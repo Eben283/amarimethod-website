@@ -8,10 +8,10 @@
   --primary-teal-dark: #2d6b59;
   --primary-teal-light: #6bb39f;
   --dark-bg: #2a2a2a;
-  --light-bg: #f9f7f4;
+  --light-bg: #faf8f5;
   --text-dark: #1a1a1a;
   --text-light: #666;
-  --border-light: #e8e8e8;
+  --border-light: #e5ddd6;
 
   --font-serif: 'Georgia', 'Garamond', serif;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -154,7 +154,7 @@ nav {
 
 /* ===== HERO SECTION ===== */
 .hero {
-  background: white;
+  background: #faf8f5;
   padding: 5rem 2rem;
   text-align: center;
   border-bottom: 1px solid var(--border-light);
@@ -282,7 +282,7 @@ nav {
 
 /* ===== TESTIMONIALS SECTION ===== */
 #testimonials {
-  background: var(--light-bg);
+  background: white;
   padding: 5rem 2rem;
 }
 
@@ -341,7 +341,7 @@ nav {
 
 /* ===== HOW IT WORKS ===== */
 #how-it-works {
-  background: white;
+  background: #faf8f5;
   padding: 5rem 2rem;
   border-bottom: 1px solid var(--border-light);
 }
@@ -382,7 +382,7 @@ nav {
 
 /* ===== WHAT MAKES DIFFERENT ===== */
 #what-makes-different {
-  background: var(--light-bg);
+  background: white;
   padding: 5rem 2rem;
 }
 
@@ -413,7 +413,7 @@ nav {
 
 /* ===== SERVICES ===== */
 #services {
-  background: white;
+  background: #faf8f5;
   padding: 5rem 2rem;
   border-bottom: 1px solid var(--border-light);
 }
@@ -427,7 +427,7 @@ nav {
 }
 
 .service-card {
-  background: var(--light-bg);
+  background: white;
   padding: 2.5rem;
   border-radius: 12px;
   border: 1px solid var(--border-light);
@@ -475,7 +475,7 @@ nav {
 
 /* ===== FAQ ===== */
 #faq {
-  background: var(--light-bg);
+  background: white;
   padding: 5rem 2rem;
 }
 
