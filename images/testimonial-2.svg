@@ -1,11 +1,41 @@
 <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gradF2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#a5d4f5;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#6fa5c4;stop-opacity:1" />
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e3f2f8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cce5f0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="skin2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d4a886;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c99977;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hair2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5c4a3d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4a3f37;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="200" cy="200" r="200" fill="url(#gradF2)"/>
-  <circle cx="200" cy="120" r="60" fill="white" opacity="0.3"/>
-  <text x="200" y="340" font-family="Georgia, serif" font-size="24" fill="white" text-anchor="middle" opacity="0.6">Client Photo</text>
+
+  <!-- Background -->
+  <circle cx="200" cy="200" r="200" fill="url(#bg2)"/>
+
+  <!-- Head -->
+  <circle cx="200" cy="130" r="50" fill="url(#skin2)"/>
+
+  <!-- Hair -->
+  <path d="M 150 110 A 50 50 0 0 1 250 110 L 250 95 A 50 50 0 0 0 150 95 Z" fill="url(#hair2)"/>
+
+  <!-- Eyes -->
+  <circle cx="185" cy="125" r="4" fill="#333" opacity="0.7"/>
+  <circle cx="215" cy="125" r="4" fill="#333" opacity="0.7"/>
+
+  <!-- Expression lines -->
+  <path d="M 185 140 Q 200 145 215 140" stroke="#999" stroke-width="1" fill="none" opacity="0.4"/>
+
+  <!-- Professional shirt -->
+  <rect x="145" y="175" width="110" height="85" fill="#f0f0f0" rx="12"/>
+
+  <!-- Shirt collar detail -->
+  <path d="M 175 175 L 170 200 L 200 190 L 230 200 L 225 175" fill="#e8e8e8"/>
+
+  <!-- Neck -->
+  <rect x="190" y="160" width="20" height="15" fill="url(#skin2)"/>
 </svg>

@@ -1,11 +1,43 @@
 <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gradF3" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f5d4a5;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#d4a56f;stop-opacity:1" />
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0e6f5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e3d4ea;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="skin3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e5b39d;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d9a391;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hair3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6b5d52;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5a4e45;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <circle cx="200" cy="200" r="200" fill="url(#gradF3)"/>
-  <circle cx="200" cy="120" r="60" fill="white" opacity="0.3"/>
-  <text x="200" y="340" font-family="Georgia, serif" font-size="24" fill="white" text-anchor="middle" opacity="0.6">Client Photo</text>
+
+  <!-- Background -->
+  <circle cx="200" cy="200" r="200" fill="url(#bg3)"/>
+
+  <!-- Head -->
+  <circle cx="200" cy="125" r="48" fill="url(#skin3)"/>
+
+  <!-- Hair with volume -->
+  <ellipse cx="200" cy="85" rx="50" ry="45" fill="url(#hair3)"/>
+  <path d="M 155 110 Q 155 65 200 60 Q 245 65 245 110" fill="url(#hair3)" opacity="0.8"/>
+
+  <!-- Friendly eyes -->
+  <circle cx="185" cy="120" r="4.5" fill="#333" opacity="0.75"/>
+  <circle cx="215" cy="120" r="4.5" fill="#333" opacity="0.75"/>
+
+  <!-- Warm smile -->
+  <path d="M 185 138 Q 200 145 215 138" stroke="#999" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+
+  <!-- Professional top -->
+  <path d="M 152 170 L 148 260 L 252 260 L 248 170 Q 200 175 152 170" fill="#2d5f7f"/>
+
+  <!-- Shirt highlights -->
+  <ellipse cx="200" cy="200" rx="35" ry="40" fill="rgba(255, 255, 255, 0.08)"/>
+
+  <!-- Shoulders -->
+  <ellipse cx="150" cy="265" rx="50" ry="25" fill="url(#bg3)" opacity="0.7"/>
+  <ellipse cx="250" cy="265" rx="50" ry="25" fill="url(#bg3)" opacity="0.7"/>
 </svg>
