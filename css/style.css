@@ -1,6 +1,6 @@
 /* =============================================
-   AMARI METHOD - ELEGANT WEBSITE STYLESHEET
-   Design System: Cream/Teal, Original-Inspired
+   AMARI METHOD - WEBSITE STYLESHEET
+   Matching original design with elegant cards
    ============================================= */
 
 :root {
@@ -12,6 +12,7 @@
   --text-dark: #2a2a2a;
   --text-light: #666;
   --border-light: #ede8e0;
+  --card-bg: #f5f0eb;
 
   --font-serif: 'Georgia', 'Garamond', serif;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
@@ -280,6 +281,76 @@ nav {
   margin-bottom: 1rem;
 }
 
+/* ===== HOW IT WORKS ===== */
+#how-it-works {
+  background: #fffef5;
+  padding: 5rem 2rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.section-title {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.how-it-works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.how-card {
+  background: var(--card-bg);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.how-card:hover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.how-card h3 {
+  color: var(--text-dark);
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+.how-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.how-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.how-card li {
+  margin-bottom: 1rem;
+  color: var(--text-light);
+  line-height: 1.7;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.how-card li:before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--primary-teal);
+  font-weight: 700;
+}
+
 /* ===== TESTIMONIALS SECTION ===== */
 #testimonials {
   background: white;
@@ -337,47 +408,6 @@ nav {
 .testimonial-role {
   font-size: 0.85rem;
   color: var(--text-light);
-}
-
-/* ===== HOW IT WORKS ===== */
-#how-it-works {
-  background: #fffef5;
-  padding: 5rem 2rem;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.steps-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 3rem;
-  margin: 3rem 0;
-}
-
-.step {
-  text-align: center;
-}
-
-.step-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: var(--primary-teal);
-  color: white;
-  font-size: 1.8rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-}
-
-.step h3 {
-  color: var(--primary-teal);
-  margin-bottom: 1rem;
-}
-
-.step p {
-  font-size: 0.95rem;
 }
 
 /* ===== WHAT MAKES DIFFERENT ===== */
@@ -501,7 +531,7 @@ nav {
 }
 
 .faq-question:hover {
-  background: rgba(74, 155, 127, 0.05);
+  background: rgba(61, 139, 125, 0.05);
 }
 
 .faq-toggle {
@@ -619,17 +649,8 @@ footer {
   font-size: 0.85rem;
 }
 
-/* ===== SECTIONS ===== */
 section {
   position: relative;
-}
-
-.section-title {
-  font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 3rem;
-  color: var(--text-dark);
-  font-weight: 700;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -688,7 +709,7 @@ section {
     padding: 0 1rem;
   }
 
-  .steps-container {
+  .how-it-works-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
