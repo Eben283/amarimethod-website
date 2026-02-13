@@ -791,7 +791,7 @@ header nav {
 }
 
 .faq-item {
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.8rem;
   border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 2rem;
@@ -818,16 +818,17 @@ header nav {
 }
 
 .faq-question::after {
-  content: '+';
-  font-size: 1.5rem;
-  color: var(--color-primary);
+  content: '‸';
+  font-size: 1.2rem;
+  color: var(--color-text);
+  font-weight: 300;
   transition: transform 0.3s ease;
   flex-shrink: 0;
   margin-left: 1rem;
 }
 
 .faq-item.open .faq-question::after {
-  transform: rotate(45deg);
+  transform: rotate(180deg);
 }
 
 .faq-answer {
