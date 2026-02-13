@@ -653,6 +653,47 @@ header nav {
   box-shadow: 0 8px 24px rgba(79, 138, 139, 0.1);
 }
 
+.testimonial-photo {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-bottom: 1.5rem;
+  border: none;
+}
+
+.testimonial-quote {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  font-style: italic;
+  flex-grow: 1;
+  margin-bottom: 1.5rem;
+}
+
+.testimonial-author {
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.testimonial-role {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.testimonial-condition {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  margin-bottom: 1rem;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+/* Legacy CSS support */
 .testimonial-image {
   width: 80px;
   height: 80px;
@@ -660,11 +701,6 @@ header nav {
   object-fit: cover;
   margin-bottom: 1.5rem;
   border: none;
-}
-
-.testimonial-card h4 {
-  margin-bottom: 0.25rem;
-  color: var(--color-text);
 }
 
 .testimonial-condition-small {
@@ -680,6 +716,21 @@ header nav {
   color: var(--color-text);
   font-style: italic;
   flex-grow: 1;
+}
+
+.cta-after-testimonials {
+  margin-top: 4rem;
+  text-align: center;
+  padding: 2rem;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.cta-after-testimonials p {
+  font-size: 1.1rem;
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
 }
 
 /* ===== WHAT SETS US APART SECTION ===== */
