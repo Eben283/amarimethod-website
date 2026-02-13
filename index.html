@@ -381,44 +381,117 @@
         /* Services/Journal Section */
         .journal-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             margin-top: 3rem;
+            align-items: flex-start;
         }
 
         .journal-card {
-            background: var(--primary-teal);
-            color: white;
-            padding: 2rem;
-            border-radius: 8px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            padding: 2.5rem;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: all 0.3s ease;
         }
 
-        .journal-card > p:last-of-type {
+        .journal-card.featured {
+            transform: scale(1.05);
+            box-shadow: 0 20px 60px rgba(79, 138, 139, 0.15);
+            border: 2px solid var(--primary-teal);
+            padding: 3rem;
+        }
+
+        .journal-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .journal-card.featured:hover {
+            box-shadow: 0 25px 70px rgba(79, 138, 139, 0.2);
+        }
+
+        .journal-card h3 {
+            font-size: 1.5rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .journal-card > p:not(.service-price):not(.journal-tag) {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .service-features {
+            margin: 2rem 0;
+            padding: 1.5rem 0;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
             flex-grow: 1;
         }
 
-        .journal-card .btn-primary {
-            margin-top: auto !important;
+        .service-feature {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+            color: #555;
         }
 
-        .journal-card img {
+        .service-feature::before {
+            content: "✓";
+            color: var(--primary-teal);
+            font-weight: 700;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .service-price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin: 1.5rem 0;
+        }
+
+        .journal-card .btn-primary {
+            margin-top: auto;
             width: 100%;
-            height: 200px;
-            object-fit: cover;
-            margin: -2rem -2rem 1rem -2rem;
-            margin-bottom: 1.5rem;
+            justify-content: center;
+        }
+
+        .journal-card.featured .btn-primary {
+            background: var(--primary-teal);
+            color: white;
         }
 
         .journal-tag {
             display: inline-block;
-            background: rgba(255,255,255,0.2);
-            padding: 0.3rem 0.8rem;
+            background: var(--primary-teal);
+            color: white;
+            padding: 0.4rem 1rem;
             border-radius: 20px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            font-weight: 600;
             margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .journal-card.featured .journal-tag {
+            background: var(--accent-red);
+        }
+
+        @media (max-width: 768px) {
+            .journal-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .journal-card.featured {
+                transform: scale(1);
+            }
         }
 
         /* Testimonials Scroll Section */
@@ -888,28 +961,46 @@
     <!-- The Journal / Services -->
     <section class="section" id="services">
         <div class="container center">
-            <h2>Choose Your Path</h2>
+            <h2>Choose Your <span style="color: var(--primary-teal);">Path</span></h2>
             <div class="journal-grid">
-                <div class="journal-card">
+                <div class="journal-card featured">
                     <div class="journal-tag">RECOMMENDED</div>
                     <h3>In-Person Sessions</h3>
                     <p>Experience the full power of the method with hands-on guidance from Dr. Garrett.</p>
-                    <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$225 - $475</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--text-dark);"><span>Book Session</span></button>
+                    <div class="service-features">
+                        <div class="service-feature">Hands-on alignment adjustments</div>
+                        <div class="service-feature">Personalized assessment and plan</div>
+                        <div class="service-feature">Real-time feedback and correction</div>
+                        <div class="service-feature">Follow-up support included</div>
+                    </div>
+                    <p class="service-price">$225 - $475</p>
+                    <button class="btn-primary"><span>Book Session</span></button>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">POPULAR</div>
                     <h3>Virtual Sessions</h3>
                     <p>Access expert guidance from anywhere, with video consultations and follow-up support.</p>
-                    <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$225 - $475</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--text-dark);"><span>Book Session</span></button>
+                    <div class="service-features">
+                        <div class="service-feature">Live video consultations</div>
+                        <div class="service-feature">Screen-shared demonstrations</div>
+                        <div class="service-feature">Flexible scheduling</div>
+                        <div class="service-feature">Email support between sessions</div>
+                    </div>
+                    <p class="service-price">$225 - $475</p>
+                    <button class="btn-primary" style="background: white; color: var(--text-dark);"><span>Book Session</span></button>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">SELF-PACED</div>
                     <h3>Online Program</h3>
                     <p>Learn the complete method with video training, exercises, and lifetime access.</p>
-                    <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$297</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--text-dark);"><span>Learn More</span></button>
+                    <div class="service-features">
+                        <div class="service-feature">15+ instructional videos</div>
+                        <div class="service-feature">Complete exercise library</div>
+                        <div class="service-feature">Lifetime access & updates</div>
+                        <div class="service-feature">Community forum access</div>
+                    </div>
+                    <p class="service-price">$297</p>
+                    <button class="btn-primary" style="background: white; color: var(--text-dark);"><span>Learn More</span></button>
                 </div>
             </div>
         </div>
