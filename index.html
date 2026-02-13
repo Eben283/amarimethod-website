@@ -412,6 +412,43 @@
             margin-bottom: 1rem;
         }
 
+        /* Client Ticker Section */
+        .client-ticker-section {
+            background: var(--bg-cream);
+            padding: 4rem 0;
+            overflow: hidden;
+        }
+
+        .client-ticker-wrapper {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .client-ticker {
+            display: flex;
+            gap: 2rem;
+            padding: 0 2rem;
+            animation: scroll-right 30s linear infinite;
+        }
+
+        .client-ticker img {
+            height: 200px;
+            width: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        @keyframes scroll-right {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(calc(250px * 5 + 2rem * 5));
+            }
+        }
+
         /* Full Width Image Section */
         .full-width-image {
             width: 100vw;
@@ -615,6 +652,25 @@
                     <p class="testimonial-role">Student & Mother of Six</p>
                     <p style="color: var(--text-dark); font-size: 0.9rem; margin-top: 1rem;">Lower back pain relief</p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scrolling Client Ticker -->
+    <section class="client-ticker-section">
+        <div class="client-ticker-wrapper">
+            <div class="client-ticker">
+                <img src="https://framerusercontent.com/images/ykax52rsbkgYur5jZqaKxWGRLM.jpg" alt="Client 1">
+                <img src="https://framerusercontent.com/images/yjAG0in3sdsVTnV8C7SQZvfI.jpg" alt="Client 2">
+                <img src="https://framerusercontent.com/images/b2BQBhvuzgJ9B0hXGR6Mllix4.jpg" alt="Client 3">
+                <img src="https://framerusercontent.com/images/UUAs7bRplHGRHjaIzEnqwmEgyZ0.jpg" alt="Client 4">
+                <img src="https://framerusercontent.com/images/VS1tU5XnBB7A2G9vAuqpuc0pZag.jpg" alt="Client 5">
+                <!-- Repeat for seamless loop -->
+                <img src="https://framerusercontent.com/images/ykax52rsbkgYur5jZqaKxWGRLM.jpg" alt="Client 1">
+                <img src="https://framerusercontent.com/images/yjAG0in3sdsVTnV8C7SQZvfI.jpg" alt="Client 2">
+                <img src="https://framerusercontent.com/images/b2BQBhvuzgJ9B0hXGR6Mllix4.jpg" alt="Client 3">
+                <img src="https://framerusercontent.com/images/UUAs7bRplHGRHjaIzEnqwmEgyZ0.jpg" alt="Client 4">
+                <img src="https://framerusercontent.com/images/VS1tU5XnBB7A2G9vAuqpuc0pZag.jpg" alt="Client 5">
             </div>
         </div>
     </section>
