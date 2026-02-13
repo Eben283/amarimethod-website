@@ -861,6 +861,120 @@
             background: var(--light-tan);
         }
 
+        /* Results Section */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .result-card {
+            background: white;
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.08);
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .result-card:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+        }
+
+        .result-metric {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary-teal);
+            margin-bottom: 0.5rem;
+            font-family: 'Bona Nova', serif;
+        }
+
+        .result-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .result-description {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* FAQ Section */
+        .faq-container {
+            max-width: 900px;
+            margin: 0 auto;
+            margin-top: 3rem;
+        }
+
+        .faq-item {
+            background: white;
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .faq-item:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            border-color: var(--primary-teal);
+        }
+
+        .faq-header {
+            padding: 1.75rem 2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: background 0.3s ease;
+        }
+
+        .faq-item.active .faq-header {
+            background: var(--light-tan);
+        }
+
+        .faq-toggle {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+            flex-shrink: 0;
+            margin-left: 1rem;
+        }
+
+        .faq-item.active .faq-toggle {
+            transform: rotate(180deg);
+        }
+
+        .faq-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .faq-item.active .faq-content {
+            max-height: 500px;
+        }
+
+        .faq-body {
+            padding: 0 2rem 1.75rem 2rem;
+            color: #666;
+            line-height: 1.8;
+            font-size: 0.95rem;
+        }
+
         /* Footer */
         footer {
             background: var(--light-tan);
@@ -937,6 +1051,23 @@
 
             .hero h1 {
                 font-size: 2rem;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .result-metric {
+                font-size: 2.5rem;
+            }
+
+            .faq-header {
+                padding: 1.25rem 1.5rem;
+            }
+
+            .faq-body {
+                padding: 0 1.5rem 1.25rem 1.5rem;
             }
         }
     </style>
@@ -1250,6 +1381,31 @@
         </div>
     </section>
 
+    <!-- Results Section -->
+    <section class="section" id="results">
+        <div class="container center">
+            <h2>Proven Results That Speak for Themselves</h2>
+            <p style="font-size: 1.1rem; color: #666; margin-bottom: 3rem; max-width: 700px; margin-left: auto; margin-right: auto;">Our clients experience transformative results in their first session, with lasting relief and renewed body awareness.</p>
+            <div class="results-grid">
+                <div class="result-card scroll-animate">
+                    <div class="result-metric">89%</div>
+                    <div class="result-label">Pain Relief in First Session</div>
+                    <div class="result-description">Most clients experience significant pain reduction or complete relief during their initial appointment.</div>
+                </div>
+                <div class="result-card scroll-animate">
+                    <div class="result-metric">95%</div>
+                    <div class="result-label">Would Recommend to a Friend</div>
+                    <div class="result-description">Clients consistently choose to continue sessions and refer friends and family to the Amari Method.</div>
+                </div>
+                <div class="result-card scroll-animate">
+                    <div class="result-metric">2-4</div>
+                    <div class="result-label">Sessions for Lasting Results</div>
+                    <div class="result-description">Most clients achieve lasting pain relief and body awareness mastery in just a few sessions.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Full Width CTA Image -->
     <div style="margin: 4rem 2rem; border-radius: 20px; overflow: hidden; min-height: 600px; background-image: url('images/waterfall-cta.png'); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative;">
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.25);"></div>
@@ -1272,6 +1428,125 @@
                         Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss.
                     </p>
                     <button class="btn-primary" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; font-size: 1rem;"><span>Take 2-Minute Assessment</span></button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section" style="background: var(--light-tan);">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h2>Frequently Asked Questions</h2>
+                <p style="font-size: 1.1rem; color: #666; margin-top: 1rem;">Everything you need to know about the Amari Method</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>What exactly is the Amari Method?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            The Amari Method is a revolutionary pain relief approach that combines deep anatomical knowledge with intuitive body awareness. Rather than treating symptoms, it identifies and addresses the root causes of pain. Dr. Garrett developed this method over 25+ years of practice, helping thousands of clients achieve lasting relief without drugs or surgery.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>How quickly will I see results?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            Most clients experience significant pain relief or complete elimination during their first session. The real transformation happens as you learn the tools and techniques—typically 2-4 sessions are enough for lasting results. You'll also receive daily practices to maintain your relief and prevent pain from returning.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>Is this suitable for my type of pain?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            The Amari Method works with most types of pain—chronic back pain, neck and shoulder tension, sports injuries, joint pain, and more. However, severe conditions or those requiring medical intervention should be discussed with Dr. Garrett during a free consultation. We'll assess whether the method is right for you and create a personalized plan.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>Do I need to be flexible or in shape?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            Not at all! The method is designed to work with your body exactly as it is right now. Whether you're stiff, out of shape, or recovering from injury, the techniques are adapted to your needs. Dr. Garrett's approach meets you where you are and gently guides you toward greater mobility and pain relief.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>What's the difference between in-person and virtual sessions?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            In-person sessions include hands-on alignment adjustments, which many clients find valuable for immediate relief. Virtual sessions are perfect if you're unable to visit in person—you'll receive expert guidance, demonstrations, and can ask questions in real-time. Most clients start with one in-person session to learn the fundamentals, then continue virtually if preferred.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>How long is each session?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            Sessions typically last 60-90 minutes, depending on your specific needs and the assessment Dr. Garrett conducts. The first session is longer as it includes a thorough evaluation, education about your condition, and hands-on experience with the method. Follow-up sessions are typically 60 minutes.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>What credentials and training does Dr. Garrett have?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            Dr. Garrett brings 25+ years of hands-on experience helping thousands of clients achieve lasting pain relief. His approach combines rigorous anatomical understanding with intuitive body awareness gained through decades of practice. He regularly continues his education to stay current with the latest body science and healing techniques.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>What if the method doesn't work for me?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            We're confident in the method's effectiveness, but we understand that everyone's body is unique. If you're not satisfied after your first session, we'll discuss your experience and determine the best path forward—whether that's adjusting the approach or exploring other options. Your satisfaction is our priority.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-header">
+                        <span>Can I do the online program if I've never tried the method?</span>
+                        <div class="faq-toggle">▼</div>
+                    </div>
+                    <div class="faq-content">
+                        <div class="faq-body">
+                            Yes! The online program includes comprehensive instructional videos that guide you through the complete method. However, many clients find that starting with at least one in-person or virtual session with Dr. Garrett helps them understand their specific pain patterns and get personalized guidance, which enhances the online program experience.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1427,6 +1702,32 @@
             card.classList.add('scroll-animate');
             card.style.animationDelay = `${index * 0.1}s`;
             scrollAnimationObserver.observe(card);
+        });
+
+        // Animate result cards
+        const resultCards = document.querySelectorAll('.result-card');
+        resultCards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+            scrollAnimationObserver.observe(card);
+        });
+
+        // FAQ Accordion Functionality
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const header = item.querySelector('.faq-header');
+            header.addEventListener('click', () => {
+                const isActive = item.classList.contains('active');
+
+                // Close all other items
+                faqItems.forEach(otherItem => {
+                    otherItem.classList.remove('active');
+                });
+
+                // Toggle current item
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
         });
     </script>
 </body>
