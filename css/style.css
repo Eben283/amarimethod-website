@@ -3,6 +3,8 @@
    Matching original design with elegant cards
    ============================================= */
 
+@import url('https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 :root {
   --primary-teal: #3d8b7d;
   --primary-teal-dark: #2a6b5f;
@@ -14,8 +16,9 @@
   --border-light: #ede8e0;
   --card-bg: #f5f0eb;
 
-  --font-serif: 'Georgia', 'Garamond', serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-serif: 'Bona Nova', 'Libre Baskerville', serif;
+  --font-sans: 'Inter', 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Poppins', 'Inter', sans-serif;
 }
 
 * {
