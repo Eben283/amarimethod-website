@@ -386,22 +386,22 @@
         .journal-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            margin-top: 3rem;
+            gap: 1.5rem;
+            margin-top: 2rem;
             align-items: stretch;
         }
 
         .journal-card {
             background: white;
-            border: 1px solid #e8e8e8;
-            padding: 3rem 2.5rem;
-            border-radius: 20px;
+            border: 1px solid #ddd;
+            padding: 2rem 1.75rem;
+            border-radius: 12px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transition: all 0.4s ease;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .journal-card::before {
@@ -411,55 +411,54 @@
             left: 0;
             right: 0;
             height: 0px;
-            background: linear-gradient(90deg, var(--primary-teal), var(--dark-teal));
+            background: #333;
             opacity: 0;
-            transition: all 0.5s ease;
+            transition: all 0.4s ease;
         }
 
         .journal-card:hover::before {
             opacity: 1;
-            height: 5px;
+            height: 3px;
         }
 
         .journal-card.featured {
-            border: 1px solid transparent;
-            background: linear-gradient(135deg, #ffffff 0%, rgba(79, 138, 139, 0.04) 100%);
-            box-shadow: 0 20px 60px rgba(79, 138, 139, 0.15);
-            padding: 3.5rem 3rem;
+            border: 2px solid var(--accent-red);
+            background: #fafafa;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            padding: 2.2rem 1.9rem;
             position: relative;
             z-index: 2;
-            transform: scale(1.05);
+            transform: none;
         }
 
         .journal-card:hover {
-            border-color: #e0e0e0;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
         }
 
         .journal-card.featured:hover {
-            box-shadow: 0 30px 80px rgba(79, 138, 139, 0.2);
-            transform: scale(1.05) translateY(-8px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
         }
 
         .journal-card h3 {
-            font-size: 1.65rem;
+            font-size: 1.3rem;
             color: var(--text-dark);
-            margin-bottom: 1rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
         }
 
         .journal-card > p:not(.service-price) {
-            color: #777;
-            line-height: 1.8;
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
         }
 
         .service-features {
-            margin: 2.5rem 0;
-            padding: 2.5rem 0;
+            margin: 1.5rem 0;
+            padding: 1.5rem 0;
             border-top: 1px solid #f0f0f0;
             border-bottom: 1px solid #f0f0f0;
             flex-grow: 1;
@@ -468,67 +467,68 @@
         .service-feature {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 1.4rem;
-            font-size: 0.95rem;
+            margin-bottom: 0.9rem;
+            font-size: 0.85rem;
             color: #666;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
         .service-feature::before {
             content: "✓";
-            color: var(--primary-teal);
-            font-weight: 800;
-            margin-right: 1rem;
-            font-size: 1.1rem;
+            color: #333;
+            font-weight: 700;
+            margin-right: 0.7rem;
+            font-size: 0.9rem;
             flex-shrink: 0;
         }
 
         .service-price {
-            font-size: 2.2rem;
-            font-weight: 800;
-            color: var(--primary-teal);
-            margin: 2rem 0 1rem 0;
-            letter-spacing: -1px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #333;
+            margin: 1.5rem 0 1rem 0;
+            letter-spacing: -0.5px;
         }
 
         .journal-card .btn-primary {
-            margin-top: 2.5rem;
+            margin-top: 1.5rem;
             width: 100%;
-            padding: 1rem 1.5rem;
-            font-size: 1rem;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.9rem;
             font-weight: 600;
         }
 
         .journal-card.featured .btn-primary {
-            background: var(--primary-teal);
+            background: var(--accent-red);
             color: white;
         }
 
         .btn-outline {
             background: white !important;
             color: var(--text-dark) !important;
-            border: 2px solid var(--primary-teal) !important;
+            border: 1px solid #ddd !important;
         }
 
         .btn-outline:hover {
-            background: var(--primary-teal) !important;
-            color: white !important;
+            background: #f5f5f5 !important;
+            color: var(--text-dark) !important;
+            border-color: #999 !important;
         }
 
         .btn-outline::before {
-            color: var(--primary-teal) !important;
+            color: #333 !important;
         }
 
         .journal-tag {
             display: inline-block;
-            background: var(--primary-teal);
+            background: #333;
             color: white;
-            padding: 0.6rem 1.4rem;
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            letter-spacing: 1px;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
         }
 
