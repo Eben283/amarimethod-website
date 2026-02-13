@@ -235,16 +235,17 @@ nav {
   position: relative;
 }
 
-.btn::after {
+.btn::before {
   content: '→';
   display: inline-block;
   opacity: 0;
   transform: translateX(-8px);
   transition: all 0.3s ease;
   font-size: 1.1em;
+  order: -1;
 }
 
-.btn:hover::after {
+.btn:hover::before {
   opacity: 1;
   transform: translateX(0);
 }
@@ -271,8 +272,8 @@ nav {
 .btn-secondary:hover {
   background: white;
   color: var(--text-dark);
-  transform: translateY(-2px);
   border-color: var(--text-dark);
+  /* No background color change - just arrow animation */
 }
 
 .btn-white {
