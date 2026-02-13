@@ -31,28 +31,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // FAQ Toggle
 function toggleFAQ(element) {
-  const answer = element.nextElementSibling;
-  const toggle = element.querySelector('.faq-toggle');
+  const faqItem = element.closest('.faq-item');
 
   // Close other open FAQs
-  const allAnswers = document.querySelectorAll('.faq-answer');
-  const allToggles = document.querySelectorAll('.faq-toggle');
-
-  allAnswers.forEach(a => {
-    if (a !== answer) {
-      a.classList.remove('active');
-    }
-  });
-
-  allToggles.forEach(t => {
-    if (t !== toggle) {
-      t.textContent = '+';
+  const allFaqItems = document.querySelectorAll('.faq-item');
+  allFaqItems.forEach(item => {
+    if (item !== faqItem) {
+      item.classList.remove('open');
     }
   });
 
   // Toggle current FAQ
-  answer.classList.toggle('active');
-  toggle.textContent = answer.classList.contains('active') ? '−' : '+';
+  faqItem.classList.toggle('open');
 }
 
 // Form Handling (if needed for contact forms)
