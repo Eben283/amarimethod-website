@@ -388,6 +388,24 @@ header nav {
   transform: scale(1.02) translateY(-8px);
 }
 
+.comparison-label {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.comparison-label.active {
+  background-color: var(--primary-teal);
+  color: white;
+}
+
+.comparison-label.inactive {
+  background-color: #f0f0f0;
+  color: var(--text-dark);
+}
+
 .outcome {
   font-weight: 700;
   color: var(--primary-teal);
@@ -588,12 +606,13 @@ header nav {
 }
 
 .credentials-list li:before {
-  content: "✓";
+  content: "•";
   position: absolute;
   left: 0;
   color: var(--primary-teal);
   font-weight: bold;
-  font-size: 1.1rem;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 .credentials-stats {
