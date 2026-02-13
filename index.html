@@ -107,37 +107,25 @@
         }
 
         .btn-primary {
-            background-color: var(--primary-teal);
+            background-color: var(--text-dark);
             color: white;
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             border-radius: 4px;
             border: none;
             cursor: pointer;
             font-size: 0.95rem;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            transition: background-color 0.3s ease;
             text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--dark-teal);
-            transform: translateY(-2px);
-        }
-
-        /* Dark button with arrow animation */
-        .btn-primary.btn-dark-arrow {
-            position: relative;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem 2rem;
+            position: relative;
             overflow: visible;
             font-weight: 300;
             letter-spacing: 0.5px;
-            width: auto;
         }
 
-        .btn-primary.btn-dark-arrow::before {
+        .btn-primary::before {
             content: '→';
             position: absolute;
             left: -2.5rem;
@@ -149,19 +137,24 @@
             transition: all 0.6s ease-out;
         }
 
-        .btn-primary.btn-dark-arrow:hover::before {
+        .btn-primary:hover {
+            background-color: var(--text-dark);
+        }
+
+        .btn-primary:hover::before {
             opacity: 1;
             left: 1rem;
         }
 
-        .btn-primary.btn-dark-arrow span {
+        .btn-primary span {
             transition: transform 0.6s ease-out;
             display: inline-block;
         }
 
-        .btn-primary.btn-dark-arrow:hover span {
+        .btn-primary:hover span {
             transform: translateX(1.5rem);
         }
+
 
         .btn-secondary {
             background-color: transparent;
@@ -526,7 +519,7 @@
             <li><a href="#results">Results</a></li>
             <li><a href="#about">About</a></li>
         </ul>
-        <button class="btn-primary">Book Session</button>
+        <button class="btn-primary"><span>Book Session</span></button>
     </nav>
 
     <!-- Hero Section -->
@@ -547,7 +540,7 @@
 
         <div class="hero-cta">
             <button class="btn-secondary">Schedule Free Call</button>
-            <button class="btn-primary">Book Relief Session</button>
+            <button class="btn-primary"><span>Book Relief Session</span></button>
         </div>
     </section>
 
@@ -604,7 +597,7 @@
                         <li style="margin-bottom: 1rem;">No medications or surgery required</li>
                         <li style="margin-bottom: 1rem;">Expert-guided sessions in-person and virtually</li>
                     </ul>
-                    <button class="btn-primary" style="margin-top: 2rem;">Learn More</button>
+                    <button class="btn-primary" style="margin-top: 2rem;"><span>Learn More</span></button>
                 </div>
                 <div>
                     <img src="images/Garrett working with patient.avif" alt="Dr. Garrett working with patient" style="border-radius: 12px;">
@@ -660,21 +653,21 @@
                     <h3>In-Person Sessions</h3>
                     <p>Experience the full power of the method with hands-on guidance from Dr. Garrett.</p>
                     <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$225 - $475</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);">Book Session</button>
+                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);"><span>Book Session</span></button>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">POPULAR</div>
                     <h3>Virtual Sessions</h3>
                     <p>Access expert guidance from anywhere, with video consultations and follow-up support.</p>
                     <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$225 - $475</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);">Book Session</button>
+                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);"><span>Book Session</span></button>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">SELF-PACED</div>
                     <h3>Online Program</h3>
                     <p>Learn the complete method with video training, exercises, and lifetime access.</p>
                     <p style="margin-top: 2rem; font-size: 1.3rem; font-weight: 600;">$297</p>
-                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);">Learn More</button>
+                    <button class="btn-primary" style="margin-top: 1rem; background: white; color: var(--primary-teal);"><span>Learn More</span></button>
                 </div>
             </div>
         </div>
@@ -685,7 +678,7 @@
         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.25);"></div>
         <div style="position: relative; z-index: 2; text-align: center; color: white; max-width: 700px; padding: 2rem;">
             <h2 style="font-size: 3.5rem; margin-bottom: 2rem; color: white; font-family: 'Bona Nova', serif; line-height: 1.2;">A proven approach to helping you reconnect with your body's wisdom.</h2>
-            <button class="btn-primary" style="background: white; color: var(--primary-teal); padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600;">Book Relief Session</button>
+            <button class="btn-primary" style="background: white; color: var(--primary-teal); padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600;"><span>Book Relief Session</span></button>
         </div>
     </div>
 
@@ -701,7 +694,7 @@
                     <p style="margin-top: 1rem; font-size: 1rem; line-height: 1.8; color: var(--text-dark);">
                         Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss.
                     </p>
-                    <button class="btn-primary btn-dark-arrow" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; font-size: 1rem;"><span>Take 2-Minute Assessment</span></button>
+                    <button class="btn-primary" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; font-size: 1rem;"><span>Take 2-Minute Assessment</span></button>
                 </div>
             </div>
         </div>
