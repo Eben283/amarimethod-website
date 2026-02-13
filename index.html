@@ -174,17 +174,50 @@
         .btn-secondary {
             background-color: transparent;
             color: var(--text-dark);
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             border: 1px solid var(--text-dark);
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.95rem;
             transition: all 0.3s ease;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-secondary::before {
+            content: '→';
+            position: absolute;
+            left: -2.5rem;
+            opacity: 0;
+            font-weight: 300;
+            color: var(--text-dark);
+            font-size: 1em;
+            margin-right: 0.5rem;
+            transition: all 0.6s ease-out;
+        }
+
+        .btn-secondary span {
+            transition: transform 0.6s ease-out;
+            display: inline-block;
         }
 
         .btn-secondary:hover {
-            background-color: var(--text-dark);
-            color: white;
+            background-color: transparent;
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover::before {
+            opacity: 1;
+            left: 1rem;
+        }
+
+        .btn-secondary:hover span {
+            transform: translateX(1.5rem);
         }
 
         /* Layout */
@@ -564,7 +597,7 @@
         </div>
 
         <div class="hero-cta">
-            <button class="btn-secondary">Schedule Free Call</button>
+            <button class="btn-secondary"><span>Schedule Free Call</span></button>
             <button class="btn-primary"><span>Book Relief Session</span></button>
         </div>
     </section>
