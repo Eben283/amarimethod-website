@@ -124,6 +124,32 @@
             transform: translateY(-2px);
         }
 
+        /* Dark button with arrow animation */
+        .btn-primary.btn-dark-arrow {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 2rem;
+            overflow: visible;
+        }
+
+        .btn-primary.btn-dark-arrow::after {
+            content: '→';
+            position: absolute;
+            right: 1rem;
+            opacity: 0;
+            transform: translateX(0.5rem);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-primary.btn-dark-arrow:hover::after {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
         .btn-secondary {
             background-color: transparent;
             color: var(--text-dark);
@@ -662,7 +688,7 @@
                     <p style="margin-top: 1rem; font-size: 1rem; line-height: 1.8; color: var(--text-dark);">
                         Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss.
                     </p>
-                    <button class="btn-primary" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; padding: 1rem 2rem; font-size: 1rem; font-weight: 600;">Take 2-Minute Assessment</button>
+                    <button class="btn-primary btn-dark-arrow" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; font-size: 1rem; font-weight: 600;">Take 2-Minute Assessment</button>
                 </div>
             </div>
         </div>
