@@ -536,7 +536,112 @@
             background: var(--accent-red);
         }
 
+        /* About Section */
+        .about-section {
+            padding: 6rem 2rem;
+        }
+
+        .about-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .about-image-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-image {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            display: block;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .about-image-wrapper:hover .about-image {
+            transform: scale(1.02);
+        }
+
+        .about-text h2 {
+            font-size: 2.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 400;
+            line-height: 1.2;
+        }
+
+        .about-label {
+            display: inline-block;
+            color: var(--primary-teal);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .about-intro {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+
+        .about-description {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: #666;
+            margin-bottom: 2.5rem;
+        }
+
+        .about-highlights {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e8e8e8;
+        }
+
+        .highlight-item {
+            text-align: center;
+        }
+
+        .highlight-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-teal);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight-label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
         @media (max-width: 768px) {
+            .about-content {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .about-text h2 {
+                font-size: 2rem;
+            }
+
+            .about-highlights {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
             .journal-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
@@ -1003,14 +1108,32 @@
     </section>
 
     <!-- Who We Are -->
-    <section class="section" id="about">
+    <section class="section about-section" id="about">
         <div class="container">
-            <h2>Who We Are</h2>
-            <div style="max-width: 800px; margin: 2rem auto;">
-                <img src="images/Dr. Garrett Professional Photo.avif" alt="Dr. Garrett" style="width: 100%; border-radius: 12px; margin-bottom: 2rem;">
-                <h3>Dr. Garrett Hewstan</h3>
-                <p>Driven by his personal healing journey from childhood pain, Dr. Garrett developed the Amari Method - a revolutionary approach that combines deep anatomical knowledge with intuitive body awareness.</p>
-                <p>With 25+ years of experience helping clients achieve lasting pain relief, Dr. Garrett's method has transformed thousands of lives.</p>
+            <div class="about-content">
+                <div class="about-image-wrapper">
+                    <img src="images/Dr. Garrett Professional Photo.avif" alt="Dr. Garrett Hewstan" class="about-image">
+                </div>
+                <div class="about-text">
+                    <span class="about-label">Meet the Founder</span>
+                    <h2>Dr. Garrett Hewstan</h2>
+                    <p class="about-intro">Driven by his personal healing journey from childhood pain, Dr. Garrett developed the Amari Method - a revolutionary approach that combines deep anatomical knowledge with intuitive body awareness.</p>
+                    <p class="about-description">With 25+ years of experience helping clients achieve lasting pain relief, Dr. Garrett's method has transformed thousands of lives. His unique approach bridges the gap between scientific understanding and body wisdom, creating lasting transformations that extend far beyond pain relief.</p>
+                    <div class="about-highlights">
+                        <div class="highlight-item">
+                            <div class="highlight-number">25+</div>
+                            <div class="highlight-label">Years of Experience</div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-number">1000s</div>
+                            <div class="highlight-label">Lives Transformed</div>
+                        </div>
+                        <div class="highlight-item">
+                            <div class="highlight-number">1</div>
+                            <div class="highlight-label">Revolutionary Method</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
