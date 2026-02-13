@@ -223,19 +223,19 @@ nav {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
-  padding: 1rem 2.5rem;
-  border-radius: 20px;
-  font-weight: 500;
+  padding: 0.75rem 1.75rem;
+  border-radius: 8px;
+  font-weight: 400;
   text-align: center;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   text-transform: none;
   font-family: var(--font-sans);
   position: relative;
-  letter-spacing: 0.3px;
 }
 
 .btn::before {
@@ -260,24 +260,22 @@ nav {
 }
 
 .btn-primary:hover {
-  background: var(--text-dark);
+  background: #1a1a1a;
   color: white;
-  border-color: var(--text-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  border-color: #1a1a1a;
+  /* Subtle hover - arrow animation is the main effect */
 }
 
 .btn-secondary {
   background: white;
   color: var(--text-dark);
-  border: 1.5px solid var(--text-dark);
+  border: 1px solid #999;
 }
 
 .btn-secondary:hover {
   background: white;
   color: var(--text-dark);
   border-color: var(--text-dark);
-  transform: translateY(-2px);
   /* No background color change - just arrow animation */
 }
 
