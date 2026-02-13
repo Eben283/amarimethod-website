@@ -412,7 +412,77 @@
             margin-bottom: 1rem;
         }
 
-/* Full Width Image Section */
+        /* Testimonials Scroll Section */
+        .testimonials-scroll-section {
+            background: var(--bg-cream);
+            padding: 4rem 2rem;
+            overflow: hidden;
+        }
+
+        .testimonials-scroll-wrapper {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .testimonials-scroll {
+            display: flex;
+            gap: 2rem;
+            animation: scroll-testimonials 80s linear infinite;
+        }
+
+        .testimonial-scroll-card {
+            flex-shrink: 0;
+            width: 280px;
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .testimonial-scroll-card img {
+            height: 120px;
+            width: 120px;
+            object-fit: cover;
+            object-position: center top;
+            border-radius: 50%;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .testimonial-scroll-card .testimonial-quote {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+            font-style: italic;
+        }
+
+        .testimonial-scroll-card .testimonial-author {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .testimonial-scroll-card .testimonial-role {
+            font-size: 0.85rem;
+            color: var(--primary-teal);
+            margin: 0;
+        }
+
+        @keyframes scroll-testimonials {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(calc(-280px * 10 - 2rem * 10));
+            }
+        }
+
+        /* Full Width Image Section */
         .full-width-image {
             width: 100vw;
             margin-left: calc(-50vw + 50%);
@@ -619,7 +689,120 @@
         </div>
     </section>
 
-<!-- Additional Testimonials -->
+    <!-- Scrolling Testimonial Cards -->
+    <section class="testimonials-scroll-section">
+        <div class="container center">
+            <h2>Real Results from Real Clients</h2>
+            <p style="margin-bottom: 3rem; color: var(--text-dark); font-size: 1.1rem;">Over 200+ clients have transformed their lives</p>
+        </div>
+        <div class="testimonials-scroll-wrapper">
+            <div class="testimonials-scroll">
+                <!-- Testimonial 1 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Sarah.png" alt="Sarah">
+                    <p class="testimonial-quote">"I avoided surgery using these simple tools. The relief was immediate and lasting."</p>
+                    <p class="testimonial-author">Sarah</p>
+                    <p class="testimonial-role">Lower Back Pain Relief</p>
+                </div>
+
+                <!-- Testimonial 2 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Justin.png" alt="Justin">
+                    <p class="testimonial-quote">"I've avoided surgery using these simple, direct, effective tools."</p>
+                    <p class="testimonial-author">Justin</p>
+                    <p class="testimonial-role">Chronic Back Pain Freedom</p>
+                </div>
+
+                <!-- Testimonial 3 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Maria.png" alt="Maria">
+                    <p class="testimonial-quote">"The method transformed my understanding of my body. I'm pain-free and feel stronger than ever."</p>
+                    <p class="testimonial-author">Maria</p>
+                    <p class="testimonial-role">Shoulder & Neck Relief</p>
+                </div>
+
+                <!-- Testimonial 4 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Amy testimonial headshot.png" alt="Amy">
+                    <p class="testimonial-quote">"After years of physical therapy that didn't work, I finally found real relief in just one session."</p>
+                    <p class="testimonial-author">Amy</p>
+                    <p class="testimonial-role">Hip Pain Resolution</p>
+                </div>
+
+                <!-- Testimonial 5 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Dan Testimonial Headshot.png" alt="Dan">
+                    <p class="testimonial-quote">"The techniques are so simple I can do them at home. My posture has completely changed."</p>
+                    <p class="testimonial-author">Dan</p>
+                    <p class="testimonial-role">Posture & Alignment</p>
+                </div>
+
+                <!-- Testimonial 6 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Gregg Testimonail headshot.png" alt="Gregg">
+                    <p class="testimonial-quote">"I was skeptical at first, but the results speak for themselves. No more pain medication."</p>
+                    <p class="testimonial-author">Gregg</p>
+                    <p class="testimonial-role">Pain-Free Without Medication</p>
+                </div>
+
+                <!-- Testimonial 7 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Kate Testimonial Headshot.png" alt="Kate">
+                    <p class="testimonial-quote">"This method gave me my life back. I can do activities I thought were gone forever."</p>
+                    <p class="testimonial-author">Kate</p>
+                    <p class="testimonial-role">Active Lifestyle Restored</p>
+                </div>
+
+                <!-- Testimonial 8 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Nina Testimonial headshot.png" alt="Nina">
+                    <p class="testimonial-quote">"The understanding I gained about my body was worth more than the pain relief itself."</p>
+                    <p class="testimonial-author">Nina</p>
+                    <p class="testimonial-role">Body Awareness & Healing</p>
+                </div>
+
+                <!-- Testimonial 9 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Samantha Testimonial Headshot.png" alt="Samantha">
+                    <p class="testimonial-quote">"After just one session, I felt the difference. Three sessions in and I'm practically pain-free."</p>
+                    <p class="testimonial-author">Samantha</p>
+                    <p class="testimonial-role">Rapid Pain Relief</p>
+                </div>
+
+                <!-- Testimonial 10 -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Terri testimonial image.png" alt="Terri">
+                    <p class="testimonial-quote">"The Amari Method is the only thing that actually worked for my chronic pain condition."</p>
+                    <p class="testimonial-author">Terri</p>
+                    <p class="testimonial-role">Chronic Condition Relief</p>
+                </div>
+
+                <!-- Duplicate for seamless loop -->
+                <div class="testimonial-scroll-card">
+                    <img src="images/Sarah.png" alt="Sarah">
+                    <p class="testimonial-quote">"I avoided surgery using these simple tools. The relief was immediate and lasting."</p>
+                    <p class="testimonial-author">Sarah</p>
+                    <p class="testimonial-role">Lower Back Pain Relief</p>
+                </div>
+
+                <div class="testimonial-scroll-card">
+                    <img src="images/Justin.png" alt="Justin">
+                    <p class="testimonial-quote">"I've avoided surgery using these simple, direct, effective tools."</p>
+                    <p class="testimonial-author">Justin</p>
+                    <p class="testimonial-role">Chronic Back Pain Freedom</p>
+                </div>
+
+                <div class="testimonial-scroll-card">
+                    <img src="images/Maria.png" alt="Maria">
+                    <p class="testimonial-quote">"The method transformed my understanding of my body. I'm pain-free and feel stronger than ever."</p>
+                    <p class="testimonial-author">Maria</p>
+                    <p class="testimonial-role">Shoulder & Neck Relief</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Additional Testimonials -->
     <section class="section" style="padding: 3rem 2rem; background: #f9f9f9;">
         <div class="container center">
             <div class="testimonials-grid">
