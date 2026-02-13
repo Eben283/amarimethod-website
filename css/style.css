@@ -462,12 +462,15 @@ header nav {
 
 .step-card,
 .how-card {
-  padding: 2.5rem;
-  text-align: center;
-  transition: all 0.3s ease;
-  background: rgba(79, 138, 139, 0.04);
-  border-radius: 12px;
-  border: 1px solid rgba(79, 138, 139, 0.1);
+  padding: 2.5rem !important;
+  text-align: center !important;
+  transition: all 0.3s ease !important;
+  background: #f0f8f9 !important;
+  border-radius: 12px !important;
+  border: 1px solid #d1e8eb !important;
+  display: block !important;
+  flex-basis: auto !important;
+  min-width: 250px !important;
 }
 
 .step-number,
