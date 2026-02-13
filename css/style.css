@@ -178,17 +178,19 @@ nav {
 }
 
 .hero-image-container {
-  margin: 3rem 0;
+  margin: 3rem auto;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 1000px;
+  width: 100%;
 }
 
 .hero-image {
   width: 100%;
   height: auto;
   display: block;
-  aspect-ratio: 4/3;
+  aspect-ratio: 16/9;
   object-fit: cover;
 }
 
