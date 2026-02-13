@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing & Packages | Amari Method</title>
+    <meta name="description" content="Discover our pain relief programs and session options. From free assessments to comprehensive treatment packages.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Color Tokens (Minimal Therabody-inspired Palette) */
+        :root {
+            --bg-cream: #ffffff;
+            --primary-red: #b03730;
+            --text-dark: #1a1a1a;
+            --text-gray: #666666;
+            --text-light-gray: #999999;
+            --border-light: #e5e5e5;
+            --background-light: #f8f8f8;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            background-color: var(--white);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Bona Nova', 'Georgia', serif;
+            font-weight: 400;
+            line-height: 1.2;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        /* Scroll Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 1px solid var(--border-light);
+            z-index: 100;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            text-decoration: none;
+            font-family: 'Bona Nova', serif;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--text-dark);
+        }
+
+        .nav-cta {
+            background-color: var(--text-dark) !important;
+            color: white !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .nav-cta:hover {
+            background-color: #333 !important;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: white;
+        }
+
+        .hero h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-gray);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .guarantee-statement {
+            font-size: 1rem;
+            color: var(--text-gray);
+            max-width: 700px;
+            margin: 0 auto 3rem;
+            line-height: 1.8;
+        }
+
+        /* Pricing Grid */
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .pricing-card {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pricing-card:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+
+        .pricing-card.featured {
+            border: 2px solid var(--text-dark);
+            background-color: var(--background-light);
+            padding: 3rem 2rem;
+        }
+
+        .pricing-card.featured:hover {
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+        }
+
+        .price-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-family: 'Bona Nova', serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-family: 'Bona Nova', serif;
+        }
+
+        .price-description {
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .price-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .price-features li {
+            color: var(--text-gray);
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .price-features li:before {
+            content: "•";
+            color: var(--text-dark);
+            font-weight: bold;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .price-features li:last-child {
+            border-bottom: none;
+        }
+
+        .btn-primary {
+            background-color: var(--text-dark);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #333;
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-dark);
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--background-light);
+            border-color: var(--text-dark);
+        }
+
+        /* Features Section */
+        .features-section {
+            background-color: var(--background-light);
+            padding: 5rem 2rem;
+            margin-top: 4rem;
+        }
+
+        .features-section h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .feature-item {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .feature-item h3 {
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .feature-item p {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .cta-section h2 {
+            margin-bottom: 1rem;
+        }
+
+        .cta-subtitle {
+            color: var(--text-gray);
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--background-light);
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        footer .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-family: 'Bona Nova', serif;
+        }
+
+        .footer-section p, .footer-section a {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            text-decoration: none;
+            line-height: 1.8;
+        }
+
+        .footer-section a:hover {
+            color: var(--text-dark);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            margin-top: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            nav ul {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 3rem 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .cta-buttons .btn-primary,
+            .cta-buttons .btn-secondary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+    <div class="container">
+        <a href="index.html" class="logo">Amari Method</a>
+        <button class="menu-toggle" aria-label="Toggle Menu">☰</button>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="about.html">About Dr. Garrett</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="https://quiz.amarimethod.com" class="nav-cta">Get Assessment</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero">
+        <div class="container">
+            <h1>Your Journey to Balance Begins Here</h1>
+            <p class="guarantee-statement">Guaranteed noticeable relief—or we'll continue working with you at no extra charge.</p>
+        </div>
+    </section>
+
+    <!-- ===== PRICING SECTION ===== -->
+    <section>
+        <div class="container">
+            <div class="pricing-grid">
+                <!-- Free Assessment Card -->
+                <div class="pricing-card scroll-animate">
+                    <div class="price-amount">$0</div>
+                    <h3 class="price-title">Free Pain Assessment</h3>
+                    <p class="price-description">Start your healing journey with no commitment. Get personalized insight into your pain pattern and learn if the Amari Method is right for you.</p>
+                    <ul class="price-features">
+                        <li>15-minute free phone consultation</li>
+                        <li>Discuss your specific pain challenges</li>
+                        <li>Learn how the Amari Method can help you</li>
+                    </ul>
+                    <a href="https://quiz.amarimethod.com" class="btn-primary">Schedule Your Free Assessment</a>
+                </div>
+
+                <!-- Intro Session Card -->
+                <div class="pricing-card scroll-animate">
+                    <div class="price-amount">$225</div>
+                    <h3 class="price-title">The Amari Method: Low Back Relief Intro Session</h3>
+                    <p class="price-description">Experience the power of the Amari Method in your first session. Feel the difference and understand why clients find relief where other approaches have failed.</p>
+                    <ul class="price-features">
+                        <li>1-hour private session (virtual or in person)</li>
+                        <li>Targeted assessment of back pain and tension patterns</li>
+                        <li>Personalized, hands-on guidance through core Amari Method principles</li>
+                        <li>Immediate relief techniques and body-specific strategies</li>
+                    </ul>
+                    <a href="https://www.amarimethod.com/booking" class="btn-primary">Book Your Appointment</a>
+                </div>
+
+                <!-- Premium Session Card (Featured) -->
+                <div class="pricing-card featured scroll-animate">
+                    <div class="price-amount">$475</div>
+                    <h3 class="price-title">Amari Method: Balanced For Life</h3>
+                    <p class="price-description">The comprehensive program for lasting transformation. This is where deep healing happens and you learn the complete seven-step protocol for lifelong relief.</p>
+                    <ul class="price-features">
+                        <li>2-hour private session (virtual or in person)</li>
+                        <li>Comprehensive full-body movement assessment</li>
+                        <li>Demonstration & hands-on guidance through the seven-step full-body reset</li>
+                        <li>Immediate pain relief and long-term practical tools</li>
+                        <li>Custom follow-up plan for sustained results</li>
+                    </ul>
+                    <a href="https://www.amarimethod.com/booking" class="btn-primary">Book Your Appointment</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES SECTION ===== -->
+    <section class="features-section">
+        <div class="container">
+            <h2>Why Choose the Amari Method</h2>
+            <div class="features-grid">
+                <div class="feature-item scroll-animate">
+                    <h3>Immediate Relief</h3>
+                    <p>89% of clients experience noticeable pain reduction or complete relief in their first session. You'll feel the difference.</p>
+                </div>
+                <div class="feature-item scroll-animate">
+                    <h3>Lasting Results</h3>
+                    <p>Most clients achieve lasting relief in just 2-4 sessions. We teach you how to maintain your results for life, not create dependency.</p>
+                </div>
+                <div class="feature-item scroll-animate">
+                    <h3>Proven Track Record</h3>
+                    <p>95% of clients would recommend Dr. Garrett to friends and family. Built on 25 years of healing practice and thousands of success stories.</p>
+                </div>
+                <div class="feature-item scroll-animate">
+                    <h3>Flexible Format</h3>
+                    <p>Sessions available virtual or in-person at our San Francisco location. Connect with Dr. Garrett from anywhere in the country.</p>
+                </div>
+                <div class="feature-item scroll-animate">
+                    <h3>Holistic Approach</h3>
+                    <p>We don't just treat symptoms. We address the root cause of your pain and teach you the tools for complete body wellness.</p>
+                </div>
+                <div class="feature-item scroll-animate">
+                    <h3>Money-Back Guarantee</h3>
+                    <p>If you don't experience noticeable relief, we'll continue working with you at no extra charge until you do.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA SECTION ===== -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Experience Natural Healing?</h2>
+            <p class="cta-subtitle">Start with a free assessment or dive into your first session. Either way, your journey to lasting relief begins now.</p>
+            <div class="cta-buttons">
+                <a href="https://quiz.amarimethod.com" class="btn-primary">Start Free Assessment</a>
+                <a href="https://www.amarimethod.com/booking" class="btn-secondary">Book a Session</a>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+    <div class="container">
+        <div class="footer-section">
+            <h4>Amari Method</h4>
+            <p>Natural pain relief and body alignment for lasting wellness.</p>
+            <p style="margin-top: 1rem;">
+                <strong>Email:</strong> <a href="mailto:hello@amarihealth.com">hello@amarihealth.com</a><br>
+                <strong>Location:</strong> San Francisco, CA
+            </p>
+        </div>
+
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="about.html">About Dr. Garrett</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Get Started</h4>
+            <ul>
+                <li><a href="https://quiz.amarimethod.com">Free Assessment</a></li>
+                <li><a href="booking.html">View Pricing & Packages</a></li>
+                <li><a href="https://www.amarimethod.com/booking">Book Session</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Follow Us</h4>
+            <ul>
+                <li><a href="https://www.instagram.com/hewstanhealth/" target="_blank">Instagram</a></li>
+                <li><a href="https://open.spotify.com/playlist/7yA6szj3KB0AMpbhiKhPSM" target="_blank">Spotify</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Scroll animation for pricing cards and features
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.8s ease-out forwards';
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.scroll-animate').forEach(element => {
+        observer.observe(element);
+    });
+
+    // Menu toggle for mobile
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navMenu = document.querySelector('nav ul');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
+        });
+    }
+</script>
+
+</body>
+</html>
