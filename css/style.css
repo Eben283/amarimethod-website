@@ -219,7 +219,9 @@ nav {
 
 /* ===== BUTTONS ===== */
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 1rem 2.5rem;
   border-radius: 4px;
   font-weight: 600;
@@ -230,6 +232,21 @@ nav {
   font-size: 0.95rem;
   text-transform: none;
   font-family: var(--font-sans);
+  position: relative;
+}
+
+.btn::after {
+  content: '→';
+  display: inline-block;
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: all 0.3s ease;
+  font-size: 1.1em;
+}
+
+.btn:hover::after {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .btn-primary {
@@ -252,9 +269,10 @@ nav {
 }
 
 .btn-secondary:hover {
-  background: var(--text-dark);
-  color: white;
+  background: white;
+  color: var(--text-dark);
   transform: translateY(-2px);
+  border-color: var(--text-dark);
 }
 
 .btn-white {
