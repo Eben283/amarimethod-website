@@ -106,12 +106,15 @@ nav {
 }
 
 .logo {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text-dark);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.logo-image {
+  height: 50px;
+  width: auto;
+  display: block;
 }
 
 .nav-menu {
