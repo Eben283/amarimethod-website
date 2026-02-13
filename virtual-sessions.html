@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Sessions | Amari Method</title>
+    <meta name="description" content="Experience the Amari Method through live virtual sessions with Dr. Garrett. Available nationwide with expert guidance and hands-on instruction online.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Color Tokens (Minimal Therabody-inspired Palette) */
+        :root {
+            --bg-cream: #ffffff;
+            --primary-red: #b03730;
+            --text-dark: #1a1a1a;
+            --text-gray: #666666;
+            --text-light-gray: #999999;
+            --border-light: #e5e5e5;
+            --background-light: #f8f8f8;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            background-color: var(--white);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Bona Nova', 'Georgia', serif;
+            font-weight: 400;
+            line-height: 1.2;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        /* Scroll Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 1px solid var(--border-light);
+            z-index: 100;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            text-decoration: none;
+            font-family: 'Bona Nova', serif;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--text-gray);
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--text-dark);
+        }
+
+        .nav-cta {
+            background-color: var(--text-dark) !important;
+            color: white !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .nav-cta:hover {
+            background-color: #333 !important;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: white;
+        }
+
+        .hero h1 {
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.15rem;
+            color: var(--text-gray);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        /* Sessions Grid */
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .session-card {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .session-card:hover {
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+
+        .session-card.featured {
+            border: 2px solid var(--text-dark);
+            background-color: var(--background-light);
+            padding: 3rem 2rem;
+        }
+
+        .session-card.featured:hover {
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+        }
+
+        .session-price {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            font-family: 'Bona Nova', serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .session-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 1.5rem;
+            font-family: 'Bona Nova', serif;
+        }
+
+        .session-description {
+            color: var(--text-gray);
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .session-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .session-features li {
+            color: var(--text-gray);
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .session-features li:before {
+            content: "•";
+            color: var(--text-dark);
+            font-weight: bold;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .session-features li:last-child {
+            border-bottom: none;
+        }
+
+        .btn-primary {
+            background-color: var(--text-dark);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: #333;
+        }
+
+        /* Info Section */
+        .info-section {
+            background-color: var(--background-light);
+            padding: 5rem 2rem;
+            margin-top: 4rem;
+        }
+
+        .info-section h2 {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .info-item {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .info-item h3 {
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .info-item p {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .cta-section h2 {
+            margin-bottom: 1rem;
+        }
+
+        .cta-subtitle {
+            color: var(--text-gray);
+            font-size: 1.05rem;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--background-light);
+            padding: 3rem 2rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        footer .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            font-size: 1rem;
+            font-family: 'Bona Nova', serif;
+        }
+
+        .footer-section p, .footer-section a {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            text-decoration: none;
+            line-height: 1.8;
+        }
+
+        .footer-section a:hover {
+            color: var(--text-dark);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+            }
+
+            nav ul {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .sessions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 3rem 1rem;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .cta-buttons .btn-primary {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header>
+    <div class="container">
+        <a href="index.html" class="logo">Amari Method</a>
+        <button class="menu-toggle" aria-label="Toggle Menu">☰</button>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="about.html">About Dr. Garrett</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li><a href="https://quiz.amarimethod.com" class="nav-cta">Get Assessment</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main>
+
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero">
+        <div class="container">
+            <h1>Virtual Sessions with Dr. Garrett</h1>
+            <p class="hero-subtitle">Experience the Amari Method from anywhere. Live, personalized guidance delivered to your home via secure video sessions.</p>
+        </div>
+    </section>
+
+    <!-- ===== SESSIONS SECTION ===== -->
+    <section>
+        <div class="container">
+            <div class="sessions-grid">
+                <!-- Intro Session Card -->
+                <div class="session-card scroll-animate">
+                    <div class="session-price">$225</div>
+                    <h3 class="session-title">The Amari Method: Low Back Relief Intro Session</h3>
+                    <p class="session-description">Perfect for first-time clients. Experience the power of the Amari Method through a targeted virtual session focused on back pain and tension patterns.</p>
+                    <ul class="session-features">
+                        <li>1-hour live video session</li>
+                        <li>Targeted assessment of your specific pain patterns</li>
+                        <li>Personalized hands-on guidance through core principles</li>
+                        <li>Immediate relief techniques demonstrated in real-time</li>
+                        <li>Follow-up exercises and practices to continue at home</li>
+                    </ul>
+                    <a href="https://www.amarimethod.com/booking" class="btn-primary">Book Virtual Session</a>
+                </div>
+
+                <!-- Premium Session Card (Featured) -->
+                <div class="session-card featured scroll-animate">
+                    <div class="session-price">$475</div>
+                    <h3 class="session-title">Amari Method: Balanced For Life</h3>
+                    <p class="session-description">Our most comprehensive program. Learn the complete seven-step protocol for lasting transformation and full-body wellness via interactive virtual sessions.</p>
+                    <ul class="session-features">
+                        <li>2-hour live video session</li>
+                        <li>Comprehensive full-body assessment</li>
+                        <li>Complete demonstration of the seven-step protocol</li>
+                        <li>Personalized guidance tailored to your body</li>
+                        <li>Long-term practical tools for sustained results</li>
+                        <li>Custom follow-up plan for continued progress</li>
+                    </ul>
+                    <a href="https://www.amarimethod.com/booking" class="btn-primary">Book Virtual Session</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== INFO SECTION ===== -->
+    <section class="info-section">
+        <div class="container">
+            <h2>Why Choose Virtual Sessions</h2>
+            <div class="info-grid">
+                <div class="info-item scroll-animate">
+                    <h3>Access From Anywhere</h3>
+                    <p>Connect with Dr. Garrett from the comfort of your home. No travel required—just a stable internet connection and a private space.</p>
+                </div>
+                <div class="info-item scroll-animate">
+                    <h3>Real-Time Guidance</h3>
+                    <p>Get live, personalized instruction through secure video. Ask questions, receive immediate feedback, and adjust techniques in real-time.</p>
+                </div>
+                <div class="info-item scroll-animate">
+                    <h3>Flexible Scheduling</h3>
+                    <p>Virtual sessions offer greater flexibility. Schedule at times that work best for your lifestyle and timezone.</p>
+                </div>
+                <div class="info-item scroll-animate">
+                    <h3>Proven Effectiveness</h3>
+                    <p>Virtual sessions deliver the same transformative results as in-person work. The Amari Method principles work whether you're in our office or at home.</p>
+                </div>
+                <div class="info-item scroll-animate">
+                    <h3>Detailed Demonstrations</h3>
+                    <p>See every movement and technique clearly. Dr. Garrett adapts his teaching for the virtual environment to ensure you understand every step.</p>
+                </div>
+                <div class="info-item scroll-animate">
+                    <h3>Personal Follow-Up</h3>
+                    <p>Receive a customized plan to continue your progress at home. Follow-up sessions help track your progress and refine your practice.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== CTA SECTION ===== -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Start Your Virtual Session?</h2>
+            <p class="cta-subtitle">Choose your session above and book a time that works for you. Dr. Garrett will guide you through the Amari Method from your home.</p>
+            <div class="cta-buttons">
+                <a href="https://quiz.amarimethod.com" class="btn-primary">Start Free Assessment</a>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+    <div class="container">
+        <div class="footer-section">
+            <h4>Amari Method</h4>
+            <p>Natural pain relief and body alignment for lasting wellness.</p>
+            <p style="margin-top: 1rem;">
+                <strong>Email:</strong> <a href="mailto:hello@amarihealth.com">hello@amarihealth.com</a><br>
+                <strong>Location:</strong> San Francisco, CA
+            </p>
+        </div>
+
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#how-it-works">How It Works</a></li>
+                <li><a href="about.html">About Dr. Garrett</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Sessions</h4>
+            <ul>
+                <li><a href="virtual-sessions.html">Virtual Sessions</a></li>
+                <li><a href="in-person-sessions.html">In-Person Sessions</a></li>
+                <li><a href="booking.html">View All Packages</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Follow Us</h4>
+            <ul>
+                <li><a href="https://www.instagram.com/hewstanhealth/" target="_blank">Instagram</a></li>
+                <li><a href="https://open.spotify.com/playlist/7yA6szj3KB0AMpbhiKhPSM" target="_blank">Spotify</a></li>
+            </ul>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Scroll animation for session cards
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = 'fadeInUp 0.8s ease-out forwards';
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.scroll-animate').forEach(element => {
+        observer.observe(element);
+    });
+
+    // Menu toggle for mobile
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navMenu = document.querySelector('nav ul');
+
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
+        });
+    }
+</script>
+
+</body>
+</html>
