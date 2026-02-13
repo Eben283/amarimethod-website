@@ -588,6 +588,21 @@ header nav {
   align-items: center;
 }
 
+.credentials-photo {
+  width: 100%;
+}
+
+.credentials-photo img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.credentials-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .credentials-stats {
   display: grid;
   grid-template-columns: 1fr;
