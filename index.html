@@ -7,15 +7,16 @@
     <meta name="description" content="Life changing results in your first session. The Amari Method is a revolutionary approach to pain relief and body alignment.">
 
     <style>
-        /* Color Tokens (Therabody Premium Palette) */
+        /* Color Tokens (Minimal Therabody-inspired Palette) */
         :root {
-            --bg-cream: #fffcf5;
-            --primary-teal: #b03730;
-            --text-dark: #252525;
-            --accent-red: #b03730;
-            --dark-teal: #8b2a23;
-            --light-tan: #f7f3e9;
-            --white: #fff;
+            --bg-cream: #ffffff;
+            --primary-red: #b03730;
+            --text-dark: #1a1a1a;
+            --text-gray: #666666;
+            --text-light-gray: #999999;
+            --border-light: #e5e5e5;
+            --background-light: #f8f8f8;
+            --white: #ffffff;
         }
 
         * {
@@ -26,7 +27,7 @@
 
         html, body {
             height: 100%;
-            background-color: var(--bg-cream);
+            background-color: var(--white);
             color: var(--text-dark);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -142,7 +143,7 @@
         }
 
         .btn-primary {
-            background-color: var(--text-dark);
+            background-color: var(--primary-red);
             color: white;
             padding: 1rem 2rem;
             border-radius: 4px;
@@ -534,7 +535,7 @@
         }
 
         .journal-card.featured .btn-primary {
-            background: var(--accent-red);
+            background: var(--primary-red);
             color: white;
         }
 
@@ -858,7 +859,7 @@
         }
 
         .cta-buttons .btn-primary:hover {
-            background: var(--light-tan);
+            background: var(--background-light);
         }
 
         /* Results Section */
@@ -887,7 +888,7 @@
         .result-metric {
             font-size: 3rem;
             font-weight: 700;
-            color: var(--primary-teal);
+            color: var(--text-dark);
             margin-bottom: 0.5rem;
             font-family: 'Bona Nova', serif;
         }
@@ -923,7 +924,7 @@
 
         .faq-item:hover {
             box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            border-color: var(--primary-teal);
+            border-color: var(--text-dark);
         }
 
         .faq-header {
@@ -939,7 +940,7 @@
         }
 
         .faq-item.active .faq-header {
-            background: var(--light-tan);
+            background: var(--background-light);
         }
 
         .faq-toggle {
@@ -977,9 +978,9 @@
 
         /* Footer */
         footer {
-            background: var(--light-tan);
+            background: var(--background-light);
             padding: 3rem 2rem;
-            border-top: 1px solid rgba(0,0,0,0.05);
+            border-top: 1px solid var(--border-light);
         }
 
         .footer-content {
@@ -1335,7 +1336,7 @@
     <!-- The Journal / Services -->
     <section class="section" id="services">
         <div class="container center">
-            <h2 style="margin-bottom: 1rem;">Choose Your <span style="color: var(--primary-teal);">Path</span></h2>
+            <h2 style="margin-bottom: 1rem;">Choose Your <span style="color: var(--text-dark);">Path</span></h2>
             <p style="font-size: 1.1rem; color: #666; margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Select the service option that works best for your healing journey</p>
             <div class="journal-grid">
                 <div class="journal-card featured">
@@ -1416,7 +1417,7 @@
     </div>
 
     <!-- Discover Your Pain Assessment Section -->
-    <section class="section" style="background: var(--light-tan); padding: 4rem 2rem;">
+    <section class="section" style="background: var(--background-light); padding: 4rem 2rem;">
         <div class="container">
             <div class="section-two-col" style="gap: 3rem; align-items: center;">
                 <div style="width: 100%; max-width: 300px;">
@@ -1434,7 +1435,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="section" style="background: var(--light-tan);">
+    <section class="section" style="background: var(--background-light);">
         <div class="container">
             <div style="text-align: center; margin-bottom: 3rem;">
                 <h2>Frequently Asked Questions</h2>
