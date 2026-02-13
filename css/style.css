@@ -124,7 +124,7 @@ header nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: 1200px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 2.5rem;
 }
@@ -200,23 +200,24 @@ header nav {
 
 /* ===== HERO SECTION ===== */
 .hero {
-  padding: 6rem 0;
+  padding: 12rem 0 10rem;
   text-align: center;
 }
 
 .hero .container {
-  max-width: 900px;
+  max-width: 800px;
 }
 
 .hero h1 {
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
   color: var(--color-text);
+  font-size: clamp(2.2rem, 10vw, 4rem);
 }
 
 .hero-subheading {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   color: var(--color-text-light);
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
   line-height: 1.6;
   font-family: var(--font-serif-secondary);
   font-weight: 400;
@@ -224,10 +225,11 @@ header nav {
 }
 
 .hero-video {
-  margin: 3rem 0 2.5rem;
-  border-radius: 8px;
+  margin: 0 0 3rem;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  max-width: 100%;
 }
 
 .hero-video-player {
@@ -259,16 +261,19 @@ header nav {
 }
 
 .hero-cta-wrapper {
-  margin: 2.5rem 0;
+  margin: 4rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 .btn {
   display: inline-block;
-  padding: 1.1rem 2.5rem;
+  padding: 0.9rem 2rem;
   border: none;
   border-radius: 4px;
   font-family: var(--font-sans-primary);
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
