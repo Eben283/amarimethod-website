@@ -225,6 +225,26 @@ header nav {
   color: white;
 }
 
+.social-proof-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin: 2rem 0;
+  font-size: 0.95rem;
+}
+
+.stars {
+  color: var(--primary-teal);
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+.rating-text {
+  color: #666;
+  font-weight: 500;
+}
+
 .cta-guarantee {
   font-size: 0.85rem;
   color: #999;
