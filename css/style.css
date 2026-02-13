@@ -103,23 +103,25 @@ nav {
   align-items: center;
   max-width: 100%;
   margin: 0 auto;
-  padding: 1rem 2rem;
+  padding: 1.2rem 2rem;
 }
 
 .logo {
   display: flex;
   align-items: center;
   text-decoration: none;
+  flex: 1;
+  justify-content: center;
 }
 
 .logo-image {
-  height: 50px;
+  height: 45px;
   width: auto;
   display: block;
 }
 
 .nav-menu {
-  display: flex;
+  display: none;
   list-style: none;
   gap: 2rem;
   align-items: center;
@@ -141,10 +143,12 @@ nav {
 .nav-cta {
   background: var(--dark-bg) !important;
   color: white !important;
-  padding: 0.6rem 1.4rem;
+  padding: 0.65rem 1.5rem;
   border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.85rem;
+  font-weight: 400;
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: background 0.3s ease;
 }
 
 .nav-cta:hover {
@@ -153,12 +157,16 @@ nav {
 }
 
 .menu-toggle {
-  display: none;
+  display: block;
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 0.9rem;
   cursor: pointer;
   color: var(--text-dark);
+  padding: 0;
+  margin-right: auto;
+  font-weight: 400;
+  order: -1;
 }
 
 /* ===== HERO SECTION ===== */
