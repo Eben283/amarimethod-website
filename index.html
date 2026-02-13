@@ -14,6 +14,7 @@
   <link rel="canonical" href="https://www.amarimethod.com/">
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
 <!-- ===== HEADER ===== -->
@@ -21,11 +22,13 @@
   <nav class="container">
     <button class="menu-toggle" aria-label="Toggle Menu">Menu</button>
     <a href="./" class="logo"><img src="images/AmariLogo.avif" alt="Amari Method Logo" class="logo-image"></a>
-    <a href="https://quiz.amarimethod.com" class="nav-cta">Schedule Free Call</a>
+    <a href="https://www.amarimethod.com/booking" class="nav-cta">Book Session</a>
     <ul class="nav-menu">
+      <li><a href="#why-different">Why Amari Method</a></li>
       <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#testimonials">Results</a></li>
       <li><a href="about.html">About</a></li>
-      <li><a href="contact.html">Contact</a></li>
     </ul>
   </nav>
 </header>
@@ -33,36 +36,90 @@
 <!-- ===== MAIN CONTENT ===== -->
 <main>
 
-  <!-- ===== HERO SECTION ===== -->
+  <!-- ===== HERO SECTION - Pain Relief Promise + Video + Primary CTA + Social Proof ===== -->
   <section class="hero">
-    <div class="container">
-      <h1>Back Pain Relief Without The Guesswork—In Your First Session</h1>
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <h1>Back Pain Relief Without The Guesswork—In Your First Session</h1>
+        <p class="hero-subheading">Most back pain isn't about your back. The Amari Method shows you what's really happening—and fixes it immediately.</p>
 
-      <div class="hero-image-container">
-        <video class="hero-image" controls>
+        <!-- Star Rating Social Proof (Above Fold) -->
+        <div class="social-proof-badge">
+          <span class="stars">★★★★★</span>
+          <span class="rating-text">4.9/5 from 200+ clients</span>
+        </div>
+
+        <!-- Primary CTA Button -->
+        <div class="hero-cta-wrapper">
+          <a href="https://www.amarimethod.com/booking" class="btn btn-primary btn-large">Book Your First Session</a>
+          <p class="cta-guarantee">Noticeable relief guaranteed, or we keep working until you feel it.</p>
+        </div>
+      </div>
+
+      <div class="hero-video">
+        <video class="hero-video-player" controls>
           <source src="videos/Dr. Garrett Intro.mp4" type="video/mp4">
           Your browser does not support the video tag.
         </video>
       </div>
+    </div>
+  </section>
 
-      <h2 class="hero-subheading">Live Pain Free Without Drugs or Surgery</h2>
+  <!-- ===== WHY AMARI METHOD IS DIFFERENT ===== -->
+  <section id="why-different" class="why-different-section">
+    <div class="container">
+      <h2 class="section-title">Why Amari Method Works Better Than Chiropractors & Physical Therapy</h2>
+      <p class="section-subtitle">The real problem with traditional pain relief</p>
 
-      <div class="hero-ctas">
-        <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="btn btn-secondary">Schedule Free Call</a>
-        <a href="https://www.amarimethod.com/booking" class="btn btn-primary">Book Relief Session</a>
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <h3>❌ Chiropractors</h3>
+          <p><strong>How:</strong> Manipulate joints to realign your spine</p>
+          <p><strong>Problem:</strong> Temporary relief only. Pain returns because they don't address the root cause—muscle imbalance and nervous system tension.</p>
+          <p class="outcome">Relief lasts: 30-60 minutes</p>
+        </div>
+
+        <div class="comparison-card highlight">
+          <h3>✓ Amari Method</h3>
+          <p><strong>How:</strong> Teaches your body to restore its own alignment through specific movements and nervous system awareness</p>
+          <p><strong>Benefit:</strong> You learn tools you can use for life. Relief that lasts because you've trained your body to stay aligned.</p>
+          <p class="outcome">Relief lasts: Immediate & lasting</p>
+        </div>
+
+        <div class="comparison-card">
+          <h3>❌ Physical Therapy</h3>
+          <p><strong>How:</strong> Give you exercises and stretches to do at home</p>
+          <p><strong>Problem:</strong> Requires ongoing compliance. Takes months. Many people quit before seeing results.</p>
+          <p class="outcome">Relief lasts: 8-12 weeks (if compliant)</p>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <p class="hero-guarantee-text">Noticeable relief guaranteed from your first session, or we'll keep working with you at no extra charge.</p>
+  <!-- ===== BRIEF FEATURED TESTIMONIAL - SOCIAL PROOF ===== -->
+  <section class="featured-testimonial-section">
+    <div class="container">
+      <div class="featured-testimonial">
+        <img src="images/Sarah.png" alt="Sara, Student and Mother of Six" class="featured-testimonial-photo">
+        <div class="featured-testimonial-content">
+          <p class="featured-testimonial-quote">"I've been empowered to take on my own health. The tools I learned have transformed how I move through my day."</p>
+          <p class="featured-testimonial-author">Sara</p>
+          <p class="featured-testimonial-role">Student & Mother of Six</p>
+          <p class="featured-testimonial-condition">Lower back pain relief</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- ===== HOW IT WORKS ===== -->
-  <section id="how-it-works">
+  <section id="how-it-works" class="how-it-works-section">
     <div class="container">
-      <h2 class="section-title">How It Works—Three Simple Steps</h2>
+      <h2 class="section-title">How The Amari Method Works</h2>
+      <p class="section-subtitle">Three simple steps to lasting relief</p>
 
       <div class="how-it-works-grid">
         <div class="how-card">
+          <div class="how-number">1</div>
           <h3>Understand Your Pain<br><span class="how-subtitle">(Awakening)</span></h3>
           <ul>
             <li>See the patterns beneath your symptoms</li>
@@ -72,6 +129,7 @@
         </div>
 
         <div class="how-card">
+          <div class="how-number">2</div>
           <h3>Experience The Method<br><span class="how-subtitle">(Connection)</span></h3>
           <ul>
             <li>Learn simple, precise tools to release tension and restore balance</li>
@@ -81,6 +139,7 @@
         </div>
 
         <div class="how-card">
+          <div class="how-number">3</div>
           <h3>Reclaim Your Life<br><span class="how-subtitle">(Freedom)</span></h3>
           <ul>
             <li>Move through daily life with more ease, strength, and confidence</li>
@@ -92,10 +151,49 @@
     </div>
   </section>
 
-  <!-- ===== TESTIMONIALS SECTION ===== -->
-  <section id="testimonials">
+  <!-- ===== DR. GARRETT'S CREDENTIALS & AUTHORITY ===== -->
+  <section id="credentials" class="credentials-section">
     <div class="container">
-      <h2 class="section-title">Real Results from Real People</h2>
+      <h2 class="section-title">Meet Dr. Garrett Hewstan</h2>
+      <p class="section-subtitle">25+ years of proven results in pain relief and body alignment</p>
+
+      <div class="credentials-grid">
+        <div class="credentials-text">
+          <p>Dr. Garrett Hewstan has dedicated his career to helping people escape the pain-relief cycle. Unlike franchised clinics, Dr. Garrett personally guides each client's healing journey, combining deep expertise with personalized care.</p>
+
+          <h3>Why Choose Dr. Garrett?</h3>
+          <ul class="credentials-list">
+            <li>✓ 25+ years of clinical experience</li>
+            <li>✓ Founder-led practice (not a franchise)</li>
+            <li>✓ Personalized treatment—Dr. Garrett works with you directly</li>
+            <li>✓ Proven system with 4.9/5 rating from 200+ clients</li>
+            <li>✓ 100% satisfaction guarantee</li>
+          </ul>
+        </div>
+
+        <div class="credentials-stats">
+          <div class="stat-box">
+            <p class="stat-number">200+</p>
+            <p class="stat-label">Clients relieved</p>
+          </div>
+          <div class="stat-box">
+            <p class="stat-number">95%</p>
+            <p class="stat-label">Feel relief in first session</p>
+          </div>
+          <div class="stat-box">
+            <p class="stat-number">4.9★</p>
+            <p class="stat-label">Average rating</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DETAILED TESTIMONIALS ===== -->
+  <section id="testimonials" class="testimonials-section">
+    <div class="container">
+      <h2 class="section-title">Real People. Real Results.</h2>
+      <p class="section-subtitle">Success stories from our clients</p>
 
       <div class="testimonials-grid">
         <div class="testimonial-card">
@@ -103,6 +201,7 @@
           <p class="testimonial-quote">"I've been empowered to take on my own health. The tools I learned have transformed how I move through my day."</p>
           <p class="testimonial-author">Sara</p>
           <p class="testimonial-role">Student & Mother of Six</p>
+          <p class="testimonial-condition">Lower back pain</p>
         </div>
 
         <div class="testimonial-card">
@@ -110,6 +209,7 @@
           <p class="testimonial-quote">"I've avoided surgery using these simple, direct, effective tools. I finally understand what was causing my pain."</p>
           <p class="testimonial-author">Justin</p>
           <p class="testimonial-role">Handyman</p>
+          <p class="testimonial-condition">Chronic back pain</p>
         </div>
 
         <div class="testimonial-card">
@@ -117,71 +217,55 @@
           <p class="testimonial-quote">"The relief started in the first session and has only improved. I can do things I thought were gone forever."</p>
           <p class="testimonial-author">Maria</p>
           <p class="testimonial-role">Graphic Designer</p>
+          <p class="testimonial-condition">Shoulder & neck pain</p>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ===== WHAT MAKES DIFFERENT ===== -->
-  <section id="what-makes-different">
-    <div class="container">
-      <h2 class="section-title">What Sets Us Apart</h2>
-
-      <div class="comparison">
-        <div class="comparison-item">
-          <h3>Body Alignment Approach</h3>
-          <p>Unlike chiropractors who manipulate joints or physical therapists who prescribe exercises, the Amari Method teaches your body to restore its own alignment. The result: immediate relief that lasts.</p>
-        </div>
-
-        <div class="comparison-item">
-          <h3>Founder-Led Care</h3>
-          <p>Dr. Garrett Hewstan personally guides your healing journey. With 25 years of proven results, this isn't a franchise model—your success is his life's mission.</p>
-        </div>
-
-        <div class="comparison-item">
-          <h3>Results Guaranteed</h3>
-          <p>If you don't feel a real shift in your first session, we keep working at no extra charge until you do. We're confident because our method works.</p>
-        </div>
+      <div class="cta-after-testimonials">
+        <p>Ready to experience your own breakthrough?</p>
+        <a href="https://www.amarimethod.com/booking" class="btn btn-primary">Schedule Your First Session</a>
       </div>
     </div>
   </section>
 
   <!-- ===== SERVICE OPTIONS ===== -->
-  <section id="services">
+  <section id="services" class="services-section">
     <div class="container">
       <h2 class="section-title">Choose Your Path</h2>
+      <p class="section-subtitle">Three ways to experience the Amari Method</p>
 
       <div class="services-grid">
         <div class="service-card">
           <h3>In-Person Sessions</h3>
           <p class="service-price">$225 - $475</p>
-          <p>Experience the full power of the Amari Method in San Francisco with one-on-one guidance from Dr. Garrett.</p>
+          <p class="service-description">Experience the full power of the Amari Method in San Francisco with one-on-one guidance from Dr. Garrett.</p>
           <ul class="service-features">
             <li>Personalized assessment</li>
             <li>2-hour session</li>
             <li>Immediate relief</li>
             <li>Tools for life</li>
           </ul>
-          <a href="https://www.amarimethod.com/booking" class="btn btn-primary btn-block">Book Now</a>
+          <a href="https://www.amarimethod.com/booking" class="btn btn-primary btn-block">Book In-Person Session</a>
         </div>
 
-        <div class="service-card">
+        <div class="service-card featured-service">
+          <span class="featured-badge">Most Popular</span>
           <h3>Virtual Sessions</h3>
           <p class="service-price">$225 - $475</p>
-          <p>Access Dr. Garrett's healing method from anywhere. Same results, maximum convenience.</p>
+          <p class="service-description">Access Dr. Garrett's healing method from anywhere. Same results, maximum convenience.</p>
           <ul class="service-features">
             <li>Work from home</li>
             <li>Flexible scheduling</li>
             <li>Full assessment</li>
             <li>Same effectiveness</li>
           </ul>
-          <a href="https://www.amarimethod.com/booking" class="btn btn-primary btn-block">Book Now</a>
+          <a href="https://www.amarimethod.com/booking" class="btn btn-primary btn-block">Book Virtual Session</a>
         </div>
 
         <div class="service-card">
           <h3>Online Program</h3>
           <p class="service-price">Self-Paced</p>
-          <p>Learn the Amari Method fundamentals at your own pace with video guidance and lifetime access.</p>
+          <p class="service-description">Learn the Amari Method fundamentals at your own pace with video guidance and lifetime access.</p>
           <ul class="service-features">
             <li>Video modules</li>
             <li>Practice guides</li>
@@ -195,11 +279,11 @@
   </section>
 
   <!-- ===== FAQ SECTION ===== -->
-  <section id="faq">
+  <section id="faq" class="faq-section">
     <div class="container">
-      <h2 class="section-title">Common Questions</h2>
+      <h2 class="section-title">Frequently Asked Questions</h2>
 
-      <div style="max-width: 800px; margin: 0 auto;">
+      <div class="faq-container">
         <div class="faq-item">
           <div class="faq-question" onclick="toggleFAQ(this)">
             <span>How is this different from a chiropractor?</span>
@@ -246,22 +330,23 @@
             <span class="faq-toggle">+</span>
           </div>
           <div class="faq-answer">
-            Skepticism is healthy. Start with a free 2-minute Body Balance Assessment—no commitment. And if you book a session and don't experience relief, our satisfaction guarantee means we keep working until you do. You have nothing to lose.
+            Skepticism is healthy. Our satisfaction guarantee means you have nothing to lose. If you don't experience relief, we keep working until you do. Start with a consultation to discuss your specific situation—no pressure.
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== FINAL CTA ===== -->
-  <section class="cta-final">
+  <!-- ===== FINAL CTA SECTION ===== -->
+  <section class="final-cta-section">
     <div class="container">
       <h2>Ready to Feel Better?</h2>
-      <p>Take the first step with a free assessment or schedule your session today.</p>
-      <div class="cta-buttons">
-        <a href="https://quiz.amarimethod.com" class="btn btn-white">Get Free Assessment</a>
-        <a href="https://www.amarimethod.com/booking" class="btn btn-white-outline">Book Your Session</a>
+      <p class="final-cta-subtitle">Take the first step with a consultation or book your session today.</p>
+      <div class="final-cta-buttons">
+        <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="btn btn-secondary">Schedule Free Discovery Call</a>
+        <a href="https://www.amarimethod.com/booking" class="btn btn-primary">Book Your Session Now</a>
       </div>
+      <p class="final-guarantee">100% satisfaction guaranteed. Noticeable relief from your first session, or we keep working until you feel it.</p>
     </div>
   </section>
 
@@ -282,19 +367,19 @@
     <div class="footer-section">
       <h4>Quick Links</h4>
       <ul style="list-style: none; margin: 0;">
+        <li><a href="#why-different">Why Amari Method</a></li>
         <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="about.html">About Dr. Garrett</a></li>
-        <li><a href="how-it-works.html">Our Method</a></li>
-        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#testimonials">Results</a></li>
       </ul>
     </div>
 
     <div class="footer-section">
       <h4>Get Started</h4>
       <ul style="list-style: none; margin: 0;">
-        <li><a href="https://quiz.amarimethod.com">Free Assessment</a></li>
         <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
         <li><a href="https://www.amarimethod.com/booking">Book Session</a></li>
+        <li><a href="about.html">About Dr. Garrett</a></li>
       </ul>
     </div>
 
