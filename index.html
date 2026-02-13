@@ -37,6 +37,41 @@
             line-height: 1.6;
         }
 
+        /* Scroll Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+
+        /* Default hidden state for scroll-triggered elements */
+        .scroll-animate {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
         /* Typography */
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Bona Nova', 'Georgia', serif;
@@ -1349,6 +1384,50 @@
         if (highlightsSection) {
             observer.observe(highlightsSection);
         }
+
+        // Scroll-triggered animations for sections
+        const scrollAnimationObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in-up');
+                    scrollAnimationObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        // Apply animations to sections
+        const sectionsToAnimate = document.querySelectorAll('.section, .section-two-col, .steps-grid, .journal-grid, .testimonials-grid, .about-section');
+        sectionsToAnimate.forEach(section => {
+            section.classList.add('scroll-animate');
+            scrollAnimationObserver.observe(section);
+        });
+
+        // Animate testimonial cards
+        const testimonialCards = document.querySelectorAll('.testimonial-card, .testimonial-scroll-card');
+        testimonialCards.forEach((card, index) => {
+            card.classList.add('scroll-animate');
+            card.style.animationDelay = `${index * 0.1}s`;
+            scrollAnimationObserver.observe(card);
+        });
+
+        // Animate step cards
+        const stepCards = document.querySelectorAll('.step-card');
+        stepCards.forEach((card, index) => {
+            card.classList.add('scroll-animate');
+            card.style.animationDelay = `${index * 0.1}s`;
+            scrollAnimationObserver.observe(card);
+        });
+
+        // Animate service cards
+        const serviceCards = document.querySelectorAll('.journal-card');
+        serviceCards.forEach((card, index) => {
+            card.classList.add('scroll-animate');
+            card.style.animationDelay = `${index * 0.1}s`;
+            scrollAnimationObserver.observe(card);
+        });
     </script>
 </body>
 </html>
