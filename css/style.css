@@ -466,6 +466,7 @@ header nav {
   transition: all 0.3s ease;
   background: rgba(79, 138, 139, 0.04);
   border-radius: 12px;
+  border: 1px solid rgba(79, 138, 139, 0.1);
 }
 
 .step-number,
