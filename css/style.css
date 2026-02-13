@@ -500,7 +500,7 @@ header nav {
 .how-card ul {
   list-style: none;
   padding: 0;
-  text-align: left;
+  text-align: center;
   margin-top: 1.5rem;
 }
 
@@ -508,17 +508,11 @@ header nav {
   margin-bottom: 0.75rem;
   color: var(--color-text);
   font-size: 0.95rem;
-  position: relative;
-  padding-left: 1.5rem;
+  line-height: 1.6;
 }
 
 .how-card li::before {
-  content: '•';
-  position: absolute;
-  left: 0;
-  color: var(--color-primary);
-  font-weight: bold;
-  font-size: 1.2rem;
+  content: '';
 }
 
 /* ===== CREDENTIALS SECTION ===== */
