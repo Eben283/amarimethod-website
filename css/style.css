@@ -1349,13 +1349,18 @@ footer {
 
   .menu-toggle {
     display: block !important;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     color: var(--color-text);
-    padding: 0.5rem;
+    padding: 0.25rem;
     margin-left: auto;
     background: none;
     border: none;
     cursor: pointer;
+  }
+
+  .logo img {
+    height: 32px !important;
+    width: auto !important;
   }
 
   .nav-menu {
