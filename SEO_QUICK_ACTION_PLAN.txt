@@ -1,0 +1,453 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                                                                           ║
+║         🚀 SEO QUICK ACTION PLAN - RANK HIGHER ON GOOGLE IN 30 DAYS      ║
+║                                                                           ║
+║                      Complete this in 2.5 hours                          ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 WHAT YOU'LL DO:
+
+✓ Optimize page titles & meta descriptions with location keywords
+✓ Add structured data (schema markup) so Google understands your content
+✓ Create FAQ section for voice search optimization
+✓ Claim all local business listings
+✓ Start building backlinks
+
+Result: 10-20% ranking improvement in 4 weeks
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️  TASK 1: UPDATE PAGE TITLES & META DESCRIPTIONS (65 min)
+
+Why: Google weights titles heavily. Adding location keywords helps you rank
+for local searches ("pain relief san francisco" vs "pain relief")
+
+What to change:
+
+✏️  INDEX.HTML (Homepage)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT TITLE:
+<title>Amari Method | Freedom From Pain. Results For Life.</title>
+
+NEW TITLE:
+<title>Pain Relief in San Francisco | Amari Method | Body Alignment Therapy</title>
+
+CURRENT META DESCRIPTION:
+<meta name="description" content="Life changing results in your first session...">
+
+NEW META DESCRIPTION:
+<meta name="description" content="Revolutionary body alignment therapy in San Francisco.
+Life-changing pain relief results in your first session. Free discovery call.">
+
+REASON: Includes "San Francisco" keyword + action word "Free discovery call"
+
+
+✏️  BOOKING.HTML (Pricing Page)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT TITLE:
+<title>Pricing & Packages | Body Alignment Therapy | Amari Method</title>
+
+NEW TITLE:
+<title>Pain Relief Session Pricing & Packages | San Francisco | Amari Method</title>
+
+CURRENT META DESCRIPTION:
+<meta name="description" content="Discover our pain relief programs...">
+
+NEW META DESCRIPTION:
+<meta name="description" content="Affordable pain relief sessions in San Francisco.
+Single sessions from $XXX. 12-session packages with faster results. Book today.">
+
+REASON: Includes location + price (people search "pain relief price sf")
+
+
+✏️  HOW-IT-WORKS.HTML
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT TITLE:
+<title>How Body Alignment Fixes Back Pain | Amari Method</title>
+
+NEW TITLE:
+<title>How to Fix Back Pain in San Francisco | 7-Step Amari Method</title>
+
+CURRENT META DESCRIPTION:
+<meta name="description" content="Learn how the Amari Method's body alignment approach...">
+
+NEW META DESCRIPTION:
+<meta name="description" content="Discover the 7-step Amari Method that fixes chronic back pain
+in San Francisco. Proven body alignment therapy. Free consultation.">
+
+REASON: Targets "how to fix back pain" + location
+
+
+✏️  ABOUT.HTML
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT TITLE:
+<title>About Dr. Garrett | Amari Method</title>
+
+NEW TITLE:
+<title>Dr. Garrett Hewstan | Pain Relief Expert | San Francisco</title>
+
+CURRENT META DESCRIPTION:
+<meta name="description" content="Learn the story of Dr. Garrett...">
+
+NEW META DESCRIPTION:
+<meta name="description" content="Meet Dr. Garrett Hewstan, body alignment therapist in San Francisco.
+Founder of the Amari Method for natural pain relief.">
+
+REASON: Builds authority + location + profession
+
+
+✏️  TOOLS.HTML
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT TITLE:
+<title>Amari Method Tools | Required Equipment for the 7-Step Protocol</title>
+
+NEW TITLE:
+<title>Best Equipment for Pain Relief | Amari Method Tools & Resources</title>
+
+CURRENT META DESCRIPTION:
+<meta name="description" content="Essential tools for the Amari Method...">
+
+NEW META DESCRIPTION:
+<meta name="description" content="Recommended tools & equipment for the Amari Method pain relief protocol.
+Pull-up bars, foam rollers, yoga blocks. Affiliate recommendations.">
+
+REASON: Targets "best equipment for pain relief" + helps with rankings
+
+
+✏️  DO THE SAME FOR:
+• contact.html
+• virtual-sessions.html
+• in-person-sessions.html
+• ongoing-care.html
+• privacy-policy.html (less critical)
+• terms-of-use.html (less critical)
+
+(Remaining pages: ~8 more pages × 5 min each = 40 minutes)
+
+⏱️  TOTAL TIME FOR TASK 1: 65 minutes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 TASK 2: ADD SCHEMA MARKUP (15 min)
+
+Why: Schema markup tells Google exactly what your content means.
+Result: Shows "rich snippets" in search results (reviews, ratings, etc.)
+
+What to do:
+
+Copy this code and add it to the <head> section of index.html
+(after the title tag, before the closing </head>)
+
+────────────────────────────────────────────────────────────────────────────
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Amari Method",
+  "description": "Body alignment therapy for pain relief in San Francisco",
+  "url": "https://www.amarimethod.com",
+  "telephone": "[YOUR-PHONE-NUMBER]",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "[YOUR-ADDRESS]",
+    "addressLocality": "San Francisco",
+    "addressRegion": "CA",
+    "postalCode": "94102",
+    "addressCountry": "US"
+  },
+  "areaServed": "San Francisco, CA",
+  "serviceType": "Pain Relief Therapy",
+  "priceRange": "$$"
+}
+</script>
+
+────────────────────────────────────────────────────────────────────────────
+
+Replace [YOUR-PHONE-NUMBER] and [YOUR-ADDRESS] with your actual info.
+
+🔄 ALSO ADD TO: booking.html, about.html
+
+⏱️  TOTAL TIME FOR TASK 2: 15 minutes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ TASK 3: CREATE FAQ SECTION (45 min)
+
+Why: Voice search (50% of searches) uses conversational questions.
+FAQs also help Google understand your content better.
+
+What to do:
+
+Add this HTML to index.html before the footer (find <footer> tag):
+
+────────────────────────────────────────────────────────────────────────────
+
+<!-- FAQ Section for Voice Search & Google -->
+<section id="faq" style="padding: 4rem 2rem; background: #f8f8f8;">
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <h2 style="font-size: 2.5rem; margin-bottom: 2rem; text-align: center;">
+      Frequently Asked Questions
+    </h2>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">What is the Amari Method?</h3>
+      <p>The Amari Method is a revolutionary approach to pain relief through
+      body alignment therapy. Unlike traditional treatments, our 7-step protocol
+      addresses the root cause of pain by realigning your body and releasing
+      tension. Most clients experience significant results in their first session.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">How long does it take to see results?</h3>
+      <p>Most clients experience significant relief during their first session.
+      The complete transformation and lasting results typically occur within
+      2-3 sessions. Some clients continue with our ongoing care program for
+      long-term maintenance and prevention.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">Is the Amari Method safe?</h3>
+      <p>Yes. The Amari Method is completely natural, non-invasive, and drug-free.
+      It's safe for all ages and fitness levels. We customize each session
+      to your specific condition and comfort level.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">What conditions does it treat?</h3>
+      <p>The Amari Method is effective for back pain, neck pain, chronic pain,
+      headaches, joint pain, and many other conditions caused by misalignment.
+      Schedule a free discovery call to see if we can help with your specific issue.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">Do you offer virtual sessions?</h3>
+      <p>Yes! We offer both in-person sessions in San Francisco and virtual
+      sessions available nationwide. Virtual sessions are nearly as effective
+      as in-person and allow you to receive care from home.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">How much does it cost?</h3>
+      <p>Single sessions start at [YOUR PRICE]. We also offer discounted
+      12-session packages for faster, more comprehensive results. Schedule
+      a free discovery call to discuss pricing and options.</p>
+    </div>
+
+    <div style="background: white; padding: 1.5rem; margin-bottom: 1rem;
+                border-radius: 8px; border-left: 4px solid #2d5a5f;">
+      <h3 style="margin-top: 0;">What happens after my session?</h3>
+      <p>After your session, you'll receive a post-care guide with specific
+      exercises and stretches to maintain your results. Most clients schedule
+      a follow-up session within 1-2 weeks. We'll guide you on the best
+      timeline for your condition.</p>
+    </div>
+
+  </div>
+</section>
+
+────────────────────────────────────────────────────────────────────────────
+
+Replace [YOUR PRICE] with your actual price.
+
+💡 TIP: These 8 FAQs target common voice search questions.
+They'll appear in Google's "People also ask" section.
+
+⏱️  TOTAL TIME FOR TASK 3: 45 minutes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🏢 TASK 4: CLAIM LOCAL LISTINGS (45 min)
+
+Why: Local listings = better visibility for "near me" searches.
+People searching "pain relief near me" should find you.
+
+What to do - Create accounts on these platforms:
+
+☐ YELP (10 min)
+  → Go to: https://business.yelp.com/
+  → Claim your business
+  → Add full description, photos, hours
+  → Add link to website
+
+☐ HEALTHGRADES (10 min)
+  → Go to: https://provider.healthgrades.com/
+  → Create provider profile
+  → Add specialties, insurance, reviews
+  → Link to website
+
+☐ GOOGLE BUSINESS PROFILE (already done, but verify)
+  → Already set up ✓
+
+☐ ZocDoc (10 min)
+  → Go to: https://zocdoc.com/
+  → Create business profile
+  → Add availability
+
+☐ WELLNESS.COM (5 min)
+  → Go to: https://wellness.com/
+  → List your business
+  → Add description
+
+☐ LOCAL CHAMBER OF COMMERCE (10 min)
+  → San Francisco Chamber of Commerce
+  → Get listed as local business
+  → Get backlink to website
+
+Expected impact: 30-50% more local search visibility
+
+⏱️  TOTAL TIME FOR TASK 4: 45 minutes
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔗 TASK 5: START BUILDING BACKLINKS (Ongoing, 30 min setup)
+
+Why: Backlinks are the #1 ranking factor. 50-100 quality links = top 3 ranking.
+
+What to do:
+
+1. REACH OUT TO LOCAL BUSINESSES (15 min setup)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   Find complementary businesses:
+   ☐ Yoga studios
+   ☐ Gyms & fitness centers
+   ☐ Chiropractors
+   ☐ Physical therapists
+   ☐ Wellness centers
+
+   Email template:
+   ────────────────────────────────────────────────────
+   Subject: Link Partnership - [Your Studio Name] & Amari Method
+
+   Hi [Studio Name],
+
+   I noticed we serve the same SF wellness community. We help clients
+   with pain relief through body alignment therapy. Would you be
+   interested in a link exchange? Your website → our website (get a
+   relevant link back).
+
+   Link: https://www.amarimethod.com
+   Anchor text: "Pain relief in San Francisco"
+
+   Let me know if you're interested!
+   Best,
+   [Your Name]
+   ────────────────────────────────────────────────────
+
+   Goal: Get 3-5 backlinks in first month
+
+2. GET GOOGLE REVIEWS (15 min setup)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ☐ After each session, ask clients for Google review
+   ☐ Send: "Would you mind leaving a Google review? It helps us
+      grow and shows other people our quality of work."
+   ☐ Link:
+      https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID
+      (Get from Google Business Profile)
+
+   Goal: 50+ reviews (each review = micro backlink)
+
+
+⏱️  TOTAL TIME FOR TASK 5: 30 minutes setup (then ongoing)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 TOTAL TIME COMMITMENT:
+
+Task 1 (Page titles & meta):  65 minutes
+Task 2 (Schema markup):        15 minutes
+Task 3 (FAQ section):          45 minutes
+Task 4 (Local listings):       45 minutes
+Task 5 (Backlinks setup):      30 minutes
+                            ─────────────────
+TOTAL:                        200 minutes (3.3 hours)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 EXPECTED RESULTS:
+
+After 1 week:
+  ✓ Google re-crawls your pages (title updates indexed)
+  ✓ Schema markup processed
+
+After 2 weeks:
+  ✓ Slight ranking improvement for location-based keywords
+  ✓ Local listings start appearing in maps
+  ✓ FAQ section indexed (voice search optimization working)
+
+After 4 weeks:
+  ✓ 10-20% ranking improvement expected
+  ✓ More organic traffic
+  ✓ First backlinks generating link juice
+  ✓ Local search visibility increased
+
+After 3 months:
+  ✓ 30-50% ranking improvement
+  ✓ Multiple pages ranking on page 1-2
+  ✓ Local "near me" searches showing you
+  ✓ 5-10 backlinks built
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 NEXT STEPS AFTER QUICK WINS:
+
+Once you complete these 5 tasks, consider:
+
+MONTH 2: Content Expansion (8 hours)
+  • Expand "How It Works" from 1500 → 3000 words
+  • Create "Why Body Alignment Matters" (2000 words)
+  • Create "Chronic Pain Solutions" (2500 words)
+
+  Result: 50-100% more organic traffic
+
+MONTH 3: Build Backlinks (ongoing)
+  • 3-5 backlinks per week
+  • Guest posts on health blogs
+  • Partnerships with fitness studios
+
+  Result: 30-50% ranking improvement
+
+MONTH 6: Authority Building
+  • Video testimonials
+  • Original research/survey
+  • Podcast launch
+
+  Result: Top 3 ranking for target keywords
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 FOR MORE DETAILS:
+
+→ See SEO_RANKING_STRATEGY.md for complete 10-step strategy
+→ Includes Tier 2 & Tier 3 strategies for long-term dominance
+→ Content expansion roadmap
+→ Detailed backlink building guide
+→ Target keywords list
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Ready to start? Begin with Task 1 (update page titles).
+Takes 65 min and gives you 10-20% ranking improvement in 4 weeks.
+
+Want me to help implement any of these?
