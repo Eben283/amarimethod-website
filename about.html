@@ -7,38 +7,43 @@
   <meta name="description" content="Learn the story of Dr. Garrett Hewstan and how the Amari Method was created in honor of a child named Amari.">
   <meta name="keywords" content="Dr. Garrett Hewstan, Amari story, natural healing, chiropractic care">
   <meta name="author" content="Amari Method">
-  <meta property="og:title" content="Our Story: Natural Healing Journey | Amari Method">
-  <meta property="og:description" content="The inspiring story of Dr. Garrett Hewstan and the creation of the Amari Method.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/about">
-  <link rel="canonical" href="https://www.amarimethod.com/about">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 
   <style>
-    /* About page specific styles */
-    .about-section {
+    /* About page specific styles - matching home page design */
+    .hero {
+      background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%);
+      padding: 6rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      color: #1a1a1a;
+      margin-bottom: 1.5rem;
+      font-family: 'Bona Nova', serif;
+      line-height: 1.2;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: #666;
+      max-width: 700px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    .story-section {
       padding: 5rem 2rem;
-      max-width: 1000px;
+      max-width: 900px;
       margin: 0 auto;
     }
 
-    .about-section h2 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 2rem;
-      margin-top: 3rem;
-      font-family: 'Bona Nova', serif;
-    }
-
-    .about-section h2:first-child {
-      margin-top: 0;
-    }
-
-    .about-section p {
+    .story-section p {
       font-size: 1rem;
       line-height: 1.8;
       color: #666;
@@ -47,23 +52,39 @@
 
     .story-intro {
       font-size: 1.1rem;
-      line-height: 1.9;
       color: #2d5a5f;
-      margin-bottom: 2.5rem;
       font-weight: 500;
+      margin-bottom: 2rem;
+      line-height: 1.9;
     }
 
-    .amari-image-section {
-      margin: 3rem 0;
+    .story-highlight {
+      background: #f0f8f5;
+      padding: 2.5rem;
+      border-radius: 8px;
+      border-left: 4px solid #2d5a5f;
+      margin: 2.5rem 0;
+    }
+
+    .story-highlight p {
+      color: #2d5a5f;
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.8;
+      margin-bottom: 0;
+    }
+
+    .amari-image-container {
       text-align: center;
+      margin: 3rem 0;
     }
 
-    .amari-image-section img {
+    .amari-image {
       max-width: 400px;
       width: 100%;
       height: auto;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
     }
 
     .amari-caption {
@@ -73,50 +94,19 @@
       font-style: italic;
     }
 
-    .promise-highlight {
-      background: linear-gradient(135deg, #f0f8f5 0%, #e8f4f0 100%);
-      padding: 3rem 2.5rem;
-      border-radius: 12px;
-      border-left: 5px solid #2d5a5f;
-      margin: 3rem 0;
-    }
-
-    .promise-highlight p {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #2d5a5f;
-      line-height: 1.8;
+    .story-section h2 {
+      font-size: 2rem;
+      color: #1a1a1a;
+      margin-top: 3rem;
       margin-bottom: 1.5rem;
-    }
-
-    .promise-highlight p:last-child {
-      margin-bottom: 0;
-    }
-
-    .method-highlight {
-      background: #f8f8f8;
-      padding: 2.5rem;
-      border-radius: 12px;
-      margin: 2rem 0;
-    }
-
-    .method-highlight h3 {
-      color: #2d5a5f;
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
       font-family: 'Bona Nova', serif;
-    }
-
-    .method-highlight p {
-      margin-bottom: 0;
+      font-weight: 400;
     }
 
     .closing-section {
       background: linear-gradient(135deg, #2d5a5f 0%, #1f3d42 100%);
       color: white;
-      padding: 4rem 3rem;
-      border-radius: 12px;
+      padding: 5rem 2rem;
       text-align: center;
       margin-top: 4rem;
     }
@@ -126,40 +116,47 @@
       font-size: 1.05rem;
       line-height: 1.8;
       margin-bottom: 1.5rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
-    .closing-section p:last-child {
-      margin-bottom: 0;
+    .closing-section p strong {
+      font-weight: 600;
+    }
+
+    .closing-section p em {
+      font-style: italic;
     }
 
     @media (max-width: 768px) {
-      .about-section {
+      .hero {
+        padding: 4rem 1.5rem;
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+        margin-bottom: 1rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1rem;
+      }
+
+      .story-section {
         padding: 3rem 1.5rem;
       }
 
-      .about-section h2 {
-        font-size: 1.8rem;
-        margin-bottom: 1.5rem;
+      .story-section h2 {
+        font-size: 1.6rem;
         margin-top: 2rem;
-      }
-
-      .story-intro {
-        font-size: 1rem;
-      }
-
-      .promise-highlight {
-        padding: 2rem 1.5rem;
-      }
-
-      .promise-highlight p {
-        font-size: 1rem;
       }
 
       .closing-section {
         padding: 3rem 1.5rem;
       }
 
-      .amari-image-section img {
+      .amari-image {
         max-width: 100%;
       }
     }
@@ -186,35 +183,33 @@
 <main>
   <!-- Hero Section -->
   <section class="hero">
-    <div class="container">
-      <h1>Transforming Lives Through Natural Healing</h1>
-      <p class="hero-subtitle">Every journey to wellness begins with a story—and ours began with a child in pain and a doctor who refused to give up.</p>
-    </div>
+    <h1>Transforming Lives Through Natural Healing</h1>
+    <p class="hero-subtitle">Every journey to wellness begins with a story—and ours began with a child in pain and a doctor who refused to give up.</p>
   </section>
 
   <!-- Story Section -->
-  <section class="about-section">
+  <section class="story-section">
     <p class="story-intro">Dr. Garrett Hewstan knows firsthand the power of natural healing. As a child, he spent countless nights in hospital oxygen tents, struggling to breathe through severe asthma. Everything changed when his mother took him to a chiropractor, whose care freed him from medication dependency and gave him the freedom to thrive.</p>
 
     <p>Years later, during his final year of chiropractic school, Garrett had an experience that would shape his life's mission. A student clinic patient named Phyllis shared heartbreaking news: her 11-year-old grandson, Amari, had just passed away from complications of asthma.</p>
 
     <p>The story struck Garrett deeply—Amari was the same age he had been when chiropractic care saved his life. Garrett couldn't help but wonder: <em>What if I could have helped him?</em></p>
 
-    <div class="amari-image-section">
-      <img src="images/Amari boy.avif" alt="Amari - the boy who inspired the Amari Method">
+    <div class="amari-image-container">
+      <img src="images/Amari boy.avif" alt="Amari - the boy who inspired the Amari Method" class="amari-image">
       <p class="amari-caption">Amari - The inspiration behind the Amari Method</p>
     </div>
 
-    <div class="promise-highlight">
+    <div class="story-highlight">
       <p>In that moment, Garrett made a promise—to Amari, to his younger self, and to every person struggling with chronic pain or dysfunction—that he would dedicate his life to making natural healing accessible, effective, and empowering.</p>
     </div>
 
     <h2>The Amari Method</h2>
     <p>The result is the Amari Method: a seven-step protocol that delivers immediate relief while teaching clients how to care for their bodies for life. No ongoing dependency. No quick fixes. Just sustainable healing that starts in the first session.</p>
 
-    <div class="method-highlight">
-      <h3>Why the Name "Amari"?</h3>
-      <p>Every person who finds freedom through the Amari Method carries forward the spirit of that promise—and honors the boy whose name reminds us why this work matters. The Amari Method exists because of one child's story, and it continues to transform lives in his honor.</p>
+    <div class="story-highlight">
+      <p><strong>Why the Name "Amari"?</strong></p>
+      <p style="margin-top: 1rem; margin-bottom: 0;">Every person who finds freedom through the Amari Method carries forward the spirit of that promise—and honors the boy whose name reminds us why this work matters. The Amari Method exists because of one child's story, and it continues to transform lives in his honor.</p>
     </div>
   </section>
 
@@ -222,7 +217,6 @@
   <section class="closing-section">
     <p><strong>This is why we do what we do.</strong></p>
     <p>Natural healing is possible. A different approach can change everything. And when you find freedom through the Amari Method, you're part of a legacy of healing that honors a promise made years ago.</p>
-    <p style="margin-top: 2rem;"><em>Ready to start your healing journey?</em></p>
   </section>
 </main>
 
