@@ -1854,17 +1854,18 @@
             let currentValue = 0;
             const isThousands = element.textContent.includes('1000');
             const target = isThousands ? 1000 : (finalValue === '25+' ? 25 : 1);
-            const duration = 2000; // milliseconds
+            const duration = 1800; // milliseconds
             const startTime = Date.now();
 
             function update() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                // Easing function for smooth animation with deceleration
-                const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+                // Better easing: easeOutQuart for smooth, quick deceleration
+                const easeOutQuart = 1 - Math.pow(1 - progress, 4);
 
-                currentValue = Math.floor(easeOutCubic * target);
+                // Increment more dramatically at the start, then slow down
+                currentValue = Math.round(easeOutQuart * target);
 
                 if (isThousands) {
                     element.textContent = currentValue + '+';
