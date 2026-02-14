@@ -328,7 +328,8 @@ nav {
 }
 
 .btn-content {
-  display: inline;
+  display: flex;
+  align-items: center;
 }
 
 .btn-text {
