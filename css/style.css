@@ -315,7 +315,7 @@ nav {
 .btn-primary .arrow,
 .btn-secondary .arrow {
   display: inline-block;
-  margin-left: 0;
+  margin-left: -1.5rem;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
