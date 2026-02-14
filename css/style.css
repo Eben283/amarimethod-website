@@ -330,20 +330,18 @@ nav {
 }
 
 .btn-content {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  transition: gap 0.3s cubic-bezier(0.2, 0, 0, 1);
-  flex-shrink: 1;
+  display: inline;
 }
 
 .btn-text {
-  flex-shrink: 0;
+  display: inline;
+  margin-left: 0;
+  transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.btn-primary:hover .btn-content,
-.btn-secondary:hover .btn-content {
-  gap: 0.5rem;
+.btn-primary:hover .btn-text,
+.btn-secondary:hover .btn-text {
+  margin-left: 0.5rem;
 }
 
 .btn-secondary {
