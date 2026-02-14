@@ -1404,6 +1404,10 @@ footer {
     display: none !important;
   }
 
+  nav > .btn-primary {
+    display: none !important;
+  }
+
   h1 {
     font-size: 2.5rem;
   }
