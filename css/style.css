@@ -385,7 +385,7 @@ nav {
 }
 
 .btn-tertiary:hover {
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 .btn-tertiary:hover::after {

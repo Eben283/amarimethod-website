@@ -180,7 +180,7 @@ For subtle, text-based navigation links that look like bold text with an arrow.
 - Text Color: Dark text (`var(--text-dark)`)
 - Font Weight: 600 (semi-bold)
 - Arrow: Automatically appended via CSS `::after` content " →"
-- Hover Effect: Arrow slides right 3px with smooth animation
+- Hover Effect: Arrow slides right 3px with smooth animation (text stays black, does NOT change color)
 - Use Case: Subtle next-step navigation, "Learn more" links, secondary CTAs
 
 **Styling:**
@@ -205,7 +205,7 @@ For subtle, text-based navigation links that look like bold text with an arrow.
 }
 
 .btn-tertiary:hover {
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 ```
 
@@ -275,8 +275,8 @@ When adding or updating ANY button on the site:
 
 ### Tertiary Button
 **HTML**: `<a href="#" class="btn-tertiary">Text</a>`
-**Colors**: Transparent, dark text
-**Animation**: Arrow slides right on hover, text changes to teal
+**Colors**: Transparent, dark text (stays black)
+**Animation**: Arrow slides right on hover (text stays black, no color change)
 
 **Golden Rule**: If it's not one of these three exact types, it's wrong.
 
