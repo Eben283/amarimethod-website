@@ -1434,6 +1434,7 @@ footer {
   .testimonials-grid,
   .services-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
 
   .step-card {
