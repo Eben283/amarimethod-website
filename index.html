@@ -364,22 +364,26 @@
             font-size: 1.05rem;
             color: #555;
             line-height: 1.7;
+            position: relative;
+            padding-left: 50px;
         }
 
         .section-two-col li::before {
             content: "✓";
-            display: inline-flex;
+            position: absolute;
+            left: 0;
+            top: 0;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 28px;
-            height: 28px;
-            min-width: 28px;
+            width: 32px;
+            height: 32px;
             background: #1a1a1a;
             color: white;
             border-radius: 50%;
-            margin-right: 1.2rem;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
 
         /* Testimonials Section */
@@ -1097,14 +1101,13 @@
             .section-two-col li {
                 font-size: 0.95rem;
                 margin-bottom: 1.2rem;
+                padding-left: 44px;
             }
 
             .section-two-col li::before {
-                width: 24px;
-                height: 24px;
-                min-width: 24px;
-                margin-right: 1rem;
-                font-size: 0.8rem;
+                width: 28px;
+                height: 28px;
+                font-size: 0.85rem;
             }
 
             .hero {
