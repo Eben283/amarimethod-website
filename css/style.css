@@ -306,26 +306,24 @@ nav {
   overflow: hidden;
 }
 
-.btn-primary::after {
-  content: '→';
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  display: inline-block;
-  margin-left: 0;
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-}
-
 .btn:hover,
 .btn-primary:hover {
   background: #000000;
   color: white;
 }
 
-.btn-primary:hover::after {
+.btn-primary .arrow,
+.btn-secondary .arrow {
+  display: inline-block;
+  margin-left: 0;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-primary:hover .arrow,
+.btn-secondary:hover .arrow {
   margin-left: 0.5rem;
   opacity: 1;
-  width: auto;
 }
 
 .btn-secondary {
@@ -346,26 +344,10 @@ nav {
   overflow: hidden;
 }
 
-.btn-secondary::after {
-  content: '→';
-  transition: all 0.3s ease;
-  display: inline-block;
-  margin-left: 0;
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-}
-
 .btn-secondary:hover {
   background: white;
   color: #000000;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-.btn-secondary:hover::after {
-  margin-left: 0.5rem;
-  opacity: 1;
-  width: auto;
 }
 
 .btn-block {

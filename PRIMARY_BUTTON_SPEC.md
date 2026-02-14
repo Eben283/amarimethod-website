@@ -8,29 +8,34 @@ This is the definitive specification for the Amari Method primary button. Every 
 ## HTML MARKUP (REQUIRED)
 
 ```html
-<a href="#DESTINATION" class="btn-primary"><span>BUTTON TEXT</span></a>
+<a href="#DESTINATION" class="btn-primary"><span>BUTTON TEXT<span class="arrow">→</span></span></a>
 ```
 
 ### Rules:
 - **Tag**: Must be an `<a>` tag (anchor link) OR `<button>` tag
 - **Class**: MUST be `class="btn-primary"` (exactly this, nothing else unless specified)
 - **Structure**: Text must be wrapped in `<span></span>` tags
+- **Arrow**: Arrow span must be inside the text span: `<span class="arrow">→</span>` for primary and secondary buttons
 - **No additional classes** unless explicitly needed (e.g., `.btn-outline` for outline variant)
 
 ### Examples:
 ```html
 <!-- CORRECT -->
-<a href="#services" class="btn-primary"><span>Book Relief Session</span></a>
+<a href="#services" class="btn-primary"><span>Book Relief Session<span class="arrow">→</span></span></a>
 
 <!-- CORRECT (button tag variant) -->
-<button class="btn-primary"><span>Start Your Assessment</span></button>
+<button class="btn-primary"><span>Start Your Assessment<span class="arrow">→</span></span></button>
 
 <!-- CORRECT (outline variant) -->
-<a href="virtual-sessions" class="btn-primary btn-outline"><span>Learn More</span></a>
+<a href="virtual-sessions" class="btn-primary btn-outline"><span>Learn More<span class="arrow">→</span></span></a>
+
+<!-- CORRECT (secondary button) -->
+<a href="#discovery" class="btn-secondary"><span>Schedule Free Call<span class="arrow">→</span></span></a>
 
 <!-- WRONG - Do not use these variations -->
 <a href="#services" class="btn btn-primary"><span>Book</span></a>
 <button class="btn-primary btn-block"><span>Book</span></button>
+<a href="#services" class="btn-primary"><span>Book</span></a>
 ```
 
 ---
@@ -55,6 +60,13 @@ This is the definitive specification for the Amari Method primary button. Every 
   position: relative;                          /* For arrow positioning */
   overflow: hidden;                            /* Clip arrow animation */
 }
+
+.btn-primary .arrow {
+  display: inline-block;                       /* Inline display for arrow */
+  margin-left: 0;                              /* Arrow starts with no margin */
+  opacity: 0;                                  /* Arrow hidden by default */
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);  /* Smooth transitions */
+}
 ```
 
 ### Hover State (ARROW ANIMATION)
@@ -64,26 +76,19 @@ This is the definitive specification for the Amari Method primary button. Every 
   color: white;                               /* White stays white */
 }
 
-.btn-primary::after {
-  content: ' →';
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-  display: inline-block;
-  transform: translateX(-20px);               /* Arrow hidden left */
-  opacity: 0;
-}
-
-.btn-primary:hover::after {
-  transform: translateX(0);                   /* Arrow slides in */
-  opacity: 1;
+.btn-primary:hover .arrow {
+  margin-left: 0.5rem;                        /* Arrow slides in from left */
+  opacity: 1;                                 /* Arrow becomes visible */
 }
 ```
 
 ### Key Animation Details:
-- **Arrow Animation**: Arrow slides in from the left on hover
+- **Arrow Animation**: Arrow appears instantly, then slides in from left pushing text
 - **Background**: Black button, stays black on hover (no color change)
 - **Text**: White text, stays white on hover (no color change)
 - **Duration**: 0.3s smooth cubic-bezier easing
-- **Arrow**: Slides in from left using `transform: translateX(-20px)` to `translateX(0)`
+- **Arrow**: Uses `margin-left` animation from `0` to `0.5rem` with opacity fade-in
+- **Implementation**: HTML `<span class="arrow">→</span>` inside button text spans
 
 ---
 
@@ -103,18 +108,18 @@ This is the definitive specification for the Amari Method primary button. Every 
 ### Outline Button
 For secondary calls-to-action where you want a button that stands out less:
 ```html
-<a href="virtual-sessions" class="btn-primary btn-outline"><span>Learn More</span></a>
+<a href="virtual-sessions" class="btn-primary btn-outline"><span>Learn More<span class="arrow">→</span></span></a>
 ```
 
 ### Block Button (Full Width)
 For forms and contained spaces:
 ```html
-<button type="submit" class="btn-primary btn-block"><span>Send Message</span></button>
+<button type="submit" class="btn-primary btn-block"><span>Send Message<span class="arrow">→</span></span></button>
 ```
 
 ### Combined
 ```html
-<button class="btn-primary btn-block" type="submit"><span>Send</span></button>
+<button class="btn-primary btn-block" type="submit"><span>Send<span class="arrow">→</span></span></button>
 ```
 
 ---
@@ -124,7 +129,7 @@ For forms and contained spaces:
 Do NOT use `.btn-secondary` when `.btn-primary` is appropriate.
 
 ```html
-<a href="#" class="btn-secondary"><span>Schedule Free Call</span></a>
+<a href="#" class="btn-secondary"><span>Schedule Free Call<span class="arrow">→</span></span></a>
 ```
 
 **Secondary Button Properties:**
@@ -143,25 +148,32 @@ Do NOT use `.btn-secondary` when `.btn-primary` is appropriate.
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
   overflow: hidden;
-}
-
-.btn-secondary::after {
-  content: ' →';
-  transition: transform 0.3s ease;
   display: inline-block;
-  transform: translateX(-20px);
-  opacity: 0;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-sans-primary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
 }
 
-.btn-secondary:hover::after {
-  transform: translateX(0);
-  opacity: 1;
+.btn-secondary .arrow {
+  display: inline-block;
+  margin-left: 0;
+  opacity: 0;
+  transition: all 0.3s ease;
 }
 
 .btn-secondary:hover {
   background: white;
   color: #000000;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover .arrow {
+  margin-left: 0.5rem;
+  opacity: 1;
 }
 ```
 
@@ -264,23 +276,37 @@ When adding or updating ANY button on the site:
 ## SUMMARY
 
 ### Primary Button
-**HTML**: `<a href="#" class="btn-primary"><span>Text</span></a>`
+**HTML**: `<a href="#" class="btn-primary"><span>Text<span class="arrow">→</span></span></a>`
 **Colors**: Black background, white text
-**Animation**: Arrow slides in from left on hover (background and text stay same)
+**Animation**: Arrow appears and slides in from left (margin-left animation), background and text stay black/white
+**Arrow**: HTML span with `class="arrow"` inside button text span
 
 ### Secondary Button
-**HTML**: `<a href="#" class="btn-secondary"><span>Text</span></a>`
+**HTML**: `<a href="#" class="btn-secondary"><span>Text<span class="arrow">→</span></span></a>`
 **Colors**: White background, black text
-**Animation**: Arrow slides in from left on hover (background and text stay same)
+**Animation**: Arrow appears and slides in from left (margin-left animation), background and text stay white/black
+**Arrow**: HTML span with `class="arrow"` inside button text span
 
 ### Tertiary Button
 **HTML**: `<a href="#" class="btn-tertiary">Text</a>`
 **Colors**: Transparent, dark text (stays black)
-**Animation**: Arrow slides right on hover (text stays black, no color change)
+**Animation**: Arrow slides right on hover via CSS `::after` pseudo-element (text stays black, no color change)
+**Arrow**: Generated via CSS `::after` content property
 
-**Golden Rule**: If it's not one of these three exact types, it's wrong.
+**Golden Rule**: If it's not one of these three exact types with correct arrow spans, it's wrong.
 
 ---
 
 *Last Updated: 2026-02-13*
 *Status: LOCKED - NO CHANGES WITHOUT EXPLICIT APPROVAL*
+
+## IMPLEMENTATION NOTES (2026-02-13)
+
+**Arrow Span Implementation Complete**
+- All primary and secondary buttons across all HTML pages have been updated to include HTML arrow spans
+- Arrow spans use CSS margin-left animation instead of transform
+- Arrow appears instantly then slides in from left, pushing text to the right
+- CSS updated in style.css to handle `.arrow` span animation
+- Updated pages: index.html, about.html, booking.html, contact.html, how-it-works.html, in-person-sessions.html, ongoing-care.html, virtual-sessions.html
+- Total buttons updated: 30+ across all pages
+- All buttons now have consistent font size (0.95rem), font weight (600), and padding (0.75rem 1.5rem)

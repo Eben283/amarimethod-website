@@ -142,117 +142,8 @@
             color: var(--text-dark);
         }
 
-        .btn-primary {
-            background-color: var(--text-dark);
-            color: white;
-            padding: 1rem 2rem 1rem 3rem;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            font-weight: 300;
-            letter-spacing: 0.5px;
-            box-shadow: none;
-        }
-
-        .btn-primary::before {
-            content: '→';
-            position: absolute;
-            left: 0.5rem;
-            opacity: 0;
-            font-weight: 300;
-            color: white;
-            font-size: 1em;
-            margin-right: 0.5rem;
-            transition: all 0.6s ease-out;
-        }
-
-        /* White button arrow - black color */
-        .btn-primary[style*="background: white"]::before {
-            color: var(--text-dark);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--text-dark);
-            color: white;
-        }
-
-        .btn-primary:hover::before {
-            opacity: 1;
-            left: 1.2rem;
-        }
-
-        /* White buttons keep arrow contained */
-        .btn-primary[style*="background: white"]:hover::before {
-            left: 1.2rem;
-        }
-
-
-        .btn-primary span {
-            transition: transform 0.6s ease-out;
-            display: inline-block;
-        }
-
-        .btn-primary:hover span {
-            transform: translateX(1.5rem);
-        }
-
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-dark);
-            padding: 1rem 2rem 1rem 3rem;
-            border: 1px solid var(--text-dark);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            font-weight: 300;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-secondary::before {
-            content: '→';
-            position: absolute;
-            left: 0.5rem;
-            opacity: 0;
-            font-weight: 300;
-            color: var(--text-dark);
-            font-size: 1em;
-            margin-right: 0.5rem;
-            transition: all 0.6s ease-out;
-        }
-
-        .btn-secondary span {
-            transition: transform 0.6s ease-out;
-            display: inline-block;
-        }
-
-        .btn-secondary:hover {
-            background-color: transparent;
-            color: var(--text-dark);
-        }
-
-        .btn-secondary:hover::before {
-            opacity: 1;
-            left: 1.2rem;
-        }
-
-        .btn-secondary:hover span {
-            transform: translateX(1.5rem);
-        }
+        /* Button styles now defined in global style.css */
+        /* Using HTML arrow spans with margin-left animation */
 
         /* Layout */
         .container {
@@ -592,10 +483,6 @@
             color: var(--text-dark) !important;
             border-color: #333 !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .btn-outline::before {
-            color: #333 !important;
         }
 
         .journal-tag {
@@ -948,9 +835,9 @@
         .cta-buttons .btn-primary {
             background: white;
             color: var(--text-dark);
-            padding: 1.1rem 2.8rem 1.1rem 3.5rem;
-            font-size: 1.05rem;
-            font-weight: 300;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
             border-radius: 12px;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-shadow: none;
@@ -958,28 +845,11 @@
             overflow: hidden;
         }
 
-        .cta-buttons .btn-primary::before {
-            content: '→';
-            position: absolute;
-            left: 0.8rem;
-            opacity: 0;
-            font-weight: 300;
-            color: var(--text-dark);
-            font-size: 1em;
-            margin-right: 0.5rem;
-            transition: all 0.6s ease-out;
-        }
-
         .cta-buttons .btn-primary:hover {
             background: white;
             box-shadow: none;
             transform: none;
             color: var(--text-dark);
-        }
-
-        .cta-buttons .btn-primary:hover::before {
-            opacity: 1;
-            left: 1.5rem;
         }
 
         /* CTA Image Section Button Enhancement */
@@ -1152,28 +1022,11 @@
             overflow: hidden !important;
         }
 
-        .assessment-btn::before {
-            content: '→';
-            position: absolute;
-            left: 0.8rem;
-            opacity: 0;
-            font-weight: 300;
-            color: var(--text-dark);
-            font-size: 1em;
-            margin-right: 0.5rem;
-            transition: all 0.6s ease-out;
-        }
-
         .assessment-btn:hover {
             background: white !important;
             border-color: #ddd !important;
             box-shadow: none !important;
             color: var(--text-dark) !important;
-        }
-
-        .assessment-btn:hover::before {
-            opacity: 1;
-            left: 1.5rem;
         }
 
         /* FAQ Section */
@@ -1374,7 +1227,7 @@
             <li><a href="booking">Pricing</a></li>
             <li><a href="#about">About</a></li>
         </ul>
-        <a href="#services" class="btn-primary"><span>Book Session</span></a>
+        <a href="#services" class="btn-primary"><span>Book Session<span class="arrow">→</span></span></a>
     </nav>
 
     <!-- Hero Section -->
@@ -1394,8 +1247,8 @@
         </div>
 
         <div class="hero-cta">
-            <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="btn-secondary"><span>Schedule Free Call</span></a>
-            <a href="#services" class="btn-primary"><span>Book Relief Session</span></a>
+            <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="btn-secondary"><span>Schedule Free Call<span class="arrow">→</span></span></a>
+            <a href="#services" class="btn-primary"><span>Book Relief Session<span class="arrow">→</span></span></a>
         </div>
     </section>
 
@@ -1557,7 +1410,7 @@
                         <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>No medications or surgery required</li>
                         <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>Expert-guided sessions in-person and virtually</li>
                     </ul>
-                    <a href="#services" class="btn-primary" style="margin-top: 2.5rem;"><span>Learn More</span></a>
+                    <a href="#services" class="btn-primary" style="margin-top: 2.5rem;"><span>Learn More<span class="arrow">→</span></span></a>
                 </div>
                 <div>
                     <img src="images/Garrett working with patient.avif" alt="Dr. Garrett working with patient" style="border-radius: 12px;">
@@ -1638,7 +1491,7 @@
                         <div class="service-feature">Follow-up support included</div>
                     </div>
                     <p class="service-price">$225 - $475</p>
-                    <a href="in-person-sessions" class="btn-primary"><span>Book Session</span></a>
+                    <a href="in-person-sessions" class="btn-primary"><span>Book Session<span class="arrow">→</span></span></a>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">POPULAR</div>
@@ -1651,7 +1504,7 @@
                         <div class="service-feature">Email support between sessions</div>
                     </div>
                     <p class="service-price">$225 - $475</p>
-                    <a href="virtual-sessions" class="btn-primary btn-outline"><span>Book Session</span></a>
+                    <a href="virtual-sessions" class="btn-primary btn-outline"><span>Book Session<span class="arrow">→</span></span></a>
                 </div>
                 <div class="journal-card">
                     <div class="journal-tag">SELF-PACED</div>
@@ -1664,7 +1517,7 @@
                         <div class="service-feature">Complete exercise library</div>
                     </div>
                     <p class="service-price">$497</p>
-                    <a href="ongoing-care" class="btn-primary btn-outline"><span>Learn More</span></a>
+                    <a href="ongoing-care" class="btn-primary btn-outline"><span>Learn More<span class="arrow">→</span></span></a>
                 </div>
             </div>
         </div>
@@ -1701,7 +1554,7 @@
         <div style="position: relative; z-index: 2; text-align: center; color: white; max-width: 800px; padding: 3rem 2.5rem;">
             <h2 style="font-size: 3.8rem; margin-bottom: 2rem; color: white; font-family: 'Bona Nova', serif; line-height: 1.2; font-weight: 700;">A proven approach to helping you reconnect with your body's wisdom.</h2>
             <p style="font-size: 1.15rem; margin-bottom: 2.5rem; color: rgba(255,255,255,0.95); line-height: 1.7;">Experience immediate relief and lasting transformation in your first session.</p>
-            <a href="#services" class="btn-secondary cta-image-section-btn" style="background: white; color: var(--text-dark); padding: 1.2rem 3rem; font-size: 1.15rem; font-weight: 700; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block;"><span>Book Relief Session</span></a>
+            <a href="#services" class="btn-secondary cta-image-section-btn" style="background: white; color: var(--text-dark); padding: 1.2rem 3rem; font-size: 1.15rem; font-weight: 700; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block;"><span>Book Relief Session<span class="arrow">→</span></span></a>
         </div>
     </div>
 
@@ -1734,7 +1587,7 @@
                             <span style="color: #555; font-size: 1rem;">No email or commitment required</span>
                         </div>
                     </div>
-                    <button class="btn-secondary assessment-btn" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 0; background: white; color: var(--text-dark); font-size: 1.05rem; padding: 1.1rem 2.8rem 1.1rem 3.5rem; border-radius: 12px; font-weight: 300; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block; box-shadow: none; cursor: pointer; border: 1px solid #ddd; position: relative; overflow: hidden;"><span>Start Your Assessment</span></button>
+                    <button class="btn-secondary assessment-btn" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 0; background: white; color: var(--text-dark); font-size: 1.05rem; padding: 1.1rem 2.8rem 1.1rem 3.5rem; border-radius: 12px; font-weight: 300; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block; box-shadow: none; cursor: pointer; border: 1px solid #ddd; position: relative; overflow: hidden;"><span>Start Your Assessment<span class="arrow">→</span></span></button>
                 </div>
             </div>
         </div>
