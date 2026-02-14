@@ -121,6 +121,50 @@ Do NOT use `.btn-secondary` when `.btn-primary` is appropriate.
 
 ---
 
+## TERTIARY BUTTON (Text with Arrow)
+
+For subtle, text-based navigation links that look like bold text with an arrow.
+
+```html
+<a href="ongoing-care" class="btn-tertiary">Explore ongoing care</a>
+```
+
+**Tertiary Button Properties:**
+- Background: None (transparent)
+- Text Color: Dark text (`var(--text-dark)`)
+- Font Weight: 600 (semi-bold)
+- Arrow: Automatically appended via CSS `::after` content " →"
+- Hover Effect: Arrow slides right 3px with smooth animation
+- Use Case: Subtle next-step navigation, "Learn more" links, secondary CTAs
+
+**Styling:**
+```css
+.btn-tertiary {
+  color: var(--text-dark);
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.btn-tertiary::after {
+  content: ' →';
+  transition: transform 0.3s ease;
+  display: inline-block;
+}
+
+.btn-tertiary:hover::after {
+  transform: translateX(3px);
+}
+
+.btn-tertiary:hover {
+  color: var(--color-primary);
+}
+```
+
+---
+
 ## USAGE LOCATIONS (WHERE PRIMARY BUTTONS GO)
 
 ✅ **Use Primary Button For:**
