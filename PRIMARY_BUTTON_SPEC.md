@@ -40,7 +40,7 @@ This is the definitive specification for the Amari Method primary button. Every 
 ### Default State
 ```css
 .btn-primary {
-  background: var(--color-primary);           /* Teal color #2d5a5f */
+  background: #000000;                         /* Black background */
   color: white;                                /* White text */
   display: inline-block;                       /* Inline-block display */
   padding: 0.75rem 1.5rem;                    /* 12px vertical, 24px horizontal */
@@ -52,24 +52,38 @@ This is the definitive specification for the Amari Method primary button. Every 
   cursor: pointer;                             /* Pointer cursor on hover */
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);  /* Smooth transitions */
   text-decoration: none;                       /* No underline */
+  position: relative;                          /* For arrow positioning */
+  overflow: hidden;                            /* Clip arrow animation */
 }
 ```
 
 ### Hover State (ARROW ANIMATION)
 ```css
 .btn-primary:hover {
-  background: var(--color-accent-teal-dark); /* Darker teal on hover */
-  transform: translateY(-2px);                /* Lift button up 2px */
-  box-shadow: 0 12px 24px rgba(79, 138, 139, 0.25);  /* Add shadow depth */
+  background: #000000;                        /* Black stays black */
+  color: white;                               /* White stays white */
+}
+
+.btn-primary::after {
+  content: ' →';
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+  display: inline-block;
+  transform: translateX(-20px);               /* Arrow hidden left */
+  opacity: 0;
+}
+
+.btn-primary:hover::after {
+  transform: translateX(0);                   /* Arrow slides in */
+  opacity: 1;
 }
 ```
 
 ### Key Animation Details:
-- **Lift Effect**: `transform: translateY(-2px)` moves button up 2 pixels
-- **Color Change**: Background darkens from `#2d5a5f` to darker teal
-- **Shadow Depth**: `box-shadow: 0 12px 24px rgba(79, 138, 139, 0.25)` creates depth
-- **Duration**: All transitions occur over `0.3s` with smooth easing
-- **Arrow**: The arrow appears as part of the transform animation (lifted appearance)
+- **Arrow Animation**: Arrow slides in from the left on hover
+- **Background**: Black button, stays black on hover (no color change)
+- **Text**: White text, stays white on hover (no color change)
+- **Duration**: 0.3s smooth cubic-bezier easing
+- **Arrow**: Slides in from left using `transform: translateX(-20px)` to `translateX(0)`
 
 ---
 
@@ -115,9 +129,41 @@ Do NOT use `.btn-secondary` when `.btn-primary` is appropriate.
 
 **Secondary Button Properties:**
 - Background: White
-- Text Color: Teal
+- Text Color: Black
 - Used for: Alternative/secondary actions
-- Hover: Light teal background with lift effect
+- Hover: White stays white, black stays black, arrow slides in from the left
+
+**Styling:**
+```css
+.btn-secondary {
+  background: white;
+  color: #000000;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary::after {
+  content: ' →';
+  transition: transform 0.3s ease;
+  display: inline-block;
+  transform: translateX(-20px);
+  opacity: 0;
+}
+
+.btn-secondary:hover::after {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.btn-secondary:hover {
+  background: white;
+  color: #000000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+```
 
 ---
 
@@ -165,18 +211,24 @@ For subtle, text-based navigation links that look like bold text with an arrow.
 
 ---
 
-## USAGE LOCATIONS (WHERE PRIMARY BUTTONS GO)
+## USAGE LOCATIONS
 
-✅ **Use Primary Button For:**
+✅ **Use Primary Button (Black) For:**
 - Main CTAs (Book Relief Session, Learn More, Get Started)
 - Hero section buttons
 - Section call-to-action buttons
 - Form submission buttons
 - Navigation "Book Session" button
 
-✅ **Use Secondary Button For:**
+✅ **Use Secondary Button (White) For:**
 - Alternative options (Schedule Free Call)
 - Less prominent CTAs
+- Contrast against dark backgrounds
+
+✅ **Use Tertiary Button (Text with Arrow) For:**
+- Subtle next-step navigation
+- "Learn more" or "Explore" links
+- Secondary CTAs within content sections
 
 ---
 
@@ -211,15 +263,22 @@ When adding or updating ANY button on the site:
 
 ## SUMMARY
 
+### Primary Button
 **HTML**: `<a href="#" class="btn-primary"><span>Text</span></a>`
+**Colors**: Black background, white text
+**Animation**: Arrow slides in from left on hover (background and text stay same)
 
-**CSS**: Teal background, white text, 2px lift on hover with shadow
+### Secondary Button
+**HTML**: `<a href="#" class="btn-secondary"><span>Text</span></a>`
+**Colors**: White background, black text
+**Animation**: Arrow slides in from left on hover (background and text stay same)
 
-**Colors**: `var(--color-primary)` → `var(--color-accent-teal-dark)` on hover
+### Tertiary Button
+**HTML**: `<a href="#" class="btn-tertiary">Text</a>`
+**Colors**: Transparent, dark text
+**Animation**: Arrow slides right on hover, text changes to teal
 
-**Animation**: 0.3s smooth transition with transform and shadow
-
-**Golden Rule**: If it's not this exact structure, it's wrong.
+**Golden Rule**: If it's not one of these three exact types, it's wrong.
 
 ---
 
