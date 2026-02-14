@@ -815,43 +815,76 @@
             flex-shrink: 0;
             width: 280px;
             background: white;
-            padding: 2rem;
-            border-radius: 12px;
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
             align-items: center;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .testimonial-scroll-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #1a1a1a;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .testimonial-scroll-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .testimonial-scroll-card:hover {
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+            transform: translateY(-6px);
         }
 
         .testimonial-scroll-card img {
-            height: 120px;
-            width: 120px;
+            height: 130px;
+            width: 130px;
             object-fit: cover;
             object-position: center top;
             border-radius: 50%;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 1.75rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            border: 3px solid white;
+            position: relative;
+            z-index: 1;
         }
 
         .testimonial-scroll-card .testimonial-quote {
             font-size: 0.95rem;
-            line-height: 1.6;
+            line-height: 1.7;
             margin-bottom: 1.5rem;
             color: var(--text-dark);
             font-style: italic;
+            flex-grow: 1;
         }
 
         .testimonial-scroll-card .testimonial-author {
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-dark);
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.4rem;
+            font-size: 1rem;
         }
 
         .testimonial-scroll-card .testimonial-role {
-            font-size: 0.85rem;
-            color: var(--primary-teal);
+            font-size: 0.8rem;
+            color: #999;
             margin: 0;
+            font-weight: 500;
+            letter-spacing: 0.3px;
         }
 
         @keyframes scroll-testimonials {
