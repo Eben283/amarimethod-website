@@ -978,38 +978,62 @@
 
         .result-card {
             background: white;
-            padding: 2.5rem 2rem;
-            border-radius: 16px;
-            border: 1px solid rgba(0,0,0,0.08);
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.06);
             text-align: center;
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.07);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #1a1a1a;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .result-card:hover::before {
+            transform: scaleX(1);
         }
 
         .result-card:hover {
-            box-shadow: 0 12px 30px rgba(0,0,0,0.1);
-            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+            transform: translateY(-6px);
         }
 
         .result-metric {
-            font-size: 3rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 0.5rem;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
             font-family: 'Bona Nova', serif;
+            line-height: 1;
         }
 
         .result-label {
-            font-size: 1.1rem;
-            font-weight: 600;
+            font-size: 1.15rem;
+            font-weight: 700;
             color: var(--text-dark);
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
+            letter-spacing: -0.3px;
         }
 
         .result-description {
             font-size: 0.95rem;
             color: #666;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         /* FAQ Section */
