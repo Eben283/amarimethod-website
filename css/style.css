@@ -305,9 +305,6 @@ nav {
   position: relative;
   overflow: hidden;
   white-space: nowrap;
-  min-width: 160px;
-  display: inline-flex;
-  align-items: center;
 }
 
 .btn:hover,
@@ -318,20 +315,16 @@ nav {
 
 .btn-primary .arrow,
 .btn-secondary .arrow {
-  display: inline-block;
-  vertical-align: middle;
+  position: absolute;
+  left: 0.75rem;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  margin-right: 0;
-  width: 0;
-  overflow: hidden;
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
   opacity: 1;
-  margin-right: 0.5rem;
-  width: auto;
+  left: 1.5rem;
 }
 
 .btn-content {
