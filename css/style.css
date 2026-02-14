@@ -314,7 +314,6 @@ nav {
 .btn-primary:hover {
   background: #000000;
   color: white;
-  padding-left: 2.2rem;
 }
 
 .btn-primary .arrow,
@@ -322,13 +321,17 @@ nav {
   display: inline-block;
   vertical-align: middle;
   opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.2, 0, 0, 1);
-  margin-right: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  margin-right: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
   opacity: 1;
+  margin-right: 0.5rem;
+  width: auto;
 }
 
 .btn-content {
