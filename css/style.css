@@ -1430,10 +1430,11 @@ footer {
 
   .comparison-grid,
   .steps-grid,
+  .how-it-works-grid,
   .testimonials-grid,
   .services-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
   }
 
   .step-card,
