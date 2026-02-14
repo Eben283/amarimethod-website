@@ -303,7 +303,7 @@ nav {
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   text-decoration: none;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   white-space: nowrap;
 }
 
@@ -311,23 +311,21 @@ nav {
 .btn-primary:hover {
   background: #000000;
   color: white;
+  padding-left: 2.2rem;
 }
 
 .btn-primary .arrow,
 .btn-secondary .arrow {
   display: inline-block;
   vertical-align: middle;
-  width: 0;
   opacity: 0;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  overflow: hidden;
+  transition: opacity 0.3s cubic-bezier(0.2, 0, 0, 1);
+  margin-right: 0.5rem;
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
-  width: 1.2rem;
   opacity: 1;
-  margin-right: 0.5rem;
 }
 
 .btn-content {
@@ -336,12 +334,6 @@ nav {
 
 .btn-text {
   display: inline;
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.btn-primary:hover .btn-text,
-.btn-secondary:hover .btn-text {
-  transform: translateX(1.7rem);
 }
 
 .btn-secondary {
