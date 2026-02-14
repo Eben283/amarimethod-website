@@ -304,6 +304,7 @@ nav {
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .btn:hover,
