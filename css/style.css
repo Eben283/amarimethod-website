@@ -317,18 +317,25 @@ nav {
 .btn-secondary .arrow {
   display: inline-block;
   vertical-align: middle;
-  margin-right: 0;
-  width: 0;
-  overflow: hidden;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
-  width: 1rem;
-  margin-right: 0.5rem;
   opacity: 1;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  transition: gap 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-primary:hover .btn-content,
+.btn-secondary:hover .btn-content {
+  gap: 0.5rem;
 }
 
 .btn-secondary {
