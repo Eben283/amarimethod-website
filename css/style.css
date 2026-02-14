@@ -199,9 +199,11 @@ nav {
   border: none;
   cursor: pointer;
   font-family: var(--font-sans-primary);
-  font-size: 0.95rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text);
+  padding: 0.5rem;
+  margin-left: auto;
 }
 
 /* ===== HERO SECTION ===== */
@@ -286,11 +288,15 @@ nav {
   text-decoration: none;
 }
 
+.btn,
 .btn-primary {
   background: var(--color-primary);
   color: white;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
 }
 
+.btn:hover,
 .btn-primary:hover {
   background: var(--color-accent-teal-dark);
   transform: translateY(-2px);
@@ -1281,13 +1287,18 @@ footer {
   header nav,
   nav {
     padding: 0 1.5rem;
+    position: sticky;
   }
 
   .menu-toggle {
-    display: block;
+    display: block !important;
     font-size: 1.5rem;
     color: var(--color-text);
     padding: 0.5rem;
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
   }
 
   .nav-menu {
@@ -1302,10 +1313,12 @@ footer {
     border-bottom: 1px solid var(--color-border);
     padding: 1rem 0;
     z-index: 999;
+    width: 100%;
+    margin: 0;
   }
 
   .nav-menu.active {
-    display: flex;
+    display: flex !important;
   }
 
   .nav-menu li {
@@ -1316,6 +1329,11 @@ footer {
   .nav-menu a {
     display: block;
     padding: 1rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-primary {
+    display: none;
   }
 
   h1 {
