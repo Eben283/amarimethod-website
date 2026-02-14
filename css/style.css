@@ -338,7 +338,7 @@ nav {
 
 .btn-primary:hover .btn-text,
 .btn-secondary:hover .btn-text {
-  transform: translateX(0.75rem);
+  transform: translateX(1.2rem);
 }
 
 .btn-secondary {
