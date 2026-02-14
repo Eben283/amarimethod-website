@@ -307,11 +307,13 @@ nav {
 }
 
 .btn-primary::after {
-  content: ' →';
-  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+  content: '→';
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   display: inline-block;
-  transform: translateX(-20px);
+  margin-left: 0;
   opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .btn:hover,
@@ -321,8 +323,9 @@ nav {
 }
 
 .btn-primary:hover::after {
-  transform: translateX(0);
+  margin-left: 0.5rem;
   opacity: 1;
+  width: auto;
 }
 
 .btn-secondary {
@@ -344,11 +347,13 @@ nav {
 }
 
 .btn-secondary::after {
-  content: ' →';
-  transition: transform 0.3s ease;
+  content: '→';
+  transition: all 0.3s ease;
   display: inline-block;
-  transform: translateX(-20px);
+  margin-left: 0;
   opacity: 0;
+  width: 0;
+  overflow: hidden;
 }
 
 .btn-secondary:hover {
@@ -358,8 +363,9 @@ nav {
 }
 
 .btn-secondary:hover::after {
-  transform: translateX(0);
+  margin-left: 0.5rem;
   opacity: 1;
+  width: auto;
 }
 
 .btn-block {
