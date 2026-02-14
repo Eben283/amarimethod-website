@@ -1342,6 +1342,8 @@ footer {
   nav {
     padding: 0.75rem 1.5rem;
     position: sticky;
+    justify-content: center;
+    position: relative;
   }
 
   .menu-toggle {
@@ -1349,10 +1351,17 @@ footer {
     font-size: 1.25rem;
     color: var(--color-text);
     padding: 0.25rem;
-    margin-left: auto;
+    position: absolute;
+    right: 1.5rem;
     background: none;
     border: none;
     cursor: pointer;
+  }
+
+  .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .logo img {
@@ -1389,6 +1398,10 @@ footer {
     display: block;
     padding: 1rem 1.5rem;
     font-size: 0.95rem;
+  }
+
+  .nav-cta {
+    display: none !important;
   }
 
   h1 {
