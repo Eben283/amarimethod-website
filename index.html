@@ -430,9 +430,13 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: all 0.4s ease;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             position: relative;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .journal-card:not(.featured):hover {
+            background: #fafafa;
         }
 
         .journal-card::before {
@@ -444,7 +448,7 @@
             height: 0px;
             background: #333;
             opacity: 0;
-            transition: all 0.4s ease;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .journal-card:hover::before {
@@ -463,13 +467,15 @@
         }
 
         .journal-card:hover {
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+            transform: translateY(-6px);
+            border-color: #999;
         }
 
         .journal-card.featured:hover {
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
-            transform: translateY(-4px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-6px);
+            border-color: var(--accent-red);
         }
 
         .journal-card h3 {
@@ -527,6 +533,7 @@
             padding: 0.8rem 1.2rem;
             font-size: 0.9rem;
             font-weight: 600;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .journal-card.featured .btn-primary {
@@ -538,12 +545,14 @@
             background: white !important;
             color: var(--text-dark) !important;
             border: 1px solid #ddd !important;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .btn-outline:hover {
             background: #f5f5f5 !important;
             color: var(--text-dark) !important;
-            border-color: #999 !important;
+            border-color: #333 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }
 
         .btn-outline::before {
