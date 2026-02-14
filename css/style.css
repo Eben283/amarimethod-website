@@ -316,16 +316,16 @@ nav {
 .btn-primary .arrow,
 .btn-secondary .arrow {
   display: inline-block;
-  margin-left: 0.5rem;
+  margin-left: -20px;
+  margin-right: 0.5rem;
   opacity: 0;
-  transform: translateX(-30px);
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
+  margin-left: 0;
   opacity: 1;
-  transform: translateX(0);
 }
 
 .btn-secondary {
