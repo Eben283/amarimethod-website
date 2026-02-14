@@ -318,12 +318,14 @@ nav {
   display: inline-block;
   vertical-align: middle;
   opacity: 0;
+  transform: translateX(-15px);
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .btn-primary:hover .arrow,
 .btn-secondary:hover .arrow {
   opacity: 1;
+  transform: translateX(3px);
 }
 
 .btn-content {
@@ -332,13 +334,6 @@ nav {
 
 .btn-text {
   display: inline;
-  margin-left: 0;
-  transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
-}
-
-.btn-primary:hover .btn-text,
-.btn-secondary:hover .btn-text {
-  margin-left: 0.5rem;
 }
 
 .btn-secondary {
