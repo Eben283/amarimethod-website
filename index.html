@@ -145,7 +145,7 @@
         .btn-primary {
             background-color: var(--text-dark);
             color: white;
-            padding: 1rem 2rem;
+            padding: 1rem 2rem 1rem 3rem;
             border-radius: 4px;
             border: none;
             cursor: pointer;
@@ -156,7 +156,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
             font-weight: 300;
             letter-spacing: 0.5px;
             box-shadow: none;
@@ -165,7 +165,7 @@
         .btn-primary::before {
             content: '→';
             position: absolute;
-            left: -2.5rem;
+            left: 0.5rem;
             opacity: 0;
             font-weight: 300;
             color: white;
@@ -186,12 +186,12 @@
 
         .btn-primary:hover::before {
             opacity: 1;
-            left: 1rem;
+            left: 1.2rem;
         }
 
         /* White buttons keep arrow contained */
         .btn-primary[style*="background: white"]:hover::before {
-            left: 0.5rem;
+            left: 1.2rem;
         }
 
 
@@ -208,7 +208,7 @@
         .btn-secondary {
             background-color: transparent;
             color: var(--text-dark);
-            padding: 1rem 2rem;
+            padding: 1rem 2rem 1rem 3rem;
             border: 1px solid var(--text-dark);
             border-radius: 4px;
             cursor: pointer;
@@ -226,7 +226,7 @@
         .btn-secondary::before {
             content: '→';
             position: absolute;
-            left: -2.5rem;
+            left: 0.5rem;
             opacity: 0;
             font-weight: 300;
             color: var(--text-dark);
@@ -247,7 +247,7 @@
 
         .btn-secondary:hover::before {
             opacity: 1;
-            left: 1rem;
+            left: 1.2rem;
         }
 
         .btn-secondary:hover span {
@@ -430,22 +430,6 @@
             overflow: hidden;
         }
 
-        .step-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #1a1a1a;
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .step-card:hover::before {
-            transform: scaleX(1);
-        }
 
         .step-card:hover {
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
@@ -510,22 +494,6 @@
             background: #fafafa;
         }
 
-        .journal-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 0px;
-            background: #333;
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .journal-card:hover::before {
-            opacity: 1;
-            height: 3px;
-        }
 
         .journal-card.featured {
             border: 2px solid var(--accent-red);
@@ -837,22 +805,6 @@
             overflow: hidden;
         }
 
-        .testimonial-scroll-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #1a1a1a;
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .testimonial-scroll-card:hover::before {
-            transform: scaleX(1);
-        }
 
         .testimonial-scroll-card:hover {
             box-shadow: 0 12px 32px rgba(0,0,0,0.12);
@@ -996,20 +948,20 @@
         .cta-buttons .btn-primary {
             background: white;
             color: var(--text-dark);
-            padding: 1.1rem 2.8rem;
+            padding: 1.1rem 2.8rem 1.1rem 3.5rem;
             font-size: 1.05rem;
             font-weight: 300;
             border-radius: 12px;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             box-shadow: none;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
         }
 
         .cta-buttons .btn-primary::before {
             content: '→';
             position: absolute;
-            left: -2.5rem;
+            left: 0.8rem;
             opacity: 0;
             font-weight: 300;
             color: var(--text-dark);
@@ -1027,7 +979,7 @@
 
         .cta-buttons .btn-primary:hover::before {
             opacity: 1;
-            left: 0.5rem;
+            left: 1.5rem;
         }
 
         /* CTA Image Section Button Enhancement */
@@ -1063,22 +1015,6 @@
             overflow: hidden;
         }
 
-        .result-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: #1a1a1a;
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .result-card:hover::before {
-            transform: scaleX(1);
-        }
 
         .result-card:hover {
             box-shadow: 0 16px 40px rgba(0,0,0,0.12);
@@ -1205,7 +1141,7 @@
         .assessment-btn {
             background: white !important;
             color: var(--text-dark) !important;
-            padding: 1.1rem 2.8rem !important;
+            padding: 1.1rem 2.8rem 1.1rem 3.5rem !important;
             font-size: 1.05rem !important;
             font-weight: 300 !important;
             border-radius: 12px !important;
@@ -1213,13 +1149,13 @@
             box-shadow: none !important;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
             position: relative !important;
-            overflow: visible !important;
+            overflow: hidden !important;
         }
 
         .assessment-btn::before {
             content: '→';
             position: absolute;
-            left: -2.5rem;
+            left: 0.8rem;
             opacity: 0;
             font-weight: 300;
             color: var(--text-dark);
@@ -1237,7 +1173,7 @@
 
         .assessment-btn:hover::before {
             opacity: 1;
-            left: 0.5rem;
+            left: 1.5rem;
         }
 
         /* FAQ Section */
@@ -1430,7 +1366,8 @@
         <div class="logo">
             <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
         </div>
-        <ul>
+        <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+        <ul class="nav-menu">
             <li><a href="#why">Why Amari Method</a></li>
             <li><a href="#how">How It Works</a></li>
             <li><a href="#services">Services</a></li>
@@ -1797,7 +1734,7 @@
                             <span style="color: #555; font-size: 1rem;">No email or commitment required</span>
                         </div>
                     </div>
-                    <button class="btn-primary assessment-btn" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 0; background: white; color: var(--text-dark); font-size: 1.05rem; padding: 1.1rem 2.8rem; border-radius: 12px; font-weight: 300; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block; box-shadow: none; cursor: pointer; border: 1px solid #ddd; position: relative; overflow: visible;"><span>Start Your Assessment</span></button>
+                    <button class="btn-primary assessment-btn" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 0; background: white; color: var(--text-dark); font-size: 1.05rem; padding: 1.1rem 2.8rem 1.1rem 3.5rem; border-radius: 12px; font-weight: 300; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block; box-shadow: none; cursor: pointer; border: 1px solid #ddd; position: relative; overflow: hidden;"><span>Start Your Assessment</span></button>
                 </div>
             </div>
         </div>
@@ -1924,6 +1861,9 @@
 
     <!-- Footer -->
     <footer>
+        <div style="padding: 0 2.5rem; border-bottom: 1px solid #e8e8e6; margin-bottom: 3rem; padding-bottom: 2rem;">
+            <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
+        </div>
         <div class="footer-content">
             <div class="footer-section">
                 <h3>Amari Method</h3>
@@ -2101,5 +2041,7 @@
             });
         });
     </script>
+
+    <script src="js/main.js"></script>
 </body>
 </html>

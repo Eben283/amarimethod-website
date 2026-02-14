@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
 
     <style>
         /* Color Tokens (Minimal Therabody-inspired Palette) */
@@ -21,6 +22,9 @@
             --border-light: #e5e5e5;
             --background-light: #f8f8f8;
             --white: #ffffff;
+            --bg-primary: #fffcf5;
+            --color-border: #e8e8e6;
+            --primary-teal: #2d5a5f;
         }
 
         * {
@@ -261,25 +265,6 @@
             border-bottom: none;
         }
 
-        .btn-primary {
-            background-color: var(--text-dark);
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: background-color 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            font-weight: 500;
-            width: 100%;
-        }
-
-        .btn-primary:hover {
-            background-color: #333;
-        }
 
         /* Info Section */
         .info-section {
@@ -470,22 +455,21 @@
 <body>
 
 <!-- ===== HEADER ===== -->
-<header>
-    <div class="container">
-        <a href="index.html" class="logo">Amari Method</a>
-        <button class="menu-toggle" aria-label="Toggle Menu">☰</button>
-        <nav>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="index.html#how-it-works">How It Works</a></li>
-                <li><a href="about.html">About Dr. Garrett</a></li>
-                <li><a href="contact.html">Contact</a></li>
-                <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="nav-cta">Schedule Free Call</a></li>
-            </ul>
-        </nav>
+<!-- Navigation -->
+<nav>
+    <div class="logo">
+        <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
     </div>
-</header>
-
+    <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    <ul class="nav-menu">
+        <li><a href="index.html#why">Why Amari Method</a></li>
+        <li><a href="index.html#how">How It Works</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="booking">Pricing</a></li>
+        <li><a href="about.html">About</a></li>
+    </ul>
+    <a href="index.html#services" class="btn-primary"><span>Book Session</span></a>
+</nav>
 <!-- ===== MAIN CONTENT ===== -->
 <main>
 
@@ -512,7 +496,7 @@
                         <li>Network Chiropractic Adjustment</li>
                         <li>Somatic Respiratory Integration</li>
                     </ul>
-                    <a href="https://amarimethodfollowup.amarimethod.com/amari-method-single-follow-up-session" class="btn-primary">Schedule Follow-Up Session</a>
+                    <a href="https://amarimethodfollowup.amarimethod.com/amari-method-single-follow-up-session" class="btn-primary"><span>Schedule Follow-Up Session</span></a>
                 </div>
 
                 <!-- Mastery Series Card (Featured) -->
@@ -528,8 +512,8 @@
                         <li>Personalized progression through the complete method</li>
                     </ul>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                        <a href="https://ongoingpartnership12pack.amarimethod.com/12-session-partnership-plan259619" class="btn-primary">Buy Plan</a>
-                        <a href="https://link.amarimethod.com/widget/booking/AFtznqR9stfkeX927X20" class="btn-primary">Schedule Sessions</a>
+                        <a href="https://ongoingpartnership12pack.amarimethod.com/12-session-partnership-plan259619" class="btn-primary"><span>Buy Plan</span></a>
+                        <a href="https://link.amarimethod.com/widget/booking/AFtznqR9stfkeX927X20" class="btn-primary"><span>Schedule Sessions</span></a>
                     </div>
                 </div>
 
@@ -545,7 +529,7 @@
                         <li>Lifetime access with targeted bonus sections</li>
                         <li>Complete reference materials and exercise library</li>
                     </ul>
-                    <a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd" class="btn-primary">Enroll Now</a>
+                    <a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd" class="btn-primary"><span>Enroll Now</span></a>
                 </div>
             </div>
         </div>
@@ -590,7 +574,7 @@
             <h2>Ready to Deepen Your Practice?</h2>
             <p class="cta-subtitle">Choose the option that resonates with you and continue your transformation with Dr. Garrett's guidance.</p>
             <div class="cta-buttons">
-                <a href="#services" class="btn-primary">View All Programs</a>
+                <a href="#services" class="btn-primary"><span>View All Programs</span></a>
             </div>
         </div>
     </section>
@@ -598,77 +582,51 @@
 </main>
 
 <!-- ===== FOOTER ===== -->
+<!-- Footer -->
 <footer>
-    <div class="container">
+    <div style="padding: 0 2.5rem; border-bottom: 1px solid #e8e8e6; margin-bottom: 3rem; padding-bottom: 2rem;">
+        <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
+    </div>
+    <div class="footer-content">
         <div class="footer-section">
-            <h4>Amari Method</h4>
-            <p>Natural pain relief and body alignment for lasting wellness.</p>
-            <p style="margin-top: 1rem;">
-                <strong>Email:</strong> <a href="mailto:hello@amarihealth.com">hello@amarihealth.com</a><br>
-                <strong>Location:</strong> San Francisco, CA
+            <h3>Amari Method</h3>
+            <p>Freedom From Pain. Results For Life.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">
+                hello@amarihealth.com<br>
+                San Francisco, CA
             </p>
         </div>
-
         <div class="footer-section">
-            <h4>Quick Links</h4>
+            <h3>Services</h3>
             <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="index.html#how-it-works">How It Works</a></li>
-                <li><a href="about.html">About Dr. Garrett</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-        </div>
-
-        <div class="footer-section">
-            <h4>Programs</h4>
-            <ul>
-                <li><a href="virtual-sessions">Virtual Sessions</a></li>
                 <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                <li><a href="ongoing-care">Ongoing Care</a></li>
-                <li><a href="booking">View All Packages</a></li>
+                <li><a href="virtual-sessions">Virtual Sessions</a></li>
+                <li><a href="booking">Online Program</a></li>
             </ul>
         </div>
-
         <div class="footer-section">
-            <h4>Follow Us</h4>
+            <h3>Company</h3>
             <ul>
-                <li><a href="https://www.instagram.com/hewstanhealth/" target="_blank">Instagram</a></li>
-                <li><a href="https://open.spotify.com/playlist/7yA6szj3KB0AMpbhiKhPSM" target="_blank">Spotify</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Get Started</h3>
+            <ul>
+                <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
+                <li><a href="booking">View Pricing & Packages</a></li>
+                <li><a href="index.html#services">Book Your Session</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
             </ul>
         </div>
     </div>
+    <div class="footer-bottom">
+        <p>Made by Forrest Designs | <a href="#">Privacy Policy</a> | <a href="#">Terms of Use</a> | © 2025 Amari Method</p>
+    </div>
 </footer>
 
-<script>
-    // Scroll animation for session cards
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.animation = 'fadeInUp 0.8s ease-out forwards';
-                observer.unobserve(entry.target);
-            }
-        });
-    }, observerOptions);
-
-    document.querySelectorAll('.scroll-animate').forEach(element => {
-        observer.observe(element);
-    });
-
-    // Menu toggle for mobile
-    const menuToggle = document.querySelector('.menu-toggle');
-    const navMenu = document.querySelector('nav ul');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', () => {
-            navMenu.style.display = navMenu.style.display === 'flex' ? 'none' : 'flex';
-        });
-    }
-</script>
-
+<script src="js/main.js"></script>
 </body>
 </html>

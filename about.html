@@ -3,251 +3,272 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meet Dr. Garrett Hewstan | Amari Method</title>
-  <meta name="description" content="Learn about Dr. Garrett Hewstan's 25-year healing journey and how he created the Amari Method to help thousands overcome chronic pain.">
-  <meta name="keywords" content="Dr. Garrett Hewstan, healer, chiropractor, pain relief expert">
+  <title>Our Story: Natural Healing Journey | Amari Method</title>
+  <meta name="description" content="Learn the story of Dr. Garrett Hewstan and how the Amari Method was created in honor of a child named Amari.">
+  <meta name="keywords" content="Dr. Garrett Hewstan, Amari story, natural healing, chiropractic care">
   <meta name="author" content="Amari Method">
-  <meta property="og:title" content="Meet Dr. Garrett Hewstan | Amari Method">
-  <meta property="og:description" content="Learn about Dr. Garrett Hewstan's 25-year healing journey and the creation of the Amari Method.">
+  <meta property="og:title" content="Our Story: Natural Healing Journey | Amari Method">
+  <meta property="og:description" content="The inspiring story of Dr. Garrett Hewstan and the creation of the Amari Method.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.amarimethod.com/about">
   <link rel="canonical" href="https://www.amarimethod.com/about">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* About page specific styles */
+    .about-section {
+      padding: 5rem 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .about-section h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 2rem;
+      margin-top: 3rem;
+      font-family: 'Bona Nova', serif;
+    }
+
+    .about-section h2:first-child {
+      margin-top: 0;
+    }
+
+    .about-section p {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: #666;
+      margin-bottom: 1.5rem;
+    }
+
+    .story-intro {
+      font-size: 1.1rem;
+      line-height: 1.9;
+      color: #2d5a5f;
+      margin-bottom: 2.5rem;
+      font-weight: 500;
+    }
+
+    .amari-image-section {
+      margin: 3rem 0;
+      text-align: center;
+    }
+
+    .amari-image-section img {
+      max-width: 400px;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .amari-caption {
+      font-size: 0.95rem;
+      color: #999;
+      margin-top: 1rem;
+      font-style: italic;
+    }
+
+    .promise-highlight {
+      background: linear-gradient(135deg, #f0f8f5 0%, #e8f4f0 100%);
+      padding: 3rem 2.5rem;
+      border-radius: 12px;
+      border-left: 5px solid #2d5a5f;
+      margin: 3rem 0;
+    }
+
+    .promise-highlight p {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #2d5a5f;
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+
+    .promise-highlight p:last-child {
+      margin-bottom: 0;
+    }
+
+    .method-highlight {
+      background: #f8f8f8;
+      padding: 2.5rem;
+      border-radius: 12px;
+      margin: 2rem 0;
+    }
+
+    .method-highlight h3 {
+      color: #2d5a5f;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      font-family: 'Bona Nova', serif;
+    }
+
+    .method-highlight p {
+      margin-bottom: 0;
+    }
+
+    .closing-section {
+      background: linear-gradient(135deg, #2d5a5f 0%, #1f3d42 100%);
+      color: white;
+      padding: 4rem 3rem;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 4rem;
+    }
+
+    .closing-section p {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+
+    .closing-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 768px) {
+      .about-section {
+        padding: 3rem 1.5rem;
+      }
+
+      .about-section h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+        margin-top: 2rem;
+      }
+
+      .story-intro {
+        font-size: 1rem;
+      }
+
+      .promise-highlight {
+        padding: 2rem 1.5rem;
+      }
+
+      .promise-highlight p {
+        font-size: 1rem;
+      }
+
+      .closing-section {
+        padding: 3rem 1.5rem;
+      }
+
+      .amari-image-section img {
+        max-width: 100%;
+      }
+    }
+  </style>
 </head>
 <body>
 
-<!-- ===== HEADER ===== -->
-<header>
-  <nav class="container">
-    <a href="./" class="logo">Amari Method</a>
-    <button class="menu-toggle" aria-label="Toggle Menu">☰</button>
+<!-- Navigation -->
+<nav>
+    <div class="logo">
+        <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
+    </div>
+    <button class="menu-toggle" aria-label="Toggle menu">☰</button>
     <ul class="nav-menu">
-      <li><a href="index.html#how-it-works">How It Works</a></li>
-      <li><a href="how-it-works.html">Our Method</a></li>
-      <li><a href="contact.html">Contact</a></li>
-      <li><a href="https://quiz.amarimethod.com" class="nav-cta">Get Assessment</a></li>
+        <li><a href="index.html#why">Why Amari Method</a></li>
+        <li><a href="index.html#how">How It Works</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="booking.html">Pricing</a></li>
+        <li><a href="about.html">About</a></li>
     </ul>
-  </nav>
-</header>
+    <a href="index.html#services" class="btn-primary"><span>Book Session</span></a>
+</nav>
 
-<!-- ===== MAIN CONTENT ===== -->
 <main>
-
-  <!-- ===== HERO ===== -->
+  <!-- Hero Section -->
   <section class="hero">
-    <div class="container hero-content">
+    <div class="container">
       <h1>Transforming Lives Through Natural Healing</h1>
-      <p class="hero-subtitle">The story of Dr. Garrett Hewstan and the creation of the Amari Method</p>
+      <p class="hero-subtitle">Every journey to wellness begins with a story—and ours began with a child in pain and a doctor who refused to give up.</p>
     </div>
   </section>
 
-  <!-- ===== STORY SECTION ===== -->
-  <section>
-    <div class="container">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2>A Child in Pain Became a Doctor Determined to Help Others</h2>
+  <!-- Story Section -->
+  <section class="about-section">
+    <p class="story-intro">Dr. Garrett Hewstan knows firsthand the power of natural healing. As a child, he spent countless nights in hospital oxygen tents, struggling to breathe through severe asthma. Everything changed when his mother took him to a chiropractor, whose care freed him from medication dependency and gave him the freedom to thrive.</p>
 
-        <p style="font-size: 1.1rem; line-height: 1.8; margin-bottom: var(--space-lg);">
-          Every journey to wellness begins with a story—and Dr. Garrett Hewstan's began with a child in pain and a mother who refused to give up.
-        </p>
+    <p>Years later, during his final year of chiropractic school, Garrett had an experience that would shape his life's mission. A student clinic patient named Phyllis shared heartbreaking news: her 11-year-old grandson, Amari, had just passed away from complications of asthma.</p>
 
-        <div style="background: var(--accent-cream); padding: var(--space-lg); border-radius: 8px; margin-bottom: var(--space-lg); border-left: 4px solid var(--primary-teal);">
-          <h3 style="color: var(--primary-teal);">The Turning Point</h3>
-          <p>As a child, Dr. Hewstan spent countless nights in hospital oxygen tents, struggling to breathe through severe asthma. Medication offered temporary relief, but it left him dependent and afraid. Everything changed when his mother took him to a chiropractor whose gentle care freed him from medication dependency and gave him the freedom to thrive.</p>
-          <p style="margin-bottom: 0;">That experience planted a seed: <em>Natural healing is possible. A different approach can change everything.</em></p>
-        </div>
+    <p>The story struck Garrett deeply—Amari was the same age he had been when chiropractic care saved his life. Garrett couldn't help but wonder: <em>What if I could have helped him?</em></p>
 
-        <h2 style="margin-top: var(--space-2xl);">The Promise That Changed Everything</h2>
+    <div class="amari-image-section">
+      <img src="images/Amari boy.avif" alt="Amari - the boy who inspired the Amari Method">
+      <p class="amari-caption">Amari - The inspiration behind the Amari Method</p>
+    </div>
 
-        <p style="line-height: 1.8; margin-bottom: var(--space-lg);">
-          Years later, during his final year of chiropractic school, something happened that would shape Dr. Hewstan's life's mission. A student clinic patient named Phyllis shared heartbreaking news: her 11-year-old grandson, Amari, had just passed away from complications of asthma.
-        </p>
+    <div class="promise-highlight">
+      <p>In that moment, Garrett made a promise—to Amari, to his younger self, and to every person struggling with chronic pain or dysfunction—that he would dedicate his life to making natural healing accessible, effective, and empowering.</p>
+    </div>
 
-        <p style="line-height: 1.8; margin-bottom: var(--space-lg);">
-          Amari was the same age Dr. Hewstan had been when chiropractic care saved his life. Garrett couldn't help but wonder: <em>What if I could have helped him?</em>
-        </p>
+    <h2>The Amari Method</h2>
+    <p>The result is the Amari Method: a seven-step protocol that delivers immediate relief while teaching clients how to care for their bodies for life. No ongoing dependency. No quick fixes. Just sustainable healing that starts in the first session.</p>
 
-        <div style="background: #f0f8f5; padding: var(--space-lg); border-radius: 8px; border: 2px solid var(--primary-teal); margin-bottom: var(--space-lg);">
-          <p style="font-size: 1.15rem; font-weight: 600; color: var(--primary-teal); margin-bottom: var(--space-md);">
-            In that moment, Dr. Garrett made a promise—to Amari, to his younger self, and to every person struggling with chronic pain or dysfunction—that he would dedicate his life to making natural healing accessible, effective, and empowering.
-          </p>
-          <p style="margin-bottom: 0; color: var(--primary-teal);">
-            Every person who finds freedom through the Amari Method carries forward the spirit of that promise—and honors the boy whose name reminds us why this work matters.
-          </p>
-        </div>
-
-        <h2>25 Years of Healing Practice</h2>
-
-        <p style="line-height: 1.8; margin-bottom: var(--space-lg);">
-          Since that promise, Dr. Hewstan has spent over 25 years refining his healing methodology. He's worked with thousands of patients—from athletes to office workers, from acute injuries to decades of chronic pain. Through careful observation and continuous learning, he developed what is now the Amari Method: a seven-step protocol that delivers immediate relief while teaching clients how to care for their bodies for life.
-        </p>
-
-        <p style="line-height: 1.8; margin-bottom: var(--space-lg);">
-          No ongoing dependency. No quick fixes. Just sustainable healing that starts in the first session and continues for a lifetime.
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-lg); margin-bottom: var(--space-2xl);">
-          <div style="text-align: center; padding: var(--space-lg); background: var(--accent-cream); border-radius: 8px;">
-            <div class="stat-number" style="margin-bottom: var(--space-sm);">5,000+</div>
-            <div class="stat-label">People healed</div>
-          </div>
-          <div style="text-align: center; padding: var(--space-lg); background: var(--accent-cream); border-radius: 8px;">
-            <div class="stat-number" style="margin-bottom: var(--space-sm);">25</div>
-            <div class="stat-label">Years of practice</div>
-          </div>
-          <div style="text-align: center; padding: var(--space-lg); background: var(--accent-cream); border-radius: 8px;">
-            <div class="stat-number" style="margin-bottom: var(--space-sm);">90%</div>
-            <div class="stat-label">Improvement in first session</div>
-          </div>
-        </div>
-      </div>
+    <div class="method-highlight">
+      <h3>Why the Name "Amari"?</h3>
+      <p>Every person who finds freedom through the Amari Method carries forward the spirit of that promise—and honors the boy whose name reminds us why this work matters. The Amari Method exists because of one child's story, and it continues to transform lives in his honor.</p>
     </div>
   </section>
 
-  <!-- ===== APPROACH SECTION ===== -->
-  <section style="background: var(--accent-cream);">
-    <div class="container">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 class="text-center" style="margin-bottom: var(--space-2xl);">Dr. Hewstan's Approach to Healing</h2>
-
-        <div class="card-grid">
-          <div class="card">
-            <h3>Listener First</h3>
-            <p>Dr. Garrett truly hears your story. Your pain isn't a symptom to treat—it's a message from your body. Understanding that message is where healing begins.</p>
-          </div>
-
-          <div class="card">
-            <h3>Teacher, Not Provider</h3>
-            <p>Rather than keeping you dependent on appointments, Dr. Garrett teaches you to heal yourself. You learn not just what to do, but why—and how to apply it for life.</p>
-          </div>
-
-          <div class="card">
-            <h3>Connector of Mind & Body</h3>
-            <p>Dr. Hewstan understands that pain isn't just physical. It's emotional, neurological, and psychological. True healing integrates all these aspects.</p>
-          </div>
-
-          <div class="card">
-            <h3>Lifelong Learner</h3>
-            <p>After 25 years, Dr. Garrett continues studying, learning, and refining his methods. His commitment to excellence means you always get the best of what he knows.</p>
-          </div>
-        </div>
-      </div>
-    </div>
+  <!-- Closing Section -->
+  <section class="closing-section">
+    <p><strong>This is why we do what we do.</strong></p>
+    <p>Natural healing is possible. A different approach can change everything. And when you find freedom through the Amari Method, you're part of a legacy of healing that honors a promise made years ago.</p>
+    <p style="margin-top: 2rem;"><em>Ready to start your healing journey?</em></p>
   </section>
-
-  <!-- ===== TESTIMONIALS SECTION ===== -->
-  <section>
-    <div class="container">
-      <h2 class="section-title">What Clients Say About Working with Dr. Garrett</h2>
-
-      <div style="max-width: 900px; margin: 0 auto;">
-        <div class="testimonial">
-          <p class="testimonial-quote">"Dr. Garrett didn't just fix my pain—he empowered me to take my health into my own hands. The difference is remarkable."</p>
-          <p class="testimonial-author">Sara</p>
-          <p class="testimonial-role">Student & Mother of Six</p>
-        </div>
-
-        <div class="testimonial">
-          <p class="testimonial-quote">"After 15 years of pain and unsuccessful treatments, I found relief in my first session with Dr. Garrett. His understanding and approach are completely different."</p>
-          <p class="testimonial-author">Justin</p>
-          <p class="testimonial-role">Handyman</p>
-        </div>
-
-        <div class="testimonial">
-          <p class="testimonial-quote">"Dr. Garrett's method works because he understands the whole person, not just the pain. Truly transformational."</p>
-          <p class="testimonial-author">Maria</p>
-          <p class="testimonial-role">Graphic Designer</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== VALUES SECTION ===== -->
-  <section style="background: var(--accent-cream);">
-    <div class="container">
-      <div style="max-width: 900px; margin: 0 auto;">
-        <h2 class="text-center" style="margin-bottom: var(--space-2xl);">What Guides Our Work</h2>
-
-        <div style="display: grid; gap: var(--space-lg);">
-          <div style="padding: var(--space-lg); background: white; border-radius: 8px;">
-            <h3 style="color: var(--primary-teal); margin-bottom: var(--space-md);">Your Success is Our Mission</h3>
-            <p>We're not here to create dependent clients. We're here to give you the tools and knowledge to be independent. Your freedom is our success.</p>
-          </div>
-
-          <div style="padding: var(--space-lg); background: white; border-radius: 8px;">
-            <h3 style="color: var(--primary-teal); margin-bottom: var(--space-md);">Natural Healing Over Everything</h3>
-            <p>We believe your body has the wisdom to heal itself. Our job is to remove the obstacles and teach you how to support that natural process.</p>
-          </div>
-
-          <div style="padding: var(--space-lg); background: white; border-radius: 8px;">
-            <h3 style="color: var(--primary-teal); margin-bottom: var(--space-md);">Honesty and Real Results</h3>
-            <p>We don't make promises we can't keep. We're honest about what the Amari Method can do—and we stand behind our satisfaction guarantee.</p>
-          </div>
-
-          <div style="padding: var(--space-lg); background: white; border-radius: 8px;">
-            <h3 style="color: var(--primary-teal); margin-bottom: var(--space-md);">Accessibility for Everyone</h3>
-            <p>Natural healing shouldn't be a luxury. That's why we offer virtual sessions nationwide and multiple service options to meet you where you are.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== CTA SECTION ===== -->
-  <section style="background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-dark) 100%); color: white; text-align: center;">
-    <div class="container">
-      <h2 style="color: white; margin-bottom: var(--space-lg);">Experience Dr. Hewstan's Healing Approach</h2>
-      <p style="color: rgba(255,255,255,0.9); margin-bottom: var(--space-lg); font-size: 1.05rem;">Start with a free 2-minute assessment or schedule your first session.</p>
-      <a href="https://quiz.amarimethod.com" class="btn" style="background-color: white; color: var(--primary-teal); margin-right: var(--space-md); margin-bottom: var(--space-md);">Get Free Assessment</a>
-      <a href="https://www.amarimethod.com/booking" class="btn" style="background-color: rgba(255,255,255,0.2); color: white; border-color: white; margin-bottom: var(--space-md);">Book Your Session</a>
-    </div>
-  </section>
-
 </main>
 
-<!-- ===== FOOTER ===== -->
+<!-- Footer -->
 <footer>
-  <div class="container footer-content">
-    <div class="footer-section">
-      <h4>Amari Method</h4>
-      <p>Natural pain relief and body alignment for lasting wellness.</p>
-      <p style="margin-top: var(--space-md);">
-        <strong>Email:</strong> <a href="mailto:hello@amarihealth.com">hello@amarihealth.com</a><br>
-        <strong>Location:</strong> San Francisco, CA
-      </p>
+    <div style="padding: 0 2.5rem; border-bottom: 1px solid #e8e8e6; margin-bottom: 3rem; padding-bottom: 2rem;">
+        <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto;">
     </div>
-
-    <div class="footer-section">
-      <h4>Quick Links</h4>
-      <ul style="list-style: none; margin: 0;">
-        <li><a href="index.html#how-it-works">How It Works</a></li>
-        <li><a href="how-it-works.html">Our Method</a></li>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="contact.html">Contact</a></li>
-      </ul>
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Amari Method</h3>
+            <p>Freedom From Pain. Results For Life.</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">
+                hello@amarihealth.com<br>
+                San Francisco, CA
+            </p>
+        </div>
+        <div class="footer-section">
+            <h3>Services</h3>
+            <ul>
+                <li><a href="in-person-sessions.html">In-Person Sessions</a></li>
+                <li><a href="virtual-sessions.html">Virtual Sessions</a></li>
+                <li><a href="booking.html">Online Program</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Company</h3>
+            <ul>
+                <li><a href="about.html">About</a></li>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h3>Get Started</h3>
+            <ul>
+                <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
+                <li><a href="booking.html">View Pricing & Packages</a></li>
+                <li><a href="index.html#services">Book Your Session</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
+            </ul>
+        </div>
     </div>
-
-    <div class="footer-section">
-      <h4>Get Started</h4>
-      <ul style="list-style: none; margin: 0;">
-        <li><a href="https://quiz.amarimethod.com">Free Assessment</a></li>
-        <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
-        <li><a href="https://www.amarimethod.com/booking">Book Session</a></li>
-      </ul>
+    <div class="footer-bottom">
+        <p>Made by Forrest Designs | <a href="#">Privacy Policy</a> | <a href="#">Terms of Use</a> | © 2025 Amari Method</p>
     </div>
-
-    <div class="footer-section">
-      <h4>Follow Us</h4>
-      <ul style="list-style: none; margin: 0;">
-        <li><a href="https://www.instagram.com/hewstanhealth/" target="_blank">Instagram</a></li>
-        <li><a href="https://open.spotify.com/playlist/7yA6szj3KB0AMpbhiKhPSM" target="_blank">Spotify</a></li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="footer-bottom">
-    <p>© 2025 Amari Method. All rights reserved. | <a href="privacy-policy.html" style="color: inherit;">Privacy Policy</a> | <a href="terms-of-use.html" style="color: inherit;">Terms of Use</a></p>
-  </div>
 </footer>
 
 <script src="js/main.js"></script>

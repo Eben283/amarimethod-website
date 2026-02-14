@@ -120,13 +120,19 @@ header {
   transition: all 0.3s ease;
 }
 
-header nav {
+header nav,
+nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
   max-width: 100%;
   margin: 0 auto;
   padding: 0 2.5rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 1000;
 }
 
 .logo {
@@ -1272,12 +1278,16 @@ footer {
     padding: 1rem 0;
   }
 
-  header nav {
+  header nav,
+  nav {
     padding: 0 1.5rem;
   }
 
   .menu-toggle {
     display: block;
+    font-size: 1.5rem;
+    color: var(--color-text);
+    padding: 0.5rem;
   }
 
   .nav-menu {
@@ -1291,6 +1301,7 @@ footer {
     background: white;
     border-bottom: 1px solid var(--color-border);
     padding: 1rem 0;
+    z-index: 999;
   }
 
   .nav-menu.active {
