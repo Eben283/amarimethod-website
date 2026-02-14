@@ -1302,9 +1302,9 @@ footer {
   }
 
   .nav-menu {
-    display: none;
+    display: none !important;
     position: absolute;
-    top: 100%;
+    top: 60px;
     left: 0;
     right: 0;
     flex-direction: column;
