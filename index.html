@@ -416,26 +416,69 @@
         }
 
         .step-card {
-            background: var(--light-tan);
-            padding: 2rem;
-            border-radius: 8px;
+            background: white;
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
             text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #1a1a1a;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .step-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .step-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
         }
 
         .step-number {
-            font-size: 1.5rem;
+            font-size: 2rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 1rem;
-            width: 60px;
-            height: 60px;
-            background: var(--primary-teal);
+            margin-bottom: 1.5rem;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-left: 0;
+            margin-left: auto;
             margin-right: auto;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-card h3 {
+            font-size: 1.35rem;
+            margin-bottom: 1rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .step-card p {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.6;
         }
 
         /* Services/Journal Section */
