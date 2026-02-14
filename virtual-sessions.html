@@ -160,10 +160,16 @@
             text-align: center;
             padding: 5rem 2rem;
             background: white;
+            min-height: 40vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
 
         .hero h1 {
             margin-bottom: 1.5rem;
+            max-width: 900px;
         }
 
         .hero-subtitle {
@@ -171,6 +177,7 @@
             color: var(--text-gray);
             max-width: 600px;
             margin: 0 auto 2rem;
+            line-height: 1.6;
         }
 
         /* Sessions Grid */
@@ -404,7 +411,18 @@
             }
 
             .hero {
-                padding: 3rem 1rem;
+                padding: 2.5rem 1rem;
+                min-height: auto;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 1.5rem;
             }
 
             .cta-buttons {
@@ -413,6 +431,38 @@
 
             .cta-buttons .btn-primary {
                 width: 100%;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        /* Tablet */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            h1 {
+                font-size: 3rem;
+            }
+
+            h2 {
+                font-size: 2rem;
+            }
+
+            .hero {
+                padding: 4rem 2rem;
+                min-height: 50vh;
+            }
+
+            .sessions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
