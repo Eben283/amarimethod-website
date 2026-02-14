@@ -343,6 +343,45 @@
             direction: ltr;
         }
 
+        /* Why Amari Section Styling */
+        .section-two-col h3 {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            line-height: 1.3;
+            font-weight: 500;
+        }
+
+        .section-two-col ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .section-two-col li {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+            color: #555;
+            line-height: 1.7;
+        }
+
+        .section-two-col li::before {
+            content: "✓";
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            min-width: 28px;
+            background: #1a1a1a;
+            color: white;
+            border-radius: 50%;
+            margin-right: 1.2rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
         /* Testimonials Section */
         .testimonials-grid {
             display: grid;
@@ -1050,6 +1089,24 @@
                 gap: 2rem;
             }
 
+            .section-two-col h3 {
+                font-size: 1.4rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .section-two-col li {
+                font-size: 0.95rem;
+                margin-bottom: 1.2rem;
+            }
+
+            .section-two-col li::before {
+                width: 24px;
+                height: 24px;
+                min-width: 24px;
+                margin-right: 1rem;
+                font-size: 0.8rem;
+            }
+
             .hero {
                 min-height: auto;
                 padding: 3rem 1rem;
@@ -1267,14 +1324,14 @@
             <div class="section-two-col">
                 <div>
                     <h3>A proven approach with immediate results</h3>
-                    <ul style="margin-top: 1.5rem; margin-left: 1.5rem;">
-                        <li style="margin-bottom: 1rem;">Gentle approach with immediate results</li>
-                        <li style="margin-bottom: 1rem;">Understand the root cause of your pain</li>
-                        <li style="margin-bottom: 1rem;">Learn alignment techniques you can use daily</li>
-                        <li style="margin-bottom: 1rem;">No medications or surgery required</li>
-                        <li style="margin-bottom: 1rem;">Expert-guided sessions in-person and virtually</li>
+                    <ul>
+                        <li>Gentle approach with immediate results</li>
+                        <li>Understand the root cause of your pain</li>
+                        <li>Learn alignment techniques you can use daily</li>
+                        <li>No medications or surgery required</li>
+                        <li>Expert-guided sessions in-person and virtually</li>
                     </ul>
-                    <a href="#services" class="btn-primary" style="margin-top: 2rem;"><span>Learn More</span></a>
+                    <a href="#services" class="btn-primary" style="margin-top: 2.5rem;"><span>Learn More</span></a>
                 </div>
                 <div>
                     <img src="images/Garrett working with patient.avif" alt="Dr. Garrett working with patient" style="border-radius: 12px;">
