@@ -336,6 +336,12 @@ nav {
 
 .btn-text {
   display: inline;
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-primary:hover .btn-text,
+.btn-secondary:hover .btn-text {
+  transform: translateX(1.7rem);
 }
 
 .btn-secondary {
