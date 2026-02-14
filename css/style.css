@@ -127,12 +127,13 @@ nav {
   justify-content: space-between;
   max-width: 100%;
   margin: 0 auto;
-  padding: 0 2.5rem;
+  padding: 1rem 2.5rem;
   position: sticky;
   top: 0;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--color-border);
   z-index: 1000;
+  min-height: 70px;
 }
 
 .logo {
