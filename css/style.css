@@ -606,7 +606,6 @@ nav {
   border: 1px solid #d1e8eb !important;
   display: block !important;
   flex-basis: auto !important;
-  min-width: 250px !important;
 }
 
 .step-number,
@@ -1437,7 +1436,8 @@ footer {
     gap: 2rem;
   }
 
-  .step-card {
+  .step-card,
+  .how-card {
     min-width: 100% !important;
   }
 
