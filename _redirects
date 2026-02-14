@@ -1,0 +1,11 @@
+# Redirects for clean URLs and trailing slashes
+# Cloudflare Pages will automatically handle these
+
+# No www to www redirect (already configured in DNS)
+# But keeping this for reference if needed later
+
+# Redirect old Framer links if migrating
+# /old-page /index.html 301
+
+# SPA fallback - redirect 404s to index for single-page-app routing
+# Not needed here since we have static pages
