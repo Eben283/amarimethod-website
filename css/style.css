@@ -334,13 +334,13 @@ nav {
 
 .btn-text {
   display: inline;
-  transition: margin-left 0.3s cubic-bezier(0.2, 0, 0, 1);
-  margin-left: 0;
+  transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transform: translateX(0);
 }
 
 .btn-primary:hover .btn-text,
 .btn-secondary:hover .btn-text {
-  margin-left: 0.5rem;
+  transform: translateX(0.5rem);
 }
 
 .btn-secondary {
