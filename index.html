@@ -720,48 +720,84 @@
             background: linear-gradient(135deg, #2d5a5f 0%, #3d6b71 100%);
             padding: 3.5rem 3rem;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-highlights::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         .highlight-item {
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2rem 1.5rem;
+            border-radius: 16px;
             text-align: center;
-            border: none;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             position: relative;
-            overflow: visible;
+            overflow: hidden;
+            z-index: 1;
         }
 
         .highlight-item::before {
-            display: none;
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .highlight-item:hover {
-            border-color: transparent;
-            box-shadow: none;
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
         }
 
         .highlight-item:hover::before {
-            display: none;
+            transform: scaleX(1);
         }
 
         .highlight-number {
-            font-size: 4rem;
-            font-weight: 700;
+            font-size: 4.5rem;
+            font-weight: 800;
             color: white;
             line-height: 1;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             font-family: 'Bona Nova', serif;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .highlight-item:hover .highlight-number {
+            font-size: 5rem;
+            color: #f0f0f0;
         }
 
         .highlight-label {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.85);
-            font-weight: 500;
-            letter-spacing: 0.3px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 0.5px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .highlight-item:hover .highlight-label {
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -1468,7 +1504,7 @@
                             <div class="highlight-label">Years of Experience</div>
                         </div>
                         <div class="highlight-item">
-                            <div class="highlight-number">1000s</div>
+                            <div class="highlight-number">1000's</div>
                             <div class="highlight-label">Lives Transformed</div>
                         </div>
                         <div class="highlight-item">
@@ -1754,17 +1790,17 @@
             let currentValue = 0;
             const isThousands = element.textContent.includes('1000');
             const target = isThousands ? 1000 : (finalValue === '25+' ? 25 : 1);
-            const duration = 1500; // milliseconds
+            const duration = 2000; // milliseconds
             const startTime = Date.now();
 
             function update() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                // Easing function for smooth animation
-                const easeOutQuad = 1 - Math.pow(1 - progress, 2);
+                // Easing function for smooth animation with deceleration
+                const easeOutCubic = 1 - Math.pow(1 - progress, 3);
 
-                currentValue = Math.floor(easeOutQuad * target);
+                currentValue = Math.floor(easeOutCubic * target);
 
                 if (isThousands) {
                     element.textContent = currentValue + '+';
