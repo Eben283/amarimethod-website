@@ -994,7 +994,7 @@ nav {
 }
 
 .faq-container {
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
@@ -1474,8 +1474,8 @@ footer {
   }
 
   .footer-content {
-    grid-template-columns: 1fr;
-    gap: 2rem;
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
   }
 }
 
