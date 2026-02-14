@@ -1130,6 +1130,141 @@
             line-height: 1.7;
         }
 
+        /* Assessment Section */
+        .assessment-section {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .assessment-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(45, 90, 95, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        .assessment-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .assessment-label {
+            display: inline-block;
+            color: var(--primary-teal);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .assessment-image-frame {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+            transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .assessment-image-wrapper:hover .assessment-image-frame {
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.18);
+            transform: translateY(-8px);
+        }
+
+        .assessment-image-frame img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .assessment-image-wrapper:hover .assessment-image-frame img {
+            transform: scale(1.03);
+        }
+
+        .assessment-text h2 {
+            font-size: 2.8rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--text-dark);
+        }
+
+        .assessment-features {
+            margin-bottom: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .assessment-features > div {
+            display: flex;
+            align-items: center;
+            animation: slideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .assessment-features > div:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .assessment-features > div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .assessment-features > div:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .assessment-btn {
+            background: var(--primary-teal) !important;
+            color: white !important;
+            padding: 1.1rem 2.8rem !important;
+            font-size: 1.05rem !important;
+            font-weight: 700 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 8px 24px rgba(45, 90, 95, 0.2) !important;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+        .assessment-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .assessment-btn:hover {
+            background: #245a61 !important;
+            box-shadow: 0 12px 36px rgba(45, 90, 95, 0.3) !important;
+            transform: translateY(-3px) !important;
+        }
+
+        .assessment-btn:hover::before {
+            left: 100%;
+        }
+
         /* FAQ Section */
         .faq-container {
             max-width: 700px;
@@ -1659,18 +1794,35 @@
     </div>
 
     <!-- Discover Your Pain Assessment Section -->
-    <section class="section" style="background: #F6F3E8; padding: 4rem 2rem;">
+    <section class="section assessment-section" style="background: linear-gradient(135deg, #F6F3E8 0%, #f5f0e8 100%); padding: 5rem 2rem;">
         <div class="container">
-            <div class="section-two-col" style="gap: 3rem; align-items: center;">
-                <div style="width: 100%; max-width: 300px;">
-                    <img src="images/Quiz cover image.avif" alt="Body Balance Assessment Quiz" style="width: 100%; border-radius: 12px;">
+            <div class="section-two-col assessment-content" style="gap: 4rem; align-items: center;">
+                <div class="assessment-image-wrapper" style="width: 100%; max-width: 350px;">
+                    <div class="assessment-image-frame">
+                        <img src="images/Quiz cover image.avif" alt="Body Balance Assessment Quiz" style="width: 100%; border-radius: 16px; display: block;">
+                    </div>
                 </div>
-                <div>
-                    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Discover What's Really Causing Your Pain</h2>
-                    <p style="margin-top: 1rem; font-size: 1rem; line-height: 1.8; color: var(--text-dark);">
-                        Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss.
+                <div class="assessment-text">
+                    <span class="assessment-label" style="display: inline-block; color: var(--primary-teal); font-size: 0.85rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 1rem;">Quick Assessment</span>
+                    <h2 style="font-size: 2.8rem; margin-bottom: 1.5rem; font-weight: 700; line-height: 1.3;">Discover What's Really Causing Your Pain</h2>
+                    <p style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.8; color: #666; margin-top: 0;">
+                        Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss. Get personalized insights and discover your path to relief.
                     </p>
-                    <button class="btn-primary" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 2rem; background: var(--text-dark); color: white; font-size: 1rem;"><span>Take 2-Minute Assessment</span></button>
+                    <div class="assessment-features" style="margin-bottom: 2.5rem;">
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary-teal); color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; font-size: 0.9rem; flex-shrink: 0;">✓</span>
+                            <span style="color: #555; font-size: 1rem;">Takes just 2 minutes to complete</span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary-teal); color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; font-size: 0.9rem; flex-shrink: 0;">✓</span>
+                            <span style="color: #555; font-size: 1rem;">Personalized insights delivered instantly</span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: var(--primary-teal); color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; font-size: 0.9rem; flex-shrink: 0;">✓</span>
+                            <span style="color: #555; font-size: 1rem;">No email or commitment required</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary assessment-btn" onclick="window.open('https://quiz.amarimethod.com/', '_blank')" style="margin-top: 0; background: var(--primary-teal); color: white; font-size: 1.05rem; padding: 1.1rem 2.8rem; border-radius: 12px; font-weight: 700; transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block; box-shadow: 0 8px 24px rgba(45, 90, 95, 0.2); cursor: pointer; border: none;"><span>Start Your Assessment</span></button>
                 </div>
             </div>
         </div>
