@@ -972,37 +972,100 @@
 
         /* CTA Section */
         .cta-section {
-            background: var(--primary-teal);
+            background: linear-gradient(135deg, var(--primary-teal) 0%, #2d5a5f 100%);
             color: white;
-            padding: 4rem 2rem;
+            padding: 6rem 2rem;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .cta-section > * {
+            position: relative;
+            z-index: 1;
         }
 
         .cta-section h2 {
             color: white;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
         }
 
         .cta-section p {
-            color: rgba(255,255,255,0.9);
-            max-width: 600px;
-            margin: 1rem auto;
+            color: rgba(255,255,255,0.95);
+            max-width: 700px;
+            margin: 1.5rem auto;
+            font-size: 1.1rem;
+            line-height: 1.7;
         }
 
         .cta-buttons {
             display: flex;
-            gap: 1rem;
+            gap: 1.5rem;
             justify-content: center;
-            margin-top: 2rem;
+            margin-top: 3rem;
             flex-wrap: wrap;
         }
 
         .cta-buttons .btn-primary {
             background: white;
             color: var(--text-dark);
+            padding: 1.1rem 2.8rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border-radius: 12px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-buttons .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.1);
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .cta-buttons .btn-primary:hover {
-            background: var(--background-light);
+            background: #f0f0f0;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.25);
+            transform: translateY(-3px);
+        }
+
+        .cta-buttons .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        /* CTA Image Section Button Enhancement */
+        .cta-image-section-btn {
+            position: relative;
+            overflow: hidden;
+            z-index: 3;
+        }
+
+        .cta-image-section-btn:hover {
+            background: #f5f5f5 !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3) !important;
+            transform: translateY(-4px) !important;
         }
 
         /* Results Section */
@@ -1592,11 +1655,12 @@
     </section>
 
     <!-- Full Width CTA Image -->
-    <div style="margin: 4rem auto; max-width: 900px; border-radius: 20px; overflow: hidden; min-height: 600px; background-image: url('images/waterfall-cta.png'); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.25);"></div>
-        <div style="position: relative; z-index: 2; text-align: center; color: white; max-width: 700px; padding: 2rem;">
-            <h2 style="font-size: 3.5rem; margin-bottom: 2rem; color: white; font-family: 'Bona Nova', serif; line-height: 1.2;">A proven approach to helping you reconnect with your body's wisdom.</h2>
-            <a href="#services" class="btn-primary" style="background: white; color: var(--text-dark); padding: 1rem 2.5rem; font-size: 1.1rem; font-weight: 600;"><span>Book Relief Session</span></a>
+    <div style="margin: 5rem auto; max-width: 1000px; border-radius: 24px; overflow: hidden; min-height: 600px; background-image: url('images/waterfall-cta.png'); background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.45) 100%);"></div>
+        <div style="position: relative; z-index: 2; text-align: center; color: white; max-width: 800px; padding: 3rem 2.5rem;">
+            <h2 style="font-size: 3.8rem; margin-bottom: 2rem; color: white; font-family: 'Bona Nova', serif; line-height: 1.2; font-weight: 700;">A proven approach to helping you reconnect with your body's wisdom.</h2>
+            <p style="font-size: 1.15rem; margin-bottom: 2.5rem; color: rgba(255,255,255,0.95); line-height: 1.7;">Experience immediate relief and lasting transformation in your first session.</p>
+            <a href="#services" class="btn-primary cta-image-section-btn" style="background: white; color: var(--text-dark); padding: 1.2rem 3rem; font-size: 1.15rem; font-weight: 700; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); display: inline-block;"><span>Book Relief Session</span></a>
         </div>
     </div>
 
