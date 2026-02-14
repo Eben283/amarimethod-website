@@ -713,91 +713,85 @@
         .about-highlights {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
+            gap: 4rem 3rem;
             padding-top: 0;
             border-top: none;
-            margin-top: 2.5rem;
-            background: linear-gradient(135deg, #2d5a5f 0%, #3d6b71 100%);
-            padding: 3.5rem 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            margin-top: 3rem;
+            background: transparent;
+            padding: 2.5rem 0;
+            border-radius: 0;
+            box-shadow: none;
             position: relative;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .about-highlights::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%);
-            pointer-events: none;
+            display: none;
         }
 
         .highlight-item {
-            background: rgba(255, 255, 255, 0.08);
-            padding: 2rem 1.5rem;
-            border-radius: 16px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: none;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             position: relative;
-            overflow: hidden;
+            overflow: visible;
             z-index: 1;
         }
 
         .highlight-item::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #2d5a5f, transparent);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .highlight-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+            transform: none;
+            box-shadow: none;
         }
 
         .highlight-item:hover::before {
-            transform: scaleX(1);
+            opacity: 1;
+            width: 80px;
         }
 
         .highlight-number {
-            font-size: 4.5rem;
-            font-weight: 800;
-            color: white;
+            font-size: 5.5rem;
+            font-weight: 900;
+            color: #1a1a1a;
             line-height: 1;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             font-family: 'Bona Nova', serif;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-shadow: none;
+            letter-spacing: -2px;
         }
 
         .highlight-item:hover .highlight-number {
-            font-size: 5rem;
-            color: #f0f0f0;
+            font-size: 6rem;
+            color: var(--primary-teal);
         }
 
         .highlight-label {
-            font-size: 1rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.9);
-            letter-spacing: 0.5px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #555;
+            letter-spacing: 0.3px;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-transform: uppercase;
         }
 
         .highlight-item:hover .highlight-label {
-            color: white;
+            color: #1a1a1a;
         }
 
         @media (max-width: 768px) {
