@@ -305,6 +305,9 @@ nav {
   position: relative;
   overflow: hidden;
   white-space: nowrap;
+  min-width: 160px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .btn:hover,
