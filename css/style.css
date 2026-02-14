@@ -343,6 +343,7 @@ nav {
   text-decoration: none;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
 }
 
 .btn-secondary:hover {
@@ -365,6 +366,7 @@ nav {
   transition: all 0.3s ease;
   position: relative;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .btn-tertiary::after {
