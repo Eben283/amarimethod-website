@@ -87,20 +87,131 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   });
 });
 
-// Track link clicks for analytics (placeholder)
+// ===== GOOGLE ANALYTICS 4 EVENT TRACKING =====
+
+// 1. Track all CTA button clicks (Book Session, Book Now, etc.)
 document.addEventListener('click', function(e) {
-  const link = e.target.closest('a[href*="booking"], a[href*="discoverycall"], a[href*="quiz"]');
-  if (link && typeof gtag !== 'undefined') {
-    gtag('event', 'booking_click', {
-      'link_url': link.href,
-      'link_text': link.textContent
+  const button = e.target.closest('.btn-primary, .btn-secondary, a[href*="booking"], a[href*="discoverycall"]');
+  if (button && typeof gtag !== 'undefined') {
+    const buttonText = button.textContent.trim();
+    const buttonHref = button.getAttribute('href') || 'internal-link';
+    const pageLocation = window.location.pathname;
+
+    gtag('event', 'cta_button_click', {
+      'event_category': 'engagement',
+      'event_label': buttonText,
+      'button_text': buttonText,
+      'button_url': buttonHref,
+      'page_location': pageLocation,
+      'value': 1
     });
   }
 });
 
-// Google Analytics tracking
+// 2. Track scroll depth
+let scrollDepthTracked = {
+  '25': false,
+  '50': false,
+  '75': false,
+  '100': false
+};
+
+window.addEventListener('scroll', function() {
+  if (typeof gtag === 'undefined') return;
+
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+  const scrollTop = window.scrollY;
+
+  // Calculate scroll percentage
+  const scrollPercent = Math.round(((scrollTop + windowHeight) / documentHeight) * 100);
+
+  // Track milestones
+  if (scrollPercent >= 25 && !scrollDepthTracked['25']) {
+    scrollDepthTracked['25'] = true;
+    gtag('event', 'scroll_depth', {
+      'event_category': 'engagement',
+      'event_label': '25%',
+      'scroll_depth': '25%'
+    });
+  }
+
+  if (scrollPercent >= 50 && !scrollDepthTracked['50']) {
+    scrollDepthTracked['50'] = true;
+    gtag('event', 'scroll_depth', {
+      'event_category': 'engagement',
+      'event_label': '50%',
+      'scroll_depth': '50%'
+    });
+  }
+
+  if (scrollPercent >= 75 && !scrollDepthTracked['75']) {
+    scrollDepthTracked['75'] = true;
+    gtag('event', 'scroll_depth', {
+      'event_category': 'engagement',
+      'event_label': '75%',
+      'scroll_depth': '75%'
+    });
+  }
+
+  if (scrollPercent >= 100 && !scrollDepthTracked['100']) {
+    scrollDepthTracked['100'] = true;
+    gtag('event', 'scroll_depth', {
+      'event_category': 'engagement',
+      'event_label': '100%',
+      'scroll_depth': '100%'
+    });
+  }
+});
+
+// 3. Track time on page (every 30 seconds)
+let pageStartTime = Date.now();
+setInterval(function() {
+  if (typeof gtag !== 'undefined') {
+    const timeOnPage = Math.round((Date.now() - pageStartTime) / 1000);
+
+    // Only track significant time milestones (30s, 60s, 120s, 300s)
+    if ([30, 60, 120, 300].includes(timeOnPage)) {
+      gtag('event', 'page_engagement', {
+        'event_category': 'engagement',
+        'event_label': `${timeOnPage}s on page`,
+        'engagement_time_msec': timeOnPage * 1000
+      });
+    }
+  }
+}, 30000);
+
+// 4. Track form interactions
+document.addEventListener('focusin', function(e) {
+  const form = e.target.closest('form');
+  const inputField = e.target.closest('input, textarea, select');
+
+  if (form && inputField && typeof gtag !== 'undefined') {
+    gtag('event', 'form_interaction', {
+      'event_category': 'engagement',
+      'event_label': inputField.name || inputField.type,
+      'form_id': form.id || 'unknown'
+    });
+  }
+});
+
+// 5. Track external link clicks
+document.addEventListener('click', function(e) {
+  const link = e.target.closest('a[target="_blank"], a[href^="http"]');
+  if (link && typeof gtag !== 'undefined') {
+    // Only track if it's truly external (not amarimethod.com)
+    if (!link.href.includes('amarimethod.com')) {
+      gtag('event', 'external_link_click', {
+        'event_category': 'engagement',
+        'event_label': link.href,
+        'link_text': link.textContent.trim()
+      });
+    }
+  }
+});
+
+// Google Analytics initialization (GA4 script is loaded in HTML head)
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
-// Note: Add your GA4 ID in the index.html header:
-// <script async src="https://www.googletagmanager.com/gtag/js?id=YOUR_GA4_ID"></script>
+// Note: GA4 measurement ID is configured in each page's HTML head
