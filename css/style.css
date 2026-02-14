@@ -178,19 +178,26 @@ nav {
 }
 
 .nav-cta {
-  font-family: var(--font-sans-primary);
-  padding: 0.75rem 1.5rem;
-  background: var(--color-primary);
+  background: #000000;
   color: white;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: none;
   border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  transition: background 0.3s ease, transform 0.2s ease;
+  font-family: var(--font-sans-primary);
+  font-size: 0.95rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  text-decoration: none;
+  position: relative;
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .nav-cta:hover {
-  background: var(--color-accent-teal-dark);
-  transform: translateY(-1px);
+  background: #000000;
+  color: white;
 }
 
 .menu-toggle {
@@ -275,20 +282,6 @@ nav {
   gap: 2rem;
 }
 
-.btn {
-  display: inline-block;
-  padding: 0.9rem 2rem;
-  border: none;
-  border-radius: 4px;
-  font-family: var(--font-sans-primary);
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  text-decoration: none;
-}
-
-.btn,
 .btn-primary {
   background: #000000;
   color: white;
@@ -307,7 +300,6 @@ nav {
   white-space: nowrap;
 }
 
-.btn:hover,
 .btn-primary:hover {
   background: #000000;
   color: white;
@@ -1113,19 +1105,6 @@ nav {
   z-index: 1;
 }
 
-.btn-secondary {
-  background: white;
-  color: var(--color-primary);
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.btn-secondary:hover {
-  background: #f0f8f9;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
 
 /* ===== FOOTER ===== */
 footer {
@@ -1412,10 +1391,6 @@ footer {
     font-size: 0.95rem;
   }
 
-  .btn-primary {
-    display: none;
-  }
-
   h1 {
     font-size: 2.5rem;
   }
@@ -1464,10 +1439,6 @@ footer {
 
   .cta-buttons {
     flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
   }
 
   .final-cta-section {
@@ -1527,11 +1498,6 @@ footer {
   .nav-cta {
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
-  }
-
-  .btn {
-    padding: 0.9rem 1.5rem;
-    font-size: 0.9rem;
   }
 
   .footer-grid {
