@@ -1344,6 +1344,7 @@ footer {
     position: sticky;
     justify-content: center;
     position: relative;
+    border-bottom: none !important;
   }
 
   .menu-toggle {
@@ -1433,6 +1434,10 @@ footer {
   .testimonials-grid,
   .services-grid {
     grid-template-columns: 1fr;
+  }
+
+  .step-card {
+    min-width: 100% !important;
   }
 
   .hero-video {
