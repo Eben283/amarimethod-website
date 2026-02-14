@@ -303,7 +303,7 @@ nav {
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
   text-decoration: none;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   white-space: nowrap;
 }
 
