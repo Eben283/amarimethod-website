@@ -358,29 +358,14 @@
         }
 
         .section-two-col li {
-            list-style-type: none !important;
+            list-style: none !important;
             margin-bottom: 1.5rem;
             font-size: 1.05rem;
             color: #555;
             line-height: 1.7;
-            padding-left: 0;
-        }
-
-        .section-two-col li::before {
-            content: "✓ ";
-            display: inline-block;
-            width: 28px;
-            height: 28px;
-            background: #1a1a1a;
-            color: white;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 28px;
-            margin-right: 12px;
-            font-weight: 700;
-            font-size: 0.9rem;
-            vertical-align: middle;
-            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 0;
         }
 
         /* Testimonials Section */
@@ -1325,11 +1310,11 @@
                 <div>
                     <h3>A proven approach with immediate results</h3>
                     <ul>
-                        <li>Gentle approach with immediate results</li>
-                        <li>Understand the root cause of your pain</li>
-                        <li>Learn alignment techniques you can use daily</li>
-                        <li>No medications or surgery required</li>
-                        <li>Expert-guided sessions in-person and virtually</li>
+                        <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>Gentle approach with immediate results</li>
+                        <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>Understand the root cause of your pain</li>
+                        <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>Learn alignment techniques you can use daily</li>
+                        <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>No medications or surgery required</li>
+                        <li><span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; background: #1a1a1a; color: white; border-radius: 50%; font-weight: 700; margin-right: 12px; flex-shrink: 0;">✓</span>Expert-guided sessions in-person and virtually</li>
                     </ul>
                     <a href="#services" class="btn-primary" style="margin-top: 2.5rem;"><span>Learn More</span></a>
                 </div>
