@@ -511,10 +511,12 @@
         .service-feature {
             display: flex;
             align-items: flex-start;
+            justify-content: flex-start;
             margin-bottom: 0.9rem;
             font-size: 0.85rem;
             color: #666;
             line-height: 1.5;
+            text-align: left;
         }
 
         .service-feature::before {
@@ -700,12 +702,28 @@
                 gap: 2rem;
             }
 
+            .journal-card {
+                text-align: center;
+            }
+
             .journal-card.featured {
                 transform: scale(1);
             }
 
             .journal-card.featured:hover {
                 transform: translateY(-8px);
+            }
+
+            .service-features {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .service-feature {
+                justify-content: center;
+                text-align: center;
+                max-width: 280px;
             }
         }
 
