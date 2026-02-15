@@ -1188,6 +1188,7 @@
             .section-two-col {
                 grid-template-columns: 1fr;
                 gap: 2rem;
+                text-align: center;
             }
 
             .section-two-col h3 {
@@ -1195,16 +1196,44 @@
                 margin-bottom: 1.5rem;
             }
 
+            .section-two-col ul {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
             .section-two-col li {
                 font-size: 0.95rem;
                 margin-bottom: 1.2rem;
-                padding-left: 44px;
+                padding-left: 0;
+                max-width: 400px;
+                text-align: left;
             }
 
             .section-two-col li::before {
                 width: 28px;
                 height: 28px;
                 font-size: 0.85rem;
+            }
+
+            .section-two-col .btn-primary,
+            .section-two-col .btn-secondary {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .assessment-text {
+                text-align: center;
+            }
+
+            .assessment-features {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .assessment-image-wrapper {
+                margin: 0 auto;
             }
 
             .hero {
