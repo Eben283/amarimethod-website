@@ -1060,33 +1060,36 @@
 
         /* FAQ Section */
         .faq-container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
-            margin-top: 3rem;
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
         }
 
         .faq-item {
             background: white;
             border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
+            border-radius: 8px;
             overflow: hidden;
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
 
         .faq-item:hover {
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
             border-color: var(--text-dark);
         }
 
         .faq-header {
-            padding: 1.75rem 2rem;
+            padding: 1.25rem 1.5rem;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             user-select: none;
-            font-weight: 600;
+            font-weight: 500;
+            font-size: 0.95rem;
             color: var(--text-dark);
             transition: background 0.3s ease;
         }
@@ -1096,12 +1099,12 @@
         }
 
         .faq-toggle {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             transition: transform 0.3s ease;
             flex-shrink: 0;
             margin-left: 1rem;
@@ -1122,10 +1125,10 @@
         }
 
         .faq-body {
-            padding: 0 2rem 1.75rem 2rem;
+            padding: 0 1.5rem 1.25rem 1.5rem;
             color: #666;
-            line-height: 1.8;
-            font-size: 0.95rem;
+            line-height: 1.7;
+            font-size: 0.9rem;
         }
 
         /* Footer */
@@ -1297,12 +1300,19 @@
                 font-size: 2.5rem;
             }
 
+            .faq-container {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
             .faq-header {
-                padding: 1.25rem 1.5rem;
+                padding: 1.1rem 1.25rem;
+                font-size: 0.9rem;
             }
 
             .faq-body {
-                padding: 0 1.5rem 1.25rem 1.5rem;
+                padding: 0 1.25rem 1.1rem 1.25rem;
+                font-size: 0.85rem;
             }
 
             .footer-content {
