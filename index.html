@@ -95,18 +95,6 @@
     <noscript><link rel="stylesheet" href="css/style.css?v=2"></noscript>
 
     <style>
-        /* Color Tokens (Minimal Therabody-inspired Palette) */
-        :root {
-            --bg-cream: #ffffff;
-            --primary-red: #b03730;
-            --text-dark: #1a1a1a;
-            --text-gray: #666666;
-            --text-light-gray: #999999;
-            --border-light: #e5e5e5;
-            --background-light: #f8f8f8;
-            --white: #ffffff;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
@@ -115,8 +103,8 @@
 
         html, body {
             height: 100%;
-            background-color: var(--white);
-            color: var(--text-dark);
+            background-color: #ffffff;
+            color: var(--color-text);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -190,7 +178,7 @@
         }
 
         a {
-            color: var(--text-dark);
+            color: var(--color-text);
             text-decoration: none;
             transition: color 0.3s ease;
         }
@@ -204,7 +192,7 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            background: var(--bg-cream);
+            background: #ffffff;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -227,7 +215,7 @@
 
         nav a {
             font-size: 0.95rem;
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         /* Button styles now defined in global style.css */
@@ -376,7 +364,7 @@
         .testimonial-quote {
             font-style: italic;
             margin-bottom: 1rem;
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         .testimonial-author {
@@ -426,7 +414,7 @@
         .step-card h3 {
             font-size: 1.35rem;
             margin-bottom: 1rem;
-            color: var(--text-dark);
+            color: var(--color-text);
             font-weight: 600;
         }
 
@@ -487,7 +475,7 @@
 
         .journal-card h3 {
             font-size: 1.3rem;
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 0.8rem;
             font-weight: 600;
             letter-spacing: -0.3px;
@@ -603,7 +591,7 @@
 
         .about-label {
             display: inline-block;
-            color: var(--primary-teal);
+            color: var(--color-primary);
             font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 1.2px;
@@ -614,7 +602,7 @@
         .about-intro {
             font-size: 1.15rem;
             line-height: 1.8;
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 1.5rem;
             font-weight: 500;
         }
@@ -735,7 +723,7 @@
 
         /* Testimonials Scroll Section */
         .testimonials-scroll-section {
-            background: var(--bg-cream);
+            background: #ffffff;
             padding: 6rem 2rem;
             overflow: hidden;
         }
@@ -792,14 +780,14 @@
             font-size: 0.95rem;
             line-height: 1.7;
             margin-bottom: 1.5rem;
-            color: var(--text-dark);
+            color: var(--color-text);
             font-style: italic;
             flex-grow: 1;
         }
 
         .testimonial-scroll-card .testimonial-author {
             font-weight: 700;
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 0.4rem;
             font-size: 1rem;
         }
@@ -860,7 +848,7 @@
 
         /* CTA Section */
         .cta-section {
-            background: linear-gradient(135deg, var(--primary-teal) 0%, #2d5a5f 100%);
+            background: linear-gradient(135deg, var(--color-primary) 0%, #2d5a5f 100%);
             color: white;
             padding: 6rem 2rem;
             text-align: center;
@@ -951,7 +939,7 @@
         .result-label {
             font-size: 1.15rem;
             font-weight: 700;
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 1rem;
             letter-spacing: -0.3px;
         }
@@ -987,7 +975,7 @@
 
         .assessment-label {
             display: inline-block;
-            color: var(--primary-teal);
+            color: var(--color-primary);
             font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 1.2px;
@@ -1019,7 +1007,7 @@
             margin-bottom: 1.5rem;
             font-weight: 700;
             line-height: 1.3;
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         .assessment-features {
@@ -1077,7 +1065,7 @@
 
         .faq-item:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-            border-color: var(--text-dark);
+            border-color: var(--color-text);
         }
 
         .faq-header {
@@ -1090,12 +1078,12 @@
             font-weight: 500;
             font-size: 15px !important;
             line-height: 1.5 !important;
-            color: var(--text-dark);
+            color: var(--color-text);
             transition: background 0.3s ease;
         }
 
         .faq-item.active .faq-header {
-            background: var(--background-light);
+            background: #f8f8f8;
         }
 
         .faq-toggle {
@@ -1133,9 +1121,9 @@
 
         /* Footer */
         footer {
-            background: var(--background-light);
+            background: #f8f8f8;
             padding: 3rem 2rem;
-            border-top: 1px solid var(--border-light);
+            border-top: 1px solid var(--color-border);
         }
 
         .footer-content {
@@ -1160,7 +1148,7 @@
         }
 
         .footer-section a {
-            color: var(--text-dark);
+            color: var(--color-text);
             font-size: 0.95rem;
         }
 
@@ -1390,7 +1378,7 @@
     <section class="testimonials-scroll-section">
         <div class="container center">
             <h2>Real Results from Real Clients</h2>
-            <p style="margin-bottom: 3rem; color: var(--text-dark); font-size: 1.1rem;">Over 200 clients have transformed their lives with the Amari Method</p>
+            <p style="margin-bottom: 3rem; color: var(--color-text); font-size: 1.1rem;">Over 200 clients have transformed their lives with the Amari Method</p>
         </div>
         <div class="testimonials-scroll-wrapper">
             <div class="testimonials-scroll">
@@ -1611,7 +1599,7 @@
     <!-- The Journal / Services -->
     <section class="section" id="services">
         <div class="container center">
-            <h2 style="margin-bottom: 1rem;">Choose Your <span style="color: var(--text-dark);">Path</span></h2>
+            <h2 style="margin-bottom: 1rem;">Choose Your <span style="color: var(--color-text);">Path</span></h2>
             <p style="font-size: 1.1rem; color: #666; margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Select the service option that works best for your healing journey</p>
             <div class="journal-grid">
                 <div class="journal-card featured">
@@ -1702,7 +1690,7 @@
                     </div>
                 </div>
                 <div class="assessment-text">
-                    <span class="assessment-label" style="display: inline-block; color: var(--primary-teal); font-size: 0.85rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 1rem;">Quick Assessment</span>
+                    <span class="assessment-label" style="display: inline-block; color: var(--color-primary); font-size: 0.85rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 1rem;">Quick Assessment</span>
                     <h2 style="font-size: 2.8rem; margin-bottom: 1.5rem; font-weight: 700; line-height: 1.3;">Discover What's Really Causing Your Pain</h2>
                     <p style="margin-bottom: 1.5rem; font-size: 1.1rem; line-height: 1.8; color: #666; margin-top: 0;">
                         Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss. Get personalized insights and discover your path to relief.
@@ -1728,7 +1716,7 @@
     </section>
 
     <!-- FAQ Section -->
-    <section class="section" style="background: var(--background-light);">
+    <section class="section" style="background: #f8f8f8;">
         <div class="container">
             <div style="text-align: center; margin-bottom: 3rem;">
                 <h2>Frequently Asked Questions</h2>

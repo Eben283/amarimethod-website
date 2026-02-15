@@ -44,19 +44,6 @@
 
     <style>
         /* Color Tokens (Minimal Therabody-inspired Palette) */
-        :root {
-            --bg-cream: #ffffff;
-            --primary-red: #b03730;
-            --text-dark: #1a1a1a;
-            --text-gray: #666666;
-            --text-light-gray: #999999;
-            --border-light: #e5e5e5;
-            --background-light: #f8f8f8;
-            --white: #ffffff;
-            --bg-primary: #fffcf5;
-            --color-border: #e8e8e6;
-            --primary-teal: #2d5a5f;
-        }
 
         * {
             box-sizing: border-box;
@@ -66,8 +53,8 @@
 
         html, body {
             height: 100%;
-            background-color: var(--white);
-            color: var(--text-dark);
+            background-color: #ffffff;
+            color: var(--color-text);
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -132,7 +119,7 @@
             position: sticky;
             top: 0;
             background: white;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--color-border);
             z-index: 100;
         }
 
@@ -146,7 +133,7 @@
         .logo {
             font-size: 1.3rem;
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--color-text);
             text-decoration: none;
             font-family: 'Bona Nova', serif;
         }
@@ -159,18 +146,18 @@
         }
 
         nav a {
-            color: var(--text-gray);
+            color: #666666;
             text-decoration: none;
             font-size: 0.95rem;
             transition: color 0.3s ease;
         }
 
         nav a:hover {
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         .nav-cta {
-            background-color: var(--text-dark) !important;
+            background-color: var(--color-text) !important;
             color: white !important;
             padding: 0.75rem 1.5rem !important;
             border-radius: 4px;
@@ -187,7 +174,7 @@
             border: none;
             font-size: 1.5rem;
             cursor: pointer;
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         /* Hero Section */
@@ -209,7 +196,7 @@
 
         .hero-subtitle {
             font-size: 1.15rem;
-            color: var(--text-gray);
+            color: #666666;
             max-width: 600px;
             margin: 0 auto 2rem;
             line-height: 1.6;
@@ -227,7 +214,7 @@
             background: white;
             border-radius: 12px;
             padding: 3rem 2rem;
-            border: 1px solid var(--border-light);
+            border: 1px solid var(--color-border);
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             display: flex;
             flex-direction: column;
@@ -239,8 +226,8 @@
         }
 
         .session-card.featured {
-            border: 2px solid var(--text-dark);
-            background-color: var(--background-light);
+            border: 2px solid var(--color-text);
+            background-color: #f8f8f8;
             padding: 3rem 2rem;
         }
 
@@ -251,7 +238,7 @@
         .session-price {
             font-size: 2.5rem;
             font-weight: 700;
-            color: var(--text-dark);
+            color: var(--color-text);
             font-family: 'Bona Nova', serif;
             margin-bottom: 0.5rem;
         }
@@ -259,13 +246,13 @@
         .session-title {
             font-size: 1.3rem;
             font-weight: 600;
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 1.5rem;
             font-family: 'Bona Nova', serif;
         }
 
         .session-description {
-            color: var(--text-gray);
+            color: #666666;
             margin-bottom: 2rem;
             flex-grow: 1;
         }
@@ -276,9 +263,9 @@
         }
 
         .session-features li {
-            color: var(--text-gray);
+            color: #666666;
             padding: 0.6rem 0;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid var(--color-border);
             font-size: 0.95rem;
             display: flex;
             align-items: flex-start;
@@ -286,7 +273,7 @@
 
         .session-features li:before {
             content: "•";
-            color: var(--text-dark);
+            color: var(--color-text);
             font-weight: bold;
             margin-right: 0.75rem;
             flex-shrink: 0;
@@ -299,7 +286,7 @@
 
         /* Info Section */
         .info-section {
-            background-color: var(--background-light);
+            background-color: #f8f8f8;
             padding: 5rem 2rem;
             margin-top: 4rem;
         }
@@ -321,16 +308,16 @@
             background: white;
             padding: 2rem;
             border-radius: 12px;
-            border: 1px solid var(--border-light);
+            border: 1px solid var(--color-border);
         }
 
         .info-item h3 {
-            color: var(--text-dark);
+            color: var(--color-text);
             margin-bottom: 1rem;
         }
 
         .info-item p {
-            color: var(--text-gray);
+            color: #666666;
             font-size: 0.95rem;
             line-height: 1.7;
         }
@@ -340,7 +327,7 @@
             background: white;
             padding: 4rem 2rem;
             text-align: center;
-            border-top: 1px solid var(--border-light);
+            border-top: 1px solid var(--color-border);
         }
 
         .cta-section h2 {
@@ -348,7 +335,7 @@
         }
 
         .cta-subtitle {
-            color: var(--text-gray);
+            color: #666666;
             font-size: 1.05rem;
             margin-bottom: 2rem;
             max-width: 600px;
@@ -365,9 +352,9 @@
 
         /* Footer */
         footer {
-            background: var(--background-light);
+            background: #f8f8f8;
             padding: 3rem 2rem;
-            border-top: 1px solid var(--border-light);
+            border-top: 1px solid var(--color-border);
         }
 
         footer .container {
@@ -380,20 +367,20 @@
 
         .footer-section h4 {
             margin-bottom: 1rem;
-            color: var(--text-dark);
+            color: var(--color-text);
             font-size: 1rem;
             font-family: 'Bona Nova', serif;
         }
 
         .footer-section p, .footer-section a {
-            color: var(--text-gray);
+            color: #666666;
             font-size: 0.9rem;
             text-decoration: none;
             line-height: 1.8;
         }
 
         .footer-section a:hover {
-            color: var(--text-dark);
+            color: var(--color-text);
         }
 
         .footer-section ul {
