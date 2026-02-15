@@ -1236,6 +1236,22 @@
                 margin: 0 auto;
             }
 
+            /* Center all standalone buttons on mobile */
+            .btn-primary,
+            .btn-secondary {
+                display: block;
+                width: fit-content;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            /* Hero buttons stay in flex container */
+            .hero-cta .btn-primary,
+            .hero-cta .btn-secondary {
+                display: inline-flex;
+                margin: 0.5rem;
+            }
+
             .hero {
                 min-height: auto;
                 padding: 3rem 1rem;
