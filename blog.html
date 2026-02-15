@@ -84,6 +84,17 @@
             font-size: 3rem;
             color: var(--color-primary);
             opacity: 0.3;
+            overflow: hidden;
+        }
+
+        .article-card-image img {
+            opacity: 1 !important;
+            background: none;
+        }
+
+        .article-card-image:has(img) {
+            background: none;
+            opacity: 1;
         }
 
         .article-card-content {
