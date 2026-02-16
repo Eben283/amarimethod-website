@@ -987,6 +987,79 @@ nav {
   margin-bottom: 1.5rem;
 }
 
+/* ============================================
+   UNIFIED CARD SYSTEM - Standard Pattern
+   ============================================
+   All cards across the website follow this unified pattern:
+   - Baseline: Subtle shadow (0.04 opacity) with off-white background
+   - Hover: Dramatic shadow (0.15 opacity) + teal border + lift animation
+   - Progressive enhancement: subtle → bold interaction
+   ============================================ */
+
+/* Blog Cards - for blog.html article listings */
+.blog-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.blog-card:hover {
+    box-shadow: 0 12px 32px rgba(79, 138, 139, 0.15);
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+}
+
+/* Pricing Cards - for booking.html package cards */
+.pricing-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 2.75rem 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.pricing-card:hover {
+    box-shadow: 0 12px 32px rgba(79, 138, 139, 0.15);
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+}
+
+.pricing-card.featured {
+    border: 2px solid var(--color-primary);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #f0f8f9 100%);
+}
+
+/* Session Cards - for in-person-sessions.html, virtual-sessions.html */
+.session-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.session-card:hover {
+    box-shadow: 0 12px 32px rgba(79, 138, 139, 0.15);
+    transform: translateY(-4px);
+    border-color: var(--color-primary);
+}
+
+.session-card.featured {
+    border: 2px solid var(--color-primary);
+    background: linear-gradient(135deg, var(--bg-primary) 0%, #f0f8f9 100%);
+}
+
 /* ===== FAQ SECTION ===== */
 .faq-section {
   padding: 8rem 0;
