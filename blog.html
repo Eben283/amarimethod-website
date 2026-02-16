@@ -153,16 +153,27 @@
         }
 
         .read-more {
-            color: var(--color-primary);
+            color: var(--color-text);
             text-decoration: none;
             font-weight: 600;
             transition: all 0.3s ease;
             font-size: 0.95rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .read-more::after {
+            content: ' →';
+            transition: transform 0.3s ease;
+            display: inline-block;
         }
 
         .read-more:hover {
-            color: var(--color-accent-teal-dark);
-            text-decoration: underline;
+            color: var(--color-text);
+        }
+
+        .read-more:hover::after {
+            transform: translateX(3px);
         }
 
         .featured-section {
@@ -242,7 +253,7 @@
                         <p class="article-meta">9 min read • February 2026</p>
                         <p class="article-excerpt">How hanging exercises awaken your posterior chain through the domino effect. Grip strength cascades through your entire body for complete alignment.</p>
                         <div class="article-card-footer">
-                            <a href="blog-suspension-squat-hanging-exercises.html" class="read-more">Read Article →</a>
+                            <a href="blog-suspension-squat-hanging-exercises.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -257,7 +268,7 @@
                         <p class="article-meta">8 min read • February 2026</p>
                         <p class="article-excerpt">Hand muscle imbalance causes carpal tunnel. The hand balancer exercise restores flexor-extensor balance and eliminates compression naturally.</p>
                         <div class="article-card-footer">
-                            <a href="blog-hand-balancer-carpal-tunnel.html" class="read-more">Read Article →</a>
+                            <a href="blog-hand-balancer-carpal-tunnel.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -272,7 +283,7 @@
                         <p class="article-meta">8 min read • February 2026</p>
                         <p class="article-excerpt">Retrain your shoulder blades to pull back and down. Power posture exercise corrects forward head posture in just 1-2 minutes daily.</p>
                         <div class="article-card-footer">
-                            <a href="blog-power-posture-shoulder-blades.html" class="read-more">Read Article →</a>
+                            <a href="blog-power-posture-shoulder-blades.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -287,7 +298,7 @@
                         <p class="article-meta">8 min read • February 2026</p>
                         <p class="article-excerpt">Release spinal compression and shoulder tension with locked-elbow hanging. Vertebrae self-adjust as your spine decompresses naturally.</p>
                         <div class="article-card-footer">
-                            <a href="blog-vertical-drop-spine-decompression.html" class="read-more">Read Article →</a>
+                            <a href="blog-vertical-drop-spine-decompression.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -302,7 +313,7 @@
                         <p class="article-meta">9 min read • February 2026</p>
                         <p class="article-excerpt">Release decades of tension and restore spinal mobility with the passive bridge. A moving meditation for tight, restricted bodies.</p>
                         <div class="article-card-footer">
-                            <a href="blog-passive-bridge-mobility.html" class="read-more">Read Article →</a>
+                            <a href="blog-passive-bridge-mobility.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -317,7 +328,7 @@
                         <p class="article-meta">9 min read • February 2026</p>
                         <p class="article-excerpt">Build spinal strength and stabilize loose joints with the active bridge. The exact opposite of sitting posture - empowerment through strength.</p>
                         <div class="article-card-footer">
-                            <a href="blog-active-bridge-strength.html" class="read-more">Read Article →</a>
+                            <a href="blog-active-bridge-strength.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -332,7 +343,7 @@
                         <p class="article-meta">8 min read • February 2026</p>
                         <p class="article-excerpt">Float like a wave in the ocean - let gentle movement undo years of sitting compression. A moving meditation for deep hip and low back release.</p>
                         <div class="article-card-footer">
-                            <a href="blog-spinal-wave-gentle-decompression.html" class="read-more">Read Article →</a>
+                            <a href="blog-spinal-wave-gentle-decompression.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -347,7 +358,7 @@
                         <p class="article-meta">7 min read • February 2026</p>
                         <p class="article-excerpt">Hanging for the lower body - eliminate achilles stiffness and plantar fasciitis with gentle calf decompression on a curb. The lymph pump for your ankles.</p>
                         <div class="article-card-footer">
-                            <a href="blog-spring-step-calf-ankle.html" class="read-more">Read Article →</a>
+                            <a href="blog-spring-step-calf-ankle.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -362,7 +373,7 @@
                         <p class="article-meta">9 min read • February 2026</p>
                         <p class="article-excerpt">100% success rate reversing TMJ disorder. Resistance training rebalances jaw muscles, eliminating clicking, pain, and headaches in 2-3 minutes daily.</p>
                         <div class="article-card-footer">
-                            <a href="blog-jaw-align-tmj-relief.html" class="read-more">Read Article →</a>
+                            <a href="blog-jaw-align-tmj-relief.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -377,7 +388,7 @@
                         <p class="article-meta">8 min read • February 2026</p>
                         <p class="article-excerpt">Resistance rotation rebalances forearm muscles and heals inflamed tendons. 90 seconds twice daily eliminates elbow tendinitis in 30 days.</p>
                         <div class="article-card-footer">
-                            <a href="blog-elbow-reset-tennis-elbow.html" class="read-more">Read Article →</a>
+                            <a href="blog-elbow-reset-tennis-elbow.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
@@ -392,7 +403,7 @@
                         <p class="article-meta">10 min read • February 2026</p>
                         <p class="article-excerpt">Gravitate toward what calls to you. Build your own pain relief practice by finding your rhythm with the Amari Method exercises that serve your body right now.</p>
                         <div class="article-card-footer">
-                            <a href="blog-putting-it-all-together.html" class="read-more">Read Article →</a>
+                            <a href="blog-putting-it-all-together.html" class="read-more">Read Article</a>
                         </div>
                     </div>
                 </article>
