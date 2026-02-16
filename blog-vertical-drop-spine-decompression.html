@@ -180,10 +180,20 @@
 
         .related-articles a {
             color: var(--color-primary);
+            font-weight: 600;
             text-decoration: none;
-            font-weight: 500;
+            display: inline-block;
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            white-space: nowrap;
             font-size: 1.05rem;
-            transition: color 0.3s ease;
+        }
+
+        .related-articles a::after {
+            content: " →";
+            transition: transform 0.3s ease;
+            display: inline-block;
         }
 
         .related-articles a:hover {
