@@ -1225,6 +1225,10 @@
                 margin-right: auto;
             }
 
+            .assessment-content {
+                grid-template-columns: 1fr !important;
+            }
+
             .assessment-text {
                 text-align: center;
             }
@@ -1311,6 +1315,24 @@
             .footer-content {
                 grid-template-columns: 1fr !important;
                 gap: 2rem !important;
+            }
+        }
+
+        /* Tablet and larger - keep assessment as two columns */
+        @media (min-width: 769px) {
+            .assessment-content {
+                grid-template-columns: auto 1fr !important;
+                gap: 2.5rem !important;
+                align-items: center;
+                text-align: left;
+            }
+
+            .assessment-text {
+                text-align: left !important;
+            }
+
+            .assessment-features {
+                align-items: flex-start !important;
             }
         }
     </style>
