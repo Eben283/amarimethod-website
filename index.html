@@ -387,21 +387,15 @@
         }
 
         .step-card {
-            background: white;
+            background: var(--bg-primary);
             padding: 2.5rem 2rem;
-            border-radius: 16px;
+            border-radius: 12px;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--color-border);
+            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-        }
-
-
-        .step-card:hover {
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-            transform: translateY(-4px);
         }
 
         .step-number {
