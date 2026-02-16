@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Your Session | Amari Method</title>
+    <meta name="description" content="Freedom from pain starts here. Book your first session or take our 2-minute assessment to discover what's causing your pain.">
+
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-M3GJ6SZPY6"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-M3GJ6SZPY6');
+    </script>
+
+    <link rel="stylesheet" href="css/style-v4.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #f0f8f9 0%, #ffffff 100%);
+        }
+
+        .instagram-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .logo-section {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-section img {
+            height: 60px;
+            width: auto;
+            margin-bottom: 1rem;
+        }
+
+        .logo-section h1 {
+            font-size: 1.8rem;
+            margin: 0 0 0.5rem;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .logo-section p {
+            font-size: 1rem;
+            color: #666;
+            margin: 0;
+        }
+
+        .cta-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .cta-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+            border-color: var(--color-primary);
+        }
+
+        .cta-card.primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .cta-card.primary h2 {
+            color: white;
+        }
+
+        .cta-card.primary p {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .cta-card h2 {
+            font-size: 1.4rem;
+            margin: 0 0 0.5rem;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        .cta-card p {
+            font-size: 0.95rem;
+            color: #666;
+            margin: 0 0 1.5rem;
+            line-height: 1.6;
+        }
+
+        .cta-card .btn-primary,
+        .cta-card .btn-secondary {
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .cta-card.primary .btn-secondary {
+            background: white;
+            color: var(--color-primary);
+        }
+
+        .cta-card.primary .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 1.5rem 0;
+            color: #999;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .trust-indicators {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .trust-indicators h3 {
+            font-size: 1rem;
+            margin: 0 0 1rem;
+            text-align: center;
+            color: var(--text-dark);
+            font-weight: 600;
+        }
+
+        .trust-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .trust-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .trust-item::before {
+            content: '✓';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .footer-simple {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .footer-simple a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        @media (min-width: 600px) {
+            .instagram-container {
+                padding: 3rem 2rem;
+            }
+
+            .logo-section h1 {
+                font-size: 2.2rem;
+            }
+
+            .cta-card h2 {
+                font-size: 1.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="instagram-container">
+        <div class="logo-section">
+            <img src="images/AmariLogo.avif" alt="Amari Method Logo">
+            <h1>Freedom From Pain</h1>
+            <p>Results For Life</p>
+        </div>
+
+        <!-- Primary CTA: Book Session -->
+        <div class="cta-card primary">
+            <h2>Ready to Get Started?</h2>
+            <p>Book your first session with Dr. Garrett and experience lasting relief</p>
+            <a href="booking.html" class="btn-secondary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Your First Session</span></span></a>
+        </div>
+
+        <div class="divider">OR</div>
+
+        <!-- Secondary CTA: Take Assessment -->
+        <div class="cta-card">
+            <h2>Not Sure Where to Start?</h2>
+            <p>Take our 2-minute Body Balance Assessment to discover what's causing your pain</p>
+            <a href="https://quiz.amarimethod.com/" class="btn-primary" target="_blank"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Take Free Assessment</span></span></a>
+        </div>
+
+        <!-- Trust Indicators -->
+        <div class="trust-indicators">
+            <h3>Why Choose Amari Method?</h3>
+            <div class="trust-item">200+ clients helped achieve lasting relief</div>
+            <div class="trust-item">25+ years of bodywork expertise</div>
+            <div class="trust-item">Results in your first session</div>
+            <div class="trust-item">100% satisfaction guaranteed</div>
+        </div>
+    </div>
+
+    <div class="footer-simple">
+        <p>© 2025 Amari Method | <a href="index.html">Visit Full Site</a></p>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
