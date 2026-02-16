@@ -194,7 +194,6 @@ nav {
   text-decoration: none;
   position: relative;
   overflow: visible;
-  white-space: nowrap;
 }
 
 .nav-cta:hover {
@@ -299,7 +298,6 @@ nav {
   text-decoration: none;
   position: relative;
   overflow: visible;
-  white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -352,7 +350,6 @@ nav {
   text-decoration: none;
   position: relative;
   overflow: visible;
-  white-space: nowrap;
 }
 
 .btn-secondary:hover {
