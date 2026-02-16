@@ -1017,8 +1017,8 @@ nav {
 
 /* Pricing Cards - for booking.html package cards */
 .pricing-card {
-    background: var(--bg-primary);
-    border: 1px solid var(--color-border);
+    background: #ffffff;
+    border: 1px solid var(--color-primary);
     border-radius: 12px;
     padding: 2.75rem 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -1035,7 +1035,7 @@ nav {
 
 .pricing-card.featured {
     border: 2px solid var(--color-primary);
-    background: linear-gradient(135deg, var(--bg-primary) 0%, #f0f8f9 100%);
+    background: #ffffff;
 }
 
 /* Session Cards - for in-person-sessions.html, virtual-sessions.html */
