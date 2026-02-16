@@ -192,7 +192,7 @@ For subtle, text-based navigation links that look like bold teal text with an an
 - Text Color: Teal (`var(--color-primary)` = #2d5a5f)
 - Font Weight: 600 (semi-bold)
 - Arrow: Automatically appended via CSS `::after` content " →"
-- Hover Effect: Arrow slides right 3px with smooth animation (text stays teal)
+- Hover Effect: Arrow slides right 3px with smooth animation (text stays teal, NO underline)
 - Use Case: Subtle next-step navigation, "Learn more" links, "Read article" links, secondary CTAs
 - Common Text: "Learn more →", "Explore ongoing care →", "Read article →", "View recommended [item] →"
 
@@ -305,7 +305,7 @@ When adding or updating ANY button on the site:
 ### Tertiary Button
 **HTML**: `<a href="#" class="btn-tertiary">Text</a>`
 **Colors**: Transparent background, teal text (`var(--color-primary)`)
-**Animation**: Arrow slides right 3px on hover via CSS `::after` pseudo-element (text stays teal)
+**Animation**: Arrow slides right 3px on hover via CSS `::after` pseudo-element (text stays teal, NO underline)
 **Arrow**: Generated via CSS `::after` content property (" →")
 
 **Golden Rule**: If it's not one of these three exact types with correct arrow spans, it's wrong.
