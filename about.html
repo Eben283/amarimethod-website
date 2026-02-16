@@ -105,19 +105,43 @@
     }
 
     .story-highlight {
-      background: #f0f8f5;
-      padding: 2.5rem;
-      border-radius: 8px;
-      border-left: 4px solid #2d5a5f;
-      margin: 2.5rem 0;
+      background: white;
+      padding: 3rem;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      margin: 3rem 0;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+      position: relative;
+    }
+
+    .story-highlight::before {
+      content: '"';
+      position: absolute;
+      top: -10px;
+      left: 30px;
+      font-size: 4rem;
+      color: #2d5a5f;
+      font-family: 'Bona Nova', serif;
+      line-height: 1;
+      opacity: 0.3;
     }
 
     .story-highlight p {
-      color: #2d5a5f;
-      font-size: 1.05rem;
-      font-weight: 500;
-      line-height: 1.8;
+      color: #1a1a1a;
+      font-size: 1.15rem;
+      font-weight: 400;
+      line-height: 1.9;
       margin-bottom: 0;
+      font-style: italic;
+    }
+
+    .story-highlight p strong {
+      font-weight: 600;
+      font-style: normal;
+      display: block;
+      margin-bottom: 1rem;
+      color: #2d5a5f;
+      font-size: 1.2rem;
     }
 
     .amari-image-container {
@@ -150,18 +174,25 @@
     }
 
     .closing-section {
-      background: linear-gradient(135deg, #2d5a5f 0%, #1f3d42 100%);
-      color: white;
+      background: #f8f8f8;
       padding: 5rem 2rem;
       text-align: center;
-      margin-top: 4rem;
+      margin-top: 5rem;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .closing-section h2 {
+      font-size: 2.5rem;
+      color: #1a1a1a;
+      margin-bottom: 1.5rem;
+      font-family: 'Bona Nova', serif;
     }
 
     .closing-section p {
-      color: rgba(255, 255, 255, 0.95);
-      font-size: 1.05rem;
+      color: #666;
+      font-size: 1.15rem;
       line-height: 1.8;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2.5rem;
       max-width: 700px;
       margin-left: auto;
       margin-right: auto;
@@ -169,10 +200,11 @@
 
     .closing-section p strong {
       font-weight: 600;
+      color: #1a1a1a;
     }
 
-    .closing-section p em {
-      font-style: italic;
+    .closing-section .btn-primary {
+      margin-top: 1rem;
     }
 
     @media (max-width: 768px) {
@@ -262,8 +294,9 @@
 
   <!-- Closing Section -->
   <section class="closing-section">
-    <p><strong>This is why we do what we do.</strong></p>
-    <p>Natural healing is possible. A different approach can change everything. And when you find freedom through the Amari Method, you're part of a legacy of healing that honors a promise made years ago.</p>
+    <h2>Ready to Experience the Amari Method?</h2>
+    <p>Natural healing is possible. A different approach can change everything. When you find freedom through the Amari Method, you're part of a legacy of healing that honors a promise made years ago.</p>
+    <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Session</span></span></a>
   </section>
 </main>
 
