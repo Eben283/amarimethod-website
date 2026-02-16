@@ -365,7 +365,7 @@ nav {
 }
 
 .btn-tertiary {
-  color: var(--color-text);
+  color: var(--color-primary);
   font-weight: 600;
   text-decoration: none;
   display: inline-block;
@@ -382,7 +382,7 @@ nav {
 }
 
 .btn-tertiary:hover {
-  color: var(--color-text);
+  color: var(--color-primary);
 }
 
 .btn-tertiary:hover::after {
