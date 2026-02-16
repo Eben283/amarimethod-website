@@ -181,7 +181,7 @@ Do NOT use `.btn-secondary` when `.btn-primary` is appropriate.
 
 ## TERTIARY BUTTON (Text with Arrow)
 
-For subtle, text-based navigation links that look like bold text with an arrow.
+For subtle, text-based navigation links that look like bold teal text with an animated arrow.
 
 ```html
 <a href="ongoing-care" class="btn-tertiary">Explore ongoing care</a>
@@ -189,36 +189,51 @@ For subtle, text-based navigation links that look like bold text with an arrow.
 
 **Tertiary Button Properties:**
 - Background: None (transparent)
-- Text Color: Dark text (`var(--text-dark)`)
+- Text Color: Teal (`var(--color-primary)` = #2d5a5f)
 - Font Weight: 600 (semi-bold)
 - Arrow: Automatically appended via CSS `::after` content " →"
-- Hover Effect: Arrow slides right 3px with smooth animation (text stays black, does NOT change color)
-- Use Case: Subtle next-step navigation, "Learn more" links, secondary CTAs
+- Hover Effect: Arrow slides right 3px with smooth animation (text stays teal)
+- Use Case: Subtle next-step navigation, "Learn more" links, "Read article" links, secondary CTAs
+- Common Text: "Learn more →", "Explore ongoing care →", "Read article →", "View recommended [item] →"
 
 **Styling:**
 ```css
 .btn-tertiary {
-  color: var(--text-dark);
+  color: var(--color-primary);           /* Teal text */
   font-weight: 600;
   text-decoration: none;
   display: inline-block;
   transition: all 0.3s ease;
   position: relative;
+  cursor: pointer;
+  white-space: nowrap;                   /* Prevents text wrapping */
 }
 
 .btn-tertiary::after {
-  content: ' →';
+  content: ' →';                         /* Arrow auto-appended */
   transition: transform 0.3s ease;
   display: inline-block;
 }
 
-.btn-tertiary:hover::after {
-  transform: translateX(3px);
+.btn-tertiary:hover {
+  color: var(--color-primary);           /* Stays teal on hover */
 }
 
-.btn-tertiary:hover {
-  color: var(--color-text);
+.btn-tertiary:hover::after {
+  transform: translateX(3px);            /* Arrow slides right 3px */
 }
+```
+
+**Usage Examples:**
+```html
+<!-- Blog related articles -->
+<a href="blog-back-pain.html" class="btn-tertiary">How to Fix Back Pain</a>
+
+<!-- Tools page -->
+<a href="https://amzn.to/abc123" class="btn-tertiary">View recommended foam rollers</a>
+
+<!-- Service pages -->
+<a href="ongoing-care" class="btn-tertiary">Explore ongoing care</a>
 ```
 
 ---
@@ -289,9 +304,9 @@ When adding or updating ANY button on the site:
 
 ### Tertiary Button
 **HTML**: `<a href="#" class="btn-tertiary">Text</a>`
-**Colors**: Transparent, dark text (stays black)
-**Animation**: Arrow slides right on hover via CSS `::after` pseudo-element (text stays black, no color change)
-**Arrow**: Generated via CSS `::after` content property
+**Colors**: Transparent background, teal text (`var(--color-primary)`)
+**Animation**: Arrow slides right 3px on hover via CSS `::after` pseudo-element (text stays teal)
+**Arrow**: Generated via CSS `::after` content property (" →")
 
 **Golden Rule**: If it's not one of these three exact types with correct arrow spans, it's wrong.
 

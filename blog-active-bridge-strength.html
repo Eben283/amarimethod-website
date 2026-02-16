@@ -177,31 +177,7 @@
             margin-bottom: 1rem;
         }
 
-        .related-articles a {
-            color: var(--color-primary);
-            font-weight: 600;
-            text-decoration: none;
-            display: inline-block;
-            transition: all 0.3s ease;
-            position: relative;
-            cursor: pointer;
-            white-space: nowrap;
-            font-size: 1.05rem;
-        }
-
-        .related-articles a::after {
-            content: " →";
-            transition: transform 0.3s ease;
-            display: inline-block;
-        }
-
-        .related-articles a:hover {
-            color: var(--color-primary);
-        }
-
-        .related-articles a:hover::after {
-            transform: translateX(3px);
-        }
+        
 
         @media (max-width: 768px) {
             article {
@@ -431,9 +407,9 @@
         <div class="related-articles">
             <h2>Related Articles</h2>
             <ul>
-                <li><a href="blog-passive-bridge-mobility.html">Passive Bridge Exercise: Restore Spinal Mobility and Release Deep Tension</a></li>
-                <li><a href="blog-suspension-squat-hanging-exercises.html">Suspension Squat Hanging Exercises: Transform Your Body Alignment</a></li>
-                <li><a href="blog-how-to-fix-back-pain.html">How to Fix Back Pain: The Body Alignment Approach</a></li>
+                <li><a href="blog-passive-bridge-mobility.html" class="btn-tertiary">Passive Bridge Exercise: Restore Spinal Mobility and Release Deep Tension</a></li>
+                <li><a href="blog-suspension-squat-hanging-exercises.html" class="btn-tertiary">Suspension Squat Hanging Exercises: Transform Your Body Alignment</a></li>
+                <li><a href="blog-how-to-fix-back-pain.html" class="btn-tertiary">How to Fix Back Pain: The Body Alignment Approach</a></li>
             </ul>
         </div>
     </article>
