@@ -1108,14 +1108,14 @@ nav {
 footer {
   background: #f9fbfc;
   border-top: 1px solid var(--color-border);
-  padding: 5rem 0 2rem;
+  padding: 3rem 0 1.5rem;
 }
 
 .footer-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 3rem;
-  margin-bottom: 3rem;
+  gap: 2rem;
+  margin-bottom: 2rem;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
@@ -1153,7 +1153,7 @@ footer {
 
 .footer-bottom {
   border-top: 1px solid var(--color-border);
-  padding: 2.5rem 2.5rem;
+  padding: 1.5rem 2.5rem;
   text-align: center;
   font-size: 0.85rem;
   color: var(--color-text-light);
