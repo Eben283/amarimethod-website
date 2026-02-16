@@ -30,6 +30,51 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// Hide/Show Nav on Scroll
+document.addEventListener('DOMContentLoaded', function() {
+  let lastScrollTop = 0;
+  let ticking = false;
+  const nav = document.querySelector('nav');
+  const scrollThreshold = 100;
+
+  if (nav) {
+    function handleScroll() {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const navMenu = document.querySelector('.nav-menu');
+      const isMobileMenuOpen = navMenu && navMenu.classList.contains('active');
+
+      // Don't hide nav when mobile menu is open
+      if (isMobileMenuOpen) {
+        ticking = false;
+        return;
+      }
+
+      if (scrollTop > scrollThreshold) {
+        if (scrollTop > lastScrollTop) {
+          // Scrolling down - hide nav
+          nav.style.transform = 'translateY(-100%)';
+        } else {
+          // Scrolling up - show nav
+          nav.style.transform = 'translateY(0)';
+        }
+      } else {
+        // At top of page - always show nav
+        nav.style.transform = 'translateY(0)';
+      }
+
+      lastScrollTop = scrollTop;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(handleScroll);
+        ticking = true;
+      }
+    });
+  }
+});
+
 // FAQ Toggle
 function toggleFAQ(element) {
   const faqItem = element.closest('.faq-item');
