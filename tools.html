@@ -78,23 +78,50 @@
     }
 
     .tool-card {
-      background: #f8f8f8;
-      padding: 2rem;
-      border-radius: 8px;
-      border-left: 4px solid #2d5a5f;
+      background: white;
+      padding: 0;
+      border-radius: 12px;
+      border: 1px solid #e5e5e5;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tool-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      transform: translateY(-4px);
+      border-color: #ccc;
+    }
+
+    .tool-card-content {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
     }
 
     .tool-card h3 {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       color: #1a1a1a;
       margin-bottom: 1rem;
       font-family: 'Bona Nova', serif;
+      font-weight: 600;
     }
 
     .tool-card p {
       color: #666;
       line-height: 1.7;
       margin-bottom: 1.5rem;
+      flex-grow: 1;
+      font-size: 0.95rem;
+    }
+
+    .tool-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
     }
 
     .tool-link {
@@ -197,31 +224,39 @@
 
       <div class="tools-grid">
         <div class="tool-card">
-          <img src="images/pull-up-bar.jpg" alt="Pull-Up Bar" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem;">
-          <h3>Pull-Up Bar</h3>
-          <p>Supports full-body reset by helping overworked areas release and underused muscles re-engage. A foundational tool for alignment work at home that enables decompression and proper spinal positioning throughout the protocol.</p>
-          <a href="https://amzn.to/3ZzXYel" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended pull-up bars</a>
+          <img src="images/pull-up-bar.jpg" alt="Pull-Up Bar" loading="lazy">
+          <div class="tool-card-content">
+            <h3>Pull-Up Bar</h3>
+            <p>Supports full-body reset by helping overworked areas release and underused muscles re-engage. A foundational tool for alignment work at home that enables decompression and proper spinal positioning throughout the protocol.</p>
+            <a href="https://amzn.to/3ZzXYel" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended pull-up bars</a>
+          </div>
         </div>
 
         <div class="tool-card">
-          <img src="images/foam-roller.jpg" alt="High Density Foam Roller" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem;">
-          <h3>High Density Foam Roller</h3>
-          <p>Encourages deep release in tension-prone areas and supports spinal decompression, helping the body integrate new patterns with ease. The firm density ensures effective myofascial release during protocol sessions.</p>
-          <a href="https://amzn.to/4rjKlfk" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended foam rollers</a>
+          <img src="images/foam-roller.jpg" alt="High Density Foam Roller" loading="lazy">
+          <div class="tool-card-content">
+            <h3>High Density Foam Roller</h3>
+            <p>Encourages deep release in tension-prone areas and supports spinal decompression, helping the body integrate new patterns with ease. The firm density ensures effective myofascial release during protocol sessions.</p>
+            <a href="https://amzn.to/4rjKlfk" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended foam rollers</a>
+          </div>
         </div>
 
         <div class="tool-card">
-          <img src="images/yoga-block.jpg" alt="Yoga Block" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem;">
-          <h3>Yoga Block</h3>
-          <p>Perfectly firm for stability and support. The block's density and height are essential for restoring proper alignment and enhancing movement awareness during protocol work. Provides the exact elevation needed for precision positioning.</p>
-          <a href="https://amzn.to/4kDykic" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended yoga blocks</a>
+          <img src="images/yoga-block.jpg" alt="Yoga Block" loading="lazy">
+          <div class="tool-card-content">
+            <h3>Yoga Block</h3>
+            <p>Perfectly firm for stability and support. The block's density and height are essential for restoring proper alignment and enhancing movement awareness during protocol work. Provides the exact elevation needed for precision positioning.</p>
+            <a href="https://amzn.to/4kDykic" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended yoga blocks</a>
+          </div>
         </div>
 
         <div class="tool-card">
-          <img src="images/gymnastic-rings.jpg" alt="Gymnastic Rings" loading="lazy" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem;">
-          <h3>Gymnastic Rings</h3>
-          <p>Used in tandem with the pull-up bar to retrain strength and stability through the shoulders and core—inviting balanced engagement throughout the body. Essential for the strengthening phases of the protocol.</p>
-          <a href="https://amzn.to/4aB3MsS" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended gymnastic rings</a>
+          <img src="images/gymnastic-rings.jpg" alt="Gymnastic Rings" loading="lazy">
+          <div class="tool-card-content">
+            <h3>Gymnastic Rings</h3>
+            <p>Used in tandem with the pull-up bar to retrain strength and stability through the shoulders and core—inviting balanced engagement throughout the body. Essential for the strengthening phases of the protocol.</p>
+            <a href="https://amzn.to/4aB3MsS" target="_blank" rel="noopener noreferrer" class="btn-tertiary">View recommended gymnastic rings</a>
+          </div>
         </div>
       </div>
 
