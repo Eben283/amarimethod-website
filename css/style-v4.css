@@ -368,6 +368,7 @@ nav {
   color: var(--color-primary);
   font-weight: 600;
   text-decoration: none;
+  font-size: 0.95rem;
   display: inline-block;
   transition: all 0.3s ease;
   position: relative;

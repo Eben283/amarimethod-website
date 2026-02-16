@@ -191,38 +191,48 @@ For subtle, text-based navigation links that look like bold teal text with an an
 - Background: None (transparent)
 - Text Color: Teal (`var(--color-primary)` = #2d5a5f)
 - Font Weight: 600 (semi-bold)
+- Font Size: 0.95rem
 - Arrow: Automatically appended via CSS `::after` content " →"
 - Hover Effect: Arrow slides right 3px with smooth animation (text stays teal, NO underline)
 - Use Case: Subtle next-step navigation, "Learn more" links, "Read article" links, secondary CTAs
 - Common Text: "Learn more →", "Explore ongoing care →", "Read article →", "View recommended [item] →"
 
-**Styling:**
+**Perfect Example:** The "Read Article" links on the Free Resources page (blog.html) blog cards - this is the gold standard for tertiary buttons.
+
+**Complete Styling (from blog.html .read-more class):**
 ```css
 .btn-tertiary {
-  color: var(--color-primary);           /* Teal text */
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-block;
-  transition: all 0.3s ease;
-  position: relative;
-  cursor: pointer;
-  white-space: nowrap;                   /* Prevents text wrapping */
+  color: var(--color-primary);           /* Teal text (#2d5a5f) */
+  text-decoration: none;                 /* No underline by default */
+  font-weight: 600;                      /* Semi-bold */
+  transition: all 0.3s ease;             /* Smooth transitions */
+  font-size: 0.95rem;                    /* Slightly smaller than body text */
+  position: relative;                    /* For pseudo-element positioning */
+  display: inline-block;                 /* Inline block for transform to work */
 }
 
 .btn-tertiary::after {
-  content: ' →';                         /* Arrow auto-appended */
-  transition: transform 0.3s ease;
-  display: inline-block;
+  content: ' →';                         /* Arrow auto-appended with space before */
+  transition: transform 0.3s ease;       /* Smooth arrow animation */
+  display: inline-block;                 /* Required for transform to work */
 }
 
 .btn-tertiary:hover {
-  color: var(--color-primary);           /* Stays teal on hover */
+  color: var(--color-primary);           /* Stays teal on hover (no color change) */
 }
 
 .btn-tertiary:hover::after {
-  transform: translateX(3px);            /* Arrow slides right 3px */
+  transform: translateX(3px);            /* Arrow slides right 3px on hover */
 }
 ```
+
+**Critical Details:**
+- Arrow has a **space before it** in the content: `' →'` (not just `'→'`)
+- `display: inline-block` on both the link and the `::after` is REQUIRED for the transform animation to work
+- `position: relative` allows for future enhancements or adjustments
+- NO underline on hover - only the arrow moves
+- Text color stays teal on hover - no color change
+- Font size matches the blog card styling at 0.95rem
 
 **Usage Examples:**
 ```html
