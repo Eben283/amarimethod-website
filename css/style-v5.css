@@ -28,10 +28,10 @@
   /* ===== ACTIVE SEMANTIC VARIABLES (what we actually use) ===== */
 
   /* Backgrounds */
-  --bg-primary: #FFFCF5;                  /* Therabody Floral White 1 */
-  --bg-secondary: #F6F3E9;                /* Therabody Floral White 2 - NEW! */
-  --bg-card-alt: #F6F3E9;                 /* Use secondary background for cards */
-  --bg-section-alt: #F6F3E9;              /* Use secondary background for footer */
+  --bg-primary: #ffffff;                   /* Pure white (matches homepage) */
+  --bg-secondary: #f8f8f8;                /* Light gray secondary */
+  --bg-card-alt: #f8f8f8;                 /* Light gray for cards */
+  --bg-section-alt: #f8f8f8;              /* Light gray for footer (matches homepage) */
 
   /* Primary Colors */
   --color-primary: #252525;               /* Therabody Carbon Black (was teal) */
@@ -47,8 +47,8 @@
   --color-emphasis: #252525;              /* Emphasized text uses Carbon Black */
 
   /* Borders */
-  --color-border: #e8e8e6;                /* Keep existing - neutral enough */
-  --color-border-light: #e8e8e6;          /* Light borders use same neutral */
+  --color-border: rgba(0,0,0,0.05);       /* Very subtle border (matches homepage) */
+  --color-border-light: rgba(0,0,0,0.05); /* Light borders */
   --color-border-dark: #d4d4d4;           /* Stronger borders if needed */
 
   /* OPTIONAL: Uncomment to use Therabody's accent colors */
