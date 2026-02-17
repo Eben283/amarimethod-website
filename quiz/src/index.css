@@ -1,0 +1,157 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 38 100% 98%; /* Bone White */
+    --foreground: 0 0% 15%; /* Charcoal */
+
+    --card: 39 47% 95%; /* Light Sand */
+    --card-foreground: 0 0% 15%; /* Charcoal */
+
+    --popover: 38 100% 98%;
+    --popover-foreground: 0 0% 15%;
+
+    --primary: 180 28% 43%; /* Pine Teal */
+    --primary-foreground: 38 100% 98%;
+
+    --secondary: 179 37% 24%; /* Forest Green */
+    --secondary-foreground: 38 100% 98%;
+
+    --muted: 39 47% 95%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 180 28% 43%; /* Pine Teal */
+    --accent-foreground: 0 0% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 38 100% 98%;
+
+    --border: 39 30% 88%; /* Oat */
+    --input: 39 30% 88%;
+    --ring: 180 28% 43%; /* Pine Teal */
+
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-amari-bone-white text-amari-charcoal font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+
+  .quiz-card {
+    @apply bg-amari-light-sand rounded-xl p-8 shadow-lg transition-all duration-300 animate-fade-in hover:shadow-card-hover;
+  }
+
+  .quiz-question-heading {
+    @apply font-serif text-3xl font-semibold text-amari-charcoal mb-3;
+  }
+
+  .quiz-question-description {
+    @apply font-sans text-base text-amari-text-light mb-6;
+  }
+
+  .progress-bar {
+    @apply h-3 bg-amari-oat rounded-full overflow-hidden shadow-sm;
+  }
+
+  .progress-fill {
+    @apply h-full bg-gradient-to-r from-amari-pine-teal to-amari-forest-green transition-all duration-500 ease-out;
+  }
+
+  .radio-container {
+    @apply flex items-center space-x-3 p-4 border-2 border-amari-oat rounded-lg cursor-pointer transition-all hover:border-amari-pine-teal hover:bg-amari-oat hover:bg-opacity-30 hover:shadow-sm;
+  }
+
+  .radio-container.selected {
+    @apply border-amari-pine-teal bg-amari-pine-teal bg-opacity-10 shadow-md transform scale-[1.01];
+  }
+
+  .checkbox-container {
+    @apply flex items-center space-x-3 p-3 border border-amari-oat rounded-md cursor-pointer transition-all hover:border-amari-pine-teal;
+  }
+
+  .checkbox-container.selected {
+    @apply border-amari-pine-teal bg-amari-pine-teal bg-opacity-10;
+  }
+}
+
+/* Button styles - OUTSIDE @layer base to override Tailwind */
+.btn-primary {
+  background: #000000 !important;
+  color: white !important;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-family: Poppins, system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary .arrow {
+  display: inline-block;
+  margin-left: 0;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.btn-primary:hover {
+  background: #000000 !important;
+  color: white !important;
+}
+
+.btn-primary:hover .arrow {
+  margin-left: 0.5rem;
+  opacity: 1;
+}
+
+.btn-secondary {
+  background: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-family: Poppins, system-ui, sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-secondary .arrow {
+  display: inline-block;
+  margin-left: 0;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: white !important;
+  color: #000000 !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary:hover .arrow {
+  margin-left: 0.5rem;
+  opacity: 1;
+}

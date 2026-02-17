@@ -14,11 +14,15 @@ Thumbs.db
 # Build/Dist
 /dist/
 /build/
+quiz/dist/
 
-# Dependencies (if node is ever added)
+# Dependencies
 node_modules/
+quiz/node_modules/
 package-lock.json
 yarn.lock
+bun.lockb
+quiz-package.json.backup
 
 # Environment
 .env

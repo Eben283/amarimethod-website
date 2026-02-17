@@ -1,11 +1,5 @@
-# Redirects for clean URLs and trailing slashes
-# Cloudflare Pages will automatically handle these
+# SPA fallback for quiz - serves index.html for all /quiz/* routes
+/quiz/* /dist/quiz/index.html 200
 
-# No www to www redirect (already configured in DNS)
-# But keeping this for reference if needed later
-
-# Redirect old Framer links if migrating
-# /old-page /index.html 301
-
-# SPA fallback - redirect 404s to index for single-page-app routing
-# Not needed here since we have static pages
+# Optional: Redirect old subdomain to new path (activate after DNS update)
+# https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
