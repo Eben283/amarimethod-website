@@ -133,7 +133,7 @@ a {
 }
 
 a:hover {
-  color: var(--color-accent-teal-dark);
+  color: var(--color-primary);
 }
 
 .container {
