@@ -29,6 +29,9 @@ quiz-package.json.backup
 .env.local
 .env.*.local
 
+# API Keys
+*.rtf
+
 # Logs
 *.log
 npm-debug.log*

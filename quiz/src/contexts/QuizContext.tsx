@@ -127,15 +127,29 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     setAnswers(newAnswers);
   };
 
-  // Use the API route at /api/send-to-ghl (not /src/pages/api)
-  const apiRoute = "/api/send-to-ghl"; 
+  // Use the API route at /api/send-to-ghl (Cloudflare Pages Function)
+  const apiRoute = "/api/send-to-ghl";
 
-  const sendContactToAPI = async (): Promise<Response> => {
+  const sendContactToAPI = async (
+    calculatedScores: ScoreCategories,
+    signature: PatternSignature
+  ): Promise<Response> => {
+    const primaryPainLocation = answers[0]?.answer as string;
+
+    // Determine severity from recovery potential score
+    let painSeverity = 'moderate';
+    if (calculatedScores.recoveryPotential >= 80) painSeverity = 'mild';
+    else if (calculatedScores.recoveryPotential < 60) painSeverity = 'severe';
+
     const contactData = {
-      first_name: firstName,
-      last_name: lastName,
+      firstName,
+      lastName,
       email,
-      phone
+      phone,
+      patternSignature: signature || 'Unknown',
+      recoveryPotentialScore: calculatedScores.recoveryPotential || 0,
+      primaryPainLocation: primaryPainLocation || 'Unknown',
+      painSeverity,
     };
 
     console.log('Sending data to API at:', apiRoute);
@@ -165,7 +179,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       setIsProcessing(true);
 
       const [response] = await Promise.all([
-        sendContactToAPI(),
+        sendContactToAPI(calculatedScores, signature),
         new Promise(resolve => setTimeout(resolve, 2500)) // 2.5 seconds to show processing animation
       ]);
 
@@ -196,8 +210,12 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     setSubmissionError(null);
 
     try {
+      if (!scores || !patternSignature) {
+        throw new Error('Missing quiz scores for retry');
+      }
+
       const [response] = await Promise.all([
-        sendContactToAPI(),
+        sendContactToAPI(scores, patternSignature),
         new Promise(resolve => setTimeout(resolve, 2000))
       ]);
 
