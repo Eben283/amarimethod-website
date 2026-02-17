@@ -135,6 +135,12 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     signature: PatternSignature
   ): Promise<Response> => {
     const primaryPainLocation = answers[0]?.answer as string;
+    const painTrigger = answers[1]?.answer as string;
+    const painDuration = answers[3]?.answer as string;
+    const treatmentsRaw = answers[9]?.answer as string[];
+    const treatmentsTried = Array.isArray(treatmentsRaw)
+      ? treatmentsRaw.filter(t => t !== "I haven't tried any treatments").join(', ')
+      : '';
 
     // Determine severity from recovery potential score
     let painSeverity = 'moderate';
@@ -150,6 +156,9 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       recoveryPotentialScore: calculatedScores.recoveryPotential || 0,
       primaryPainLocation: primaryPainLocation || 'Unknown',
       painSeverity,
+      painDuration: painDuration || '',
+      treatmentsTried: treatmentsTried || '',
+      painTrigger: painTrigger || '',
     };
 
     console.log('Sending data to API at:', apiRoute);
