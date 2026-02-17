@@ -28,32 +28,34 @@
   /* ===== ACTIVE SEMANTIC VARIABLES (what we actually use) ===== */
 
   /* Backgrounds */
-  --bg-primary: #ffffff;                   /* Pure white (matches homepage) */
-  --bg-secondary: #f8f8f8;                /* Light gray secondary */
-  --bg-card-alt: #f8f8f8;                 /* Light gray for cards */
-  --bg-section-alt: #f8f8f8;              /* Light gray for footer (matches homepage) */
+  --bg-primary: #FFFCF5;                  /* Floral White 1 — warm page background */
+  --bg-secondary: #F6F3E9;               /* Floral White 2 — alternating sections */
+  --bg-card: #FFFFFF;                     /* White card surfaces (contrast against warm bg) */
+  --bg-card-alt: #F5F0E5;                /* Soft Linen 1 — warm card variant */
+  --bg-section-alt: #F6F3E9;             /* Floral White 2 — footer & alternate sections */
 
   /* Primary Colors */
-  --color-primary: #252525;               /* Therabody Carbon Black (was teal) */
+  --color-primary: #252525;               /* Therabody Carbon Black */
   --color-primary-hover: #3a3a3a;         /* Slightly lighter charcoal for hover */
 
   /* Button Colors */
-  --color-button-primary-bg: #252525;     /* Primary button: Carbon Black (was #000) */
+  --color-button-primary-bg: #252525;     /* Primary button: Carbon Black */
   --color-button-primary-hover: #3a3a3a;  /* Primary button hover: lighter charcoal */
 
   /* Text Colors */
-  --color-text: #252525;                  /* Therabody Carbon Black (was #1a1a1a) */
-  --color-text-light: #6a6a6a;            /* Keep existing - works well */
+  --color-text: #252525;                  /* Carbon Black — headlines & primary */
+  --color-text-secondary: #484742;        /* Charcoal Brown — body text, softer */
+  --color-text-light: #6a6a6a;            /* Metadata, labels */
   --color-emphasis: #252525;              /* Emphasized text uses Carbon Black */
 
   /* Borders */
-  --color-border: rgba(0,0,0,0.05);       /* Very subtle border (matches homepage) */
-  --color-border-light: rgba(0,0,0,0.05); /* Light borders */
-  --color-border-dark: #d4d4d4;           /* Stronger borders if needed */
+  --color-border: #F0EADC;               /* Soft Linen 2 — visible warm border */
+  --color-border-light: #F5F0E5;         /* Soft Linen 1 — subtle warm border */
+  --color-border-dark: #C5CDD8;          /* Pale Slate — stronger accent border */
 
-  /* OPTIONAL: Uncomment to use Therabody's accent colors */
-  /* --color-accent-warm: #EBA584; */    /* Tangerine Dream */
-  /* --color-accent-cool: #C5CDD8; */    /* Pale Slate */
+  /* Accent Colors */
+  --color-accent-warm: #EBA584;           /* Tangerine Dream — CTA accents */
+  --color-accent-cool: #C5CDD8;          /* Pale Slate — decorative lines */
 
   /* Typography */
   --font-serif-primary: 'Bona Nova', serif;
@@ -122,7 +124,7 @@ h4 {
 p {
   margin-bottom: 1.5rem;
   line-height: 1.7;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   font-size: 1rem;
 }
 
@@ -146,7 +148,7 @@ a:hover {
 header {
   position: sticky;
   top: 0;
-  background: var(--bg-primary);
+  background: #FFFFFF;
   border-bottom: 1px solid var(--color-border);
   padding: 1.5rem 0;
   z-index: 1000;
@@ -163,7 +165,7 @@ nav {
   padding: 1rem 2.5rem;
   position: sticky;
   top: 0;
-  background: var(--bg-primary);
+  background: #FFFFFF;
   border-bottom: 1px solid var(--color-border);
   z-index: 1000;
   min-height: 70px;
@@ -460,7 +462,7 @@ nav {
 
 .comparison-card {
   padding: 2.5rem;
-  background: var(--bg-primary);
+  background: var(--bg-card);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -468,8 +470,8 @@ nav {
 }
 
 .comparison-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.1);
+  border-color: var(--color-border-dark);
+  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
 }
 
 .comparison-card.highlight {
@@ -567,7 +569,7 @@ nav {
   margin-bottom: 2rem;
   line-height: 1.8;
   font-style: italic;
-  border-left: 4px solid var(--color-primary);
+  border-left: 4px solid var(--color-accent-cool);
   padding-left: 1.5rem;
   font-family: var(--font-serif-secondary);
 }
@@ -599,7 +601,7 @@ nav {
   margin-bottom: 2rem;
   line-height: 1.8;
   font-style: italic;
-  border-left: 4px solid var(--color-primary);
+  border-left: 4px solid var(--color-accent-cool);
   padding-left: 1.5rem;
   font-family: var(--font-serif-secondary);
 }
@@ -636,9 +638,9 @@ nav {
   padding: 2.5rem !important;
   text-align: center !important;
   transition: all 0.3s ease !important;
-  background: var(--bg-card-alt) !important;
+  background: var(--bg-card) !important;
   border-radius: 12px !important;
-  border: 1px solid var(--color-border-light) !important;
+  border: 1px solid var(--color-border) !important;
   display: block !important;
   flex-basis: auto !important;
 }
@@ -761,7 +763,7 @@ nav {
 
 .stat-box {
   padding: 2rem;
-  background: var(--bg-primary);
+  background: var(--bg-card);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   text-align: center;
@@ -770,8 +772,8 @@ nav {
 }
 
 .stat-box:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.1);
+  border-color: var(--color-border-dark);
+  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
 }
 
 .stat-number {
@@ -804,7 +806,7 @@ nav {
 
 .testimonial-card {
   padding: 2.5rem;
-  background: var(--bg-primary);
+  background: var(--bg-card);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -814,8 +816,8 @@ nav {
 }
 
 .testimonial-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.1);
+  border-color: var(--color-border-dark);
+  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
 }
 
 .testimonial-photo {
@@ -887,7 +889,7 @@ nav {
   margin-top: 4rem;
   text-align: center;
   padding: 2rem;
-  background: var(--bg-primary);
+  background: var(--bg-card);
   border-radius: 12px;
   border: 1px solid var(--color-border);
 }
@@ -939,7 +941,7 @@ nav {
 
 .service-card {
   padding: 2.5rem;
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -950,8 +952,8 @@ nav {
 }
 
 .service-card:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 12px 32px rgba(37, 37, 37, 0.15);
+  border-color: var(--color-border-dark);
+  box-shadow: 0 12px 32px rgba(37, 37, 37, 0.1);
   transform: translateY(-4px);
 }
 
