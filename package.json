@@ -1,8 +1,9 @@
 {
   "name": "amarimethod-website",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
+  "description": "Amari Method website with integrated pain assessment quiz",
   "scripts": {
     "dev": "cd quiz && vite",
     "build": "cd quiz && vite build",
