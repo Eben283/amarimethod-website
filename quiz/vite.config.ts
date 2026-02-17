@@ -4,7 +4,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/quiz/",  // CRITICAL: Sets asset paths for /quiz route
+  base: "/dist/quiz/",  // CRITICAL: Sets asset paths to match Cloudflare deployment structure
   build: {
     outDir: "../dist/quiz",  // Output to dist/quiz
     emptyOutDir: true,
