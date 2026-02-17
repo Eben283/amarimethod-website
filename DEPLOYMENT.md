@@ -5,7 +5,7 @@
 This repository is deployed via Cloudflare Pages with the following configuration:
 
 - **Build command**: `npm run build`
-- **Build output directory**: `/dist` (CRITICAL: Must be /dist, not /)
+- **Build output directory**: `/dist` (CRITICAL: Must be `/dist`, not `/` - this ensures only built files are deployed)
 - **Node version**: 18 (set via environment variable `NODE_VERSION`)
 
 ## Structure
@@ -19,9 +19,13 @@ This repository is deployed via Cloudflare Pages with the following configuratio
 1. Push changes to GitHub (`main` branch)
 2. Cloudflare Pages automatically detects the push
 3. Runs `npm install` to install dependencies
-4. Runs `npm run build` to build the quiz to `/dist/quiz/`
-5. Deploys both static HTML files and built quiz files
+4. Runs `npm run build` which:
+   - Copies static HTML files to `/dist/`
+   - Builds React quiz to `/dist/quiz/`
+5. Deploys ONLY the `/dist/` directory (configured via "Build output directory: /dist")
 6. Quiz accessible at: https://www.amarimethod.com/quiz
+
+**CRITICAL:** Cloudflare Pages "Build output directory" MUST be set to `/dist` (not `/`). This ensures only built files are deployed, not source files.
 
 ## Build Output
 
