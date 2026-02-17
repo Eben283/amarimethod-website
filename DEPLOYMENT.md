@@ -5,7 +5,7 @@
 This repository is deployed via Cloudflare Pages with the following configuration:
 
 - **Build command**: `npm run build`
-- **Build output directory**: `/` (serves both static HTML and built quiz)
+- **Build output directory**: `/dist` (CRITICAL: Must be /dist, not /)
 - **Node version**: 18 (set via environment variable `NODE_VERSION`)
 
 ## Structure
