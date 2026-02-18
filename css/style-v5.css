@@ -941,18 +941,12 @@ nav {
 
 .service-card {
   padding: 2.5rem;
-  background: var(--bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  transition: all 0.3s ease;
   position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .service-card:hover {
-  border-color: var(--color-border-dark);
   box-shadow: 0 12px 32px rgba(37, 37, 37, 0.1);
   transform: translateY(-4px);
 }
@@ -1581,6 +1575,31 @@ footer {
    Consolidated from inline <style> blocks
    ============================================ */
 
+/* --- Global Card Base ---
+   Shared visual treatment for all card-like elements.
+   Individual card rules below only need to add unique properties. */
+
+.pricing-card,
+.session-card,
+.blog-card,
+.service-card,
+.feature-item,
+.info-item {
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pricing-card:hover,
+.session-card:hover,
+.blog-card:hover,
+.service-card:hover {
+  border-color: var(--color-border-dark);
+  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
+}
+
 /* --- CTA Section (shared across multiple pages) --- */
 
 .cta-section {
@@ -1630,19 +1649,9 @@ footer {
 }
 
 .pricing-card {
-  background: white;
-  border: 1px solid #F0EADC;
-  border-radius: 12px;
   padding: 2.5rem 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.pricing-card:hover {
-  border-color: #C5CDD8;
-  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
 }
 
 .pricing-card.featured {
@@ -1729,10 +1738,7 @@ footer {
 }
 
 .feature-item {
-  background: white;
   padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
 }
 
 .feature-item h3 {
@@ -1753,6 +1759,16 @@ footer {
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
   margin: 4rem 0;
+}
+
+.session-card {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.session-card.featured {
+  border: 2px solid var(--color-primary);
 }
 
 .session-price {
@@ -1840,10 +1856,7 @@ footer {
 }
 
 .info-item {
-  background: white;
   padding: 2rem;
-  border-radius: 12px;
-  border: 1px solid var(--color-border);
 }
 
 .info-item h3 {
@@ -2030,19 +2043,9 @@ footer {
 }
 
 .blog-card {
-  background: white;
-  border: 1px solid #F0EADC;
-  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.blog-card:hover {
-  border-color: #C5CDD8;
-  box-shadow: 0 8px 24px rgba(37, 37, 37, 0.08);
 }
 
 .blog-card-image {
