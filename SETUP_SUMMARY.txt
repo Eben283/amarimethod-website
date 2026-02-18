@@ -18,7 +18,7 @@ ANALYTICS STATUS: 🟢 FULLY CONFIGURED
    • SEO meta tags on all pages
 
 ✅ Analytics & Tracking
-   • Google Analytics 4 installed (ID: G-M3GJ6SZPY6)
+   • Google Analytics 4 installed (ID: G-DGQM32BMYZ)
    • 5 event types tracking:
      1. CTA button clicks (Book Session tracking)
      2. Scroll depth (25%, 50%, 75%, 100%)
@@ -141,9 +141,9 @@ Every step of this funnel is now tracked and measurable.
 🔧 TECHNICAL DETAILS:
 
 GA4 Implementation:
-  • Script: https://www.googletagmanager.com/gtag/js?id=G-M3GJ6SZPY6
+  • Script: https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ
   • Installed on all 13 pages
-  • Tracking ID: G-M3GJ6SZPY6
+  • Tracking ID: G-DGQM32BMYZ
   • Status: LIVE and working
 
 Event Tracking Code:

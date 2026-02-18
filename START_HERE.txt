@@ -11,7 +11,7 @@
 📊 YOUR DASHBOARD AT A GLANCE:
 
 Website Status:       🟢 LIVE at https://www.amarimethod.com
-Analytics:            🟢 GA4 TRACKING (ID: G-M3GJ6SZPY6)
+Analytics:            🟢 GA4 TRACKING (ID: G-DGQM32BMYZ)
 Performance:          🟢 2-3 SECOND LOAD TIMES
 Mobile:               🟢 100% RESPONSIVE
 Search Engine Ready:  🟢 SITEMAP & ROBOTS.TXT READY
