@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.requestAnimationFrame(handleScroll);
         ticking = true;
       }
-    });
+    }, { passive: true });
   }
 });
 
@@ -153,61 +153,50 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// 2. Track scroll depth
+// 2. Track scroll depth (throttled with rAF to reduce main thread blocking)
 let scrollDepthTracked = {
   '25': false,
   '50': false,
   '75': false,
   '100': false
 };
+let scrollDepthTicking = false;
 
-window.addEventListener('scroll', function() {
+function checkScrollDepth() {
   if (typeof gtag === 'undefined') return;
 
   const windowHeight = window.innerHeight;
   const documentHeight = document.documentElement.scrollHeight;
   const scrollTop = window.scrollY;
-
-  // Calculate scroll percentage
   const scrollPercent = Math.round(((scrollTop + windowHeight) / documentHeight) * 100);
 
-  // Track milestones
-  if (scrollPercent >= 25 && !scrollDepthTracked['25']) {
-    scrollDepthTracked['25'] = true;
-    gtag('event', 'scroll_depth', {
-      'event_category': 'engagement',
-      'event_label': '25%',
-      'scroll_depth': '25%'
-    });
-  }
+  const milestones = [25, 50, 75, 100];
+  milestones.forEach(milestone => {
+    if (scrollPercent >= milestone && !scrollDepthTracked[String(milestone)]) {
+      scrollDepthTracked[String(milestone)] = true;
+      gtag('event', 'scroll_depth', {
+        'event_category': 'engagement',
+        'event_label': milestone + '%',
+        'scroll_depth': milestone + '%'
+      });
+    }
+  });
 
-  if (scrollPercent >= 50 && !scrollDepthTracked['50']) {
-    scrollDepthTracked['50'] = true;
-    gtag('event', 'scroll_depth', {
-      'event_category': 'engagement',
-      'event_label': '50%',
-      'scroll_depth': '50%'
-    });
+  // Stop listening once all milestones tracked
+  if (scrollDepthTracked['100']) {
+    window.removeEventListener('scroll', onScrollDepth);
   }
+  scrollDepthTicking = false;
+}
 
-  if (scrollPercent >= 75 && !scrollDepthTracked['75']) {
-    scrollDepthTracked['75'] = true;
-    gtag('event', 'scroll_depth', {
-      'event_category': 'engagement',
-      'event_label': '75%',
-      'scroll_depth': '75%'
-    });
+function onScrollDepth() {
+  if (!scrollDepthTicking) {
+    scrollDepthTicking = true;
+    requestAnimationFrame(checkScrollDepth);
   }
+}
 
-  if (scrollPercent >= 100 && !scrollDepthTracked['100']) {
-    scrollDepthTracked['100'] = true;
-    gtag('event', 'scroll_depth', {
-      'event_category': 'engagement',
-      'event_label': '100%',
-      'scroll_depth': '100%'
-    });
-  }
-});
+window.addEventListener('scroll', onScrollDepth, { passive: true });
 
 // 3. Track time on page (every 30 seconds)
 let pageStartTime = Date.now();
@@ -255,8 +244,4 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Google Analytics initialization (GA4 script is loaded in HTML head)
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-// Note: GA4 measurement ID is configured in each page's HTML head
+// Note: GA4 initialization is in each page's HTML (gtag script loaded there)
