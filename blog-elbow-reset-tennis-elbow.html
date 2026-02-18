@@ -43,7 +43,7 @@
     </script>
 
         <!-- External CSS -->
-    <link rel="stylesheet" href="css/style-v5.css?v=9">
+    <link rel="stylesheet" href="css/style-v5.css?v=10">
 
     <style>
         /* Smooth nav hide/show on scroll */
@@ -511,31 +511,5 @@
     </footer>
 
     <script src="js/main.js" defer></script>
-
-    <script>
-        // Hide/show nav on scroll
-        let lastScrollTop = 0;
-        const nav = document.querySelector('nav');
-        const scrollThreshold = 100;
-
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-            if (scrollTop > scrollThreshold) {
-                if (scrollTop > lastScrollTop) {
-                    // Scrolling down - hide nav
-                    nav.style.transform = 'translateY(-100%)';
-                } else {
-                    // Scrolling up - show nav
-                    nav.style.transform = 'translateY(0)';
-                }
-            } else {
-                // At top of page - always show nav
-                nav.style.transform = 'translateY(0)';
-            }
-
-            lastScrollTop = scrollTop;
-        });
-    </script>
 </body>
 </html>

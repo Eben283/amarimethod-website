@@ -45,6 +45,8 @@
   /* Text Colors */
   --color-text: #252525;                  /* Carbon Black — headlines & primary */
   --color-text-secondary: #484742;        /* Charcoal Brown — body text, softer */
+  --color-text-muted: #666666;            /* Descriptions, secondary content */
+  --color-text-meta: #999999;             /* Timestamps, captions, metadata */
   --color-text-light: #6a6a6a;            /* Metadata, labels */
   --color-emphasis: #252525;              /* Emphasized text uses Carbon Black */
 
@@ -57,11 +59,9 @@
   --color-accent-warm: #EBA584;           /* Tangerine Dream — CTA accents */
   --color-accent-cool: #C5CDD8;          /* Pale Slate — decorative lines */
 
-  /* Typography */
+  /* Typography (only fonts actually imported above) */
   --font-serif-primary: 'Bona Nova', serif;
-  --font-serif-secondary: 'Libre Baskerville', serif;
-  --font-sans-primary: 'Poppins', sans-serif;
-  --font-sans-secondary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans-primary: 'DM Sans', sans-serif;
 }
 
 /* ===== RESET & BASE STYLES ===== */
@@ -148,7 +148,7 @@ a:hover {
 header {
   position: sticky;
   top: 0;
-  background: #FFFFFF;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--color-border);
   padding: 1.5rem 0;
   z-index: 1000;
@@ -165,7 +165,7 @@ nav {
   padding: 1rem 2.5rem;
   position: sticky;
   top: 0;
-  background: #FFFFFF;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--color-border);
   z-index: 1000;
   min-height: 70px;
@@ -1614,7 +1614,7 @@ footer {
 }
 
 .cta-subtitle {
-  color: #666666;
+  color: var(--color-text-muted);
   font-size: 1.05rem;
   margin-bottom: 2rem;
   max-width: 600px;
@@ -1633,7 +1633,7 @@ footer {
 
 .guarantee-statement {
   font-size: 1rem;
-  color: #666666;
+  color: var(--color-text-muted);
   max-width: 700px;
   margin: 0 auto 3rem;
   line-height: 1.8;
@@ -1675,7 +1675,7 @@ footer {
 }
 
 .price-description {
-  color: #666666;
+  color: var(--color-text-muted);
   margin-bottom: 2rem;
   flex-grow: 1;
 }
@@ -1686,7 +1686,7 @@ footer {
 }
 
 .price-features li {
-  color: #666666;
+  color: var(--color-text-muted);
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.95rem;
@@ -1719,7 +1719,7 @@ footer {
 /* --- Features Section (booking page) --- */
 
 .features-section {
-  background-color: #F5F0E5;
+  background-color: var(--bg-card-alt);
   padding: 5rem 2rem;
   margin-top: 4rem;
 }
@@ -1747,7 +1747,7 @@ footer {
 }
 
 .feature-item p {
-  color: #666666;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -1788,7 +1788,7 @@ footer {
 }
 
 .session-description {
-  color: #666666;
+  color: var(--color-text-muted);
   margin-bottom: 2rem;
   flex-grow: 1;
 }
@@ -1799,7 +1799,7 @@ footer {
 }
 
 .session-features li {
-  color: #666666;
+  color: var(--color-text-muted);
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--color-border);
   font-size: 0.95rem;
@@ -1821,7 +1821,7 @@ footer {
 
 .hero-label {
   display: block;
-  background: #1a1a1a;
+  background: var(--color-text);
   color: white;
   padding: 0.5rem 1.2rem;
   border-radius: 20px;
@@ -1837,7 +1837,7 @@ footer {
 /* --- Info Section (session pages) --- */
 
 .info-section {
-  background-color: #F5F0E5;
+  background-color: var(--bg-card-alt);
   padding: 5rem 2rem;
   margin-top: 4rem;
 }
@@ -1865,7 +1865,7 @@ footer {
 }
 
 .info-item p {
-  color: #666666;
+  color: var(--color-text-muted);
   font-size: 0.95rem;
   line-height: 1.7;
 }
@@ -1887,7 +1887,7 @@ footer {
 }
 
 .location-box p {
-  color: #666666;
+  color: var(--color-text-muted);
   margin: 0.5rem 0;
 }
 
@@ -1902,13 +1902,13 @@ footer {
 .story-section p {
   font-size: 1rem;
   line-height: 1.8;
-  color: #666;
+  color: var(--color-text-muted);
   margin-bottom: 1.5rem;
 }
 
 .story-section h2 {
   font-size: 2rem;
-  color: #1a1a1a;
+  color: var(--color-text);
   margin-top: 3rem;
   margin-bottom: 1.5rem;
   font-family: var(--font-serif-primary);
@@ -1927,14 +1927,14 @@ footer {
   background: white;
   padding: 3rem;
   border-radius: 12px;
-  border: 1px solid #F0EADC;
+  border: 1px solid var(--color-border);
   margin: 3rem 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
   position: relative;
 }
 
 .story-highlight p {
-  color: #1a1a1a;
+  color: var(--color-text);
   font-size: 1.15rem;
   font-weight: 400;
   line-height: 1.9;
@@ -1966,28 +1966,28 @@ footer {
 
 .amari-caption {
   font-size: 0.95rem;
-  color: #999;
+  color: var(--color-text-meta);
   margin-top: 1rem;
   font-style: italic;
 }
 
 .closing-section {
-  background: #F6F3E8;
+  background: var(--bg-secondary);
   padding: 5rem 2rem;
   text-align: center;
   margin-top: 5rem;
-  border-top: 1px solid #F0EADC;
+  border-top: 1px solid var(--color-border);
 }
 
 .closing-section h2 {
   font-size: 2.5rem;
-  color: #1a1a1a;
+  color: var(--color-text);
   margin-bottom: 1.5rem;
   font-family: var(--font-serif-primary);
 }
 
 .closing-section p {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 1.15rem;
   line-height: 1.8;
   margin-bottom: 2.5rem;
@@ -1998,7 +1998,7 @@ footer {
 
 .closing-section p strong {
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--color-text);
 }
 
 .closing-section .btn-primary {
@@ -2010,7 +2010,7 @@ footer {
 .journal-hero {
   text-align: center;
   padding: 4rem 2rem;
-  border-bottom: 1px solid #F0EADC;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .journal-hero h1 {
@@ -2024,7 +2024,7 @@ footer {
 
 .journal-hero p {
   font-size: 1.1rem;
-  color: #666;
+  color: var(--color-text-muted);
   margin-top: 0.5rem;
   font-weight: 300;
 }
@@ -2051,7 +2051,7 @@ footer {
 .blog-card-image {
   width: 100%;
   height: 200px;
-  background: #F5F0E5;
+  background: var(--bg-card-alt);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2080,7 +2080,7 @@ footer {
 }
 
 .blog-card h3 a {
-  color: #1a1a1a;
+  color: var(--color-text);
   text-decoration: none;
 }
 
@@ -2091,12 +2091,12 @@ footer {
 
 .article-meta {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--color-text-meta);
   margin-bottom: 1rem;
 }
 
 .article-excerpt {
-  color: #555;
+  color: var(--color-text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
   margin-bottom: 1rem;
@@ -2119,7 +2119,7 @@ footer {
 .featured-section {
   margin-bottom: 4rem;
   padding-bottom: 3rem;
-  border-bottom: 1px solid #F0EADC;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .featured-section h2 {
@@ -2141,25 +2141,25 @@ footer {
   text-align: center;
   margin-bottom: 3rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #F0EADC;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .info-header h1 {
   font-size: 2.5rem;
-  color: #1a1a1a;
+  color: var(--color-text);
   margin-bottom: 1rem;
   font-family: var(--font-serif-primary);
 }
 
 .info-header .last-updated {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
   font-style: italic;
 }
 
 .info-header p {
   font-size: 1.15rem;
-  color: #666;
+  color: var(--color-text-muted);
   margin-top: 1rem;
   line-height: 1.8;
 }
@@ -2174,14 +2174,14 @@ footer {
 
 .info-container .info-section h2 {
   font-size: 1.8rem;
-  color: #1a1a1a;
+  color: var(--color-text);
   margin-bottom: 1.5rem;
   font-family: var(--font-serif-primary);
   text-align: left;
 }
 
 .info-container .info-section p {
-  color: #666;
+  color: var(--color-text-muted);
   line-height: 1.8;
   margin-bottom: 1rem;
 }
@@ -2196,7 +2196,7 @@ footer {
   padding: 0.5rem 0;
   padding-left: 1.5rem;
   position: relative;
-  color: #666;
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 
@@ -2211,7 +2211,7 @@ footer {
 /* Client info service cards (different from main site .service-card) */
 .info-container .service-card {
   background: white;
-  border: 1px solid #F0EADC;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 1.5rem;
@@ -2235,7 +2235,7 @@ footer {
   padding: 0.5rem 0;
   padding-left: 1.5rem;
   position: relative;
-  color: #666;
+  color: var(--color-text-muted);
   line-height: 1.6;
 }
 
@@ -2248,7 +2248,7 @@ footer {
 }
 
 .guarantee-box {
-  background: #F5F0E5;
+  background: var(--bg-card-alt);
   border-left: 4px solid var(--color-primary);
   padding: 2rem;
   border-radius: 8px;
@@ -2257,12 +2257,12 @@ footer {
 
 .guarantee-box p {
   margin: 0;
-  color: #1a1a1a;
+  color: var(--color-text);
   line-height: 1.8;
 }
 
 .contact-box {
-  background: #F5F0E5;
+  background: var(--bg-card-alt);
   padding: 2rem;
   border-radius: 12px;
   text-align: center;
@@ -2272,7 +2272,7 @@ footer {
 .contact-box h3 {
   font-size: 1.3rem;
   margin-bottom: 1rem;
-  color: #1a1a1a;
+  color: var(--color-text);
 }
 
 .contact-box a {

@@ -91,8 +91,8 @@
     }
     </script>
 
-    <link rel="stylesheet" href="css/style-v5.css?v=9" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="css/style-v5.css?v=9"></noscript>
+    <link rel="stylesheet" href="css/style-v5.css?v=10" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="css/style-v5.css?v=10"></noscript>
 
     <style>
         * {
@@ -218,8 +218,7 @@
             color: var(--color-text);
         }
 
-        /* Button styles now defined in global style.css */
-        /* Using HTML arrow spans with margin-left animation */
+        /* Button styles defined in global style-v5.css */
 
         /* Layout */
         .container {
@@ -2102,32 +2101,6 @@
         });
     </script>
 
-    <script src="js/main.js" defer></script>
-
-    <script>
-        // Hide/show nav on scroll
-        let lastScrollTop = 0;
-        const nav = document.querySelector('nav');
-        const scrollThreshold = 100;
-
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-            if (scrollTop > scrollThreshold) {
-                if (scrollTop > lastScrollTop) {
-                    // Scrolling down - hide nav
-                    nav.style.transform = 'translateY(-100%)';
-                } else {
-                    // Scrolling up - show nav
-                    nav.style.transform = 'translateY(0)';
-                }
-            } else {
-                // At top of page - always show nav
-                nav.style.transform = 'translateY(0)';
-            }
-
-            lastScrollTop = scrollTop;
-        });
-    </script>
+    <script src="js/main.js" defer></script>
 </body>
 </html>
