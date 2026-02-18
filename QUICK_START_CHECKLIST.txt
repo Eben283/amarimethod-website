@@ -7,7 +7,7 @@
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [✓] Google Analytics 4 (GA4) installed on all 13 pages
-    - Measurement ID: G-DGQM32BMYZ
+    - Measurement ID: G-M3GJ6SZPY6
     - Tracking live: Yes
     - Event tracking: Active (button clicks, scroll depth, time on page, etc.)
 
