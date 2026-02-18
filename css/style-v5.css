@@ -1644,15 +1644,53 @@ footer {
 
 /* --- Pricing Page Styles (booking.html) --- */
 
+.pricing-section {
+  padding: 3rem 0 1rem;
+}
+
+.pricing-section:first-of-type {
+  padding-top: 0;
+}
+
+.pricing-section-title {
+  font-size: 1.8rem;
+  font-family: var(--font-serif-primary);
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.pricing-section-subtitle {
+  color: #666;
+  font-size: 1.05rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 2rem;
-  margin-bottom: 4rem;
+  margin-bottom: 1rem;
+}
+
+.pricing-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.pricing-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.pricing-grid-1 {
+  grid-template-columns: 1fr;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .pricing-card {
-  padding: 2.5rem 2rem;
+  padding: 2rem 1.75rem;
   display: flex;
   flex-direction: column;
 }
@@ -1673,19 +1711,19 @@ footer {
   font-size: 1.3rem;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   font-family: var(--font-serif-primary);
 }
 
 .price-description {
   color: var(--color-text-muted);
-  margin-bottom: 2rem;
-  flex-grow: 1;
+  margin-bottom: 1.25rem;
 }
 
 .price-features {
   list-style: none;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
 }
 
 .price-features li {
@@ -1707,6 +1745,13 @@ footer {
 
 .price-features li:last-child {
   border-bottom: none;
+}
+
+.price-note {
+  font-size: 0.9rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 1rem;
 }
 
 /* --- Compact Button Variant --- */
@@ -2290,7 +2335,9 @@ footer {
 
 @media (max-width: 768px) {
   /* Pricing page */
-  .pricing-grid {
+  .pricing-grid,
+  .pricing-grid-2,
+  .pricing-grid-3 {
     grid-template-columns: 1fr;
   }
 
@@ -2355,6 +2402,10 @@ footer {
   .pricing-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
+  }
+
+  .pricing-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   /* Session pages */

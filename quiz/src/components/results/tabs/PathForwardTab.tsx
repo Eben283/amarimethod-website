@@ -67,7 +67,7 @@ const PathForwardTab = ({ patternSignature }: PathForwardTabProps) => {
               <svg className="w-6 h-6 text-amari-pine-teal flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span>2-hour Amari Method session (virtual or in-person)</span>
+              <span>90-minute Initial Amari Method session (virtual or in-person)</span>
             </li>
             <li className="flex items-start gap-3">
               <svg className="w-6 h-6 text-amari-pine-teal flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,14 +90,14 @@ const PathForwardTab = ({ patternSignature }: PathForwardTabProps) => {
           </ul>
 
           <div className="text-center mb-6">
-            <div className="text-3xl font-serif text-amari-charcoal mb-2">$475</div>
+            <div className="text-3xl font-serif text-amari-charcoal mb-2">$275</div>
             <p className="text-sm text-amari-text-light">
               <strong>Satisfaction guaranteed:</strong> If you don't feel a real shift, we'll keep working at no extra charge.
             </p>
           </div>
 
           <a
-            href="https://www.amarimethod.com/in-person-or-online"
+            href="https://www.amarimethod.com/booking"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary w-full text-center"
@@ -106,7 +106,7 @@ const PathForwardTab = ({ patternSignature }: PathForwardTabProps) => {
             <span>Book Your Amari Session<span className="arrow">→</span></span>
           </a>
           <p className="text-sm text-amari-text-light mt-3 text-center">
-            ⚡ Only 3 spots available this week
+            Book your initial session to get started
           </p>
         </div>
       </div>

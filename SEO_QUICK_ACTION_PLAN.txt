@@ -60,7 +60,7 @@ CURRENT META DESCRIPTION:
 
 NEW META DESCRIPTION:
 <meta name="description" content="Affordable pain relief sessions in San Francisco.
-Single sessions from $XXX. 12-session packages with faster results. Book today.">
+Single sessions from $XXX. multi-session series with faster results. Book today.">
 
 REASON: Includes location + price (people search "pain relief price sf")
 
@@ -71,13 +71,13 @@ CURRENT TITLE:
 <title>How Body Alignment Fixes Back Pain | Amari Method</title>
 
 NEW TITLE:
-<title>How to Fix Back Pain in San Francisco | 7-Step Amari Method</title>
+<title>How to Fix Back Pain in San Francisco | 8-Step Amari Method</title>
 
 CURRENT META DESCRIPTION:
 <meta name="description" content="Learn how the Amari Method's body alignment approach...">
 
 NEW META DESCRIPTION:
-<meta name="description" content="Discover the 7-step Amari Method that fixes chronic back pain
+<meta name="description" content="Discover the 8-step Amari Method that fixes chronic back pain
 in San Francisco. Proven body alignment therapy. Free consultation.">
 
 REASON: Targets "how to fix back pain" + location
@@ -104,7 +104,7 @@ REASON: Builds authority + location + profession
 ✏️  TOOLS.HTML
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CURRENT TITLE:
-<title>Amari Method Tools | Required Equipment for the 7-Step Protocol</title>
+<title>Amari Method Tools | Required Equipment for the 8-Step Protocol</title>
 
 NEW TITLE:
 <title>Best Equipment for Pain Relief | Amari Method Tools & Resources</title>
@@ -201,7 +201,7 @@ Add this HTML to index.html before the footer (find <footer> tag):
                 border-radius: 8px; border-left: 4px solid #2d5a5f;">
       <h3 style="margin-top: 0;">What is the Amari Method?</h3>
       <p>The Amari Method is a revolutionary approach to pain relief through
-      body alignment therapy. Unlike traditional treatments, our 7-step protocol
+      body alignment therapy. Unlike traditional treatments, our 8-step protocol
       addresses the root cause of pain by realigning your body and releasing
       tension. Most clients experience significant results in their first session.</p>
     </div>
@@ -243,7 +243,7 @@ Add this HTML to index.html before the footer (find <footer> tag):
                 border-radius: 8px; border-left: 4px solid #2d5a5f;">
       <h3 style="margin-top: 0;">How much does it cost?</h3>
       <p>Single sessions start at [YOUR PRICE]. We also offer discounted
-      12-session packages for faster, more comprehensive results. Schedule
+      multi-session series for faster, more comprehensive results. Schedule
       a free discovery call to discuss pricing and options.</p>
     </div>
 
