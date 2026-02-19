@@ -140,8 +140,14 @@ export async function onRequestGet(context) {
 
     // Parse custom fields for series tracking
     const seriesType = getCustomField(contact, "series_type") || "none";
-    const sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed") || "0", 10);
+    const fieldSessionsCompleted = parseInt(getCustomField(contact, "sessions_completed") || "0", 10);
     const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining") || "0", 10);
+
+    // Count actual completed appointments as a fallback for sessions_completed
+    const completedAppointmentCount = allAppointments.filter(
+      (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
+    ).length;
+    const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
     const lpField = (getCustomField(contact, "living_practice_access") || "").toString().toLowerCase();
     const hasLivingPractice = ["true", "yes", "1"].includes(lpField) ||
       (contact.tags || []).includes("living-practice-access");
@@ -168,12 +174,15 @@ export async function onRequestGet(context) {
       .filter((a) => a.startTime >= now && a.status !== "cancelled")
       .reverse(); // Soonest first for upcoming
 
+    // Capitalize first letter of names
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
+
     return new Response(
       JSON.stringify({
         client: {
           contactId: contact.id,
-          firstName: contact.firstName || "there",
-          lastName: contact.lastName || "",
+          firstName: capitalize(contact.firstName) || "there",
+          lastName: capitalize(contact.lastName) || "",
           email: contact.email || tokenPayload.email,
           phone: contact.phone || undefined,
           seriesType,
