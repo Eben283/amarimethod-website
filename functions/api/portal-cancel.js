@@ -101,7 +101,7 @@ export async function onRequestPost(context) {
 
     // Parse request body
     const body = await context.request.json();
-    const { appointmentId } = body;
+    const { appointmentId, title } = body;
 
     if (!appointmentId) {
       return new Response(
@@ -113,12 +113,16 @@ export async function onRequestPost(context) {
     console.log(`[portal-cancel] User ${tokenPayload.contactId} cancelling appointment ${appointmentId}`);
 
     // Cancel the appointment via GHL API
+    // PUT requires title to be present alongside the status update
     const cancelResponse = await fetch(
       `${GHL_API_BASE}/calendars/events/appointments/${appointmentId}`,
       {
         method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
-        body: JSON.stringify({ appointmentStatus: "cancelled" }),
+        body: JSON.stringify({
+          title: title || "Session",
+          appointmentStatus: "cancelled",
+        }),
       }
     );
 
@@ -126,7 +130,7 @@ export async function onRequestPost(context) {
       const errorText = await cancelResponse.text();
       console.error(`[portal-cancel] GHL cancel error: ${cancelResponse.status} ${errorText}`);
       return new Response(
-        JSON.stringify({ error: "Unable to cancel appointment. Please try again or contact us." }),
+        JSON.stringify({ error: `Unable to cancel appointment (GHL ${cancelResponse.status}). Please try again or contact us.` }),
         { status: 502, headers }
       );
     }

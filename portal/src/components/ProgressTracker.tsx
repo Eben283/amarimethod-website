@@ -21,7 +21,9 @@ function isWithin24Hours(startTime: string): boolean {
 
 export default function ProgressTracker({ client, upcomingAppointments, onRefetch }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmMode, setConfirmMode] = useState<'cancel' | 'reschedule'>('cancel');
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const isOnSeries = client.seriesType !== 'none';
@@ -30,11 +32,11 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
     ? Math.min((client.sessionsCompleted / totalSessions) * 100, 100)
     : 0;
 
-  async function handleCancel(appointmentId: string) {
+  async function handleCancel(appointmentId: string, title: string) {
     setCancellingId(appointmentId);
     setCancelError(null);
     try {
-      await cancelAppointment(appointmentId);
+      await cancelAppointment(appointmentId, title);
       setConfirmingId(null);
       onRefetch();
     } catch (err) {
@@ -43,6 +45,24 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
       );
     } finally {
       setCancellingId(null);
+    }
+  }
+
+  async function handleReschedule(appointmentId: string, title: string) {
+    setReschedulingId(appointmentId);
+    setCancelError(null);
+    try {
+      await cancelAppointment(appointmentId, title);
+      // Old appointment cancelled — open booking page in new tab
+      window.open(BOOKING_URL, '_blank', 'noopener,noreferrer');
+      setConfirmingId(null);
+      onRefetch();
+    } catch (err) {
+      setCancelError(
+        err instanceof Error ? err.message : 'Unable to reschedule. Please try again.'
+      );
+    } finally {
+      setReschedulingId(null);
     }
   }
 
@@ -117,6 +137,8 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
               const tooSoon = isWithin24Hours(appt.startTime);
               const isConfirming = confirmingId === appt.id;
               const isCancelling = cancellingId === appt.id;
+              const isRescheduling = reschedulingId === appt.id;
+              const apptTitle = appt.title || appt.appointmentType || 'Session';
 
               return (
                 <div
@@ -136,7 +158,7 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
                     {/* Details */}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-amari-charcoal truncate">
-                        {appt.title || appt.appointmentType || 'Session'}
+                        {apptTitle}
                       </p>
                       <p className="text-xs text-amari-text-muted mt-0.5">
                         {getRelativeDay(appt.startTime)}
@@ -154,24 +176,31 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
                   {isConfirming ? (
                     <div className="mt-3 p-3 bg-white rounded-lg border border-red-200">
                       <p className="text-sm text-amari-charcoal mb-3">
-                        Are you sure you want to cancel this appointment?
+                        {confirmMode === 'reschedule'
+                          ? 'This will cancel your current appointment and open the booking page so you can pick a new time. Continue?'
+                          : 'Are you sure you want to cancel this appointment?'}
                       </p>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => handleCancel(appt.id)}
-                          disabled={isCancelling}
+                          onClick={() => confirmMode === 'reschedule'
+                            ? handleReschedule(appt.id, apptTitle)
+                            : handleCancel(appt.id, apptTitle)
+                          }
+                          disabled={isCancelling || isRescheduling}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors disabled:opacity-50"
                         >
-                          {isCancelling ? (
+                          {(isCancelling || isRescheduling) ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : confirmMode === 'reschedule' ? (
+                            <RefreshCw className="w-3 h-3" />
                           ) : (
                             <X className="w-3 h-3" />
                           )}
-                          {isCancelling ? 'Cancelling...' : 'Yes, cancel'}
+                          {isCancelling ? 'Cancelling...' : isRescheduling ? 'Cancelling...' : confirmMode === 'reschedule' ? 'Yes, reschedule' : 'Yes, cancel'}
                         </button>
                         <button
                           onClick={() => setConfirmingId(null)}
-                          disabled={isCancelling}
+                          disabled={isCancelling || isRescheduling}
                           className="px-3 py-1.5 text-xs font-medium text-amari-text-secondary bg-amari-light-sand hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
                         >
                           Keep it
@@ -180,23 +209,27 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
                     </div>
                   ) : (
                     <div className="mt-3 flex gap-2">
-                      <a
-                        href={BOOKING_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amari-charcoal bg-white hover:bg-gray-50 border border-amari-border rounded-md transition-colors"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        Reschedule
-                      </a>
                       {tooSoon ? (
-                        <span className="flex items-center px-3 py-1.5 text-xs text-amari-text-muted" title="Cancellations require 24 hours notice">
-                          Cancel unavailable within 24hrs
+                        <span className="flex items-center px-3 py-1.5 text-xs text-amari-text-muted" title="Changes require 24 hours notice">
+                          Changes unavailable within 24hrs
                         </span>
                       ) : (
+                        <>
                         <button
                           onClick={() => {
                             setCancelError(null);
+                            setConfirmMode('reschedule');
+                            setConfirmingId(appt.id);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amari-charcoal bg-white hover:bg-gray-50 border border-amari-border rounded-md transition-colors"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Reschedule
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCancelError(null);
+                            setConfirmMode('cancel');
                             setConfirmingId(appt.id);
                           }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 bg-white hover:bg-red-50 border border-amari-border rounded-md transition-colors"
@@ -204,6 +237,7 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
                           <X className="w-3 h-3" />
                           Cancel
                         </button>
+                        </>
                       )}
                     </div>
                   )}

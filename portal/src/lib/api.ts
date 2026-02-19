@@ -49,10 +49,10 @@ export async function getPortalData(): Promise<import('../types/portal').PortalD
   return fetchApi('/portal-data');
 }
 
-export async function cancelAppointment(appointmentId: string): Promise<{ success: boolean }> {
+export async function cancelAppointment(appointmentId: string, title: string): Promise<{ success: boolean }> {
   return fetchApi('/portal-cancel', {
     method: 'POST',
-    body: JSON.stringify({ appointmentId }),
+    body: JSON.stringify({ appointmentId, title }),
   });
 }
 
