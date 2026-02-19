@@ -36,9 +36,10 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <a href="/" className="inline-block">
             <img
-              src="/images/amari-method-logo.svg"
+              src="/images/AmariLogo.avif"
               alt="Amari Method"
               className="h-10 mx-auto mb-6"
+              style={{ height: '40px', width: 'auto' }}
             />
           </a>
           <h1 className="font-serif text-3xl font-bold text-amari-charcoal mb-2">

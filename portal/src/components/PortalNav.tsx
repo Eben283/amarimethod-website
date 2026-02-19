@@ -10,9 +10,10 @@ export default function PortalNav() {
         {/* Logo */}
         <a href="/" className="flex items-center gap-3">
           <img
-            src="/images/amari-method-logo.svg"
+            src="/images/AmariLogo.avif"
             alt="Amari Method"
             className="h-8"
+            style={{ height: '32px', width: 'auto' }}
           />
         </a>
 
