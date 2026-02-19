@@ -72,7 +72,7 @@ export default function DashboardPage() {
         {/* Progress + Upcoming | Session History grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <ProgressTracker client={client} upcomingAppointments={upcomingAppointments} />
+            <ProgressTracker client={client} upcomingAppointments={upcomingAppointments} onRefetch={refetch} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <SessionHistory appointments={appointments} />

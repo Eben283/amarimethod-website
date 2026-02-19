@@ -49,4 +49,11 @@ export async function getPortalData(): Promise<import('../types/portal').PortalD
   return fetchApi('/portal-data');
 }
 
+export async function cancelAppointment(appointmentId: string): Promise<{ success: boolean }> {
+  return fetchApi('/portal-cancel', {
+    method: 'POST',
+    body: JSON.stringify({ appointmentId }),
+  });
+}
+
 export { ApiError };
