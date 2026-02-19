@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 100% 98%;
+    --foreground: 0 0% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 15%;
+
+    --popover: 40 100% 98%;
+    --popover-foreground: 0 0% 15%;
+
+    --primary: 0 0% 15%;
+    --primary-foreground: 40 100% 98%;
+
+    --secondary: 39 40% 93%;
+    --secondary-foreground: 0 0% 15%;
+
+    --muted: 39 40% 93%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 19 78% 72%;
+    --accent-foreground: 0 0% 15%;
+
+    --border: 39 30% 88%;
+    --input: 39 30% 88%;
+    --ring: 0 0% 15%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-amari-bone-white text-amari-charcoal font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+/* Portal-specific utilities */
+@layer components {
+  .portal-card {
+    @apply bg-white rounded-xl border border-amari-border p-6 shadow-card transition-all duration-200;
+  }
+
+  .portal-card:hover {
+    @apply shadow-card-hover;
+  }
+
+  .portal-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 font-sans font-medium text-sm transition-all duration-200;
+  }
+
+  .portal-btn-primary {
+    @apply portal-btn bg-amari-charcoal text-white hover:bg-[#3a3a3a] hover:-translate-y-[1px] hover:shadow-card-hover;
+  }
+
+  .portal-btn-secondary {
+    @apply portal-btn bg-white text-amari-charcoal border border-amari-border hover:bg-amari-light-sand hover:-translate-y-[1px];
+  }
+
+  .portal-btn-accent {
+    @apply portal-btn bg-amari-accent-warm text-white hover:bg-[#e0926f] hover:-translate-y-[1px] hover:shadow-card-hover;
+  }
+
+  .portal-input {
+    @apply w-full rounded-lg border border-amari-border bg-white px-4 py-3 font-sans text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent transition-all;
+  }
+
+  .portal-label {
+    @apply block text-sm font-medium text-amari-text-secondary mb-1.5;
+  }
+}
