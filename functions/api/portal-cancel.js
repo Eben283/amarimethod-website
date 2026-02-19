@@ -131,7 +131,7 @@ export async function onRequestPost(context) {
       console.error(`[portal-cancel] GHL cancel error: ${cancelResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: `Unable to cancel appointment (GHL ${cancelResponse.status}). Please try again or contact us.` }),
-        { status: 502, headers }
+        { status: 422, headers }
       );
     }
 
