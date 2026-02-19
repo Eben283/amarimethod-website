@@ -124,7 +124,7 @@ export async function onRequestGet(context) {
       console.error(`[portal-data] GHL contact fetch error: ${contactResponse.status}`);
       return new Response(
         JSON.stringify({ error: "Unable to load your data. Please try again." }),
-        { status: 502, headers }
+        { status: 422, headers }
       );
     }
 
