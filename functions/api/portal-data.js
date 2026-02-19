@@ -142,9 +142,11 @@ export async function onRequestGet(context) {
     const seriesType = getCustomField(contact, "series_type") || "none";
     const sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed") || "0", 10);
     const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining") || "0", 10);
-    const hasLivingPractice = getCustomField(contact, "living_practice_access") === "true" ||
+    const lpField = (getCustomField(contact, "living_practice_access") || "").toString().toLowerCase();
+    const hasLivingPractice = ["true", "yes", "1"].includes(lpField) ||
       (contact.tags || []).includes("living-practice-access");
-    const portalAccess = getCustomField(contact, "portal_access") === "true" ||
+    const paField = (getCustomField(contact, "portal_access") || "").toString().toLowerCase();
+    const portalAccess = ["true", "yes", "1"].includes(paField) ||
       (contact.tags || []).includes("portal-access");
 
     // Sort appointments by date

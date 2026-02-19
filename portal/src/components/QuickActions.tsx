@@ -13,11 +13,8 @@ const BOOKING_URLS = {
   discovery: 'https://discoverycall.amarimethod.com/discovery-call-booking',
 };
 
-// Series purchase URLs (placeholder until GHL checkout pages are created)
-const SERIES_URLS = {
-  '4-session': '#', // TODO: Replace with GHL checkout URL
-  '8-session': '#', // TODO: Replace with GHL checkout URL
-};
+// Series purchase — no checkout pages yet, direct to email
+const SERIES_INQUIRY_URL = 'mailto:hello@amarimethod.com?subject=Series%20Purchase%20Inquiry';
 
 const LIVING_PRACTICE_URL = 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd';
 
@@ -38,11 +35,11 @@ export default function QuickActions({ client }: QuickActionsProps) {
     },
     {
       icon: ShoppingBag,
-      label: 'Purchase Series',
+      label: client.seriesType !== 'none' ? 'Your Series' : 'Purchase Series',
       description: client.seriesType !== 'none'
         ? `You're on a ${client.seriesType} series`
-        : 'Save with a 4 or 8-session package',
-      href: client.seriesType !== 'none' ? undefined : SERIES_URLS['4-session'],
+        : 'Email us about 4 or 8-session packages',
+      href: client.seriesType !== 'none' ? undefined : SERIES_INQUIRY_URL,
       style: 'secondary' as const,
       disabled: client.seriesType !== 'none',
     },

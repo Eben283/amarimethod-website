@@ -127,7 +127,7 @@ export async function onRequestGet(context) {
       await context.env.PORTAL_KV.delete(`nonce:${payload.nonce}`);
     }
 
-    // Create a session token (7-day expiry)
+    // Create a session token (30-day expiry)
     const sessionToken = await createSessionToken(
       {
         contactId: payload.contactId,
