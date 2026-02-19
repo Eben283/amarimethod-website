@@ -42,7 +42,7 @@ export async function requestMagicLink(email: string): Promise<{ success: boolea
 }
 
 export async function verifyToken(token: string): Promise<{ sessionToken: string; contactId: string; email: string }> {
-  return fetchApi(`/portal-verify?token=${token}`);
+  return fetchApi(`/portal-verify?token=${encodeURIComponent(token)}`);
 }
 
 export async function getPortalData(): Promise<import('../types/portal').PortalDataResponse> {
