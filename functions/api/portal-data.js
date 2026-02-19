@@ -189,6 +189,8 @@ export async function onRequestGet(context) {
         },
         appointments: pastAppointments,
         upcomingAppointments,
+        // DEBUG: raw first appointment from GHL (remove after checking)
+        _debug_rawAppointment: allAppointments.length > 0 ? allAppointments[0] : null,
       }),
       { status: 200, headers }
     );
