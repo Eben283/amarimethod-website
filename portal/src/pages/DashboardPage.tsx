@@ -49,7 +49,6 @@ export default function DashboardPage() {
   if (!data) return null;
 
   const { client, appointments, upcomingAppointments } = data;
-  const nextAppointment = upcomingAppointments.length > 0 ? upcomingAppointments[0] : null;
 
   return (
     <>
@@ -70,10 +69,10 @@ export default function DashboardPage() {
           <QuickActions client={client} />
         </section>
 
-        {/* Progress + History grid */}
+        {/* Progress + Upcoming | Session History grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <ProgressTracker client={client} nextAppointment={nextAppointment} />
+            <ProgressTracker client={client} upcomingAppointments={upcomingAppointments} />
           </div>
           <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
             <SessionHistory appointments={appointments} />
