@@ -48,6 +48,92 @@ async function createToken(payload, secret) {
   return `${data}.${sig}`;
 }
 
+// Look up a contact by email in GHL using multiple fallback strategies
+async function findContactByEmail(email, apiKey) {
+  // Strategy 1: GET /contacts/search/duplicate — designed for email lookup
+  try {
+    const dupeUrl = `${GHL_API_BASE}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`;
+    console.log(`[portal-auth] Trying duplicate search: ${dupeUrl}`);
+    const dupeResponse = await fetch(dupeUrl, {
+      method: "GET",
+      headers: ghlHeaders(apiKey),
+    });
+    console.log(`[portal-auth] Duplicate search status: ${dupeResponse.status}`);
+    if (dupeResponse.ok) {
+      const dupeData = await dupeResponse.json();
+      console.log(`[portal-auth] Duplicate search response keys: ${Object.keys(dupeData).join(", ")}`);
+      // Response may have { contact: {...} } or { contacts: [...] }
+      if (dupeData.contact && dupeData.contact.id) {
+        return dupeData.contact;
+      }
+      if (dupeData.contacts && dupeData.contacts.length > 0) {
+        return dupeData.contacts[0];
+      }
+    }
+  } catch (err) {
+    console.error(`[portal-auth] Duplicate search error: ${err.message}`);
+  }
+
+  // Strategy 2: GET /contacts/ with query parameter — list contacts filtered by email
+  try {
+    const listUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(email)}&limit=1`;
+    console.log(`[portal-auth] Trying contacts list: ${listUrl}`);
+    const listResponse = await fetch(listUrl, {
+      method: "GET",
+      headers: ghlHeaders(apiKey),
+    });
+    console.log(`[portal-auth] Contacts list status: ${listResponse.status}`);
+    if (listResponse.ok) {
+      const listData = await listResponse.json();
+      console.log(`[portal-auth] Contacts list response keys: ${Object.keys(listData).join(", ")}`);
+      const contacts = listData.contacts || [];
+      // Find exact email match
+      const match = contacts.find(
+        (c) => (c.email || "").toLowerCase() === email.toLowerCase()
+      );
+      if (match) {
+        return match;
+      }
+    }
+  } catch (err) {
+    console.error(`[portal-auth] Contacts list error: ${err.message}`);
+  }
+
+  // Strategy 3: POST /contacts/search — advanced search
+  try {
+    const searchUrl = `${GHL_API_BASE}/contacts/search`;
+    const searchBody = {
+      locationId: GHL_LOCATION_ID,
+      filters: [
+        {
+          field: "email",
+          operator: "eq",
+          value: email,
+        },
+      ],
+    };
+    console.log(`[portal-auth] Trying advanced search`);
+    const searchResponse = await fetch(searchUrl, {
+      method: "POST",
+      headers: ghlHeaders(apiKey),
+      body: JSON.stringify(searchBody),
+    });
+    console.log(`[portal-auth] Advanced search status: ${searchResponse.status}`);
+    if (searchResponse.ok) {
+      const searchData = await searchResponse.json();
+      console.log(`[portal-auth] Advanced search response keys: ${Object.keys(searchData).join(", ")}`);
+      const contacts = searchData.contacts || [];
+      if (contacts.length > 0) {
+        return contacts[0];
+      }
+    }
+  } catch (err) {
+    console.error(`[portal-auth] Advanced search error: ${err.message}`);
+  }
+
+  return null;
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -75,7 +161,10 @@ export async function onRequestPost(context) {
     const JWT_SECRET = context.env.JWT_SECRET;
 
     if (!GHL_API_KEY || !JWT_SECRET) {
-      console.error("[portal-auth] Missing env vars");
+      console.error("[portal-auth] Missing env vars", {
+        hasGHL: !!GHL_API_KEY,
+        hasJWT: !!JWT_SECRET,
+      });
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         { status: 500, headers }
@@ -83,32 +172,11 @@ export async function onRequestPost(context) {
     }
 
     // Look up contact in GHL
-    const lookupUrl = `${GHL_API_BASE}/contacts/lookup?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`;
-    const lookupResponse = await fetch(lookupUrl, {
-      method: "GET",
-      headers: ghlHeaders(GHL_API_KEY),
-    });
-
-    if (!lookupResponse.ok) {
-      if (lookupResponse.status === 404 || lookupResponse.status === 422) {
-        return new Response(
-          JSON.stringify({
-            error: "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com.",
-          }),
-          { status: 404, headers }
-        );
-      }
-      console.error(`[portal-auth] GHL lookup error: ${lookupResponse.status}`);
-      return new Response(
-        JSON.stringify({ error: "Unable to verify your account. Please try again." }),
-        { status: 502, headers }
-      );
-    }
-
-    const lookupData = await lookupResponse.json();
-    const contact = lookupData.contact;
+    console.log(`[portal-auth] Looking up contact: ${email}`);
+    const contact = await findContactByEmail(email, GHL_API_KEY);
 
     if (!contact || !contact.id) {
+      console.log(`[portal-auth] Contact not found for: ${email}`);
       return new Response(
         JSON.stringify({
           error: "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com.",
@@ -116,6 +184,8 @@ export async function onRequestPost(context) {
         { status: 404, headers }
       );
     }
+
+    console.log(`[portal-auth] Contact found: ${contact.id}`);
 
     // Generate magic link token (15-minute expiry)
     const nonce = crypto.randomUUID();
@@ -131,30 +201,43 @@ export async function onRequestPost(context) {
 
     // Store nonce in KV for single-use validation (if KV is available)
     if (context.env.PORTAL_KV) {
-      await context.env.PORTAL_KV.put(`nonce:${nonce}`, "valid", {
-        expirationTtl: 900, // 15 minutes
-      });
+      try {
+        await context.env.PORTAL_KV.put(`nonce:${nonce}`, "valid", {
+          expirationTtl: 900, // 15 minutes
+        });
+        console.log(`[portal-auth] Nonce stored in KV`);
+      } catch (kvErr) {
+        console.error(`[portal-auth] KV put error: ${kvErr.message}`);
+        // Continue anyway — nonce check is optional
+      }
     }
 
-    // Send magic link email via GHL workflow trigger
-    // We tag the contact to trigger a GHL workflow that sends the email
+    // Build the magic link URL
     const magicLink = `https://www.amarimethod.com/portal/verify?token=${encodeURIComponent(token)}`;
 
-    // Update contact with the magic link URL in a custom field so the GHL workflow email template can use it
-    const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
-      method: "PUT",
-      headers: ghlHeaders(GHL_API_KEY),
-      body: JSON.stringify({
-        customFields: [
-          { id: "portal_magic_link", field_value: magicLink },
-        ],
-        tags: ["portal-login-requested"],
-      }),
-    });
+    // Update contact with the magic link URL and trigger tag
+    // Use the key-based custom field format since we may not have the exact GHL field ID
+    try {
+      const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+        method: "PUT",
+        headers: ghlHeaders(GHL_API_KEY),
+        body: JSON.stringify({
+          customFields: [
+            { key: "portal_magic_link", field_value: magicLink },
+          ],
+          tags: [...(contact.tags || []), "portal-login-requested"],
+        }),
+      });
 
-    if (!updateResponse.ok) {
-      console.error(`[portal-auth] Failed to set magic link on contact: ${updateResponse.status}`);
-      // Fall back to just returning success — the token is valid regardless
+      if (!updateResponse.ok) {
+        const errText = await updateResponse.text();
+        console.error(`[portal-auth] Failed to update contact: ${updateResponse.status} ${errText}`);
+        // Don't fail — the token is valid regardless. The email just won't send via GHL workflow.
+      } else {
+        console.log(`[portal-auth] Contact updated with magic link and tag`);
+      }
+    } catch (updateErr) {
+      console.error(`[portal-auth] Contact update error: ${updateErr.message}`);
     }
 
     console.log(`[portal-auth] Magic link generated for contact: ${contact.id}`);
@@ -167,7 +250,7 @@ export async function onRequestPost(context) {
       { status: 200, headers }
     );
   } catch (err) {
-    console.error("[portal-auth] Unexpected error:", err);
+    console.error("[portal-auth] Unexpected error:", err.message, err.stack);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers }
