@@ -136,6 +136,11 @@ export async function onRequestGet(context) {
     if (appointmentsResponse.ok) {
       const apptData = await appointmentsResponse.json();
       allAppointments = apptData.appointments || apptData.events || [];
+      // DEBUG: Log raw appointment to discover all fields (remove after confirming)
+      if (allAppointments.length > 0) {
+        console.log("[portal-data] Raw appointment keys:", Object.keys(allAppointments[0]));
+        console.log("[portal-data] Raw appointment[0]:", JSON.stringify(allAppointments[0]));
+      }
     }
 
     // Parse custom fields for series tracking
