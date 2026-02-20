@@ -59,9 +59,9 @@ function getSeriesActions(client: ClientData): Action[] {
     ];
   }
 
-  // Had exactly 1 session (initial only), no series — offer series upgrade with credit applied
-  // Once they book a follow-up (sessionsCompleted > 1) they're locked into pay-as-you-go
-  if (sessionsCompleted === 1) {
+  // Pay-as-you-go with fewer than 4 sessions — still worth offering series upgrade
+  // At 4+ individual sessions, the savings case is weaker and they're locked in
+  if (sessionsCompleted >= 1 && sessionsCompleted < 4) {
     return [
       {
         icon: ShoppingBag,
@@ -117,19 +117,21 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         style: 'primary',
       };
 
-  const livingPracticeAction: Action = {
-    icon: Play,
-    label: 'Living Practice',
-    description: client.hasLivingPractice
-      ? 'Continue your video program'
-      : 'Add the standalone video program ($347)',
-    href: client.hasLivingPractice
-      ? LIVING_PRACTICE_COURSE_URL
-      : PAYMENT_LINKS.living_practice,
-    style: 'secondary',
-    // Always clickable now — either go to course or purchase
-    disabled: false,
-  };
+  const livingPracticeAction: Action = client.hasLivingPractice
+    ? {
+        icon: Play,
+        label: 'Living Practice',
+        description: 'Continue your video program →',
+        href: LIVING_PRACTICE_COURSE_URL,
+        style: 'secondary',
+      }
+    : {
+        icon: Play,
+        label: 'Living Practice',
+        description: 'Add the standalone video program ($347)',
+        href: PAYMENT_LINKS.living_practice,
+        style: 'secondary',
+      };
 
   const contactAction: Action = {
     icon: MessageCircle,
