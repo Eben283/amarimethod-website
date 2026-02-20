@@ -26,7 +26,7 @@ const PAYMENT_LINKS = {
   single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
 
-const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd';
+const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/';
 
 interface Action {
   icon: React.ElementType;
