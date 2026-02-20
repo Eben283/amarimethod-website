@@ -1,4 +1,4 @@
-import { Calendar, ShoppingBag, Play, MessageCircle } from 'lucide-react';
+import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp } from 'lucide-react';
 import type { ClientData } from '../types/portal';
 
 interface QuickActionsProps {
@@ -13,60 +13,138 @@ const BOOKING_URLS = {
   discovery: 'https://discoverycall.amarimethod.com/discovery-call-booking',
 };
 
-// Series purchase — no checkout pages yet, direct to email
-const SERIES_INQUIRY_URL = 'mailto:hello@amarimethod.com?subject=Series%20Purchase%20Inquiry';
+// GHL Payment Links
+const PAYMENT_LINKS = {
+  series_4:        'https://link.amarimethod.com/payment-link/69986ff988a3f0163e84003d',
+  series_8:        'https://link.amarimethod.com/payment-link/6998736ab409476885754915',
+  upgrade_to_4:    'https://link.amarimethod.com/payment-link/699873a81a8400115e0381db',
+  upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
+  upgrade_4_to_8:  'https://link.amarimethod.com/payment-link/699874221a8400d21b038273',
+  living_practice: 'https://link.amarimethod.com/payment-link/6998745744f21f09ead95e82',
+};
 
-const LIVING_PRACTICE_URL = 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd';
+const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd';
+
+interface Action {
+  icon: React.ElementType;
+  label: string;
+  description: string;
+  href?: string;
+  style: 'primary' | 'secondary';
+  disabled?: boolean;
+}
+
+function getSeriesActions(client: ClientData): Action[] {
+  const { seriesType, sessionsCompleted, hasLivingPractice } = client;
+
+  // Already on 8-session series — top tier, nothing to upgrade to
+  if (seriesType === '8-session') {
+    return [];
+  }
+
+  // Already on 4-session series — offer upgrade to 8
+  if (seriesType === '4-session') {
+    return [
+      {
+        icon: TrendingUp,
+        label: 'Upgrade to 8-Session Series',
+        description: 'Add Living Practice + 4 more sessions — pay the difference ($475)',
+        href: PAYMENT_LINKS.upgrade_4_to_8,
+        style: 'secondary',
+      },
+    ];
+  }
+
+  // No active series but has had sessions — show upgrade pricing
+  if (sessionsCompleted >= 1) {
+    return [
+      {
+        icon: ShoppingBag,
+        label: 'Upgrade to 4-Session Series',
+        description: 'Apply your initial session — pay the difference ($545)',
+        href: PAYMENT_LINKS.upgrade_to_4,
+        style: 'secondary',
+      },
+      {
+        icon: TrendingUp,
+        label: 'Upgrade to 8-Session Series',
+        description: 'Apply your initial session + get Living Practice ($1,020)',
+        href: PAYMENT_LINKS.upgrade_to_8,
+        style: 'secondary',
+      },
+    ];
+  }
+
+  // Brand new client — no sessions yet, show full prices
+  return [
+    {
+      icon: ShoppingBag,
+      label: '4-Session Series',
+      description: 'Four sessions — save vs. individual pricing ($820)',
+      href: PAYMENT_LINKS.series_4,
+      style: 'secondary',
+    },
+    {
+      icon: TrendingUp,
+      label: '8-Session Series',
+      description: 'Eight sessions + Living Practice video program ($1,295)',
+      href: PAYMENT_LINKS.series_8,
+      style: 'secondary',
+    },
+  ];
+}
 
 export default function QuickActions({ client }: QuickActionsProps) {
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingUrl = hasHadInitial ? BOOKING_URLS.followup : BOOKING_URLS.initial_inperson;
   const bookingLabel = hasHadInitial ? 'Book Follow-up' : 'Book Initial Session';
 
-  const actions = [
-    {
-      icon: Calendar,
-      label: bookingLabel,
-      description: hasHadInitial
-        ? 'Schedule your next session'
-        : 'Start your journey with a 90-min session',
-      href: bookingUrl,
-      style: 'primary' as const,
-    },
-    {
-      icon: ShoppingBag,
-      label: client.seriesType !== 'none' ? 'Your Series' : 'Purchase Series',
-      description: client.seriesType !== 'none'
-        ? `You're on a ${client.seriesType} series`
-        : 'Email us about 4 or 8-session packages',
-      href: client.seriesType !== 'none' ? undefined : SERIES_INQUIRY_URL,
-      style: 'secondary' as const,
-      disabled: client.seriesType !== 'none',
-    },
-    {
-      icon: Play,
-      label: 'Living Practice',
-      description: client.hasLivingPractice
-        ? 'Continue your video program'
-        : 'Included with 8-Session Series',
-      href: client.hasLivingPractice ? LIVING_PRACTICE_URL : undefined,
-      style: 'secondary' as const,
-      disabled: !client.hasLivingPractice,
-    },
-    {
-      icon: MessageCircle,
-      label: 'Contact Dr. Garrett',
-      description: 'Questions about your care?',
-      href: 'mailto:hello@amarimethod.com',
-      style: 'secondary' as const,
-    },
+  const bookingAction: Action = {
+    icon: Calendar,
+    label: bookingLabel,
+    description: hasHadInitial
+      ? 'Schedule your next session'
+      : 'Start your journey with a 90-min session',
+    href: bookingUrl,
+    style: 'primary',
+  };
+
+  const livingPracticeAction: Action = {
+    icon: Play,
+    label: 'Living Practice',
+    description: client.hasLivingPractice
+      ? 'Continue your video program'
+      : 'Add the standalone video program ($347)',
+    href: client.hasLivingPractice
+      ? LIVING_PRACTICE_COURSE_URL
+      : PAYMENT_LINKS.living_practice,
+    style: 'secondary',
+    // Always clickable now — either go to course or purchase
+    disabled: false,
+  };
+
+  const contactAction: Action = {
+    icon: MessageCircle,
+    label: 'Contact Dr. Garrett',
+    description: 'Questions about your care?',
+    href: 'mailto:hello@amarimethod.com',
+    style: 'secondary',
+  };
+
+  const seriesActions = getSeriesActions(client);
+
+  const actions: Action[] = [
+    bookingAction,
+    ...seriesActions,
+    livingPracticeAction,
+    contactAction,
   ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {actions.map((action) => {
         const Icon = action.icon;
-        const isDisabled = action.disabled;
+        const isDisabled = !!action.disabled;
 
         const content = (
           <div
