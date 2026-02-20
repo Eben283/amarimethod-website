@@ -60,7 +60,7 @@ async function verifySessionToken(tokenString, secret) {
 function getCustomField(contact, fieldKey) {
   if (!contact.customFields) return null;
   const field = contact.customFields.find(
-    (f) => f.id === fieldKey || f.key === fieldKey
+    (f) => f.id === fieldKey || f.key === fieldKey || f.key === `contact.${fieldKey}`
   );
   return field ? field.value || field.field_value : null;
 }
