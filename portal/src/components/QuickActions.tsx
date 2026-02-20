@@ -97,7 +97,7 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
     ? {
         icon: Calendar,
         label: bookingLabel,
-        description: 'Start your journey with a 90-min session',
+        description: 'Start your journey with a 60-min session',
         onClick: () => setShowInitialChoice(true),
         style: 'primary',
       }
