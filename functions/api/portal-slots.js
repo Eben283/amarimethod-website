@@ -84,25 +84,27 @@ export async function onRequestGet({ request, env }) {
 
     const data = await ghlRes.json();
 
-    // DEBUG: return raw GHL response so we can see what's coming back
-    return json({ debug_raw: data, debug_url: `calendarId=${calendarId}&startDate=${startTimestamp}&endDate=${endTimestamp}&timezone=${timezone}` });
-
-    // GHL returns { _dates_: { "YYYY-MM-DD": { slots: ["HH:MM", ...] } } }
-    // Normalize to a flat array of { date, time, datetime } objects
+    // GHL returns { "YYYY-MM-DD": { slots: ["YYYY-MM-DDTHH:MM:SS-TZ", ...] }, traceId: "..." }
+    // Normalize to a flat array of { date, time, hour, minute, datetime } objects
     const slots = [];
-    const dates = data._dates_ || {};
-    for (const [date, val] of Object.entries(dates)) {
+    for (const [key, val] of Object.entries(data)) {
+      // Skip non-date keys like traceId
+      if (!key.match(/^\d{4}-\d{2}-\d{2}$/)) continue;
+      const date = key; // "YYYY-MM-DD"
       const timeSlots = val.slots || [];
-      for (const time of timeSlots) {
-        // time is like "09:00" or "09:00:00"
-        const [hour, minute] = time.split(':');
+      for (const isoSlot of timeSlots) {
+        // isoSlot is like "2026-02-24T11:30:00-07:00"
+        const slotDate = new Date(isoSlot);
+        const hour = slotDate.getHours();
+        const minute = slotDate.getMinutes();
+        const hh = String(hour).padStart(2, '0');
+        const mm = String(minute).padStart(2, '0');
         slots.push({
-          date,          // "YYYY-MM-DD"
-          time,          // "HH:MM"
-          hour: parseInt(hour),
-          minute: parseInt(minute || '0'),
-          // ISO datetime for creating the appointment
-          datetime: `${date}T${time.length === 5 ? time + ':00' : time}`,
+          date,                    // "YYYY-MM-DD"
+          time: `${hh}:${mm}`,    // "HH:MM" in user's local time
+          hour,
+          minute,
+          datetime: isoSlot,       // full ISO string for booking
         });
       }
     }
