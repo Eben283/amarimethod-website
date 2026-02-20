@@ -84,6 +84,9 @@ export async function onRequestGet({ request, env }) {
 
     const data = await ghlRes.json();
 
+    // DEBUG: return raw GHL response so we can see what's coming back
+    return json({ debug_raw: data, debug_url: `calendarId=${calendarId}&startDate=${startTimestamp}&endDate=${endTimestamp}&timezone=${timezone}` });
+
     // GHL returns { _dates_: { "YYYY-MM-DD": { slots: ["HH:MM", ...] } } }
     // Normalize to a flat array of { date, time, datetime } objects
     const slots = [];
