@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp } from 'lucide-react';
 import type { ClientData } from '../types/portal';
+import BookingModal from './BookingModal';
 
 interface QuickActionsProps {
   client: ClientData;
@@ -30,6 +32,7 @@ interface Action {
   label: string;
   description: string;
   href?: string;
+  onClick?: () => void;
   style: 'primary' | 'secondary';
   disabled?: boolean;
 }
@@ -95,19 +98,28 @@ function getSeriesActions(client: ClientData): Action[] {
 }
 
 export default function QuickActions({ client }: QuickActionsProps) {
-  const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
-  const bookingUrl = hasHadInitial ? BOOKING_URLS.followup : BOOKING_URLS.initial_inperson;
-  const bookingLabel = hasHadInitial ? 'Book Follow-up' : 'Book Initial Session';
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
-  const bookingAction: Action = {
-    icon: Calendar,
-    label: bookingLabel,
-    description: hasHadInitial
-      ? 'Schedule your next session'
-      : 'Start your journey with a 90-min session',
-    href: bookingUrl,
-    style: 'primary',
-  };
+  const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
+  const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
+
+  // Follow-ups use the custom in-portal booking modal.
+  // Initial session still goes to the external GHL page.
+  const bookingAction: Action = hasHadInitial
+    ? {
+        icon: Calendar,
+        label: bookingLabel,
+        description: 'Schedule your next in-person or virtual session',
+        onClick: () => setShowBookingModal(true),
+        style: 'primary',
+      }
+    : {
+        icon: Calendar,
+        label: bookingLabel,
+        description: 'Start your journey with a 90-min session',
+        href: BOOKING_URLS.initial_inperson,
+        style: 'primary',
+      };
 
   const livingPracticeAction: Action = {
     icon: Play,
@@ -141,53 +153,73 @@ export default function QuickActions({ client }: QuickActionsProps) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {actions.map((action) => {
-        const Icon = action.icon;
-        const isDisabled = !!action.disabled;
+    <>
+      {showBookingModal && (
+        <BookingModal onClose={() => setShowBookingModal(false)} />
+      )}
 
-        const content = (
-          <div
-            className={`portal-card flex items-start gap-4 ${
-              isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer hover:shadow-card-hover'
-            } ${action.style === 'primary' ? 'border-amari-charcoal' : ''}`}
-          >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          const isDisabled = !!action.disabled;
+
+          const content = (
             <div
-              className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                action.style === 'primary'
-                  ? 'bg-amari-charcoal text-white'
-                  : 'bg-amari-light-sand text-amari-charcoal'
-              }`}
+              className={`portal-card flex items-start gap-4 ${
+                isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer hover:shadow-card-hover'
+              } ${action.style === 'primary' ? 'border-amari-charcoal' : ''}`}
             >
-              <Icon className="w-5 h-5" />
+              <div
+                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                  action.style === 'primary'
+                    ? 'bg-amari-charcoal text-white'
+                    : 'bg-amari-light-sand text-amari-charcoal'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
+                  {action.label}
+                </h3>
+                <p className="text-xs text-amari-text-muted mt-0.5">
+                  {action.description}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
-                {action.label}
-              </h3>
-              <p className="text-xs text-amari-text-muted mt-0.5">
-                {action.description}
-              </p>
-            </div>
-          </div>
-        );
+          );
 
-        if (isDisabled || !action.href) {
-          return <div key={action.label}>{content}</div>;
-        }
+          // Button-style action (opens modal)
+          if (action.onClick) {
+            return (
+              <button
+                key={action.label}
+                onClick={action.onClick}
+                className="text-left no-underline w-full"
+              >
+                {content}
+              </button>
+            );
+          }
 
-        return (
-          <a
-            key={action.label}
-            href={action.href}
-            target={action.href.startsWith('http') ? '_blank' : undefined}
-            rel={action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-            className="no-underline"
-          >
-            {content}
-          </a>
-        );
-      })}
-    </div>
+          // Disabled or no href
+          if (isDisabled || !action.href) {
+            return <div key={action.label}>{content}</div>;
+          }
+
+          return (
+            <a
+              key={action.label}
+              href={action.href}
+              target={action.href.startsWith('http') ? '_blank' : undefined}
+              rel={action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="no-underline"
+            >
+              {content}
+            </a>
+          );
+        })}
+      </div>
+    </>
   );
 }

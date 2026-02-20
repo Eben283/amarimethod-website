@@ -56,4 +56,39 @@ export async function cancelAppointment(appointmentId: string, title: string): P
   });
 }
 
+export interface SlotResult {
+  date: string;
+  time: string;
+  hour: number;
+  minute: number;
+  datetime: string;
+}
+
+export async function getAvailableSlots(
+  calendarId: string,
+  startDate: string,
+  endDate: string,
+  timezone: string,
+): Promise<{ slots: SlotResult[] }> {
+  const params = new URLSearchParams({ calendarId, startDate, endDate, timezone });
+  return fetchApi(`/portal-slots?${params.toString()}`, { method: 'GET' });
+}
+
+export interface BookAppointmentPayload {
+  calendarId: string;
+  startTime: string;
+  timezone: string;
+  sessionType: 'in-person' | 'virtual';
+}
+
+export async function bookAppointment(payload: BookAppointmentPayload): Promise<{
+  success: boolean;
+  appointment: { id: string; title: string; startTime: string; sessionType: string };
+}> {
+  return fetchApi('/portal-book', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export { ApiError };

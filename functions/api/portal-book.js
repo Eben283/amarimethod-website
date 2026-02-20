@@ -1,0 +1,135 @@
+/**
+ * POST /api/portal-book
+ * Creates an appointment in GHL for the authenticated client.
+ *
+ * Body: {
+ *   calendarId: string,
+ *   startTime: string,   // ISO datetime e.g. "2026-02-20T10:00:00"
+ *   timezone: string,    // e.g. "America/New_York"
+ *   sessionType: 'in-person' | 'virtual'
+ * }
+ */
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+}
+
+export async function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS });
+}
+
+export async function onRequestPost({ request, env }) {
+  // Verify session token and extract contactId
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.replace('Bearer ', '').trim();
+  if (!token) return json({ error: 'Unauthorized' }, 401);
+
+  let contactId, email;
+  try {
+    const { verifyJwt } = await import('./_jwt.js');
+    const payload = await verifyJwt(token, env.JWT_SECRET, 'session');
+    contactId = payload.contactId;
+    email = payload.email;
+  } catch {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { calendarId, startTime, timezone, sessionType } = body;
+
+  if (!calendarId || !startTime || !timezone || !sessionType) {
+    return json({ error: 'calendarId, startTime, timezone, and sessionType are required' }, 400);
+  }
+
+  // Fetch contact details from GHL to get name/phone
+  let contact;
+  try {
+    const contactRes = await fetch(
+      `https://services.leadconnectorhq.com/contacts/${contactId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${env.GHL_API_KEY}`,
+          Version: '2021-07-28',
+        },
+      }
+    );
+    if (!contactRes.ok) throw new Error(`GHL contact fetch failed: ${contactRes.status}`);
+    const contactData = await contactRes.json();
+    contact = contactData.contact;
+  } catch (err) {
+    console.error('Failed to fetch contact:', err);
+    return json({ error: 'Failed to retrieve contact information' }, 422);
+  }
+
+  // Create the appointment title
+  const title = sessionType === 'virtual'
+    ? 'Follow-up Session (Virtual)'
+    : 'Follow-up Session (In Person)';
+
+  // Build the appointment payload
+  const appointmentPayload = {
+    calendarId,
+    locationId: env.GHL_LOCATION_ID || '7pIO7FHVAyBT1jKGhfQM',
+    contactId,
+    startTime,
+    timezone,
+    title,
+    appointmentStatus: 'confirmed',
+    // Pre-fill contact details
+    firstName: contact?.firstName || '',
+    lastName: contact?.lastName || '',
+    email: contact?.email || email,
+    phone: contact?.phone || '',
+  };
+
+  try {
+    const bookRes = await fetch(
+      'https://services.leadconnectorhq.com/calendars/events/appointments',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${env.GHL_API_KEY}`,
+          Version: '2021-07-28',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentPayload),
+      }
+    );
+
+    if (!bookRes.ok) {
+      const err = await bookRes.text();
+      console.error('GHL booking error:', bookRes.status, err);
+      return json({ error: 'Failed to create appointment', details: err }, 422);
+    }
+
+    const apptData = await bookRes.json();
+
+    return json({
+      success: true,
+      appointment: {
+        id: apptData.id,
+        title,
+        startTime,
+        sessionType,
+      },
+    });
+  } catch (err) {
+    console.error('portal-book error:', err);
+    return json({ error: 'Internal server error' }, 500);
+  }
+}
