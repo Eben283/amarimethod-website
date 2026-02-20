@@ -138,8 +138,11 @@ export async function onRequestGet(context) {
       allAppointments = apptData.appointments || apptData.events || [];
     }
 
-    // DEBUG: log raw custom fields so we can see what GHL actually returns
-    console.log("[portal-data] customFields raw:", JSON.stringify(contact.customFields));
+    // DEBUG: temporarily return raw customFields so we can see what GHL actually returns
+    return new Response(
+      JSON.stringify({ debug_customFields: contact.customFields }),
+      { status: 200, headers }
+    );
 
     // Parse custom fields for series tracking
     const seriesType = getCustomField(contact, "series_type") || "none";
