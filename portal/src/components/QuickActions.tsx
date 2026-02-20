@@ -59,8 +59,9 @@ function getSeriesActions(client: ClientData): Action[] {
     ];
   }
 
-  // Had initial session, no series yet — show apply-the-difference pricing
-  if (sessionsCompleted >= 1) {
+  // Had exactly 1 session (initial only), no series — offer series upgrade with credit applied
+  // Once they book a follow-up (sessionsCompleted > 1) they're locked into pay-as-you-go
+  if (sessionsCompleted === 1) {
     return [
       {
         icon: ShoppingBag,

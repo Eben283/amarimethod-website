@@ -120,10 +120,10 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
             <p className="text-sm text-amari-text-secondary">
               You've completed <span className="font-semibold">{client.sessionsCompleted}</span> session{client.sessionsCompleted !== 1 ? 's' : ''} so far.
             </p>
-            {client.sessionsCompleted > 0 && (
+            {client.sessionsCompleted === 1 && client.seriesType === 'none' && (
               <div className="mt-3 p-3 bg-amari-light-sand rounded-lg">
                 <p className="text-sm text-amari-text-secondary">
-                  <span className="font-medium">Save with a series:</span> Whatever you've already paid applies toward a series upgrade at any time.
+                  <span className="font-medium">Ready to commit to your care?</span> Your initial session cost applies toward a 4 or 8-session series.
                 </p>
               </div>
             )}
