@@ -38,7 +38,7 @@ interface Action {
 }
 
 function getSeriesActions(client: ClientData): Action[] {
-  const { seriesType, sessionsCompleted, hasLivingPractice } = client;
+  const { seriesType, sessionsCompleted } = client;
 
   // Already on 8-session series — top tier, nothing to upgrade to
   if (seriesType === '8-session') {
@@ -51,50 +51,35 @@ function getSeriesActions(client: ClientData): Action[] {
       {
         icon: TrendingUp,
         label: 'Upgrade to 8-Session Series',
-        description: 'Add Living Practice + 4 more sessions — pay the difference ($475)',
+        description: 'Add 4 more sessions + Living Practice — pay just $475',
         href: PAYMENT_LINKS.upgrade_4_to_8,
         style: 'secondary',
       },
     ];
   }
 
-  // No active series but has had sessions — show upgrade pricing
+  // Had initial session, no series yet — show apply-the-difference pricing
   if (sessionsCompleted >= 1) {
     return [
       {
         icon: ShoppingBag,
-        label: 'Upgrade to 4-Session Series',
-        description: 'Apply your initial session — pay the difference ($545)',
+        label: 'Continue with a 4-Session Series',
+        description: 'Your initial session applies — pay just $545',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
       },
       {
         icon: TrendingUp,
-        label: 'Upgrade to 8-Session Series',
-        description: 'Apply your initial session + get Living Practice ($1,020)',
+        label: 'Continue with an 8-Session Series',
+        description: 'Your initial session applies — pay just $1,020',
         href: PAYMENT_LINKS.upgrade_to_8,
         style: 'secondary',
       },
     ];
   }
 
-  // Brand new client — no sessions yet, show full prices
-  return [
-    {
-      icon: ShoppingBag,
-      label: '4-Session Series',
-      description: 'Four sessions — save vs. individual pricing ($820)',
-      href: PAYMENT_LINKS.series_4,
-      style: 'secondary',
-    },
-    {
-      icon: TrendingUp,
-      label: '8-Session Series',
-      description: 'Eight sessions + Living Practice video program ($1,295)',
-      href: PAYMENT_LINKS.series_8,
-      style: 'secondary',
-    },
-  ];
+  // Discovery call client — no sessions yet, no series cards
+  return [];
 }
 
 export default function QuickActions({ client }: QuickActionsProps) {
