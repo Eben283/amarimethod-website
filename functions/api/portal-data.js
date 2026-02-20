@@ -218,6 +218,12 @@ export async function onRequestGet(context) {
         },
         appointments: pastAppointments,
         upcomingAppointments,
+        _debug: {
+          lpRaw,
+          paRaw,
+          fieldDefs,
+          rawCustomFields: contact.customFields || [],
+        },
       }),
       { status: 200, headers }
     );
