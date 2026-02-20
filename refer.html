@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit a Referral | Amari Method Partner Portal</title>
+  <meta name="description" content="Submit a client referral to the Amari Method. We'll reach out to your client and handle booking, sessions, and follow-up.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="author" content="Amari Method">
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="canonical" href="https://www.amarimethod.com/refer">
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M3GJ6SZPY6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M3GJ6SZPY6');
+  </script>
+
+  <link rel="stylesheet" href="css/style-v5.css?v=14">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<!-- Navigation -->
+      <nav>
+    <a href="index.html" class="logo" style="text-decoration: none;">
+      <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
+    </a>
+    <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    <ul class="nav-menu">
+      <li><a href="index.html#why">Why Amari Method</a></li>
+      <li><a href="index.html#how">How It Works</a></li>
+      <li><a href="index.html#services">Services</a></li>
+      <li><a href="blog.html">Free Resources</a></li>
+      <li><a href="booking">Pricing</a></li>
+      <li><a href="tools.html">Tools</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="/portal">Client Portal</a></li>
+    </ul>
+    <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Session</span></span></a>
+  </nav>
+<!-- ===== MAIN CONTENT ===== -->
+<main>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="container hero-content">
+      <h1>Submit a Client Referral</h1>
+      <p class="hero-subtitle">Fill out your client's info below. We'll send them a warm intro email with a booking link.</p>
+    </div>
+  </section>
+
+  <!-- ===== REFERRAL FORM ===== -->
+  <section>
+    <div class="container">
+      <div style="max-width: 600px; margin: 0 auto;">
+
+        <div id="referral-form-container">
+          <form id="referral-form">
+
+            <h2 style="margin-bottom: var(--space-lg);">Your Information</h2>
+
+            <div class="form-group">
+              <label for="affiliate-name">Your Name *</label>
+              <input type="text" id="affiliate-name" name="affiliateName" required>
+            </div>
+
+            <div class="form-group">
+              <label for="affiliate-email">Your Email *</label>
+              <input type="email" id="affiliate-email" name="affiliateEmail" required>
+            </div>
+
+            <h2 style="margin-top: var(--space-xl); margin-bottom: var(--space-lg);">Client Information</h2>
+
+            <div class="form-group">
+              <label for="client-first-name">Client First Name *</label>
+              <input type="text" id="client-first-name" name="clientFirstName" required>
+            </div>
+
+            <div class="form-group">
+              <label for="client-last-name">Client Last Name *</label>
+              <input type="text" id="client-last-name" name="clientLastName" required>
+            </div>
+
+            <div class="form-group">
+              <label for="client-email">Client Email *</label>
+              <input type="email" id="client-email" name="clientEmail" required>
+            </div>
+
+            <div class="form-group">
+              <label for="client-phone">Client Phone</label>
+              <input type="tel" id="client-phone" name="clientPhone">
+            </div>
+
+            <div class="form-group">
+              <label for="notes">Notes <span style="color: var(--color-text-muted); font-weight: 400;">(optional)</span></label>
+              <textarea id="notes" name="notes" rows="4" placeholder="Anything we should know about this client? Pain areas, goals, etc."></textarea>
+            </div>
+
+            <div id="form-error" style="display: none; background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 8px; padding: 1rem; margin-bottom: var(--space-md); color: #c62828;"></div>
+
+            <button type="submit" id="submit-btn" class="btn-primary btn-block" style="margin-top: var(--space-md);">
+              <span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Referral</span></span>
+            </button>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: var(--space-sm); text-align: center;">Your client will receive a booking email within minutes.</p>
+          </form>
+        </div>
+
+        <div id="referral-success" style="display: none; text-align: center; padding: var(--space-2xl) 0;">
+          <div style="font-size: 3rem; margin-bottom: var(--space-md);">&#10003;</div>
+          <h2 style="margin-bottom: var(--space-md);">Client Referred Successfully</h2>
+          <p style="font-size: 1.1rem; margin-bottom: var(--space-lg); color: var(--color-text-secondary);">We've received your referral and will send your client a booking email shortly. You'll be notified once they book.</p>
+          <a href="refer" class="btn-secondary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Another Referral</span></span></a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<!-- Footer -->
+        <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 40px; width: auto; margin-bottom: 1rem;" loading="lazy">
+                <p>Freedom From Pain. Results For Life.</p>
+                <p style="margin-top: 1rem; font-size: 0.9rem;">
+                    hello@amarihealth.com<br>
+                    San Francisco, CA
+                </p>
+            </div>
+            <div class="footer-section">
+                <h3>Services</h3>
+                <ul>
+                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
+                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
+                    <li><a href="booking">Online Program</a></li>
+                    <li><a href="ongoing-care">Ongoing Care</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>About</h3>
+                <ul>
+                    <li><a href="index.html#why">Why Amari Method</a></li>
+                    <li><a href="about.html">About Dr. Garrett</a></li>
+                    <li><a href="index.html#how">How It Works</a></li>
+                    <li><a href="index.html#results">Results & Reviews</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Get Started</h3>
+                <ul>
+                    <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
+                    <li><a href="client-info.html">Client Information</a></li>
+                    <li><a href="booking">View Pricing & Packages</a></li>
+                    <li><a href="index.html#services">Book Your Session</a></li>
+                    <li><a href="/portal">Client Portal</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Made by Forrest Designs | <a href="affiliate">Partnership Program</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; 2025 Amari Method</p>
+        </div>
+    </footer>
+
+<script src="js/main.js" defer></script>
+<script>
+  document.getElementById('referral-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitBtn = document.getElementById('submit-btn');
+    const errorDiv = document.getElementById('form-error');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const originalText = btnText.textContent;
+
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    btnText.textContent = 'Submitting...';
+    errorDiv.style.display = 'none';
+
+    const payload = {
+      affiliateName: form.affiliateName.value.trim(),
+      affiliateEmail: form.affiliateEmail.value.trim(),
+      clientFirstName: form.clientFirstName.value.trim(),
+      clientLastName: form.clientLastName.value.trim(),
+      clientEmail: form.clientEmail.value.trim(),
+      clientPhone: form.clientPhone.value.trim(),
+      notes: form.notes.value.trim(),
+    };
+
+    try {
+      const response = await fetch('/api/affiliate-refer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+      }
+
+      // Show success
+      document.getElementById('referral-form-container').style.display = 'none';
+      document.getElementById('referral-success').style.display = 'block';
+
+      // Track in GA4
+      gtag('event', 'affiliate_referral_submitted', {
+        affiliate_email: payload.affiliateEmail,
+      });
+
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+      submitBtn.disabled = false;
+      btnText.textContent = originalText;
+    }
+  });
+</script>
+</body>
+</html>
