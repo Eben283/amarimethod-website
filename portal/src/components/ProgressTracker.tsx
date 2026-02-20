@@ -47,6 +47,14 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
     }
   }
 
+  function getRescheduleUrl(title: string): string | null {
+    const t = title.toLowerCase();
+    if (t.includes('discovery')) return 'https://discoverycall.amarimethod.com/discovery-call-booking';
+    if (t.includes('initial') && t.includes('virtual')) return 'https://introsessionvirtual.amarimethod.com/is-virtual-info';
+    if (t.includes('initial')) return 'https://back-pain-session-inperson.amarimethod.com/client-info';
+    return null; // follow-up — use modal
+  }
+
   async function handleReschedule(appointmentId: string, title: string) {
     setReschedulingId(appointmentId);
     setCancelError(null);
@@ -54,11 +62,13 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
       await cancelAppointment(appointmentId, title);
       setConfirmingId(null);
       onRefetch();
-      // Open booking modal if available, otherwise fall back to external page
-      if (onBookSession) {
+      const externalUrl = getRescheduleUrl(title);
+      if (externalUrl) {
+        // Discovery call or initial session — send to appropriate GHL page
+        window.open(externalUrl, '_blank', 'noopener,noreferrer');
+      } else if (onBookSession) {
+        // Follow-up — open the in-portal booking modal
         onBookSession();
-      } else {
-        window.open('https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session', '_blank', 'noopener,noreferrer');
       }
     } catch (err) {
       setCancelError(
