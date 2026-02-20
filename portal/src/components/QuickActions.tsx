@@ -52,7 +52,7 @@ function getSeriesActions(client: ClientData): Action[] {
       {
         icon: TrendingUp,
         label: 'Upgrade to 8-Session Series',
-        description: 'Add 4 more sessions + Living Practice — pay just $475',
+        description: 'Add 4 more sessions + Living Practice video program — pay just $475',
         href: PAYMENT_LINKS.upgrade_4_to_8,
         style: 'secondary',
       },
@@ -66,14 +66,14 @@ function getSeriesActions(client: ClientData): Action[] {
       {
         icon: ShoppingBag,
         label: 'Continue with a 4-Session Series',
-        description: 'Your initial session applies — pay just $545',
+        description: '3 more sessions at a package rate — pay just $545',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
       },
       {
         icon: TrendingUp,
         label: 'Continue with an 8-Session Series',
-        description: 'Your initial session applies — pay just $1,020',
+        description: '7 more sessions + Living Practice video program — pay just $1,020',
         href: PAYMENT_LINKS.upgrade_to_8,
         style: 'secondary',
       },
