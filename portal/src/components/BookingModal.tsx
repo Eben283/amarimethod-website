@@ -97,7 +97,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
 
     try {
       const data = await getAvailableSlots(calendarId, startDate, endDate, timezone);
-      setSlots(data.slots);
+      setSlots(data.slots ?? []);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to load available times';
       setSlotsError(msg);
