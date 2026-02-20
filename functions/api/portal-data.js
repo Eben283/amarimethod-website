@@ -2,6 +2,7 @@
 // Returns client data from GHL: contact details, appointments, series progress
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -57,12 +58,18 @@ async function verifySessionToken(tokenString, secret) {
 }
 
 // Extract custom field value from GHL contact
-function getCustomField(contact, fieldKey) {
+// fieldDefs is a map of { [key: string]: string } — field key (short) → field ID
+function getCustomField(contact, fieldKey, fieldDefs = {}) {
   if (!contact.customFields) return null;
+  const fieldId = fieldDefs[fieldKey];
   const field = contact.customFields.find(
-    (f) => f.id === fieldKey || f.key === fieldKey || f.key === `contact.${fieldKey}`
+    (f) =>
+      (fieldId && f.id === fieldId) ||
+      f.id === fieldKey ||
+      f.key === fieldKey ||
+      f.key === `contact.${fieldKey}`
   );
-  return field ? field.value || field.field_value : null;
+  return field ? field.value ?? field.field_value : null;
 }
 
 export async function onRequestOptions(context) {
@@ -110,15 +117,30 @@ export async function onRequestGet(context) {
 
     const contactId = tokenPayload.contactId;
 
-    // Fetch contact details and appointments in parallel
-    const [contactResponse, appointmentsResponse] = await Promise.all([
+    // Fetch contact details, appointments, and custom field definitions in parallel
+    const [contactResponse, appointmentsResponse, fieldDefsResponse] = await Promise.all([
       fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         headers: ghlHeaders(GHL_API_KEY),
       }),
       fetch(`${GHL_API_BASE}/contacts/${contactId}/appointments`, {
         headers: ghlHeaders(GHL_API_KEY),
       }),
+      fetch(`${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`, {
+        headers: ghlHeaders(GHL_API_KEY),
+      }),
     ]);
+
+    // Build a map of short field key → field ID (e.g. "sessions_completed" → "TE0udwVH1Km5RsKaN5H0")
+    let fieldDefs = {};
+    if (fieldDefsResponse.ok) {
+      const fieldDefsData = await fieldDefsResponse.json();
+      const allFields = fieldDefsData.customFields || [];
+      for (const f of allFields) {
+        // f.fieldKey is like "contact.sessions_completed" — strip the "contact." prefix
+        const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
+        if (shortKey) fieldDefs[shortKey] = f.id;
+      }
+    }
 
     if (!contactResponse.ok) {
       console.error(`[portal-data] GHL contact fetch error: ${contactResponse.status}`);
@@ -138,26 +160,20 @@ export async function onRequestGet(context) {
       allAppointments = apptData.appointments || apptData.events || [];
     }
 
-    // DEBUG: temporarily return raw customFields so we can see what GHL actually returns
-    return new Response(
-      JSON.stringify({ debug_customFields: contact.customFields }),
-      { status: 200, headers }
-    );
-
     // Parse custom fields for series tracking
-    const seriesType = getCustomField(contact, "series_type") || "none";
-    const fieldSessionsCompleted = parseInt(getCustomField(contact, "sessions_completed") || "0", 10);
-    const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining") || "0", 10);
+    const seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
+    const fieldSessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
+    const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
 
     // Count actual completed appointments as a fallback for sessions_completed
     const completedAppointmentCount = allAppointments.filter(
       (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
     ).length;
     const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
-    const lpField = (getCustomField(contact, "living_practice_access") || "").toString().toLowerCase();
+    const lpField = (getCustomField(contact, "living_practice_access", fieldDefs) ?? "").toString().toLowerCase();
     const hasLivingPractice = ["true", "yes", "1"].includes(lpField) ||
       (contact.tags || []).includes("living-practice-access");
-    const paField = (getCustomField(contact, "portal_access") || "").toString().toLowerCase();
+    const paField = (getCustomField(contact, "portal_access", fieldDefs) ?? "").toString().toLowerCase();
     const portalAccess = ["true", "yes", "1"].includes(paField) ||
       (contact.tags || []).includes("portal-access");
 
