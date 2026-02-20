@@ -1,4 +1,5 @@
-import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video } from 'lucide-react';
 import type { ClientData } from '../types/portal';
 
 interface QuickActionsProps {
@@ -82,11 +83,12 @@ function getSeriesActions(client: ClientData): Action[] {
 }
 
 export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
+  const [showInitialChoice, setShowInitialChoice] = useState(false);
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
   // Follow-ups use the custom in-portal booking modal.
-  // Initial session still goes to the external GHL page.
+  // Initial session expands an inline In Person / Virtual choice.
   const bookingAction: Action = hasHadInitial
     ? {
         icon: Calendar,
@@ -99,7 +101,7 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         icon: Calendar,
         label: bookingLabel,
         description: 'Start your journey with a 90-min session',
-        href: BOOKING_URLS.initial_inperson,
+        onClick: () => setShowInitialChoice(true),
         style: 'primary',
       };
 
@@ -140,6 +142,64 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         {actions.map((action) => {
           const Icon = action.icon;
           const isDisabled = !!action.disabled;
+          const isBookingCard = action.label === bookingLabel && !hasHadInitial;
+
+          // Initial session card — expands to show In Person / Virtual choice
+          if (isBookingCard) {
+            return (
+              <div key={action.label} className={`portal-card border-amari-charcoal`}>
+                {!showInitialChoice ? (
+                  <button
+                    onClick={() => setShowInitialChoice(true)}
+                    className="flex items-start gap-4 w-full text-left"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <a
+                        href={BOOKING_URLS.initial_inperson}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors no-underline"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        In Person
+                      </a>
+                      <a
+                        href={BOOKING_URLS.initial_virtual}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors no-underline"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Virtual
+                      </a>
+                    </div>
+                    <button
+                      onClick={() => setShowInitialChoice(false)}
+                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           const content = (
             <div
