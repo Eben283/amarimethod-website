@@ -1335,38 +1335,6 @@ footer {
     padding: 0 2rem;
   }
 
-  header nav {
-    padding: 0 2rem;
-  }
-
-  h1 {
-    font-size: 3.5rem;
-  }
-
-  h2 {
-    font-size: 2.5rem;
-  }
-
-  .hero {
-    padding: 4rem 0;
-  }
-
-  .featured-testimonial,
-  .credentials-grid {
-    grid-template-columns: 1fr;
-    gap: 2.5rem;
-  }
-
-  .nav-menu {
-    gap: 2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 0 1.5rem;
-  }
-
   header {
     padding: 1rem 0;
   }
@@ -1440,6 +1408,30 @@ footer {
 
   nav > .btn-primary {
     display: none !important;
+  }
+
+  h1 {
+    font-size: 3.5rem;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+  }
+
+  .hero {
+    padding: 4rem 0;
+  }
+
+  .featured-testimonial,
+  .credentials-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1.5rem;
   }
 
   h1 {
