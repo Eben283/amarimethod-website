@@ -170,15 +170,17 @@ export async function onRequestGet(context) {
       (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
     ).length;
     const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
+    // GHL checkbox fields return either: true (bool), "true" (string), or ["true"] (array)
+    function isChecked(raw) {
+      if (!raw && raw !== 0) return false;
+      if (Array.isArray(raw)) return raw.some(v => ["true","yes","1"].includes(String(v).toLowerCase()));
+      return ["true","yes","1"].includes(String(raw).toLowerCase());
+    }
+
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
-    const lpField = (lpRaw ?? "").toString().toLowerCase();
-    const hasLivingPractice = !!lpRaw || ["true", "yes", "1"].includes(lpField) ||
-      (contact.tags || []).includes("living-practice-access");
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
-    const paField = (paRaw ?? "").toString().toLowerCase();
-    const portalAccess = !!paRaw || ["true", "yes", "1"].includes(paField) ||
-      (contact.tags || []).includes("portal-access");
-    console.log("[portal-data] lp raw:", JSON.stringify(lpRaw), "pa raw:", JSON.stringify(paRaw), "fieldDefs keys:", Object.keys(fieldDefs).join(","));
+    const hasLivingPractice = isChecked(lpRaw) || (contact.tags || []).includes("living-practice-access");
+    const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
 
     // Sort appointments by date
     const now = new Date().toISOString();
@@ -218,12 +220,6 @@ export async function onRequestGet(context) {
         },
         appointments: pastAppointments,
         upcomingAppointments,
-        _debug: {
-          lpRaw,
-          paRaw,
-          fieldDefs,
-          rawCustomFields: contact.customFields || [],
-        },
       }),
       { status: 200, headers }
     );
