@@ -170,12 +170,15 @@ export async function onRequestGet(context) {
       (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
     ).length;
     const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
-    const lpField = (getCustomField(contact, "living_practice_access", fieldDefs) ?? "").toString().toLowerCase();
-    const hasLivingPractice = ["true", "yes", "1"].includes(lpField) ||
+    const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
+    const lpField = (lpRaw ?? "").toString().toLowerCase();
+    const hasLivingPractice = !!lpRaw || ["true", "yes", "1"].includes(lpField) ||
       (contact.tags || []).includes("living-practice-access");
-    const paField = (getCustomField(contact, "portal_access", fieldDefs) ?? "").toString().toLowerCase();
-    const portalAccess = ["true", "yes", "1"].includes(paField) ||
+    const paRaw = getCustomField(contact, "portal_access", fieldDefs);
+    const paField = (paRaw ?? "").toString().toLowerCase();
+    const portalAccess = !!paRaw || ["true", "yes", "1"].includes(paField) ||
       (contact.tags || []).includes("portal-access");
+    console.log("[portal-data] lp raw:", JSON.stringify(lpRaw), "pa raw:", JSON.stringify(paRaw), "fieldDefs keys:", Object.keys(fieldDefs).join(","));
 
     // Sort appointments by date
     const now = new Date().toISOString();
