@@ -23,6 +23,7 @@ const PAYMENT_LINKS = {
   upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
   upgrade_4_to_8:  'https://link.amarimethod.com/payment-link/699874221a8400d21b038273',
   living_practice: 'https://link.amarimethod.com/payment-link/6998745744f21f09ead95e82',
+  single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
 
 const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd';
@@ -87,21 +88,31 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
-  // Follow-ups use the custom in-portal booking modal.
-  // Initial session expands an inline In Person / Virtual choice.
-  const bookingAction: Action = hasHadInitial
+  // Series clients → in-portal booking modal (pre-paid, no payment needed)
+  // Pay-as-you-go clients (had initial, no series) → payment link first
+  // New clients → inline In Person / Virtual choice
+  const isPayAsYouGo = client.sessionsCompleted >= 1 && client.seriesType === 'none';
+  const bookingAction: Action = !hasHadInitial
     ? {
         icon: Calendar,
         label: bookingLabel,
-        description: 'Schedule your next in-person or virtual session',
-        onClick: onBookSession,
+        description: 'Start your journey with a 90-min session',
+        onClick: () => setShowInitialChoice(true),
+        style: 'primary',
+      }
+    : isPayAsYouGo
+    ? {
+        icon: Calendar,
+        label: bookingLabel,
+        description: 'Book and pay for a single session ($190)',
+        href: PAYMENT_LINKS.single_followup,
         style: 'primary',
       }
     : {
         icon: Calendar,
         label: bookingLabel,
-        description: 'Start your journey with a 90-min session',
-        onClick: () => setShowInitialChoice(true),
+        description: 'Schedule your next in-person or virtual session',
+        onClick: onBookSession,
         style: 'primary',
       };
 
