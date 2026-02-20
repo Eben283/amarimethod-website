@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import PortalNav from '../components/PortalNav';
 import QuickActions from '../components/QuickActions';
 import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
+import BookingModal from '../components/BookingModal';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 import { getGreeting } from '../lib/utils';
@@ -10,6 +12,7 @@ import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   if (isLoading) {
     return (
@@ -49,35 +52,56 @@ export default function DashboardPage() {
   if (!data) return null;
 
   const { client, appointments, upcomingAppointments } = data;
+  const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
 
   return (
     <>
       <PortalNav />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-        {/* Welcome */}
-        <div className="mb-8 animate-fade-in">
+      {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+
+        {/* ── Greeting ── */}
+        <div className="animate-fade-in">
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-amari-charcoal">
             {getGreeting()}, {client.firstName}
           </h1>
-          <p className="text-amari-text-muted mt-1">
-            Here's where you stand with your care.
+          <p className="text-amari-text-muted mt-1 text-sm">
+            {client.seriesType !== 'none'
+              ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining in your ${client.seriesType} series`
+              : hasHadInitial
+                ? 'Welcome back — ready to book your next session?'
+                : 'Welcome — your portal is ready.'}
           </p>
         </div>
 
-        {/* Quick Actions */}
-        <section className="mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <QuickActions client={client} />
-        </section>
-
-        {/* Progress + Upcoming | Session History grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <ProgressTracker client={client} upcomingAppointments={upcomingAppointments} onRefetch={refetch} />
-          </div>
-          <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+        {/* ── Zone 1: Your Care ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
+            Your Care
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ProgressTracker
+              client={client}
+              upcomingAppointments={upcomingAppointments}
+              onRefetch={refetch}
+              onBookSession={hasHadInitial ? () => setShowBookingModal(true) : undefined}
+            />
             <SessionHistory appointments={appointments} />
           </div>
-        </div>
+        </section>
+
+        {/* ── Divider ── */}
+        <div className="border-t border-amari-border" />
+
+        {/* ── Zone 2: Actions ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
+            Book &amp; Manage
+          </h2>
+          <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+        </section>
+
       </main>
     </>
   );

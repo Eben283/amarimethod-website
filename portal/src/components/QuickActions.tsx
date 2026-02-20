@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp } from 'lucide-react';
 import type { ClientData } from '../types/portal';
-import BookingModal from './BookingModal';
 
 interface QuickActionsProps {
   client: ClientData;
+  onBookSession: () => void;
 }
 
 // Booking URLs
@@ -82,9 +81,7 @@ function getSeriesActions(client: ClientData): Action[] {
   return [];
 }
 
-export default function QuickActions({ client }: QuickActionsProps) {
-  const [showBookingModal, setShowBookingModal] = useState(false);
-
+export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
@@ -95,7 +92,7 @@ export default function QuickActions({ client }: QuickActionsProps) {
         icon: Calendar,
         label: bookingLabel,
         description: 'Schedule your next in-person or virtual session',
-        onClick: () => setShowBookingModal(true),
+        onClick: onBookSession,
         style: 'primary',
       }
     : {
@@ -139,10 +136,6 @@ export default function QuickActions({ client }: QuickActionsProps) {
 
   return (
     <>
-      {showBookingModal && (
-        <BookingModal onClose={() => setShowBookingModal(false)} />
-      )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {actions.map((action) => {
           const Icon = action.icon;

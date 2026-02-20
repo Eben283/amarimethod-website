@@ -8,9 +8,8 @@ interface ProgressTrackerProps {
   client: ClientData;
   upcomingAppointments: Appointment[];
   onRefetch: () => void;
+  onBookSession?: () => void;
 }
-
-const BOOKING_URL = 'https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session';
 
 function isWithin24Hours(startTime: string): boolean {
   const apptDate = new Date(startTime);
@@ -19,7 +18,7 @@ function isWithin24Hours(startTime: string): boolean {
   return diff < 24 * 60 * 60 * 1000;
 }
 
-export default function ProgressTracker({ client, upcomingAppointments, onRefetch }: ProgressTrackerProps) {
+export default function ProgressTracker({ client, upcomingAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -53,10 +52,14 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
     setCancelError(null);
     try {
       await cancelAppointment(appointmentId, title);
-      // Old appointment cancelled — open booking page in new tab
-      window.open(BOOKING_URL, '_blank', 'noopener,noreferrer');
       setConfirmingId(null);
       onRefetch();
+      // Open booking modal if available, otherwise fall back to external page
+      if (onBookSession) {
+        onBookSession();
+      } else {
+        window.open('https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session', '_blank', 'noopener,noreferrer');
+      }
     } catch (err) {
       setCancelError(
         err instanceof Error ? err.message : 'Unable to reschedule. Please try again.'
@@ -251,14 +254,14 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
               <Calendar className="w-6 h-6 text-amari-text-muted" />
             </div>
             <p className="text-sm text-amari-text-muted mb-3">No upcoming sessions scheduled</p>
-            <a
-              href={BOOKING_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-amari-charcoal hover:underline"
-            >
-              Book your next session <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            {onBookSession && (
+              <button
+                onClick={onBookSession}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-amari-charcoal hover:underline"
+              >
+                Book your next session <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         )}
       </div>
