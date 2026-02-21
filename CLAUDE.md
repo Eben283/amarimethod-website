@@ -82,7 +82,7 @@ cd quiz && npx vite build   # Build quiz only
 |---------|-------|----------|
 | Initial Session | $225 | 60 min |
 | Follow-up Session | $190 | 50 min |
-| 4-Session Series | $820 | — |
+| 4-Session Series | $720 | — |
 | 8-Session Series | $1,295 | — (includes Living Practice) |
 | Living Practice | $347 | standalone video program |
 | Discovery Call | Free | 15 min |

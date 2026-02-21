@@ -65,7 +65,7 @@ function getSeriesActions(client: ClientData): Action[] {
       {
         icon: ShoppingBag,
         label: 'Continue with a 4-Session Series',
-        description: '3 more sessions at a package rate — pay just $545',
+        description: '3 more sessions at a package rate — pay just $495',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
       },
