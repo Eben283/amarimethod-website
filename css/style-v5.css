@@ -257,6 +257,8 @@ nav {
 .hero {
   padding: 9rem 2.5rem 7rem;
   text-align: center;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .hero .container {
