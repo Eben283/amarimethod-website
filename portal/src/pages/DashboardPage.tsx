@@ -59,7 +59,7 @@ export default function DashboardPage() {
       <PortalNav />
       {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
 
         {/* ── Greeting ── */}
         <div className="animate-fade-in">

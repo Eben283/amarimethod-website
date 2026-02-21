@@ -255,7 +255,7 @@ nav {
 
 /* ===== HERO SECTION ===== */
 .hero {
-  padding: 12rem 0 10rem;
+  padding: 12rem 2.5rem 10rem;
   text-align: center;
 }
 
@@ -1419,7 +1419,7 @@ footer {
   }
 
   .hero {
-    padding: 4rem 0;
+    padding: 4rem 2rem;
   }
 
   .featured-testimonial,
@@ -1443,7 +1443,7 @@ footer {
   }
 
   .hero {
-    padding: 3rem 0;
+    padding: 3rem 1.5rem;
   }
 
   .hero h1 {
@@ -1532,7 +1532,7 @@ footer {
   }
 
   .hero {
-    padding: 2rem 0;
+    padding: 2rem 1rem;
   }
 
   .hero-subheading {

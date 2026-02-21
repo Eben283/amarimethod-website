@@ -6,7 +6,7 @@ export default function PortalNav() {
 
   return (
     <nav className="border-b border-amari-border bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 flex items-center justify-between h-16">
         {/* Logo */}
         <a href="/" className="flex items-center gap-3">
           <img
