@@ -59,9 +59,8 @@ function getSeriesActions(client: ClientData): Action[] {
     ];
   }
 
-  // Pay-as-you-go with fewer than 4 sessions — still worth offering series upgrade
-  // At 4+ individual sessions, the savings case is weaker and they're locked in
-  if (sessionsCompleted >= 1 && sessionsCompleted < 4) {
+  // Pay-as-you-go with fewer than 5 sessions — offer series upgrade
+  if (sessionsCompleted >= 1 && sessionsCompleted < 5) {
     return [
       {
         icon: ShoppingBag,
