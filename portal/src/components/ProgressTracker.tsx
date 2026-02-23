@@ -70,7 +70,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
     const t = title.toLowerCase();
     if (t.includes('discovery')) return 'https://discoverycall.amarimethod.com/discovery-call-booking';
     if (t.includes('initial') && t.includes('virtual')) return 'https://introsessionvirtual.amarimethod.com/is-virtual-info';
-    if (t.includes('initial')) return 'https://back-pain-session-inperson.amarimethod.com/client-info';
+    if (t.includes('initial')) return 'https://amarimethodbooking.amarimethod.com/client-info';
     return null; // follow-up — use modal
   }
 
