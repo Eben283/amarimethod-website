@@ -24,6 +24,7 @@ type QuizContextType = {
   goToNextStep: () => void;
   goToPrevStep: () => void;
   skipStep: () => void;
+  jumpToStep: (n: number) => void;
   setAnswer: (index: number, answer: string | string[] | null) => void;
   setFirstName: (value: string) => void;
   setLastName: (value: string) => void;
@@ -143,6 +144,11 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   };
 
   const goToPrevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
+
+  const jumpToStep = useCallback((n: number) => {
+    setValidationError('');
+    setCurrentStep(Math.max(0, Math.min(n, totalSteps - 1)));
+  }, [totalSteps]);
 
   const skipStep = () => {
     // Skip function bypasses validation for optional questions
@@ -334,6 +340,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       goToNextStep,
       goToPrevStep,
       skipStep,
+      jumpToStep,
       setAnswer,
       setFirstName,
       setLastName,
