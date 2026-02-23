@@ -77,191 +77,6 @@
         <!-- External CSS -->
     <link rel="stylesheet" href="css/style-v5.css?v=15">
 
-    <style>
-        /* Smooth nav hide/show on scroll */
-        nav {
-            transition: transform 0.3s ease-in-out;
-        }
-        /* Blog-specific typography and layout overrides */
-        body {
-            background: #ffffff;
-        }
-
-        article {
-            max-width: 800px;
-            margin: 4rem auto;
-            padding: 3rem 2rem;
-        }
-
-        article h1 {
-            font-family: 'Bona Nova', Georgia, serif;
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            color: var(--text-dark);
-            line-height: 1.2;
-            font-weight: 400;
-            letter-spacing: -0.5px;
-        }
-
-        article h2 {
-            font-family: 'Bona Nova', Georgia, serif;
-            font-size: 2rem;
-            margin: 3rem 0 1.5rem 0;
-            color: var(--text-dark);
-            font-weight: 400;
-            letter-spacing: -0.5px;
-        }
-
-        article h3 {
-            font-family: 'Bona Nova', Georgia, serif;
-            font-size: 1.5rem;
-            margin: 2rem 0 1rem 0;
-            color: #1a1a1a;
-            font-weight: 400;
-        }
-
-        article p {
-            margin-bottom: 1.5rem;
-            line-height: 1.8;
-            font-size: 1.05rem;
-            color: #333;
-        }
-
-        article ul, article ol {
-            margin: 1.5rem 0 1.5rem 2rem;
-            line-height: 1.8;
-        }
-
-        article li {
-            margin-bottom: 0.75rem;
-            font-size: 1.05rem;
-            color: #333;
-        }
-
-        article strong {
-            color: var(--text-dark);
-            font-weight: 600;
-        }
-
-        .article-meta {
-            color: #999;
-            font-size: 0.95rem;
-            margin-bottom: 2.5rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid #F0EADC;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
-        .cta-box {
-            background: white;
-            border: 2px solid var(--color-primary);
-            padding: 3rem;
-            margin: 3rem 0;
-            border-radius: 16px;
-            box-shadow: 0 8px 24px rgba(45, 90, 95, 0.12);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .cta-box::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
-        }
-
-        .cta-box h3 {
-            margin-top: 0;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: var(--text-dark);
-        }
-
-        .cta-box p {
-            font-size: 1.1rem;
-            color: #666;
-            margin-bottom: 2rem;
-            line-height: 1.7;
-        }
-
-        
-
-        @media (max-width: 768px) {
-            article {
-                margin: 2rem auto;
-                padding: 2rem 1.5rem;
-            }
-
-            article h1 {
-                font-size: 2rem;
-            }
-
-            article h2 {
-                font-size: 1.5rem;
-            }
-
-            article h3 {
-                font-size: 1.25rem;
-            }
-
-            article p, article li {
-                font-size: 1rem;
-            }
-        }
-    </style>
-
-    <style>
-        /* Keep assessment banner side-by-side on tablet and larger screens */
-        @media (min-width: 769px) {
-            .assessment-content {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 2.5rem;
-                align-items: center;
-            }
-
-            .assessment-text {
-                text-align: left;
-            }
-
-            .assessment-features {
-                align-items: flex-start;
-            }
-
-            .assessment-image-wrapper {
-                margin: 0;
-            }
-        }
-
-        /* Stack on mobile */
-        @media (max-width: 768px) {
-            .assessment-content {
-                display: flex;
-                flex-direction: column;
-                gap: 1.5rem;
-                text-align: center;
-            }
-
-            .assessment-text {
-                text-align: center;
-            }
-
-            .assessment-features {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .assessment-image-wrapper {
-                margin: 0 auto;
-            }
-        }
-    </style>
-
     <!-- BlogPosting Schema -->
     <script type="application/ld+json">
     {
@@ -299,7 +114,7 @@
         <h1>Suspension Squat Hanging Exercises: Transform Your Body Alignment in Minutes Daily</h1>
         <p class="article-meta">9 min read • February 2026 • By Dr. Garrett Hewstan</p>
 
-        <img src="images/hands-on-rings-landscape.webp?v=1" alt="Hands gripping gymnastics rings demonstrating suspension squat hanging exercises for grip strength and body alignment" style="width: 100%; height: auto; border-radius: 12px; margin: 2rem 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <img src="images/hands-on-rings-landscape.webp?v=1" alt="Hands gripping gymnastics rings demonstrating suspension squat hanging exercises for grip strength and body alignment" class="article-hero-image">
 
         <p>Your hands are shutting down. Years of desk work, typing, and smartphone use have turned your hands into weak, inflexible tools. When your hands weaken, everything collapses—your grip strength declines, your arms tighten, your shoulders collapse, and your entire posterior chain goes dormant.</p>
 
@@ -413,7 +228,7 @@
         <div class="cta-box">
             <h3>Learn the Complete Suspension Squat System</h3>
             <p>This article explains WHY suspension squats work and the domino effect of posterior chain activation. The EXACT ring height, grip width, body positioning angles, and progressive variations based on your alignment require professional guidance. The nuances of spontaneous micro-movements cannot be taught through written instruction alone.</p>
-            <p style="margin-top: 1rem; font-size: 0.95rem; font-weight: 500;">
+            <p class="cta-helper">
                 <strong>Sophisticated Practice:</strong> Suspension squats appear simple but require real-time feedback to master. Dr. Garrett customizes the technique for your unique body during your first session.
             </p>
             <a href="booking.html" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Learn the Full Suspension Squat System</span></span></a>
@@ -442,35 +257,35 @@
 </article>
 
     <!-- Assessment Banner -->
-    <section class="section assessment-section" style="background: #F6F3E8; padding: 3.5rem 2rem;">
+    <section class="section assessment-section">
         <div class="container">
-            <div class="section-two-col assessment-content" style="gap: 2.5rem; align-items: center;">
-                <div class="assessment-image-wrapper" style="width: 100%; max-width: 280px;">
+            <div class="section-two-col assessment-content">
+                <div class="assessment-image-wrapper">
                     <div class="assessment-image-frame">
-                        <img src="images/Quiz cover image.avif" alt="Body Balance Assessment Quiz" style="width: 100%; border-radius: 16px; display: block;" loading="lazy">
+                        <img src="images/Quiz cover image.avif" alt="Body Balance Assessment Quiz" loading="lazy">
                     </div>
                 </div>
                 <div class="assessment-text">
-                    <span class="assessment-label" style="display: inline-block; color: var(--color-primary); font-size: 0.85rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 0.75rem;">Quick Assessment</span>
-                    <h2 style="font-size: 2.2rem; margin-bottom: 1rem; font-weight: 700; line-height: 1.3;">Discover What's Really Causing Your Pain</h2>
-                    <p style="margin-bottom: 1.25rem; font-size: 1.05rem; line-height: 1.7; color: #666; margin-top: 0;">
+                    <span class="assessment-label">Quick Assessment</span>
+                    <h2>Discover What's Really Causing Your Pain</h2>
+                    <p>
                         Take our 2-minute Body Balance Assessment to reveal the hidden patterns behind your pain that most treatments miss. Get personalized insights and discover your path to relief.
                     </p>
-                    <div class="assessment-features" style="margin-bottom: 1.75rem;">
-                        <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: white; color: #1a1a1a; border-radius: 50%; font-weight: 700; margin-right: 10px; font-size: 0.85rem; flex-shrink: 0; border: 2px solid #e0e0e0;">✓</span>
-                            <span style="color: #555; font-size: 0.95rem;">Takes just 2 minutes to complete</span>
+                    <div class="assessment-features">
+                        <div>
+                            <span>✓</span>
+                            <span>Takes just 2 minutes to complete</span>
                         </div>
-                        <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
-                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: white; color: #1a1a1a; border-radius: 50%; font-weight: 700; margin-right: 10px; font-size: 0.85rem; flex-shrink: 0; border: 2px solid #e0e0e0;">✓</span>
-                            <span style="color: #555; font-size: 0.95rem;">Personalized insights delivered instantly</span>
+                        <div>
+                            <span>✓</span>
+                            <span>Personalized insights delivered instantly</span>
                         </div>
-                        <div style="display: flex; align-items: center;">
-                            <span style="display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: white; color: #1a1a1a; border-radius: 50%; font-weight: 700; margin-right: 10px; font-size: 0.85rem; flex-shrink: 0; border: 2px solid #e0e0e0;">✓</span>
-                            <span style="color: #555; font-size: 0.95rem;">No email or commitment required</span>
+                        <div>
+                            <span>✓</span>
+                            <span>No email or commitment required</span>
                         </div>
                     </div>
-                    <button class="btn-secondary" style="box-shadow: none;" onclick="window.location.href='/quiz/'"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Start Your Assessment</span></span></button>
+                    <button class="btn-secondary" onclick="window.location.href='/quiz/'"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Start Your Assessment</span></span></button>
                 </div>
             </div>
         </div>

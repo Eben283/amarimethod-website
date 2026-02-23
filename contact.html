@@ -78,35 +78,35 @@
   <!-- ===== CONTACT SECTION ===== -->
   <section>
     <div class="container">
-      <div style="max-width: 1000px; margin: 0 auto;">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); margin-bottom: var(--space-2xl);">
+      <div class="contact-wrapper">
+        <div class="contact-grid">
           <!-- Contact Info -->
           <div>
-            <h2 style="margin-bottom: var(--space-lg);">Contact Information</h2>
+            <h2 class="contact-heading">Contact Information</h2>
 
-            <div style="margin-bottom: var(--space-xl);">
-              <h3 style="color: var(--primary-teal); font-size: 1.1rem; margin-bottom: var(--space-sm);">Email</h3>
+            <div class="contact-block">
+              <h3>Email</h3>
               <p>
-                <a href="mailto:hello@amarihealth.com" style="font-size: 1.05rem;">hello@amarihealth.com</a>
+                <a href="mailto:hello@amarihealth.com">hello@amarihealth.com</a>
               </p>
-              <p style="color: #666; font-size: 0.9rem;">We respond within 24 hours</p>
+              <p class="contact-hint">We respond within 24 hours</p>
             </div>
 
-            <div style="margin-bottom: var(--space-xl);">
-              <h3 style="color: var(--primary-teal); font-size: 1.1rem; margin-bottom: var(--space-sm);">Location</h3>
+            <div class="contact-block">
+              <h3>Location</h3>
               <p>
                 San Francisco, California<br>
-                <span style="color: #666;">Serving clients locally and nationwide virtually</span>
+                <span class="contact-hint">Serving clients locally and nationwide virtually</span>
               </p>
             </div>
 
-            <div style="margin-bottom: var(--space-xl);">
-              <h3 style="color: var(--primary-teal); font-size: 1.1rem; margin-bottom: var(--space-sm);">Quick Booking</h3>
-              <ul style="list-style: none; margin: 0;">
-                <li style="margin-bottom: var(--space-sm);">
+            <div class="contact-block">
+              <h3>Quick Booking</h3>
+              <ul class="contact-booking-list">
+                <li>
                   <a href="/quiz/" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Free Assessment (2 min)</span></span></a>
                 </li>
-                <li style="margin-bottom: var(--space-sm);">
+                <li>
                   <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Free Discovery Call</span></span></a>
                 </li>
                 <li>
@@ -115,9 +115,9 @@
               </ul>
             </div>
 
-            <div style="background: var(--accent-cream); padding: var(--space-lg); border-radius: 8px; border-left: 4px solid var(--primary-teal);">
-              <h4 style="color: var(--primary-teal); margin-bottom: var(--space-sm);">Popular Questions?</h4>
-              <p style="margin-bottom: 0;">
+            <div class="contact-tip-box">
+              <h4>Popular Questions?</h4>
+              <p>
                 Check out our <a href="index.html#faq">FAQ section</a> for answers to common questions about the Amari Method.
               </p>
             </div>
@@ -125,7 +125,7 @@
 
           <!-- Contact Form -->
           <div>
-            <h2 style="margin-bottom: var(--space-lg);">Send us a Message</h2>
+            <h2 class="contact-heading">Send us a Message</h2>
             <form id="contact-form" action="https://www.amarimethod.com/api/contact" method="POST">
               <div class="form-group">
                 <label for="name">Name *</label>
@@ -159,30 +159,21 @@
                 <textarea id="message" name="message" rows="5" required></textarea>
               </div>
 
-              <button type="submit" class="btn-primary btn-block" style="margin-top: var(--space-md);"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Send Message</span></span></button>
-              <p style="font-size: 0.85rem; color: #666; margin-top: var(--space-sm);">We'll get back to you within 24 hours</p>
+              <button type="submit" class="btn-primary btn-block contact-form-submit"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Send Message</span></span></button>
+              <p class="contact-form-helper">We'll get back to you within 24 hours</p>
             </form>
           </div>
         </div>
-
-        <!-- Responsive version for mobile -->
-        <style>
-          @media (max-width: 768px) {
-            [style*="grid-template-columns: 1fr 1fr"] {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        </style>
       </div>
     </div>
   </section>
 
   <!-- ===== FAQ PREVIEW ===== -->
-  <section style="background: var(--accent-cream);">
+  <section class="faq-section">
     <div class="container">
       <h2 class="section-title">Quick Answers</h2>
 
-      <div style="max-width: 800px; margin: 0 auto;">
+      <div class="contact-faq-wrapper">
         <div class="faq-item">
           <div class="faq-question" onclick="toggleFAQ(this)">
             <span class="btn-content"><span class="arrow">→</span><span class="btn-text">What's the best first step?</span></span>
@@ -227,10 +218,10 @@
   </section>
 
   <!-- ===== FINAL CTA ===== -->
-  <section style="background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-dark) 100%); color: white; text-align: center;">
+  <section class="contact-final-cta">
     <div class="container">
-      <h2 style="color: white; margin-bottom: var(--space-lg);">Ready to Start Your Healing Journey?</h2>
-      <p style="color: rgba(255,255,255,0.9); margin-bottom: var(--space-lg); font-size: 1.05rem;">You don't need to live with pain. Take the first step today.</p>
+      <h2>Ready to Start Your Healing Journey?</h2>
+      <p>You don't need to live with pain. Take the first step today.</p>
       <a href="/quiz/" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Get Free Assessment</span></span></a>
       <a href="https://www.amarimethod.com/booking" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Your Session</span></span></a>
     </div>
