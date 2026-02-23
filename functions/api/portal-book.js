@@ -10,21 +10,27 @@
  * }
  */
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+const allowedOrigin = 'https://www.amarimethod.com';
 
-function json(data, status = 200) {
+function cors(requestOrigin) {
+  const origin = requestOrigin === allowedOrigin ? allowedOrigin : '';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
+function json(data, status = 200, requestOrigin = '') {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...cors(requestOrigin), 'Content-Type': 'application/json' },
   });
 }
 
-export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: CORS });
+export async function onRequestOptions({ request }) {
+  const origin = request.headers.get('Origin') || '';
+  return new Response(null, { status: 204, headers: cors(origin) });
 }
 
 async function verifySessionToken(tokenString, secret) {
@@ -46,10 +52,12 @@ async function verifySessionToken(tokenString, secret) {
 }
 
 export async function onRequestPost({ request, env }) {
+  const origin = request.headers.get('Origin') || '';
+
   // Verify session token and extract contactId
   const auth = request.headers.get('Authorization') || '';
   const token = auth.replace('Bearer ', '').trim();
-  if (!token) return json({ error: 'Unauthorized' }, 401);
+  if (!token) return json({ error: 'Unauthorized' }, 401, origin);
 
   let contactId, email;
   try {
@@ -57,20 +65,20 @@ export async function onRequestPost({ request, env }) {
     contactId = payload.contactId;
     email = payload.email;
   } catch {
-    return json({ error: 'Unauthorized' }, 401);
+    return json({ error: 'Unauthorized' }, 401, origin);
   }
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return json({ error: 'Invalid JSON body' }, 400);
+    return json({ error: 'Invalid JSON body' }, 400, origin);
   }
 
   const { calendarId, startTime, timezone, sessionType } = body;
 
   if (!calendarId || !startTime || !timezone || !sessionType) {
-    return json({ error: 'calendarId, startTime, timezone, and sessionType are required' }, 400);
+    return json({ error: 'calendarId, startTime, timezone, and sessionType are required' }, 400, origin);
   }
 
   // Fetch contact details from GHL to get name/phone
@@ -90,7 +98,7 @@ export async function onRequestPost({ request, env }) {
     contact = contactData.contact;
   } catch (err) {
     console.error('Failed to fetch contact:', err);
-    return json({ error: 'Failed to retrieve contact information' }, 422);
+    return json({ error: 'Failed to retrieve contact information' }, 422, origin);
   }
 
   // Create the appointment title
@@ -131,7 +139,7 @@ export async function onRequestPost({ request, env }) {
     if (!bookRes.ok) {
       const err = await bookRes.text();
       console.error('GHL booking error:', bookRes.status, err);
-      return json({ error: 'Failed to create appointment', details: err }, 422);
+      return json({ error: 'Failed to create appointment', details: err }, 422, origin);
     }
 
     const apptData = await bookRes.json();
@@ -144,9 +152,9 @@ export async function onRequestPost({ request, env }) {
         startTime,
         sessionType,
       },
-    });
+    }, 200, origin);
   } catch (err) {
     console.error('portal-book error:', err);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error' }, 500, origin);
   }
 }

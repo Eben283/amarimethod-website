@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found | Amari Method</title>
+  <meta name="description" content="The page you're looking for doesn't exist. Return to the Amari Method homepage.">
+  <meta name="robots" content="noindex, nofollow">
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style-v5.css?v=15">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M3GJ6SZPY6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M3GJ6SZPY6');
+  </script>
+
+  <style>
+    .error-page {
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4rem 1.5rem;
+    }
+    .error-page__inner {
+      max-width: 480px;
+    }
+    .error-page__code {
+      font-family: var(--font-serif, serif);
+      font-size: clamp(5rem, 20vw, 9rem);
+      line-height: 1;
+      color: var(--amari-accent-warm, #EBA584);
+      margin: 0 0 0.5rem;
+    }
+    .error-page__heading {
+      font-family: var(--font-serif, serif);
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      color: var(--amari-charcoal, #2C2C2C);
+      margin: 0 0 1rem;
+    }
+    .error-page__message {
+      color: var(--amari-charcoal, #2C2C2C);
+      opacity: 0.7;
+      margin: 0 0 2rem;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<!-- include:nav -->
+<main>
+  <div class="error-page">
+    <div class="error-page__inner">
+      <p class="error-page__code">404</p>
+      <h1 class="error-page__heading">Page not found</h1>
+      <p class="error-page__message">
+        The page you're looking for doesn't exist or may have moved.
+      </p>
+      <a href="/" class="portal-btn-secondary" style="display:inline-block;">Go to Homepage</a>
+    </div>
+  </div>
+</main>
+<!-- include:footer -->
+
+<script src="js/main.js"></script>
+</body>
+</html>

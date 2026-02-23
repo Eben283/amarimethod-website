@@ -1,9 +1,11 @@
-# Allow all crawlers
+# Allow all crawlers on public pages
 User-agent: *
 Allow: /
 
+# Block private/app routes
+Disallow: /portal/
+Disallow: /quiz/
+Disallow: /dist/
+
 # Sitemap location
 Sitemap: https://www.amarimethod.com/sitemap.xml
-
-# Crawl delay (milliseconds between requests - optional)
-# Crawl-delay: 2

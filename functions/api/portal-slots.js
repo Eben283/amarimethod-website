@@ -4,21 +4,27 @@
  * Requires valid portal session token.
  */
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+const allowedOrigin = 'https://www.amarimethod.com';
 
-function json(data, status = 200) {
+function cors(requestOrigin) {
+  const origin = requestOrigin === allowedOrigin ? allowedOrigin : '';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+}
+
+function json(data, status = 200, requestOrigin = '') {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...cors(requestOrigin), 'Content-Type': 'application/json' },
   });
 }
 
-export async function onRequestOptions() {
-  return new Response(null, { status: 204, headers: CORS });
+export async function onRequestOptions({ request }) {
+  const origin = request.headers.get('Origin') || '';
+  return new Response(null, { status: 204, headers: cors(origin) });
 }
 
 async function verifySessionToken(tokenString, secret) {
@@ -40,15 +46,17 @@ async function verifySessionToken(tokenString, secret) {
 }
 
 export async function onRequestGet({ request, env }) {
+  const origin = request.headers.get('Origin') || '';
+
   // Verify session token
   const auth = request.headers.get('Authorization') || '';
   const token = auth.replace('Bearer ', '').trim();
-  if (!token) return json({ error: 'Unauthorized' }, 401);
+  if (!token) return json({ error: 'Unauthorized' }, 401, origin);
 
   try {
     await verifySessionToken(token, env.JWT_SECRET);
   } catch {
-    return json({ error: 'Unauthorized' }, 401);
+    return json({ error: 'Unauthorized' }, 401, origin);
   }
 
   const url = new URL(request.url);
@@ -58,7 +66,7 @@ export async function onRequestGet({ request, env }) {
   const timezone = url.searchParams.get('timezone') || 'America/New_York';
 
   if (!calendarId || !startDate || !endDate) {
-    return json({ error: 'calendarId, startDate, and endDate are required' }, 400);
+    return json({ error: 'calendarId, startDate, and endDate are required' }, 400, origin);
   }
 
   // Convert YYYY-MM-DD to epoch ms for GHL
@@ -79,7 +87,7 @@ export async function onRequestGet({ request, env }) {
     if (!ghlRes.ok) {
       const err = await ghlRes.text();
       console.error('GHL slots error:', ghlRes.status, err);
-      return json({ error: 'Failed to fetch slots' }, 422);
+      return json({ error: 'Failed to fetch slots' }, 422, origin);
     }
 
     const data = await ghlRes.json();
@@ -112,9 +120,9 @@ export async function onRequestGet({ request, env }) {
       }
     }
 
-    return json({ slots });
+    return json({ slots }, 200, origin);
   } catch (err) {
     console.error('portal-slots error:', err);
-    return json({ error: 'Internal server error' }, 500);
+    return json({ error: 'Internal server error' }, 500, origin);
   }
 }
