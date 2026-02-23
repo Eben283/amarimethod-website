@@ -33,7 +33,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     index: 1, type: 'single',
     question: 'What do you think triggered or worsened your pain?',
     description: 'Understanding the origin helps identify the pattern.',
-    options: ['Sudden injury or accident', 'Gradual onset over time (no specific event)', 'After starting a new activity/exercise', 'Stress or emotional factors', 'After a major life change (pregnancy, new job, etc.)', "I'm not sure"],
+    options: ['Sudden injury or accident', 'Gradual onset over time (no specific event)', 'After starting an activity/exercise', 'Stress or emotional factors', 'After a major life change (pregnancy, new job, etc.)', "I'm not sure"],
     required: true,
     category: 'Pain History', questionNum: 2,
   },
