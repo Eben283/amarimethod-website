@@ -5,7 +5,7 @@ import ProgressBar from './ProgressBar';
 import SingleSelectQuestion from './questions/SingleSelectQuestion';
 import MultiSelectQuestion from './questions/MultiSelectQuestion';
 import ContactInfoForm from './questions/ContactInfoForm';
-import ResultsTabs from './results/ResultsTabs';
+import ResultsPage from './results/ResultsPage';
 import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
@@ -565,15 +565,9 @@ const QuizContainer = () => {
           </div>
         ) : (
           <div>
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-freight mb-4">Your Pain Assessment Results</h1>
-              <p className="text-lg text-gray-600">
-                Thank you, {firstName}. Here's your personalized Amari Method assessment.
-              </p>
-            </div>
-            
             {scores && patternSignature && (
-              <ResultsTabs
+              <ResultsPage
+                firstName={firstName}
                 patternSignature={patternSignature}
                 scores={scores}
                 insights={insights}
