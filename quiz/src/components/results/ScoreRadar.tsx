@@ -73,6 +73,7 @@ const ScoreRadar = ({ scores }: ScoreRadarProps) => {
             <svg
               viewBox="0 0 320 320"
               className="w-full h-auto"
+              overflow="visible"
               aria-label="Pain pattern radar chart"
             >
               {/* Grid hexagons */}
