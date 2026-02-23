@@ -110,7 +110,7 @@ export async function onRequestPost(context) {
       console.error(`[send-to-ghl] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save contact" }),
-        { status: 502, headers }
+        { status: 422, headers }
       );
     }
 
