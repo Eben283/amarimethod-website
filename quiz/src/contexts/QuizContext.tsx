@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { QuizAnswer, ScoreCategories, PatternSignature, QuizInsight } from '@/types/quiz';
 import { calculateScores, determinePatternSignature, generateInsights } from '@/lib/quizLogic';
 import { useToast } from '@/components/ui/use-toast';
@@ -67,6 +67,12 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [hasStarted, setHasStarted] = useState(false);
   const startQuiz = useCallback(() => setHasStarted(true), []);
 
+  // Always-current refs so setTimeout callbacks (auto-advance) read fresh state
+  const answersRef = useRef<QuizAnswer[]>([]);
+  answersRef.current = answers;
+  const currentStepRef = useRef(0);
+  currentStepRef.current = currentStep;
+
   useEffect(() => {
     setAnswers([
       { question: "Where is your pain primarily located?", answer: null },
@@ -85,34 +91,38 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const goToNextStep = () => {
+    // Read from refs so this is safe to call from a stale setTimeout closure
+    const step = currentStepRef.current;
+    const ans = answersRef.current;
+
     setValidationError(''); // clear any previous error on each attempt
-    if (currentStep === 0 && !answers[0]?.answer) {
+    if (step === 0 && !ans[0]?.answer) {
       setValidationError('Please select where your pain is primarily located');
       return;
     }
-    if (currentStep === 1 && !answers[1]?.answer) {
+    if (step === 1 && !ans[1]?.answer) {
       setValidationError('Please select what triggered your pain');
       return;
     }
-    if (currentStep === 3 && !answers[3]?.answer) {
+    if (step === 3 && !ans[3]?.answer) {
       setValidationError("Please select how long you've been experiencing this pain");
       return;
     }
-    if (currentStep === 4 && !answers[4]?.answer) {
+    if (step === 4 && !ans[4]?.answer) {
       setValidationError('Please select your pain intensity');
       return;
     }
     if (
-      currentStep === 10 &&
-      answers[9]?.answer &&
-      (answers[9].answer as string[]).length > 0 &&
-      !(answers[9].answer as string[]).includes("I haven't tried any treatments") &&
-      !answers[10]?.answer
+      step === 10 &&
+      ans[9]?.answer &&
+      (ans[9].answer as string[]).length > 0 &&
+      !(ans[9].answer as string[]).includes("I haven't tried any treatments") &&
+      !ans[10]?.answer
     ) {
       setValidationError('Please describe your results from previous treatments');
       return;
     }
-    if (currentStep === 12) {
+    if (step === 12) {
       if (!firstName.trim() || !lastName.trim()) {
         setValidationError('Please enter your first and last name');
         return;
@@ -126,7 +136,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     // Fire quiz_start when user leaves step 0 (first real engagement)
-    if (currentStep === 0) {
+    if (step === 0) {
       trackEvent('quiz_start');
     }
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
