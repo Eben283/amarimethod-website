@@ -26,62 +26,87 @@ const SingleSelectQuestion = ({
   required = false,
   onAutoAdvance,
 }: SingleSelectQuestionProps) => {
+  const handleClick = (option: string) => {
+    onChange(option);
+    if (onAutoAdvance) setTimeout(onAutoAdvance, 400);
+  };
+
+  const OptionButton = ({ label }: { label: string }) => {
+    const isSelected = selectedOption === label;
+    return (
+      <button
+        type="button"
+        onClick={() => handleClick(label)}
+        className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
+          ${isSelected
+            ? 'border-amari-pine-teal bg-amari-pine-teal bg-opacity-[7%] shadow-sm'
+            : 'border-amari-oat bg-white hover:border-amari-pine-teal hover:border-opacity-40 hover:bg-amari-light-sand hover:shadow-sm'
+          }`}
+      >
+        <span className={`font-sans text-sm font-medium leading-snug ${isSelected ? 'text-amari-charcoal' : 'text-gray-700'}`}>
+          {label}
+        </span>
+        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ml-3 transition-all duration-200
+          ${isSelected ? 'border-amari-pine-teal bg-amari-pine-teal' : 'border-amari-oat group-hover:border-amari-pine-teal'}`}
+        >
+          {isSelected && (
+            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      </button>
+    );
+  };
+
   return (
     <div className="quiz-card">
       <h2 className="text-2xl font-freight mb-2">
         {question}
         {required && <span className="text-red-500 ml-1">*</span>}
       </h2>
-      {description && <p className="mb-6 text-gray-600">{description}</p>}
-      
-      <div className="space-y-3 mt-6">
+      {description && <p className="mb-4 text-sm text-amari-text-light font-sans">{description}</p>}
+
+      <div className="space-y-2.5 mt-5">
         {options.map((option) => (
-          <div
-            key={option}
-            className={`radio-container ${selectedOption === option ? 'selected' : ''}`}
-            onClick={() => {
-              onChange(option);
-              if (onAutoAdvance) setTimeout(onAutoAdvance, 400);
-            }}
-          >
-            <div className="flex items-center h-5">
-              <div className={`w-5 h-5 rounded-full border-2 border-amari-pine-teal flex items-center justify-center ${selectedOption === option ? 'bg-amari-pine-teal' : 'bg-white'}`}>
-                {selectedOption === option && (
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                )}
-              </div>
-            </div>
-            <div className="ml-3 text-sm">
-              <label className="font-medium text-gray-900 cursor-pointer">{option}</label>
-            </div>
-          </div>
+          <OptionButton key={option} label={option} />
         ))}
-        
+
         {otherOption && (
-          <div
-            className={`radio-container ${selectedOption === 'Other' ? 'selected' : ''}`}
-            onClick={() => onChange('Other')}
-          >
-            <div className="flex items-center h-5">
-              <div className={`w-5 h-5 rounded-full border-2 border-amari-pine-teal flex items-center justify-center ${selectedOption === 'Other' ? 'bg-amari-pine-teal' : 'bg-white'}`}>
+          <div>
+            <button
+              type="button"
+              onClick={() => handleClick('Other')}
+              className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
+                ${selectedOption === 'Other'
+                  ? 'border-amari-pine-teal bg-amari-pine-teal bg-opacity-[7%] shadow-sm'
+                  : 'border-amari-oat bg-white hover:border-amari-pine-teal hover:border-opacity-40 hover:bg-amari-light-sand hover:shadow-sm'
+                }`}
+            >
+              <span className={`font-sans text-sm font-medium ${selectedOption === 'Other' ? 'text-amari-charcoal' : 'text-gray-700'}`}>
+                Other
+              </span>
+              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ml-3 transition-all duration-200
+                ${selectedOption === 'Other' ? 'border-amari-pine-teal bg-amari-pine-teal' : 'border-amari-oat group-hover:border-amari-pine-teal'}`}
+              >
                 {selectedOption === 'Other' && (
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
+                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
                 )}
               </div>
-            </div>
-            <div className="ml-3 text-sm flex-grow">
-              <label className="font-medium text-gray-900 cursor-pointer">Other</label>
-              {selectedOption === 'Other' && onOtherChange && (
-                <input
-                  type="text"
-                  value={otherValue}
-                  onChange={(e) => onOtherChange(e.target.value)}
-                  placeholder="Please specify"
-                  className="mt-2 p-2 w-full border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amari-pine-teal"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-            </div>
+            </button>
+            {selectedOption === 'Other' && onOtherChange && (
+              <input
+                type="text"
+                value={otherValue}
+                onChange={(e) => onOtherChange(e.target.value)}
+                placeholder="Please specify"
+                autoFocus
+                className="mt-2 px-4 py-2.5 w-full border-2 border-amari-pine-teal rounded-xl text-sm font-sans focus:outline-none focus:border-amari-pine-teal bg-white"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
           </div>
         )}
       </div>

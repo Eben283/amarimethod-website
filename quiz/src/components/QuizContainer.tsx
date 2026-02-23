@@ -13,6 +13,23 @@ import QuizFooter from './QuizFooter';
 import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 
+// Per-step metadata: category label + question number (1-based; undefined for contact form)
+const STEP_META: Record<number, { category: string; questionNum?: number }> = {
+  0:  { category: 'Pain Location',        questionNum: 1  },
+  1:  { category: 'Pain History',         questionNum: 2  },
+  2:  { category: 'Pain Location',        questionNum: 3  },
+  3:  { category: 'Duration',             questionNum: 4  },
+  4:  { category: 'Severity',             questionNum: 5  },
+  5:  { category: 'Timing',               questionNum: 6  },
+  6:  { category: 'Pain Quality',         questionNum: 7  },
+  7:  { category: 'Aggravating Factors',  questionNum: 8  },
+  8:  { category: 'Daily Impact',         questionNum: 9  },
+  9:  { category: 'Treatment History',    questionNum: 10 },
+  10: { category: 'Treatment Results',    questionNum: 11 },
+  11: { category: 'Health Background',    questionNum: 12 },
+  12: { category: 'Your Results' },
+};
+
 const QuizContainer = () => {
   const {
     currentStep,
@@ -540,7 +557,25 @@ const QuizContainer = () => {
                 ) : submissionError ? (
                   renderErrorState()
                 ) : (
-                  renderQuestionStep()
+                  <>
+                    {/* Category label */}
+                    {STEP_META[currentStep] && (
+                      <div className="flex items-center gap-2.5 mb-4">
+                        {STEP_META[currentStep].questionNum && (
+                          <span className="text-xs font-semibold text-amari-text-light font-sans tabular-nums">
+                            {STEP_META[currentStep].questionNum} / 12
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold uppercase tracking-widest text-amari-pine-teal bg-amari-pine-teal bg-opacity-10 px-3 py-1 rounded-full font-sans">
+                          {STEP_META[currentStep].category}
+                        </span>
+                      </div>
+                    )}
+                    {/* Slide-up animation wrapper — key forces remount on step change */}
+                    <div key={currentStep} className="quiz-step-enter">
+                      {renderQuestionStep()}
+                    </div>
+                  </>
                 )}
 
                 {/* Always show navigation buttons unless we're loading or submitted */}

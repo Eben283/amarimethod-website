@@ -27,22 +27,16 @@ const MultiSelectQuestion = ({
   showSkipButton = false,
 }: MultiSelectQuestionProps) => {
   const toggleOption = (option: string) => {
-    const newSelectedOptions = [...selectedOptions];
-    
-    if (newSelectedOptions.includes(option)) {
-      // Remove the option if already selected
-      onChange(newSelectedOptions.filter((item) => item !== option));
+    if (selectedOptions.includes(option)) {
+      onChange(selectedOptions.filter((item) => item !== option));
     } else {
-      // Add the option if not already selected
-      onChange([...newSelectedOptions, option]);
+      onChange([...selectedOptions, option]);
     }
   };
 
-  const toggleOtherOption = () => {
-    const hasOther = selectedOptions.includes('Other');
-    
-    if (hasOther) {
-      onChange(selectedOptions.filter(item => item !== 'Other'));
+  const toggleOther = () => {
+    if (selectedOptions.includes('Other')) {
+      onChange(selectedOptions.filter((item) => item !== 'Other'));
     } else {
       onChange([...selectedOptions, 'Other']);
     }
@@ -51,74 +45,73 @@ const MultiSelectQuestion = ({
   return (
     <div className="quiz-card">
       <h2 className="text-2xl font-freight mb-2">{question}</h2>
-      {description && <p className="mb-6 text-gray-600">{description}</p>}
-      
-      <div className="space-y-3 mt-6">
-        {options.map((option) => (
-          <div
-            key={option}
-            className={`checkbox-container ${selectedOptions.includes(option) ? 'selected' : ''}`}
-            onClick={() => toggleOption(option)}
-          >
-            <div className="flex items-center h-5">
-              <div className={`w-5 h-5 rounded border-2 border-amari-pine-teal flex items-center justify-center ${selectedOptions.includes(option) ? 'bg-amari-pine-teal' : 'bg-white'}`}>
-                {selectedOptions.includes(option) && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </div>
-            </div>
-            <div className="ml-3 text-sm">
-              <label className="font-medium text-gray-900 cursor-pointer">{option}</label>
-            </div>
-          </div>
-        ))}
-        
-        {otherOption && (
-          <div
-            className={`checkbox-container ${selectedOptions.includes('Other') ? 'selected' : ''}`}
-            onClick={toggleOtherOption}
-          >
-            <div className="flex items-center h-5">
-              <div className={`w-5 h-5 rounded border-2 border-amari-pine-teal flex items-center justify-center ${selectedOptions.includes('Other') ? 'bg-amari-pine-teal' : 'bg-white'}`}>
-                {selectedOptions.includes('Other') && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                )}
-              </div>
-            </div>
-            <div className="ml-3 text-sm flex-grow">
-              <label className="font-medium text-gray-900 cursor-pointer">Other</label>
-              {selectedOptions.includes('Other') && onOtherChange && (
-                <input
-                  type="text"
-                  value={otherValue}
-                  onChange={(e) => onOtherChange(e.target.value)}
-                  placeholder="Please specify"
-                  className="mt-2 p-2 w-full border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-amari-pine-teal"
-                  onClick={(e) => e.stopPropagation()}
-                />
+      {description && (
+        <p className="text-sm text-amari-text-light font-sans mb-1">{description}</p>
+      )}
+      <p className="text-xs text-amari-text-light font-sans mb-5 opacity-70">Select all that apply</p>
+
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const isSelected = selectedOptions.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => toggleOption(option)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium font-sans border-2 transition-all duration-200 leading-tight
+                ${isSelected
+                  ? 'border-amari-pine-teal bg-amari-pine-teal text-white shadow-sm'
+                  : 'border-amari-oat bg-white text-gray-700 hover:border-amari-pine-teal hover:bg-amari-light-sand'
+                }`}
+            >
+              {isSelected && (
+                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
               )}
-            </div>
-          </div>
+              {option}
+            </button>
+          );
+        })}
+
+        {otherOption && (
+          <button
+            type="button"
+            onClick={toggleOther}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium font-sans border-2 transition-all duration-200
+              ${selectedOptions.includes('Other')
+                ? 'border-amari-pine-teal bg-amari-pine-teal text-white shadow-sm'
+                : 'border-amari-oat bg-white text-gray-700 hover:border-amari-pine-teal hover:bg-amari-light-sand'
+              }`}
+          >
+            {selectedOptions.includes('Other') && (
+              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+            Other
+          </button>
         )}
       </div>
+
+      {/* Other text input — appears below chips when "Other" is selected */}
+      {otherOption && selectedOptions.includes('Other') && onOtherChange && (
+        <input
+          type="text"
+          value={otherValue}
+          onChange={(e) => onOtherChange(e.target.value)}
+          placeholder="Please specify…"
+          autoFocus
+          className="mt-4 px-4 py-2.5 w-full border-2 border-amari-pine-teal rounded-xl text-sm font-sans focus:outline-none bg-white"
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
 
       {showSkipButton && selectedOptions.length === 0 && (
         <div className="mt-6 text-center">
           <button
             onClick={onSkip}
-            className="text-amari-pine-teal hover:text-amari-forest-green font-medium transition-colors duration-200 flex items-center justify-center mx-auto gap-2 group"
+            className="text-amari-pine-teal hover:text-amari-forest-green font-medium font-sans text-sm transition-colors duration-200 flex items-center justify-center mx-auto gap-2 group"
           >
             <span>Skip this question</span>
             <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">

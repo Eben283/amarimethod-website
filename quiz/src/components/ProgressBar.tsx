@@ -12,7 +12,8 @@ const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
 
   return (
     <div className="w-full mb-8 px-1">
-      <div className="flex items-center gap-3">
+      {/* Bar row */}
+      <div className="flex items-center gap-3 mb-2.5">
         <span className="text-xs font-semibold uppercase tracking-widest text-amari-text-light font-sans flex-shrink-0">
           Start
         </span>
@@ -31,6 +32,27 @@ const ProgressBar = ({ currentStep, totalSteps }: ProgressBarProps) => {
         <span className="text-xs font-semibold uppercase tracking-widest text-amari-text-light font-sans flex-shrink-0">
           Finish
         </span>
+      </div>
+
+      {/* Step dots row */}
+      <div className="flex items-center justify-between px-[2.75rem]">
+        {Array.from({ length: totalSteps }).map((_, i) => {
+          const isPast    = i < currentStep;
+          const isCurrent = i === currentStep;
+          const isFuture  = i > currentStep;
+          return (
+            <div
+              key={i}
+              className="rounded-full transition-all duration-300"
+              style={{
+                width:           isCurrent ? '8px' : '5px',
+                height:          isCurrent ? '8px' : '5px',
+                backgroundColor: isFuture  ? '#D9CFBF' : '#5E8C8A', // oat : pine-teal
+                opacity:         isPast    ? 0.55 : 1,
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );
