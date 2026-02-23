@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// FAQ Toggle
+// FAQ Toggle (legacy .faq-question/.open pattern)
 function toggleFAQ(element) {
   const faqItem = element.closest('.faq-item');
 
@@ -90,6 +90,24 @@ function toggleFAQ(element) {
   // Toggle current FAQ
   faqItem.classList.toggle('open');
 }
+
+// FAQ Accordion (.faq-header/.active pattern — matches homepage)
+document.addEventListener('DOMContentLoaded', function() {
+  const faqItems = document.querySelectorAll('.faq-item');
+  faqItems.forEach(item => {
+    const header = item.querySelector('.faq-header');
+    if (!header) return;
+    header.addEventListener('click', () => {
+      const isActive = item.classList.contains('active');
+      faqItems.forEach(otherItem => {
+        otherItem.classList.remove('active');
+      });
+      if (!isActive) {
+        item.classList.add('active');
+      }
+    });
+  });
+});
 
 // Form Handling (if needed for contact forms)
 document.addEventListener('DOMContentLoaded', function() {
