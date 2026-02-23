@@ -84,6 +84,7 @@ export default function DashboardPage() {
             <ProgressTracker
               client={client}
               upcomingAppointments={upcomingAppointments}
+              allAppointments={appointments}
               onRefetch={refetch}
               onBookSession={hasHadInitial ? () => setShowBookingModal(true) : undefined}
             />
