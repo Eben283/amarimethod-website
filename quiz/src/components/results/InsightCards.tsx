@@ -1,28 +1,10 @@
+
 import React from 'react';
 import { QuizInsight } from '@/types/quiz';
 
 type InsightCardsProps = {
   insights: QuizInsight[];
 };
-
-const insightIcons = [
-  // Magnifying glass
-  <svg key="0" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-  </svg>,
-  // Lightning bolt
-  <svg key="1" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-  </svg>,
-  // Refresh / cycle
-  <svg key="2" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>,
-  // Lightbulb
-  <svg key="3" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-  </svg>,
-];
 
 const InsightCards = ({ insights }: InsightCardsProps) => {
   return (
@@ -45,17 +27,19 @@ const InsightCards = ({ insights }: InsightCardsProps) => {
               key={index}
               className="bg-white rounded-xl border border-amari-border shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
             >
-              <div className="flex items-start gap-0">
-                {/* Accent bar */}
-                <div className="w-1 self-stretch flex-shrink-0" style={{ backgroundColor: '#EBA584' }} />
+              <div className="flex items-stretch gap-0">
+                {/* Left accent bar */}
+                <div className="w-1 flex-shrink-0" style={{ backgroundColor: '#EBA584' }} />
 
                 <div className="flex items-start gap-4 p-5 md:p-6 flex-1">
-                  {/* Icon badge */}
+                  {/* Numbered badge */}
                   <div
-                    className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white mt-0.5"
+                    className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5"
                     style={{ backgroundColor: '#EBA584' }}
                   >
-                    {insightIcons[index % insightIcons.length]}
+                    <span className="text-white font-serif font-bold text-sm leading-none">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
                   </div>
 
                   {/* Content */}

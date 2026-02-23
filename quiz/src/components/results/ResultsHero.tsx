@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { PatternSignature, ScoreCategories } from '@/types/quiz';
 
 type ResultsHeroProps = {
@@ -13,7 +14,7 @@ const patternDescriptions: Record<PatternSignature, string> = {
   'Structural Adaptation':
     'Your skeletal system has shifted its alignment to reduce stress—creating its own patterns over time.',
   'Established Pattern':
-    'Your pain pattern has become deeply rehearsed in your nervous system through long-term reinforcement.',
+    'Your pain pattern has had time to become well-practiced. Long-standing patterns often feel inevitable—but the body remains adaptable, and a targeted approach can create real, lasting change.',
   'Functional Limitation':
     'Pain is meaningfully affecting your daily activities, prompting your body to find workarounds.',
   'Compensatory Movement':
@@ -21,9 +22,9 @@ const patternDescriptions: Record<PatternSignature, string> = {
 };
 
 const patternColors: Record<PatternSignature, string> = {
-  'Protective Tension': 'bg-amber-100 text-amber-800 border-amber-200',
+  'Protective Tension':    'bg-amber-100 text-amber-800 border-amber-200',
   'Structural Adaptation': 'bg-blue-100 text-blue-800 border-blue-200',
-  'Established Pattern': 'bg-purple-100 text-purple-800 border-purple-200',
+  'Established Pattern':   'bg-purple-100 text-purple-800 border-purple-200',
   'Functional Limitation': 'bg-rose-100 text-rose-800 border-rose-200',
   'Compensatory Movement': 'bg-teal-100 text-teal-800 border-teal-200',
 };
@@ -33,24 +34,28 @@ const RecoveryRing = ({ score }: { score: number }) => {
   const cx = 70;
   const cy = 70;
   const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - score / 100);
+
+  // Animate on mount: start at full offset (0% filled), transition to real value
+  const [offset, setOffset] = useState(circumference);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setOffset(circumference * (1 - score / 100));
+    }, 120); // short delay so the transition is visible after first paint
+    return () => clearTimeout(id);
+  }, [score, circumference]);
 
   const ringColor =
-    score >= 75 ? '#4ade80' : score >= 60 ? '#EBA584' : score >= 45 ? '#f97316' : '#ef4444';
+    score >= 75 ? '#4ade80'
+    : score >= 60 ? '#EBA584'
+    : score >= 45 ? '#f97316'
+    : '#ef4444';
 
   return (
     <div className="flex flex-col items-center gap-2">
       <svg width="140" height="140" viewBox="0 0 140 140">
         {/* Track */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke="#e5e7eb"
-          strokeWidth="11"
-        />
-        {/* Progress */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e5e7eb" strokeWidth="11" />
+        {/* Animated progress arc */}
         <circle
           cx={cx}
           cy={cy}
@@ -62,31 +67,15 @@ const RecoveryRing = ({ score }: { score: number }) => {
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           transform={`rotate(-90 ${cx} ${cy})`}
-          style={{ transition: 'stroke-dashoffset 1s ease-out' }}
+          style={{ transition: 'stroke-dashoffset 1.1s cubic-bezier(0.4, 0, 0.2, 1)' }}
         />
-        {/* Center text */}
-        <text
-          x={cx}
-          y={cy - 6}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="22"
-          fontWeight="700"
-          fill="#2d3748"
-          fontFamily="serif"
-        >
+        {/* Center score */}
+        <text x={cx} y={cy - 6} textAnchor="middle" dominantBaseline="middle"
+          fontSize="22" fontWeight="700" fill="#2d3748" fontFamily="serif">
           {score}%
         </text>
-        <text
-          x={cx}
-          y={cy + 14}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize="9"
-          fill="#718096"
-          fontFamily="sans-serif"
-          letterSpacing="0.5"
-        >
+        <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle"
+          fontSize="9" fill="#718096" fontFamily="sans-serif" letterSpacing="0.5">
           RECOVERY
         </text>
       </svg>
@@ -124,16 +113,13 @@ const ResultsHero = ({ firstName, patternSignature, scores }: ResultsHeroProps) 
             <p className="text-xs font-semibold uppercase tracking-widest text-amari-text-light font-sans mb-3">
               Your Pattern Signature
             </p>
-            <span
-              className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border mb-4 ${badgeClass}`}
-            >
+            <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border mb-4 ${badgeClass}`}>
               {patternSignature}
             </span>
             <p className="text-base text-amari-charcoal font-sans leading-relaxed">
               {patternDescriptions[patternSignature]}
             </p>
           </div>
-
           {/* Right: recovery ring */}
           <div className="flex-shrink-0">
             <RecoveryRing score={scores.recoveryPotential} />
@@ -145,7 +131,7 @@ const ResultsHero = ({ firstName, patternSignature, scores }: ResultsHeroProps) 
       <div className="mt-8 flex flex-col items-center gap-1 text-amari-text-light">
         <p className="text-sm font-sans">Scroll to see your full assessment</p>
         <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" />
         </svg>
       </div>
     </section>

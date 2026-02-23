@@ -1,21 +1,9 @@
+
 import React from 'react';
 import { PatternSignature } from '@/types/quiz';
 
 type BookingCTAProps = {
   patternSignature: PatternSignature;
-};
-
-const patternRecommendations: Record<PatternSignature, string> = {
-  'Protective Tension':
-    "What you're feeling isn't dysfunction—it's your body's way of holding on for safety. Let's help it begin to let go.",
-  'Structural Adaptation':
-    "Your body has found a way to cope. Now, let's guide it back into alignment—and into ease.",
-  'Established Pattern':
-    "Your pain pattern has been deeply rehearsed over time. But healing is possible—through new neural pathways.",
-  'Functional Limitation':
-    "Pain has narrowed what you can do. Let's widen your range by retraining the way your body supports you.",
-  'Compensatory Movement':
-    "Your body has been making up for lost function. Now it's time to balance the equation at its source.",
 };
 
 const CheckIcon = () => (
@@ -30,11 +18,7 @@ const StarIcon = () => (
   </svg>
 );
 
-const BookingCTA = ({ patternSignature }: BookingCTAProps) => {
-  const recommendation =
-    patternRecommendations[patternSignature] ??
-    "Your body is doing its best to adapt. The Amari Method meets it there—and begins the shift toward lasting change.";
-
+const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
   return (
     <section className="px-6 py-12 bg-amari-bone-white">
       <div className="max-w-2xl mx-auto">
@@ -44,19 +28,16 @@ const BookingCTA = ({ patternSignature }: BookingCTAProps) => {
           <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-4">
             You're not broken.<br />You're out of balance.
           </h2>
-          <p className="text-lg font-sans text-amari-text-light max-w-xl mx-auto mb-3">
+          <p className="text-lg font-sans text-amari-text-light max-w-xl mx-auto mb-5">
             The pain you feel isn't a failure—it's your body asking for a reset. The Amari Method shows you how to respond with precision, not guesswork.
           </p>
-          <p className="text-base text-amari-pine-teal font-medium">
-            ✓ Most clients feel noticeable change within one session
-          </p>
-        </div>
-
-        {/* Pattern-specific quote */}
-        <div className="bg-amari-light-sand border-l-4 border-amari-pine-teal p-6 rounded-r-xl mb-10">
-          <p className="text-base md:text-lg font-sans text-amari-charcoal italic leading-relaxed">
-            {recommendation}
-          </p>
+          {/* Social proof pill */}
+          <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold font-sans bg-green-50 text-green-700 border border-green-200">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            Most clients feel noticeable change within one session
+          </span>
         </div>
 
         {/* Booking card */}
@@ -134,6 +115,7 @@ const BookingCTA = ({ patternSignature }: BookingCTAProps) => {
             No pressure. Just answers to your questions.
           </p>
         </div>
+
       </div>
     </section>
   );

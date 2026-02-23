@@ -9,87 +9,77 @@ type ScoreCardProps = {
   compact?: boolean;
 };
 
-const ScoreCard = ({
-  title,
-  subtitle,
-  score,
-  description,
-  compact = false,
-}: ScoreCardProps) => {
-  // Determine score category text and color
-  let categoryText = '';
-  let categoryColor = '';
-
-  // Active and Passive systems are neutral (data points, not good/bad)
+const ScoreCard = ({ title, subtitle, score, description, compact = false }: ScoreCardProps) => {
   const isCompensationSystem = title === 'Active System' || title === 'Passive System';
-  const isRecoveryPotential = title === 'Recovery Potential';
+  const isRecoveryPotential  = title === 'Recovery Potential';
 
-  if (score < 25) {
-    categoryText = 'Minimal';
-    categoryColor = isCompensationSystem ? 'text-gray-600' : 'text-green-600';
-  } else if (score < 50) {
-    categoryText = 'Mild';
-    categoryColor = isCompensationSystem ? 'text-gray-600' : 'text-emerald-600';
-  } else if (score < 75) {
-    categoryText = 'Moderate';
-    categoryColor = isCompensationSystem ? 'text-gray-700' : 'text-amber-600';
+  // Category label
+  let categoryText = '';
+  if (score < 25)       categoryText = 'Minimal';
+  else if (score < 50)  categoryText = 'Mild';
+  else if (score < 75)  categoryText = 'Moderate';
+  else                  categoryText = 'Significant';
+
+  // Category label color
+  let categoryColor = '';
+  if (isCompensationSystem) {
+    categoryColor = 'text-gray-600';
+  } else if (isRecoveryPotential) {
+    categoryColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-emerald-600' : score >= 25 ? 'text-amber-600' : 'text-red-600';
   } else {
-    categoryText = 'Significant';
-    categoryColor = isCompensationSystem ? 'text-gray-800' : 'text-red-600';
+    categoryColor = score < 25 ? 'text-green-600' : score < 50 ? 'text-emerald-600' : score < 75 ? 'text-amber-600' : 'text-red-600';
   }
 
-  // Progress bar colors:
-  // - Recovery Potential: higher is better (green at high scores)
-  // - Compensation Systems: neutral gray (just data)
-  // - Other scores: lower is better (green at low scores)
+  // Progress bar color
   const progressColor = isCompensationSystem
-    ? (score < 25 ? 'bg-gray-300' :        // Minimal compensation = light gray
-       score < 50 ? 'bg-gray-400' :        // Mild = medium gray
-       score < 75 ? 'bg-gray-500' :        // Moderate = darker gray
-       'bg-gray-600')                       // Significant = darkest gray
+    ? (score < 25 ? 'bg-gray-300' : score < 50 ? 'bg-gray-400' : score < 75 ? 'bg-gray-500' : 'bg-gray-600')
     : isRecoveryPotential
-    ? (score >= 75 ? 'bg-green-500' :      // High recovery = green
-       score >= 50 ? 'bg-emerald-500' :    // Moderate recovery = teal
-       score >= 25 ? 'bg-amber-500' :      // Low recovery = amber
-       'bg-red-500')                        // Very low = red
-    : (score < 25 ? 'bg-green-500' :       // Low dysfunction = green
-       score < 50 ? 'bg-emerald-500' :     // Moderate = teal
-       score < 75 ? 'bg-amber-500' :       // High = amber
-       'bg-red-500');                       // Very high = red
+    ? (score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-emerald-500' : score >= 25 ? 'bg-amber-500' : 'bg-red-500')
+    : (score < 25 ? 'bg-green-500' : score < 50 ? 'bg-emerald-500' : score < 75 ? 'bg-amber-500' : 'bg-red-500');
+
+  if (compact) {
+    return (
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-amari-border hover:shadow-md transition-shadow duration-200">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="font-serif text-base text-amari-charcoal leading-tight">{title}</h3>
+          <span className="text-2xl font-serif font-bold text-amari-charcoal ml-3 leading-none flex-shrink-0">
+            {score}%
+          </span>
+        </div>
+        <div className="w-full bg-amari-oat rounded-full h-2 mb-2 overflow-hidden">
+          <div className={`h-2 rounded-full ${progressColor} transition-all duration-700 ease-out`}
+            style={{ width: `${score}%` }} />
+        </div>
+        <span className={`text-xs font-semibold font-sans ${categoryColor}`}>{categoryText}</span>
+      </div>
+    );
+  }
 
   return (
-    <div className={`bg-white rounded-xl p-6 md:p-8 shadow-md hover:shadow-lg transition-shadow duration-300 border border-amari-border ${compact ? 'text-center' : ''}`}>
-      <div className={`${compact ? '' : 'flex justify-between items-start mb-4'}`}>
+    <div className="bg-white rounded-xl p-6 md:p-8 shadow-md hover:shadow-lg transition-shadow duration-200 border border-amari-border">
+      {/* Big score number — leads the card */}
+      <div className="flex items-start justify-between mb-1">
         <div>
-          <h3 className={`font-serif text-xl md:text-2xl mb-1 text-amari-charcoal ${compact ? 'text-center' : ''}`}>
-            {title}
-          </h3>
+          <h3 className="font-serif text-xl md:text-2xl text-amari-charcoal mb-0.5">{title}</h3>
           {subtitle && <p className="text-amari-text-light text-sm font-sans">{subtitle}</p>}
         </div>
-
-        {!compact && (
-          <div className="text-right">
-            <span className={`${categoryColor} font-semibold font-ui`}>{categoryText}</span>
-            <span className="text-amari-text-light ml-1">({score}%)</span>
-          </div>
-        )}
-      </div>
-
-      {compact && (
-        <div className="text-center mb-4">
-          <span className={`${categoryColor} font-semibold font-ui text-lg`}>{categoryText}</span>
-          <span className="text-amari-text-light ml-1">({score}%)</span>
+        <div className="text-right ml-4 flex-shrink-0">
+          <span className="text-4xl md:text-5xl font-serif font-bold text-amari-charcoal leading-none block">
+            {score}%
+          </span>
+          <span className={`text-sm font-semibold font-sans ${categoryColor} block mt-0.5`}>
+            {categoryText}
+          </span>
         </div>
-      )}
-
-      <div className="w-full bg-amari-oat rounded-full h-3 mb-4 overflow-hidden">
-        <div
-          className={`h-3 rounded-full ${progressColor} transition-all duration-500 ease-out`}
-          style={{ width: `${score}%` }}
-        ></div>
       </div>
 
-      <p className={`text-amari-text-light text-sm md:text-base font-sans leading-relaxed ${compact ? 'text-center' : ''}`}>
+      {/* Progress bar */}
+      <div className="w-full bg-amari-oat rounded-full h-2.5 mb-4 mt-4 overflow-hidden">
+        <div className={`h-2.5 rounded-full ${progressColor} transition-all duration-700 ease-out`}
+          style={{ width: `${score}%` }} />
+      </div>
+
+      <p className="text-amari-text-light text-sm md:text-base font-sans leading-relaxed">
         {description}
       </p>
     </div>
