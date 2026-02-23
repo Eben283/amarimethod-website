@@ -45,7 +45,7 @@ export default function SessionHistory({ appointments }: SessionHistoryProps) {
       </div>
       <div className="space-y-3">
         {appointments.slice(0, 10).map((appt) => {
-          const statusConfig = STATUS_CONFIG[appt.status] || STATUS_CONFIG.completed;
+          const statusConfig = STATUS_CONFIG[appt.status] || STATUS_CONFIG.confirmed;
           const StatusIcon = statusConfig.icon;
 
           return (

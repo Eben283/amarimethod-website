@@ -21,7 +21,6 @@ const PAYMENT_LINKS = {
   series_8:        'https://link.amarimethod.com/payment-link/6998736ab409476885754915',
   upgrade_to_4:    'https://link.amarimethod.com/payment-link/699873a81a8400115e0381db',
   upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
-  upgrade_4_to_8:  'https://link.amarimethod.com/payment-link/699874221a8400d21b038273',
   living_practice: 'https://link.amarimethod.com/payment-link/6998745744f21f09ead95e82',
   single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
@@ -39,48 +38,58 @@ interface Action {
 }
 
 function getSeriesActions(client: ClientData): Action[] {
-  const { seriesType, sessionsCompleted } = client;
+  const { seriesType, sessionsCompleted, sessionsRemaining } = client;
+  const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
+  const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
 
-  // Already on 8-session series — top tier, nothing to upgrade to
-  if (seriesType === '8-session') {
-    return [];
-  }
-
-  // Already on 4-session series — offer upgrade to 8
-  if (seriesType === '4-session') {
-    return [
-      {
-        icon: TrendingUp,
-        label: 'Upgrade to 8-Session Series',
-        description: 'Add 4 more sessions + Living Practice video program — pay just $575',
-        href: PAYMENT_LINKS.upgrade_4_to_8,
-        style: 'secondary',
-      },
-    ];
-  }
-
-  // Pay-as-you-go with fewer than 5 sessions — offer series upgrade
-  if (sessionsCompleted >= 1 && sessionsCompleted < 5) {
+  // Exactly 1 pay-as-you-go session — show credit upgrade links (better deal than full price)
+  if (seriesType === 'none' && sessionsCompleted === 1) {
     return [
       {
         icon: ShoppingBag,
-        label: 'Continue with a 4-Session Series',
-        description: '3 more sessions at a package rate — pay just $495',
+        label: 'Upgrade to a 4-Session Series',
+        description: 'Your initial session cost applies — pay just $495 more',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
       },
       {
         icon: TrendingUp,
-        label: 'Continue with an 8-Session Series',
-        description: '7 more sessions + Living Practice video program — pay just $1,070',
+        label: 'Upgrade to an 8-Session Series',
+        description: 'Includes Living Practice — pay just $1,070 more',
         href: PAYMENT_LINKS.upgrade_to_8,
         style: 'secondary',
       },
     ];
   }
 
-  // Discovery call client — no sessions yet, no series cards
-  return [];
+  // Everyone else — 4 and 8 packs available at any time.
+  // For established clients (on a series or 2+ sessions), frame around continuing their home practice.
+  const isEstablished = hasActiveSeries || seriesFinished || sessionsCompleted >= 2;
+
+  const pack4Description = isEstablished
+    ? 'Maintain and evolve your Amari at-home practice ($720)'
+    : 'Four sessions at a package rate ($720)';
+
+  const pack8Description = isEstablished
+    ? 'Deepen your at-home practice with 8 sessions + Living Practice ($1,295)'
+    : 'Eight sessions + Living Practice included ($1,295)';
+
+  return [
+    {
+      icon: ShoppingBag,
+      label: 'Buy a 4-Session Series',
+      description: pack4Description,
+      href: PAYMENT_LINKS.series_4,
+      style: 'secondary',
+    },
+    {
+      icon: TrendingUp,
+      label: 'Buy an 8-Session Series',
+      description: pack8Description,
+      href: PAYMENT_LINKS.series_8,
+      style: 'secondary',
+    },
+  ];
 }
 
 export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
@@ -88,10 +97,11 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
-  // Series clients → in-portal booking modal (pre-paid, no payment needed)
-  // Pay-as-you-go clients (had initial, no series) → payment link first
-  // New clients → inline In Person / Virtual choice
-  const isPayAsYouGo = client.sessionsCompleted >= 1 && client.seriesType === 'none';
+  // Active series = on a series with sessions remaining (pre-paid, modal booking)
+  // Pay-as-you-go = has had sessions but no pre-paid sessions left (pay per session)
+  //   Includes: no-series clients who've had sessions, AND finished-series clients
+  const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
+  const isPayAsYouGo = hasHadInitial && !hasActiveSeries;
   const bookingAction: Action = !hasHadInitial
     ? {
         icon: Calendar,
@@ -100,19 +110,20 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         onClick: () => setShowInitialChoice(true),
         style: 'primary',
       }
-    : isPayAsYouGo
+    : hasActiveSeries
     ? {
-        icon: Calendar,
-        label: bookingLabel,
-        description: 'Book and pay for a single session ($190)',
-        href: PAYMENT_LINKS.single_followup,
-        style: 'primary',
-      }
-    : {
         icon: Calendar,
         label: bookingLabel,
         description: 'Schedule your next in-person or virtual session',
         onClick: onBookSession,
+        style: 'primary',
+      }
+    : {
+        // Pay-as-you-go or finished series — pay for a single session
+        icon: Calendar,
+        label: bookingLabel,
+        description: 'Book and pay for a single session ($190)',
+        href: PAYMENT_LINKS.single_followup,
         style: 'primary',
       };
 
