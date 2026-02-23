@@ -36,6 +36,13 @@ type QuizContextType = {
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
+// GA4 event helper — fires only if gtag is loaded (safe to call even before GA initializes)
+function trackEvent(eventName: string, params?: Record<string, unknown>) {
+  if (typeof window !== 'undefined' && typeof (window as any).gtag === 'function') {
+    (window as any).gtag('event', eventName, params);
+  }
+}
+
 export function QuizProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
@@ -113,6 +120,10 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       }
       submitQuiz();
       return;
+    }
+    // Fire quiz_start when user leaves step 0 (first real engagement)
+    if (currentStep === 0) {
+      trackEvent('quiz_start');
     }
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
   };
@@ -204,6 +215,13 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
 
       setIsProcessing(false);
       setIsCompleted(true);
+      trackEvent('quiz_complete', {
+        pattern_signature: signature,
+        recovery_potential: calculatedScores.recoveryPotential,
+        pain_location: (answers[0]?.answer as string) || 'Unknown',
+        pain_severity: calculatedScores.recoveryPotential >= 80 ? 'mild'
+          : calculatedScores.recoveryPotential < 60 ? 'severe' : 'moderate',
+      });
       return true;
     } catch (err: any) {
       const message = err?.message || "Unknown error";
