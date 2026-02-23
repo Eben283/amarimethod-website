@@ -2065,7 +2065,7 @@ article strong {
 }
 
 .contact-final-cta {
-  background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-dark) 100%);
+  background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
   color: white;
   text-align: center;
 }
@@ -2676,14 +2676,37 @@ footer {
 /* --- CTA Section (shared across multiple pages) --- */
 
 .cta-section {
-  background: white;
+  background: linear-gradient(135deg, #252525 0%, #1a1a1a 100%);
+  color: white;
   padding: 4rem 2rem;
   text-align: center;
-  border-top: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin: 3rem 0;
 }
 
 .cta-section h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  color: white;
   margin-bottom: 1rem;
+}
+
+.cta-section p {
+  color: rgba(255,255,255,0.9);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 2rem;
+  font-size: 1.05rem;
+}
+
+.cta-section .btn-primary {
+  background: white;
+  color: #252525;
+}
+
+.cta-section .btn-primary:hover {
+  background: #EBA584;
+  color: white;
 }
 
 .cta-subtitle {
