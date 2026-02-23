@@ -2092,6 +2092,7 @@ article strong {
 .referral-wrapper {
   max-width: 600px;
   margin: 0 auto;
+  padding: 3rem 0 4rem;
 }
 
 .referral-form label {
