@@ -3475,11 +3475,6 @@ footer {
   animation: fadeIn 0.8s ease-out forwards;
 }
 
-.scroll-animate {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
 /* --- Layout Utilities --- */
 
 .section {

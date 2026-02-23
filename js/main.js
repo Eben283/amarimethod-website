@@ -161,30 +161,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Scroll-triggered fade-in animations
-document.addEventListener('DOMContentLoaded', function() {
-  const scrollAnimationObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('fade-in-up');
-        scrollAnimationObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-
-  const sectionsToAnimate = document.querySelectorAll('.section, .section-two-col, .steps-grid, .journal-grid, .testimonials-grid, .about-section');
-  sectionsToAnimate.forEach(section => {
-    section.classList.add('scroll-animate');
-    scrollAnimationObserver.observe(section);
-  });
-
-  const cardSelectors = '.testimonial-card, .testimonial-scroll-card, .step-card, .journal-card, .result-card';
-  document.querySelectorAll(cardSelectors).forEach((card, index) => {
-    card.classList.add('scroll-animate');
-    card.style.animationDelay = `${index * 0.1}s`;
-    scrollAnimationObserver.observe(card);
-  });
-});
+// Scroll-triggered fade-in animations removed — content is always visible.
+// The JS-driven approach of hiding elements with opacity:0 and relying on
+// IntersectionObserver to reveal them is fragile and can leave content
+// invisible if the observer doesn't fire. CSS animations can be added back
+// via CSS-only @media (prefers-reduced-motion: no-preference) if desired.
 
 // Form Handling (if needed for contact forms)
 document.addEventListener('DOMContentLoaded', function() {
