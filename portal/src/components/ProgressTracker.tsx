@@ -7,6 +7,7 @@ import { cancelAppointment } from '../lib/api';
 interface ProgressTrackerProps {
   client: ClientData;
   upcomingAppointments: Appointment[];
+  allAppointments: Appointment[];
   onRefetch: () => void;
   onBookSession?: () => void;
 }
@@ -18,7 +19,7 @@ function isWithin24Hours(startTime: string): boolean {
   return diff < 24 * 60 * 60 * 1000;
 }
 
-export default function ProgressTracker({ client, upcomingAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
+export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -27,9 +28,27 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
 
   const isOnSeries = client.seriesType !== 'none';
   const totalSessions = client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
-  const progressPercent = totalSessions > 0
-    ? Math.min((client.sessionsCompleted / totalSessions) * 100, 100)
+
+  // Use (total - remaining) for the bar — reliable regardless of whether
+  // sessions_completed in GHL is per-series or cumulative (it's cumulative).
+  const currentSeriesCompleted = isOnSeries
+    ? Math.max(0, totalSessions - client.sessionsRemaining)
     : 0;
+  const progressPercent = totalSessions > 0
+    ? Math.min((currentSeriesCompleted / totalSessions) * 100, 100)
+    : 0;
+
+  // Lifetime count from actual appointment data — always accurate, never clamped
+  const lifetimeCompleted = allAppointments.filter(a => a.status === 'completed').length;
+
+  // True when client is on their second or later series (lifetime > current series)
+  const isReturningClient = isOnSeries && lifetimeCompleted > currentSeriesCompleted;
+
+  // Four UI states
+  const seriesInProgress = isOnSeries && client.sessionsRemaining > 0;
+  const seriesFinished = isOnSeries && client.sessionsRemaining === 0;
+  const payAsYouGo = !isOnSeries && lifetimeCompleted > 0;
+  // brandNew = !isOnSeries && lifetimeCompleted === 0 (default / else branch)
 
   async function handleCancel(appointmentId: string, title: string) {
     setCancellingId(appointmentId);
@@ -51,7 +70,7 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
     const t = title.toLowerCase();
     if (t.includes('discovery')) return 'https://discoverycall.amarimethod.com/discovery-call-booking';
     if (t.includes('initial') && t.includes('virtual')) return 'https://introsessionvirtual.amarimethod.com/is-virtual-info';
-    if (t.includes('initial')) return 'https://back-pain-session-inperson.amarimethod.com/client-info';
+    if (t.includes('initial')) return 'https://amarimethodbooking.amarimethod.com/amari-method-funnel';
     return null; // follow-up — use modal
   }
 
@@ -64,10 +83,8 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
       onRefetch();
       const externalUrl = getRescheduleUrl(title);
       if (externalUrl) {
-        // Discovery call or initial session — send to appropriate GHL page
         window.open(externalUrl, '_blank', 'noopener,noreferrer');
       } else if (onBookSession) {
-        // Follow-up — open the in-portal booking modal
         onBookSession();
       }
     } catch (err) {
@@ -81,18 +98,19 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
 
   return (
     <div className="space-y-6">
-      {/* Progress card */}
+      {/* ── Progress card ── */}
       <div className="portal-card">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-amari-accent-warm" />
           <h2 className="font-serif text-lg font-bold text-amari-charcoal">Your Progress</h2>
         </div>
 
-        {isOnSeries ? (
+        {/* State 1: Active series, in progress */}
+        {seriesInProgress && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-amari-text-secondary">
-                {client.sessionsCompleted} of {totalSessions} sessions completed
+                {currentSeriesCompleted} of {totalSessions} sessions
               </span>
               <span className="text-sm font-medium text-amari-accent-warm">
                 {Math.round(progressPercent)}%
@@ -104,40 +122,52 @@ export default function ProgressTracker({ client, upcomingAppointments, onRefetc
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            {client.sessionsRemaining > 0 && (
-              <p className="text-xs text-amari-text-muted mt-2">
-                {client.sessionsRemaining} session{client.sessionsRemaining !== 1 ? 's' : ''} remaining in your {client.seriesType} series
-              </p>
-            )}
-            {client.sessionsRemaining === 0 && (
-              <p className="text-xs text-green-600 font-medium mt-2">
-                Series complete! Consider starting a new series to continue your progress.
+            <p className="text-xs text-amari-text-muted mt-2">
+              {client.sessionsRemaining} session{client.sessionsRemaining !== 1 ? 's' : ''} remaining in your {client.seriesType} series
+            </p>
+            {isReturningClient && (
+              <p className="text-xs text-amari-text-muted mt-1">
+                ✦ {lifetimeCompleted} sessions with the Amari Method
               </p>
             )}
           </div>
-        ) : (
+        )}
+
+        {/* State 2: Series just finished */}
+        {seriesFinished && (
           <div>
-            {client.sessionsCompleted === 0 ? (
-              <p className="text-sm text-amari-text-secondary">
-                Your session history will appear here after your first visit.
-              </p>
-            ) : (
-              <p className="text-sm text-amari-text-secondary">
-                You've completed <span className="font-semibold">{client.sessionsCompleted}</span> session{client.sessionsCompleted !== 1 ? 's' : ''} so far.
-              </p>
-            )}
-            {client.sessionsCompleted === 1 && client.seriesType === 'none' && (
-              <div className="mt-3 p-3 bg-amari-light-sand rounded-lg">
-                <p className="text-sm text-amari-text-secondary">
-                  <span className="font-medium">Ready to commit to your care?</span> Your initial session cost applies toward a 4 or 8-session series.
-                </p>
-              </div>
-            )}
+            <div className="h-3 bg-amari-light-sand rounded-full overflow-hidden mb-3">
+              <div className="h-full bg-amari-accent-warm rounded-full w-full transition-all duration-700 ease-out" />
+            </div>
+            <p className="text-sm font-medium text-amari-charcoal">
+              {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
+            </p>
+            <p className="text-xs text-amari-text-muted mt-1">
+              Your current series is complete — ready to continue?
+            </p>
+          </div>
+        )}
+
+        {/* State 3: Pay-as-you-go, has sessions */}
+        {payAsYouGo && (
+          <div>
+            <p className="text-sm font-medium text-amari-charcoal">
+              ✦ {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
+            </p>
+          </div>
+        )}
+
+        {/* State 4: Brand new client */}
+        {!seriesInProgress && !seriesFinished && !payAsYouGo && (
+          <div>
+            <p className="text-sm text-amari-text-muted">
+              Your session history will appear here after your first visit.
+            </p>
           </div>
         )}
       </div>
 
-      {/* Upcoming Sessions card */}
+      {/* ── Upcoming Sessions card ── */}
       <div className="portal-card">
         <div className="flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5 text-amari-charcoal" />
