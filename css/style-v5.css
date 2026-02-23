@@ -1383,6 +1383,335 @@ nav {
   display: block;
 }
 
+/* ===== HOMEPAGE SECTIONS ===== */
+
+/* Section subtitle — reusable centered subtitle pattern */
+.section-subtitle {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 3rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-subtitle-narrow {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Checkmark badges — dark variant (Break Free section) */
+.checkmark-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #1a1a1a;
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+/* Checkmark badges — light variant (Assessment section) */
+.checkmark-light {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: white;
+  color: #1a1a1a;
+  border-radius: 50%;
+  font-weight: 700;
+  margin-right: 10px;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  border: 2px solid #e0e0e0;
+}
+
+/* Assessment section */
+.assessment-section {
+  background: #F6F3E8;
+  padding: 3.5rem 2rem;
+}
+
+.assessment-content {
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.assessment-image-wrapper {
+  width: 100%;
+  max-width: 280px;
+}
+
+.assessment-image-wrapper img {
+  width: 100%;
+  border-radius: 16px;
+  display: block;
+}
+
+.assessment-label {
+  display: inline-block;
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.assessment-text h2 {
+  font-size: 2.2rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.assessment-text p {
+  margin-bottom: 1.25rem;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #666;
+  margin-top: 0;
+}
+
+.assessment-features {
+  margin-bottom: 1.75rem;
+}
+
+.assessment-feature {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.assessment-feature:last-child {
+  margin-bottom: 0;
+}
+
+.assessment-feature span:last-child {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.assessment-section .btn-secondary {
+  box-shadow: none;
+}
+
+/* Why This Is Different — comparison section */
+.comparison-section {
+  background: var(--bg-secondary);
+}
+
+.comparison-section h2 {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.comparison-section .section-two-col {
+  gap: 3rem;
+}
+
+.comparison-col-header {
+  margin-bottom: 1.5rem;
+}
+
+.comparison-col-header-muted {
+  margin-bottom: 1.5rem;
+  color: var(--color-text-muted);
+}
+
+.comparison-item {
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+}
+
+.comparison-item:last-child {
+  margin-bottom: 0;
+}
+
+.comparison-item h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.comparison-item-highlight {
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+  border-left: 4px solid var(--color-primary);
+}
+
+.comparison-item-highlight:last-child {
+  margin-bottom: 0;
+}
+
+.comparison-item-highlight h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Waterfall CTA banner */
+.waterfall-cta {
+  margin: 5rem auto;
+  max-width: 1000px;
+  padding: 0 2rem;
+  border-radius: 24px;
+  overflow: hidden;
+  min-height: 400px;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.waterfall-cta-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.45) 100%);
+}
+
+.waterfall-cta-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: white;
+  max-width: 700px;
+  padding: 3rem 2rem;
+}
+
+.waterfall-cta-content h2 {
+  font-size: 2.8rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  font-family: 'Bona Nova', serif;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.waterfall-cta-content p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: rgba(255,255,255,0.95);
+  line-height: 1.7;
+}
+
+/* FAQ section header */
+.faq-section {
+  background: #F6F3E9;
+}
+
+.faq-section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.faq-section-header p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-top: 1rem;
+}
+
+/* Free Resources section (homepage) */
+.blog-resources-section {
+  background: white;
+  padding: 5rem 2rem;
+  margin: 3rem 0;
+}
+
+.blog-resources-section h2 {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.blog-resources-subtitle {
+  font-size: 1.1rem;
+  margin-bottom: 3rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  color: #666;
+}
+
+.resource-grid {
+  max-width: 1200px;
+  margin: 0 auto 3rem;
+}
+
+.resource-card {
+  background: white;
+  border: 1px solid #F0EADC;
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.resource-card-image {
+  width: 100%;
+  height: 200px;
+  background: #F5F0E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.resource-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resource-card-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.resource-card-body h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+
+.resource-card-body h3 a {
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.resource-card-body p {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  flex-grow: 1;
+}
+
+.resource-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 /* ===== REFERRAL PAGE ===== */
 .referral-wrapper {
   max-width: 600px;

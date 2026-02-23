@@ -109,6 +109,83 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// Counter Animation (homepage about highlights)
+document.addEventListener('DOMContentLoaded', function() {
+  const highlightNumbers = document.querySelectorAll('.highlight-number');
+  if (!highlightNumbers.length) return;
+
+  let hasAnimated = false;
+
+  function animateCounter(element, finalValue) {
+    const is200Plus = element.textContent.includes('200');
+    const target = is200Plus ? 200 : (finalValue === '25+' ? 25 : 1);
+    const duration = 1800;
+    const startTime = Date.now();
+
+    function update() {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const currentValue = Math.round(easeOutQuart * target);
+
+      if (is200Plus) {
+        element.textContent = currentValue + '+';
+      } else if (finalValue === '25+') {
+        element.textContent = currentValue + '+';
+      } else {
+        element.textContent = currentValue;
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        element.textContent = finalValue;
+      }
+    }
+    update();
+  }
+
+  const highlightsSection = document.querySelector('.about-highlights');
+  if (highlightsSection) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !hasAnimated) {
+          hasAnimated = true;
+          highlightNumbers.forEach(el => {
+            animateCounter(el, el.textContent);
+          });
+        }
+      });
+    }, { threshold: 0.3 });
+    observer.observe(highlightsSection);
+  }
+});
+
+// Scroll-triggered fade-in animations
+document.addEventListener('DOMContentLoaded', function() {
+  const scrollAnimationObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('fade-in-up');
+        scrollAnimationObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+  const sectionsToAnimate = document.querySelectorAll('.section, .section-two-col, .steps-grid, .journal-grid, .testimonials-grid, .about-section');
+  sectionsToAnimate.forEach(section => {
+    section.classList.add('scroll-animate');
+    scrollAnimationObserver.observe(section);
+  });
+
+  const cardSelectors = '.testimonial-card, .testimonial-scroll-card, .step-card, .journal-card, .result-card';
+  document.querySelectorAll(cardSelectors).forEach((card, index) => {
+    card.classList.add('scroll-animate');
+    card.style.animationDelay = `${index * 0.1}s`;
+    scrollAnimationObserver.observe(card);
+  });
+});
+
 // Form Handling (if needed for contact forms)
 document.addEventListener('DOMContentLoaded', function() {
   const forms = document.querySelectorAll('form');
