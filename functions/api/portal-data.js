@@ -169,13 +169,10 @@ export async function onRequestGet(context) {
     const completedAppointmentCount = allAppointments.filter(
       (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
     ).length;
-    const sessionsCompletedRaw = Math.max(fieldSessionsCompleted, completedAppointmentCount);
-    // Clamp to series total so we never show impossible numbers (e.g. 5 of 4)
-    const seriesTotalMap = { "4-session": 4, "8-session": 8 };
-    const seriesTotal = seriesTotalMap[seriesType] ?? null;
-    const sessionsCompleted = seriesTotal !== null
-      ? Math.min(sessionsCompletedRaw, seriesTotal)
-      : sessionsCompletedRaw;
+    // sessions_completed in GHL is cumulative (never reset between series — the attendance
+    // workflow adds 1 each time). Don't clamp it — the frontend uses it as a lifetime counter.
+    // The progress bar uses (totalSessions - sessionsRemaining) instead, which is always accurate.
+    const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
     // GHL checkbox fields return either: true (bool), "true" (string), or ["true"] (array)
     function isChecked(raw) {
       if (!raw && raw !== 0) return false;

@@ -94,14 +94,17 @@ export async function onRequestGet({ request, env }) {
       const timeSlots = val.slots || [];
       for (const isoSlot of timeSlots) {
         // isoSlot is like "2026-02-24T11:30:00-07:00"
-        const slotDate = new Date(isoSlot);
-        const hour = slotDate.getHours();
-        const minute = slotDate.getMinutes();
+        // NOTE: Do NOT use new Date().getHours() — Cloudflare Workers run in UTC,
+        // so getHours() returns UTC hours, not the slot's local time. Parse the
+        // time components directly from the ISO string instead.
+        const timePart = isoSlot.split('T')[1] || '';
+        const hour = parseInt(timePart.split(':')[0], 10) || 0;
+        const minute = parseInt(timePart.split(':')[1], 10) || 0;
         const hh = String(hour).padStart(2, '0');
         const mm = String(minute).padStart(2, '0');
         slots.push({
           date,                    // "YYYY-MM-DD"
-          time: `${hh}:${mm}`,    // "HH:MM" in user's local time
+          time: `${hh}:${mm}`,    // "HH:MM" in the timezone GHL returned it in
           hour,
           minute,
           datetime: isoSlot,       // full ISO string for booking

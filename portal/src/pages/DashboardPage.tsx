@@ -84,6 +84,9 @@ export default function DashboardPage() {
             <ProgressTracker
               client={client}
               upcomingAppointments={upcomingAppointments}
+              // `appointments` from the API = past appointments only (not upcoming).
+              // Prop is named allAppointments but only past ones are passed — correct
+              // because completed status only ever appears on past appointments.
               allAppointments={appointments}
               onRefetch={refetch}
               onBookSession={hasHadInitial ? () => setShowBookingModal(true) : undefined}

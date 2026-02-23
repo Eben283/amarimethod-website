@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video } from 'lucide-react';
+import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video, Gift, Tag } from 'lucide-react';
 import type { ClientData } from '../types/portal';
 
 interface QuickActionsProps {
@@ -26,6 +26,10 @@ const PAYMENT_LINKS = {
 };
 
 const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/';
+
+// TODO: Once Eben creates the gift card in GHL (Payments → Gift Cards),
+// paste the shareable checkout link here to activate the Buy button.
+const GIFT_CARD_URL = '';
 
 interface Action {
   icon: React.ElementType;
@@ -94,6 +98,7 @@ function getSeriesActions(client: ClientData): Action[] {
 
 export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
   const [showInitialChoice, setShowInitialChoice] = useState(false);
+  const [showRedeemInfo, setShowRedeemInfo] = useState(false);
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
@@ -281,6 +286,83 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
             </a>
           );
         })}
+      </div>
+
+      {/* ── Gift Cards ── */}
+      <div className="mt-6">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-3">
+          Gift Cards
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Buy a Gift Card */}
+          {GIFT_CARD_URL ? (
+            <a
+              href={GIFT_CARD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="no-underline"
+            >
+              <div className="portal-card flex items-start gap-4 cursor-pointer hover:shadow-card-hover">
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
+                  <Gift className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-sans font-semibold text-amari-charcoal text-sm">Buy a Gift Card</h3>
+                  <p className="text-xs text-amari-text-muted mt-0.5">Give the gift of pain relief</p>
+                </div>
+              </div>
+            </a>
+          ) : (
+            <div className="portal-card flex items-start gap-4 opacity-50 cursor-default">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
+                <Gift className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-sans font-semibold text-amari-charcoal text-sm">Buy a Gift Card</h3>
+                <p className="text-xs text-amari-text-muted mt-0.5">Coming soon</p>
+              </div>
+            </div>
+          )}
+
+          {/* Redeem a Gift Card */}
+          <div className="portal-card">
+            {!showRedeemInfo ? (
+              <button
+                onClick={() => setShowRedeemInfo(true)}
+                className="flex items-start gap-4 w-full text-left cursor-pointer"
+              >
+                <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
+                  <Tag className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-sans font-semibold text-amari-charcoal text-sm">Redeem a Gift Card</h3>
+                  <p className="text-xs text-amari-text-muted mt-0.5">Have a code? Tap to learn how →</p>
+                </div>
+              </button>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
+                    <Tag className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-sans font-semibold text-amari-charcoal text-sm">Redeeming your gift card</h3>
+                </div>
+                <p className="text-xs text-amari-text-muted leading-relaxed">
+                  When you book a session and reach the payment step, enter your gift card code in the
+                  discount/gift card field at checkout. Your balance will be applied automatically.
+                </p>
+                <button
+                  onClick={() => setShowRedeemInfo(false)}
+                  className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
+                >
+                  ← Back
+                </button>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
     </>
   );

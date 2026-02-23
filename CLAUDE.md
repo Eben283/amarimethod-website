@@ -78,14 +78,16 @@ cd quiz && npx vite build   # Build quiz only
 | Living Practice Access | `living_practice_access` | Checkbox |
 
 ## Pricing (current)
-| Service | Price | Duration |
-|---------|-------|----------|
-| Initial Session | $225 | 60 min |
-| Follow-up Session | $190 | 50 min |
-| 4-Session Series | $720 | — |
-| 8-Session Series | $1,295 | — (includes Living Practice) |
-| Living Practice | $347 | standalone video program |
-| Discovery Call | Free | 15 min |
+| Service | Price | Duration | Notes |
+|---------|-------|----------|-------|
+| Initial Session | $225 | 60 min | |
+| Follow-up Session | $190 | 50 min | |
+| 4-Session Series | $720 | — | Available to anyone at any time |
+| 8-Session Series | $1,295 | — (includes Living Practice) | Available to anyone at any time |
+| Upgrade: 1 Initial → 4-Session | $495 | — | Credit upgrade only — $225 already paid applied toward $720. ONLY if client has purchased exactly 1 initial session. |
+| Upgrade: 1 Initial → 8-Session | $1,070 | — | Credit upgrade only — $225 already paid applied toward $1,295. ONLY if client has purchased exactly 1 initial session. |
+| Living Practice | $347 | standalone video program | |
+| Discovery Call | Free | 15 min | |
 
 ## Key URLs
 - Live site: https://www.amarimethod.com
