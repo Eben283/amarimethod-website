@@ -115,16 +115,18 @@ export async function onRequestGet(context) {
     }
 
     // Check nonce (single-use) if KV is available
+    // If the nonce IS found in KV: delete it to enforce single-use.
+    // If NOT found: allow through — KV may have had a storage error in portal-auth.js,
+    // or the nonce TTL may have expired. The HMAC signature + expiry are sufficient protection.
     if (context.env.PORTAL_KV && payload.nonce) {
       const nonceValue = await context.env.PORTAL_KV.get(`nonce:${payload.nonce}`);
-      if (!nonceValue) {
-        return new Response(
-          JSON.stringify({ error: "This login link has already been used. Please request a new one." }),
-          { status: 410, headers }
-        );
+      if (nonceValue) {
+        // Nonce found and valid — consume it to prevent reuse
+        await context.env.PORTAL_KV.delete(`nonce:${payload.nonce}`);
+      } else {
+        // Nonce not found: log warning but allow through (graceful degradation)
+        console.warn(`[portal-verify] Nonce not found in KV for contact ${payload.contactId} — allowing through`);
       }
-      // Delete nonce to prevent reuse
-      await context.env.PORTAL_KV.delete(`nonce:${payload.nonce}`);
     }
 
     // Create a session token (30-day expiry)

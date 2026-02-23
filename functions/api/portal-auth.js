@@ -194,7 +194,7 @@ export async function onRequestPost(context) {
         contactId: contact.id,
         email: email,
         nonce: nonce,
-        exp: Date.now() + 15 * 60 * 1000, // 15 minutes
+        exp: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       },
       JWT_SECRET
     );
@@ -203,7 +203,7 @@ export async function onRequestPost(context) {
     if (context.env.PORTAL_KV) {
       try {
         await context.env.PORTAL_KV.put(`nonce:${nonce}`, "valid", {
-          expirationTtl: 900, // 15 minutes
+          expirationTtl: 86400, // 24 hours
         });
         console.log(`[portal-auth] Nonce stored in KV`);
       } catch (kvErr) {
