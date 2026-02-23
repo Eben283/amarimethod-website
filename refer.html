@@ -27,39 +27,6 @@
   </script>
 
   <link rel="stylesheet" href="css/style-v5.css?v=15">
-  <style>
-    .referral-form label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      color: var(--color-text);
-      font-size: 0.95rem;
-    }
-    .referral-form input,
-    .referral-form textarea {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-family: var(--font-sans-primary);
-      font-size: 1rem;
-      color: var(--color-text);
-      background: white;
-      transition: border-color 0.2s ease;
-      box-sizing: border-box;
-    }
-    .referral-form input:focus,
-    .referral-form textarea:focus {
-      outline: none;
-      border-color: var(--color-primary);
-    }
-    .referral-form .field {
-      margin-bottom: 1.25rem;
-    }
-    .referral-form textarea {
-      resize: vertical;
-    }
-  </style>
 </head>
 <body>
 
@@ -78,12 +45,12 @@
   <!-- ===== REFERRAL FORM ===== -->
   <section>
     <div class="container">
-      <div style="max-width: 600px; margin: 0 auto;">
+      <div class="referral-wrapper">
 
         <div id="referral-form-container">
           <form id="referral-form" class="referral-form">
 
-            <h2 style="margin-bottom: 1.5rem;">Your Information</h2>
+            <h2>Your Information</h2>
 
             <div class="field">
               <label for="affiliate-name">Your Name *</label>
@@ -95,7 +62,7 @@
               <input type="email" id="affiliate-email" name="affiliateEmail" required>
             </div>
 
-            <h2 style="margin-top: 2.5rem; margin-bottom: 1.5rem;">Client Information</h2>
+            <h2 class="referral-section-break">Client Information</h2>
 
             <div class="field">
               <label for="client-first-name">Client First Name *</label>
@@ -118,23 +85,23 @@
             </div>
 
             <div class="field">
-              <label for="notes">Notes <span style="color: var(--color-text-muted); font-weight: 400;">(optional)</span></label>
+              <label for="notes">Notes <span class="field-hint">(optional)</span></label>
               <textarea id="notes" name="notes" rows="4" placeholder="Anything we should know about this client? Pain areas, goals, etc."></textarea>
             </div>
 
-            <div id="form-error" style="display: none; background: #fff0f0; border: 1px solid #ffcdd2; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; color: #c62828;"></div>
+            <div id="form-error" class="form-error"></div>
 
-            <button type="submit" id="submit-btn" class="btn-primary btn-block" style="margin-top: 1rem;">
+            <button type="submit" id="submit-btn" class="btn-primary btn-block">
               <span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Referral</span></span>
             </button>
-            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-top: 0.75rem; text-align: center;">Your client will receive a booking email within minutes.</p>
+            <p class="form-helper">Your client will receive a booking email within minutes.</p>
           </form>
         </div>
 
-        <div id="referral-success" style="display: none; text-align: center; padding: 3rem 0;">
-          <div style="font-size: 3rem; margin-bottom: 1rem;">&#10003;</div>
-          <h2 style="margin-bottom: 1rem;">Client Referred Successfully</h2>
-          <p style="font-size: 1.1rem; margin-bottom: 2rem; color: var(--color-text-secondary);">We've received your referral and will send your client a booking email shortly. You'll be notified once they book.</p>
+        <div id="referral-success" class="referral-success">
+          <div class="referral-success-icon">&#10003;</div>
+          <h2>Client Referred Successfully</h2>
+          <p>We've received your referral and will send your client a booking email shortly. You'll be notified once they book.</p>
           <a href="refer" class="btn-secondary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Another Referral</span></span></a>
         </div>
 

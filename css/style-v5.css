@@ -1383,6 +1383,105 @@ nav {
   display: block;
 }
 
+/* ===== REFERRAL PAGE ===== */
+.referral-wrapper {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.referral-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.referral-form input,
+.referral-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-family: var(--font-sans-primary);
+  font-size: 1rem;
+  color: var(--color-text);
+  background: white;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.referral-form input:focus,
+.referral-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.referral-form .field {
+  margin-bottom: 1.25rem;
+}
+
+.referral-form textarea {
+  resize: vertical;
+}
+
+.referral-form h2:first-of-type {
+  margin-bottom: 1.5rem;
+}
+
+.referral-form h2 + h2,
+.referral-form .referral-section-break {
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.field-hint {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.form-error {
+  display: none;
+  background: #fff0f0;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  color: #c62828;
+}
+
+.referral-form .btn-primary {
+  margin-top: 1rem;
+}
+
+.form-helper {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+.referral-success {
+  display: none;
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.referral-success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.referral-success h2 {
+  margin-bottom: 1rem;
+}
+
+.referral-success p {
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  color: var(--color-text-light);
+}
+
 /* ===== FINAL CTA SECTION ===== */
 .final-cta-section {
   padding: 6rem 0;
