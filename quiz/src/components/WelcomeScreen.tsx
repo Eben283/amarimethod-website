@@ -4,21 +4,78 @@ type WelcomeScreenProps = {
   onStart: () => void;
 };
 
-const CheckIcon = () => (
-  <svg className="w-4 h-4 text-amari-pine-teal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
+// Each question gets its own drift animation + duration for organic feel
 const floatingQuestions = [
-  { text: 'Why does my pain keep coming back?',  style: { top: '18%',   left: '2%'    } },
-  { text: 'Is this muscular or structural?',      style: { top: '40%',   left: '1.5%'  } },
-  { text: 'Why haven\'t treatments worked?',      style: { top: '20%',   right: '2%'   } },
-  { text: 'Am I just getting older?',             style: { top: '57%',   left: '2%'    } },
-  { text: 'Is tension part of the problem?',      style: { top: '60%',   right: '2.5%' } },
-  { text: 'What\'s actually out of balance?',     style: { bottom: '26%', left: '2%'   } },
-  { text: 'Why does it hurt more some days?',     style: { bottom: '18%', right: '2%'  } },
+  { text: 'Why does my pain keep coming back?',  style: { top: '18%',    left: '2%'    }, anim: 'float-q-1 10s ease-in-out infinite' },
+  { text: 'Is this muscular or structural?',      style: { top: '40%',    left: '1.5%'  }, anim: 'float-q-2 13s ease-in-out infinite' },
+  { text: "Why haven't treatments worked?",       style: { top: '20%',    right: '2%'   }, anim: 'float-q-3 11s ease-in-out infinite' },
+  { text: 'Am I just getting older?',             style: { top: '57%',    left: '2%'    }, anim: 'float-q-4  9s ease-in-out infinite' },
+  { text: 'Is tension part of the problem?',      style: { top: '60%',    right: '2.5%' }, anim: 'float-q-5 12s ease-in-out infinite' },
+  { text: "What's actually out of balance?",      style: { bottom: '28%', left: '2%'    }, anim: 'float-q-6 14s ease-in-out infinite' },
+  { text: 'Why does it hurt more some days?',     style: { bottom: '18%', right: '2%'   }, anim: 'float-q-7 10s ease-in-out infinite' },
 ];
+
+// SVG spider/radar chart — 6 axes, fixed demo values
+// Center (80,80), max radius 55. Angles clockwise from top: -90, -30, 30, 90, 150, 210 degrees
+const AXES = [
+  { label: 'Soft Tissue', angle: -90 },
+  { label: 'Joint/Bone',  angle: -30 },
+  { label: 'Duration',    angle:  30 },
+  { label: 'Daily Impact',angle:  90 },
+  { label: 'Adaptations', angle: 150 },
+  { label: 'Recovery',    angle: 210 },
+];
+const CX = 80, CY = 80, R = 55;
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+const pt = (angle: number, r: number) => ({
+  x: CX + r * Math.cos(toRad(angle)),
+  y: CY + r * Math.sin(toRad(angle)),
+});
+
+const DEMO_SCORES = [0.65, 0.52, 0.78, 0.60, 0.85, 0.72];
+
+const gridRings = [0.33, 0.66, 1.0];
+
+const SpiderChart = () => {
+  const dataPoints = AXES.map((ax, i) => pt(ax.angle, R * DEMO_SCORES[i]));
+  const dataPolygon = dataPoints.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  return (
+    <svg viewBox="0 0 160 160" className="w-full max-w-[180px] mx-auto block">
+      {/* Grid rings */}
+      {gridRings.map((level) => {
+        const ringPts = AXES.map(ax => pt(ax.angle, R * level));
+        const poly = ringPts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+        return (
+          <polygon key={level} points={poly}
+            fill="none" stroke="#D9CFBF" strokeWidth="0.8" />
+        );
+      })}
+
+      {/* Spoke lines */}
+      {AXES.map((ax) => {
+        const tip = pt(ax.angle, R);
+        return (
+          <line key={ax.label}
+            x1={CX} y1={CY} x2={tip.x.toFixed(1)} y2={tip.y.toFixed(1)}
+            stroke="#D9CFBF" strokeWidth="0.8" />
+        );
+      })}
+
+      {/* Data polygon */}
+      <polygon points={dataPolygon}
+        fill="#EBA584" fillOpacity="0.35"
+        stroke="#EBA584" strokeWidth="1.8" strokeLinejoin="round" />
+
+      {/* Data dots */}
+      {dataPoints.map((p, i) => (
+        <circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="3"
+          fill="#EBA584" stroke="white" strokeWidth="1" />
+      ))}
+    </svg>
+  );
+};
 
 const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
   return (
@@ -27,12 +84,12 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
       {/* ── HERO SECTION ── */}
       <section className="relative min-h-[calc(100vh-72px)] flex items-center justify-center px-4 py-16 overflow-hidden">
 
-        {/* Floating questions — desktop only */}
+        {/* Floating questions — desktop only, with drift animations */}
         {floatingQuestions.map((q, i) => (
           <span
             key={i}
             className="hidden md:block absolute text-xs font-sans pointer-events-none select-none whitespace-nowrap"
-            style={{ ...q.style, color: '#5E8C8A', opacity: 0.32 }}
+            style={{ ...q.style, color: '#5E8C8A', opacity: 0.55, animation: q.anim }}
           >
             {q.text}
           </span>
@@ -58,34 +115,62 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
             Most people manage symptoms for years without addressing the real pattern. This assessment changes that.
           </p>
 
-          {/* Feature card — dark */}
-          <div className="bg-amari-charcoal rounded-xl p-6 text-left shadow-xl mb-8 max-w-sm mx-auto">
-            <p className="text-xs uppercase tracking-widest font-semibold font-sans mb-4" style={{ color: '#5E8C8A' }}>
-              Your personalized pain pattern report
+          {/* Feature card — Pattern Profile + Balance Equation preview */}
+          <div className="bg-white rounded-xl p-5 shadow-md border border-amari-border max-w-sm mx-auto mb-8">
+            <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-1 text-center">
+              Your pain pattern report
             </p>
-            {/* Mock result preview */}
-            <div className="flex items-center gap-3 mb-5">
-              <span className="px-3 py-1 rounded-full text-xs font-semibold font-sans"
-                style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
+
+            {/* Pattern signature badge */}
+            <div className="flex justify-center mb-2">
+              <span className="text-xs font-semibold font-sans px-3 py-1 rounded-full"
+                style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#b45309' }}>
                 Protective Tension
               </span>
-              <div className="flex items-baseline gap-1 ml-auto">
-                <span className="text-3xl font-serif font-bold text-white leading-none">72%</span>
-                <span className="text-xs font-sans leading-tight" style={{ color: '#9ca3af' }}>Recovery<br/>Potential</span>
+            </div>
+
+            {/* Pattern Profile — radar chart */}
+            <SpiderChart />
+
+            {/* Balance Equation — Active vs Passive bars */}
+            <div className="mt-3 space-y-2.5 px-1">
+              <p className="text-xs font-semibold text-amari-charcoal font-sans text-center mb-2 tracking-wide uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.07em', color: '#718096' }}>
+                The Balance Equation
+              </p>
+
+              {/* Active System */}
+              <div>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-amari-charcoal font-medium">Active System <span className="text-amari-text-light font-normal">· Muscles</span></span>
+                  <span className="font-bold text-amari-charcoal">72%</span>
+                </div>
+                <div className="w-full rounded-full h-2 overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                  <div className="h-2 rounded-full" style={{ width: '72%', backgroundColor: '#9ca3af' }} />
+                </div>
+              </div>
+
+              {/* Passive System */}
+              <div>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-amari-charcoal font-medium">Passive System <span className="text-amari-text-light font-normal">· Structure</span></span>
+                  <span className="font-bold text-amari-charcoal">48%</span>
+                </div>
+                <div className="w-full rounded-full h-2 overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                  <div className="h-2 rounded-full" style={{ width: '48%', backgroundColor: '#d1d5db' }} />
+                </div>
+              </div>
+
+              {/* Recovery */}
+              <div>
+                <div className="flex justify-between text-xs font-sans mb-1">
+                  <span className="text-amari-charcoal font-medium">Recovery Potential</span>
+                  <span className="font-bold text-amari-charcoal">72%</span>
+                </div>
+                <div className="w-full rounded-full h-2 overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
+                  <div className="h-2 rounded-full" style={{ width: '72%', backgroundColor: '#EBA584' }} />
+                </div>
               </div>
             </div>
-            <ul className="space-y-2.5">
-              {[
-                'Your exact imbalance pattern identified',
-                'Why your specific pain occurs',
-                'Personalized recovery insights',
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm font-sans" style={{ color: '#d1d5db' }}>
-                  <CheckIcon />
-                  {item}
-                </li>
-              ))}
-            </ul>
           </div>
 
           {/* CTA */}
@@ -117,7 +202,6 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-            {/* Card 1 */}
             <div className="bg-amari-bone-white rounded-xl p-6 border border-amari-border">
               <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'rgba(94,140,138,0.12)' }}>
@@ -131,7 +215,6 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
               </p>
             </div>
 
-            {/* Card 2 */}
             <div className="bg-amari-bone-white rounded-xl p-6 border border-amari-border">
               <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'rgba(235,165,132,0.15)' }}>
@@ -145,7 +228,6 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
               </p>
             </div>
 
-            {/* Card 3 */}
             <div className="bg-amari-bone-white rounded-xl p-6 border border-amari-border">
               <div className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
                 style={{ backgroundColor: 'rgba(94,140,138,0.12)' }}>
@@ -197,7 +279,6 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
 
           </div>
 
-          {/* Bottom CTA */}
           <div className="text-center">
             <button onClick={onStart} className="btn-primary">
               <span>Start My Assessment<span className="arrow">→</span></span>
