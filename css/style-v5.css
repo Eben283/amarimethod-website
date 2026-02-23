@@ -1887,6 +1887,13 @@ article strong {
   margin: 0 auto;
 }
 
+.affiliate-page h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+
 .affiliate-prose p {
   font-size: 1.1rem;
   line-height: 1.8;
@@ -1952,7 +1959,46 @@ article strong {
 }
 
 .contact-heading {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   margin-bottom: var(--space-lg);
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-family: var(--font-sans-primary);
+  font-size: 1rem;
+  color: var(--color-text);
+  background: white;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.form-group textarea {
+  resize: vertical;
 }
 
 .contact-block {
@@ -2025,6 +2071,7 @@ article strong {
 }
 
 .contact-final-cta h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
   color: white;
   margin-bottom: var(--space-lg);
 }
@@ -2083,11 +2130,11 @@ article strong {
   resize: vertical;
 }
 
-.referral-form h2:first-of-type {
+.referral-form h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
   margin-bottom: 1.5rem;
 }
 
-.referral-form h2 + h2,
 .referral-form .referral-section-break {
   margin-top: 2.5rem;
   margin-bottom: 1.5rem;
