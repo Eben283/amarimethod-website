@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { QuizAnswer, ScoreCategories, PatternSignature, QuizInsight } from '@/types/quiz';
 import { calculateScores, determinePatternSignature, generateInsights } from '@/lib/quizLogic';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,6 +32,8 @@ type QuizContextType = {
   submitQuiz: () => Promise<boolean>;
   retrySubmission: () => Promise<boolean>;
   resetQuiz: () => void;
+  hasStarted: boolean;
+  startQuiz: () => void;
 };
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -62,6 +64,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [isCompleted, setIsCompleted] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
+  const startQuiz = useCallback(() => setHasStarted(true), []);
 
   useEffect(() => {
     setAnswers([
@@ -272,6 +276,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
 
   const resetQuiz = () => {
     setCurrentStep(0);
+    setHasStarted(false);
     setIsCompleted(false);
     setSubmissionError(null);
     setValidationError('');
@@ -326,7 +331,9 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       setPhone,
       submitQuiz,
       retrySubmission,
-      resetQuiz
+      resetQuiz,
+      hasStarted,
+      startQuiz,
     }}>
       {children}
     </QuizContext.Provider>

@@ -11,6 +11,7 @@ type SingleSelectQuestionProps = {
   otherValue?: string;
   onOtherChange?: (value: string) => void;
   required?: boolean;
+  onAutoAdvance?: () => void;
 };
 
 const SingleSelectQuestion = ({
@@ -23,6 +24,7 @@ const SingleSelectQuestion = ({
   otherValue = '',
   onOtherChange,
   required = false,
+  onAutoAdvance,
 }: SingleSelectQuestionProps) => {
   return (
     <div className="quiz-card">
@@ -37,7 +39,10 @@ const SingleSelectQuestion = ({
           <div
             key={option}
             className={`radio-container ${selectedOption === option ? 'selected' : ''}`}
-            onClick={() => onChange(option)}
+            onClick={() => {
+              onChange(option);
+              if (onAutoAdvance) setTimeout(onAutoAdvance, 400);
+            }}
           >
             <div className="flex items-center h-5">
               <div className={`w-5 h-5 rounded-full border-2 border-amari-pine-teal flex items-center justify-center ${selectedOption === option ? 'bg-amari-pine-teal' : 'bg-white'}`}>

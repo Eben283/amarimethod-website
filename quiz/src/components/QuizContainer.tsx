@@ -6,6 +6,7 @@ import SingleSelectQuestion from './questions/SingleSelectQuestion';
 import MultiSelectQuestion from './questions/MultiSelectQuestion';
 import ContactInfoForm from './questions/ContactInfoForm';
 import ResultsPage from './results/ResultsPage';
+import WelcomeScreen from './WelcomeScreen';
 import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
@@ -39,6 +40,8 @@ const QuizContainer = () => {
     setEmail,
     setPhone,
     retrySubmission,
+    hasStarted,
+    startQuiz,
   } = useQuiz();
 
   const handleNextStep = () => goToNextStep();
@@ -147,6 +150,7 @@ const QuizContainer = () => {
             otherOption={true}
             description="Select the area where you experience the most pain or discomfort."
             required={true}
+            onAutoAdvance={goToNextStep}
           />
         );
 
@@ -166,6 +170,7 @@ const QuizContainer = () => {
             onChange={(option) => setAnswer(1, option)}
             description="Understanding the origin helps identify the pattern. Select what best describes your situation."
             required={true}
+            onAutoAdvance={goToNextStep}
           />
         );
 
@@ -209,6 +214,7 @@ const QuizContainer = () => {
             onChange={(option) => setAnswer(3, option)}
             description="Select the timeframe that best represents how long you've been experiencing your primary pain."
             required={true}
+            onAutoAdvance={goToNextStep}
           />
         );
 
@@ -225,6 +231,7 @@ const QuizContainer = () => {
             onChange={(option) => setAnswer(4, option)}
             description="On a scale of 1-10, with 10 being the worst pain imaginable, how would you rate your typical pain level?"
             required={true}
+            onAutoAdvance={goToNextStep}
           />
         );
 
@@ -376,6 +383,7 @@ const QuizContainer = () => {
             onChange={(option) => setAnswer(10, option)}
             description="Select the option that best describes your overall experience with previous treatments."
             required={true}
+            onAutoAdvance={goToNextStep}
           />
         );
 
@@ -521,47 +529,24 @@ const QuizContainer = () => {
           <ProcessingScreen />
         ) : !isCompleted ? (
           <div>
-            <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-freight mb-4">Pain Pattern Assessment</h1>
-              <p className="text-lg text-gray-600 mb-6">
-                Discover the root causes of your pain with our personalized assessment
-              </p>
-
-              {/* Trust indicators */}
-              <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-amari-text-light max-w-2xl mx-auto">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-amari-pine-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="font-medium">2-3 minutes</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-amari-pine-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="font-medium">200+ clients helped</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-amari-pine-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="font-medium">Free personalized results</span>
-                </div>
-              </div>
-            </div>
-
-            <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-            
-            {isLoading ? (
-              renderLoadingState()
-            ) : submissionError ? (
-              renderErrorState()
+            {!hasStarted ? (
+              <WelcomeScreen onStart={startQuiz} />
             ) : (
-              renderQuestionStep()
-            )}
+              <>
+                <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
 
-            {/* Always show navigation buttons unless we're loading or submitted */}
-            {!isLoading && !isCompleted && renderNavigationButtons()}
+                {isLoading ? (
+                  renderLoadingState()
+                ) : submissionError ? (
+                  renderErrorState()
+                ) : (
+                  renderQuestionStep()
+                )}
+
+                {/* Always show navigation buttons unless we're loading or submitted */}
+                {!isLoading && !isCompleted && renderNavigationButtons()}
+              </>
+            )}
           </div>
         ) : (
           <div>
