@@ -133,71 +133,66 @@
 
 /* Button styles - OUTSIDE @layer base to override Tailwind */
 .btn-primary {
-  background: #000000 !important;
+  background: #252525 !important;
   color: white !important;
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.75rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 9999px;
   font-family: Poppins, system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  transition: background 0.2s ease, transform 0.2s ease;
   text-decoration: none;
-  position: relative;
-  overflow: hidden;
 }
 
 .btn-primary .arrow {
   display: inline-block;
-  margin-left: 0;
-  opacity: 0;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  opacity: 1;
+  transition: transform 0.2s ease;
 }
 
 .btn-primary:hover {
-  background: #000000 !important;
+  background: #3d3d3d !important;
   color: white !important;
+  transform: translateY(-1px);
 }
 
 .btn-primary:hover .arrow {
-  margin-left: 0.5rem;
-  opacity: 1;
+  transform: translateX(3px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-secondary {
-  background: white !important;
-  color: #000000 !important;
-  border: 2px solid #000000 !important;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  position: relative;
-  overflow: hidden;
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 4px;
+  background: transparent !important;
+  color: #9ca3af !important;
+  border: 1.5px solid #e5e7eb !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.8rem 1.25rem;
+  border-radius: 9999px;
   font-family: Poppins, system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 500;
   cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
   text-decoration: none;
-}
-
-.btn-secondary .arrow {
-  display: inline-block;
-  margin-left: 0;
-  opacity: 0;
-  transition: all 0.3s ease;
+  box-shadow: none;
 }
 
 .btn-secondary:hover {
-  background: white !important;
-  color: #000000 !important;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-}
-
-.btn-secondary:hover .arrow {
-  margin-left: 0.5rem;
-  opacity: 1;
+  background: #f9fafb !important;
+  color: #4b5563 !important;
+  border-color: #d1d5db !important;
+  box-shadow: none;
 }

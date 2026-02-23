@@ -295,13 +295,13 @@ export default function QuizStack() {
                   <div className="flex justify-between">
                     {q.index > 0 ? (
                       <button onClick={goToPrevStep} className="btn-secondary">
-                        <span>← Back</span>
+                        ← Back
                       </button>
                     ) : (
                       <div />
                     )}
                     <button onClick={goToNextStep} className="btn-primary">
-                      <span>Next<span className="arrow">→</span></span>
+                      Next <span className="arrow">→</span>
                     </button>
                   </div>
                 </div>
