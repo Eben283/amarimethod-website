@@ -29,6 +29,7 @@ const QuizContainer = () => {
     isProcessing,
     isCompleted,
     submissionError,
+    validationError,
     goToNextStep,
     goToPrevStep,
     skipStep,
@@ -470,7 +471,11 @@ const QuizContainer = () => {
     console.log('[QuizContainer] isLoading:', isLoading, 'submissionError:', submissionError);
 
     return (
-      <div className="flex justify-between mt-8">
+      <div className="mt-8">
+        {validationError && (
+          <p className="text-sm text-red-500 text-center mb-3" role="alert">{validationError}</p>
+        )}
+      <div className="flex justify-between">
         {currentStep > 0 && (
           <button
             onClick={goToPrevStep}
@@ -502,6 +507,7 @@ const QuizContainer = () => {
             <span>Next<span className="arrow">→</span></span>
           )}
         </button>
+      </div>
       </div>
     );
   };

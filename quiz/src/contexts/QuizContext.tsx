@@ -20,6 +20,7 @@ type QuizContextType = {
   isProcessing: boolean;
   isCompleted: boolean;
   submissionError: string | null;
+  validationError: string;
   goToNextStep: () => void;
   goToPrevStep: () => void;
   skipStep: () => void;
@@ -53,6 +54,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState('');
 
   useEffect(() => {
     setAnswers([
@@ -72,20 +74,21 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const goToNextStep = () => {
+    setValidationError(''); // clear any previous error on each attempt
     if (currentStep === 0 && !answers[0]?.answer) {
-      toast({ title: "Required Field", description: "Please select where your pain is primarily located", variant: "destructive" });
+      setValidationError('Please select where your pain is primarily located');
       return;
     }
     if (currentStep === 1 && !answers[1]?.answer) {
-      toast({ title: "Required Field", description: "Please select what triggered your pain", variant: "destructive" });
+      setValidationError('Please select what triggered your pain');
       return;
     }
     if (currentStep === 3 && !answers[3]?.answer) {
-      toast({ title: "Required Field", description: "Please select how long you've been experiencing this pain", variant: "destructive" });
+      setValidationError("Please select how long you've been experiencing this pain");
       return;
     }
     if (currentStep === 4 && !answers[4]?.answer) {
-      toast({ title: "Required Field", description: "Please select your pain intensity", variant: "destructive" });
+      setValidationError('Please select your pain intensity');
       return;
     }
     if (
@@ -95,17 +98,17 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       !(answers[9].answer as string[]).includes("I haven't tried any treatments") &&
       !answers[10]?.answer
     ) {
-      toast({ title: "Required Field", description: "Please describe your results from previous treatments", variant: "destructive" });
+      setValidationError('Please describe your results from previous treatments');
       return;
     }
     if (currentStep === 12) {
       if (!firstName.trim() || !lastName.trim()) {
-        toast({ title: "Required Field", description: "Please enter your first and last name", variant: "destructive" });
+        setValidationError('Please enter your first and last name');
         return;
       }
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!email.trim() || !emailRegex.test(email)) {
-        toast({ title: "Invalid Email", description: "Please enter a valid email address", variant: "destructive" });
+        setValidationError('Please enter a valid email address');
         return;
       }
       submitQuiz();
@@ -125,6 +128,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     const newAnswers = [...answers];
     newAnswers[index] = { ...newAnswers[index], answer };
     setAnswers(newAnswers);
+    setValidationError(''); // clear inline error as soon as user makes a selection
   };
 
   // Use the API route at /api/send-to-ghl (Cloudflare Pages Function)
@@ -252,6 +256,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     setCurrentStep(0);
     setIsCompleted(false);
     setSubmissionError(null);
+    setValidationError('');
     setScores(null);
     setPatternSignature(null);
     setInsights([]);
@@ -292,6 +297,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       isProcessing,
       isCompleted,
       submissionError,
+      validationError,
       goToNextStep,
       goToPrevStep,
       skipStep,
