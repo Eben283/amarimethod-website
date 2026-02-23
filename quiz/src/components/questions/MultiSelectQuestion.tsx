@@ -10,8 +10,6 @@ type MultiSelectQuestionProps = {
   otherOption?: boolean;
   otherValue?: string;
   onOtherChange?: (value: string) => void;
-  onSkip?: () => void;
-  showSkipButton?: boolean;
 };
 
 const MultiSelectQuestion = ({
@@ -23,8 +21,6 @@ const MultiSelectQuestion = ({
   otherOption = false,
   otherValue = '',
   onOtherChange,
-  onSkip,
-  showSkipButton = false,
 }: MultiSelectQuestionProps) => {
   const toggleOption = (option: string) => {
     if (selectedOptions.includes(option)) {
@@ -107,19 +103,7 @@ const MultiSelectQuestion = ({
         />
       )}
 
-      {showSkipButton && selectedOptions.length === 0 && (
-        <div className="mt-6 text-center">
-          <button
-            onClick={onSkip}
-            className="text-amari-pine-teal hover:text-amari-forest-green font-medium font-sans text-sm transition-colors duration-200 flex items-center justify-center mx-auto gap-2 group"
-          >
-            <span>Skip this question</span>
-            <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      )}
+
     </div>
   );
 };

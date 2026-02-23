@@ -16,7 +16,6 @@ export type QDef = {
   options: string[];
   required?: boolean;
   otherOption?: boolean;
-  showSkipButton?: boolean;
   category: string;
   questionNum: number;
 };
@@ -43,7 +42,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'Do you experience pain in any additional areas?',
     description: 'Select all other areas where you experience pain or discomfort. (Optional)',
     options: ['Neck', 'Shoulders', 'Upper back', 'Lower back', 'Hips', 'Knees', 'Ankles/Feet', 'Wrists/Hands', 'Elbows'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Pain Location', questionNum: 3,
   },
   {
@@ -67,7 +66,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'When do you typically experience pain?',
     description: 'Select all times when you typically experience pain. (Optional)',
     options: ['In the morning, right after waking up', 'During the day, while active', 'After physical activity', 'After sitting for long periods', 'At night, when trying to sleep', 'The pain is constant throughout the day'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Timing', questionNum: 6,
   },
   {
@@ -75,7 +74,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'What type of pain are you experiencing?',
     description: 'Select all words that describe the quality of your pain. (Optional)',
     options: ['Sharp or stabbing', 'Dull or achy', 'Tight or stiff', 'Burning', 'Shooting down arm/leg', 'Tingling or numbness', 'Throbbing', 'Pinching'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Pain Quality', questionNum: 7,
   },
   {
@@ -83,7 +82,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'What activities make your pain worse?',
     description: 'Select all activities that tend to worsen your pain. (Optional)',
     options: ['Walking/Running', 'Sitting', 'Standing for long periods', 'Bending forward', 'Bending backward', 'Twisting or rotating', 'Lifting or carrying objects', 'Going up/down stairs', 'Repetitive movements', 'Specific exercise/sports'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Aggravating Factors', questionNum: 8,
   },
   {
@@ -91,7 +90,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'Does your pain affect any of the following aspects of your life?',
     description: 'Select all areas of life that are impacted by your pain. (Optional)',
     options: ['Sleep quality', 'Work performance', 'Ability to exercise', 'Social activities', 'Household chores', 'Hobbies/Recreation', 'Mood and mental health', 'Relationships', 'Driving'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Daily Impact', questionNum: 9,
   },
   {
@@ -99,7 +98,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'Have you tried any treatments for your pain?',
     description: 'Select all treatments you have tried for your pain. (Optional)',
     options: ['Physical therapy', 'Chiropractic care', 'Massage therapy', 'Acupuncture', 'Pain medication', 'Anti-inflammatory medication', 'Injections (cortisone, etc.)', 'Surgery', 'Exercise/Stretching', 'Heat/Ice therapy', "I haven't tried any treatments"],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Treatment History', questionNum: 10,
   },
   {
@@ -115,7 +114,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     question: 'Do you have any other health conditions?',
     description: 'Select any health conditions you have been diagnosed with. (Optional)',
     options: ['Arthritis', 'Fibromyalgia', 'Sciatica', 'Disc herniation/bulge', 'Scoliosis', 'Previous injury/trauma', 'Previous surgery', 'Diabetes', 'Autoimmune condition', 'Depression/Anxiety', 'Chronic fatigue', 'None of the above'],
-    otherOption: true, showSkipButton: true,
+    otherOption: true,
     category: 'Health Background', questionNum: 12,
   },
 ];
@@ -159,9 +158,6 @@ export default function QuizStack() {
     answers,
     setAnswer,
     goToNextStep,
-    goToPrevStep,
-    skipStep,
-    validationError,
     jumpToStep,
   } = useQuiz();
 
@@ -280,31 +276,9 @@ export default function QuizStack() {
                     onChange={(opts) => setAnswer(q.index, opts)}
                     description={q.description}
                     otherOption={q.otherOption}
-                    showSkipButton={q.showSkipButton}
-                    onSkip={skipStep}
                   />
                 )}
 
-                {/* Validation + navigation */}
-                <div className="mt-5">
-                  {validationError && (
-                    <p className="text-sm text-red-500 text-center mb-3" role="alert">
-                      {validationError}
-                    </p>
-                  )}
-                  <div className="flex justify-between">
-                    {q.index > 0 ? (
-                      <button onClick={goToPrevStep} className="btn-secondary">
-                        ← Back
-                      </button>
-                    ) : (
-                      <div />
-                    )}
-                    <button onClick={goToNextStep} className="btn-primary">
-                      Next <span className="arrow">→</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
