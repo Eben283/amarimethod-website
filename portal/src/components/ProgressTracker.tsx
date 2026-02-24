@@ -39,7 +39,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
     : 0;
 
   // Lifetime count from actual appointment data — always accurate, never clamped
-  const lifetimeCompleted = allAppointments.filter(a => a.status === 'completed').length;
+  const lifetimeCompleted = allAppointments.filter(a => a.status === 'completed' || a.status === 'showed').length;
 
   // True when client is on their second or later series (lifetime > current series)
   const isReturningClient = isOnSeries && lifetimeCompleted > currentSeriesCompleted;

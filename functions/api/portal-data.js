@@ -167,7 +167,10 @@ export async function onRequestGet(context) {
 
     // Count actual completed appointments as a fallback for sessions_completed
     const completedAppointmentCount = allAppointments.filter(
-      (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
+      (a) => {
+        const s = (a.appointmentStatus || a.status || "").toLowerCase();
+        return s === "completed" || s === "showed";
+      }
     ).length;
     // sessions_completed in GHL is cumulative (never reset between series — the attendance
     // workflow adds 1 each time). Don't clamp it — the frontend uses it as a lifetime counter.

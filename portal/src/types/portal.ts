@@ -16,7 +16,7 @@ export interface Appointment {
   title: string;
   startTime: string;
   endTime: string;
-  status: 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+  status: 'confirmed' | 'completed' | 'showed' | 'cancelled' | 'no_show';
   appointmentType: string;
 }
 

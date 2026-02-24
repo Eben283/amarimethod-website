@@ -8,6 +8,7 @@ interface SessionHistoryProps {
 
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; bg: string; label: string }> = {
   completed: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', label: 'Completed' },
+  showed: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', label: 'Completed' },
   confirmed: { icon: Clock, color: 'text-blue-600', bg: 'bg-blue-50', label: 'Confirmed' },
   cancelled: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50', label: 'Cancelled' },
   no_show: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', label: 'No show' },
