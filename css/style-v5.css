@@ -4211,7 +4211,7 @@ footer {
 }
 
 .faq-item.active .faq-content {
-  max-height: 400px;
+  max-height: 800px;
 }
 
 .faq-body {
