@@ -167,12 +167,22 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
 
   const sendContactToAPI = async (
     calculatedScores: ScoreCategories,
-    signature: PatternSignature
+    signature: PatternSignature,
+    generatedInsights: QuizInsight[]
   ): Promise<Response> => {
     const primaryPainLocation = answers[0]?.answer as string;
     const painTrigger = answers[1]?.answer as string;
+    const additionalPainAreas = answers[2]?.answer as string[];
     const painDuration = answers[3]?.answer as string;
+    const painIntensity = answers[4]?.answer as string;
+    const painTiming = answers[5]?.answer as string[];
+    const painType = answers[6]?.answer as string[];
+    const aggravatingActivities = answers[7]?.answer as string[];
+    const dailyImpact = answers[8]?.answer as string[];
     const treatmentsRaw = answers[9]?.answer as string[];
+    const treatmentResults = answers[10]?.answer as string;
+    const healthConditions = answers[11]?.answer as string[];
+
     const treatmentsTried = Array.isArray(treatmentsRaw)
       ? treatmentsRaw.filter(t => t !== "I haven't tried any treatments").join(', ')
       : '';
@@ -194,6 +204,26 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       painDuration: painDuration || '',
       treatmentsTried: treatmentsTried || '',
       painTrigger: painTrigger || '',
+      // All remaining answers
+      additionalPainAreas: Array.isArray(additionalPainAreas) ? additionalPainAreas.join(', ') : '',
+      painIntensity: painIntensity || '',
+      painTiming: Array.isArray(painTiming) ? painTiming.join(', ') : '',
+      painType: Array.isArray(painType) ? painType.join(', ') : '',
+      aggravatingActivities: Array.isArray(aggravatingActivities) ? aggravatingActivities.join(', ') : '',
+      dailyImpact: Array.isArray(dailyImpact) ? dailyImpact.join(', ') : '',
+      treatmentResults: treatmentResults || '',
+      healthConditions: Array.isArray(healthConditions) ? healthConditions.join(', ') : '',
+      // Scores
+      scores: {
+        softTissueTension: calculatedScores.softTissueTension,
+        jointBoneAlignment: calculatedScores.jointBoneAlignment,
+        patternDuration: calculatedScores.patternDuration,
+        dailyActivitiesImpact: calculatedScores.dailyActivitiesImpact,
+        bodyAdaptations: calculatedScores.bodyAdaptations,
+        recoveryPotential: calculatedScores.recoveryPotential,
+      },
+      // Insights
+      insights: generatedInsights.map(i => ({ title: i.title, description: i.description })),
     };
 
     console.log('Sending data to API at:', apiRoute);
@@ -223,7 +253,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       setIsProcessing(true);
 
       const [response] = await Promise.all([
-        sendContactToAPI(calculatedScores, signature),
+        sendContactToAPI(calculatedScores, signature, generatedInsights),
         new Promise(resolve => setTimeout(resolve, 2500)) // 2.5 seconds to show processing animation
       ]);
 
@@ -266,7 +296,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       }
 
       const [response] = await Promise.all([
-        sendContactToAPI(scores, patternSignature),
+        sendContactToAPI(scores, patternSignature, insights),
         new Promise(resolve => setTimeout(resolve, 2000))
       ]);
 

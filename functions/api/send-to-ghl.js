@@ -6,6 +6,7 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // Custom field IDs (created via GHL API)
+// Existing fields
 const FIELD_IDS = {
   painPatternSignature: "BvTGZ9O9ayecw5f0Nj76",
   recoveryPotentialScore: "PhQQjTF1fiLgtnAgKZZP",
@@ -13,6 +14,16 @@ const FIELD_IDS = {
   painDuration: "wrYzlW0ta2SGD8cI5iTM",
   treatmentsTried: "y5HBXMycSnfFPSOcnR2y",
   painTrigger: "NaNk1OVQLu8CcONUnyNz",
+  // New fields (created 2026-02-26)
+  additionalPainAreas: "NCDnl1jHDvDATpRKhkeV",
+  painIntensity: "iCMhoomSzLnCUCcludwD",
+  painTiming: "bUuxBmrMuu2Zm9QrNTng",
+  painType: "tIIxUQT8hrkpDYY3WhWn",
+  aggravatingActivities: "IqxEaCTcZpvGuDUC3O9c",
+  dailyImpact: "zin4frkDKBWvVoN7ztZW",
+  treatmentResults: "1MSGnUASa5Zd9lKoNdvO",
+  healthConditions: "Uw1MeObXs3xKJGh1KGNu",
+  quizResultsSummary: "fE6XF0OEaq09v6clDhzq",
 };
 
 const ALLOWED_ORIGINS = [
@@ -36,6 +47,51 @@ function ghlHeaders(apiKey) {
     "Content-Type": "application/json",
     "Version": "2021-07-28",
   };
+}
+
+// Build the formatted quiz results summary for GHL (used for text to Garrett)
+function buildResultsSummary(body) {
+  const lines = [];
+
+  lines.push(`Quiz Results — ${body.firstName} ${body.lastName}`);
+  lines.push('');
+  lines.push(`Pattern: ${body.patternSignature || 'Unknown'}`);
+  lines.push(`Recovery Potential: ${body.recoveryPotentialScore || 0}%`);
+
+  // Scores
+  if (body.scores) {
+    const s = body.scores;
+    lines.push('');
+    lines.push('Scores:');
+    lines.push(`Soft Tissue: ${s.softTissueTension} | Joint/Bone: ${s.jointBoneAlignment} | Duration: ${s.patternDuration} | Daily Impact: ${s.dailyActivitiesImpact} | Adaptations: ${s.bodyAdaptations}`);
+  }
+
+  // Insights
+  if (body.insights && body.insights.length > 0) {
+    lines.push('');
+    lines.push('Insights:');
+    body.insights.forEach((insight, i) => {
+      lines.push(`${i + 1}. ${insight.title} — ${insight.description}`);
+    });
+  }
+
+  // All answers
+  lines.push('');
+  lines.push('Answers:');
+  lines.push(`Pain Location: ${body.primaryPainLocation || 'N/A'}`);
+  lines.push(`Trigger: ${body.painTrigger || 'N/A'}`);
+  if (body.additionalPainAreas) lines.push(`Additional Areas: ${body.additionalPainAreas}`);
+  lines.push(`Duration: ${body.painDuration || 'N/A'}`);
+  lines.push(`Intensity: ${body.painIntensity || 'N/A'}`);
+  if (body.painTiming) lines.push(`Timing: ${body.painTiming}`);
+  if (body.painType) lines.push(`Pain Type: ${body.painType}`);
+  if (body.aggravatingActivities) lines.push(`Makes It Worse: ${body.aggravatingActivities}`);
+  if (body.dailyImpact) lines.push(`Life Impact: ${body.dailyImpact}`);
+  if (body.treatmentsTried) lines.push(`Treatments Tried: ${body.treatmentsTried}`);
+  if (body.treatmentResults) lines.push(`Treatment Results: ${body.treatmentResults}`);
+  if (body.healthConditions) lines.push(`Health Conditions: ${body.healthConditions}`);
+
+  return lines.join('\n');
 }
 
 export async function onRequestOptions(context) {
@@ -121,13 +177,28 @@ export async function onRequestPost(context) {
     // ---- STEP 2: Update custom fields via PUT ----
     // This is a separate call because upsert doesn't reliably save custom fields
     if (contactId) {
+      // Build the formatted summary
+      const resultsSummary = buildResultsSummary(body);
+
       const customFields = [
+        // Existing fields
         { id: FIELD_IDS.painPatternSignature, field_value: String(body.patternSignature || "Unknown") },
         { id: FIELD_IDS.recoveryPotentialScore, field_value: Number(body.recoveryPotentialScore) || 0 },
         { id: FIELD_IDS.primaryPainLocation, field_value: String(body.primaryPainLocation || "Unknown") },
         { id: FIELD_IDS.painDuration, field_value: String(body.painDuration || "") },
         { id: FIELD_IDS.treatmentsTried, field_value: String(body.treatmentsTried || "") },
         { id: FIELD_IDS.painTrigger, field_value: String(body.painTrigger || "") },
+        // New answer fields
+        { id: FIELD_IDS.additionalPainAreas, field_value: String(body.additionalPainAreas || "") },
+        { id: FIELD_IDS.painIntensity, field_value: String(body.painIntensity || "") },
+        { id: FIELD_IDS.painTiming, field_value: String(body.painTiming || "") },
+        { id: FIELD_IDS.painType, field_value: String(body.painType || "") },
+        { id: FIELD_IDS.aggravatingActivities, field_value: String(body.aggravatingActivities || "") },
+        { id: FIELD_IDS.dailyImpact, field_value: String(body.dailyImpact || "") },
+        { id: FIELD_IDS.treatmentResults, field_value: String(body.treatmentResults || "") },
+        { id: FIELD_IDS.healthConditions, field_value: String(body.healthConditions || "") },
+        // Full formatted summary
+        { id: FIELD_IDS.quizResultsSummary, field_value: resultsSummary },
       ];
 
       const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
