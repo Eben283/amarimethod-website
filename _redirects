@@ -4,5 +4,8 @@
 # SPA fallback for client portal
 /portal/* /portal/index.html 200
 
+# Redirect old /affiliate URL to /partner
+/affiliate /partner 301
+
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301

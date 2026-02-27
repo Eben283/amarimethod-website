@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { PatternSignature } from '@/types/quiz';
+import { useQuiz } from '@/contexts/QuizContext';
 
 type BookingCTAProps = {
   patternSignature: PatternSignature;
@@ -19,6 +20,13 @@ const StarIcon = () => (
 );
 
 const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
+  const { referralSource } = useQuiz();
+
+  // Capitalize first letter of referral name for display
+  const referralName = referralSource
+    ? referralSource.charAt(0).toUpperCase() + referralSource.slice(1)
+    : null;
+
   return (
     <section className="px-6 py-12 bg-amari-bone-white">
       <div className="max-w-2xl mx-auto">
@@ -71,17 +79,45 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             </p>
           </div>
 
-          <a
-            href="https://www.amarimethod.com/booking"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary w-full text-center"
-            style={{ display: 'block' }}
-          >
-            <span>Book Your Amari Session<span className="arrow">→</span></span>
-          </a>
+          {referralName ? (
+            <>
+              <a
+                href="https://www.amarimethod.com/booking"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full text-center"
+                style={{ display: 'block' }}
+              >
+                <span>Talk to {referralName} About Booking<span className="arrow">→</span></span>
+              </a>
+              <p className="text-sm text-amari-text-light mt-3 text-center font-sans">
+                Or book directly below
+              </p>
+            </>
+          ) : null}
+
+          <div className={`flex gap-3 ${referralName ? 'mt-3' : ''}`} style={{ width: '100%' }}>
+            <a
+              href="https://amarimethodbooking.amarimethod.com/amari-method-funnel"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${referralName ? 'btn-secondary' : 'btn-primary'} text-center`}
+              style={{ flex: 1, display: 'block' }}
+            >
+              <span>Book In-Person<span className="arrow">→</span></span>
+            </a>
+            <a
+              href="https://introsessionvirtual.amarimethod.com/is-virtual-info"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${referralName ? 'btn-secondary' : 'btn-primary'} text-center`}
+              style={{ flex: 1, display: 'block' }}
+            >
+              <span>Book Virtual<span className="arrow">→</span></span>
+            </a>
+          </div>
           <p className="text-sm text-amari-text-light mt-3 text-center font-sans">
-            Book your initial session to get started
+            San Francisco in-person or virtual from anywhere · HSA/FSA accepted
           </p>
         </div>
 
@@ -101,7 +137,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
         {/* Discovery call secondary CTA */}
         <div className="text-center border-t border-amari-border pt-8">
           <p className="text-lg text-amari-charcoal font-semibold mb-4 font-sans">
-            Not ready to book? Start with a free call
+            {referralName ? 'Have questions? Book a free discovery call' : 'Not ready to book? Start with a free call'}
           </p>
           <a
             href="https://discoverycall.amarimethod.com/discovery-call-booking"

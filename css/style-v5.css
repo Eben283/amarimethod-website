@@ -1880,6 +1880,9 @@ article strong {
   }
 }
 
+/* ===== UTILITY CLASSES ===== */
+.text-center { text-align: center; }
+
 /* ===== AFFILIATE PAGE ===== */
 
 .affiliate-prose {

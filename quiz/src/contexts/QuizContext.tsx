@@ -20,6 +20,7 @@ type QuizContextType = {
   isProcessing: boolean;
   isCompleted: boolean;
   submissionError: string | null;
+  referralSource: string | null;
   validationError: string;
   goToNextStep: () => void;
   goToPrevStep: () => void;
@@ -66,7 +67,23 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [validationError, setValidationError] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
+  const [referralSource, setReferralSource] = useState<string | null>(null);
   const startQuiz = useCallback(() => setHasStarted(true), []);
+
+  // Read ?ref= URL parameter for affiliate tracking
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      setReferralSource(ref);
+      // Also persist to localStorage in case of page refresh
+      localStorage.setItem('quiz_ref', ref);
+    } else {
+      // Check localStorage for previously saved ref
+      const savedRef = localStorage.getItem('quiz_ref');
+      if (savedRef) setReferralSource(savedRef);
+    }
+  }, []);
 
   // Always-current refs so setTimeout callbacks (auto-advance) read fresh state
   const answersRef = useRef<QuizAnswer[]>([]);
@@ -224,6 +241,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       },
       // Insights
       insights: generatedInsights.map(i => ({ title: i.title, description: i.description })),
+      // Referral tracking
+      referralSource: referralSource || undefined,
     };
 
     console.log('Sending data to API at:', apiRoute);
@@ -265,6 +284,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
 
       setIsProcessing(false);
       setIsCompleted(true);
+      localStorage.removeItem('quiz_ref');
       trackEvent('quiz_complete', {
         pattern_signature: signature,
         recovery_potential: calculatedScores.recoveryPotential,
@@ -379,6 +399,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       submitQuiz,
       retrySubmission,
       resetQuiz,
+      referralSource,
       hasStarted,
       startQuiz,
     }}>

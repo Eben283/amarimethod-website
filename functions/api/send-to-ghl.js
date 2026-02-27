@@ -142,6 +142,12 @@ export async function onRequestPost(context) {
     else if (severity === "severe") tags.push("pain-severity-severe");
     else tags.push("pain-severity-moderate");
 
+    // Referral tracking
+    const referralSource = body.referralSource ? String(body.referralSource).trim() : null;
+    if (referralSource) {
+      tags.push(`referred-by-${referralSource.toLowerCase()}`);
+    }
+
     // ---- STEP 1: Upsert contact (create or find by email) ----
     // Only send basic contact info + tags + source
     // Custom fields are set in Step 2 via PUT (upsert doesn't reliably save them)
@@ -152,7 +158,9 @@ export async function onRequestPost(context) {
       phone: body.phone ? String(body.phone).slice(0, 20) : undefined,
       locationId: GHL_LOCATION_ID,
       tags,
-      source: "Pain Assessment Quiz",
+      source: referralSource
+        ? `Pain Assessment Quiz (ref: ${referralSource})`
+        : "Pain Assessment Quiz",
     };
 
     const upsertResponse = await fetch(`${GHL_API_BASE}/contacts/upsert`, {
