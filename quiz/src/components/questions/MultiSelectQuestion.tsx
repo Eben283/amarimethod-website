@@ -39,7 +39,7 @@ const MultiSelectQuestion = ({
   };
 
   return (
-    <div className="quiz-card">
+    <div>
       <h2 className="text-2xl font-freight mb-2">{question}</h2>
       {description && (
         <p className="text-sm text-amari-text-light font-sans mb-1">{description}</p>

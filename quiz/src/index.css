@@ -197,7 +197,14 @@
   box-shadow: none;
 }
 
-/* Icon-only back button in fixed nav bar */
+/* In-card navigation bar (below question options) */
+.quiz-card-nav {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Icon-only back button */
 .quiz-nav-back {
   width: 2.5rem;
   height: 2.5rem;

@@ -60,7 +60,7 @@ const SingleSelectQuestion = ({
   };
 
   return (
-    <div className="quiz-card">
+    <div>
       <h2 className="text-2xl font-freight mb-2">
         {question}
         {required && <span className="text-red-500 ml-1">*</span>}
