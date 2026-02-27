@@ -2705,7 +2705,7 @@ footer {
 }
 
 .cta-section .btn-primary:hover {
-  background: #EBA584;
+  background: var(--color-button-primary-hover);
   color: white;
 }
 
