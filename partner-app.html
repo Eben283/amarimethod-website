@@ -326,6 +326,150 @@
       text-decoration: underline;
     }
 
+    /* ===== Stats Dashboard ===== */
+    .stats-section {
+      margin-bottom: 2rem;
+      display: none;
+    }
+    .stats-section.loaded { display: block; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat-number {
+      font-family: var(--font-serif-primary);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-text-secondary);
+    }
+
+    /* Streak + Milestone row */
+    .stats-meta {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .streak-badge, .milestone-badge {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .streak-badge {
+      background: rgba(235, 165, 132, 0.1);
+      color: #c47a55;
+    }
+    .streak-icon {
+      font-size: 1.2rem;
+    }
+    .milestone-badge {
+      background: rgba(94, 140, 138, 0.1);
+      color: #4a7270;
+    }
+    .milestone-icon {
+      font-size: 1.2rem;
+    }
+    .milestone-next {
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
+      display: block;
+      margin-top: 0.1rem;
+    }
+
+    /* Referral list */
+    .referral-list-toggle {
+      background: none;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      padding: 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .referral-list-toggle .chevron {
+      transition: transform 0.2s ease;
+      font-size: 0.7rem;
+    }
+    .referral-list-toggle.open .chevron {
+      transform: rotate(90deg);
+    }
+    .referral-list {
+      display: none;
+      margin-top: 0.5rem;
+    }
+    .referral-list.open { display: block; }
+    .referral-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.9rem;
+    }
+    .referral-item:last-child { border-bottom: none; }
+    .referral-name {
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .referral-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      text-transform: capitalize;
+    }
+    .status-referred {
+      background: rgba(37, 37, 37, 0.08);
+      color: #666;
+    }
+    .status-booked {
+      background: rgba(235, 165, 132, 0.15);
+      color: #c47a55;
+    }
+    .status-completed {
+      background: rgba(94, 140, 138, 0.12);
+      color: #4a7270;
+    }
+
+    /* Animated count-up */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stats-section.loaded .stat-card {
+      animation: fadeUp 0.4s ease both;
+    }
+    .stats-section.loaded .stat-card:nth-child(2) { animation-delay: 0.08s; }
+    .stats-section.loaded .stat-card:nth-child(3) { animation-delay: 0.16s; }
+
     /* Install banner */
     .install-banner {
       background: var(--bg-card);
@@ -403,6 +547,33 @@
     <img src="/apple-touch-icon.png" alt="Amari Method">
     <div class="app-greeting" id="greeting">Hey there</div>
     <div class="app-subtext">Your Amari Method partner toolkit</div>
+  </div>
+
+  <!-- Stats dashboard (populated via API) -->
+  <div class="stats-section" id="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Referrals</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-booked">0</div>
+        <div class="stat-label">Booked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-completed">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+    </div>
+
+    <div class="stats-meta" id="stats-meta"></div>
+
+    <div id="referral-list-wrap" style="display:none;">
+      <button class="referral-list-toggle" id="referral-list-toggle" type="button">
+        <span class="chevron">&#9654;</span> Your referrals
+      </button>
+      <div class="referral-list" id="referral-list"></div>
+    </div>
   </div>
 
   <!-- Main actions -->
@@ -714,6 +885,94 @@
     if (sessionStorage.getItem('install_dismissed') === '1') {
       banner.classList.remove('active');
     }
+  }
+
+  // ── Load partner stats ──
+  if (refName) {
+    (async function loadStats() {
+      try {
+        var res = await fetch('/api/partner-stats?ref=' + encodeURIComponent(refName));
+        if (!res.ok) return;
+        var data = await res.json();
+        var stats = data.stats || {};
+        var milestone = data.milestone;
+        var referrals = data.referrals || [];
+
+        // Animate numbers counting up
+        function animateNumber(el, target) {
+          if (target === 0) { el.textContent = '0'; return; }
+          var duration = 600;
+          var start = performance.now();
+          function tick(now) {
+            var elapsed = now - start;
+            var progress = Math.min(elapsed / duration, 1);
+            // Ease-out cubic
+            var eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(eased * target);
+            if (progress < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        }
+
+        animateNumber(document.getElementById('stat-total'), stats.total || 0);
+        animateNumber(document.getElementById('stat-booked'), stats.booked || 0);
+        animateNumber(document.getElementById('stat-completed'), stats.completed || 0);
+
+        // Streak + Milestone badges
+        var metaEl = document.getElementById('stats-meta');
+        var metaHTML = '';
+
+        if (stats.streak > 0) {
+          metaHTML += '<div class="streak-badge">'
+            + '<span class="streak-icon">&#128293;</span>'
+            + '<span>' + stats.streak + '-month streak</span>'
+            + '</div>';
+        }
+
+        if (milestone) {
+          var icons = { crown: '&#128081;', fire: '&#128293;', star: '&#11088;', check: '&#9989;' };
+          metaHTML += '<div class="milestone-badge">'
+            + '<span class="milestone-icon">' + (icons[milestone.icon] || '&#11088;') + '</span>'
+            + '<span>' + milestone.level
+            + (milestone.next ? '<span class="milestone-next">' + stats.total + '/' + milestone.next + ' to next</span>' : '')
+            + '</span></div>';
+        }
+
+        if (metaHTML) {
+          metaEl.innerHTML = metaHTML;
+        } else {
+          metaEl.style.display = 'none';
+        }
+
+        // Referral list
+        if (referrals.length > 0) {
+          var listWrap = document.getElementById('referral-list-wrap');
+          var listEl = document.getElementById('referral-list');
+          listWrap.style.display = 'block';
+
+          var listHTML = '';
+          for (var i = 0; i < referrals.length; i++) {
+            var r = referrals[i];
+            var statusClass = 'status-' + (r.status || 'referred');
+            listHTML += '<div class="referral-item">'
+              + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
+              + '<span class="referral-status ' + statusClass + '">' + (r.status || 'referred') + '</span>'
+              + '</div>';
+          }
+          listEl.innerHTML = listHTML;
+
+          document.getElementById('referral-list-toggle').addEventListener('click', function () {
+            this.classList.toggle('open');
+            listEl.classList.toggle('open');
+          });
+        }
+
+        // Show the section
+        document.getElementById('stats-section').classList.add('loaded');
+      } catch (e) {
+        // Stats failed — no big deal, just don't show the section
+      }
+    })();
   }
 
   // ── Register service worker ──
