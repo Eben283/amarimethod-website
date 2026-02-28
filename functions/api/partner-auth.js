@@ -192,27 +192,44 @@ export async function onRequestPost(context) {
     // Build the magic link URL
     const magicLink = `https://www.amarimethod.com/partner-app?token=${encodeURIComponent(token)}`;
 
-    // Update contact with the magic link and trigger tag for GHL email workflow
+    // Step 1: Save the magic link to the custom field FIRST
     try {
-      const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+      const fieldResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
         method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
           customFields: [
             { key: "partner_magic_link", field_value: magicLink },
           ],
+        }),
+      });
+      if (!fieldResponse.ok) {
+        const errText = await fieldResponse.text();
+        console.error(`[partner-auth] Failed to set partner_magic_link: ${fieldResponse.status} ${errText}`);
+      } else {
+        console.log(`[partner-auth] partner_magic_link field saved`);
+      }
+    } catch (fieldErr) {
+      console.error(`[partner-auth] Field update error: ${fieldErr.message}`);
+    }
+
+    // Step 2: Add the tag — this triggers the GHL email workflow AFTER the field is saved
+    try {
+      const tagResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+        method: "PUT",
+        headers: ghlHeaders(GHL_API_KEY),
+        body: JSON.stringify({
           tags: [...tags, "partner-login-requested"],
         }),
       });
-
-      if (!updateResponse.ok) {
-        const errText = await updateResponse.text();
-        console.error(`[partner-auth] Failed to update contact: ${updateResponse.status} ${errText}`);
+      if (!tagResponse.ok) {
+        const errText = await tagResponse.text();
+        console.error(`[partner-auth] Failed to add tag: ${tagResponse.status} ${errText}`);
       } else {
-        console.log(`[partner-auth] Contact updated with magic link and tag`);
+        console.log(`[partner-auth] partner-login-requested tag added`);
       }
-    } catch (updateErr) {
-      console.error(`[partner-auth] Contact update error: ${updateErr.message}`);
+    } catch (tagErr) {
+      console.error(`[partner-auth] Tag update error: ${tagErr.message}`);
     }
 
     console.log(`[partner-auth] Magic link generated for partner: ${contact.id}`);
