@@ -108,7 +108,10 @@ export async function onRequestPost(context) {
       phone: body.clientPhone ? String(body.clientPhone).slice(0, 20) : undefined,
       locationId: GHL_LOCATION_ID,
       tags: ["affiliate-referral"],
-      source: `Affiliate Referral - ${affiliateRef}`,
+      source: `Affiliate Referral - ${String(affiliateName).slice(0, 100)}`,
+      customFields: [
+        { id: "htX3m1ba8ka7PU0OWISE", field_value: String(affiliateName).slice(0, 100) },
+      ],
     };
 
     // Remove undefined fields so GHL doesn't choke

@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build*)",
+      "Bash(npm install*)",
+      "Bash(npm run dev*)",
+      "Bash(npx vite*)",
+      "Bash(npx wrangler*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git pull*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git merge*)",
+      "Bash(git stash*)",
+      "Bash(gh *)",
+      "Bash(grep*)",
+      "Bash(ls*)",
+      "Bash(cat *)",
+      "Bash(cd portal*)",
+      "Bash(cd quiz*)",
+      "Bash(node *)",
+      "Bash(npx tsc*)",
+      "Bash(curl *)"
+    ]
+  }
+}

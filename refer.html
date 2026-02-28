@@ -60,6 +60,11 @@
               <input type="tel" id="client-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required>
             </div>
 
+            <div class="field">
+              <label for="pain-area">What hurts? <span class="field-hint">(optional)</span></label>
+              <input type="text" id="pain-area" name="painArea" placeholder="e.g. low back, shoulder, knee">
+            </div>
+
             <div id="form-error" class="form-error"></div>
 
             <button type="submit" id="submit-btn" class="btn-primary btn-block">
@@ -113,6 +118,7 @@
       affiliateRef: refParam || 'unknown',
       clientFirstName: form.clientFirstName.value.trim(),
       clientPhone: form.clientPhone.value.trim(),
+      painArea: form.painArea.value.trim(),
     };
 
     try {
