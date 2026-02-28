@@ -536,11 +536,155 @@
       display: inline-block;
       vertical-align: middle;
     }
+
+    /* ===== Login Screen ===== */
+    .login-screen {
+      display: none;
+      text-align: center;
+      padding-top: 15vh;
+    }
+    .login-screen.active { display: block; }
+    .login-screen img {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      margin-bottom: 1.25rem;
+    }
+    .login-screen h1 {
+      font-family: var(--font-serif-primary);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 0.5rem;
+    }
+    .login-screen .login-subtitle {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      margin-bottom: 2rem;
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      text-align: left;
+    }
+    .login-card label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+      color: var(--color-text);
+    }
+    .login-card input[type="email"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: var(--bg-primary);
+      color: var(--color-text);
+      box-sizing: border-box;
+      margin-bottom: 1rem;
+    }
+    .login-card input[type="email"]:focus {
+      outline: none;
+      border-color: #5E8C8A;
+      box-shadow: 0 0 0 2px rgba(94, 140, 138, 0.2);
+    }
+    .login-card .login-btn {
+      width: 100%;
+      padding: 0.85rem;
+      border: none;
+      border-radius: 8px;
+      background: #252525;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .login-card .login-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .login-error {
+      color: #dc2626;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+      display: none;
+    }
+    .login-success {
+      display: none;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    .login-success .check-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(94, 140, 138, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.75rem;
+      font-size: 1.5rem;
+      color: #5E8C8A;
+    }
+    .login-success h3 {
+      font-family: var(--font-serif-primary);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .login-success p {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+    }
+
+    /* Dashboard wrapper (hidden until authenticated) */
+    .dashboard-screen { display: none; }
+    .dashboard-screen.active { display: block; }
+
+    /* Loading state */
+    .app-loading {
+      text-align: center;
+      padding: 4rem 0;
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="app-shell">
+
+  <!-- Loading state (shown briefly while checking auth) -->
+  <div class="app-loading" id="app-loading">Loading...</div>
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div class="login-screen" id="login-screen">
+    <img src="/apple-touch-icon.png" alt="Amari Method">
+    <h1>Partner Portal</h1>
+    <p class="login-subtitle">Log in to access your dashboard, stats, and referral tools.</p>
+
+    <div class="login-card">
+      <form id="login-form">
+        <label for="login-email">Email address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" required>
+        <div class="login-error" id="login-error"></div>
+        <button type="submit" class="login-btn" id="login-btn">Send Login Link</button>
+      </form>
+
+      <div class="login-success" id="login-success">
+        <div class="check-circle">&#10003;</div>
+        <h3>Check Your Email</h3>
+        <p>We sent a login link to your email. Click it to access your portal.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD SCREEN ===== -->
+  <div class="dashboard-screen" id="dashboard-screen">
 
   <!-- Header -->
   <div class="app-header">
@@ -716,34 +860,258 @@
   <!-- Footer -->
   <div class="app-footer">
     <a href="https://www.amarimethod.com" target="_blank">amarimethod.com</a>
+    <span style="margin: 0 0.5rem;">|</span>
+    <a href="#" id="btn-logout">Log out</a>
   </div>
+
+  </div><!-- /.dashboard-screen -->
 
 </div>
 
 <script>
 (function () {
-  // ── Read ?ref= parameter ──
-  var params = new URLSearchParams(window.location.search);
-  var ref = params.get('ref') || '';
-  var refName = ref.replace(/<[^>]*>/g, '').replace(/[^a-zA-Z\s\-']/g, '').trim();
-  if (refName) {
-    refName = refName.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  // ── DOM refs ──
+  var loadingEl = document.getElementById('app-loading');
+  var loginScreen = document.getElementById('login-screen');
+  var dashboardScreen = document.getElementById('dashboard-screen');
+
+  // ── Auth helpers ──
+  var AUTH_KEYS = {
+    token: 'partner_token',
+    contactId: 'partner_contact_id',
+    email: 'partner_email',
+  };
+
+  function getSession() {
+    var token = localStorage.getItem(AUTH_KEYS.token);
+    if (!token) return null;
+    // Check if token is expired by decoding payload
+    try {
+      var payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && Date.now() > payload.exp) {
+        clearSession();
+        return null;
+      }
+      return {
+        token: token,
+        contactId: localStorage.getItem(AUTH_KEYS.contactId),
+        email: localStorage.getItem(AUTH_KEYS.email),
+      };
+    } catch (e) {
+      clearSession();
+      return null;
+    }
   }
 
-  // Personalize greeting
-  if (refName) {
-    document.getElementById('greeting').textContent = 'Hey, ' + refName;
+  function saveSession(data) {
+    localStorage.setItem(AUTH_KEYS.token, data.sessionToken);
+    localStorage.setItem(AUTH_KEYS.contactId, data.contactId);
+    localStorage.setItem(AUTH_KEYS.email, data.email);
   }
 
-  // Build partner quiz link
-  var partnerLink = 'https://www.amarimethod.com/client-landing' + (ref ? '?ref=' + encodeURIComponent(ref) : '');
-  document.getElementById('share-link').value = partnerLink;
+  function clearSession() {
+    localStorage.removeItem(AUTH_KEYS.token);
+    localStorage.removeItem(AUTH_KEYS.contactId);
+    localStorage.removeItem(AUTH_KEYS.email);
+  }
 
-  // Persist ref in manifest start_url (for installed PWA)
-  if (ref) {
-    var manifestLink = document.querySelector('link[rel="manifest"]');
-    // We can't dynamically change manifest start_url easily,
-    // but the ref is already in the URL when they install
+  function showLogin() {
+    loadingEl.style.display = 'none';
+    loginScreen.classList.add('active');
+    dashboardScreen.classList.remove('active');
+  }
+
+  function showDashboard() {
+    loadingEl.style.display = 'none';
+    loginScreen.classList.remove('active');
+    dashboardScreen.classList.add('active');
+  }
+
+  // ── Login form ──
+  document.getElementById('login-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var emailInput = document.getElementById('login-email');
+    var loginBtn = document.getElementById('login-btn');
+    var errorDiv = document.getElementById('login-error');
+    var successDiv = document.getElementById('login-success');
+    var email = emailInput.value.trim().toLowerCase();
+
+    if (!email) return;
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Sending...';
+    errorDiv.style.display = 'none';
+
+    try {
+      var res = await fetch('/api/partner-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Something went wrong.');
+      }
+
+      // Show success message
+      e.target.style.display = 'none';
+      successDiv.style.display = 'block';
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Send Login Link';
+    }
+  });
+
+  // ── Logout ──
+  document.getElementById('btn-logout').addEventListener('click', function (e) {
+    e.preventDefault();
+    clearSession();
+    showLogin();
+    // Reset login form state
+    document.getElementById('login-form').style.display = '';
+    document.getElementById('login-form').reset();
+    document.getElementById('login-success').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('login-btn').textContent = 'Send Login Link';
+  });
+
+  // ── Magic link token verification ──
+  async function verifyMagicLink(token) {
+    try {
+      var res = await fetch('/api/partner-verify?token=' + encodeURIComponent(token));
+      var data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Invalid login link.');
+      }
+
+      saveSession(data);
+      // Clean the token from URL
+      var cleanUrl = window.location.pathname;
+      window.history.replaceState({}, '', cleanUrl);
+      return true;
+    } catch (err) {
+      // Show login with error
+      showLogin();
+      var errorDiv = document.getElementById('login-error');
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+      // Clean the token from URL
+      window.history.replaceState({}, '', window.location.pathname);
+      return false;
+    }
+  }
+
+  // ── Load dashboard data (authenticated) ──
+  async function loadDashboard(session) {
+    showDashboard();
+
+    try {
+      var res = await fetch('/api/partner-data', {
+        headers: { 'Authorization': 'Bearer ' + session.token },
+      });
+
+      if (res.status === 401) {
+        // Session expired
+        clearSession();
+        showLogin();
+        return;
+      }
+
+      if (!res.ok) return;
+
+      var data = await res.json();
+      var partner = data.partner || {};
+      var stats = data.stats || {};
+      var milestone = data.milestone;
+      var referrals = data.referrals || [];
+
+      // Set greeting
+      var firstName = partner.firstName || 'there';
+      document.getElementById('greeting').textContent = 'Hey, ' + firstName;
+
+      // Set share link using partner's first name
+      var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
+      document.getElementById('share-link').value = partnerLink;
+
+      // Animate stat numbers
+      function animateNumber(el, target) {
+        if (target === 0) { el.textContent = '0'; return; }
+        var duration = 600;
+        var start = performance.now();
+        function tick(now) {
+          var elapsed = now - start;
+          var progress = Math.min(elapsed / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(eased * target);
+          if (progress < 1) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      }
+
+      animateNumber(document.getElementById('stat-total'), stats.total || 0);
+      animateNumber(document.getElementById('stat-booked'), stats.booked || 0);
+      animateNumber(document.getElementById('stat-completed'), stats.completed || 0);
+
+      // Streak + Milestone badges
+      var metaEl = document.getElementById('stats-meta');
+      var metaHTML = '';
+
+      if (stats.streak > 0) {
+        metaHTML += '<div class="streak-badge">'
+          + '<span class="streak-icon">&#128293;</span>'
+          + '<span>' + stats.streak + '-month streak</span>'
+          + '</div>';
+      }
+
+      if (milestone) {
+        var icons = { crown: '&#128081;', fire: '&#128293;', star: '&#11088;', check: '&#9989;' };
+        metaHTML += '<div class="milestone-badge">'
+          + '<span class="milestone-icon">' + (icons[milestone.icon] || '&#11088;') + '</span>'
+          + '<span>' + milestone.level
+          + (milestone.next ? '<span class="milestone-next">' + stats.total + '/' + milestone.next + ' to next</span>' : '')
+          + '</span></div>';
+      }
+
+      if (metaHTML) {
+        metaEl.innerHTML = metaHTML;
+      } else {
+        metaEl.style.display = 'none';
+      }
+
+      // Referral list
+      if (referrals.length > 0) {
+        var listWrap = document.getElementById('referral-list-wrap');
+        var listEl = document.getElementById('referral-list');
+        listWrap.style.display = 'block';
+
+        var listHTML = '';
+        for (var i = 0; i < referrals.length; i++) {
+          var r = referrals[i];
+          var statusClass = 'status-' + (r.status || 'referred');
+          listHTML += '<div class="referral-item">'
+            + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
+            + '<span class="referral-status ' + statusClass + '">' + (r.status || 'referred') + '</span>'
+            + '</div>';
+        }
+        listEl.innerHTML = listHTML;
+
+        document.getElementById('referral-list-toggle').addEventListener('click', function () {
+          this.classList.toggle('open');
+          listEl.classList.toggle('open');
+        });
+      }
+
+      // Show the stats section
+      document.getElementById('stats-section').classList.add('loaded');
+
+    } catch (e) {
+      // Dashboard load failed — show what we have
+    }
   }
 
   // ── Video button ──
@@ -763,7 +1131,6 @@
   var successPanel = document.getElementById('referral-success');
 
   document.getElementById('btn-refer').addEventListener('click', function () {
-    // Toggle form visibility
     var isActive = formPanel.classList.contains('active');
     formPanel.classList.toggle('active');
     successPanel.classList.remove('active');
@@ -772,7 +1139,7 @@
     }
   });
 
-  // ── Referral form submit ──
+  // ── Referral form submit (authenticated) ──
   document.getElementById('referral-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     var form = e.target;
@@ -784,16 +1151,21 @@
     submitBtn.textContent = 'Submitting...';
     errorDiv.style.display = 'none';
 
+    var session = getSession();
     var payload = {
-      affiliateRef: ref || 'unknown',
       clientFirstName: form.clientFirstName.value.trim(),
       clientPhone: form.clientPhone.value.trim(),
     };
 
+    var fetchHeaders = { 'Content-Type': 'application/json' };
+    if (session && session.token) {
+      fetchHeaders['Authorization'] = 'Bearer ' + session.token;
+    }
+
     try {
       var response = await fetch('/api/affiliate-refer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: fetchHeaders,
         body: JSON.stringify(payload),
       });
 
@@ -803,13 +1175,10 @@
         throw new Error(data.error || 'Something went wrong. Please try again.');
       }
 
-      // Show success
       document.getElementById('success-message').textContent =
         "We'll reach out to " + payload.clientFirstName + ' and take it from here.';
       formPanel.classList.remove('active');
       successPanel.classList.add('active');
-
-      // Reset form
       form.reset();
     } catch (err) {
       errorDiv.textContent = err.message;
@@ -831,14 +1200,13 @@
   document.getElementById('btn-share').addEventListener('click', function () {
     sharePanel.style.display = sharePanel.style.display === 'none' ? 'block' : 'none';
 
-    // Try native share on mobile
+    var partnerLink = document.getElementById('share-link').value;
     if (navigator.share) {
       navigator.share({
         title: 'Take the Pain Assessment',
         text: 'Find out what\'s causing your pain — free 2-minute quiz:',
         url: partnerLink,
       }).catch(function () {
-        // User cancelled or not supported — just show the link
         sharePanel.style.display = 'block';
       });
     }
@@ -874,113 +1242,50 @@
       document.getElementById('install-steps-android').style.display = '';
       banner.classList.add('active');
     }
-    // Desktop: don't show banner
 
     document.getElementById('install-dismiss').addEventListener('click', function () {
       banner.classList.remove('active');
       sessionStorage.setItem('install_dismissed', '1');
     });
 
-    // Don't show if already dismissed this session
     if (sessionStorage.getItem('install_dismissed') === '1') {
       banner.classList.remove('active');
     }
   }
 
-  // ── Load partner stats ──
-  if (refName) {
-    (async function loadStats() {
-      try {
-        var res = await fetch('/api/partner-stats?ref=' + encodeURIComponent(refName));
-        if (!res.ok) return;
-        var data = await res.json();
-        var stats = data.stats || {};
-        var milestone = data.milestone;
-        var referrals = data.referrals || [];
-
-        // Animate numbers counting up
-        function animateNumber(el, target) {
-          if (target === 0) { el.textContent = '0'; return; }
-          var duration = 600;
-          var start = performance.now();
-          function tick(now) {
-            var elapsed = now - start;
-            var progress = Math.min(elapsed / duration, 1);
-            // Ease-out cubic
-            var eased = 1 - Math.pow(1 - progress, 3);
-            el.textContent = Math.round(eased * target);
-            if (progress < 1) requestAnimationFrame(tick);
-          }
-          requestAnimationFrame(tick);
-        }
-
-        animateNumber(document.getElementById('stat-total'), stats.total || 0);
-        animateNumber(document.getElementById('stat-booked'), stats.booked || 0);
-        animateNumber(document.getElementById('stat-completed'), stats.completed || 0);
-
-        // Streak + Milestone badges
-        var metaEl = document.getElementById('stats-meta');
-        var metaHTML = '';
-
-        if (stats.streak > 0) {
-          metaHTML += '<div class="streak-badge">'
-            + '<span class="streak-icon">&#128293;</span>'
-            + '<span>' + stats.streak + '-month streak</span>'
-            + '</div>';
-        }
-
-        if (milestone) {
-          var icons = { crown: '&#128081;', fire: '&#128293;', star: '&#11088;', check: '&#9989;' };
-          metaHTML += '<div class="milestone-badge">'
-            + '<span class="milestone-icon">' + (icons[milestone.icon] || '&#11088;') + '</span>'
-            + '<span>' + milestone.level
-            + (milestone.next ? '<span class="milestone-next">' + stats.total + '/' + milestone.next + ' to next</span>' : '')
-            + '</span></div>';
-        }
-
-        if (metaHTML) {
-          metaEl.innerHTML = metaHTML;
-        } else {
-          metaEl.style.display = 'none';
-        }
-
-        // Referral list
-        if (referrals.length > 0) {
-          var listWrap = document.getElementById('referral-list-wrap');
-          var listEl = document.getElementById('referral-list');
-          listWrap.style.display = 'block';
-
-          var listHTML = '';
-          for (var i = 0; i < referrals.length; i++) {
-            var r = referrals[i];
-            var statusClass = 'status-' + (r.status || 'referred');
-            listHTML += '<div class="referral-item">'
-              + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
-              + '<span class="referral-status ' + statusClass + '">' + (r.status || 'referred') + '</span>'
-              + '</div>';
-          }
-          listEl.innerHTML = listHTML;
-
-          document.getElementById('referral-list-toggle').addEventListener('click', function () {
-            this.classList.toggle('open');
-            listEl.classList.toggle('open');
-          });
-        }
-
-        // Show the section
-        document.getElementById('stats-section').classList.add('loaded');
-      } catch (e) {
-        // Stats failed — no big deal, just don't show the section
-      }
-    })();
-  }
-
   // ── Register service worker ──
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/partner-sw.js').catch(function () {
-      // Silent fail — PWA features just won't work
-    });
+    navigator.serviceWorker.register('/partner-sw.js').catch(function () {});
   }
+
+  // ── INIT: Check auth state ──
+  (async function init() {
+    var params = new URLSearchParams(window.location.search);
+    var token = params.get('token');
+
+    // Case 1: Magic link token in URL → verify it
+    if (token) {
+      var verified = await verifyMagicLink(token);
+      if (verified) {
+        var session = getSession();
+        if (session) {
+          loadDashboard(session);
+          return;
+        }
+      }
+      return; // verifyMagicLink already showed login with error
+    }
+
+    // Case 2: Existing session in localStorage
+    var session = getSession();
+    if (session) {
+      loadDashboard(session);
+      return;
+    }
+
+    // Case 3: No auth → show login
+    showLogin();
+  })();
 })();
 </script>
 </body>

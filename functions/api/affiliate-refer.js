@@ -5,13 +5,12 @@
 // Accepts two payload formats:
 // NEW (simplified): { affiliateRef, clientFirstName, clientPhone, painArea }
 // OLD (legacy):     { affiliateName, affiliateEmail, clientFirstName, clientLastName, clientEmail, clientPhone, notes }
+//
+// If an Authorization: Bearer header is present, partner identity is resolved
+// from the session token (more accurate than affiliateRef field).
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-
-// Custom field IDs — create in GHL dashboard, then paste ID here
-// TODO: Create "Referral Source" text field in GHL > Settings > Custom Fields
-// const REFERRAL_SOURCE_FIELD_ID = "PASTE_FIELD_ID_HERE";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -23,9 +22,40 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
+}
+
+// Verify session token (optional — used when partner is authenticated)
+async function verifySessionToken(tokenString, secret) {
+  try {
+    const parts = tokenString.split(".");
+    if (parts.length !== 3) return null;
+
+    const [header, body, sig] = parts;
+    const data = `${header}.${body}`;
+
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const sigBytes = Uint8Array.from(atob(sig), c => c.charCodeAt(0));
+    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(data));
+    if (!valid) return null;
+
+    const payload = JSON.parse(atob(body));
+    if (!payload.exp || Date.now() > payload.exp) return null;
+
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 function ghlHeaders(apiKey) {
@@ -51,11 +81,56 @@ export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
 
+    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const JWT_SECRET = context.env.JWT_SECRET;
+
+    if (!GHL_API_KEY) {
+      console.error("[affiliate-refer] GHL_API_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers }
+      );
+    }
+
+    // ── Resolve partner identity ──
+    // Priority: Bearer token > body.affiliateName > body.affiliateRef
+    let resolvedPartnerName = null;
+    let resolvedPartnerEmail = null;
+
+    const authHeader = context.request.headers.get("Authorization");
+    if (authHeader && authHeader.startsWith("Bearer ") && JWT_SECRET) {
+      const tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      if (tokenPayload && tokenPayload.contactId) {
+        try {
+          const partnerResponse = await fetch(`${GHL_API_BASE}/contacts/${tokenPayload.contactId}`, {
+            headers: ghlHeaders(GHL_API_KEY),
+          });
+          if (partnerResponse.ok) {
+            const partnerData = await partnerResponse.json();
+            const pc = partnerData.contact;
+            resolvedPartnerName = pc.firstName
+              ? pc.firstName.charAt(0).toUpperCase() + pc.firstName.slice(1).toLowerCase()
+              : null;
+            resolvedPartnerEmail = pc.email || tokenPayload.email;
+            console.log(`[affiliate-refer] Resolved partner from token: ${resolvedPartnerName}`);
+          }
+        } catch (err) {
+          console.error(`[affiliate-refer] Token partner lookup error: ${err.message}`);
+        }
+      }
+    }
+
     // Detect payload format: new (affiliateRef) vs old (affiliateName + affiliateEmail)
     const isNewFormat = body.affiliateRef !== undefined;
 
+    // Final affiliate name: token-resolved > body field
+    const affiliateName = resolvedPartnerName
+      || (isNewFormat ? String(body.affiliateRef || "unknown").slice(0, 100) : String(body.affiliateName || "").slice(0, 100));
+    const affiliateEmail = resolvedPartnerEmail || body.affiliateEmail || "";
+
     // Validate required fields based on format
-    if (isNewFormat) {
+    if (isNewFormat || resolvedPartnerName) {
+      // Simplified flow: only need client name + phone
       if (!body.clientFirstName || !body.clientPhone) {
         return new Response(
           JSON.stringify({ error: "Client name and phone are required" }),
@@ -64,7 +139,7 @@ export async function onRequestPost(context) {
       }
     } else {
       // Legacy format validation
-      const { affiliateName, affiliateEmail, clientFirstName, clientLastName, clientEmail } = body;
+      const { clientFirstName, clientLastName, clientEmail } = body;
       if (!affiliateName || !affiliateEmail || !clientFirstName || !clientLastName || !clientEmail) {
         return new Response(
           JSON.stringify({ error: "Missing required fields" }),
@@ -86,26 +161,9 @@ export async function onRequestPost(context) {
       }
     }
 
-    const GHL_API_KEY = context.env.GHL_API_KEY;
-    if (!GHL_API_KEY) {
-      console.error("[affiliate-refer] GHL_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers }
-      );
-    }
-
-    // ---- Build affiliate name for source field ----
-    const affiliateRef = isNewFormat
-      ? String(body.affiliateRef || "unknown").slice(0, 100)
-      : String(body.affiliateName).slice(0, 100);
-
     // ---- STEP 1: Upsert client contact ----
     const upsertPayload = {
       firstName: String(body.clientFirstName).slice(0, 100),
-      lastName: isNewFormat ? undefined : String(body.clientLastName || "").slice(0, 100),
-      email: isNewFormat ? undefined : String(body.clientEmail || "").slice(0, 200),
-      phone: body.clientPhone ? String(body.clientPhone).slice(0, 20) : undefined,
       locationId: GHL_LOCATION_ID,
       tags: ["affiliate-referral"],
       source: `Affiliate Referral - ${String(affiliateName).slice(0, 100)}`,
@@ -113,11 +171,9 @@ export async function onRequestPost(context) {
         { id: "htX3m1ba8ka7PU0OWISE", field_value: String(affiliateName).slice(0, 100) },
       ],
     };
-
-    // Remove undefined fields so GHL doesn't choke
-    Object.keys(upsertPayload).forEach(key => {
-      if (upsertPayload[key] === undefined) delete upsertPayload[key];
-    });
+    if (body.clientLastName) upsertPayload.lastName = String(body.clientLastName).slice(0, 100);
+    if (body.clientEmail) upsertPayload.email = String(body.clientEmail).slice(0, 200);
+    if (body.clientPhone) upsertPayload.phone = String(body.clientPhone).slice(0, 20);
 
     const upsertResponse = await fetch(`${GHL_API_BASE}/contacts/upsert`, {
       method: "POST",
@@ -140,14 +196,14 @@ export async function onRequestPost(context) {
 
     // ---- STEP 2: Add note with referral details ----
     if (contactId) {
-      const noteParts = isNewFormat
+      const noteParts = isNewFormat || resolvedPartnerName
         ? [
-            `Affiliate Referral from partner: ${affiliateRef}`,
+            `Affiliate Referral from partner: ${affiliateName}${affiliateEmail ? ` (${affiliateEmail})` : ""}`,
             body.painArea ? `Pain area: ${String(body.painArea).slice(0, 200)}` : null,
             `Submitted: ${new Date().toISOString()}`,
           ]
         : [
-            `Affiliate Referral from ${String(body.affiliateName).slice(0, 100)} (${String(body.affiliateEmail).slice(0, 200)})`,
+            `Affiliate Referral from ${String(affiliateName).slice(0, 100)}${affiliateEmail ? ` (${String(affiliateEmail).slice(0, 200)})` : ""}`,
             body.notes ? `Notes: ${String(body.notes).slice(0, 500)}` : null,
             `Submitted: ${new Date().toISOString()}`,
           ];
@@ -163,7 +219,6 @@ export async function onRequestPost(context) {
       if (!noteResponse.ok) {
         const errorText = await noteResponse.text();
         console.error(`[affiliate-refer] GHL note error: ${noteResponse.status} ${errorText}`);
-        // Don't fail — contact was created, note just didn't save
       } else {
         console.log(`[affiliate-refer] Note added for contact: ${contactId}`);
       }

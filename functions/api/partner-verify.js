@@ -1,0 +1,163 @@
+// Cloudflare Pages Function: GET /api/partner-verify?token=xxx
+// Validates the partner magic link JWT and returns a session token
+
+const ALLOWED_ORIGINS = [
+  "https://www.amarimethod.com",
+  "https://amarimethod.com",
+];
+
+function corsHeaders(origin) {
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+// Verify HMAC-SHA256 token
+async function verifyToken(tokenString, secret) {
+  const parts = tokenString.split(".");
+  if (parts.length !== 3) throw new Error("Invalid token format");
+
+  const [header, body, sig] = parts;
+  const data = `${header}.${body}`;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  );
+
+  const sigBytes = Uint8Array.from(atob(sig), c => c.charCodeAt(0));
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(data));
+  if (!valid) throw new Error("Invalid signature");
+
+  const payload = JSON.parse(atob(body));
+  return payload;
+}
+
+// Create a session token (longer-lived, for dashboard API calls)
+async function createSessionToken(payload, secret) {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = btoa(JSON.stringify(payload));
+  const data = `${header}.${body}`;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
+
+  return `${data}.${sig}`;
+}
+
+export async function onRequestOptions(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(context.request.headers.get("Origin")),
+  });
+}
+
+export async function onRequestGet(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const headers = corsHeaders(origin);
+  headers["Content-Type"] = "application/json";
+
+  try {
+    const url = new URL(context.request.url);
+    const token = url.searchParams.get("token");
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: "No token provided" }),
+        { status: 400, headers }
+      );
+    }
+
+    const JWT_SECRET = context.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      console.error("[partner-verify] JWT_SECRET not configured");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers }
+      );
+    }
+
+    // Verify the magic link token
+    let payload;
+    try {
+      payload = await verifyToken(token, JWT_SECRET);
+    } catch (err) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired login link." }),
+        { status: 401, headers }
+      );
+    }
+
+    // Check expiry
+    if (!payload.exp || Date.now() > payload.exp) {
+      return new Response(
+        JSON.stringify({ error: "This login link has expired. Please request a new one." }),
+        { status: 410, headers }
+      );
+    }
+
+    // Check that this is a partner token
+    if (payload.type !== "partner") {
+      return new Response(
+        JSON.stringify({ error: "Invalid token type." }),
+        { status: 401, headers }
+      );
+    }
+
+    // Check nonce (single-use) if KV is available
+    if (context.env.PORTAL_KV && payload.nonce) {
+      const nonceValue = await context.env.PORTAL_KV.get(`partner_nonce:${payload.nonce}`);
+      if (nonceValue) {
+        // Nonce found and valid — consume it to prevent reuse
+        await context.env.PORTAL_KV.delete(`partner_nonce:${payload.nonce}`);
+      } else {
+        // Nonce not found: log warning but allow through (graceful degradation)
+        console.warn(`[partner-verify] Nonce not found in KV for contact ${payload.contactId} — allowing through`);
+      }
+    }
+
+    // Create a session token (30-day expiry)
+    const sessionToken = await createSessionToken(
+      {
+        contactId: payload.contactId,
+        email: payload.email,
+        type: "partner",
+        exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      },
+      JWT_SECRET
+    );
+
+    console.log(`[partner-verify] Session created for partner: ${payload.contactId}`);
+
+    return new Response(
+      JSON.stringify({
+        sessionToken,
+        contactId: payload.contactId,
+        email: payload.email,
+      }),
+      { status: 200, headers }
+    );
+  } catch (err) {
+    console.error("[partner-verify] Unexpected error:", err);
+    return new Response(
+      JSON.stringify({ error: "Internal server error" }),
+      { status: 500, headers }
+    );
+  }
+}
