@@ -12,6 +12,9 @@
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
+// Custom field IDs
+const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -166,9 +169,9 @@ export async function onRequestPost(context) {
       firstName: String(body.clientFirstName).slice(0, 100),
       locationId: GHL_LOCATION_ID,
       tags: ["affiliate-referral"],
-      source: `Affiliate Referral - ${String(affiliateName).slice(0, 100)}`,
+      source: `Affiliate Referral - ${affiliateName}`,
       customFields: [
-        { id: "htX3m1ba8ka7PU0OWISE", field_value: String(affiliateName).slice(0, 100) },
+        { id: REFERRAL_SOURCE_FIELD_ID, field_value: affiliateName },
       ],
     };
     if (body.clientLastName) upsertPayload.lastName = String(body.clientLastName).slice(0, 100);

@@ -24,6 +24,7 @@ const FIELD_IDS = {
   treatmentResults: "1MSGnUASa5Zd9lKoNdvO",
   healthConditions: "Uw1MeObXs3xKJGh1KGNu",
   quizResultsSummary: "fE6XF0OEaq09v6clDhzq",
+  referralSource: "htX3m1ba8ka7PU0OWISE",
 };
 
 const ALLOWED_ORIGINS = [
@@ -208,6 +209,11 @@ export async function onRequestPost(context) {
         // Full formatted summary
         { id: FIELD_IDS.quizResultsSummary, field_value: resultsSummary },
       ];
+
+      // Add referral source if present
+      if (referralSource) {
+        customFields.push({ id: FIELD_IDS.referralSource, field_value: referralSource });
+      }
 
       const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         method: "PUT",
