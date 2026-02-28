@@ -192,51 +192,27 @@ export async function onRequestPost(context) {
     // Build the magic link URL
     const magicLink = `https://www.amarimethod.com/partner-app?token=${encodeURIComponent(token)}`;
 
-    // Send the magic link email directly via GHL conversations API
-    // (avoids needing a custom field + workflow)
+    // Update contact with the magic link and trigger tag for GHL email workflow
     try {
-      const firstName = contact.firstName || contact.first_name || "there";
-      const emailBody = `<p>Hey ${firstName},</p>
-<p>Here's your login link for the Amari Method partner dashboard:</p>
-<p><a href="${magicLink}">Log in to your dashboard</a></p>
-<p>This link expires in 24 hours. If it expires, just go to <a href="https://www.amarimethod.com/partner-app">amarimethod.com/partner-app</a> and request a new one.</p>
-<p>— The Amari Method Team</p>`;
-
-      const emailResponse = await fetch(`${GHL_API_BASE}/conversations/messages/outbound`, {
-        method: "POST",
-        headers: ghlHeaders(GHL_API_KEY),
-        body: JSON.stringify({
-          type: "Email",
-          contactId: contact.id,
-          locationId: GHL_LOCATION_ID,
-          subject: "Your Amari Method Partner Login Link",
-          body: emailBody,
-          emailFrom: "eben@amarimethod.com",
-          emailTo: email,
-        }),
-      });
-
-      if (!emailResponse.ok) {
-        const errText = await emailResponse.text();
-        console.error(`[partner-auth] Failed to send email: ${emailResponse.status} ${errText}`);
-      } else {
-        console.log(`[partner-auth] Magic link email sent to ${email}`);
-      }
-    } catch (emailErr) {
-      console.error(`[partner-auth] Email send error: ${emailErr.message}`);
-    }
-
-    // Also add the partner-login-requested tag (for tracking)
-    try {
-      await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+      const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
         method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
+          customFields: [
+            { key: "partner_magic_link", field_value: magicLink },
+          ],
           tags: [...tags, "partner-login-requested"],
         }),
       });
-    } catch (tagErr) {
-      console.error(`[partner-auth] Tag update error: ${tagErr.message}`);
+
+      if (!updateResponse.ok) {
+        const errText = await updateResponse.text();
+        console.error(`[partner-auth] Failed to update contact: ${updateResponse.status} ${errText}`);
+      } else {
+        console.log(`[partner-auth] Contact updated with magic link and tag`);
+      }
+    } catch (updateErr) {
+      console.error(`[partner-auth] Contact update error: ${updateErr.message}`);
     }
 
     console.log(`[partner-auth] Magic link generated for partner: ${contact.id}`);
