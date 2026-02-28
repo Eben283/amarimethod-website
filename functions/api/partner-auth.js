@@ -199,7 +199,7 @@ export async function onRequestPost(context) {
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
           customFields: [
-            { key: "partner_magic_link", field_value: magicLink },
+            { key: "_partner_magic_link", field_value: magicLink },
           ],
         }),
       });
