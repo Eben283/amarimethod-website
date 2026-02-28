@@ -37,8 +37,8 @@
   <!-- ===== HERO ===== -->
   <section class="hero">
     <div class="container hero-content">
-      <h1>Submit a Client Referral</h1>
-      <p class="hero-subtitle">Fill out your client's info below. We'll send them a warm intro email with a booking link.</p>
+      <h1 id="page-heading">Submit a Referral</h1>
+      <p class="hero-subtitle">Name and number — we'll handle the rest.</p>
     </div>
   </section>
 
@@ -50,59 +50,34 @@
         <div id="referral-form-container">
           <form id="referral-form" class="referral-form">
 
-            <h2>Your Information</h2>
-
-            <div class="field">
-              <label for="affiliate-name">Your Name *</label>
-              <input type="text" id="affiliate-name" name="affiliateName" required>
-            </div>
-
-            <div class="field">
-              <label for="affiliate-email">Your Email *</label>
-              <input type="email" id="affiliate-email" name="affiliateEmail" required>
-            </div>
-
-            <h2 class="referral-section-break">Client Information</h2>
-
             <div class="field">
               <label for="client-first-name">Client First Name *</label>
-              <input type="text" id="client-first-name" name="clientFirstName" required>
+              <input type="text" id="client-first-name" name="clientFirstName" autocomplete="given-name" required>
             </div>
 
             <div class="field">
-              <label for="client-last-name">Client Last Name *</label>
-              <input type="text" id="client-last-name" name="clientLastName" required>
+              <label for="client-phone">Client Phone *</label>
+              <input type="tel" id="client-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required>
             </div>
 
             <div class="field">
-              <label for="client-email">Client Email *</label>
-              <input type="email" id="client-email" name="clientEmail" required>
-            </div>
-
-            <div class="field">
-              <label for="client-phone">Client Phone</label>
-              <input type="tel" id="client-phone" name="clientPhone">
-            </div>
-
-            <div class="field">
-              <label for="notes">Notes <span class="field-hint">(optional)</span></label>
-              <textarea id="notes" name="notes" rows="4" placeholder="Anything we should know about this client? Pain areas, goals, etc."></textarea>
+              <label for="pain-area">What hurts? <span class="field-hint">(optional)</span></label>
+              <input type="text" id="pain-area" name="painArea" placeholder="e.g. low back, shoulder, knee">
             </div>
 
             <div id="form-error" class="form-error"></div>
 
             <button type="submit" id="submit-btn" class="btn-primary btn-block">
-              <span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Referral</span></span>
+              <span class="btn-content"><span class="arrow">&rarr;</span><span class="btn-text">Submit Referral</span></span>
             </button>
-            <p class="form-helper">Your client will receive a booking email within minutes.</p>
           </form>
         </div>
 
         <div id="referral-success" class="referral-success">
           <div class="referral-success-icon">&#10003;</div>
-          <h2>Client Referred Successfully</h2>
-          <p>We've received your referral and will send your client a booking email shortly. You'll be notified once they book.</p>
-          <a href="refer" class="btn-secondary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Submit Another Referral</span></span></a>
+          <h2>Got It!</h2>
+          <p id="success-message">We'll reach out and take it from here.</p>
+          <a href="refer" id="another-referral-link" class="btn-secondary"><span class="btn-content"><span class="arrow">&rarr;</span><span class="btn-text">Submit Another Referral</span></span></a>
         </div>
 
       </div>
@@ -114,6 +89,17 @@
 <!-- include:footer -->
 <script src="js/main.js?v=2" defer></script>
 <script>
+  // Read ?ref= parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const refParam = urlParams.get('ref') || '';
+
+  // Personalize heading
+  if (refParam) {
+    document.getElementById('page-heading').textContent = 'Submit a Referral, ' + refParam;
+    // Preserve ref param on "Submit Another" link
+    document.getElementById('another-referral-link').href = 'refer?ref=' + encodeURIComponent(refParam);
+  }
+
   document.getElementById('referral-form').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -129,13 +115,10 @@
     errorDiv.style.display = 'none';
 
     const payload = {
-      affiliateName: form.affiliateName.value.trim(),
-      affiliateEmail: form.affiliateEmail.value.trim(),
+      affiliateRef: refParam || 'unknown',
       clientFirstName: form.clientFirstName.value.trim(),
-      clientLastName: form.clientLastName.value.trim(),
-      clientEmail: form.clientEmail.value.trim(),
       clientPhone: form.clientPhone.value.trim(),
-      notes: form.notes.value.trim(),
+      painArea: form.painArea.value.trim(),
     };
 
     try {
@@ -151,13 +134,17 @@
         throw new Error(data.error || 'Something went wrong. Please try again.');
       }
 
+      // Personalize success message
+      document.getElementById('success-message').textContent =
+        "We'll reach out to " + payload.clientFirstName + ' and take it from here.';
+
       // Show success
       document.getElementById('referral-form-container').style.display = 'none';
       document.getElementById('referral-success').style.display = 'block';
 
       // Track in GA4
       gtag('event', 'affiliate_referral_submitted', {
-        affiliate_email: payload.affiliateEmail,
+        affiliate_ref: payload.affiliateRef,
       });
 
     } catch (err) {

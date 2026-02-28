@@ -85,6 +85,9 @@ export async function onRequestPost(context) {
       locationId: GHL_LOCATION_ID,
       tags: ["affiliate-referral"],
       source: `Affiliate Referral - ${String(affiliateName).slice(0, 100)}`,
+      customFields: [
+        { id: "htX3m1ba8ka7PU0OWISE", field_value: String(affiliateName).slice(0, 100) },
+      ],
     };
 
     const upsertResponse = await fetch(`${GHL_API_BASE}/contacts/upsert`, {
