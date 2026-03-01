@@ -422,6 +422,11 @@ nav {
   .btn-tertiary {
     white-space: normal;
   }
+
+  .btn-primary,
+  .btn-secondary {
+    white-space: normal;
+  }
 }
 
 .btn-tertiary::after {
@@ -1885,6 +1890,17 @@ article strong {
   article p, article li {
     font-size: 1rem;
   }
+
+  .cta-box {
+    padding: 2rem 1.25rem;
+  }
+
+  .cta-box .btn-primary,
+  .cta-box .btn-secondary {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
 }
 
 /* ===== UTILITY CLASSES ===== */
@@ -2590,6 +2606,14 @@ footer {
   .footer-content {
     grid-template-columns: 1fr;
     gap: 2rem;
+  }
+
+  .footer-section {
+    text-align: center;
+  }
+
+  .footer-section ul {
+    padding: 0;
   }
 }
 
