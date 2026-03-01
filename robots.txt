@@ -4,7 +4,6 @@ Allow: /
 
 # Block private/app routes
 Disallow: /portal/
-Disallow: /quiz/
 Disallow: /dist/
 
 # Sitemap location
