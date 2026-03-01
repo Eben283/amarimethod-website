@@ -37,12 +37,17 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
 
       <Divider />
 
-      {/* 3 — Radar chart + score bars */}
+      {/* 3 — CTA: booking + testimonial (early placement for high-intent visitors) */}
+      <BookingCTA patternSignature={patternSignature} />
+
+      <Divider />
+
+      {/* 4 — Radar chart + score bars */}
       <ScoreRadar scores={scores} />
 
       <Divider />
 
-      {/* 4 — Primary score cards (Active / Passive systems) */}
+      {/* 5 — Primary score cards (Active / Passive systems) */}
       <section className="px-6 py-10 bg-white">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
@@ -92,13 +97,36 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
               compact
             />
           </div>
+
+          {/* Bottom booking prompt */}
+          <div className="mt-10 text-center">
+            <p className="text-base font-sans text-amari-charcoal font-semibold mb-4">
+              Ready to address your pattern?
+            </p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <a
+                href="https://amarimethodbooking.amarimethod.com/amari-method-funnel"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
+                <span>Book In-Person<span className="arrow">→</span></span>
+              </a>
+              <a
+                href="https://introsessionvirtual.amarimethod.com/is-virtual-info"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary"
+              >
+                <span>Book Virtual<span className="arrow">→</span></span>
+              </a>
+            </div>
+            <p className="text-sm text-amari-text-light mt-3 font-sans">
+              San Francisco in-person or virtual from anywhere · HSA/FSA accepted
+            </p>
+          </div>
         </div>
       </section>
-
-      <Divider />
-
-      {/* 5 — CTA: booking + testimonial */}
-      <BookingCTA patternSignature={patternSignature} />
 
     </div>
   );

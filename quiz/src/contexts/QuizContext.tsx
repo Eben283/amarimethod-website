@@ -108,6 +108,13 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, []);
 
+  const STEP_CATEGORIES = [
+    'pain_location', 'pain_trigger', 'additional_locations', 'duration',
+    'intensity', 'timing', 'pain_quality', 'aggravating_factors',
+    'daily_impact', 'treatment_history', 'treatment_results', 'health_background',
+    'contact_info',
+  ];
+
   const goToNextStep = () => {
     // Read from refs so this is safe to call from a stale setTimeout closure
     const step = currentStepRef.current;
@@ -157,6 +164,11 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
     if (step === 0) {
       trackEvent('quiz_start');
     }
+    // Track each step completion so we can see per-question drop-off in GA4
+    trackEvent('quiz_step_complete', {
+      step_number: step + 1,
+      step_category: STEP_CATEGORIES[step] ?? `step_${step + 1}`,
+    });
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
   };
 

@@ -80,28 +80,22 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           </div>
 
           {referralName ? (
-            <>
-              <a
-                href="https://www.amarimethod.com/booking"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary w-full text-center"
-                style={{ display: 'block' }}
-              >
-                <span>Talk to {referralName} About Booking<span className="arrow">→</span></span>
-              </a>
-              <p className="text-sm text-amari-text-light mt-3 text-center font-sans">
-                Or book directly below
-              </p>
-            </>
+            <div className="flex justify-center mb-4">
+              <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold font-sans bg-amari-pine-teal bg-opacity-10 text-amari-pine-teal border border-amari-pine-teal border-opacity-20">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                </svg>
+                Referred by {referralName}
+              </span>
+            </div>
           ) : null}
 
-          <div className={`flex gap-3 ${referralName ? 'mt-3' : ''}`} style={{ width: '100%' }}>
+          <div className="flex gap-3" style={{ width: '100%' }}>
             <a
               href="https://amarimethodbooking.amarimethod.com/amari-method-funnel"
               target="_blank"
               rel="noopener noreferrer"
-              className={`${referralName ? 'btn-secondary' : 'btn-primary'} text-center`}
+              className="btn-primary text-center"
               style={{ flex: 1, display: 'block' }}
             >
               <span>Book In-Person<span className="arrow">→</span></span>
@@ -110,7 +104,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               href="https://introsessionvirtual.amarimethod.com/is-virtual-info"
               target="_blank"
               rel="noopener noreferrer"
-              className={`${referralName ? 'btn-secondary' : 'btn-primary'} text-center`}
+              className="btn-primary text-center"
               style={{ flex: 1, display: 'block' }}
             >
               <span>Book Virtual<span className="arrow">→</span></span>

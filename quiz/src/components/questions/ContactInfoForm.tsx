@@ -24,8 +24,8 @@ const ContactInfoForm = ({
 }: ContactInfoFormProps) => {
   return (
     <div className="quiz-card">
-      <h2 className="text-2xl font-freight mb-6">Almost there! Let's get your results ready</h2>
-      <p className="mb-6 text-gray-600">Please share your contact information so we can prepare your personalized pain assessment results.</p>
+      <h2 className="text-2xl font-serif mb-3">Your Pain Pattern Report Is Ready</h2>
+      <p className="mb-6 text-gray-600">One last step — enter your email to see your pattern signature, recovery score, and personalized insights.</p>
       
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
