@@ -2,6 +2,12 @@
    AMARI METHOD - MAIN JAVASCRIPT
    ============================================= */
 
+// Disable browser scroll restoration so pages always start at top
+if ('scrollRestoration' in history) {
+  history.scrollRestoration = 'manual';
+}
+window.scrollTo(0, 0);
+
 // Mobile Menu Toggle
 document.addEventListener('DOMContentLoaded', function() {
   const menuToggle = document.querySelector('.menu-toggle');
