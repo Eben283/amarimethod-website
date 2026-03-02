@@ -131,7 +131,7 @@ const ResultsHero = ({ firstName, patternSignature, scores }: ResultsHeroProps) 
       <div className="mt-8 flex flex-col items-center gap-1 text-amari-text-light">
         <p className="text-sm font-sans">Scroll to see your full assessment</p>
         <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7 7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
     </section>
