@@ -4098,33 +4098,30 @@ footer {
 }
 
 .condition-card {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  background: var(--bg-card);
+  gap: 0.5rem;
+  padding: 0.55rem 1.1rem;
+  background: transparent;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 100px;
   text-decoration: none;
   color: var(--color-text);
   font-weight: 500;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
 
 .condition-card:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
+  color: var(--color-primary);
 }
 
 .condition-card-arrow {
-  color: var(--color-primary);
-  font-size: 1.1rem;
+  color: inherit;
+  font-size: 0.95rem;
   flex-shrink: 0;
-  margin-left: 0.75rem;
 }
 
 .result-card {
