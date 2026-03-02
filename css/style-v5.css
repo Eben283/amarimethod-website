@@ -2834,6 +2834,16 @@ footer {
   margin-top: auto;
 }
 
+.pricing-card .btn-secondary {
+  border: 1px solid var(--color-border);
+  background: transparent;
+}
+
+.pricing-card .btn-secondary:hover {
+  box-shadow: none;
+  border-color: var(--color-border-dark);
+}
+
 .pricing-card.featured {
   border: 2px solid var(--color-primary);
 }
