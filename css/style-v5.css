@@ -3935,6 +3935,11 @@ footer {
   animation: scroll-testimonials 100s linear infinite;
 }
 
+.testimonials-scroll-wrapper:hover .testimonials-scroll,
+.testimonials-scroll.paused {
+  animation-play-state: paused;
+}
+
 .testimonial-scroll-card {
   flex-shrink: 0;
   width: 280px;

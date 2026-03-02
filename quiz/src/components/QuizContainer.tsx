@@ -161,6 +161,33 @@ const QuizContainer = () => {
                         setPhone={setPhone}
                       />
                     </div>
+                    {validationError && (
+                      <p className="mt-3 text-red-500 text-sm">{validationError}</p>
+                    )}
+                    <div className="flex justify-between mt-6">
+                      <Button
+                        onClick={goToPrevStep}
+                        variant="outline"
+                        disabled={isSubmitting}
+                        className="border-amari-pine-teal text-amari-pine-teal"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        onClick={goToNextStep}
+                        disabled={isSubmitting}
+                        className="bg-amari-pine-teal hover:bg-amari-pine-teal/90 text-white px-8"
+                      >
+                        {isSubmitting ? (
+                          <span className="flex items-center">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Submitting...
+                          </span>
+                        ) : (
+                          'See My Results →'
+                        )}
+                      </Button>
+                    </div>
                   </>
                 ) : (
                   /* ── Question stack (steps 0–11) ── */

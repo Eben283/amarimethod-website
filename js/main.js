@@ -327,3 +327,19 @@ document.addEventListener('click', function(e) {
 });
 
 // Note: GA4 initialization is in each page's HTML (gtag script loaded there)
+
+// Testimonial carousel: pause on mobile touch (touchstart/touchend)
+(function() {
+  var wrapper = document.querySelector('.testimonials-scroll-wrapper');
+  var track = document.querySelector('.testimonials-scroll');
+  if (!wrapper || !track) return;
+  wrapper.addEventListener('touchstart', function() {
+    track.classList.add('paused');
+  }, { passive: true });
+  wrapper.addEventListener('touchend', function() {
+    track.classList.remove('paused');
+  }, { passive: true });
+  wrapper.addEventListener('touchcancel', function() {
+    track.classList.remove('paused');
+  }, { passive: true });
+})();
