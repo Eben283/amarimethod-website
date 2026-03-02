@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ScoreCategories, PatternSignature, QuizInsight } from '@/types/quiz';
 import ResultsHero from './ResultsHero';
 import ScoreCard from './ScoreCard';
 import ScoreRadar from './ScoreRadar';
 import InsightCards from './InsightCards';
 import BookingCTA from './BookingCTA';
+import ShareCard from './ShareCard';
+import { useShareResults } from '@/hooks/useShareResults';
 
 type ResultsPageProps = {
   firstName: string;
@@ -20,8 +22,23 @@ const Divider = () => (
 );
 
 const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsPageProps) => {
+  const shareCardRef = useRef<HTMLDivElement>(null);
+  const { share, state: shareState } = useShareResults(shareCardRef);
+
+  const shareButtonLabel =
+    shareState === 'capturing' ? 'Creating image…'
+    : shareState === 'sharing'  ? 'Opening share sheet…'
+    : shareState === 'downloaded' ? 'Image saved to Downloads'
+    : shareState === 'error'    ? 'Something went wrong'
+    : 'Share Your Results';
+
   return (
     <div className="bg-amari-bone-white font-sans text-amari-charcoal">
+
+      {/* Off-screen share card — captured by html2canvas on share click */}
+      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <ShareCard ref={shareCardRef} patternSignature={patternSignature} scores={scores} />
+      </div>
 
       {/* 1 — Hero: pattern badge + recovery ring */}
       <ResultsHero
@@ -29,6 +46,25 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
         patternSignature={patternSignature}
         scores={scores}
       />
+
+      {/* Share strip */}
+      <section className="px-6 py-5 bg-amari-bone-white text-center">
+        <button
+          onClick={share}
+          disabled={shareState === 'capturing' || shareState === 'sharing'}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-amari-border text-sm font-medium text-amari-charcoal bg-white hover:bg-amari-light-sand transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {/* Share icon */}
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+          {shareButtonLabel}
+        </button>
+        <p className="text-xs text-amari-text-light mt-2 font-sans">
+          Save or share your pattern card
+        </p>
+      </section>
 
       <Divider />
 
