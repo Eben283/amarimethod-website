@@ -1434,7 +1434,7 @@ nav {
 
 /* Assessment section */
 .assessment-section {
-  background: var(--bg-primary, #fff);
+  background: #EDE8DC;
   padding: 2rem 2rem;
 }
 
