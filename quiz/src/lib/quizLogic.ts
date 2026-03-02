@@ -225,7 +225,7 @@ export function calculateScores(answers: QuizAnswer[]): ScoreCategories {
   }
 
   // Normalize to 0-100 scale (most people will be 65-90%)
-  scores.recoveryPotential = Math.min(100, Math.max(40, recoveryPotential));
+  scores.recoveryPotential = Math.min(100, Math.max(88, recoveryPotential));
 
   return scores;
 }
