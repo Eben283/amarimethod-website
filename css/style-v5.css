@@ -1434,7 +1434,7 @@ nav {
 
 /* Assessment section */
 .assessment-section {
-  background: #F6F3E8;
+  background: var(--bg-primary, #fff);
   padding: 2rem 2rem;
 }
 
@@ -1450,7 +1450,7 @@ nav {
 
 .assessment-image-wrapper img {
   width: 100%;
-  border-radius: 16px;
+  border-radius: 0;
   display: block;
 }
 
