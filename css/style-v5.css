@@ -2829,6 +2829,11 @@ footer {
   flex-direction: column;
 }
 
+.pricing-card .btn-primary,
+.pricing-card .btn-secondary {
+  margin-top: auto;
+}
+
 .pricing-card.featured {
   border: 2px solid var(--color-primary);
 }
