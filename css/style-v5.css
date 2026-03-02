@@ -1614,7 +1614,7 @@ nav {
 
 /* FAQ section header */
 .faq-section {
-  background: #F6F3E9;
+  background: var(--bg-primary, #fff);
 }
 
 .faq-section-header {
