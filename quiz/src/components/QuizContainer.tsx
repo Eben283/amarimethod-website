@@ -9,7 +9,6 @@ import WelcomeScreen from './WelcomeScreen';
 import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
-import { Button } from './ui/button';
 import { Loader2 } from 'lucide-react';
 
 const QuizContainer = () => {
@@ -159,34 +158,11 @@ const QuizContainer = () => {
                         setLastName={setLastName}
                         setEmail={setEmail}
                         setPhone={setPhone}
+                        onSubmit={goToNextStep}
+                        onBack={goToPrevStep}
+                        isSubmitting={isSubmitting}
+                        validationError={validationError}
                       />
-                    </div>
-                    {validationError && (
-                      <p className="mt-3 text-red-500 text-sm">{validationError}</p>
-                    )}
-                    <div className="flex justify-between mt-6">
-                      <Button
-                        onClick={goToPrevStep}
-                        variant="outline"
-                        disabled={isSubmitting}
-                        className="border-amari-pine-teal text-amari-pine-teal"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={goToNextStep}
-                        disabled={isSubmitting}
-                        className="bg-amari-pine-teal hover:bg-amari-pine-teal/90 text-white px-8"
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center">
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting...
-                          </span>
-                        ) : (
-                          'See My Results →'
-                        )}
-                      </Button>
                     </div>
                   </>
                 ) : (
