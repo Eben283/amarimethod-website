@@ -4284,14 +4284,17 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--color-text-light, #888);
   transition: transform 0.3s ease;
   flex-shrink: 0;
   margin-left: 1rem;
+  line-height: 1;
 }
 
 .faq-item.active .faq-toggle {
-  transform: rotate(180deg);
+  transform: rotate(45deg);
 }
 
 .faq-content {
