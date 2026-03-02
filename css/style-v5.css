@@ -1791,6 +1791,29 @@ article strong {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+.author-bio {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  background: #FDFAF5;
+  border: 1px solid #F0EADC;
+  border-radius: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.author-bio-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #2C2C2C;
+  margin-bottom: 0.4rem;
+}
+
+.author-bio-desc {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
 .cta-box {
   background: white;
   border: 2px solid var(--color-primary);
