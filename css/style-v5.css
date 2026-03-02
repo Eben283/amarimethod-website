@@ -1416,18 +1416,11 @@ nav {
   margin-right: auto;
 }
 
-/* Checkmark badges — dark variant (Break Free section) */
+/* Checkmark — Break Free section */
 .checkmark-dark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  background: #1a1a1a;
-  color: white;
-  border-radius: 50%;
-  font-weight: 700;
-  margin-right: 12px;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-right: 10px;
   flex-shrink: 0;
 }
 
