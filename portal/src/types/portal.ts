@@ -4,11 +4,12 @@ export interface ClientData {
   lastName: string;
   email: string;
   phone?: string;
-  seriesType: 'none' | '4-session' | '8-session';
+  seriesType: 'none' | '4-session' | '8-session' | 'Single';
   sessionsCompleted: number;
   sessionsRemaining: number;
   hasLivingPractice: boolean;
   portalAccess: boolean;
+  isPartner: boolean;
 }
 
 export interface Appointment {

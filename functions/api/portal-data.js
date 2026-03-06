@@ -187,6 +187,7 @@ export async function onRequestGet(context) {
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
     const hasLivingPractice = isChecked(lpRaw) || (contact.tags || []).includes("living-practice-access");
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
+    const isPartner = (contact.tags || []).includes("affiliate-partner");
 
     // Sort appointments by date
     const now = new Date().toISOString();
@@ -223,6 +224,7 @@ export async function onRequestGet(context) {
           sessionsRemaining,
           hasLivingPractice,
           portalAccess,
+          isPartner,
         },
         appointments: pastAppointments,
         upcomingAppointments,

@@ -156,12 +156,23 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
     style: 'secondary',
   };
 
+  const partnerAction: Action | null = client.isPartner
+    ? {
+        icon: Gift,
+        label: 'Partner Dashboard',
+        description: 'Refer clients & track your referrals →',
+        href: 'https://www.amarimethod.com/partner-app',
+        style: 'secondary',
+      }
+    : null;
+
   const seriesActions = getSeriesActions(client);
 
   const actions: Action[] = [
     bookingAction,
     ...seriesActions,
     livingPracticeAction,
+    ...(partnerAction ? [partnerAction] : []),
     contactAction,
   ];
 
