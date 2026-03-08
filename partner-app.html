@@ -257,25 +257,14 @@
       cursor: pointer;
       padding: 0.5rem;
     }
-    .video-placeholder-modal {
-      width: 100%;
-      padding-bottom: 56.25%;
-      background: linear-gradient(135deg, #252525 0%, #3a3a3a 100%);
+    .partner-toolkit-video {
+      display: block;
+      max-height: 82vh;
+      width: auto;
+      max-width: 100%;
+      margin: 0 auto;
       border-radius: 12px;
-      position: relative;
-    }
-    .video-placeholder-modal-inner {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255,255,255,0.7);
-      gap: 0.75rem;
-    }
-    .video-placeholder-modal-inner span {
-      font-size: 0.9rem;
+      background: #000;
     }
 
     /* Share link section */
@@ -705,6 +694,17 @@
       margin-bottom: 0.75rem;
       display: none;
     }
+    .login-resend {
+      margin-top: 12px;
+      font-size: 0.8rem;
+      text-align: center;
+      color: #888;
+    }
+    .login-resend a {
+      color: #333;
+      text-decoration: underline;
+      cursor: pointer;
+    }
     .login-success {
       display: none;
       text-align: center;
@@ -755,7 +755,7 @@
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
     <img src="/apple-touch-icon.png" alt="Amari Method">
-    <h1>Partner Portal</h1>
+    <h1>Referral Toolkit</h1>
     <p class="login-subtitle">Log in to access your dashboard, stats, and referral tools.</p>
 
     <div class="login-card">
@@ -770,6 +770,7 @@
         <div class="check-circle">&#10003;</div>
         <h3>Check Your Email</h3>
         <p>We sent a login link to your email. Click it to access your portal.</p>
+        <div class="login-resend" id="login-resend"></div>
       </div>
     </div>
   </div>
@@ -975,12 +976,9 @@
   <div class="video-modal" id="video-modal">
     <div class="video-modal-inner">
       <button class="video-modal-close" id="btn-close-video">&times;</button>
-      <div class="video-placeholder-modal">
-        <div class="video-placeholder-modal-inner">
-          <svg viewBox="0 0 24 24" style="width: 56px; height: 56px; fill: rgba(255,255,255,0.4);"><polygon points="8,5 19,12 8,19"/></svg>
-          <span>Video coming soon</span>
-        </div>
-      </div>
+      <video class="partner-toolkit-video" id="partner-toolkit-video" controls playsinline preload="none" poster="">
+        <source src="/videos/partner-toolkit.mp4" type="video/mp4">
+      </video>
     </div>
   </div>
 
@@ -1090,6 +1088,43 @@
     dashboardScreen.classList.add('active');
   }
 
+  // ── Login cooldown helpers ──
+  function startBtnCooldown(btn, seconds) {
+    btn.disabled = true;
+    var remaining = seconds;
+    btn.textContent = 'Wait ' + remaining + 's';
+    var interval = setInterval(function () {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        btn.disabled = false;
+        btn.textContent = 'Send Login Link';
+      } else {
+        btn.textContent = 'Wait ' + remaining + 's';
+      }
+    }, 1000);
+  }
+
+  function startResendCooldown(resendDiv, form, successDiv, seconds) {
+    var remaining = seconds;
+    resendDiv.textContent = 'Resend in ' + remaining + 's';
+    var interval = setInterval(function () {
+      remaining--;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        resendDiv.innerHTML = '<a href="#">Resend link</a>';
+        resendDiv.querySelector('a').addEventListener('click', function (e) {
+          e.preventDefault();
+          successDiv.style.display = 'none';
+          resendDiv.textContent = '';
+          form.style.display = '';
+        });
+      } else {
+        resendDiv.textContent = 'Resend in ' + remaining + 's';
+      }
+    }, 1000);
+  }
+
   // ── Login form ──
   document.getElementById('login-form').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -1117,14 +1152,20 @@
         throw new Error(data.error || 'Something went wrong.');
       }
 
-      // Show success message
-      e.target.style.display = 'none';
+      // Show success message and start resend countdown
+      var form = e.target;
+      form.style.display = 'none';
       successDiv.style.display = 'block';
+      startResendCooldown(document.getElementById('login-resend'), form, successDiv, 60);
     } catch (err) {
       errorDiv.textContent = err.message;
       errorDiv.style.display = 'block';
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Send Login Link';
+      if (res && res.status === 429) {
+        startBtnCooldown(loginBtn, 60);
+      } else {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Send Login Link';
+      }
     }
   });
 
@@ -1239,14 +1280,20 @@
 
   // ── Video button ──
   var videoModal = document.getElementById('video-modal');
+  var toolkitVideo = document.getElementById('partner-toolkit-video');
+  function closeVideoModal() {
+    videoModal.classList.remove('active');
+    toolkitVideo.pause();
+    toolkitVideo.currentTime = 0;
+  }
   document.getElementById('btn-video').addEventListener('click', function () {
     videoModal.classList.add('active');
+    toolkitVideo.load();
+    toolkitVideo.play().catch(function () {});
   });
-  document.getElementById('btn-close-video').addEventListener('click', function () {
-    videoModal.classList.remove('active');
-  });
+  document.getElementById('btn-close-video').addEventListener('click', closeVideoModal);
   videoModal.addEventListener('click', function (e) {
-    if (e.target === videoModal) videoModal.classList.remove('active');
+    if (e.target === videoModal) closeVideoModal();
   });
 
   // ── Referral form toggle ──

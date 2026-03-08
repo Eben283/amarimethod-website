@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { requestMagicLink, ApiError } from '../lib/api';
 import { Mail, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -6,6 +6,16 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!countdown) return;
+    const timer = setTimeout(
+      () => setCountdown(c => (c !== null && c > 1 ? c - 1 : null)),
+      1000
+    );
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,9 +27,13 @@ export default function LoginPage() {
     try {
       await requestMagicLink(email.trim().toLowerCase());
       setStatus('sent');
+      setCountdown(60);
     } catch (err) {
       setStatus('error');
-      if (err instanceof ApiError && err.status === 404) {
+      if (err instanceof ApiError && err.status === 429) {
+        setErrorMessage('Please wait before requesting another link.');
+        setCountdown(60);
+      } else if (err instanceof ApiError && err.status === 404) {
         setErrorMessage(
           "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com."
         );
@@ -64,14 +78,28 @@ export default function LoginPage() {
                 Click the link to sign in.
               </p>
               <p className="text-sm text-amari-text-muted">
-                The link expires in 15 minutes. Check your spam folder if you don't see it.
+                The link expires in 24 hours. Check your spam folder if you don't see it.
               </p>
-              <button
-                onClick={() => { setStatus('idle'); setEmail(''); }}
-                className="mt-6 text-sm text-amari-charcoal underline hover:no-underline"
-              >
-                Use a different email
-              </button>
+              <div className="mt-6 flex flex-col items-center gap-3">
+                {countdown !== null && countdown > 0 ? (
+                  <span className="text-sm text-amari-text-muted">
+                    Resend in {countdown}s
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => { setStatus('idle'); setCountdown(null); }}
+                    className="text-sm text-amari-charcoal underline hover:no-underline"
+                  >
+                    Resend link
+                  </button>
+                )}
+                <button
+                  onClick={() => { setStatus('idle'); setEmail(''); setCountdown(null); }}
+                  className="text-sm text-amari-text-muted hover:text-amari-charcoal"
+                >
+                  Use a different email
+                </button>
+              </div>
             </div>
           ) : (
             /* Login form */
@@ -104,13 +132,15 @@ export default function LoginPage() {
               <button
                 type="submit"
                 className="portal-btn-primary w-full"
-                disabled={status === 'loading' || !email.trim()}
+                disabled={status === 'loading' || !email.trim() || (countdown !== null && countdown > 0)}
               >
                 {status === 'loading' ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Sending link...
                   </span>
+                ) : countdown !== null && countdown > 0 ? (
+                  `Wait ${countdown}s`
                 ) : (
                   <span className="flex items-center gap-2">
                     Send login link
