@@ -130,6 +130,22 @@ export async function onRequestPost(context) {
       );
     }
 
+    // Cooldown: prevent repeated login email requests for the same address
+    if (context.env.PORTAL_KV) {
+      try {
+        const cooldown = await context.env.PORTAL_KV.get(`cooldown:partner:${email}`);
+        if (cooldown) {
+          return new Response(
+            JSON.stringify({ error: "Please wait a minute before requesting another login link." }),
+            { status: 429, headers }
+          );
+        }
+      } catch (kvErr) {
+        console.error(`[partner-auth] Cooldown check error: ${kvErr.message}`);
+        // Continue — don't block legitimate users if KV is unavailable
+      }
+    }
+
     const GHL_API_KEY = context.env.GHL_API_KEY;
     const JWT_SECRET = context.env.JWT_SECRET;
 
@@ -233,6 +249,17 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[partner-auth] Magic link generated for partner: ${contact.id}`);
+
+    // Set cooldown so the same address can't trigger another email for 60 seconds
+    if (context.env.PORTAL_KV) {
+      try {
+        await context.env.PORTAL_KV.put(`cooldown:partner:${email}`, "1", {
+          expirationTtl: 60,
+        });
+      } catch (kvErr) {
+        console.error(`[partner-auth] Cooldown set error: ${kvErr.message}`);
+      }
+    }
 
     return new Response(
       JSON.stringify({

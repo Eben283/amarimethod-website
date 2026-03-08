@@ -157,6 +157,22 @@ export async function onRequestPost(context) {
       );
     }
 
+    // Cooldown: prevent repeated login email requests for the same address
+    if (context.env.PORTAL_KV) {
+      try {
+        const cooldown = await context.env.PORTAL_KV.get(`cooldown:portal:${email}`);
+        if (cooldown) {
+          return new Response(
+            JSON.stringify({ error: "Please wait a minute before requesting another login link." }),
+            { status: 429, headers }
+          );
+        }
+      } catch (kvErr) {
+        console.error(`[portal-auth] Cooldown check error: ${kvErr.message}`);
+        // Continue — don't block legitimate users if KV is unavailable
+      }
+    }
+
     const GHL_API_KEY = context.env.GHL_API_KEY;
     const JWT_SECRET = context.env.JWT_SECRET;
 
@@ -187,7 +203,7 @@ export async function onRequestPost(context) {
 
     console.log(`[portal-auth] Contact found: ${contact.id}`);
 
-    // Generate magic link token (15-minute expiry)
+    // Generate magic link token (24-hour expiry)
     const nonce = crypto.randomUUID();
     const token = await createToken(
       {
@@ -215,32 +231,62 @@ export async function onRequestPost(context) {
     // Build the magic link URL
     const magicLink = `https://www.amarimethod.com/portal/verify?token=${encodeURIComponent(token)}`;
 
-    // Update contact with the magic link URL and trigger tag
-    // Use the key-based custom field format since we may not have the exact GHL field ID
+    // Step 1: Save the magic link field FIRST (must complete before tag triggers the workflow)
+    // Using field ID (not key string) for reliable GHL field resolution.
     try {
-      const updateResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+      const fieldResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
         method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
           customFields: [
-            { key: "portal_magic_link", field_value: magicLink },
+            { id: "7u8Uu7a1p3KUcu0sgvoQ", field_value: magicLink },
           ],
+        }),
+      });
+
+      if (!fieldResponse.ok) {
+        const errText = await fieldResponse.text();
+        console.error(`[portal-auth] Failed to set portal_magic_link: ${fieldResponse.status} ${errText}`);
+        // Don't fail — token is valid; email merge tag will be blank but we log the issue.
+      } else {
+        console.log(`[portal-auth] portal_magic_link field saved`);
+      }
+    } catch (fieldErr) {
+      console.error(`[portal-auth] Field update error: ${fieldErr.message}`);
+    }
+
+    // Step 2: Add the tag — this triggers the GHL email workflow AFTER the field is saved
+    try {
+      const tagResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+        method: "PUT",
+        headers: ghlHeaders(GHL_API_KEY),
+        body: JSON.stringify({
           tags: [...(contact.tags || []), "portal-login-requested"],
         }),
       });
 
-      if (!updateResponse.ok) {
-        const errText = await updateResponse.text();
-        console.error(`[portal-auth] Failed to update contact: ${updateResponse.status} ${errText}`);
-        // Don't fail — the token is valid regardless. The email just won't send via GHL workflow.
+      if (!tagResponse.ok) {
+        const errText = await tagResponse.text();
+        console.error(`[portal-auth] Failed to add tag: ${tagResponse.status} ${errText}`);
       } else {
-        console.log(`[portal-auth] Contact updated with magic link and tag`);
+        console.log(`[portal-auth] portal-login-requested tag added`);
       }
-    } catch (updateErr) {
-      console.error(`[portal-auth] Contact update error: ${updateErr.message}`);
+    } catch (tagErr) {
+      console.error(`[portal-auth] Tag update error: ${tagErr.message}`);
     }
 
     console.log(`[portal-auth] Magic link generated for contact: ${contact.id}`);
+
+    // Set cooldown so the same address can't trigger another email for 60 seconds
+    if (context.env.PORTAL_KV) {
+      try {
+        await context.env.PORTAL_KV.put(`cooldown:portal:${email}`, "1", {
+          expirationTtl: 60,
+        });
+      } catch (kvErr) {
+        console.error(`[portal-auth] Cooldown set error: ${kvErr.message}`);
+      }
+    }
 
     return new Response(
       JSON.stringify({
