@@ -189,6 +189,10 @@ export async function onRequestGet(context) {
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
     const isPartner = (contact.tags || []).includes("affiliate-partner");
 
+    const referralCountRaw = getCustomField(contact, "client_referral_count", fieldDefs);
+    const referralCount = Math.max(0, parseInt(referralCountRaw ?? "0", 10) || 0);
+    const rewardCode = getCustomField(contact, "referral_reward_code", fieldDefs) || null;
+
     // Sort appointments by date
     const now = new Date().toISOString();
     const sortedAppointments = allAppointments
@@ -225,6 +229,8 @@ export async function onRequestGet(context) {
           hasLivingPractice,
           portalAccess,
           isPartner,
+          referralCount,
+          rewardCode,
         },
         appointments: pastAppointments,
         upcomingAppointments,

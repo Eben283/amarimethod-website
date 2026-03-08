@@ -10,6 +10,8 @@ export interface ClientData {
   hasLivingPractice: boolean;
   portalAccess: boolean;
   isPartner: boolean;
+  referralCount?: number;
+  rewardCode?: string | null;
 }
 
 export interface Appointment {

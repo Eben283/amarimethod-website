@@ -4,6 +4,7 @@ import QuickActions from '../components/QuickActions';
 import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
+import ReferralCard from '../components/ReferralCard';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 import { getGreeting } from '../lib/utils';
@@ -68,7 +69,7 @@ export default function DashboardPage() {
           </h1>
           <p className="text-amari-text-muted mt-1 text-sm">
             {client.seriesType !== 'none'
-              ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining in your ${client.seriesType} series`
+              ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`
               : hasHadInitial
                 ? 'Welcome back — ready to book your next session?'
                 : 'Welcome — your portal is ready.'}
@@ -105,6 +106,23 @@ export default function DashboardPage() {
           </h2>
           <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
         </section>
+
+        {/* ── Zone 3: Refer a Friend (non-partners only) ── */}
+        {!client.isPartner && (
+          <>
+            <div className="border-t border-amari-border" />
+            <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
+                Refer a Friend
+              </h2>
+              <ReferralCard
+                contactId={client.contactId}
+                referralCount={client.referralCount ?? 0}
+                rewardCode={client.rewardCode ?? null}
+              />
+            </section>
+          </>
+        )}
 
       </main>
     </>
