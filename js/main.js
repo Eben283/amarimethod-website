@@ -328,6 +328,75 @@ document.addEventListener('click', function(e) {
 
 // Note: GA4 initialization is in each page's HTML (gtag script loaded there)
 
+// ===== GHL CALENDAR MODAL =====
+// Shared modal used by booking.html, virtual-sessions.html, in-person-sessions.html
+// Usage: openCalendarModal('CALENDAR_ID', 'Modal Title')
+(function () {
+  var _modal = null;
+
+  function _build() {
+    _modal = document.createElement('div');
+    _modal.id = 'cal-modal';
+    _modal.style.cssText =
+      'display:none;position:fixed;inset:0;z-index:9999;' +
+      'background:rgba(0,0,0,0.5);overflow-y:auto;' +
+      'padding:2rem 1rem 1rem;box-sizing:border-box;';
+    _modal.innerHTML =
+      '<div style="background:#fff;border-radius:16px;' +
+        'box-shadow:0 20px 60px rgba(0,0,0,0.3);' +
+        'width:100%;max-width:640px;margin:0 auto;' +
+        'overflow-y:auto;max-height:calc(100vh - 3rem);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;' +
+          'padding:1rem 1.25rem;border-bottom:1px solid #f0f0f0;' +
+          'position:sticky;top:0;background:#fff;z-index:1;">' +
+          '<h2 id="cal-modal-title" style="margin:0;' +
+            'font-family:var(--font-sans-primary,\'DM Sans\',sans-serif);' +
+            'font-size:1rem;font-weight:600;' +
+            'color:var(--amari-charcoal,#252525);"></h2>' +
+          '<button id="cal-modal-close" aria-label="Close" ' +
+            'style="width:32px;height:32px;display:flex;align-items:center;' +
+            'justify-content:center;background:none;border:none;cursor:pointer;' +
+            'border-radius:8px;font-size:1.1rem;color:#888;line-height:1;">✕</button>' +
+        '</div>' +
+        '<div id="cal-modal-body"></div>' +
+      '</div>';
+    document.body.appendChild(_modal);
+    _modal.addEventListener('click', function (e) {
+      if (e.target === _modal) closeCalendarModal();
+    });
+    document.getElementById('cal-modal-close').addEventListener('click', closeCalendarModal);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && _modal && _modal.style.display !== 'none') closeCalendarModal();
+    });
+  }
+
+  window.openCalendarModal = function (calendarId, title) {
+    if (!_modal) _build();
+    document.getElementById('cal-modal-title').textContent = title;
+    document.getElementById('cal-modal-body').innerHTML =
+      '<iframe src="https://link.amarimethod.com/widget/booking/' + calendarId + '" ' +
+      'id="' + calendarId + '_modal" ' +
+      'style="width:100%;border:none;overflow:hidden;min-height:750px;display:block;" ' +
+      'scrolling="no" title="' + title + '"></iframe>';
+    _modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+    if (!document.getElementById('ghl-embed-script')) {
+      var s = document.createElement('script');
+      s.id = 'ghl-embed-script';
+      s.src = 'https://link.amarimethod.com/js/form_embed.js';
+      s.type = 'text/javascript';
+      document.body.appendChild(s);
+    }
+  };
+
+  window.closeCalendarModal = function () {
+    if (!_modal) return;
+    _modal.style.display = 'none';
+    document.body.style.overflow = '';
+    document.getElementById('cal-modal-body').innerHTML = '';
+  };
+})();
+
 // Testimonial carousel: pause on mobile touch (touchstart/touchend)
 (function() {
   var wrapper = document.querySelector('.testimonials-scroll-wrapper');
