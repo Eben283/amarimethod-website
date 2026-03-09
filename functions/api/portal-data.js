@@ -185,7 +185,10 @@ export async function onRequestGet(context) {
 
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
-    const hasLivingPractice = isChecked(lpRaw) || (contact.tags || []).includes("living-practice-access");
+    // 8-session series always includes Living Practice — don't require the field to be set
+    const hasLivingPractice = isChecked(lpRaw) ||
+      (contact.tags || []).includes("living-practice-access") ||
+      seriesType === "8-session";
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
     const isPartner = (contact.tags || []).includes("affiliate-partner");
 

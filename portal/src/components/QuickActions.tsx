@@ -21,7 +21,7 @@ const PAYMENT_LINKS = {
   series_8:        'https://link.amarimethod.com/payment-link/6998736ab409476885754915',
   upgrade_to_4:    'https://link.amarimethod.com/payment-link/699873a81a8400115e0381db',
   upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
-  living_practice: 'https://link.amarimethod.com/payment-link/6998745744f21f09ead95e82',
+  living_practice: 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd',
   single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
 
