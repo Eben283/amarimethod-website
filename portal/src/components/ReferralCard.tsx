@@ -112,7 +112,7 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
                     aria-label={isFilled ? `Referral ${i + 1} — complete` : `Referral ${i + 1} — pending`}
                   >
                     <img
-                      src="/favicon-dark.png"
+                      src="/images/amari-icon.png"
                       alt=""
                       className="w-full h-full"
                     />
