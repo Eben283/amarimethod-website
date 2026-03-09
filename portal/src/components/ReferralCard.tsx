@@ -102,20 +102,20 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
                 : `${MILESTONE - Math.min(referralCount, MILESTONE)} more paid referral${MILESTONE - Math.min(referralCount, MILESTONE) !== 1 ? 's' : ''} to earn a free session`
               }
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               {Array.from({ length: MILESTONE }).map((_, i) => {
                 const isFilled = i < referralCount;
                 return (
                   <div
                     key={i}
-                    className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
-                      isFilled
-                        ? 'bg-amari-charcoal border-amari-charcoal text-white'
-                        : 'border-amari-border bg-white text-transparent'
-                    }`}
+                    className={`w-11 h-11 transition-all ${isFilled ? 'opacity-100' : 'opacity-20'}`}
                     aria-label={isFilled ? `Referral ${i + 1} — complete` : `Referral ${i + 1} — pending`}
                   >
-                    {isFilled && <Check className="w-4 h-4" />}
+                    <img
+                      src="/favicon-dark.png"
+                      alt=""
+                      className="w-full h-full"
+                    />
                   </div>
                 );
               })}
