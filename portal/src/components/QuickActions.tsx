@@ -29,7 +29,7 @@ const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/';
 
 // TODO: Once Eben creates the gift card in GHL (Payments → Gift Cards),
 // paste the shareable checkout link here to activate the Buy button.
-const GIFT_CARD_URL = '';
+const GIFT_CARD_URL = 'https://link.amarimethod.com/gift-card/69ae353a47ad8b40dc3cdb13';
 
 interface Action {
   icon: React.ElementType;
@@ -42,12 +42,13 @@ interface Action {
 }
 
 function getSeriesActions(client: ClientData): Action[] {
-  const { seriesType, sessionsCompleted, sessionsRemaining } = client;
+  const { seriesType, sessionsCompleted, sessionsRemaining, isPartner } = client;
   const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
   const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
 
   // Exactly 1 pay-as-you-go session — show credit upgrade links (better deal than full price)
-  if (seriesType === 'none' && sessionsCompleted === 1) {
+  // Partners are excluded: they receive a free first session, so the $225 credit does not apply
+  if (seriesType === 'none' && sessionsCompleted === 1 && !isPartner) {
     return [
       {
         icon: ShoppingBag,
@@ -159,7 +160,7 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
   const partnerAction: Action | null = client.isPartner
     ? {
         icon: Gift,
-        label: 'Partner Dashboard',
+        label: 'Referral Toolkit',
         description: 'Refer clients & track your referrals →',
         href: 'https://www.amarimethod.com/partner-app',
         style: 'secondary',
