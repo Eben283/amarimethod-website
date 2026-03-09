@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Video, Phone } from 'lucide-react';
 
 const EMBED_SCRIPT_URL = 'https://link.amarimethod.com/js/form_embed.js';
@@ -71,7 +72,10 @@ export default function EmbedCalendarModal({ calendarType, onClose }: EmbedCalen
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  return (
+  // Render via portal at document.body to escape any ancestor stacking context
+  // created by CSS animations (animate-fade-in uses opacity/transform which
+  // confines z-index to that subtree — fixed + z-50 alone are not enough).
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 pb-4"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
@@ -117,6 +121,7 @@ export default function EmbedCalendarModal({ calendarType, onClose }: EmbedCalen
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
