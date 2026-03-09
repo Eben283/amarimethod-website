@@ -48,3 +48,4 @@ AMARI-CLAUDE-CONTEXT/
 
 # Claude worktrees (git worktrees used by Claude — not for deployment)
 .claude/worktrees/
+videos/Partner Program Explainer.mp4

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video, Gift } from 'lucide-react';
 import type { ClientData } from '../types/portal';
+import EmbedCalendarModal, { type EmbedCalendarType } from './EmbedCalendarModal';
 
 interface QuickActionsProps {
   client: ClientData;
@@ -99,6 +100,9 @@ function getSeriesActions(client: ClientData): Action[] {
 
 export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
   const [showInitialChoice, setShowInitialChoice] = useState(false);
+  const [showFollowupChoice, setShowFollowupChoice] = useState(false);
+  const [embedCalendarType, setEmbedCalendarType] = useState<EmbedCalendarType | null>(null);
+
   const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
@@ -124,11 +128,11 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         style: 'primary',
       }
     : {
-        // Pay-as-you-go or finished series — pay for a single session
+        // Pay-as-you-go or finished series — choose in-person or virtual, then book + pay
         icon: Calendar,
         label: bookingLabel,
         description: 'Book and pay for a single session ($190)',
-        href: PAYMENT_LINKS.single_followup,
+        onClick: () => setShowFollowupChoice(true),
         style: 'primary',
       };
 
@@ -194,6 +198,60 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
           const Icon = action.icon;
           const isDisabled = !!action.disabled;
           const isBookingCard = action.label === bookingLabel && !hasHadInitial;
+          const isPayAsYouGoCard = action.label === bookingLabel && isPayAsYouGo;
+
+          // Pay-as-you-go follow-up card — expands to show In Person / Virtual choice, then opens embedded calendar
+          if (isPayAsYouGoCard) {
+            return (
+              <div key={action.label} className="portal-card border-amari-charcoal">
+                {!showFollowupChoice ? (
+                  <button
+                    onClick={() => setShowFollowupChoice(true)}
+                    className="flex items-start gap-4 w-full text-left"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEmbedCalendarType('followup_inperson')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        In Person
+                      </button>
+                      <button
+                        onClick={() => setEmbedCalendarType('followup_virtual')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Virtual
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowFollowupChoice(false)}
+                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           // Initial session card — expands to show In Person / Virtual choice
           if (isBookingCard) {
@@ -310,6 +368,15 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         })}
       </div>
 
+      {embedCalendarType && (
+        <EmbedCalendarModal
+          calendarType={embedCalendarType}
+          onClose={() => {
+            setEmbedCalendarType(null);
+            setShowFollowupChoice(false);
+          }}
+        />
+      )}
     </>
   );
 }
