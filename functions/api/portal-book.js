@@ -111,13 +111,22 @@ export async function onRequestPost({ request, env }) {
   // e.g. "2026-03-15T10:00:00-07:00" → "2026-03-15T10:00:00"
   const cleanStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
 
+  // Compute endTime: follow-up sessions are 50 min. Treat cleanStartTime as UTC
+  // for arithmetic only — the local time values remain correct.
+  const startMs = new Date(cleanStartTime + 'Z').getTime();
+  const cleanEndTime = new Date(startMs + 50 * 60 * 1000)
+    .toISOString()
+    .replace('Z', '')
+    .replace(/\.\d{3}$/, ''); // e.g. "2026-03-15T10:50:00"
+
   // Build the appointment payload
   const appointmentPayload = {
     calendarId,
     locationId: env.GHL_LOCATION_ID || '7pIO7FHVAyBT1jKGhfQM',
     contactId,
     startTime: cleanStartTime,
-    selectedTimezone: timezone,  // GHL field name — was incorrectly "timezone" before
+    endTime: cleanEndTime,
+    selectedTimezone: timezone,
     title,
     appointmentStatus: 'confirmed',
     // Pre-fill contact details
@@ -142,9 +151,10 @@ export async function onRequestPost({ request, env }) {
     );
 
     if (!bookRes.ok) {
-      const err = await bookRes.text();
-      console.error('GHL booking error:', bookRes.status, err);
-      return json({ error: 'Failed to create appointment', details: err }, 422, origin);
+      const errText = await bookRes.text();
+      console.error('GHL booking error:', bookRes.status, errText);
+      // Surface the actual GHL error so the modal can display it for debugging
+      return json({ error: `Booking failed (${bookRes.status}): ${errText}` }, 422, origin);
     }
 
     const apptData = await bookRes.json();
