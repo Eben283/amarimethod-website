@@ -1,10 +1,24 @@
 import { useEffect } from 'react';
-import { X, MapPin, Video } from 'lucide-react';
+import { X, MapPin, Video, Phone } from 'lucide-react';
 
 const EMBED_SCRIPT_URL = 'https://link.amarimethod.com/js/form_embed.js';
 const SCRIPT_ID = 'ghl-form-embed-script';
 
 const CALENDAR_CONFIGS = {
+  // Pre-paid series clients (session already paid for in the series)
+  prepaid_inperson: {
+    src: 'https://link.amarimethod.com/widget/booking/ZO1jlGfy01rsxVqicoSB',
+    iframeId: 'ZO1jlGfy01rsxVqicoSB_portal',
+    label: 'Book In-Person Session',
+    Icon: MapPin,
+  },
+  prepaid_virtual: {
+    src: 'https://link.amarimethod.com/widget/booking/bJFkhVP35Ecwh4tLnSmy',
+    iframeId: 'bJFkhVP35Ecwh4tLnSmy_portal',
+    label: 'Book Virtual Session',
+    Icon: Video,
+  },
+  // Pay-as-you-go clients (book + pay $190 in one step)
   followup_inperson: {
     src: 'https://link.amarimethod.com/widget/booking/SKDVOL8wtUN6Ne0ppbC9',
     iframeId: 'SKDVOL8wtUN6Ne0ppbC9_portal',
@@ -16,6 +30,13 @@ const CALENDAR_CONFIGS = {
     iframeId: 'oVn77FcecFY16iS2pHyP_portal',
     label: 'Book Virtual Follow-up',
     Icon: Video,
+  },
+  // Free discovery call
+  discovery: {
+    src: 'https://link.amarimethod.com/widget/booking/USgPsktqRcuomdUgpShL',
+    iframeId: 'USgPsktqRcuomdUgpShL_portal',
+    label: 'Book a Free Discovery Call',
+    Icon: Phone,
   },
 } as const;
 

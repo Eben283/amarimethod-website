@@ -98,8 +98,9 @@ function getSeriesActions(client: ClientData): Action[] {
   ];
 }
 
-export default function QuickActions({ client, onBookSession }: QuickActionsProps) {
+export default function QuickActions({ client, onBookSession: _onBookSession }: QuickActionsProps) {
   const [showInitialChoice, setShowInitialChoice] = useState(false);
+  const [showSeriesChoice, setShowSeriesChoice] = useState(false);
   const [showFollowupChoice, setShowFollowupChoice] = useState(false);
   const [embedCalendarType, setEmbedCalendarType] = useState<EmbedCalendarType | null>(null);
 
@@ -124,7 +125,7 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
         icon: Calendar,
         label: bookingLabel,
         description: 'Schedule your next in-person or virtual session',
-        onClick: onBookSession,
+        onClick: () => setShowSeriesChoice(true),
         style: 'primary',
       }
     : {
@@ -198,7 +199,61 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
           const Icon = action.icon;
           const isDisabled = !!action.disabled;
           const isBookingCard = action.label === bookingLabel && !hasHadInitial;
+          const isSeriesCard = action.label === bookingLabel && hasActiveSeries;
           const isPayAsYouGoCard = action.label === bookingLabel && isPayAsYouGo;
+
+          // Pre-paid series card — expands to show In Person / Virtual choice, then opens embedded calendar
+          if (isSeriesCard) {
+            return (
+              <div key={action.label} className="portal-card border-amari-charcoal">
+                {!showSeriesChoice ? (
+                  <button
+                    onClick={() => setShowSeriesChoice(true)}
+                    className="flex items-start gap-4 w-full text-left"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
+                    </div>
+                  </button>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setEmbedCalendarType('prepaid_inperson')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        In Person
+                      </button>
+                      <button
+                        onClick={() => setEmbedCalendarType('prepaid_virtual')}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Virtual
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => setShowSeriesChoice(false)}
+                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          }
 
           // Pay-as-you-go follow-up card — expands to show In Person / Virtual choice, then opens embedded calendar
           if (isPayAsYouGoCard) {
@@ -373,6 +428,7 @@ export default function QuickActions({ client, onBookSession }: QuickActionsProp
           calendarType={embedCalendarType}
           onClose={() => {
             setEmbedCalendarType(null);
+            setShowSeriesChoice(false);
             setShowFollowupChoice(false);
           }}
         />
