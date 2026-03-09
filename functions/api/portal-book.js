@@ -106,13 +106,18 @@ export async function onRequestPost({ request, env }) {
     ? 'Follow-up Session (Virtual)'
     : 'Follow-up Session (In Person)';
 
+  // Strip timezone offset from startTime if present — GHL expects local time in
+  // selectedTimezone format, not an ISO string with embedded offset
+  // e.g. "2026-03-15T10:00:00-07:00" → "2026-03-15T10:00:00"
+  const cleanStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+
   // Build the appointment payload
   const appointmentPayload = {
     calendarId,
     locationId: env.GHL_LOCATION_ID || '7pIO7FHVAyBT1jKGhfQM',
     contactId,
-    startTime,
-    timezone,
+    startTime: cleanStartTime,
+    selectedTimezone: timezone,  // GHL field name — was incorrectly "timezone" before
     title,
     appointmentStatus: 'confirmed',
     // Pre-fill contact details
