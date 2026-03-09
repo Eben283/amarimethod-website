@@ -76,30 +76,24 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* ── Zone 1: Your Care ── */}
+        {/* ── Zone 1: Progress + Upcoming (full width) ── */}
         <section className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
-            Your Care
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ProgressTracker
-              client={client}
-              upcomingAppointments={upcomingAppointments}
-              // `appointments` from the API = past appointments only (not upcoming).
-              // Prop is named allAppointments but only past ones are passed — correct
-              // because completed status only ever appears on past appointments.
-              allAppointments={appointments}
-              onRefetch={refetch}
-              onBookSession={hasHadInitial ? () => setShowBookingModal(true) : undefined}
-            />
-            <SessionHistory appointments={appointments} />
-          </div>
+          <ProgressTracker
+            client={client}
+            upcomingAppointments={upcomingAppointments}
+            // `appointments` from the API = past appointments only (not upcoming).
+            // Prop is named allAppointments but only past ones are passed — correct
+            // because completed status only ever appears on past appointments.
+            allAppointments={appointments}
+            onRefetch={refetch}
+            onBookSession={hasHadInitial ? () => setShowBookingModal(true) : undefined}
+          />
         </section>
 
         {/* ── Divider ── */}
         <div className="border-t border-amari-border" />
 
-        {/* ── Zone 2: Actions ── */}
+        {/* ── Zone 2: Book & Manage ── */}
         <section className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
             Book &amp; Manage
@@ -107,22 +101,22 @@ export default function DashboardPage() {
           <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
         </section>
 
-        {/* ── Zone 3: Refer a Friend (non-partners only) ── */}
-        {!client.isPartner && (
-          <>
-            <div className="border-t border-amari-border" />
-            <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
-                Refer a Friend
-              </h2>
+        {/* ── Divider ── */}
+        <div className="border-t border-amari-border" />
+
+        {/* ── Zone 3: History + Refer (bottom row) ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className={`grid grid-cols-1 gap-6 ${!client.isPartner ? 'lg:grid-cols-2' : ''}`}>
+            <SessionHistory appointments={appointments} />
+            {!client.isPartner && (
               <ReferralCard
                 contactId={client.contactId}
                 referralCount={client.referralCount ?? 0}
                 rewardCode={client.rewardCode ?? null}
               />
-            </section>
-          </>
-        )}
+            )}
+          </div>
+        </section>
 
       </main>
     </>
