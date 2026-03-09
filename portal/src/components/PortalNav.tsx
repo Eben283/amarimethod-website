@@ -1,7 +1,11 @@
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function PortalNav() {
+interface PortalNavProps {
+  firstName?: string;
+}
+
+export default function PortalNav({ firstName }: PortalNavProps) {
   const { email, logout } = useAuth();
 
   return (
@@ -21,7 +25,7 @@ export default function PortalNav() {
         <div className="flex items-center gap-4">
           <div className="hidden sm:flex items-center gap-2 text-sm text-amari-text-muted">
             <User className="w-4 h-4" />
-            <span>{email}</span>
+            <span>{firstName || email}</span>
           </div>
           <button
             onClick={logout}

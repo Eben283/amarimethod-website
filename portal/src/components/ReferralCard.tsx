@@ -73,14 +73,16 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
 
         <div className="flex-1 min-w-0">
           <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
-            {hasReachedMilestone && rewardCode ? 'You\'ve Earned a Free Session!' : 'Refer a Friend'}
+            {hasReachedMilestone && rewardCode ? 'Your free session is ready.' : 'Give a Session. Get a Session.'}
           </h3>
           <p className="text-xs text-amari-text-muted mt-0.5">
             {hasReachedMilestone
               ? rewardCode
-                ? `Your code: ${rewardCode} — tap to expand`
+                ? `Code: ${rewardCode} — tap to expand`
                 : 'Milestone reached — reward on the way'
-              : `${referralCount} / ${MILESTONE} paid referrals · earn a free session at ${MILESTONE}`
+              : referralCount === 0
+                ? `Refer ${MILESTONE} friends who book — earn a free session`
+                : `${referralCount} of ${MILESTONE} referrals complete · ${MILESTONE - referralCount} more to go`
             }
           </p>
         </div>

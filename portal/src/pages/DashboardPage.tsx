@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PortalNav />
+      <PortalNav firstName={client.firstName} />
       {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
 
       <main className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
