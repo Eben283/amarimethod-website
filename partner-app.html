@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
   <title>Amari Partner | Your Toolkit</title>
   <meta name="description" content="Show the video, submit referrals, share your link.">
   <meta name="robots" content="noindex, nofollow">
@@ -23,7 +23,7 @@
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 
-  <link rel="stylesheet" href="css/style-v5.css?v=15">
+  <link rel="stylesheet" href="css/style-v5.css?v=16">
   <style>
     /* ===== Partner App Shell ===== */
     body {
@@ -1233,8 +1233,8 @@
       var stats = data.stats || {};
       var referrals = data.referrals || [];
 
-      // Set greeting
-      var firstName = partner.firstName || 'there';
+      // Set greeting — fall back to lastName if firstName is missing/swapped in GHL
+      var firstName = partner.firstName || partner.lastName || 'there';
       document.getElementById('greeting').textContent = 'Hey, ' + firstName;
 
       // Set share link using partner's first name

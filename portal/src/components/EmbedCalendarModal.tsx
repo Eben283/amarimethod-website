@@ -82,7 +82,7 @@ export default function EmbedCalendarModal({ calendarType, onClose }: EmbedCalen
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white rounded-2xl shadow-xl w-full overflow-hidden"
+        className="bg-white rounded-2xl shadow-xl w-full"
         style={{ maxWidth: '640px', maxHeight: '85vh', overflowY: 'auto' }}
       >
         {/* Header */}
@@ -112,7 +112,7 @@ export default function EmbedCalendarModal({ calendarType, onClose }: EmbedCalen
               width: '100%',
               border: 'none',
               overflow: 'hidden',
-              minHeight: '580px',
+              minHeight: '750px',
               display: 'block',
             }}
             scrolling="no"

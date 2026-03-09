@@ -124,6 +124,7 @@ export async function onRequestGet(context) {
       s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
 
     const partnerFirstName = capitalize(contact.firstName) || "Partner";
+    const partnerLastName = capitalize(contact.lastName) || "";
     const partnerEmail = contact.email || tokenPayload.email;
 
     // ── Search for referrals ──
@@ -303,6 +304,7 @@ export async function onRequestGet(context) {
       JSON.stringify({
         partner: {
           firstName: partnerFirstName,
+          lastName: partnerLastName,
           email: partnerEmail,
           contactId: contact.id,
         },
