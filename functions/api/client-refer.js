@@ -101,6 +101,13 @@ export async function onRequestPost(context) {
         { status: 400, headers }
       );
     }
+    const phoneDigitCount = (referredPhone.match(/\d/g) || []).length;
+    if (phoneDigitCount < 10) {
+      return new Response(
+        JSON.stringify({ error: "Phone number must have at least 10 digits" }),
+        { status: 400, headers }
+      );
+    }
 
     const sanitizedReferrerId = referrerId.trim().slice(0, 50);
     const sanitizedName = referredName.trim().slice(0, 100);

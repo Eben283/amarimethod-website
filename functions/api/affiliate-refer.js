@@ -143,6 +143,13 @@ export async function onRequestPost(context) {
           { status: 400, headers }
         );
       }
+      const phoneDigitCount = (String(body.clientPhone).match(/\d/g) || []).length;
+      if (phoneDigitCount < 10) {
+        return new Response(
+          JSON.stringify({ error: "Phone number must have at least 10 digits" }),
+          { status: 400, headers }
+        );
+      }
     } else {
       // Legacy format validation
       const { clientFirstName, clientLastName, clientEmail } = body;

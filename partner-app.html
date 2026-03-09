@@ -942,7 +942,7 @@
       </div>
       <div class="field">
         <label for="client-phone">Client Phone</label>
-        <input type="tel" id="client-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required>
+        <input type="tel" id="client-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="Please enter a valid phone number (at least 10 digits)">
       </div>
       <div class="field">
         <label for="client-email">Client Email <span style="font-weight:400; color:var(--color-text-secondary);">(optional)</span></label>
@@ -1323,9 +1323,18 @@
     errorDiv.style.display = 'none';
 
     var session = getSession();
+    var rawPhone = form.clientPhone.value.trim();
+    var phoneDigits = rawPhone.replace(/\D/g, '');
+    if (phoneDigits.length < 10) {
+      errorDiv.textContent = 'Phone number must have at least 10 digits';
+      errorDiv.style.display = 'block';
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+      return;
+    }
     var payload = {
       clientFirstName: form.clientFirstName.value.trim(),
-      clientPhone: form.clientPhone.value.trim(),
+      clientPhone: rawPhone,
     };
     var emailVal = form.clientEmail.value.trim();
     if (emailVal) payload.clientEmail = emailVal;
