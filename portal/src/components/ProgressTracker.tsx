@@ -27,7 +27,9 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const isOnSeries = client.seriesType !== 'none';
-  const totalSessions = client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
+  // Total = all sessions ever purchased (completed + still remaining).
+  // Reflects reality correctly even after re-purchases or single add-ons.
+  const totalSessions = client.sessionsCompleted + client.sessionsRemaining;
 
   // Use (total - remaining) for the bar — reliable regardless of whether
   // sessions_completed in GHL is per-series or cumulative (it's cumulative).
@@ -123,7 +125,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
               />
             </div>
             <p className="text-xs text-amari-text-muted mt-2">
-              {client.sessionsRemaining} session{client.sessionsRemaining !== 1 ? 's' : ''} remaining in your {client.seriesType} series
+              {`${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`}
             </p>
             {isReturningClient && (
               <p className="text-xs text-amari-text-muted mt-1">

@@ -14,6 +14,7 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // Custom field IDs
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
+const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -99,11 +100,13 @@ export async function onRequestPost(context) {
     // Priority: Bearer token > body.affiliateName > body.affiliateRef
     let resolvedPartnerName = null;
     let resolvedPartnerEmail = null;
+    let resolvedPartnerContactId = null;
 
     const authHeader = context.request.headers.get("Authorization");
     if (authHeader && authHeader.startsWith("Bearer ") && JWT_SECRET) {
       const tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
       if (tokenPayload && tokenPayload.contactId) {
+        resolvedPartnerContactId = tokenPayload.contactId;
         try {
           const partnerResponse = await fetch(`${GHL_API_BASE}/contacts/${tokenPayload.contactId}`, {
             headers: ghlHeaders(GHL_API_KEY),
@@ -115,7 +118,7 @@ export async function onRequestPost(context) {
               ? pc.firstName.charAt(0).toUpperCase() + pc.firstName.slice(1).toLowerCase()
               : null;
             resolvedPartnerEmail = pc.email || tokenPayload.email;
-            console.log(`[affiliate-refer] Resolved partner from token: ${resolvedPartnerName}`);
+            console.log(`[affiliate-refer] Resolved partner from token: ${resolvedPartnerName} (${resolvedPartnerContactId})`);
           }
         } catch (err) {
           console.error(`[affiliate-refer] Token partner lookup error: ${err.message}`);
@@ -165,14 +168,19 @@ export async function onRequestPost(context) {
     }
 
     // ---- STEP 1: Upsert client contact ----
+    const referralCustomFields = [
+      { id: REFERRAL_SOURCE_FIELD_ID, field_value: affiliateName },
+    ];
+    if (resolvedPartnerContactId) {
+      referralCustomFields.push({ id: PARTNER_CONTACT_ID_FIELD_ID, field_value: resolvedPartnerContactId });
+    }
+
     const upsertPayload = {
       firstName: String(body.clientFirstName).slice(0, 100),
       locationId: GHL_LOCATION_ID,
       tags: ["affiliate-referral"],
       source: `Affiliate Referral - ${affiliateName}`,
-      customFields: [
-        { id: REFERRAL_SOURCE_FIELD_ID, field_value: affiliateName },
-      ],
+      customFields: referralCustomFields,
     };
     if (body.clientLastName) upsertPayload.lastName = String(body.clientLastName).slice(0, 100);
     if (body.clientEmail) upsertPayload.email = String(body.clientEmail).slice(0, 200);

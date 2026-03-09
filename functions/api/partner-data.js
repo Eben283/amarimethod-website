@@ -4,6 +4,7 @@
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
+const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -125,31 +126,73 @@ export async function onRequestGet(context) {
     const partnerFirstName = capitalize(contact.firstName) || "Partner";
     const partnerEmail = contact.email || tokenPayload.email;
 
-    // Search for referrals: contacts whose referral_source custom field matches this partner
-    const searchUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(partnerFirstName)}&limit=100`;
+    // ── Search for referrals ──
+    // Primary: POST /contacts/search by partner_contact_id field (exact, collision-free)
+    // Fallback: GET /contacts/ by name, filtered by referral_source (for pre-fix records)
+    // Results are merged and deduplicated by contact ID.
 
-    const searchResponse = await fetch(searchUrl, {
-      method: "GET",
-      headers: ghlHeaders(GHL_API_KEY),
-    });
-
+    const seen = new Set();
     let referrals = [];
-    if (searchResponse.ok) {
-      const searchData = await searchResponse.json();
-      const allContacts = searchData.contacts || [];
 
-      // Filter to only contacts whose referral_source custom field matches this partner
-      referrals = allContacts.filter((c) => {
-        const customFields = c.customFields || [];
-        const refField = customFields.find(
-          (f) => f.id === REFERRAL_SOURCE_FIELD_ID
-        );
-        if (!refField) return false;
-        return (
-          String(refField.value).toLowerCase() ===
-          partnerFirstName.toLowerCase()
-        );
-      });
+    // Primary search — by partner contactId field, paginated to handle any referral count.
+    // Two stop conditions: (1) batch smaller than PAGE_LIMIT = final page;
+    // (2) full page returned but no new contacts added = GHL ignores the page param,
+    //     preventing an infinite loop if pagination is unsupported.
+    try {
+      const PAGE_LIMIT = 100;
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
+        const prevCount = referrals.length;
+        const idSearchResponse = await fetch(`${GHL_API_BASE}/contacts/search`, {
+          method: "POST",
+          headers: ghlHeaders(GHL_API_KEY),
+          body: JSON.stringify({
+            locationId: GHL_LOCATION_ID,
+            filters: [{ field: PARTNER_CONTACT_ID_FIELD_ID, operator: "eq", value: contactId }],
+            limit: PAGE_LIMIT,
+            page,
+          }),
+        });
+        if (!idSearchResponse.ok) break;
+        const idSearchData = await idSearchResponse.json();
+        const batch = idSearchData.contacts || [];
+        for (const c of batch) {
+          if (!seen.has(c.id)) {
+            seen.add(c.id);
+            referrals.push(c);
+          }
+        }
+        // Continue only if we got a full page AND at least one new contact was added.
+        // The second condition guards against infinite loops if GHL ignores the page param.
+        hasMore = batch.length === PAGE_LIMIT && referrals.length > prevCount;
+        page++;
+      }
+      console.log(`[partner-data] contactId search returned ${referrals.length} referrals`);
+    } catch (err) {
+      console.error(`[partner-data] contactId search error: ${err.message}`);
+    }
+
+    // Fallback — name-based search for referrals submitted before the contactId fix
+    try {
+      const nameSearchUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(partnerFirstName)}&limit=100`;
+      const nameSearchResponse = await fetch(nameSearchUrl, { headers: ghlHeaders(GHL_API_KEY) });
+      if (nameSearchResponse.ok) {
+        const nameSearchData = await nameSearchResponse.json();
+        const nameMatches = (nameSearchData.contacts || []).filter((c) => {
+          const refField = (c.customFields || []).find((f) => f.id === REFERRAL_SOURCE_FIELD_ID);
+          return refField && String(refField.value).toLowerCase() === partnerFirstName.toLowerCase();
+        });
+        for (const c of nameMatches) {
+          if (!seen.has(c.id)) {
+            seen.add(c.id);
+            referrals.push(c);
+          }
+        }
+        console.log(`[partner-data] name fallback added ${referrals.length - seen.size + nameMatches.filter(c => seen.has(c.id)).length} new referrals`);
+      }
+    } catch (err) {
+      console.error(`[partner-data] name fallback search error: ${err.message}`);
     }
 
     // Get appointment data for each referred contact

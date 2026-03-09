@@ -333,13 +333,22 @@ document.addEventListener('click', function(e) {
   var wrapper = document.querySelector('.testimonials-scroll-wrapper');
   var track = document.querySelector('.testimonials-scroll');
   if (!wrapper || !track) return;
+  var resumeTimer = null;
+
   wrapper.addEventListener('touchstart', function() {
+    if (resumeTimer) { clearTimeout(resumeTimer); resumeTimer = null; }
     track.classList.add('paused');
   }, { passive: true });
-  wrapper.addEventListener('touchend', function() {
-    track.classList.remove('paused');
-  }, { passive: true });
-  wrapper.addEventListener('touchcancel', function() {
-    track.classList.remove('paused');
-  }, { passive: true });
+
+  function resumeScroll() {
+    // Small delay lets the browser finish processing the touch event
+    // before toggling animation state — fixes mobile Safari freeze bug
+    if (resumeTimer) clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(function() {
+      track.classList.remove('paused');
+    }, 50);
+  }
+
+  wrapper.addEventListener('touchend', resumeScroll, { passive: true });
+  wrapper.addEventListener('touchcancel', resumeScroll, { passive: true });
 })();

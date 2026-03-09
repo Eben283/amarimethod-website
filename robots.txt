@@ -5,6 +5,7 @@ Allow: /
 # Block private/app routes
 Disallow: /portal/
 Disallow: /dist/
+Disallow: /member-agreement
 
 # AI search bots — explicitly allowed for citation
 User-agent: GPTBot

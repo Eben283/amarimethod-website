@@ -112,6 +112,34 @@ export async function onRequestPost(context) {
 
     console.log(`[portal-cancel] User ${tokenPayload.contactId} cancelling appointment ${appointmentId}`);
 
+    // Verify the appointment belongs to this contact before cancelling.
+    // Soft-fail: if the GHL call itself errors, allow through rather than blocking
+    // a legitimate cancellation due to a transient API issue.
+    try {
+      const ownershipResponse = await fetch(
+        `${GHL_API_BASE}/contacts/${tokenPayload.contactId}/appointments`,
+        { headers: ghlHeaders(GHL_API_KEY) }
+      );
+      if (ownershipResponse.ok) {
+        const ownershipData = await ownershipResponse.json();
+        const contactAppointments = ownershipData.appointments || ownershipData.events || [];
+        const ownsAppointment = contactAppointments.some((a) => a.id === appointmentId);
+        if (!ownsAppointment) {
+          console.warn(
+            `[portal-cancel] Contact ${tokenPayload.contactId} attempted to cancel appointment ${appointmentId} — not found on their contact`
+          );
+          return new Response(
+            JSON.stringify({ error: "Appointment not found." }),
+            { status: 404, headers }
+          );
+        }
+      } else {
+        console.warn(`[portal-cancel] Ownership check GHL error ${ownershipResponse.status} — allowing through`);
+      }
+    } catch (ownershipErr) {
+      console.warn(`[portal-cancel] Ownership check error: ${ownershipErr.message} — allowing through`);
+    }
+
     // Cancel the appointment via GHL API
     // PUT requires title to be present alongside the status update
     const cancelResponse = await fetch(

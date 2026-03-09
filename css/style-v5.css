@@ -78,7 +78,7 @@ html {
 }
 
 body {
-  font-family: var(--font-sans-secondary);
+  font-family: var(--font-sans-primary);
   color: var(--color-text);
   background-color: var(--bg-primary);
   line-height: 1.6;
@@ -3960,7 +3960,11 @@ footer {
   animation: scroll-testimonials 100s linear infinite;
 }
 
-.testimonials-scroll-wrapper:hover .testimonials-scroll,
+@media (hover: hover) {
+  .testimonials-scroll-wrapper:hover .testimonials-scroll {
+    animation-play-state: paused;
+  }
+}
 .testimonials-scroll.paused {
   animation-play-state: paused;
 }

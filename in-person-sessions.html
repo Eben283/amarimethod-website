@@ -108,8 +108,17 @@
                         <li>Hands-on alignment work</li>
                         <li>Personalized next steps</li>
                     </ul>
-                    <a href="https://amarimethodbooking.amarimethod.com/amari-method-in-person-followup-713283-425635" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Follow-up</span></span></a>
+                    <button onclick="showFollowupCalendar()" class="btn-primary" style="cursor: pointer; border: none; font-family: inherit; font-size: inherit; width: 100%; text-align: center;"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Follow-up</span></span></button>
                 </div>
+            </div>
+
+            <!-- Inline follow-up calendar embed -->
+            <div id="followup-embed-container" style="display:none; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--color-border, #e5e7eb);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <h3 style="font-size: 1rem; font-weight: 600; margin: 0;">In-Person Follow-up — $190</h3>
+                    <button onclick="hideFollowupCalendar()" style="font-size: 0.85rem; color: var(--amari-text-muted, #888); background: none; border: none; cursor: pointer; padding: 4px 8px;">✕ Close</button>
+                </div>
+                <div id="followup-embed-target"></div>
             </div>
 
             <!-- Location Box -->
@@ -197,5 +206,28 @@
 
 <!-- include:footer -->
 <script src="js/main.js?v=2" defer></script>
+<script>
+  function showFollowupCalendar() {
+    var container = document.getElementById('followup-embed-container');
+    var target = document.getElementById('followup-embed-target');
+    target.innerHTML = '<iframe src="https://link.amarimethod.com/widget/booking/SKDVOL8wtUN6Ne0ppbC9" style="width:100%;border:none;overflow:hidden;min-height:560px;display:block;" scrolling="no" id="SKDVOL8wtUN6Ne0ppbC9_inperson_sessions"></iframe>';
+    container.style.display = 'block';
+    if (!document.getElementById('ghl-embed-script')) {
+      var s = document.createElement('script');
+      s.id = 'ghl-embed-script';
+      s.src = 'https://link.amarimethod.com/js/form_embed.js';
+      s.type = 'text/javascript';
+      document.body.appendChild(s);
+    }
+    setTimeout(function () {
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  }
+  function hideFollowupCalendar() {
+    var container = document.getElementById('followup-embed-container');
+    container.style.display = 'none';
+    document.getElementById('followup-embed-target').innerHTML = '';
+  }
+</script>
 </body>
 </html>
