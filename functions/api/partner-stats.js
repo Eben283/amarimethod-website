@@ -2,6 +2,8 @@
 // Returns referral stats for a partner: total referrals, booked, completed sessions.
 // Queries GHL contacts where referral_source matches the partner name.
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
@@ -18,14 +20,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
-  };
-}
-
-function ghlHeaders(apiKey) {
-  return {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    Version: "2021-07-28",
   };
 }
 
@@ -60,7 +54,7 @@ export async function onRequestGet(context) {
       );
     }
 
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),

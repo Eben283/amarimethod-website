@@ -9,6 +9,8 @@
 // If an Authorization: Bearer header is present, partner identity is resolved
 // from the session token (more accurate than affiliateRef field).
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
@@ -62,14 +64,6 @@ async function verifySessionToken(tokenString, secret) {
   }
 }
 
-function ghlHeaders(apiKey) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Version": "2021-07-28",
-  };
-}
-
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -85,7 +79,7 @@ export async function onRequestPost(context) {
   try {
     const body = await context.request.json();
 
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
     const JWT_SECRET = context.env.JWT_SECRET;
 
     if (!GHL_API_KEY) {

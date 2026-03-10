@@ -2,6 +2,8 @@
 // Accepts { email }, verifies contact is an approved partner in GHL,
 // generates a magic link token, and triggers email via GHL workflow.
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
@@ -17,14 +19,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
-  };
-}
-
-function ghlHeaders(apiKey) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Version": "2021-07-28",
   };
 }
 
@@ -146,7 +140,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
     const JWT_SECRET = context.env.JWT_SECRET;
 
     if (!GHL_API_KEY || !JWT_SECRET) {

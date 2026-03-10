@@ -7,6 +7,8 @@
 //
 // Payload: { referrerId: string, referredName: string, referredPhone: string }
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
@@ -24,14 +26,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
-  };
-}
-
-function ghlHeaders(apiKey) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Version": "2021-07-28",
   };
 }
 
@@ -69,7 +63,7 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
 
     if (!GHL_API_KEY) {
       console.error("[client-refer] GHL_API_KEY not configured");

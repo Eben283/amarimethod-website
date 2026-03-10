@@ -10,6 +10,8 @@
  * }
  */
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const allowedOrigin = 'https://www.amarimethod.com';
 
 function cors(requestOrigin) {
@@ -51,8 +53,10 @@ async function verifySessionToken(tokenString, secret) {
   return payload;
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost(context) {
+  const { request, env } = context;
   const origin = request.headers.get('Origin') || '';
+  const GHL_API_KEY = await getGhlToken(context);
 
   // Verify session token and extract contactId
   const auth = request.headers.get('Authorization') || '';
@@ -87,10 +91,7 @@ export async function onRequestPost({ request, env }) {
     const contactRes = await fetch(
       `https://services.leadconnectorhq.com/contacts/${contactId}`,
       {
-        headers: {
-          Authorization: `Bearer ${env.GHL_API_KEY}`,
-          Version: '2021-07-28',
-        },
+        headers: ghlHeaders(GHL_API_KEY),
       }
     );
     if (!contactRes.ok) throw new Error(`GHL contact fetch failed: ${contactRes.status}`);
@@ -141,11 +142,7 @@ export async function onRequestPost({ request, env }) {
       'https://services.leadconnectorhq.com/calendars/events/appointments',
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${env.GHL_API_KEY}`,
-          Version: '2021-07-28',
-          'Content-Type': 'application/json',
-        },
+        headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify(appointmentPayload),
       }
     );

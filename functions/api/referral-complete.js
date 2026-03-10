@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: POST /api/referral-complete
 // Called by a GHL webhook when a referred contact completes a session purchase.
-//
+
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 // Flow:
 // 1. Fetch the purchasing contact from GHL
 // 2. Read referred_by_client_id — if unset, return early (not a referral or already credited)
@@ -25,14 +27,6 @@
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_MILESTONE = 3;
-
-function ghlHeaders(apiKey) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Version": "2021-07-28",
-  };
-}
 
 // Fetch all custom field definitions and return a map of shortKey → fieldId.
 async function fetchFieldDefs(apiKey) {
@@ -126,7 +120,7 @@ export async function onRequestPost(context) {
   const headers = { "Content-Type": "application/json" };
 
   try {
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
 
     if (!GHL_API_KEY) {
       console.error("[referral-complete] GHL_API_KEY not configured");

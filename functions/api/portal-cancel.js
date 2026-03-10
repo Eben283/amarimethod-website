@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: POST /api/portal-cancel
 // Cancels an upcoming appointment via GHL API
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
 const ALLOWED_ORIGINS = [
@@ -15,14 +17,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
-  };
-}
-
-function ghlHeaders(apiKey) {
-  return {
-    "Authorization": `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Version": "2021-07-28",
   };
 }
 
@@ -70,7 +64,7 @@ export async function onRequestPost(context) {
 
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
-    const GHL_API_KEY = context.env.GHL_API_KEY;
+    const GHL_API_KEY = await getGhlToken(context);
 
     if (!JWT_SECRET || !GHL_API_KEY) {
       console.error("[portal-cancel] Missing env vars");

@@ -1,0 +1,160 @@
+// Shared GHL API utility — OAuth2 auto-refresh via Cloudflare KV
+// All API functions import from here instead of using static GHL_API_KEY.
+
+const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
+const REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
+
+// KV keys
+const KV_ACCESS_TOKEN = "ghl_access_token";
+const KV_REFRESH_TOKEN = "ghl_refresh_token";
+const KV_TOKEN_EXPIRY = "ghl_token_expiry";
+
+/**
+ * Build standard GHL API headers from a Bearer token.
+ * Replaces the duplicated ghlHeaders() in every API file.
+ */
+export function ghlHeaders(token) {
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Version: "2021-07-28",
+  };
+}
+
+/**
+ * Get a valid GHL access token. Auto-refreshes from KV if expired.
+ * Falls back to static GHL_API_KEY env var if OAuth2 is not yet configured.
+ */
+export async function getGhlToken(context) {
+  const kv = context.env.PORTAL_KV;
+
+  // If KV is available, try OAuth2 tokens first
+  if (kv) {
+    try {
+      const [accessToken, expiryStr] = await Promise.all([
+        kv.get(KV_ACCESS_TOKEN),
+        kv.get(KV_TOKEN_EXPIRY),
+      ]);
+
+      const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+      const now = Date.now();
+
+      // Token exists and is not expired (with buffer)
+      if (accessToken && expiry > now + REFRESH_BUFFER_MS) {
+        return accessToken;
+      }
+
+      // Token expired or missing — try to refresh
+      const refreshToken = await kv.get(KV_REFRESH_TOKEN);
+      if (refreshToken) {
+        const newToken = await refreshGhlToken(context, refreshToken);
+        if (newToken) {
+          return newToken;
+        }
+      }
+    } catch (err) {
+      console.error("[ghl] KV token read error:", err.message);
+    }
+  }
+
+  // Fallback: static API key from env (legacy, pre-OAuth2)
+  const staticKey = context.env.GHL_API_KEY;
+  if (staticKey) {
+    return staticKey;
+  }
+
+  throw new Error("No GHL API credentials available");
+}
+
+/**
+ * Refresh the GHL OAuth2 access token using the refresh token.
+ * Stores new tokens in KV and returns the new access token.
+ */
+async function refreshGhlToken(context, refreshToken) {
+  const clientId = context.env.GHL_CLIENT_ID;
+  const clientSecret = context.env.GHL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    console.error("[ghl] Missing GHL_CLIENT_ID or GHL_CLIENT_SECRET");
+    return null;
+  }
+
+  try {
+    const response = await fetch(GHL_TOKEN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[ghl] Token refresh failed: ${response.status} ${errText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const newAccessToken = data.access_token;
+    const newRefreshToken = data.refresh_token;
+    const expiresIn = data.expires_in || 86399; // Default ~24h
+
+    if (!newAccessToken) {
+      console.error("[ghl] No access_token in refresh response");
+      return null;
+    }
+
+    // Store new tokens in KV
+    const kv = context.env.PORTAL_KV;
+    const newExpiry = Date.now() + expiresIn * 1000;
+
+    await Promise.all([
+      kv.put(KV_ACCESS_TOKEN, newAccessToken),
+      kv.put(KV_REFRESH_TOKEN, newRefreshToken || refreshToken),
+      kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
+    ]);
+
+    console.log("[ghl] Token refreshed successfully");
+    return newAccessToken;
+  } catch (err) {
+    console.error("[ghl] Token refresh error:", err.message);
+    return null;
+  }
+}
+
+/**
+ * Fetch wrapper for GHL API calls with auto-retry on 401.
+ * If the first request returns 401, refreshes the token and retries once.
+ *
+ * @param {object} context - Cloudflare Pages context (for env/KV)
+ * @param {string} url - Full GHL API URL
+ * @param {object} options - Fetch options (method, body, etc.) — headers are auto-set
+ * @returns {Response} The fetch response
+ */
+export async function ghlFetch(context, url, options = {}) {
+  const token = await getGhlToken(context);
+  const headers = { ...ghlHeaders(token), ...options.headers };
+
+  const response = await fetch(url, { ...options, headers });
+
+  // If 401, token might have expired mid-request — refresh and retry once
+  if (response.status === 401) {
+    console.warn("[ghl] Got 401, attempting token refresh and retry");
+    const kv = context.env.PORTAL_KV;
+    if (kv) {
+      const refreshToken = await kv.get(KV_REFRESH_TOKEN);
+      if (refreshToken) {
+        const newToken = await refreshGhlToken(context, refreshToken);
+        if (newToken) {
+          const retryHeaders = { ...ghlHeaders(newToken), ...options.headers };
+          return fetch(url, { ...options, headers: retryHeaders });
+        }
+      }
+    }
+  }
+
+  return response;
+}

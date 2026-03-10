@@ -4,6 +4,8 @@
  * Requires valid portal session token.
  */
 
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+
 const allowedOrigin = 'https://www.amarimethod.com';
 
 function cors(requestOrigin) {
@@ -45,8 +47,10 @@ async function verifySessionToken(tokenString, secret) {
   return payload;
 }
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet(context) {
+  const { request, env } = context;
   const origin = request.headers.get('Origin') || '';
+  const GHL_API_KEY = await getGhlToken(context);
 
   // Verify session token
   const auth = request.headers.get('Authorization') || '';
@@ -77,10 +81,7 @@ export async function onRequestGet({ request, env }) {
     const ghlRes = await fetch(
       `https://services.leadconnectorhq.com/calendars/${calendarId}/free-slots?startDate=${startTimestamp}&endDate=${endTimestamp}&timezone=${encodeURIComponent(timezone)}`,
       {
-        headers: {
-          Authorization: `Bearer ${env.GHL_API_KEY}`,
-          Version: '2021-07-28',
-        },
+        headers: ghlHeaders(GHL_API_KEY),
       }
     );
 
