@@ -17,8 +17,7 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // Custom field IDs
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
 const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
-// TODO: Create "Referral Type" custom field in GHL (dropdown: refer / sold), then paste ID here
-const REFERRAL_TYPE_FIELD_ID = null; // ← Replace with GHL field ID once created
+const REFERRAL_TYPE_FIELD_ID = "uIxbS5OTNziajtkEhukJ";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
