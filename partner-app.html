@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
   <title>Amari Partner | Your Toolkit</title>
-  <meta name="description" content="Show the video, submit referrals, share your link.">
+  <meta name="description" content="Refer clients, track earnings, and grow with Amari Method.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -42,7 +42,7 @@
 
     .app-header {
       text-align: center;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
     .app-header img {
       width: 48px;
@@ -72,14 +72,88 @@
       margin-bottom: 0.75rem;
     }
 
-    /* Action buttons */
-    .app-actions {
+    /* ===== Earnings Card ===== */
+    .earnings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      display: none;
+    }
+    .earnings-card.loaded { display: block; }
+    .earnings-top {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+    .earnings-amount {
+      font-family: var(--font-serif-primary);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text);
+      line-height: 1;
+    }
+    .earnings-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      margin-top: 0.15rem;
+    }
+    .earnings-breakdown {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
+      text-align: right;
+      line-height: 1.4;
+    }
+    .earnings-breakdown strong {
+      color: var(--color-text);
+      font-weight: 600;
+    }
+    /* Progress bar toward milestone */
+    .earnings-progress {
+      margin-top: 0.25rem;
+    }
+    .earnings-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.35rem;
+    }
+    .earnings-progress-bar {
+      height: 6px;
+      background: rgba(37,37,37,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .earnings-progress-fill {
+      height: 100%;
+      background: #EBA584;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+    .earnings-milestone-msg {
+      font-size: 0.75rem;
+      color: #c47a55;
+      font-weight: 500;
+      margin-top: 0.5rem;
+      text-align: center;
+      display: none;
+    }
+    .earnings-milestone-msg.show { display: block; }
+
+    /* ===== Dual-path CTA cards ===== */
+    .cta-cards {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.75rem;
     }
-    .app-action-btn {
+    .cta-card {
       display: flex;
       align-items: flex-start;
       gap: 0.85rem;
@@ -93,40 +167,64 @@
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
       -webkit-tap-highlight-color: transparent;
     }
-    .app-action-btn:hover {
+    .cta-card:hover {
       border-color: #e0dace;
       box-shadow: 0 4px 12px rgba(37,37,37,0.06);
     }
-    .app-action-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .cta-card-primary {
+      border-color: #EBA584;
+      background: linear-gradient(135deg, rgba(235,165,132,0.04), var(--bg-card));
+    }
+    .cta-card-primary:hover {
+      border-color: #d89474;
+      box-shadow: 0 4px 12px rgba(235,165,132,0.12);
+    }
+    .cta-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 11px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      background: var(--bg-secondary, #F6F3E9);
       color: #252525;
     }
-    .app-action-icon svg {
-      width: 20px;
-      height: 20px;
+    .cta-icon-warm {
+      background: rgba(235,165,132,0.15);
+      color: #b87a56;
     }
-    .app-action-label {
+    .cta-icon-dark {
+      background: var(--bg-secondary, #F6F3E9);
+    }
+    .cta-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+    .cta-label {
       font-family: var(--font-serif-primary);
       font-weight: 700;
       font-size: 0.9375rem;
       line-height: 1.3;
       color: var(--color-text);
     }
-    .app-action-desc {
+    .cta-desc {
       font-size: 0.75rem;
       color: var(--color-text-secondary);
       margin-top: 0.1rem;
       font-weight: 400;
     }
+    .cta-earn-tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #c47a55;
+      background: rgba(235,165,132,0.12);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-top: 0.35rem;
+    }
 
-    /* Inline referral form */
+    /* ===== Inline forms ===== */
     .inline-form {
       display: none;
       background: var(--bg-card);
@@ -141,7 +239,13 @@
       font-family: var(--font-serif-primary);
       font-size: 1.15rem;
       font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .inline-form .form-subtitle {
+      font-size: 0.8rem;
+      color: var(--color-text-secondary);
       margin-bottom: 1rem;
+      line-height: 1.4;
     }
     .inline-form .field {
       margin-bottom: 1rem;
@@ -190,12 +294,19 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
+    .submit-btn-warm {
+      background: #c47a55 !important;
+    }
 
     /* Success state */
     .inline-success {
       display: none;
       text-align: center;
       padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
     }
     .inline-success.active { display: block; }
     .inline-success .check {
@@ -228,6 +339,256 @@
       font-size: 0.9rem;
       cursor: pointer;
       color: var(--color-text);
+    }
+
+    /* ===== Share link section ===== */
+    .app-share-section {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .app-share-section h3 {
+      font-family: var(--font-serif-primary);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .share-link-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .share-link-input {
+      flex: 1;
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      background: var(--bg-primary);
+      color: var(--color-text);
+      cursor: text;
+    }
+    .share-link-copy {
+      padding: 0.65rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease;
+    }
+    .share-link-copy:active {
+      background: var(--bg-secondary);
+    }
+
+    /* ===== What to Say (always visible) ===== */
+    .pitch-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+    }
+    .pitch-card h3 {
+      font-family: var(--font-serif-primary);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .pitch-card h3 svg {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text-secondary);
+    }
+    .pitch-section {
+      margin-bottom: 1rem;
+    }
+    .pitch-section:last-child { margin-bottom: 0; }
+    .pitch-section-title {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--color-text-secondary);
+      margin-bottom: 0.5rem;
+    }
+    .pitch-quote {
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: var(--color-text);
+      background: var(--bg-secondary, #F6F3E9);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+    }
+    .pitch-quote em {
+      font-style: normal;
+      font-weight: 600;
+    }
+    .objection-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .objection-list li {
+      font-size: 0.875rem;
+      line-height: 1.45;
+      color: var(--color-text);
+      padding-left: 1.1rem;
+      position: relative;
+    }
+    .objection-list li::before {
+      content: '\2014';
+      position: absolute;
+      left: 0;
+      color: var(--color-text-secondary);
+      font-size: 0.8rem;
+    }
+    .objection-list li strong {
+      font-weight: 600;
+    }
+    .trust-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .trust-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--color-text);
+      line-height: 1.4;
+    }
+    .trust-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #EBA584;
+      flex-shrink: 0;
+      margin-top: 0.45rem;
+    }
+
+    /* ===== Action buttons (secondary tools) ===== */
+    .app-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+    .app-action-btn {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 1rem 1.15rem;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--color-text);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .app-action-btn:hover {
+      border-color: #e0dace;
+      box-shadow: 0 4px 12px rgba(37,37,37,0.06);
+    }
+    .app-action-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--bg-secondary, #F6F3E9);
+      color: #252525;
+    }
+    .app-action-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+    .app-action-label {
+      font-family: var(--font-serif-primary);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      line-height: 1.3;
+      color: var(--color-text);
+    }
+    .app-action-desc {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.1rem;
+      font-weight: 400;
+    }
+
+    /* ===== Referral History ===== */
+    .referral-history {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1.75rem;
+      display: none;
+    }
+    .referral-history.loaded { display: block; }
+    .referral-history h3 {
+      font-family: var(--font-serif-primary);
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .referral-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.9rem;
+    }
+    .referral-item:last-child { border-bottom: none; }
+    .referral-left {
+      display: flex;
+      flex-direction: column;
+    }
+    .referral-name {
+      font-weight: 500;
+      color: var(--color-text);
+    }
+    .referral-earning {
+      font-size: 0.75rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.1rem;
+    }
+    .referral-status {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      text-transform: capitalize;
+    }
+    .status-referred {
+      background: rgba(37, 37, 37, 0.08);
+      color: #666;
+    }
+    .status-booked {
+      background: rgba(235, 165, 132, 0.15);
+      color: #c47a55;
+    }
+    .referral-empty {
+      font-size: 0.85rem;
+      color: var(--color-text-secondary);
+      text-align: center;
+      padding: 1rem 0;
     }
 
     /* Video modal */
@@ -266,289 +627,6 @@
       margin: 0 auto;
       border-radius: 12px;
       background: #000;
-    }
-
-    /* Share link section */
-    .app-share-section {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.5rem;
-    }
-    .app-share-section h3 {
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.75rem;
-    }
-    .share-link-row {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .share-link-input {
-      flex: 1;
-      padding: 0.65rem 0.75rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      background: var(--bg-primary);
-      color: var(--color-text);
-      cursor: text;
-    }
-    .share-link-copy {
-      padding: 0.65rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s ease;
-    }
-    .share-link-copy:active {
-      background: var(--bg-secondary);
-    }
-
-    /* Footer text */
-    .app-footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--color-text-meta);
-      margin-top: 2rem;
-    }
-    .app-footer a {
-      color: var(--color-text-secondary);
-      text-decoration: underline;
-    }
-
-    /* ===== Stats ===== */
-    .stats-section {
-      margin-bottom: 0.5rem;
-      display: none;
-    }
-    .stats-section.loaded { display: block; }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.75rem;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 0.85rem 0.75rem;
-      text-align: center;
-    }
-    .stat-number {
-      font-family: var(--font-serif-primary);
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--color-text);
-      line-height: 1;
-      margin-bottom: 0.2rem;
-    }
-    .stat-label {
-      font-size: 0.65rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--color-text-secondary);
-    }
-
-    /* Referral list */
-    .referral-list-toggle {
-      background: none;
-      border: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      padding: 0.5rem 0;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .referral-list-toggle .chevron {
-      transition: transform 0.2s ease;
-      font-size: 0.7rem;
-    }
-    .referral-list-toggle.open .chevron {
-      transform: rotate(90deg);
-    }
-    .referral-list {
-      display: none;
-      margin-top: 0.5rem;
-    }
-    .referral-list.open { display: block; }
-    .referral-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.6rem 0;
-      border-bottom: 1px solid var(--color-border);
-      font-size: 0.9rem;
-    }
-    .referral-item:last-child { border-bottom: none; }
-    .referral-name {
-      font-weight: 500;
-      color: var(--color-text);
-    }
-    .referral-status {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      text-transform: capitalize;
-    }
-    .status-referred {
-      background: rgba(37, 37, 37, 0.08);
-      color: #666;
-    }
-    .status-booked {
-      background: rgba(235, 165, 132, 0.15);
-      color: #c47a55;
-    }
-
-
-    /* ===== Sales Reference ===== */
-    .sales-ref-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      overflow: hidden;
-    }
-    .sales-ref-toggle {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 1.15rem;
-      background: none;
-      border: none;
-      cursor: pointer;
-      text-align: left;
-      -webkit-tap-highlight-color: transparent;
-      gap: 0.5rem;
-    }
-    .sales-ref-toggle-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .sales-ref-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--bg-secondary, #F6F3E9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: #252525;
-    }
-    .sales-ref-icon svg { width: 20px; height: 20px; }
-    .sales-ref-toggle-label {
-      font-weight: 600;
-      font-size: 0.9rem;
-      color: var(--color-text);
-      line-height: 1.3;
-    }
-    .sales-ref-toggle-desc {
-      font-size: 0.75rem;
-      color: var(--color-text-secondary);
-      margin-top: 0.1rem;
-      font-weight: 400;
-    }
-    .sales-ref-chevron {
-      font-size: 0.7rem;
-      color: var(--color-text-secondary);
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-    }
-    .sales-ref-card.open .sales-ref-chevron {
-      transform: rotate(180deg);
-    }
-    .sales-ref-body {
-      display: none;
-      padding: 0 1.15rem 1.25rem;
-      border-top: 1px solid var(--color-border);
-    }
-    .sales-ref-card.open .sales-ref-body { display: block; }
-    .sales-ref-section {
-      margin-top: 1rem;
-    }
-    .sales-ref-section-title {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.5rem;
-    }
-    .sales-ref-pitch {
-      font-size: 0.9rem;
-      line-height: 1.55;
-      color: var(--color-text);
-      background: var(--bg-secondary, #F6F3E9);
-      border-radius: 8px;
-      padding: 0.85rem 1rem;
-    }
-    .sales-ref-pitch em {
-      font-style: normal;
-      font-weight: 600;
-    }
-    .sales-ref-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-    .sales-ref-list li {
-      font-size: 0.875rem;
-      line-height: 1.45;
-      color: var(--color-text);
-      padding-left: 1.1rem;
-      position: relative;
-    }
-    .sales-ref-list li::before {
-      content: '—';
-      position: absolute;
-      left: 0;
-      color: var(--color-text-secondary);
-      font-size: 0.8rem;
-    }
-    .sales-ref-list li strong {
-      font-weight: 600;
-    }
-    .sales-ref-trust {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .sales-ref-trust-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--color-text);
-      line-height: 1.4;
-    }
-    .sales-ref-trust-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #EBA584;
-      flex-shrink: 0;
-      margin-top: 0.45rem;
     }
 
     /* Install banner */
@@ -733,7 +811,7 @@
       color: var(--color-text-secondary);
     }
 
-    /* Dashboard wrapper (hidden until authenticated) */
+    /* Dashboard wrapper */
     .dashboard-screen { display: none; }
     .dashboard-screen.active { display: block; }
 
@@ -744,20 +822,32 @@
       color: var(--color-text-secondary);
       font-size: 0.9rem;
     }
+
+    /* Footer */
+    .app-footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--color-text-meta);
+      margin-top: 2rem;
+    }
+    .app-footer a {
+      color: var(--color-text-secondary);
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
 
 <div class="app-shell">
 
-  <!-- Loading state (shown briefly while checking auth) -->
+  <!-- Loading state -->
   <div class="app-loading" id="app-loading">Loading...</div>
 
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
     <img src="/apple-touch-icon.png" alt="Amari Method">
-    <h1>Referral Toolkit</h1>
-    <p class="login-subtitle">Log in to access your dashboard, stats, and referral tools.</p>
+    <h1>Partner Toolkit</h1>
+    <p class="login-subtitle">Log in to access your referral tools and track your earnings.</p>
 
     <div class="login-card">
       <form id="login-form">
@@ -770,7 +860,7 @@
       <div class="login-success" id="login-success">
         <div class="check-circle">&#10003;</div>
         <h3>Check Your Email</h3>
-        <p>We sent a login link to your email. Click it to access your portal.</p>
+        <p>We sent a login link to your email. Click it to access your toolkit.</p>
         <div class="login-resend" id="login-resend"></div>
       </div>
     </div>
@@ -783,36 +873,178 @@
   <div class="app-header">
     <img src="/apple-touch-icon.png" alt="Amari Method">
     <div class="app-greeting" id="greeting">Hey there</div>
-    <div class="app-subtext">Your Amari Method partner toolkit</div>
+    <div class="app-subtext">Your partner toolkit</div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-section" id="stats-section">
-    <div class="section-label">Your Referrals</div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number" id="stat-total">0</div>
-        <div class="stat-label">Referred</div>
+  <!-- 1. EARNINGS CARD (Goal-Gradient + Loss Aversion) -->
+  <div class="earnings-card" id="earnings-card">
+    <div class="earnings-top">
+      <div>
+        <div class="earnings-amount" id="earnings-amount">$0</div>
+        <div class="earnings-label">earned from referrals</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-number" id="stat-booked">0</div>
-        <div class="stat-label">Booked</div>
+      <div class="earnings-breakdown" id="earnings-breakdown">
+        <div><strong id="stat-booked">0</strong> booked</div>
+        <div><strong id="stat-total">0</strong> referred</div>
+      </div>
+    </div>
+    <div class="earnings-progress" id="earnings-progress">
+      <div class="earnings-progress-label">
+        <span id="progress-current">0 of 5 bookings</span>
+        <span id="progress-goal">$250</span>
+      </div>
+      <div class="earnings-progress-bar">
+        <div class="earnings-progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+    </div>
+    <div class="earnings-milestone-msg" id="milestone-msg"></div>
+  </div>
+
+  <!-- 2. DUAL-PATH CTAs (Foot-in-the-Door + Contrast Effect) -->
+  <div class="section-label">Get Paid</div>
+  <div class="cta-cards">
+
+    <!-- Primary: Refer a Client ($50 per booking) -->
+    <button class="cta-card cta-card-primary" id="btn-refer" type="button">
+      <div class="cta-icon cta-icon-warm">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <line x1="19" y1="8" x2="19" y2="14"/>
+          <line x1="22" y1="11" x2="16" y2="11"/>
+        </svg>
+      </div>
+      <div>
+        <div class="cta-label">Refer a Client</div>
+        <div class="cta-desc">Submit their name and number. We handle the rest.</div>
+        <div class="cta-earn-tag">You earn $50 when they book</div>
+      </div>
+    </button>
+
+    <!-- Secondary: I Sold a Session ($225) -->
+    <button class="cta-card" id="btn-sold" type="button">
+      <div class="cta-icon cta-icon-dark">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="cta-label">I Sold a Session</div>
+        <div class="cta-desc">You collected $225 directly. Submit the client for onboarding.</div>
+        <div class="cta-earn-tag" style="background:rgba(37,37,37,0.06); color:#555;">You keep the full $225</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- Refer form (hidden, shown when "Refer a Client" tapped) -->
+  <div class="inline-form" id="refer-form-panel">
+    <h3>Refer a Client</h3>
+    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
+    <form id="refer-form">
+      <div class="field">
+        <label for="refer-name">Client First Name</label>
+        <input type="text" id="refer-name" name="clientFirstName" autocomplete="given-name" required>
+      </div>
+      <div class="field">
+        <label for="refer-phone">Client Phone</label>
+        <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="At least 10 digits">
+      </div>
+      <div class="form-error" id="refer-error"></div>
+      <button type="submit" class="submit-btn submit-btn-warm" id="refer-submit-btn">Submit Referral</button>
+    </form>
+  </div>
+
+  <!-- Sold form (hidden, shown when "I Sold a Session" tapped) -->
+  <div class="inline-form" id="sold-form-panel">
+    <h3>Client Info</h3>
+    <div class="form-subtitle">Submit your client's details so Dr. Garrett can send the intake and get them booked.</div>
+    <form id="sold-form">
+      <div class="field">
+        <label for="sold-name">Client First Name</label>
+        <input type="text" id="sold-name" name="clientFirstName" autocomplete="given-name" required>
+      </div>
+      <div class="field">
+        <label for="sold-phone">Client Phone</label>
+        <input type="tel" id="sold-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="At least 10 digits">
+      </div>
+      <div class="field">
+        <label for="sold-email">Client Email <span style="font-weight:400; color:var(--color-text-secondary);">(optional)</span></label>
+        <input type="email" id="sold-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
+      </div>
+      <div class="form-error" id="sold-error"></div>
+      <button type="submit" class="submit-btn" id="sold-submit-btn">Submit Client</button>
+    </form>
+  </div>
+
+  <!-- Shared success state -->
+  <div class="inline-success" id="referral-success">
+    <div class="check">&#10003;</div>
+    <h3 id="success-heading">Got It!</h3>
+    <p id="success-message">We'll reach out and take it from here.</p>
+    <button type="button" id="btn-another">Submit Another</button>
+  </div>
+
+  <!-- 3. SEND THE PAIN QUIZ (share link) -->
+  <div class="section-label">Share</div>
+  <div class="app-share-section" id="share-panel">
+    <h3>Send the Pain Quiz</h3>
+    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.75rem; line-height:1.4;">
+      Text this link to anyone. When they take the quiz, it tracks back to you.
+    </p>
+    <div class="share-link-row">
+      <input type="text" class="share-link-input" id="share-link" readonly>
+      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
+    </div>
+  </div>
+
+  <!-- 4. WHAT TO SAY (always visible — not collapsed) -->
+  <div class="section-label">Reference</div>
+  <div class="pitch-card">
+    <h3>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      </svg>
+      What to Say
+    </h3>
+
+    <div class="pitch-section">
+      <div class="pitch-section-title">30-Second Pitch</div>
+      <div class="pitch-quote">
+        "Exercise-based pain relief. You're in pain because something's working too hard and something else isn't working hard enough. Dr. Garrett finds the exact imbalance and teaches you exercises to fix it. <em>Most people feel a difference in the first session.</em>"
       </div>
     </div>
 
-    <div id="referral-list-wrap" style="display:none;">
-      <button class="referral-list-toggle" id="referral-list-toggle" type="button">
-        <span class="chevron">&#9654;</span> Details
-      </button>
-      <div class="referral-list" id="referral-list"></div>
+    <div class="pitch-section">
+      <div class="pitch-section-title">If They Push Back</div>
+      <ul class="objection-list">
+        <li><strong>vs. Chiro:</strong> "Chiro adjusts the bones but doesn't retrain the muscles pulling them back out. This trains the muscles."</li>
+        <li><strong>vs. PT:</strong> "PT gives generic exercises for a category. This finds your specific pattern."</li>
+        <li><strong>vs. "I've tried everything":</strong> "Those treatments address the symptom. This finds the pattern underneath it."</li>
+      </ul>
+    </div>
+
+    <div class="pitch-section">
+      <div class="pitch-section-title">Trust Signals</div>
+      <div class="trust-items">
+        <div class="trust-item"><div class="trust-dot"></div><span>4.9/5 from 200+ clients</span></div>
+        <div class="trust-item"><div class="trust-dot"></div><span>Most people feel a difference in their first session</span></div>
+        <div class="trust-item"><div class="trust-dot"></div><span>Satisfaction guarantee &mdash; if you don't feel a shift, he keeps working at no charge</span></div>
+      </div>
+    </div>
+
+    <div class="pitch-section">
+      <div class="pitch-section-title">What They're Buying</div>
+      <ul class="objection-list">
+        <li>60 min with Dr. Garrett &mdash; $225</li>
+        <li>In-person or virtual</li>
+        <li>HSA/FSA accepted</li>
+        <li>Assessment + hands-on work + take-home exercises</li>
+      </ul>
     </div>
   </div>
 
-  <!-- Tools -->
-  <div class="section-label">Tools</div>
+  <!-- 5. SHOW CLIENT VIDEO (support tool, lower priority) -->
   <div class="app-actions">
-
-    <!-- 1. Show Client Video -->
     <button class="app-action-btn" id="btn-video" type="button">
       <div class="app-action-icon">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -824,156 +1056,15 @@
         <div class="app-action-desc">Play the 60-second explainer for your client</div>
       </div>
     </button>
-
-    <!-- 2. I Sold a Session -->
-    <button class="app-action-btn" id="btn-refer" type="button">
-      <div class="app-action-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <line x1="19" y1="8" x2="19" y2="14"/>
-          <line x1="22" y1="11" x2="16" y2="11"/>
-        </svg>
-      </div>
-      <div>
-        <div class="app-action-label">I Sold a Session</div>
-        <div class="app-action-desc">Submit your client's name &amp; number</div>
-      </div>
-    </button>
-
-    <!-- 3. Send Client the Quiz -->
-    <button class="app-action-btn" id="btn-share" type="button">
-      <div class="app-action-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="18" cy="5" r="3"/>
-          <circle cx="6" cy="12" r="3"/>
-          <circle cx="18" cy="19" r="3"/>
-          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-        </svg>
-      </div>
-      <div>
-        <div class="app-action-label">Share the Quiz Link</div>
-        <div class="app-action-desc">Text your client their personalized link</div>
-      </div>
-    </button>
-
   </div>
 
-  <!-- Sales Reference (collapsible) -->
-  <div class="section-label" style="margin-top:0.5rem;">The Pitch</div>
-  <div class="sales-ref-card" id="sales-ref-card">
-    <button class="sales-ref-toggle" id="sales-ref-toggle" type="button">
-      <div class="sales-ref-toggle-left">
-        <div class="sales-ref-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-        </div>
-        <div>
-          <div class="sales-ref-toggle-label">Sales Reference</div>
-          <div class="sales-ref-toggle-desc">Pitch, objections &amp; what they're buying</div>
-        </div>
-      </div>
-      <span class="sales-ref-chevron">▼</span>
-    </button>
-
-    <div class="sales-ref-body" id="sales-ref-body">
-
-      <!-- The 30-second pitch -->
-      <div class="sales-ref-section">
-        <div class="sales-ref-section-title">30-Second Pitch</div>
-        <div class="sales-ref-pitch">
-          "Exercise-based pain relief. You're in pain because something's working too hard and something else isn't working hard enough. Dr. Garrett finds the exact imbalance and teaches you exercises to fix it. <em>Most people feel a difference in the first session.</em>"
-        </div>
-      </div>
-
-      <!-- Objections -->
-      <div class="sales-ref-section">
-        <div class="sales-ref-section-title">If They Push Back</div>
-        <ul class="sales-ref-list">
-          <li><strong>vs. Chiro:</strong> "Chiro adjusts the bones but doesn't retrain the muscles pulling them back out. This trains the muscles."</li>
-          <li><strong>vs. PT:</strong> "PT gives generic exercises for a category. This finds your specific pattern."</li>
-          <li><strong>vs. "I've tried everything":</strong> "Those treatments address the symptom. This finds the pattern underneath it."</li>
-        </ul>
-      </div>
-
-      <!-- Trust signals -->
-      <div class="sales-ref-section">
-        <div class="sales-ref-section-title">Trust Signals</div>
-        <div class="sales-ref-trust">
-          <div class="sales-ref-trust-item"><div class="sales-ref-trust-dot"></div><span>4.9/5 from 200+ clients</span></div>
-          <div class="sales-ref-trust-item"><div class="sales-ref-trust-dot"></div><span>Most people feel a difference in their first session</span></div>
-          <div class="sales-ref-trust-item"><div class="sales-ref-trust-dot"></div><span>Satisfaction guarantee — if you don't feel a shift, he keeps working at no charge</span></div>
-        </div>
-      </div>
-
-      <!-- What they're buying -->
-      <div class="sales-ref-section">
-        <div class="sales-ref-section-title">What They're Buying</div>
-        <ul class="sales-ref-list">
-          <li>60 min with Dr. Garrett — $225</li>
-          <li>In-person or virtual</li>
-          <li>HSA/FSA accepted</li>
-          <li>Assessment + hands-on work + take-home exercises</li>
-          <li>Guarantee: if you don't feel a shift, he keeps working at no extra charge</li>
-        </ul>
-      </div>
-
-      <!-- What happens after -->
-      <div class="sales-ref-section">
-        <div class="sales-ref-section-title">After You Submit Their Info</div>
-        <ul class="sales-ref-list">
-          <li>They get an automated text from Dr. Garrett with a quiz link and booking link</li>
-          <li>That's it — you're done</li>
-        </ul>
-      </div>
-
-    </div>
+  <!-- 6. REFERRAL HISTORY (per-referral earnings + status) -->
+  <div class="referral-history" id="referral-history">
+    <h3>Your Referrals</h3>
+    <div id="referral-list"></div>
   </div>
 
-  <!-- Inline referral form (hidden by default) -->
-  <div class="inline-form" id="referral-form-panel">
-    <h3>Client Info</h3>
-    <form id="referral-form">
-      <div class="field">
-        <label for="client-name">Client First Name</label>
-        <input type="text" id="client-name" name="clientFirstName" autocomplete="given-name" required>
-      </div>
-      <div class="field">
-        <label for="client-phone">Client Phone</label>
-        <input type="tel" id="client-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="Please enter a valid phone number (at least 10 digits)">
-      </div>
-      <div class="field">
-        <label for="client-email">Client Email <span style="font-weight:400; color:var(--color-text-secondary);">(optional)</span></label>
-        <input type="email" id="client-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
-      </div>
-      <div class="form-error" id="form-error"></div>
-      <button type="submit" class="submit-btn" id="submit-btn">Submit Referral</button>
-    </form>
-  </div>
-
-  <!-- Referral success (hidden by default) -->
-  <div class="inline-success" id="referral-success">
-    <div class="check">&#10003;</div>
-    <h3>Got It!</h3>
-    <p id="success-message">We'll reach out and take it from here.</p>
-    <button type="button" id="btn-another">Submit Another</button>
-  </div>
-
-  <!-- Share link panel (hidden by default, shown when "Share" clicked) -->
-  <div class="app-share-section" id="share-panel" style="display: none;">
-    <h3>Your Partner Link</h3>
-    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.75rem;">
-      Text this to clients — when they take the quiz, it tracks back to you.
-    </p>
-    <div class="share-link-row">
-      <input type="text" class="share-link-input" id="share-link" readonly>
-      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
-    </div>
-  </div>
-
-  <!-- Video modal (fullscreen overlay) -->
+  <!-- Video modal -->
   <div class="video-modal" id="video-modal">
     <div class="video-modal-inner">
       <button class="video-modal-close" id="btn-close-video">&times;</button>
@@ -983,7 +1074,7 @@
     </div>
   </div>
 
-  <!-- Install banner (shown only in browser, hidden when installed) -->
+  <!-- 7. INSTALL BANNER (bottom — out of prime position) -->
   <div class="install-banner" id="install-banner">
     <div class="install-banner-header">
       <h3>Add to Home Screen</h3>
@@ -1000,7 +1091,7 @@
       </li>
       <li>
         <span class="install-step-num">3</span>
-        <span>Tap <strong>"Add"</strong> — that's it!</span>
+        <span>Tap <strong>"Add"</strong> &mdash; that's it!</span>
       </li>
     </ol>
     <ol class="install-steps" id="install-steps-android" style="display:none;">
@@ -1014,7 +1105,7 @@
       </li>
       <li>
         <span class="install-step-num">3</span>
-        <span>Tap <strong>"Install"</strong> — that's it!</span>
+        <span>Tap <strong>"Install"</strong> &mdash; that's it!</span>
       </li>
     </ol>
   </div>
@@ -1047,7 +1138,6 @@
   function getSession() {
     var token = localStorage.getItem(AUTH_KEYS.token);
     if (!token) return null;
-    // Check if token is expired by decoding payload
     try {
       var payload = JSON.parse(atob(token.split('.')[1]));
       if (payload.exp && Date.now() > payload.exp) {
@@ -1153,7 +1243,6 @@
         throw new Error(data.error || 'Something went wrong.');
       }
 
-      // Show success message and start resend countdown
       var form = e.target;
       form.style.display = 'none';
       successDiv.style.display = 'block';
@@ -1175,7 +1264,6 @@
     e.preventDefault();
     clearSession();
     showLogin();
-    // Reset login form state
     document.getElementById('login-form').style.display = '';
     document.getElementById('login-form').reset();
     document.getElementById('login-success').style.display = 'none';
@@ -1195,23 +1283,54 @@
       }
 
       saveSession(data);
-      // Clean the token from URL
-      var cleanUrl = window.location.pathname;
-      window.history.replaceState({}, '', cleanUrl);
+      window.history.replaceState({}, '', window.location.pathname);
       return true;
     } catch (err) {
-      // Show login with error
       showLogin();
       var errorDiv = document.getElementById('login-error');
       errorDiv.textContent = err.message;
       errorDiv.style.display = 'block';
-      // Clean the token from URL
       window.history.replaceState({}, '', window.location.pathname);
       return false;
     }
   }
 
-  // ── Load dashboard data (authenticated) ──
+  // ── Earnings + milestone logic ──
+  function updateEarnings(booked, total) {
+    var earned = booked * 50;
+    document.getElementById('earnings-amount').textContent = '$' + earned;
+    document.getElementById('stat-booked').textContent = booked;
+    document.getElementById('stat-total').textContent = total;
+
+    // Milestone: every 5 bookings
+    var MILESTONE_STEP = 5;
+    var nextMilestone = Math.ceil((booked + 1) / MILESTONE_STEP) * MILESTONE_STEP;
+    if (booked >= nextMilestone) nextMilestone = nextMilestone + MILESTONE_STEP;
+    var milestoneGoal = nextMilestone * 50;
+    var progressPct = Math.min((booked / nextMilestone) * 100, 100);
+
+    document.getElementById('progress-current').textContent = booked + ' of ' + nextMilestone + ' bookings';
+    document.getElementById('progress-goal').textContent = '$' + milestoneGoal;
+    document.getElementById('progress-fill').style.width = progressPct + '%';
+
+    // Milestone message (Goal-Gradient: motivate when close)
+    var msgEl = document.getElementById('milestone-msg');
+    var remaining = nextMilestone - booked;
+    if (remaining === 1) {
+      msgEl.textContent = '1 more booking to hit $' + milestoneGoal + '!';
+      msgEl.classList.add('show');
+    } else if (remaining === 2) {
+      msgEl.textContent = 'Just 2 more to reach $' + milestoneGoal;
+      msgEl.classList.add('show');
+    } else if (booked > 0 && booked % MILESTONE_STEP === 0) {
+      msgEl.textContent = '$' + earned + ' earned. Next milestone: $' + milestoneGoal;
+      msgEl.classList.add('show');
+    } else {
+      msgEl.classList.remove('show');
+    }
+  }
+
+  // ── Load dashboard data ──
   async function loadDashboard(session) {
     showDashboard();
 
@@ -1221,7 +1340,6 @@
       });
 
       if (res.status === 401) {
-        // Session expired
         clearSession();
         showLogin();
         return;
@@ -1234,45 +1352,43 @@
       var stats = data.stats || {};
       var referrals = data.referrals || [];
 
-      // Set greeting — fall back to lastName if firstName is missing/swapped in GHL
       var firstName = partner.firstName || partner.lastName || 'there';
       document.getElementById('greeting').textContent = 'Hey, ' + firstName;
 
-      // Set share link using partner's first name
+      // Set share link
       var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
       document.getElementById('share-link').value = partnerLink;
 
-      // Set stat numbers
-      document.getElementById('stat-total').textContent = stats.total || 0;
-      document.getElementById('stat-booked').textContent = stats.booked || 0;
+      // Update earnings card
+      var booked = stats.booked || 0;
+      var total = stats.total || 0;
+      updateEarnings(booked, total);
+      document.getElementById('earnings-card').classList.add('loaded');
 
-      // Referral list
+      // Referral history
+      var historyEl = document.getElementById('referral-history');
+      var listEl = document.getElementById('referral-list');
+
       if (referrals.length > 0) {
-        var listWrap = document.getElementById('referral-list-wrap');
-        var listEl = document.getElementById('referral-list');
-        listWrap.style.display = 'block';
-
         var listHTML = '';
         for (var i = 0; i < referrals.length; i++) {
           var r = referrals[i];
-          // Only show referred or booked to partners
           var displayStatus = (r.status === 'completed' || r.status === 'booked') ? 'booked' : 'referred';
           var statusClass = 'status-' + displayStatus;
+          var earningText = displayStatus === 'booked' ? '+$50' : 'pending';
           listHTML += '<div class="referral-item">'
+            + '<div class="referral-left">'
             + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
+            + '<span class="referral-earning">' + earningText + '</span>'
+            + '</div>'
             + '<span class="referral-status ' + statusClass + '">' + displayStatus + '</span>'
             + '</div>';
         }
         listEl.innerHTML = listHTML;
-
-        document.getElementById('referral-list-toggle').addEventListener('click', function () {
-          this.classList.toggle('open');
-          listEl.classList.toggle('open');
-        });
+      } else {
+        listEl.innerHTML = '<div class="referral-empty">Your referrals will appear here</div>';
       }
-
-      // Show the stats section
-      document.getElementById('stats-section').classList.add('loaded');
+      historyEl.classList.add('loaded');
 
     } catch (e) {
       // Dashboard load failed — show what we have
@@ -1297,109 +1413,139 @@
     if (e.target === videoModal) closeVideoModal();
   });
 
-  // ── Referral form toggle ──
-  var formPanel = document.getElementById('referral-form-panel');
+  // ── Dual-path form toggles ──
+  var referPanel = document.getElementById('refer-form-panel');
+  var soldPanel = document.getElementById('sold-form-panel');
   var successPanel = document.getElementById('referral-success');
 
-  document.getElementById('btn-refer').addEventListener('click', function () {
-    var isActive = formPanel.classList.contains('active');
-    formPanel.classList.toggle('active');
+  // Track which form triggered the success state
+  var lastFormType = 'refer';
+
+  function closeAllForms() {
+    referPanel.classList.remove('active');
+    soldPanel.classList.remove('active');
     successPanel.classList.remove('active');
+  }
+
+  document.getElementById('btn-refer').addEventListener('click', function () {
+    var isActive = referPanel.classList.contains('active');
+    closeAllForms();
     if (!isActive) {
-      document.getElementById('client-name').focus();
+      referPanel.classList.add('active');
+      document.getElementById('refer-name').focus();
     }
   });
 
-  // ── Referral form submit (authenticated) ──
-  document.getElementById('referral-form').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var form = e.target;
-    var submitBtn = document.getElementById('submit-btn');
-    var errorDiv = document.getElementById('form-error');
-    var originalText = submitBtn.textContent;
-
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
-    errorDiv.style.display = 'none';
-
-    var session = getSession();
-    var rawPhone = form.clientPhone.value.trim();
-    var phoneDigits = rawPhone.replace(/\D/g, '');
-    if (phoneDigits.length < 10) {
-      errorDiv.textContent = 'Phone number must have at least 10 digits';
-      errorDiv.style.display = 'block';
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalText;
-      return;
+  document.getElementById('btn-sold').addEventListener('click', function () {
+    var isActive = soldPanel.classList.contains('active');
+    closeAllForms();
+    if (!isActive) {
+      soldPanel.classList.add('active');
+      document.getElementById('sold-name').focus();
     }
-    var payload = {
-      clientFirstName: form.clientFirstName.value.trim(),
-      clientPhone: rawPhone,
-    };
-    var emailVal = form.clientEmail.value.trim();
-    if (emailVal) payload.clientEmail = emailVal;
+  });
 
-    var fetchHeaders = { 'Content-Type': 'application/json' };
-    if (session && session.token) {
-      fetchHeaders['Authorization'] = 'Bearer ' + session.token;
-    }
+  // ── Generic referral submit handler ──
+  function handleReferralSubmit(form, errorId, submitBtnId, type) {
+    return async function (e) {
+      e.preventDefault();
+      var submitBtn = document.getElementById(submitBtnId);
+      var errorDiv = document.getElementById(errorId);
+      var originalText = submitBtn.textContent;
 
-    try {
-      var response = await fetch('/api/affiliate-refer', {
-        method: 'POST',
-        headers: fetchHeaders,
-        body: JSON.stringify(payload),
-      });
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      errorDiv.style.display = 'none';
 
-      var data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong. Please try again.');
+      var session = getSession();
+      var rawPhone = form.clientPhone.value.trim();
+      var phoneDigits = rawPhone.replace(/\D/g, '');
+      if (phoneDigits.length < 10) {
+        errorDiv.textContent = 'Phone number must have at least 10 digits';
+        errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        return;
       }
 
-      document.getElementById('success-message').textContent =
-        "We'll reach out to " + payload.clientFirstName + ' and take it from here.';
-      formPanel.classList.remove('active');
-      successPanel.classList.add('active');
-      form.reset();
-    } catch (err) {
-      errorDiv.textContent = err.message;
-      errorDiv.style.display = 'block';
+      var payload = {
+        clientFirstName: form.clientFirstName.value.trim(),
+        clientPhone: rawPhone,
+      };
+
+      // Include email if present (sold form has email field)
+      var emailField = form.clientEmail;
+      if (emailField) {
+        var emailVal = emailField.value.trim();
+        if (emailVal) payload.clientEmail = emailVal;
+      }
+
+      // Include referral type for future backend differentiation
+      payload.referralType = type;
+
+      var fetchHeaders = { 'Content-Type': 'application/json' };
+      if (session && session.token) {
+        fetchHeaders['Authorization'] = 'Bearer ' + session.token;
+      }
+
+      try {
+        var response = await fetch('/api/affiliate-refer', {
+          method: 'POST',
+          headers: fetchHeaders,
+          body: JSON.stringify(payload),
+        });
+
+        var data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Something went wrong. Please try again.');
+        }
+
+        lastFormType = type;
+        var clientName = payload.clientFirstName;
+
+        if (type === 'refer') {
+          document.getElementById('success-heading').textContent = 'Referral Submitted!';
+          document.getElementById('success-message').textContent =
+            "We'll reach out to " + clientName + ". You earn $50 when they book.";
+        } else {
+          document.getElementById('success-heading').textContent = 'Got It!';
+          document.getElementById('success-message').textContent =
+            "We'll get " + clientName + " set up with Dr. Garrett.";
+        }
+
+        closeAllForms();
+        successPanel.classList.add('active');
+        form.reset();
+      } catch (err) {
+        errorDiv.textContent = err.message;
+        errorDiv.style.display = 'block';
+      }
+
       submitBtn.disabled = false;
       submitBtn.textContent = originalText;
-    }
-  });
+    };
+  }
+
+  document.getElementById('refer-form').addEventListener('submit',
+    handleReferralSubmit(document.getElementById('refer-form'), 'refer-error', 'refer-submit-btn', 'refer'));
+
+  document.getElementById('sold-form').addEventListener('submit',
+    handleReferralSubmit(document.getElementById('sold-form'), 'sold-error', 'sold-submit-btn', 'sold'));
 
   // Submit another
   document.getElementById('btn-another').addEventListener('click', function () {
     successPanel.classList.remove('active');
-    formPanel.classList.add('active');
-    document.getElementById('client-name').focus();
-  });
-
-  // ── Sales reference toggle ──
-  document.getElementById('sales-ref-toggle').addEventListener('click', function () {
-    document.getElementById('sales-ref-card').classList.toggle('open');
-  });
-
-  // ── Share link panel ──
-  var sharePanel = document.getElementById('share-panel');
-  document.getElementById('btn-share').addEventListener('click', function () {
-    sharePanel.style.display = sharePanel.style.display === 'none' ? 'block' : 'none';
-
-    var partnerLink = document.getElementById('share-link').value;
-    if (navigator.share) {
-      navigator.share({
-        title: 'Take the Pain Assessment',
-        text: 'Find out what\'s causing your pain — free 2-minute quiz:',
-        url: partnerLink,
-      }).catch(function () {
-        sharePanel.style.display = 'block';
-      });
+    if (lastFormType === 'refer') {
+      referPanel.classList.add('active');
+      document.getElementById('refer-name').focus();
+    } else {
+      soldPanel.classList.add('active');
+      document.getElementById('sold-name').focus();
     }
   });
 
-  // Copy link
+  // ── Copy link ──
   document.getElementById('btn-copy').addEventListener('click', function () {
     var linkInput = document.getElementById('share-link');
     linkInput.select();
@@ -1450,7 +1596,6 @@
     var params = new URLSearchParams(window.location.search);
     var token = params.get('token');
 
-    // Case 1: Magic link token in URL → verify it
     if (token) {
       var verified = await verifyMagicLink(token);
       if (verified) {
@@ -1460,17 +1605,15 @@
           return;
         }
       }
-      return; // verifyMagicLink already showed login with error
+      return;
     }
 
-    // Case 2: Existing session in localStorage
     var session = getSession();
     if (session) {
       loadDashboard(session);
       return;
     }
 
-    // Case 3: No auth → show login
     showLogin();
   })();
 })();
