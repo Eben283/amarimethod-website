@@ -135,17 +135,17 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           </div>
         )}
 
-        {/* State 2: Series just finished */}
+        {/* State 2: Series just finished — celebration (Peak-End) */}
         {seriesFinished && (
           <div>
             <div className="h-3 bg-amari-light-sand rounded-full overflow-hidden mb-3">
               <div className="h-full bg-amari-accent-warm rounded-full w-full transition-all duration-700 ease-out" />
             </div>
             <p className="text-sm font-medium text-amari-charcoal">
-              {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
+              Series complete — {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
             </p>
             <p className="text-xs text-amari-text-muted mt-1">
-              Your current series is complete — ready to continue?
+              You've done meaningful work. Ready to keep the momentum going?
             </p>
           </div>
         )}
@@ -159,11 +159,27 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           </div>
         )}
 
-        {/* State 4: Brand new client */}
+        {/* State 4: Brand new client — ghost progress bar (Zeigarnik) */}
         {!seriesInProgress && !seriesFinished && !payAsYouGo && (
           <div>
-            <p className="text-sm text-amari-text-muted">
-              Your session history will appear here after your first visit.
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-amari-text-muted">
+                Your 8-step journey
+              </span>
+              <span className="text-sm font-medium text-amari-text-muted">
+                0%
+              </span>
+            </div>
+            <div className="flex gap-1">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-2.5 flex-1 bg-amari-light-sand rounded-full"
+                />
+              ))}
+            </div>
+            <p className="text-xs text-amari-text-muted mt-2">
+              Book your first session to begin.
             </p>
           </div>
         )}
@@ -228,8 +244,8 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                     <div className="mt-3 p-3 bg-white rounded-lg border border-red-200">
                       <p className="text-sm text-amari-charcoal mb-3">
                         {confirmMode === 'reschedule'
-                          ? 'This will cancel your current appointment and open the booking page so you can pick a new time. Continue?'
-                          : 'Are you sure you want to cancel this appointment?'}
+                          ? 'Your current time slot will be released and you can pick a new one. Your session won\'t be lost.'
+                          : 'You\'ll lose this time slot and may need to wait for the next available opening.'}
                       </p>
                       <div className="flex gap-2">
                         <button

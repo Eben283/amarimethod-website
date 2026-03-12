@@ -38,12 +38,20 @@ export default function SessionHistory({ appointments }: SessionHistoryProps) {
 
   return (
     <div className="portal-card">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-1">
         <History className="w-5 h-5 text-amari-charcoal" />
         <h2 className="font-serif text-lg font-bold text-amari-charcoal">
           Session History
         </h2>
       </div>
+      {(() => {
+        const completed = appointments.filter(a => a.status === 'completed' || a.status === 'showed').length;
+        return completed > 0 ? (
+          <p className="text-xs text-amari-text-muted mb-4 ml-7">
+            {completed} session{completed !== 1 ? 's' : ''} completed — your progress is building.
+          </p>
+        ) : <div className="mb-3" />;
+      })()}
       <div className="space-y-3">
         {appointments.slice(0, 10).map((appt) => {
           const statusConfig = STATUS_CONFIG[appt.status] || STATUS_CONFIG.confirmed;

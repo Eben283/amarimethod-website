@@ -75,6 +75,11 @@ export default function DashboardPage() {
                 ? 'Welcome back — ready to book your next session?'
                 : 'Welcome — your portal is ready.'}
           </p>
+          {hasHadInitial && (
+            <p className="text-xs text-amari-text-muted mt-1.5">
+              Join hundreds of clients building a practice with the Amari Method.
+            </p>
+          )}
         </div>
 
         {/* ── Zone 1: Progress + Upcoming (full width) ── */}
