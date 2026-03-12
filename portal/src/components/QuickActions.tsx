@@ -72,13 +72,19 @@ function getSeriesActions(client: ClientData): Action[] {
   // For established clients (on a series or 2+ sessions), frame around continuing their home practice.
   const isEstablished = hasActiveSeries || seriesFinished || sessionsCompleted >= 2;
 
+  const hasHadInitialForCopy = client.sessionsCompleted > 0;
+
   const pack4Description = isEstablished
     ? 'Maintain and evolve your Amari at-home practice ($720)'
-    : 'Four sessions at a package rate ($720)';
+    : hasHadInitialForCopy
+      ? 'Four sessions at a package rate ($720)'
+      : 'Four follow-up sessions at a package rate ($720 — initial session purchased separately)';
 
   const pack8Description = isEstablished
     ? 'Deepen your at-home practice with 8 sessions + Living Practice ($1,295)'
-    : 'Eight sessions + Living Practice included ($1,295)';
+    : hasHadInitialForCopy
+      ? 'Eight sessions + Living Practice included ($1,295)'
+      : 'Eight follow-up sessions + Living Practice ($1,295 — initial session purchased separately)';
 
   return [
     {
@@ -104,7 +110,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
   const [showFollowupChoice, setShowFollowupChoice] = useState(false);
   const [embedCalendarType, setEmbedCalendarType] = useState<EmbedCalendarType | null>(null);
 
-  const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
+  const hasHadInitial = client.sessionsCompleted > 0;
   const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
 
   // Active series = on a series with sessions remaining (pre-paid, modal booking)

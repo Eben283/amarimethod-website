@@ -53,7 +53,7 @@ export default function DashboardPage() {
   if (!data) return null;
 
   const { client, appointments, upcomingAppointments } = data;
-  const hasHadInitial = client.sessionsCompleted > 0 || client.seriesType !== 'none';
+  const hasHadInitial = client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
 
   return (
@@ -92,7 +92,7 @@ export default function DashboardPage() {
             // because completed status only ever appears on past appointments.
             allAppointments={appointments}
             onRefetch={refetch}
-            onBookSession={hasActiveSeries ? () => setShowBookingModal(true) : undefined}
+            onBookSession={hasActiveSeries && hasHadInitial ? () => setShowBookingModal(true) : undefined}
           />
         </section>
 
