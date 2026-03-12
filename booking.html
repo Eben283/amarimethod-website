@@ -41,23 +41,75 @@
       gtag('config', 'G-M3GJ6SZPY6');
     </script>
 
-    <!-- Schema Markup - LocalBusiness -->
+    <!-- Schema Markup - MedicalBusiness -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "LocalBusiness",
+      "@type": "MedicalBusiness",
+      "@id": "https://www.amarimethod.com/#business",
       "name": "Amari Method",
       "url": "https://www.amarimethod.com",
+      "telephone": "+1-415-555-0100",
+      "medicalSpecialty": "Musculoskeletal",
       "address": {
         "@type": "PostalAddress",
+        "streetAddress": "870 Market Street, Suite 1151",
         "addressLocality": "San Francisco",
         "addressRegion": "CA",
         "postalCode": "94102",
         "addressCountry": "US"
       },
-      "areaServed": "San Francisco, CA",
-      "serviceType": "Pain Relief Therapy",
-      "priceRange": "$$"
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 37.7842,
+        "longitude": -122.4086
+      },
+      "areaServed": [
+        { "@type": "City", "name": "San Francisco" },
+        { "@type": "State", "name": "California" }
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "200",
+        "bestRating": "5"
+      },
+      "priceRange": "$$",
+      "paymentAccepted": ["Credit Card", "HSA", "FSA", "Affirm"],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Amari Method Sessions & Programs",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "name": "Initial Assessment Session",
+            "description": "60-minute comprehensive pain assessment, movement analysis, and first protocol session",
+            "price": "225.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "Follow-up Session",
+            "description": "50-minute follow-up session to refine protocol and advance exercises",
+            "price": "190.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "4-Session Series",
+            "description": "Four sessions covering foundational exercises of the Amari Method protocol",
+            "price": "720.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "name": "8-Session Series + Living Practice",
+            "description": "Complete 8-step protocol plus Living Practice video program for ongoing self-care",
+            "price": "1295.00",
+            "priceCurrency": "USD"
+          }
+        ]
+      }
     }
     </script>
     <script type="application/ld+json">

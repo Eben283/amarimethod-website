@@ -46,11 +46,12 @@
     {
       "@context": "https://schema.org",
       "@type": "Service",
-      "name": "In-Person Pain Relief Sessions",
-      "description": "In-person pain relief sessions at our San Francisco office. Direct hands-on work with Dr. Garrett, full assessment, and personalized exercises.",
+      "name": "In-Person Pain Relief Sessions — Amari Method",
+      "description": "In-person chronic pain relief sessions at our San Francisco office. Direct hands-on work with Dr. Garrett including full biomechanical assessment, root-cause identification, and personalized 8-exercise protocol.",
       "url": "https://www.amarimethod.com/in-person-sessions",
       "provider": {
-        "@type": "LocalBusiness",
+        "@type": "MedicalBusiness",
+        "@id": "https://www.amarimethod.com/#business",
         "name": "Amari Method",
         "url": "https://www.amarimethod.com"
       },
@@ -58,7 +59,38 @@
         "@type": "City",
         "name": "San Francisco"
       },
-      "serviceType": "In-Person Pain Relief Sessions"
+      "serviceType": "In-Person Pain Relief Sessions",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Initial Assessment Session",
+          "price": "225.00",
+          "priceCurrency": "USD",
+          "description": "60-minute in-person session with full history, examination, hands-on alignment assessment, and first protocol."
+        },
+        {
+          "@type": "Offer",
+          "name": "Follow-Up Session",
+          "price": "190.00",
+          "priceCurrency": "USD",
+          "description": "50-minute in-person session for progress check-in, protocol refinement, and next stage advancement."
+        },
+        {
+          "@type": "Offer",
+          "name": "4-Session Series",
+          "price": "720.00",
+          "priceCurrency": "USD",
+          "description": "Four sessions to build a strong foundation. Includes initial session plus 3 follow-ups."
+        },
+        {
+          "@type": "Offer",
+          "name": "8-Session Series",
+          "price": "1295.00",
+          "priceCurrency": "USD",
+          "description": "Complete 8-session Amari Method training with Living Practice video program access."
+        }
+      ],
+      "termsOfService": "HSA/FSA cards accepted. Pay over time with Affirm."
     }
     </script>
 </head>

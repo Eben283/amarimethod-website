@@ -38,13 +38,14 @@
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
 
-    <!-- Schema Markup - LocalBusiness -->
+    <!-- Schema Markup - MedicalBusiness -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "LocalBusiness",
+      "@type": "MedicalBusiness",
+      "@id": "https://www.amarimethod.com/#business",
       "name": "Amari Method",
-      "description": "Exercise-based pain relief in San Francisco. Finds the root cause of chronic pain and teaches clients to fix it themselves. Most clients feel relief in their first session.",
+      "description": "Exercise-based chronic pain relief in San Francisco. The Amari Method identifies root-cause movement imbalances and teaches clients an 8-exercise protocol to eliminate pain without drugs or surgery. Most clients feel relief in their first session.",
       "url": "https://www.amarimethod.com",
       "telephone": "+1-628-877-7673",
       "address": {
@@ -55,9 +56,86 @@
         "postalCode": "94102",
         "addressCountry": "US"
       },
-      "areaServed": "San Francisco, CA",
-      "serviceType": "Pain Relief Therapy",
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 37.7749,
+        "longitude": -122.4194
+      },
+      "areaServed": [
+        { "@type": "City", "name": "San Francisco" },
+        { "@type": "State", "name": "California" },
+        { "@type": "Country", "name": "United States" }
+      ],
+      "medicalSpecialty": "Musculoskeletal",
       "priceRange": "$$",
+      "currenciesAccepted": "USD",
+      "paymentAccepted": "Credit Card, HSA, FSA, Affirm",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "09:00",
+        "closes": "18:00"
+      },
+      "founder": {
+        "@type": "Person",
+        "@id": "https://www.amarimethod.com/about#dr-garrett",
+        "name": "Dr. Garrett Hewstan",
+        "jobTitle": "Chronic Pain Relief Expert",
+        "description": "Creator of the 8-step Amari Method protocol with 25+ years of hands-on experience helping 200+ clients achieve lasting pain relief."
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "bestRating": "5",
+        "ratingCount": "200",
+        "reviewCount": "200"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Amari Method Sessions",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Initial Assessment Session",
+              "description": "60-minute comprehensive session including full history, examination, findings discussion, and first protocol with Dr. Garrett."
+            },
+            "price": "225.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Follow-Up Session",
+              "description": "50-minute session for progress check-in, protocol refinement, and advancing to the next stage. In-person or virtual."
+            },
+            "price": "190.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "4-Session Series",
+              "description": "Four sessions to build a strong foundation. Includes initial session plus 3 follow-ups."
+            },
+            "price": "720.00",
+            "priceCurrency": "USD"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "8-Session Series",
+              "description": "Complete Amari Method training over 8 sessions. Includes Living Practice video program access."
+            },
+            "price": "1295.00",
+            "priceCurrency": "USD"
+          }
+        ]
+      },
       "sameAs": [
         "https://share.google/hfsren84ry0DBjKEH"
       ]
@@ -68,18 +146,29 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Service",
-      "name": "Amari Method Pain Relief",
-      "description": "Exercise-based pain relief through root-cause assessment and an 8-exercise protocol. Clients learn to fix their own pain and maintain results independently.",
+      "@type": "MedicalTherapy",
+      "name": "Amari Method — Exercise-Based Chronic Pain Relief",
+      "alternateName": "Amari Method Pain Relief",
+      "description": "Exercise-based pain relief through root-cause biomechanical assessment and an 8-exercise protocol. Addresses chronic back pain, neck pain, hip pain, knee pain, and shoulder pain by correcting movement imbalances. Clients learn to fix their own pain and maintain results independently without drugs or surgery.",
+      "medicineSystem": "WesternConventional",
+      "relevantSpecialty": "Musculoskeletal",
       "provider": {
-        "@type": "LocalBusiness",
-        "name": "Amari Method"
+        "@type": "MedicalBusiness",
+        "@id": "https://www.amarimethod.com/#business"
       },
       "serviceType": "Pain Relief Therapy",
-      "areaServed": "San Francisco, CA",
+      "areaServed": [
+        { "@type": "City", "name": "San Francisco" },
+        { "@type": "Country", "name": "United States" }
+      ],
       "availableChannel": {
         "@type": "ServiceChannel",
-        "serviceUrl": "https://www.amarimethod.com/booking"
+        "serviceUrl": "https://www.amarimethod.com/booking",
+        "serviceType": "In-person and virtual sessions"
+      },
+      "audience": {
+        "@type": "PeopleAudience",
+        "audienceType": "Adults with chronic musculoskeletal pain"
       }
     }
     </script>
@@ -176,6 +265,70 @@
           "acceptedAnswer": {
             "@type": "Answer",
             "text": "We do not bill insurance directly. However, we can provide you with a detailed superbill (itemized receipt) that you can submit to your insurance company for potential reimbursement. Many clients have successfully received partial or full reimbursement for alternative care services."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does bodywork help regulate the nervous system for chronic pain?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Chronic pain often persists because the nervous system gets stuck in a heightened threat response, sending pain signals even after tissue damage has healed. The Amari Method uses targeted exercises and hands-on guidance to retrain how your nervous system interprets movement and load. By restoring proper joint mechanics and muscle activation patterns, the brain receives accurate sensory feedback instead of alarm signals — calming the nervous system and reducing pain sensitivity over time."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can the Amari Method help with pain reprocessing for long-term relief?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Pain reprocessing works by teaching the brain that certain movements and sensations are safe rather than threatening. The Amari Method achieves this through progressive exercise-based protocols that systematically expose your body to pain-free movement patterns. As you master each exercise and feel relief in real time, your nervous system updates its threat assessment — replacing chronic pain signals with accurate feedback about your body's actual condition."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the difference between traditional massage and nervous system-focused bodywork?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Traditional massage primarily addresses muscle tension through manual pressure, providing temporary relief. The Amari Method takes a fundamentally different approach: instead of treating symptoms, it identifies the biomechanical imbalances causing your pain — such as a hip compensation pattern driving lower back tension — and teaches you exercises to correct the root cause. You leave each session with a personalized protocol you practice daily, creating lasting structural change rather than short-term relaxation."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How many sessions are needed to see a reduction in chronic pain sensitivity?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most clients experience noticeable pain relief during their very first 60-minute session as they learn the initial exercises. The full Amari Method protocol includes 8 core exercises introduced progressively across a series of sessions. A 4-session series ($720) covers the foundational exercises, while the 8-session series ($1,295) completes the full protocol and includes the Living Practice video program for ongoing self-care. Many clients report 50–80% pain reduction within the first 3–4 sessions."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why does chronic pain get stuck in the nervous system?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "When an injury or repetitive strain persists, the nervous system can become sensitized — amplifying pain signals and lowering the threshold for triggering them. This is called central sensitization. Even after the original tissue heals, the brain continues interpreting normal movement as threatening. Contributing factors include prolonged poor posture, compensation patterns where some muscles overwork while others shut down, and emotional stress that keeps the nervous system in fight-or-flight mode."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What are the best mind-body techniques for pain control?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Effective mind-body approaches for chronic pain include graded motor imagery, somatic awareness exercises, breathwork, and progressive loading protocols. The Amari Method integrates these principles through its 8-step exercise protocol: each exercise is permission-based, meaning your body guides the depth and intensity rather than pushing through pain. This approach retrains the connection between movement, sensation, and the brain's pain response — building confidence in your body's ability to move without pain."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do I know if my chronic pain is caused by a dysregulated nervous system?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Common signs of nervous system-driven pain include: pain that persists long after an injury should have healed, pain that moves around or affects multiple areas, heightened sensitivity to touch or pressure, pain that worsens with stress or poor sleep, and stiffness that improves with gentle movement but returns at rest. During your initial 60-minute assessment, Dr. Garrett evaluates your movement patterns, compensation habits, and pain responses to determine whether nervous system dysregulation is a primary driver."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can bodywork improve mobility for fibromyalgia and chronic fatigue?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Many clients with fibromyalgia and chronic fatigue conditions have found relief through the Amari Method. The key is the permission-based approach — exercises are adapted to your current capacity and never push past your tolerance. By gently restoring joint mobility and correcting compensation patterns, the method helps reduce the widespread muscle tension and movement restriction common in these conditions. Sessions are paced to your energy levels, and the at-home exercises can be modified for days when symptoms are more active."
           }
         }
       ]
