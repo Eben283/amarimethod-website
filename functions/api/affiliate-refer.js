@@ -17,6 +17,8 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // Custom field IDs
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
 const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
+// TODO: Create "Referral Type" custom field in GHL (dropdown: refer / sold), then paste ID here
+const REFERRAL_TYPE_FIELD_ID = null; // ← Replace with GHL field ID once created
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -169,11 +171,18 @@ export async function onRequestPost(context) {
     }
 
     // ---- STEP 1: Upsert client contact ----
+    const referralType = (body.referralType === "sold" || body.referralType === "refer")
+      ? body.referralType
+      : "refer"; // default to refer if missing
+
     const referralCustomFields = [
       { id: REFERRAL_SOURCE_FIELD_ID, field_value: affiliateName },
     ];
     if (resolvedPartnerContactId) {
       referralCustomFields.push({ id: PARTNER_CONTACT_ID_FIELD_ID, field_value: resolvedPartnerContactId });
+    }
+    if (REFERRAL_TYPE_FIELD_ID) {
+      referralCustomFields.push({ id: REFERRAL_TYPE_FIELD_ID, field_value: referralType });
     }
 
     const upsertPayload = {
@@ -186,6 +195,8 @@ export async function onRequestPost(context) {
     if (body.clientLastName) upsertPayload.lastName = String(body.clientLastName).slice(0, 100);
     if (body.clientEmail) upsertPayload.email = String(body.clientEmail).slice(0, 200);
     if (body.clientPhone) upsertPayload.phone = String(body.clientPhone).slice(0, 20);
+
+    console.log(`[affiliate-refer] Referral type: ${referralType}, partner: ${affiliateName}`);
 
     const upsertResponse = await fetch(`${GHL_API_BASE}/contacts/upsert`, {
       method: "POST",
@@ -211,6 +222,7 @@ export async function onRequestPost(context) {
       const noteParts = isNewFormat || resolvedPartnerName
         ? [
             `Affiliate Referral from partner: ${affiliateName}${affiliateEmail ? ` (${affiliateEmail})` : ""}`,
+            `Referral type: ${referralType}`,
             body.painArea ? `Pain area: ${String(body.painArea).slice(0, 200)}` : null,
             `Submitted: ${new Date().toISOString()}`,
           ]

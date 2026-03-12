@@ -1360,7 +1360,7 @@
       document.getElementById('share-link').value = partnerLink;
 
       // Update earnings card
-      var booked = stats.booked || 0;
+      var booked = (stats.booked || 0) + (stats.completed || 0);
       var total = stats.total || 0;
       updateEarnings(booked, total);
       document.getElementById('earnings-card').classList.add('loaded');
