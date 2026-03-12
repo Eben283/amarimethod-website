@@ -685,12 +685,39 @@
     }
     .partner-toolkit-video {
       display: block;
-      max-height: 82vh;
+      max-height: 72vh;
       width: auto;
       max-width: 100%;
       margin: 0 auto;
       border-radius: 12px;
       background: #000;
+    }
+    .video-share-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 0.75rem;
+    }
+    .video-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.6rem 1.2rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .video-share-btn:active { opacity: 0.8; }
+    .video-share-btn--copy {
+      background: #fff;
+      color: #1a1a1a;
+    }
+    .video-share-btn--send {
+      background: var(--color-accent-warm, #EBA584);
+      color: #1a1a1a;
     }
 
     /* Install banner */
@@ -1111,6 +1138,16 @@
       <video class="partner-toolkit-video" id="partner-toolkit-video" controls playsinline preload="none" poster="">
         <source src="https://pub-784b8d75a8d440188ba1ff351c9297d4.r2.dev/Partner%20Program%20Explainer.mp4" type="video/mp4">
       </video>
+      <div class="video-share-row">
+        <button class="video-share-btn video-share-btn--copy" id="btn-copy-video-link" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy link
+        </button>
+        <button class="video-share-btn video-share-btn--send" id="btn-share-video" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Send to client
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1430,6 +1467,29 @@
   document.getElementById('btn-close-video').addEventListener('click', closeVideoModal);
   videoModal.addEventListener('click', function (e) {
     if (e.target === videoModal) closeVideoModal();
+  });
+
+  var videoUrl = 'https://pub-784b8d75a8d440188ba1ff351c9297d4.r2.dev/Partner%20Program%20Explainer.mp4';
+  var videoShareText = 'Check this out — it explains the Amari Method in 60 seconds:';
+
+  document.getElementById('btn-copy-video-link').addEventListener('click', function () {
+    var btn = this;
+    navigator.clipboard.writeText(videoUrl).then(function () {
+      btn.textContent = 'Copied!';
+      setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy link'; }, 2000);
+    });
+  });
+
+  document.getElementById('btn-share-video').addEventListener('click', function () {
+    if (navigator.share) {
+      navigator.share({ title: 'Amari Method', text: videoShareText, url: videoUrl }).catch(function () {});
+    } else {
+      navigator.clipboard.writeText(videoShareText + '\n' + videoUrl).then(function () {
+        var btn = document.getElementById('btn-share-video');
+        btn.textContent = 'Copied to clipboard!';
+        setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to client'; }, 2000);
+      });
+    }
   });
 
   // ── Dual-path form toggles ──

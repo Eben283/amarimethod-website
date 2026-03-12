@@ -54,14 +54,14 @@ function getSeriesActions(client: ClientData): Action[] {
       {
         icon: ShoppingBag,
         label: 'Upgrade to a 4-Session Series',
-        description: 'Your initial session cost applies — pay just $495 more',
+        description: 'Continue your progress with 3 more sessions — your $225 is already applied',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
       },
       {
         icon: TrendingUp,
         label: 'Upgrade to an 8-Session Series',
-        description: 'Includes Living Practice — pay just $1,070 more',
+        description: 'The full 8-step protocol + Living Practice — your $225 is already applied',
         href: PAYMENT_LINKS.upgrade_to_8,
         style: 'secondary',
       },
@@ -194,15 +194,15 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {actions.map((action) => {
+      <div className="space-y-4">
+        {/* Primary booking action — full width */}
+        {(() => {
+          const action = actions[0];
           const Icon = action.icon;
-          const isDisabled = !!action.disabled;
           const isBookingCard = action.label === bookingLabel && !hasHadInitial;
           const isSeriesCard = action.label === bookingLabel && hasActiveSeries;
           const isPayAsYouGoCard = action.label === bookingLabel && isPayAsYouGo;
 
-          // Pre-paid series card — expands to show In Person / Virtual choice, then opens embedded calendar
           if (isSeriesCard) {
             return (
               <div key={action.label} className="portal-card border-amari-charcoal">
@@ -255,7 +255,6 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             );
           }
 
-          // Pay-as-you-go follow-up card — expands to show In Person / Virtual choice, then opens embedded calendar
           if (isPayAsYouGoCard) {
             return (
               <div key={action.label} className="portal-card border-amari-charcoal">
@@ -308,10 +307,9 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             );
           }
 
-          // Initial session card — expands to show In Person / Virtual choice
           if (isBookingCard) {
             return (
-              <div key={action.label} className={`portal-card border-amari-charcoal`}>
+              <div key={action.label} className="portal-card border-amari-charcoal">
                 {!showInitialChoice ? (
                   <button
                     onClick={() => setShowInitialChoice(true)}
@@ -365,19 +363,40 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             );
           }
 
+          // Fallback for primary action that doesn't match special cards
+          const content = (
+            <div className="portal-card flex items-start gap-4 border-amari-charcoal cursor-pointer hover:shadow-card-hover">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
+                <Icon className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
+              </div>
+            </div>
+          );
+          if (action.onClick) {
+            return <button key={action.label} onClick={action.onClick} className="text-left no-underline w-full">{content}</button>;
+          }
+          if (action.href) {
+            return <a key={action.label} href={action.href} target="_blank" rel="noopener noreferrer" className="no-underline">{content}</a>;
+          }
+          return <div key={action.label}>{content}</div>;
+        })()}
+
+        {/* Secondary actions — 2-column grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {actions.slice(1).map((action) => {
+          const Icon = action.icon;
+          const isDisabled = !!action.disabled;
+
           const content = (
             <div
               className={`portal-card flex items-start gap-4 ${
                 isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer hover:shadow-card-hover'
-              } ${action.style === 'primary' ? 'border-amari-charcoal' : ''}`}
+              }`}
             >
-              <div
-                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                  action.style === 'primary'
-                    ? 'bg-amari-charcoal text-white'
-                    : 'bg-amari-light-sand text-amari-charcoal'
-                }`}
-              >
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
                 <Icon className="w-5 h-5" />
               </div>
               <div>
@@ -391,20 +410,14 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             </div>
           );
 
-          // Button-style action (opens modal)
           if (action.onClick) {
             return (
-              <button
-                key={action.label}
-                onClick={action.onClick}
-                className="text-left no-underline w-full"
-              >
+              <button key={action.label} onClick={action.onClick} className="text-left no-underline w-full">
                 {content}
               </button>
             );
           }
 
-          // Disabled or no href
           if (isDisabled || !action.href) {
             return <div key={action.label}>{content}</div>;
           }
@@ -421,6 +434,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             </a>
           );
         })}
+        </div>
       </div>
 
       {embedCalendarType && (

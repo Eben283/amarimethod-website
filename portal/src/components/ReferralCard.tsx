@@ -92,6 +92,24 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
         </div>
       </button>
 
+      {/* Progress icons — always visible below header */}
+      {!isExpanded && (
+        <div className="flex items-center gap-3 mt-3 pl-14">
+          {Array.from({ length: MILESTONE }).map((_, i) => {
+            const isFilled = i < referralCount;
+            return (
+              <div
+                key={i}
+                className={`w-8 h-8 transition-all ${isFilled ? 'opacity-100' : 'opacity-20'}`}
+                aria-label={isFilled ? `Referral ${i + 1} — complete` : `Referral ${i + 1} — pending`}
+              >
+                <img src="/images/amari-icon.png" alt="" className="w-full h-full" />
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── Expanded content ── */}
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-amari-border space-y-5">

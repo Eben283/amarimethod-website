@@ -60,7 +60,7 @@ export default function LoginPage() {
             Client Portal
           </h1>
           <p className="text-amari-text-muted">
-            Sign in to view your sessions, track your progress, and manage your care.
+            See where you are in your healing journey — progress, sessions, and next steps.
           </p>
         </div>
 
@@ -75,10 +75,10 @@ export default function LoginPage() {
               </h2>
               <p className="text-amari-text-secondary mb-4">
                 We sent a login link to <span className="font-medium">{email}</span>.
-                Click the link to sign in.
+                Click the link to access your portal.
               </p>
               <p className="text-sm text-amari-text-muted">
-                The link expires in 24 hours. Check your spam folder if you don't see it.
+                We're looking forward to seeing you. Check your spam folder if you don't see it within a minute.
               </p>
               <div className="mt-6 flex flex-col items-center gap-3">
                 {countdown !== null && countdown > 0 ? (

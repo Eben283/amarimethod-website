@@ -12,6 +12,18 @@ class ApiError extends Error {
 async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('portal_token');
 
+  // Check token expiry client-side before making the request
+  if (token) {
+    const expiry = localStorage.getItem('portal_token_expiry');
+    if (expiry && Date.now() > parseInt(expiry, 10)) {
+      localStorage.removeItem('portal_token');
+      localStorage.removeItem('portal_contact_id');
+      localStorage.removeItem('portal_email');
+      localStorage.removeItem('portal_token_expiry');
+      throw new ApiError('Your session has expired. Please log in again.', 401);
+    }
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
