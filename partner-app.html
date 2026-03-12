@@ -531,6 +531,70 @@
       font-weight: 400;
     }
 
+    /* ===== Earnings Nudge (zero-state) ===== */
+    .earnings-nudge {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--color-text-secondary, #888);
+      margin-top: 0.5rem;
+    }
+
+    /* ===== Post-Submit Timeline ===== */
+    .success-timeline {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border, #e8e4da);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .success-timeline-step {
+      font-size: 0.82rem;
+      color: var(--color-text-secondary, #666);
+      padding-left: 1.25rem;
+      position: relative;
+    }
+    .success-timeline-step::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.45em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amari-accent-warm, #EBA584);
+    }
+    .success-timeline-step strong {
+      color: var(--color-text, #252525);
+    }
+
+    /* ===== Pitch Video Button ===== */
+    .pitch-video-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--color-border, #e8e4da);
+      background: var(--bg-secondary, #F6F3E9);
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--color-text, #252525);
+      font-weight: 500;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pitch-video-btn:hover {
+      border-color: #d5d0c4;
+      background: #eeead9;
+    }
+    .pitch-video-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
     /* ===== Referral History ===== */
     .referral-history {
       background: var(--bg-card);
@@ -876,7 +940,7 @@
     <div class="app-subtext">Your partner toolkit</div>
   </div>
 
-  <!-- 1. EARNINGS CARD (Goal-Gradient + Loss Aversion) -->
+  <!-- 1. EARNINGS CARD (Loss Aversion + Activation Energy) -->
   <div class="earnings-card" id="earnings-card">
     <div class="earnings-top">
       <div>
@@ -888,52 +952,42 @@
         <div><strong id="stat-total">0</strong> referred</div>
       </div>
     </div>
-    <div class="earnings-progress" id="earnings-progress">
-      <div class="earnings-progress-label">
-        <span id="progress-current">0 of 5 bookings</span>
-        <span id="progress-goal">$250</span>
-      </div>
-      <div class="earnings-progress-bar">
-        <div class="earnings-progress-fill" id="progress-fill" style="width: 0%"></div>
-      </div>
+    <div class="earnings-nudge" id="earnings-nudge">
+      Your first referral earns $50 cash &mdash; just a name and phone number.
     </div>
-    <div class="earnings-milestone-msg" id="milestone-msg"></div>
   </div>
 
-  <!-- 2. DUAL-PATH CTAs (Foot-in-the-Door + Contrast Effect) -->
-  <div class="section-label">Get Paid</div>
-  <div class="cta-cards">
+  <!-- SHARE LINK (Activation Energy: lowest-effort action first) -->
+  <div class="app-share-section" id="share-panel">
+    <h3>Share Your Link</h3>
+    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.75rem; line-height:1.4;">
+      Text this to anyone with pain. When they book through your link, you earn $50.
+    </p>
+    <div class="share-link-row">
+      <input type="text" class="share-link-input" id="share-link" readonly>
+      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
+    </div>
+  </div>
 
-    <!-- Primary: Refer a Client ($50 per booking) -->
-    <button class="cta-card cta-card-primary" id="btn-refer" type="button">
-      <div class="cta-icon cta-icon-warm">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <line x1="19" y1="8" x2="19" y2="14"/>
-          <line x1="22" y1="11" x2="16" y2="11"/>
-        </svg>
-      </div>
-      <div>
-        <div class="cta-label">Refer a Client</div>
-        <div class="cta-desc">Submit their name and number. We handle the rest.</div>
-        <div class="cta-earn-tag">You earn $50 when they book</div>
-      </div>
-    </button>
-
-    <!-- Secondary: I Sold a Session ($225) -->
-    <button class="cta-card" id="btn-sold" type="button">
-      <div class="cta-icon cta-icon-dark">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-        </svg>
-      </div>
-      <div>
-        <div class="cta-label">I Sold a Session</div>
-        <div class="cta-desc">You collected $225 directly. Submit the client for onboarding.</div>
-        <div class="cta-earn-tag" style="background:rgba(37,37,37,0.06); color:#555;">You keep the full $225</div>
-      </div>
-    </button>
+  <!-- 2. PRIMARY CTA — Refer (Default Effect: one clear action) -->
+  <div class="section-label">Submit a Referral</div>
+  <button class="cta-card cta-card-primary" id="btn-refer" type="button" style="width:100%;">
+    <div class="cta-icon cta-icon-warm">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <line x1="19" y1="8" x2="19" y2="14"/>
+        <line x1="22" y1="11" x2="16" y2="11"/>
+      </svg>
+    </div>
+    <div>
+      <div class="cta-label">Refer a Client</div>
+      <div class="cta-desc">Submit their name and number. We handle the rest.</div>
+      <div class="cta-earn-tag">You earn $50 when they book</div>
+    </div>
+  </button>
+  <div style="text-align:center; margin-top:0.5rem;">
+    <button id="btn-sold" type="button" style="background:none; border:none; font-size:0.82rem; color:var(--color-text-secondary,#888); cursor:pointer; text-decoration:underline; padding:0.25rem 0;">Already sold a session? Log it here ($225)</button>
   </div>
 
   <!-- Refer form (hidden, shown when "Refer a Client" tapped) -->
@@ -981,21 +1035,15 @@
     <div class="check">&#10003;</div>
     <h3 id="success-heading">Got It!</h3>
     <p id="success-message">We'll reach out and take it from here.</p>
+    <div class="success-timeline" id="success-timeline">
+      <div class="success-timeline-step"><strong>Now:</strong> Dr. Garrett gets notified</div>
+      <div class="success-timeline-step"><strong>Within 24h:</strong> We reach out to your referral</div>
+      <div class="success-timeline-step"><strong>When they book:</strong> Status updates here automatically</div>
+    </div>
     <button type="button" id="btn-another">Submit Another</button>
   </div>
 
-  <!-- 3. SEND THE PAIN QUIZ (share link) -->
-  <div class="section-label">Share</div>
-  <div class="app-share-section" id="share-panel">
-    <h3>Send the Pain Quiz</h3>
-    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.75rem; line-height:1.4;">
-      Text this link to anyone. When they take the quiz, it tracks back to you.
-    </p>
-    <div class="share-link-row">
-      <input type="text" class="share-link-input" id="share-link" readonly>
-      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
-    </div>
-  </div>
+  <!-- (Share link moved above CTAs) -->
 
   <!-- 4. WHAT TO SAY (always visible — not collapsed) -->
   <div class="section-label">Reference</div>
@@ -1012,6 +1060,12 @@
       <div class="pitch-quote">
         "Exercise-based pain relief. You're in pain because something's working too hard and something else isn't working hard enough. Dr. Garrett finds the exact imbalance and teaches you exercises to fix it. <em>Most people feel a difference in the first session.</em>"
       </div>
+      <button class="pitch-video-btn" id="btn-video" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:0.4rem;">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Watch the 60-second version
+      </button>
     </div>
 
     <div class="pitch-section">
@@ -1041,21 +1095,6 @@
         <li>Assessment + hands-on work + take-home exercises</li>
       </ul>
     </div>
-  </div>
-
-  <!-- 5. SHOW CLIENT VIDEO (support tool, lower priority) -->
-  <div class="app-actions">
-    <button class="app-action-btn" id="btn-video" type="button">
-      <div class="app-action-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="5 3 19 12 5 21 5 3"/>
-        </svg>
-      </div>
-      <div>
-        <div class="app-action-label">Show Client Video</div>
-        <div class="app-action-desc">Play the 60-second explainer for your client</div>
-      </div>
-    </button>
   </div>
 
   <!-- 6. REFERRAL HISTORY (per-referral earnings + status) -->
@@ -1295,38 +1334,17 @@
     }
   }
 
-  // ── Earnings + milestone logic ──
+  // ── Earnings display ──
   function updateEarnings(booked, total) {
     var earned = booked * 50;
     document.getElementById('earnings-amount').textContent = '$' + earned;
     document.getElementById('stat-booked').textContent = booked;
     document.getElementById('stat-total').textContent = total;
 
-    // Milestone: every 5 bookings
-    var MILESTONE_STEP = 5;
-    var nextMilestone = Math.ceil((booked + 1) / MILESTONE_STEP) * MILESTONE_STEP;
-    if (booked >= nextMilestone) nextMilestone = nextMilestone + MILESTONE_STEP;
-    var milestoneGoal = nextMilestone * 50;
-    var progressPct = Math.min((booked / nextMilestone) * 100, 100);
-
-    document.getElementById('progress-current').textContent = booked + ' of ' + nextMilestone + ' bookings';
-    document.getElementById('progress-goal').textContent = '$' + milestoneGoal;
-    document.getElementById('progress-fill').style.width = progressPct + '%';
-
-    // Milestone message (Goal-Gradient: motivate when close)
-    var msgEl = document.getElementById('milestone-msg');
-    var remaining = nextMilestone - booked;
-    if (remaining === 1) {
-      msgEl.textContent = '1 more booking to hit $' + milestoneGoal + '!';
-      msgEl.classList.add('show');
-    } else if (remaining === 2) {
-      msgEl.textContent = 'Just 2 more to reach $' + milestoneGoal;
-      msgEl.classList.add('show');
-    } else if (booked > 0 && booked % MILESTONE_STEP === 0) {
-      msgEl.textContent = '$' + earned + ' earned. Next milestone: $' + milestoneGoal;
-      msgEl.classList.add('show');
-    } else {
-      msgEl.classList.remove('show');
+    // Show nudge only at zero state; hide once they have earnings
+    var nudgeEl = document.getElementById('earnings-nudge');
+    if (nudgeEl) {
+      nudgeEl.style.display = booked > 0 ? 'none' : '';
     }
   }
 
@@ -1504,14 +1522,17 @@
         lastFormType = type;
         var clientName = payload.clientFirstName;
 
+        var timelineEl = document.getElementById('success-timeline');
         if (type === 'refer') {
           document.getElementById('success-heading').textContent = 'Referral Submitted!';
           document.getElementById('success-message').textContent =
             "We'll reach out to " + clientName + ". You earn $50 when they book.";
+          if (timelineEl) timelineEl.style.display = '';
         } else {
           document.getElementById('success-heading').textContent = 'Got It!';
           document.getElementById('success-message').textContent =
             "We'll get " + clientName + " set up with Dr. Garrett.";
+          if (timelineEl) timelineEl.style.display = 'none';
         }
 
         closeAllForms();
