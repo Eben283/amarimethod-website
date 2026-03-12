@@ -23,6 +23,7 @@
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // ── Product-to-package mapping ──
 // GHL product IDs → session increment + field values
@@ -79,6 +80,61 @@ function getCustomFieldValue(contact, fieldId) {
   if (!contact.customFields) return null;
   const field = contact.customFields.find((f) => f.id === fieldId);
   return field ? (field.value ?? field.field_value ?? null) : null;
+}
+
+// Fetch the most recent order for a contact from GHL Payments API.
+// Used when the webhook payload doesn't include product data.
+// Returns { productId, orderId } or null.
+async function fetchRecentOrder(context, contactId) {
+  try {
+    const url = `${GHL_API_BASE}/payments/orders?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=5`;
+    const res = await ghlFetch(context, url);
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`[ghl-purchase-webhook] Orders API failed (${res.status}): ${errText}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const orders = data.data || data.orders || [];
+
+    if (orders.length === 0) {
+      console.log("[ghl-purchase-webhook] No orders found for contact via API");
+      return null;
+    }
+
+    // Walk through orders (most recent first) looking for a recognized product
+    for (const order of orders) {
+      const items = order.items || order.lineItems || order.line_items || [];
+      for (const item of items) {
+        // GHL may nest the product ID under different keys
+        const pid =
+          item.product_id ||
+          item.productId ||
+          item._id ||
+          item.priceId ||
+          (item.price && item.price._id);
+        if (pid && PRODUCT_MAP[pid]) {
+          return {
+            productId: pid,
+            orderId: order._id || order.id || order.orderId,
+          };
+        }
+      }
+    }
+
+    // Log what we found so we can debug product ID matching
+    const firstOrder = orders[0];
+    const firstItems = firstOrder.items || firstOrder.lineItems || firstOrder.line_items || [];
+    console.log(
+      `[ghl-purchase-webhook] No recognized products in ${orders.length} orders. First order items: ${JSON.stringify(firstItems).slice(0, 500)}`
+    );
+    return null;
+  } catch (err) {
+    console.error(`[ghl-purchase-webhook] fetchRecentOrder error: ${err.message}`);
+    return null;
+  }
 }
 
 // Extract a value from the webhook payload, trying multiple possible keys.
@@ -154,26 +210,40 @@ export async function onRequestPost(context) {
     }
 
     // ── 3. Map product to package ──
-    if (!productId || !PRODUCT_MAP[productId]) {
-      console.log(`[ghl-purchase-webhook] Unknown or missing product ID: ${productId} — skipping (not a session purchase)`);
-      return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "unrecognized product" }),
-        { status: 200, headers }
-      );
+    // The GHL Custom Webhook RAW BODY can only include contact fields,
+    // not order/product fields. When productId is missing from the payload,
+    // we look up the contact's most recent order via the GHL Payments API.
+    let resolvedProductId = productId;
+    let resolvedOrderId = orderId;
+
+    if (!resolvedProductId || !PRODUCT_MAP[resolvedProductId]) {
+      console.log(`[ghl-purchase-webhook] Product ID missing or unrecognized in payload (${productId}) — querying GHL Orders API`);
+      const orderLookup = await fetchRecentOrder(context, contactId);
+      if (orderLookup) {
+        resolvedProductId = orderLookup.productId;
+        resolvedOrderId = resolvedOrderId || orderLookup.orderId;
+        console.log(`[ghl-purchase-webhook] Resolved product via Orders API: ${resolvedProductId} (order: ${resolvedOrderId})`);
+      } else {
+        console.log("[ghl-purchase-webhook] Could not determine product from payload or API — skipping");
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "unrecognized product" }),
+          { status: 200, headers }
+        );
+      }
     }
 
-    const pkg = PRODUCT_MAP[productId];
+    const pkg = PRODUCT_MAP[resolvedProductId];
     console.log(`[ghl-purchase-webhook] Matched product: ${pkg.name} (add ${pkg.sessionsToAdd} sessions)`);
 
     // ── 4. Idempotency check via KV ──
     const kv = context.env.PURCHASE_KV;
-    const idempotencyKey = orderId ? `order:${orderId}` : null;
+    const idempotencyKey = resolvedOrderId ? `order:${resolvedOrderId}` : null;
 
     if (kv && idempotencyKey) {
       try {
         const existing = await kv.get(idempotencyKey);
         if (existing) {
-          console.log(`[ghl-purchase-webhook] Order ${orderId} already processed — skipping`);
+          console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed — skipping`);
           return new Response(
             JSON.stringify({ success: true, alreadyProcessed: true }),
             { status: 200, headers }
