@@ -18,6 +18,7 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
 const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
 const REFERRAL_TYPE_FIELD_ID = "uIxbS5OTNziajtkEhukJ";
+const REFERRAL_FEE_STATUS_FIELD_ID = "WVoFlhWeVW7h353R1Sfy";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -182,6 +183,10 @@ export async function onRequestPost(context) {
     }
     if (REFERRAL_TYPE_FIELD_ID) {
       referralCustomFields.push({ id: REFERRAL_TYPE_FIELD_ID, field_value: referralType });
+    }
+    // Set fee status to "unpaid" for refer-path only (partner is owed $50)
+    if (REFERRAL_FEE_STATUS_FIELD_ID && referralType === "refer") {
+      referralCustomFields.push({ id: REFERRAL_FEE_STATUS_FIELD_ID, field_value: "unpaid" });
     }
 
     const upsertPayload = {

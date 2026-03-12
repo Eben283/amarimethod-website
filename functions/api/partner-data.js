@@ -7,6 +7,8 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
 const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
+const REFERRAL_TYPE_FIELD_ID = "uIxbS5OTNziajtkEhukJ";
+const REFERRAL_FEE_STATUS_FIELD_ID = "WVoFlhWeVW7h353R1Sfy";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -196,9 +198,18 @@ export async function onRequestGet(context) {
     const referralDetails = [];
 
     const appointmentPromises = referrals.map(async (refContact) => {
+      // Extract referral type and fee status from custom fields
+      const customFields = refContact.customFields || [];
+      const typeField = customFields.find((f) => f.id === REFERRAL_TYPE_FIELD_ID);
+      const feeField = customFields.find((f) => f.id === REFERRAL_FEE_STATUS_FIELD_ID);
+      const referralType = typeField?.value || "refer";
+      const feeStatus = referralType === "refer" ? (feeField?.value || "unpaid") : null;
+
       const detail = {
         firstName: refContact.firstName || "",
         status: "referred",
+        referralType,
+        feeStatus,
       };
 
       try {
@@ -233,6 +244,19 @@ export async function onRequestGet(context) {
         console.error(
           `[partner-data] Appointment fetch error for ${refContact.id}: ${err.message}`
         );
+      }
+
+      // 90-day expiry: if refer-path, no booking, and >90 days since referral → expired
+      if (
+        detail.referralType === "refer" &&
+        detail.status === "referred" &&
+        detail.feeStatus !== "expired"
+      ) {
+        const referredDate = new Date(refContact.dateAdded || refContact.createdAt);
+        const daysSinceReferred = (Date.now() - referredDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSinceReferred > 90) {
+          detail.feeStatus = "expired";
+        }
       }
 
       return detail;
@@ -312,6 +336,8 @@ export async function onRequestGet(context) {
         referrals: details.map((d) => ({
           name: d.firstName,
           status: d.status,
+          referralType: d.referralType,
+          feeStatus: d.feeStatus, // "unpaid" | "paid" | null (null = sold path, no fee owed)
         })),
       }),
       { status: 200, headers }
