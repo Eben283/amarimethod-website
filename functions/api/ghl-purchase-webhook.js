@@ -186,6 +186,7 @@ export async function onRequestPost(context) {
     const contactId = extractField(body, [
       "contact_id", "contactId", "contact.id",
       "data.contact_id", "data.contactId",
+      "id",
     ]);
 
     const productId = extractField(body, [
