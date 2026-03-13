@@ -648,6 +648,21 @@
       background: rgba(235, 165, 132, 0.15);
       color: #c47a55;
     }
+    .status-paid {
+      background: rgba(76, 175, 80, 0.12);
+      color: #2e7d32;
+    }
+    .status-expired {
+      background: rgba(37, 37, 37, 0.06);
+      color: #999;
+      text-decoration: line-through;
+    }
+    .referral-type-label {
+      font-size: 0.65rem;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
     .referral-empty {
       font-size: 0.85rem;
       color: var(--color-text-secondary);
@@ -926,6 +941,14 @@
       text-decoration: underline;
     }
   </style>
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vuvx43xu8h");
+    </script>
 </head>
 <body>
 
@@ -972,6 +995,7 @@
     <div class="earnings-top">
       <div>
         <div class="earnings-amount" id="earnings-amount">$0</div>
+        <div class="earnings-paid" id="earnings-paid" style="display:none; font-size:0.85rem; color:#2e7d32; margin-top:2px;"></div>
         <div class="earnings-label">earned from referrals</div>
       </div>
       <div class="earnings-breakdown" id="earnings-breakdown">
@@ -1373,16 +1397,28 @@
   }
 
   // ── Earnings display ──
-  function updateEarnings(booked, total) {
-    var earned = booked * 50;
-    document.getElementById('earnings-amount').textContent = '$' + earned;
-    document.getElementById('stat-booked').textContent = booked;
+  function updateEarnings(earned, paid, total) {
+    var earnedAmount = earned * 50;
+    var paidAmount = paid * 50;
+    document.getElementById('earnings-amount').textContent = '$' + earnedAmount;
+    document.getElementById('stat-booked').textContent = earned;
     document.getElementById('stat-total').textContent = total;
+
+    // Show paid sub-line if any payouts have been made
+    var paidEl = document.getElementById('earnings-paid');
+    if (paidEl) {
+      if (paid > 0) {
+        paidEl.textContent = '$' + paidAmount + ' paid';
+        paidEl.style.display = '';
+      } else {
+        paidEl.style.display = 'none';
+      }
+    }
 
     // Show nudge only at zero state; hide once they have earnings
     var nudgeEl = document.getElementById('earnings-nudge');
     if (nudgeEl) {
-      nudgeEl.style.display = booked > 0 ? 'none' : '';
+      nudgeEl.style.display = earned > 0 ? 'none' : '';
     }
   }
 
@@ -1415,10 +1451,18 @@
       var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
       document.getElementById('share-link').value = partnerLink;
 
-      // Update earnings card
-      var booked = (stats.booked || 0) + (stats.completed || 0);
+      // Update earnings card — only refer-path booked/completed referrals earn $50
       var total = stats.total || 0;
-      updateEarnings(booked, total);
+      var referEarned = 0;
+      var referPaid = 0;
+      for (var i = 0; i < referrals.length; i++) {
+        var ref = referrals[i];
+        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && (ref.status === 'booked' || ref.status === 'completed')) {
+          referEarned++;
+          if (ref.feeStatus === 'paid') referPaid++;
+        }
+      }
+      updateEarnings(referEarned, referPaid, total);
       document.getElementById('earnings-card').classList.add('loaded');
 
       // Referral history
@@ -1429,9 +1473,31 @@
         var listHTML = '';
         for (var i = 0; i < referrals.length; i++) {
           var r = referrals[i];
-          var displayStatus = (r.status === 'completed' || r.status === 'booked') ? 'booked' : 'referred';
+          var hasBooked = (r.status === 'completed' || r.status === 'booked');
+          var isReferPath = (r.referralType !== 'sold');
+
+          // Status badge: booked/referred
+          var displayStatus = hasBooked ? 'booked' : 'referred';
           var statusClass = 'status-' + displayStatus;
-          var earningText = displayStatus === 'booked' ? '+$50' : 'pending';
+
+          // Fee badge for refer-path only
+          var earningText = '';
+          if (isReferPath) {
+            if (r.feeStatus === 'expired') {
+              earningText = 'expired';
+              statusClass = 'status-expired';
+            } else if (!hasBooked) {
+              earningText = 'pending';
+            } else if (r.feeStatus === 'paid') {
+              earningText = '$50 paid';
+              statusClass = 'status-paid';
+            } else {
+              earningText = '$50 earned';
+            }
+          } else {
+            earningText = 'sold';
+          }
+
           listHTML += '<div class="referral-item">'
             + '<div class="referral-left">'
             + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
