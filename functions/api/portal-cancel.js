@@ -11,7 +11,14 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  if (!ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400",
+    };
+  }
+  const allowedOrigin = origin;
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -97,7 +104,7 @@ export async function onRequestPost(context) {
     const body = await context.request.json();
     const { appointmentId, title } = body;
 
-    if (!appointmentId) {
+    if (!appointmentId || typeof appointmentId !== "string") {
       return new Response(
         JSON.stringify({ error: "Missing appointmentId" }),
         { status: 400, headers }

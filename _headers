@@ -24,16 +24,15 @@
 /index.html
   Cache-Control: public, max-age=3600, must-revalidate
 
-/* Performance and Security Headers */
+/* Security Headers */
 /*
   X-Content-Type-Options: nosniff
   X-Frame-Options: SAMEORIGIN
   X-XSS-Protection: 1; mode=block
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
 
-  /* Enable compression */
-  Content-Encoding: gzip, deflate, br
-
-  /* Preconnect hints */
+/* Preconnect hints */
+/*
   Link: <https://fonts.googleapis.com>; rel=preconnect, <https://fonts.gstatic.com>; rel=preconnect; crossorigin

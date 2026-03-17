@@ -157,7 +157,7 @@ All booking and contact functionality integrates with:
 
 ## Support
 
-For questions or issues, email: hello@amarihealth.com
+For questions or issues, email: hello@amarimethod.com
 
 ---
 

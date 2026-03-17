@@ -372,12 +372,18 @@ document.addEventListener('click', function(e) {
 
   window.openCalendarModal = function (calendarId, title) {
     if (!_modal) _build();
+    var safeId = String(calendarId).replace(/[^a-zA-Z0-9\-_]/g, '');
+    var safeTitle = String(title).replace(/[<>"'&]/g, '');
     document.getElementById('cal-modal-title').textContent = title;
-    document.getElementById('cal-modal-body').innerHTML =
-      '<iframe src="https://link.amarimethod.com/widget/booking/' + calendarId + '" ' +
-      'id="' + calendarId + '_modal" ' +
-      'style="width:100%;border:none;overflow:hidden;min-height:750px;display:block;" ' +
-      'scrolling="no" title="' + title + '"></iframe>';
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://link.amarimethod.com/widget/booking/' + safeId;
+    iframe.id = safeId + '_modal';
+    iframe.style.cssText = 'width:100%;border:none;overflow:hidden;min-height:750px;display:block;';
+    iframe.scrolling = 'no';
+    iframe.title = safeTitle;
+    var body = document.getElementById('cal-modal-body');
+    body.innerHTML = '';
+    body.appendChild(iframe);
     _modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     if (!document.getElementById('ghl-embed-script')) {
