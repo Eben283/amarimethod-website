@@ -95,13 +95,14 @@ export async function onRequestPost(context) {
   // e.g. "2026-03-15T10:00:00-07:00" → "2026-03-15T10:00:00"
   const cleanStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
 
-  // Compute endTime: follow-up sessions are 50 min. Treat cleanStartTime as UTC
-  // for arithmetic only — the local time values remain correct.
-  const startMs = new Date(cleanStartTime + 'Z').getTime();
-  const cleanEndTime = new Date(startMs + 50 * 60 * 1000)
-    .toISOString()
-    .replace('Z', '')
-    .replace(/\.\d{3}$/, ''); // e.g. "2026-03-15T10:50:00"
+  // Compute endTime: follow-up sessions are 50 min.
+  // Add 50 min directly to the local time parts to avoid UTC offset errors.
+  const [dateStr, timeStr] = cleanStartTime.split('T');
+  const [hh, mm, ss = '00'] = timeStr.split(':');
+  const totalMinutes = parseInt(hh, 10) * 60 + parseInt(mm, 10) + 50;
+  const endHH = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
+  const endMM = String(totalMinutes % 60).padStart(2, '0');
+  const cleanEndTime = `${dateStr}T${endHH}:${endMM}:${ss}`; // e.g. "2026-03-15T10:50:00"
 
   // Build the appointment payload
   const appointmentPayload = {
