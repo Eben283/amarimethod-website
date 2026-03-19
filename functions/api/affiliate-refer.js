@@ -10,6 +10,7 @@
 // from the session token (more accurate than affiliateRef field).
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -33,37 +34,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
-}
-
-// Verify session token (optional — used when partner is authenticated)
-async function verifySessionToken(tokenString, secret) {
-  try {
-    const parts = tokenString.split(".");
-    if (parts.length !== 3) return null;
-
-    const [header, body, sig] = parts;
-    const data = `${header}.${body}`;
-
-    const encoder = new TextEncoder();
-    const key = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(secret),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["verify"]
-    );
-
-    const sigBytes = Uint8Array.from(atob(sig), c => c.charCodeAt(0));
-    const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(data));
-    if (!valid) return null;
-
-    const payload = JSON.parse(atob(body));
-    if (!payload.exp || Date.now() > payload.exp) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
 }
 
 export async function onRequestOptions(context) {
@@ -100,7 +70,12 @@ export async function onRequestPost(context) {
 
     const authHeader = context.request.headers.get("Authorization");
     if (authHeader && authHeader.startsWith("Bearer ") && JWT_SECRET) {
-      const tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      let tokenPayload = null;
+      try {
+        tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      } catch {
+        // Token verification failed — fall through to name-based resolution
+      }
       if (tokenPayload && tokenPayload.contactId) {
         resolvedPartnerContactId = tokenPayload.contactId;
         try {

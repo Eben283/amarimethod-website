@@ -3,6 +3,7 @@
 // Queries GHL contacts where referral_source matches the partner name.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -36,6 +37,31 @@ export async function onRequestGet(context) {
   headers["Content-Type"] = "application/json";
 
   try {
+    // Require partner session token
+    const JWT_SECRET = context.env.JWT_SECRET;
+    const authHeader = context.request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ") || !JWT_SECRET) {
+      return new Response(
+        JSON.stringify({ error: "Not authenticated" }),
+        { status: 401, headers }
+      );
+    }
+
+    try {
+      const tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      if (tokenPayload.type !== "partner") {
+        return new Response(
+          JSON.stringify({ error: "Partner access required" }),
+          { status: 403, headers }
+        );
+      }
+    } catch (authErr) {
+      return new Response(
+        JSON.stringify({ error: "Session expired. Please log in again." }),
+        { status: 401, headers }
+      );
+    }
+
     const url = new URL(context.request.url);
     const ref = url.searchParams.get("ref");
 

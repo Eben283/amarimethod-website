@@ -370,14 +370,31 @@ document.addEventListener('click', function(e) {
     });
   }
 
+  // Valid GHL calendar IDs (allowlist)
+  var VALID_CALENDAR_IDS = [
+    'amari-method-initial-session',
+    'booking-single-amari-method-followup-session',
+    'amari-method-discovery-call',
+    'amari-method-free-15-min-discovery-call'
+  ];
+
   window.openCalendarModal = function (calendarId, title) {
+    // Validate calendarId against allowlist (alphanumeric + hyphens only as fallback)
+    if (!VALID_CALENDAR_IDS.includes(calendarId) && !/^[a-zA-Z0-9\-]+$/.test(calendarId)) {
+      console.error('[calendar] Invalid calendar ID:', calendarId);
+      return;
+    }
     if (!_modal) _build();
+    var modalBody = document.getElementById('cal-modal-body');
     document.getElementById('cal-modal-title').textContent = title;
-    document.getElementById('cal-modal-body').innerHTML =
-      '<iframe src="https://link.amarimethod.com/widget/booking/' + calendarId + '" ' +
-      'id="' + calendarId + '_modal" ' +
-      'style="width:100%;border:none;overflow:hidden;min-height:750px;display:block;" ' +
-      'scrolling="no" title="' + title + '"></iframe>';
+    modalBody.textContent = '';
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://link.amarimethod.com/widget/booking/' + encodeURIComponent(calendarId);
+    iframe.id = calendarId + '_modal';
+    iframe.style.cssText = 'width:100%;border:none;overflow:hidden;min-height:750px;display:block;';
+    iframe.scrolling = 'no';
+    iframe.title = title;
+    modalBody.appendChild(iframe);
     _modal.style.display = 'block';
     document.body.style.overflow = 'hidden';
     if (!document.getElementById('ghl-embed-script')) {

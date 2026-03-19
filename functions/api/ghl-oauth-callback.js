@@ -7,7 +7,25 @@ const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
 
 export async function onRequestGet(context) {
   try {
+    // Verify setup secret to prevent unauthorized use
+    const setupSecret = context.env.GHL_OAUTH_SETUP_SECRET;
     const url = new URL(context.request.url);
+
+    if (!setupSecret) {
+      return new Response("GHL_OAUTH_SETUP_SECRET not configured. Set it in Cloudflare env vars.", {
+        status: 500,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
+    const providedSecret = url.searchParams.get("secret");
+    if (providedSecret !== setupSecret) {
+      return new Response("Unauthorized. Provide ?secret=YOUR_SETUP_SECRET in the URL.", {
+        status: 403,
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+
     const code = url.searchParams.get("code");
 
     if (!code) {

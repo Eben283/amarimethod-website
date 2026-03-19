@@ -2,6 +2,7 @@
 // Called by a GHL webhook when a referred contact completes a session purchase.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { verifyWebhookSecret } from "../lib/auth.js";
 
 // Flow:
 // 1. Fetch the purchasing contact from GHL
@@ -120,6 +121,15 @@ export async function onRequestPost(context) {
   const headers = { "Content-Type": "application/json" };
 
   try {
+    // Verify webhook secret (same pattern as ghl-purchase-webhook.js)
+    if (!verifyWebhookSecret(context.request, context.env.GHL_WEBHOOK_SECRET)) {
+      console.error("[referral-complete] Invalid or missing webhook secret");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers }
+      );
+    }
+
     const GHL_API_KEY = await getGhlToken(context);
 
     if (!GHL_API_KEY) {

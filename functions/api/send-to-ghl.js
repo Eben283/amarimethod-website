@@ -102,6 +102,21 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
+    // Rate limiting: max 3 quiz submissions per IP per hour
+    const kv = context.env.PORTAL_KV;
+    if (kv) {
+      const clientIP = context.request.headers.get("CF-Connecting-IP") || "unknown";
+      const rateKey = `quiz_rate:${clientIP}`;
+      const currentCount = parseInt(await kv.get(rateKey) || "0", 10);
+      if (currentCount >= 3) {
+        return new Response(
+          JSON.stringify({ error: "Too many submissions. Please try again later." }),
+          { status: 429, headers }
+        );
+      }
+      await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
+    }
+
     const body = await context.request.json();
 
     // Validate required fields

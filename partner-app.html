@@ -1470,7 +1470,7 @@
       var listEl = document.getElementById('referral-list');
 
       if (referrals.length > 0) {
-        var listHTML = '';
+        var fragment = document.createDocumentFragment();
         for (var i = 0; i < referrals.length; i++) {
           var r = referrals[i];
           var hasBooked = (r.status === 'completed' || r.status === 'booked');
@@ -1498,17 +1498,39 @@
             earningText = 'sold';
           }
 
-          listHTML += '<div class="referral-item">'
-            + '<div class="referral-left">'
-            + '<span class="referral-name">' + (r.name || 'Client') + '</span>'
-            + '<span class="referral-earning">' + earningText + '</span>'
-            + '</div>'
-            + '<span class="referral-status ' + statusClass + '">' + displayStatus + '</span>'
-            + '</div>';
+          var item = document.createElement('div');
+          item.className = 'referral-item';
+
+          var left = document.createElement('div');
+          left.className = 'referral-left';
+
+          var nameSpan = document.createElement('span');
+          nameSpan.className = 'referral-name';
+          nameSpan.textContent = r.name || 'Client';
+
+          var earningSpan = document.createElement('span');
+          earningSpan.className = 'referral-earning';
+          earningSpan.textContent = earningText;
+
+          left.appendChild(nameSpan);
+          left.appendChild(earningSpan);
+
+          var statusSpan = document.createElement('span');
+          statusSpan.className = 'referral-status ' + statusClass;
+          statusSpan.textContent = displayStatus;
+
+          item.appendChild(left);
+          item.appendChild(statusSpan);
+          fragment.appendChild(item);
         }
-        listEl.innerHTML = listHTML;
+        listEl.textContent = '';
+        listEl.appendChild(fragment);
       } else {
-        listEl.innerHTML = '<div class="referral-empty">Your referrals will appear here</div>';
+        listEl.textContent = '';
+        var emptyDiv = document.createElement('div');
+        emptyDiv.className = 'referral-empty';
+        emptyDiv.textContent = 'Your referrals will appear here';
+        listEl.appendChild(emptyDiv);
       }
       historyEl.classList.add('loaded');
 

@@ -2,6 +2,7 @@
 // Cancels an upcoming appointment via GHL API
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -18,36 +19,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
-}
-
-// Verify session token (same as portal-data.js)
-async function verifySessionToken(tokenString, secret) {
-  const parts = tokenString.split(".");
-  if (parts.length !== 3) throw new Error("Invalid token format");
-
-  const [header, body, sig] = parts;
-  const data = `${header}.${body}`;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  const sigBytes = Uint8Array.from(atob(sig), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(data));
-  if (!valid) throw new Error("Invalid signature");
-
-  const payload = JSON.parse(atob(body));
-
-  if (!payload.exp || Date.now() > payload.exp) {
-    throw new Error("Token expired");
-  }
-
-  return payload;
 }
 
 export async function onRequestOptions(context) {
@@ -128,10 +99,18 @@ export async function onRequestPost(context) {
           );
         }
       } else {
-        console.warn(`[portal-cancel] Ownership check GHL error ${ownershipResponse.status} — allowing through`);
+        console.error(`[portal-cancel] Ownership check GHL error ${ownershipResponse.status} — blocking`);
+        return new Response(
+          JSON.stringify({ error: "Unable to verify appointment ownership. Please try again." }),
+          { status: 500, headers }
+        );
       }
     } catch (ownershipErr) {
-      console.warn(`[portal-cancel] Ownership check error: ${ownershipErr.message} — allowing through`);
+      console.error(`[portal-cancel] Ownership check error: ${ownershipErr.message} — blocking`);
+      return new Response(
+        JSON.stringify({ error: "Unable to verify appointment ownership. Please try again." }),
+        { status: 500, headers }
+      );
     }
 
     // Cancel the appointment via GHL API

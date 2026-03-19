@@ -124,8 +124,12 @@ export async function onRequestGet(context) {
         // Nonce found and valid — consume it to prevent reuse
         await context.env.PORTAL_KV.delete(`nonce:${payload.nonce}`);
       } else {
-        // Nonce not found: log warning but allow through (graceful degradation)
-        console.warn(`[portal-verify] Nonce not found in KV for contact ${payload.contactId} — allowing through`);
+        // Nonce not found — reject to prevent token replay
+        console.warn(`[portal-verify] Nonce not found in KV for contact ${payload.contactId} — rejecting`);
+        return new Response(
+          JSON.stringify({ error: "This login link has already been used. Please request a new one." }),
+          { status: 401, headers }
+        );
       }
     }
 

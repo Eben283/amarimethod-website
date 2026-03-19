@@ -2,6 +2,7 @@
 // Returns client data from GHL: contact details, appointments, series progress
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -19,36 +20,6 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
-}
-
-// Verify session token
-async function verifySessionToken(tokenString, secret) {
-  const parts = tokenString.split(".");
-  if (parts.length !== 3) throw new Error("Invalid token format");
-
-  const [header, body, sig] = parts;
-  const data = `${header}.${body}`;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  const sigBytes = Uint8Array.from(atob(sig), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(data));
-  if (!valid) throw new Error("Invalid signature");
-
-  const payload = JSON.parse(atob(body));
-
-  if (!payload.exp || Date.now() > payload.exp) {
-    throw new Error("Token expired");
-  }
-
-  return payload;
 }
 
 // Extract custom field value from GHL contact
