@@ -24,7 +24,7 @@ function corsHeaders(origin) {
 
 // Extract custom field value from GHL contact
 // fieldDefs is a map of { [key: string]: string } — field key (short) → field ID
-function getCustomField(contact, fieldKey, fieldDefs = {}) {
+export function getCustomField(contact, fieldKey, fieldDefs = {}) {
   if (!contact.customFields) return null;
   const fieldId = fieldDefs[fieldKey];
   const field = contact.customFields.find(
@@ -35,6 +35,20 @@ function getCustomField(contact, fieldKey, fieldDefs = {}) {
       f.key === `contact.${fieldKey}`
   );
   return field ? field.value ?? field.field_value : null;
+}
+
+// GHL checkbox fields return either: true (bool), "true" (string), or ["true"] (array)
+export function isChecked(raw) {
+  if (!raw && raw !== 0) return false;
+  if (Array.isArray(raw)) return raw.some(v => ["true","yes","1"].includes(String(v).toLowerCase()));
+  return ["true","yes","1"].includes(String(raw).toLowerCase());
+}
+
+// 8-session series always includes Living Practice — don't require the field to be set
+export function computeHasLivingPractice(lpRaw, tags, seriesType) {
+  return isChecked(lpRaw) ||
+    (tags || []).includes("living-practice-access") ||
+    seriesType === "8-session";
 }
 
 export async function onRequestOptions(context) {
@@ -141,19 +155,10 @@ export async function onRequestGet(context) {
     // workflow adds 1 each time). Don't clamp it — the frontend uses it as a lifetime counter.
     // The progress bar uses (totalSessions - sessionsRemaining) instead, which is always accurate.
     const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
-    // GHL checkbox fields return either: true (bool), "true" (string), or ["true"] (array)
-    function isChecked(raw) {
-      if (!raw && raw !== 0) return false;
-      if (Array.isArray(raw)) return raw.some(v => ["true","yes","1"].includes(String(v).toLowerCase()));
-      return ["true","yes","1"].includes(String(raw).toLowerCase());
-    }
 
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
-    // 8-session series always includes Living Practice — don't require the field to be set
-    const hasLivingPractice = isChecked(lpRaw) ||
-      (contact.tags || []).includes("living-practice-access") ||
-      seriesType === "8-session";
+    const hasLivingPractice = computeHasLivingPractice(lpRaw, contact.tags || [], seriesType);
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
     const isPartner = (contact.tags || []).includes("affiliate-partner");
 

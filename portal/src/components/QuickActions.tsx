@@ -40,6 +40,7 @@ interface Action {
   onClick?: () => void;
   style: 'primary' | 'secondary';
   disabled?: boolean;
+  testId?: string;
 }
 
 function getSeriesActions(client: ClientData): Action[] {
@@ -57,6 +58,7 @@ function getSeriesActions(client: ClientData): Action[] {
         description: 'Continue your progress with 3 more sessions — your $225 is already applied',
         href: PAYMENT_LINKS.upgrade_to_4,
         style: 'secondary',
+        testId: 'upgrade-to-4-card',
       },
       {
         icon: TrendingUp,
@@ -64,6 +66,7 @@ function getSeriesActions(client: ClientData): Action[] {
         description: 'The full 8-step protocol + Living Practice — your $225 is already applied',
         href: PAYMENT_LINKS.upgrade_to_8,
         style: 'secondary',
+        testId: 'upgrade-to-8-card',
       },
     ];
   }
@@ -93,6 +96,7 @@ function getSeriesActions(client: ClientData): Action[] {
       description: pack4Description,
       href: PAYMENT_LINKS.series_4,
       style: 'secondary',
+      testId: 'series-4-card',
     },
     {
       icon: TrendingUp,
@@ -100,6 +104,7 @@ function getSeriesActions(client: ClientData): Action[] {
       description: pack8Description,
       href: PAYMENT_LINKS.series_8,
       style: 'secondary',
+      testId: 'series-8-card',
     },
   ];
 }
@@ -150,6 +155,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         description: 'Continue your video program →',
         href: LIVING_PRACTICE_COURSE_URL,
         style: 'secondary',
+        testId: 'living-practice-card',
       }
     : {
         icon: Play,
@@ -157,6 +163,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         description: 'Add the standalone video program ($347)',
         href: PAYMENT_LINKS.living_practice,
         style: 'secondary',
+        testId: 'living-practice-card',
       };
 
   const contactAction: Action = {
@@ -174,6 +181,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         description: 'Refer clients & track your referrals →',
         href: 'https://www.amarimethod.com/partner-app',
         style: 'secondary',
+        testId: 'partner-toolkit-card',
       }
     : null;
 
@@ -221,7 +229,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
                       <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
                     </div>
                   </button>
@@ -273,7 +281,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
                       <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
                     </div>
                   </button>
@@ -325,7 +333,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
                       <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
                     </div>
                   </button>
@@ -371,12 +379,12 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
 
           // Fallback for primary action that doesn't match special cards
           const content = (
-            <div className="portal-card flex items-start gap-4 border-amari-charcoal cursor-pointer hover:shadow-card-hover">
+            <div data-testid="booking-card" className="portal-card flex items-start gap-4 border-amari-charcoal cursor-pointer hover:shadow-card-hover">
               <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
                 <Icon className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
+                <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
                 <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
               </div>
             </div>
@@ -398,6 +406,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
 
           const content = (
             <div
+              data-testid={action.testId}
               className={`portal-card flex items-start gap-4 ${
                 isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer hover:shadow-card-hover'
               }`}
@@ -409,7 +418,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
                 <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
                   {action.label}
                 </h3>
-                <p className="text-xs text-amari-text-muted mt-0.5">
+                <p data-testid={action.testId ? `${action.testId}-desc` : undefined} className="text-xs text-amari-text-muted mt-0.5">
                   {action.description}
                 </p>
               </div>

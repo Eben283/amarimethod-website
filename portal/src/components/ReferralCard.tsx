@@ -56,7 +56,7 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
   };
 
   return (
-    <div className="portal-card">
+    <div data-testid="referral-card" className="portal-card">
 
       {/* ── Collapsed header — always visible ── */}
       <button

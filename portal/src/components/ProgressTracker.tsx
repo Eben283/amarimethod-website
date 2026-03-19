@@ -109,7 +109,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
         {/* State 1: Active series, in progress */}
         {seriesInProgress && (
-          <div>
+          <div data-testid="state-series-in-progress">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-amari-text-secondary">
                 {currentSeriesCompleted} of {totalSessions} sessions
@@ -137,7 +137,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
         {/* State 2: Series just finished — celebration (Peak-End) */}
         {seriesFinished && (
-          <div>
+          <div data-testid="state-series-finished">
             <div className="h-3 bg-amari-light-sand rounded-full overflow-hidden mb-3">
               <div className="h-full bg-amari-accent-warm rounded-full w-full transition-all duration-700 ease-out" />
             </div>
@@ -152,7 +152,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
         {/* State 3: Pay-as-you-go, has sessions */}
         {payAsYouGo && (
-          <div>
+          <div data-testid="state-pay-as-you-go">
             <p className="text-sm font-medium text-amari-charcoal">
               ✦ {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
             </p>
@@ -161,7 +161,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
         {/* State 4: Brand new client — ghost progress bar (Zeigarnik) */}
         {!seriesInProgress && !seriesFinished && !payAsYouGo && (
-          <div>
+          <div data-testid="state-brand-new">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-amari-text-muted">
                 Your 8-step journey
@@ -320,6 +320,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
             <p className="text-sm text-amari-text-muted mb-3">No upcoming sessions scheduled</p>
             {onBookSession && (
               <button
+                data-testid="book-next-from-progress"
                 onClick={onBookSession}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-amari-charcoal hover:underline"
               >

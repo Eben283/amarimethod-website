@@ -61,15 +61,15 @@ export default function DashboardPage() {
       <PortalNav firstName={client.firstName || client.lastName} />
       {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
+      <main data-testid="dashboard" className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
 
         {/* ── Greeting ── */}
         <div className="animate-fade-in">
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-amari-charcoal">
             {getGreeting()}, {client.firstName || client.lastName}
           </h1>
-          <p className="text-amari-text-muted mt-1 text-sm">
-            {client.seriesType !== 'none'
+          <p data-testid="dashboard-subtitle" className="text-amari-text-muted mt-1 text-sm">
+            {client.seriesType !== 'none' && client.sessionsRemaining > 0
               ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`
               : hasHadInitial
                 ? 'Welcome back — ready to book your next session?'
