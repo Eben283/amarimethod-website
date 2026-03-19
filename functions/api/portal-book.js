@@ -90,27 +90,29 @@ export async function onRequestPost(context) {
     ? 'Follow-up Session (Virtual)'
     : 'Follow-up Session (In Person)';
 
-  // Strip timezone offset from startTime if present — GHL expects local time in
-  // selectedTimezone format, not an ISO string with embedded offset
-  // e.g. "2026-03-15T10:00:00-07:00" → "2026-03-15T10:00:00"
-  const cleanStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+  // GHL requires the timezone offset to be present in startTime/endTime
+  // (e.g. "2026-03-15T10:00:00-07:00"). Stripping the offset causes GHL to
+  // reject the slot as "not available" for some calendar types.
+  // Extract the offset so we can re-apply it to the computed endTime.
+  const offsetMatch = startTime.match(/([+-]\d{2}:\d{2})$/);
+  const tzOffset = offsetMatch ? offsetMatch[1] : '';
 
-  // Compute endTime: follow-up sessions are 50 min.
-  // Add 50 min directly to the local time parts to avoid UTC offset errors.
-  const [dateStr, timeStr] = cleanStartTime.split('T');
+  // Compute endTime by adding 50 min to the local time parts, then re-append offset.
+  const localStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
+  const [dateStr, timeStr] = localStartTime.split('T');
   const [hh, mm, ss = '00'] = timeStr.split(':');
   const totalMinutes = parseInt(hh, 10) * 60 + parseInt(mm, 10) + 50;
   const endHH = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
   const endMM = String(totalMinutes % 60).padStart(2, '0');
-  const cleanEndTime = `${dateStr}T${endHH}:${endMM}:${ss}`; // e.g. "2026-03-15T10:50:00"
+  const endTime = `${dateStr}T${endHH}:${endMM}:${ss}${tzOffset}`; // e.g. "2026-03-15T10:50:00-07:00"
 
   // Build the appointment payload
   const appointmentPayload = {
     calendarId,
     locationId: env.GHL_LOCATION_ID || '7pIO7FHVAyBT1jKGhfQM',
     contactId,
-    startTime: cleanStartTime,
-    endTime: cleanEndTime,
+    startTime,   // pass through as-is, with offset intact
+    endTime,
     selectedTimezone: timezone,
     title,
     appointmentStatus: 'confirmed',
