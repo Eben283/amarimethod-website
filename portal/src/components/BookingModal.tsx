@@ -183,6 +183,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
       cells.push(
         <button
           key={ymd}
+          data-testid={`calendar-day-${ymd}`}
           disabled={isPast || !hasSlots || slotsLoading}
           onClick={() => { setSelectedDate(ymd); setSelectedSlot(null); }}
           className={[
@@ -237,7 +238,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
 
           {/* ── Step: Success ── */}
           {step === 'success' && (
-            <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div data-testid="booking-success-screen" className="flex flex-col items-center gap-4 py-8 text-center">
               <CheckCircle className="w-14 h-14 text-green-500" />
               <div>
                 <h3 className="font-serif text-lg text-amari-charcoal">You're booked!</h3>
@@ -261,7 +262,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
 
           {/* ── Step: Error ── */}
           {step === 'error' && (
-            <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <div data-testid="booking-error-screen" className="flex flex-col items-center gap-4 py-8 text-center">
               <AlertCircle className="w-14 h-14 text-red-400" />
               <div>
                 <h3 className="font-serif text-lg text-amari-charcoal">Something went wrong</h3>
@@ -313,6 +314,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                   Back
                 </button>
                 <button
+                  data-testid="confirm-booking-btn"
                   onClick={handleConfirm}
                   className="flex-1 py-2.5 bg-amari-charcoal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
                 >
@@ -347,16 +349,18 @@ export default function BookingModal({ onClose }: BookingModalProps) {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <button
+                    data-testid="prev-month-btn"
                     onClick={prevMonth}
                     disabled={isPrevDisabled}
                     className="p-1.5 rounded-lg hover:bg-amari-light-sand disabled:opacity-30 disabled:cursor-default transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4 text-amari-charcoal" />
                   </button>
-                  <span className="font-medium text-amari-charcoal text-sm">
+                  <span data-testid="calendar-month-label" className="font-medium text-amari-charcoal text-sm">
                     {MONTHS[calMonth]} {calYear}
                   </span>
                   <button
+                    data-testid="next-month-btn"
                     onClick={nextMonth}
                     className="p-1.5 rounded-lg hover:bg-amari-light-sand transition-colors"
                   >
@@ -389,7 +393,7 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-7 gap-y-1">
+                  <div data-testid="calendar-grid" className="grid grid-cols-7 gap-y-1">
                     {renderCalendar()}
                   </div>
                 )}

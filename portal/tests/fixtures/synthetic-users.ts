@@ -116,6 +116,14 @@ export const S11_REFERRAL_MILESTONE: PortalDataResponse = {
   upcomingAppointments: [],
 };
 
+// ZACH — affiliate-partner, 4-session series, 3 remaining (1 session attended, automation gap = not decremented)
+// sessionsCompleted=1 (GHL not updated after yesterday's session), isPartner=true
+export const S_ZACH: PortalDataResponse = {
+  client: { ...BASE, seriesType: '4-session', sessionsCompleted: 1, sessionsRemaining: 3, isPartner: true },
+  appointments: [appt('z1', 'showed', 1)],   // yesterday's session — showed but GHL didn't decrement
+  upcomingAppointments: [],
+};
+
 // 12. 1 session remaining in 4-session series (3 done)
 export const S12_ONE_REMAINING: PortalDataResponse = {
   client: { ...BASE, seriesType: '4-session', sessionsCompleted: 3, sessionsRemaining: 1 },

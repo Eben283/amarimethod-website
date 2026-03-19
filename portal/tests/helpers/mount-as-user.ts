@@ -28,7 +28,19 @@ export async function mountAsUser(page: Page, scenario: PortalDataResponse): Pro
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ slots: [] }) })
   );
   await page.route('**/api/portal-book', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) })
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        appointment: {
+          id: 'test-appt-id',
+          title: 'Follow-up Session (In Person)',
+          startTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          sessionType: 'in-person',
+        },
+      }),
+    })
   );
 
   await page.goto('/portal/');
