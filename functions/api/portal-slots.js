@@ -56,9 +56,12 @@ export async function onRequestGet(context) {
     return json({ error: 'calendarId, startDate, and endDate are required' }, 400, origin);
   }
 
-  // Convert YYYY-MM-DD to epoch ms for GHL
-  const startTimestamp = new Date(`${startDate}T00:00:00`).getTime();
-  const endTimestamp = new Date(`${endDate}T23:59:59`).getTime();
+  // Convert YYYY-MM-DD to epoch ms for GHL.
+  // Cloudflare Workers run in UTC, so T00:00:00 parses as UTC midnight.
+  // Extend endDate by 12 hours so that late-day slots in western timezones
+  // (e.g. 5-6 PM PDT = 00:00-01:00 UTC next day) are not cut off.
+  const startTimestamp = new Date(`${startDate}T00:00:00Z`).getTime();
+  const endTimestamp = new Date(`${endDate}T23:59:59Z`).getTime() + 12 * 60 * 60 * 1000;
 
   try {
     const ghlRes = await fetch(
