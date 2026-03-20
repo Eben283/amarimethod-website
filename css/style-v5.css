@@ -1037,6 +1037,56 @@ nav {
 /* ===== HOW IT WORKS PAGE ===== */
 
 /* Problem Cards Section */
+/* ===== DEFINITION BLOCK (how-it-works) ===== */
+.definition-section {
+  padding: 4rem 0 2rem;
+  background: var(--bg-primary);
+}
+
+.definition-block {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2.5rem 3rem;
+  background: var(--bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-left: 4px solid var(--therabody-tangerine-dream);
+}
+
+.definition-block h2 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.definition-block p {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.definition-block p:last-child {
+  margin-bottom: 0;
+}
+
+.definition-context {
+  font-size: 0.95rem !important;
+  color: var(--color-text-muted) !important;
+}
+
+.definition-sources {
+  font-size: 0.8rem !important;
+  color: var(--color-text-meta) !important;
+  margin-top: 0.5rem;
+}
+
+.definition-sources a {
+  color: var(--color-text-meta);
+  text-decoration: underline;
+}
+
 .problem-section {
   padding: 5rem 0;
   background: white;
@@ -1796,6 +1846,102 @@ article strong {
   color: #666;
   line-height: 1.6;
   margin: 0;
+}
+
+/* ===== STAT CALLOUT (blog articles) ===== */
+.stat-callout {
+  background: var(--bg-card-alt, #F5F0E5);
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  display: flex;
+  gap: 1.5rem;
+  align-items: baseline;
+}
+
+.stat-callout .stat-figure {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--font-serif-primary);
+  color: var(--color-primary);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.stat-callout .stat-detail {
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.stat-callout .stat-source {
+  font-size: 0.78rem;
+  color: var(--color-text-meta);
+  display: block;
+  margin-top: 0.3rem;
+}
+
+.stat-callout .stat-source a {
+  color: var(--color-text-meta);
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .stat-callout {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* ===== COMPARISON TABLE ===== */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--color-border, #e5e2d9);
+}
+
+.comparison-table thead th {
+  background: var(--bg-card-alt, #F5F0E5);
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-primary);
+}
+
+.comparison-table thead th:first-child {
+  border-radius: 8px 0 0 0;
+}
+
+.comparison-table thead th:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.comparison-table tbody td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 700px) {
+  .comparison-table {
+    font-size: 0.85rem;
+  }
+  .comparison-table th,
+  .comparison-table td {
+    padding: 0.75rem 0.8rem;
+  }
+  .comparison-table tbody td:first-child {
+    white-space: normal;
+  }
 }
 
 .cta-box {
