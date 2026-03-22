@@ -328,6 +328,83 @@ document.addEventListener('click', function(e) {
 
 // Note: GA4 initialization is in each page's HTML (gtag script loaded there)
 
+// ===== PAIN POINT PARAMETER FORWARDING =====
+// Reads ?pain=<type> from current URL and appends it to all outbound booking links.
+// This enables GA4 audience segmentation by pain point (e.g., Near-Bookers - Neck Pain).
+// Usage: link to amarimethod.com/booking?pain=neck from Instagram, ads, etc.
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  var painType = params.get('pain');
+  if (!painType) return;
+
+  // Sanitize: only allow lowercase letters and hyphens
+  painType = painType.toLowerCase().replace(/[^a-z\-]/g, '');
+  if (!painType) return;
+
+  // Store in sessionStorage so it persists across page navigations on the site
+  sessionStorage.setItem('amari_pain_type', painType);
+
+  function appendPainParam() {
+    var stored = sessionStorage.getItem('amari_pain_type');
+    if (!stored) return;
+
+    // Target all external booking links (GHL funnels and subdomains)
+    var bookingLinks = document.querySelectorAll(
+      'a[href*="amarimethodbooking.amarimethod.com"],' +
+      'a[href*="introsessionvirtual.amarimethod.com"],' +
+      'a[href*="discoverycall.amarimethod.com"],' +
+      'a[href*="amarimethodfollowup.amarimethod.com"]'
+    );
+
+    bookingLinks.forEach(function (link) {
+      var url = new URL(link.href);
+      if (!url.searchParams.has('pain')) {
+        url.searchParams.set('pain', stored);
+        link.href = url.toString();
+      }
+    });
+  }
+
+  // Run on DOMContentLoaded and also on any dynamic content changes
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', appendPainParam);
+  } else {
+    appendPainParam();
+  }
+})();
+
+// On pages without ?pain= param, check sessionStorage from a previous page
+(function () {
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('pain')) return; // Already handled above
+
+  var stored = sessionStorage.getItem('amari_pain_type');
+  if (!stored) return;
+
+  function appendPainParam() {
+    var bookingLinks = document.querySelectorAll(
+      'a[href*="amarimethodbooking.amarimethod.com"],' +
+      'a[href*="introsessionvirtual.amarimethod.com"],' +
+      'a[href*="discoverycall.amarimethod.com"],' +
+      'a[href*="amarimethodfollowup.amarimethod.com"]'
+    );
+
+    bookingLinks.forEach(function (link) {
+      var url = new URL(link.href);
+      if (!url.searchParams.has('pain')) {
+        url.searchParams.set('pain', stored);
+        link.href = url.toString();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', appendPainParam);
+  } else {
+    appendPainParam();
+  }
+})();
+
 // ===== GHL CALENDAR MODAL =====
 // Shared modal used by booking.html, virtual-sessions.html, in-person-sessions.html
 // Usage: openCalendarModal('CALENDAR_ID', 'Modal Title')
