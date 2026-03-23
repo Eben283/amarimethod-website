@@ -19,8 +19,17 @@ const StarIcon = () => (
   </svg>
 );
 
+// Build a booking URL with ?pain= param based on quiz Q0 answer
+function buildBookingUrl(base: string, painLocation: string | null): string {
+  if (!painLocation) return base;
+  const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
+  const separator = base.includes('?') ? '&' : '?';
+  return `${base}${separator}pain=${encodeURIComponent(normalized)}`;
+}
+
 const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
-  const { referralSource } = useQuiz();
+  const { referralSource, answers } = useQuiz();
+  const painLocation = (answers[0]?.answer as string) || null;
 
   // Capitalize first letter of referral name for display
   const referralName = referralSource
@@ -92,7 +101,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
 
           <div className="flex gap-3" style={{ width: '100%' }}>
             <a
-              href="https://amarimethodbooking.amarimethod.com/amari-method-funnel"
+              href={buildBookingUrl("https://amarimethodbooking.amarimethod.com/amari-method-funnel", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary text-center"
@@ -101,7 +110,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               <span>Book In-Person<span className="arrow">→</span></span>
             </a>
             <a
-              href="https://introsessionvirtual.amarimethod.com/is-virtual-info"
+              href={buildBookingUrl("https://introsessionvirtual.amarimethod.com/is-virtual-info", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary text-center"
@@ -134,7 +143,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             {referralName ? 'Have questions? Book a free discovery call' : 'Not ready to book? Start with a free call'}
           </p>
           <a
-            href="https://discoverycall.amarimethod.com/discovery-call-booking"
+            href={buildBookingUrl("https://discoverycall.amarimethod.com/discovery-call-booking", painLocation)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary"

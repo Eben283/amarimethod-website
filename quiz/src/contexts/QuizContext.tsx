@@ -297,6 +297,14 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       setIsProcessing(false);
       setIsCompleted(true);
       localStorage.removeItem('quiz_ref');
+
+      // Store pain type in sessionStorage so main.js forwards it to GHL booking links
+      const painLocation = (answers[0]?.answer as string) || '';
+      if (painLocation) {
+        const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
+        sessionStorage.setItem('amari_pain_type', normalized);
+      }
+
       trackEvent('quiz_complete', {
         pattern_signature: signature,
         recovery_potential: calculatedScores.recoveryPotential,

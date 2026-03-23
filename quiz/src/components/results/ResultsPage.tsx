@@ -7,6 +7,7 @@ import InsightCards from './InsightCards';
 import BookingCTA from './BookingCTA';
 import ShareCard from './ShareCard';
 import { useShareResults } from '@/hooks/useShareResults';
+import { useQuiz } from '@/contexts/QuizContext';
 
 type ResultsPageProps = {
   firstName: string;
@@ -24,6 +25,15 @@ const Divider = () => (
 const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsPageProps) => {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const { share, state: shareState } = useShareResults(shareCardRef);
+  const { answers } = useQuiz();
+  const painLocation = (answers[0]?.answer as string) || null;
+
+  function buildBookingUrl(base: string): string {
+    if (!painLocation) return base;
+    const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
+    const separator = base.includes('?') ? '&' : '?';
+    return `${base}${separator}pain=${encodeURIComponent(normalized)}`;
+  }
 
   const shareButtonLabel =
     shareState === 'capturing' ? 'Creating image…'
@@ -141,7 +151,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <a
-                href="https://amarimethodbooking.amarimethod.com/amari-method-funnel"
+                href={buildBookingUrl("https://amarimethodbooking.amarimethod.com/amari-method-funnel")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -149,7 +159,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
                 <span>Book In-Person<span className="arrow">→</span></span>
               </a>
               <a
-                href="https://introsessionvirtual.amarimethod.com/is-virtual-info"
+                href={buildBookingUrl("https://introsessionvirtual.amarimethod.com/is-virtual-info")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
