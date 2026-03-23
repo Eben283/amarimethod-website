@@ -18,7 +18,7 @@ Here's what it comes down to:
 
 **Your body already knows how to heal. You're not broken — you're out of balance.**
 
-The Amari Method teaches your nervous system to restore that balance. Not through ongoing dependency or endless appointments — but through tools you learn once and keep for life.
+The Amari Method restores the muscle balance your body has lost. Not through ongoing dependency or endless appointments — but through tools you learn once and keep for life.
 
 This is the last email I'll send in this series. No countdown timers. No manufactured urgency.
 

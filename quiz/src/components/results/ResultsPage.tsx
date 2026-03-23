@@ -127,7 +127,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             <ScoreCard
               title="Pattern Duration"
               score={scores.patternDuration}
-              description="How long your pattern has been developing affects how established it is in your nervous system."
+              description="How long your pattern has been developing affects how established the compensation pattern is in your body."
               compact
             />
             <ScoreCard

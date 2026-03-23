@@ -277,7 +277,7 @@ export function generateInsights(answers: QuizAnswer[], scores: ScoreCategories)
   if (answers[5]?.answer && (answers[5].answer as string[]).includes('In the morning, right after waking up')) {
     insights.push({
       title: 'Your Morning Reset Pattern',
-      description: 'Your body uses sleep to reset, but the transition to vertical movement creates a challenge. This indicates a deeper postural pattern that can be retrained.'
+      description: 'Your body uses sleep to reset, but the transition to vertical movement creates a challenge. This indicates a deeper postural pattern where balance can be restored.'
     });
   }
 

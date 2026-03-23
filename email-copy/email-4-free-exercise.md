@@ -36,7 +36,7 @@ Hi {{contact.first_name}},
 
 I promised you a free exercise for your {{contact.primary_pain_location}} — here it is.
 
-It's called the **Spinal Wave**, and it's one of the first things I teach clients with {{contact.primary_pain_location}} pain. It gently decompresses your spine and helps your nervous system release the tension patterns that keep pulling you out of alignment.
+It's called the **Spinal Wave**, and it's one of the first things I teach clients with {{contact.primary_pain_location}} pain. It gently decompresses your spine and helps overworked muscles release the tension patterns that keep pulling you out of alignment.
 
 **How to do it:**
 1. Lie on your back with knees bent, feet flat on the floor
@@ -44,7 +44,7 @@ It's called the **Spinal Wave**, and it's one of the first things I teach client
 3. Pause at the top, then roll back down just as slowly
 4. Repeat 5-8 times, breathing deeply with each wave
 
-The key is *slow*. Your nervous system responds to gentle input, not force.
+The key is *slow*. Your body responds to gentle input, not force.
 
 This is a preview of what a full Amari Method session covers — except in a session, every exercise is tailored to your specific {{contact.pain_pattern_signature}} pattern and we address the full chain of compensation, not just one area.
 
@@ -118,7 +118,7 @@ It's called the **Spring Step**, and it's one of the first things I teach client
 4. Pause at the top for 1 second
 5. Repeat 10-12 times
 
-The slow lowering phase is where the magic happens — it retrains your tendons to absorb force properly.
+The slow lowering phase is where the magic happens — it restores your tendons' ability to absorb force properly.
 
 This is a preview of what a full Amari Method session covers — except in a session, every exercise is tailored to your specific {{contact.pain_pattern_signature}} pattern and we address the full chain of compensation, not just one area.
 
