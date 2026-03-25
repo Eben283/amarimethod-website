@@ -40,7 +40,7 @@ export const COURSE_MODULES: readonly Module[] = [
     slug: 'power-posture',
     title: 'Power Posture',
     lessons: [
-      { slug: 'introduction', title: 'Introduction', videoUrl: `${CDN}/69c306b5f5a389ab2aa4c3a0.mp4`, durationSeconds: 0 },
+      { slug: 'introduction', title: 'Introduction', videoUrl: `${CDN}/69c30d0ef5a3893acea59684.mp4`, durationSeconds: 0 },
       { slug: 'technical-terms', title: 'Technical Terms', videoUrl: `${CDN}/69c306b5cf4f9ab0a0157c59.mp4`, durationSeconds: 0 },
       { slug: 'exercise-walkthrough', title: 'Exercise Walkthrough', videoUrl: `${CDN}/69c306b6f9ac780b0f586e7f.mp4`, durationSeconds: 0 },
       { slug: 'exercise-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c306b57fba4bae43d2b291.mp4`, durationSeconds: 0 },
@@ -91,7 +91,7 @@ export const COURSE_MODULES: readonly Module[] = [
     slug: 'spring-step',
     title: 'Spring Step',
     lessons: [
-      { slug: 'introduction', title: 'Introduction', videoUrl: `${CDN}/69c30d0ef5a3893acea59684.mp4`, durationSeconds: 0 },
+      { slug: 'introduction', title: 'Introduction', videoUrl: `${CDN}/69c306b5f5a389ab2aa4c3a0.mp4`, durationSeconds: 0 },
       { slug: 'technical-terms', title: 'Technical Terms', videoUrl: `${CDN}/69c30d0eeaed0669bca91834.mp4`, durationSeconds: 0 },
       { slug: 'why-this-is-so-important', title: 'Why This Is So Important', videoUrl: `${CDN}/69c30d0e39e309ebe374dd17.mp4`, durationSeconds: 0 },
       { slug: 'exercise-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c30d0efe4d0d3133d628ce.mp4`, durationSeconds: 0 },
