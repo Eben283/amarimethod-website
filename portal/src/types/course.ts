@@ -3,6 +3,8 @@ export interface Lesson {
   readonly title: string;
   readonly videoUrl: string;
   readonly durationSeconds: number;
+  /** Optional section label — renders a divider/heading before this lesson */
+  readonly section?: string;
 }
 
 export interface Module {

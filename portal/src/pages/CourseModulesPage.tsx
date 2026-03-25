@@ -108,6 +108,13 @@ function ModuleAccordion({
 
             return (
               <li key={lesson.slug} className="border-b border-amari-border last:border-b-0">
+                {lesson.section && (
+                  <div className="px-4 pt-3 pb-1">
+                    <p className="text-[10px] uppercase tracking-widest text-amari-text-muted font-sans font-semibold">
+                      {lesson.section}
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={() => navigate(`/practice/${mod.slug}/${lesson.slug}`)}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-amari-light-sand transition-colors"

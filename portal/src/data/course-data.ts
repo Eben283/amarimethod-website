@@ -60,23 +60,19 @@ export const COURSE_MODULES: readonly Module[] = [
     ],
   },
   {
-    slug: 'passive-bridge',
-    title: 'Passive Bridge',
+    slug: 'bridge-variations',
+    title: 'Bridge Variations',
     lessons: [
       { slug: 'introduction', title: 'Introduction', videoUrl: `${CDN}/69c307643ec9e8047a8e62f1.mp4`, durationSeconds: 0 },
       { slug: 'technical-terms', title: 'Technical Terms', videoUrl: `${CDN}/69c30764bbd719b2660c4cee.mp4`, durationSeconds: 0 },
-      { slug: 'exercise-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c30764cf4f9a6d64158fd6.mp4`, durationSeconds: 0 },
-      { slug: 'discussion', title: 'Discussion', videoUrl: `${CDN}/69c30764f9ac78710958809c.mp4`, durationSeconds: 0 },
-      { slug: 'tips', title: 'Tips and Common Mistakes', videoUrl: `${CDN}/69c30764fe4d0d3fcbd568ae.mp4`, durationSeconds: 0 },
-    ],
-  },
-  {
-    slug: 'active-bridge',
-    title: 'Active Bridge',
-    lessons: [
-      { slug: 'discussion', title: 'Discussion', videoUrl: `${CDN}/69c30764eaed06570fa85743.mp4`, durationSeconds: 0 },
-      { slug: 'exercise-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c30764510803387ad90d1a.mp4`, durationSeconds: 0 },
-      { slug: 'tips', title: 'Tips and Common Mistakes', videoUrl: `${CDN}/69c33128eaed06392cad7fc5.mp4`, durationSeconds: 0 },
+      // — Passive Bridge —
+      { slug: 'passive-bridge-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c30764cf4f9a6d64158fd6.mp4`, durationSeconds: 0, section: 'Passive Bridge' },
+      { slug: 'passive-bridge-discussion', title: 'Discussion', videoUrl: `${CDN}/69c30764f9ac78710958809c.mp4`, durationSeconds: 0 },
+      { slug: 'passive-bridge-tips', title: 'Tips and Common Mistakes', videoUrl: `${CDN}/69c30764fe4d0d3fcbd568ae.mp4`, durationSeconds: 0 },
+      // — Active Bridge —
+      { slug: 'active-bridge-discussion', title: 'Discussion', videoUrl: `${CDN}/69c30764eaed06570fa85743.mp4`, durationSeconds: 0, section: 'Active Bridge' },
+      { slug: 'active-bridge-demo', title: 'Exercise Demo', videoUrl: `${CDN}/69c30764510803387ad90d1a.mp4`, durationSeconds: 0 },
+      { slug: 'active-bridge-tips', title: 'Tips and Common Mistakes', videoUrl: `${CDN}/69c33128eaed06392cad7fc5.mp4`, durationSeconds: 0 },
       { slug: 'active-vs-passive-guide', title: 'Active vs Passive Bridge Guide', videoUrl: `${CDN}/69c30765bbd7198da70c4d09.mp4`, durationSeconds: 0 },
     ],
   },

@@ -93,6 +93,11 @@ export default function CourseSidebar({
 
                       return (
                         <li key={lesson.slug}>
+                          {lesson.section && (
+                            <p className="text-[10px] uppercase tracking-widest text-amari-text-muted font-sans font-semibold mt-2 mb-1 px-2">
+                              {lesson.section}
+                            </p>
+                          )}
                           <button
                             onClick={() => navigate(`/practice/${mod.slug}/${lesson.slug}`)}
                             className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-xs font-sans transition-colors ${
