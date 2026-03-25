@@ -28,6 +28,7 @@ quiz-package.json.backup
 .env
 .env.local
 .env.*.local
+.dev.vars
 
 # API Keys
 *.rtf

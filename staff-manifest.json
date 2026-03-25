@@ -1,0 +1,23 @@
+{
+  "name": "Amari Method Staff",
+  "short_name": "Amari Staff",
+  "description": "Staff dashboard — today's schedule, client lookup, session checklists.",
+  "start_url": "/staff/",
+  "scope": "/staff/",
+  "display": "standalone",
+  "background_color": "#FFFCF5",
+  "theme_color": "#252525",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-light.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

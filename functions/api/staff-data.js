@@ -1,0 +1,192 @@
+// Cloudflare Pages Function: GET /api/staff-data
+// Returns today's appointments with enriched contact data
+
+import { ghlHeaders, getGhlToken, ghlFetch } from "../lib/ghl.js";
+import { verifySessionToken } from "../lib/auth.js";
+import { getCustomField } from "./portal-data.js";
+
+const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+
+const ALLOWED_ORIGINS = [
+  "https://www.amarimethod.com",
+  "https://amarimethod.com",
+];
+
+function corsHeaders(origin) {
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+export async function onRequestOptions(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(context.request.headers.get("Origin")),
+  });
+}
+
+export async function onRequestGet(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
+
+  try {
+    const JWT_SECRET = context.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
+    }
+
+    // Verify staff auth token
+    const authHeader = context.request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
+    }
+
+    let tokenPayload;
+    try {
+      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+    } catch {
+      return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers });
+    }
+
+    if (tokenPayload.role !== "staff") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
+    }
+
+    const GHL_API_KEY = await getGhlToken(context);
+
+    // Get today's date in Pacific Time
+    const now = new Date();
+    const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Los_Angeles',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const todayStr = pacificFormatter.format(now); // "YYYY-MM-DD"
+
+    // Convert Pacific midnight to epoch ms (handles PST/PDT automatically)
+    const [year, month, day] = todayStr.split('-').map(Number);
+    const probe = new Date(Date.UTC(year, month - 1, day, 20, 0, 0));
+    const ptHourAtProbe = Number(
+      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(probe)
+    );
+    const utcHourForPTMidnight = 20 - ptHourAtProbe;
+    const startTime = Date.UTC(year, month - 1, day, utcHourForPTMidnight, 0, 0);
+    const endTime = startTime + 86_400_000 - 1;
+
+    // Fetch all calendars, then query each one for today's events (GHL requires calendarId per request)
+    const calendarsRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/?locationId=${GHL_LOCATION_ID}`);
+    if (!calendarsRes.ok) {
+      console.error(`[staff-data] Calendars list error: ${calendarsRes.status}`);
+      return new Response(JSON.stringify({ error: "Failed to load calendars" }), { status: 422, headers });
+    }
+    const calendarsData = await calendarsRes.json();
+    const allCalendars = calendarsData.calendars || [];
+
+    const eventMap = new Map();
+    for (const cal of allCalendars) {
+      const params = new URLSearchParams({
+        locationId: GHL_LOCATION_ID,
+        calendarId: cal.id,
+        startTime: String(startTime),
+        endTime: String(endTime),
+      });
+      const calResponse = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
+      if (calResponse.ok) {
+        const calData = await calResponse.json();
+        for (const e of (calData.events || [])) {
+          if (!eventMap.has(e.id)) {
+            eventMap.set(e.id, { ...e, calendarName: cal.name });
+          }
+        }
+      }
+    }
+    const events = Array.from(eventMap.values());
+
+    // Filter to non-cancelled appointments
+    const todayEvents = events.filter(
+      (e) => (e.appointmentStatus || e.status || "").toLowerCase() !== "cancelled"
+    );
+
+    // Sort chronologically
+    todayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+    // Fetch custom field definitions
+    const fieldDefsResponse = await ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`);
+    let fieldDefs = {};
+    if (fieldDefsResponse.ok) {
+      const fieldDefsData = await fieldDefsResponse.json();
+      for (const f of (fieldDefsData.customFields || [])) {
+        const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
+        if (shortKey) fieldDefs[shortKey] = f.id;
+      }
+    }
+
+    // Enrich each appointment with contact details
+    const enriched = await Promise.all(
+      todayEvents.map(async (event) => {
+        const contactId = event.contactId;
+        let contactName = event.title || "Unknown";
+        let sessionsRemaining = 0;
+        let sessionsCompleted = 0;
+        let seriesType = "none";
+        let tags = [];
+
+        if (contactId) {
+          try {
+            const capitalize = (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : "";
+            const [contactRes, apptRes] = await Promise.all([
+              ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`),
+              ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
+            ]);
+            if (contactRes.ok) {
+              const contactData = await contactRes.json();
+              const contact = contactData.contact;
+              const firstName = capitalize(contact.firstName || "");
+              const lastName = capitalize(contact.lastName || "");
+              contactName = [firstName, lastName].filter(Boolean).join(" ") || contactName;
+              seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
+              sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
+              sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
+              tags = contact.tags || [];
+            }
+            // Derive session count from appointment history if custom field is empty
+            if (sessionsCompleted === 0 && apptRes.ok) {
+              const apptData = await apptRes.json();
+              const allAppts = apptData.appointments || apptData.events || [];
+              sessionsCompleted = allAppts.filter(
+                (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "showed" ||
+                       (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
+              ).length;
+            }
+          } catch (err) {
+            console.error(`[staff-data] Contact enrich error for ${contactId}:`, err.message);
+          }
+        }
+
+        return {
+          id: event.id,
+          contactId: contactId || "",
+          contactName,
+          startTime: event.startTime || event.start_time,
+          endTime: event.endTime || event.end_time,
+          title: event.title || event.calendarName || "Session",
+          sessionsRemaining,
+          sessionsCompleted,
+          seriesType,
+          tags,
+        };
+      })
+    );
+
+    return new Response(JSON.stringify(enriched), { status: 200, headers });
+  } catch (err) {
+    console.error("[staff-data] Unexpected error:", err);
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
+  }
+}
