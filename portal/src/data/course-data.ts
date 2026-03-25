@@ -1,10 +1,11 @@
 import type { Module } from '../types/course';
+import { MODULE_META, LESSON_NOTES } from './course-content';
 
 // CDN base for all course videos hosted in GHL Media Storage
 const CDN = 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media';
 
 
-export const COURSE_MODULES: readonly Module[] = [
+const RAW_MODULES: readonly Module[] = [
   {
     slug: 'welcome',
     title: 'Welcome',
@@ -127,6 +128,21 @@ export const COURSE_MODULES: readonly Module[] = [
     ],
   },
 ] as const;
+
+/** Enrich modules with equipment, guidance, and lesson notes from transcripts */
+export const COURSE_MODULES: readonly Module[] = RAW_MODULES.map((mod) => {
+  const meta = MODULE_META[mod.slug] ?? {};
+  return {
+    ...mod,
+    equipment: meta.equipment,
+    guidance: meta.guidance,
+    lessons: mod.lessons.map((lesson) => {
+      const key = `${mod.slug}/${lesson.slug}`;
+      const notes = LESSON_NOTES[key];
+      return notes && notes.length > 0 ? { ...lesson, notes } : lesson;
+    }),
+  };
+});
 
 /** Total number of lessons across all modules */
 export const TOTAL_LESSONS = COURSE_MODULES.reduce(

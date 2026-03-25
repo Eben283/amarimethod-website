@@ -5,12 +5,18 @@ export interface Lesson {
   readonly durationSeconds: number;
   /** Optional section label — renders a divider/heading before this lesson */
   readonly section?: string;
+  /** Key takeaways shown below the video — extracted verbatim from transcripts */
+  readonly notes?: readonly string[];
 }
 
 export interface Module {
   readonly slug: string;
   readonly title: string;
   readonly lessons: readonly Lesson[];
+  /** Equipment needed for this module */
+  readonly equipment?: readonly string[];
+  /** Recommended duration/frequency — verbatim from transcripts */
+  readonly guidance?: string;
 }
 
 export interface LessonProgress {

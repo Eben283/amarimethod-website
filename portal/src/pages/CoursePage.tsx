@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
-import { ArrowLeft, List } from 'lucide-react';
+import { ArrowLeft, List, Wrench, Clock } from 'lucide-react';
 import PortalNav from '../components/PortalNav';
 import CourseGuard from '../components/course/CourseGuard';
 import CourseSidebar from '../components/course/CourseSidebar';
@@ -138,6 +138,54 @@ export default function CoursePage() {
               initialSeconds={lessonProg?.watchedSeconds ?? 0}
               onTimeUpdate={handleTimeUpdate}
             />
+
+            {/* Equipment & guidance — shown on first lesson of each module */}
+            {lessonNumber === 1 && (currentModule.equipment || currentModule.guidance) && (
+              <div className="mt-5 p-4 rounded-lg bg-amari-light-sand border border-amari-border">
+                {currentModule.equipment && currentModule.equipment.length > 0 && (
+                  <div className="mb-3">
+                    <h3 className="flex items-center gap-1.5 text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
+                      <Wrench className="w-3.5 h-3.5" />
+                      Equipment
+                    </h3>
+                    <ul className="space-y-1">
+                      {currentModule.equipment.map((item, i) => (
+                        <li key={i} className="text-sm text-amari-text-secondary font-sans flex items-start gap-2">
+                          <span className="text-amari-accent-warm mt-0.5">•</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {currentModule.guidance && (
+                  <div>
+                    <h3 className="flex items-center gap-1.5 text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Recommended Practice
+                    </h3>
+                    <p className="text-sm text-amari-text-secondary font-sans">{currentModule.guidance}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Lesson notes — key takeaways from the video */}
+            {currentLesson.notes && currentLesson.notes.length > 0 && (
+              <div className="mt-5 p-4 rounded-lg border border-amari-border">
+                <h3 className="text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
+                  Key Takeaways
+                </h3>
+                <ul className="space-y-1.5">
+                  {currentLesson.notes.map((note, i) => (
+                    <li key={i} className="text-sm text-amari-text-secondary font-sans flex items-start gap-2">
+                      <span className="text-amari-accent-warm mt-0.5">•</span>
+                      {note}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Nav buttons */}
             <LessonNav moduleSlug={moduleSlug} lessonSlug={lessonSlug} />
