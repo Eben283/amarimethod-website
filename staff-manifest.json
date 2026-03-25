@@ -10,14 +10,10 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/staff-icon.png",
       "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicon-light.png",
-      "sizes": "64x64",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
