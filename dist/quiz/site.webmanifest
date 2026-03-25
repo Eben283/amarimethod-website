@@ -1,0 +1,26 @@
+{
+  "name": "Amari Method Pain Assessment",
+  "short_name": "Amari Quiz",
+  "description": "Discover your pain pattern and get personalized recovery insights",
+  "start_url": "/quiz/",
+  "display": "standalone",
+  "background_color": "#fffcf5",
+  "theme_color": "#4f8a8b",
+  "icons": [
+    {
+      "src": "/favicon-light.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-dark.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

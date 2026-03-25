@@ -1,0 +1,8 @@
+# SPA fallback for quiz - serves index.html for all /quiz/* routes
+/quiz/* /quiz/index.html 200
+
+# SPA fallback for client portal
+/portal/* /portal/index.html 200
+
+# Optional: Redirect old subdomain to new path (activate after DNS update)
+# https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301

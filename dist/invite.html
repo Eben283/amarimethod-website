@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <title>You've Been Invited | Amari Method</title>
+  <meta name="description" content="A friend thought you'd benefit from a session with the Amari Method. Leave your name and number and we'll send you a booking link.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="author" content="Amari Method">
+
+  <!-- Favicon & Icons -->
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="canonical" href="https://www.amarimethod.com/invite">
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ', { send_page_view: false });
+  </script>
+
+  <link rel="stylesheet" href="css/style-v5.css?v=15">
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vuvx43xu8h");
+    </script>
+</head>
+<body>
+
+  <nav>
+    <a href="index.html" class="logo" style="text-decoration: none;">
+      <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
+    </a>
+    <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+    <ul class="nav-menu">
+      <li><a href="index.html#why">Why Amari Method</a></li>
+      <li><a href="index.html#how">How It Works</a></li>
+      <li><a href="index.html#services">Services</a></li>
+      <li><a href="blog.html">Free Resources</a></li>
+      <li><a href="booking">Pricing</a></li>
+      <li><a href="about.html">About</a></li>
+    </ul>
+    <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Session</span></span></a>
+  </nav>
+<!-- ===== MAIN CONTENT ===== -->
+<main>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="container hero-content">
+      <h1>You've been invited</h1>
+      <p class="hero-subtitle" id="hero-subtitle">A friend thought you'd benefit from a session. Leave your name and number and we'll send you a booking link.</p>
+    </div>
+  </section>
+
+  <!-- ===== INVITE FORM ===== -->
+  <section>
+    <div class="container">
+      <div class="referral-wrapper">
+
+        <!-- Form (shown when valid ?ref= param is present) -->
+        <div id="invite-form-container">
+          <form id="invite-form" class="referral-form">
+
+            <div class="field">
+              <label for="referred-name">Your First Name *</label>
+              <input type="text" id="referred-name" name="referredName" autocomplete="given-name" required>
+            </div>
+
+            <div class="field">
+              <label for="referred-phone">Your Phone Number *</label>
+              <input type="tel" id="referred-phone" name="referredPhone" inputmode="tel" autocomplete="tel" required>
+            </div>
+
+            <div id="form-error" class="form-error"></div>
+
+            <button type="submit" id="submit-btn" class="btn-primary btn-block">
+              <span class="btn-content"><span class="arrow">&rarr;</span><span class="btn-text">Send Me a Booking Link</span></span>
+            </button>
+
+          </form>
+        </div>
+
+        <!-- Success state -->
+        <div id="invite-success" class="referral-success" style="display: none;">
+          <div class="referral-success-icon">&#10003;</div>
+          <h2>You're on the list!</h2>
+          <p id="success-message">We'll be in touch shortly with a booking link.</p>
+          <a id="booking-link" href="https://amarimethodbooking.amarimethod.com/amari-method-funnel" class="btn-primary" target="_blank" rel="noopener noreferrer">
+            <span class="btn-content"><span class="arrow">&rarr;</span><span class="btn-text">Book a Session Now</span></span>
+          </a>
+        </div>
+
+        <!-- No-ref fallback (shown when ?ref= param is missing or invalid referrer) -->
+        <div id="no-ref-fallback" class="referral-success" style="display: none;">
+          <div class="referral-success-icon">&#9733;</div>
+          <h2>Experience the Amari Method</h2>
+          <p>Interested in booking a session? We'd love to work with you.</p>
+          <a href="https://amarimethodbooking.amarimethod.com/amari-method-funnel" class="btn-primary" target="_blank" rel="noopener noreferrer">
+            <span class="btn-content"><span class="arrow">&rarr;</span><span class="btn-text">Book a Session</span></span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+    <footer>
+        <!-- Footer Top: Logo + Contact -->
+        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
+            <div style="display: flex; align-items: center; gap: 1.25rem;">
+                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
+                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Freedom From Pain. Results For Life.</p>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
+                hello@amarihealth.com &nbsp;·&nbsp; San Francisco, CA
+            </p>
+        </div>
+        <!-- Footer Links -->
+        <div class="footer-content" style="padding-top: 2.5rem;">
+            <div class="footer-section">
+                <h3>Services</h3>
+                <ul>
+                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
+                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
+                    <li><a href="booking">Online Program</a></li>
+                    <li><a href="ongoing-care">Ongoing Care</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Conditions</h3>
+                <ul>
+                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
+                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
+                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
+                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
+                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>About</h3>
+                <ul>
+                    <li><a href="/#why">Why Amari Method</a></li>
+                    <li><a href="about.html">About Dr. Garrett</a></li>
+                    <li><a href="/#how">How It Works</a></li>
+                    <li><a href="/#results">Results & Reviews</a></li>
+                    <li><a href="affiliate">Partnership Program</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Get Started</h3>
+                <ul>
+                    <li><a href="https://discoverycall.amarimethod.com/discovery-call-booking">Free Discovery Call</a></li>
+                    <li><a href="client-info.html">Client Information</a></li>
+                    <li><a href="booking">View Pricing & Packages</a></li>
+                    <li><a href="/#services">Book Your Session</a></li>
+                    <li><a href="/portal">Client Portal</a></li>
+                    <li><a href="/#faq">FAQ</a></li>
+                    <li><a href="tools.html">Tools</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Made by Forrest Designs | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
+        </div>
+    </footer>
+<script src="js/main.js?v=2" defer></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const refParam = (urlParams.get('ref') || '').trim();
+
+  const formContainer = document.getElementById('invite-form-container');
+  const noRefFallback = document.getElementById('no-ref-fallback');
+
+  // Show the fallback state if no ref param is provided
+  if (!refParam) {
+    formContainer.style.display = 'none';
+    noRefFallback.style.display = 'block';
+    document.getElementById('hero-subtitle').textContent = 'Interested in a session? We\'d love to have you.';
+  }
+
+  document.getElementById('invite-form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitBtn = document.getElementById('submit-btn');
+    const errorDiv = document.getElementById('form-error');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const originalText = btnText.textContent;
+
+    submitBtn.disabled = true;
+    btnText.textContent = 'Sending...';
+    errorDiv.style.display = 'none';
+
+    const referredName = form.referredName.value.trim();
+    const referredPhone = form.referredPhone.value.trim();
+
+    const payload = {
+      referrerId: refParam,
+      referredName,
+      referredPhone,
+    };
+
+    try {
+      const response = await fetch('/api/client-refer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Something went wrong. Please try again.');
+      }
+
+      // Personalize success message
+      document.getElementById('success-message').textContent =
+        'Thanks, ' + referredName + '! We\'ll be in touch shortly with your booking link.';
+
+      if (data.bookingUrl) {
+        document.getElementById('booking-link').href = data.bookingUrl;
+      }
+
+      // Show success state
+      formContainer.style.display = 'none';
+      document.getElementById('invite-success').style.display = 'block';
+
+      // Track in GA4
+      gtag('event', 'client_referral_invite_submitted', {
+        has_ref: !!refParam,
+      });
+
+    } catch (err) {
+      errorDiv.textContent = err.message;
+      errorDiv.style.display = 'block';
+      submitBtn.disabled = false;
+      btnText.textContent = originalText;
+    }
+  });
+</script>
+</body>
+</html>
