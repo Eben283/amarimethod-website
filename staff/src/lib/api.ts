@@ -63,8 +63,9 @@ export async function staffLogin(pin: string): Promise<{ token: string }> {
   });
 }
 
-export async function getTodayData(): Promise<import('../types/staff').TodayAppointment[]> {
-  return fetchApi('/staff-data');
+export async function getDayData(date?: string): Promise<import('../types/staff').TodayAppointment[]> {
+  const params = date ? `?date=${date}` : '';
+  return fetchApi(`/staff-data${params}`);
 }
 
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {

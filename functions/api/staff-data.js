@@ -59,7 +59,9 @@ export async function onRequestGet(context) {
 
     const GHL_API_KEY = await getGhlToken(context);
 
-    // Get today's date in Pacific Time
+    // Support ?date=YYYY-MM-DD param, default to today in Pacific Time
+    const url = new URL(context.request.url);
+    const dateParam = url.searchParams.get('date');
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -67,7 +69,9 @@ export async function onRequestGet(context) {
       month: '2-digit',
       day: '2-digit',
     });
-    const todayStr = pacificFormatter.format(now); // "YYYY-MM-DD"
+    const todayStr = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+      ? dateParam
+      : pacificFormatter.format(now);
 
     // Convert Pacific midnight to epoch ms (handles PST/PDT automatically)
     const [year, month, day] = todayStr.split('-').map(Number);
