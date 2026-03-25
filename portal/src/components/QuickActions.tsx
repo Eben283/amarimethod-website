@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video, Gift } from 'lucide-react';
 import type { ClientData } from '../types/portal';
 import EmbedCalendarModal, { type EmbedCalendarType } from './EmbedCalendarModal';
@@ -26,7 +27,8 @@ const PAYMENT_LINKS = {
   single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
 
-const LIVING_PRACTICE_COURSE_URL = 'https://groups.amarimethod.com/';
+// Internal route — course player is now inside the portal
+const LIVING_PRACTICE_ROUTE = '/practice';
 
 // TODO: Once Eben creates the gift card in GHL (Payments → Gift Cards),
 // paste the shareable checkout link here to activate the Buy button.
@@ -110,6 +112,7 @@ function getSeriesActions(client: ClientData): Action[] {
 }
 
 export default function QuickActions({ client, onBookSession: _onBookSession }: QuickActionsProps) {
+  const navigate = useNavigate();
   const [showInitialChoice, setShowInitialChoice] = useState(false);
   const [showSeriesChoice, setShowSeriesChoice] = useState(false);
   const [showFollowupChoice, setShowFollowupChoice] = useState(false);
@@ -153,7 +156,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         icon: Play,
         label: 'Living Practice',
         description: 'Continue your video program →',
-        href: LIVING_PRACTICE_COURSE_URL,
+        onClick: () => navigate(LIVING_PRACTICE_ROUTE),
         style: 'secondary',
         testId: 'living-practice-card',
       }

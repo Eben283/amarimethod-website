@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { requestMagicLink, ApiError } from '../lib/api';
-import { Mail, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Mail, ArrowRight, CheckCircle, AlertCircle, Monitor } from 'lucide-react';
 
 export default function LoginPage() {
+  const { sessionEvicted } = useAuth();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
@@ -63,6 +67,19 @@ export default function LoginPage() {
             See where you are in your healing journey — progress, sessions, and next steps.
           </p>
         </div>
+
+        {/* Session evicted notice */}
+        {sessionEvicted && (
+          <div className="flex items-start gap-3 mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
+            <Monitor className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">Session expired</p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                You've logged in on another device. Please sign in again to continue.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Card */}
         <div className="portal-card">

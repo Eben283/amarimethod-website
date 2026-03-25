@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import VerifyPage from './pages/VerifyPage';
 import DashboardPage from './pages/DashboardPage';
+import CoursePage, { CourseIndex } from './pages/CoursePage';
+import CourseModulesPage from './pages/CourseModulesPage';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -62,6 +64,30 @@ function AppRoutes() {
         }
       />
       <Route path="/verify" element={<VerifyPage />} />
+      <Route
+        path="/practice"
+        element={
+          <ProtectedRoute>
+            <CourseIndex />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/practice/modules"
+        element={
+          <ProtectedRoute>
+            <CourseModulesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/practice/:moduleSlug/:lessonSlug"
+        element={
+          <ProtectedRoute>
+            <CoursePage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
