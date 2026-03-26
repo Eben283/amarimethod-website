@@ -105,7 +105,16 @@ export async function onRequestGet(context) {
         .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
     }
 
-    // Find last completed appointment + count completed sessions from history
+    // Exclude non-session appointments (discovery calls, pain assessments) from session count
+    const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+    const sessionAppointments = appointments.filter(
+      (a) => !NON_SESSION_PATTERNS.test(a.title)
+    );
+
+    // Find last completed session + count completed sessions from history
+    const completedSessions = sessionAppointments.filter(
+      (a) => a.status === "completed" || a.status === "showed"
+    );
     const completedAppointments = appointments.filter(
       (a) => a.status === "completed" || a.status === "showed"
     );
@@ -179,7 +188,7 @@ export async function onRequestGet(context) {
     // Use appointment history count if custom field is empty/zero
     const derivedSessionsCompleted = sessionsCompleted > 0
       ? sessionsCompleted
-      : completedAppointments.length;
+      : completedSessions.length;
 
     const result = {
       id: contact.id,

@@ -170,9 +170,13 @@ export async function onRequestGet(context) {
             if (sessionsCompleted === 0 && apptRes.ok) {
               const apptData = await apptRes.json();
               const allAppts = apptData.appointments || apptData.events || [];
+              const nonSessionPattern = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
               sessionsCompleted = allAppts.filter(
-                (a) => (a.appointmentStatus || a.status || "").toLowerCase() === "showed" ||
-                       (a.appointmentStatus || a.status || "").toLowerCase() === "completed"
+                (a) => {
+                  const status = (a.appointmentStatus || a.status || "").toLowerCase();
+                  const title = a.title || "";
+                  return (status === "showed" || status === "completed") && !nonSessionPattern.test(title);
+                }
               ).length;
             }
           } catch (err) {

@@ -8,9 +8,10 @@ export default function SessionBrief({ client }: Props) {
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ');
   const isPartner = client.tags.includes('affiliate-partner');
 
-  // Count completed/showed appointments
+  // Count completed/showed sessions (exclude discovery calls, pain assessments)
+  const nonSession = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
   const completedAppts = client.appointments.filter(
-    (a) => a.status === 'showed' || a.status === 'completed'
+    (a) => (a.status === 'showed' || a.status === 'completed') && !nonSession.test(a.title)
   );
   const visitCount = completedAppts.length;
   const visitLabel = visitCount === 0

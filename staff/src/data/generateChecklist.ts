@@ -15,11 +15,13 @@ interface SessionContext {
   sessionsRemaining: number;
 }
 
+const NON_SESSION = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+
 export function generateChecklist(client: ContactDetail): ChecklistTemplate | null {
   const isPartner = client.tags.includes('affiliate-partner');
 
   const completed = client.appointments.filter(
-    (a) => a.status === 'showed' || a.status === 'completed'
+    (a) => (a.status === 'showed' || a.status === 'completed') && !NON_SESSION.test(a.title)
   );
 
   // Previous sessions = completed but not today
