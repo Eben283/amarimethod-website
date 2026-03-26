@@ -59,9 +59,10 @@ export async function onRequestGet(context) {
 
     const GHL_API_KEY = await getGhlToken(context);
 
-    // Support ?date=YYYY-MM-DD param, default to today in Pacific Time
+    // Support ?date=YYYY-MM-DD and ?endDate=YYYY-MM-DD for ranges
     const url = new URL(context.request.url);
     const dateParam = url.searchParams.get('date');
+    const endDateParam = url.searchParams.get('endDate');
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -69,19 +70,25 @@ export async function onRequestGet(context) {
       month: '2-digit',
       day: '2-digit',
     });
-    const todayStr = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
-      ? dateParam
-      : pacificFormatter.format(now);
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    const startDateStr = dateParam && dateRegex.test(dateParam) ? dateParam : pacificFormatter.format(now);
+    const endDateStr = endDateParam && dateRegex.test(endDateParam) ? endDateParam : startDateStr;
 
-    // Convert Pacific midnight to epoch ms (handles PST/PDT automatically)
-    const [year, month, day] = todayStr.split('-').map(Number);
-    const probe = new Date(Date.UTC(year, month - 1, day, 20, 0, 0));
-    const ptHourAtProbe = Number(
-      new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(probe)
-    );
-    const utcHourForPTMidnight = 20 - ptHourAtProbe;
-    const startTime = Date.UTC(year, month - 1, day, utcHourForPTMidnight, 0, 0);
-    const endTime = startTime + 86_400_000 - 1;
+    // Convert to epoch ms range (handles PST/PDT automatically)
+    function dateToEpochRange(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const probe = new Date(Date.UTC(y, m - 1, d, 20, 0, 0));
+      const ptHour = Number(
+        new Intl.DateTimeFormat('en-US', { timeZone: 'America/Los_Angeles', hour: '2-digit', hour12: false }).format(probe)
+      );
+      const utcMidnight = 20 - ptHour;
+      const start = Date.UTC(y, m - 1, d, utcMidnight, 0, 0);
+      return { start, end: start + 86_400_000 - 1 };
+    }
+    const rangeStart = dateToEpochRange(startDateStr);
+    const rangeEnd = dateToEpochRange(endDateStr);
+    const startTime = rangeStart.start;
+    const endTime = rangeEnd.end;
 
     // Fetch all calendars, then query each one for today's events (GHL requires calendarId per request)
     const calendarsRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/?locationId=${GHL_LOCATION_ID}`);

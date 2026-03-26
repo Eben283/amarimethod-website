@@ -63,9 +63,12 @@ export async function staffLogin(pin: string): Promise<{ token: string }> {
   });
 }
 
-export async function getDayData(date?: string): Promise<import('../types/staff').TodayAppointment[]> {
-  const params = date ? `?date=${date}` : '';
-  return fetchApi(`/staff-data${params}`);
+export async function getDayData(date?: string, endDate?: string): Promise<import('../types/staff').TodayAppointment[]> {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (endDate) params.set('endDate', endDate);
+  const qs = params.toString();
+  return fetchApi(`/staff-data${qs ? `?${qs}` : ''}`);
 }
 
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {

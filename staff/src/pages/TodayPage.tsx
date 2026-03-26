@@ -63,18 +63,21 @@ export default function TodayPage() {
     setError('');
     try {
       const dates = getWeekDates(date);
-      const results = await Promise.all(
-        dates.map(async (d) => {
-          try {
-            const data = await getDayData(toDateStr(d));
-            return [toDateStr(d), data] as const;
-          } catch {
-            return [toDateStr(d), []] as const;
-          }
-        })
-      );
+      const startStr = toDateStr(dates[0]);
+      const endStr = toDateStr(dates[6]);
+      // Single API call for the full week range
+      const allAppts = await getDayData(startStr, endStr);
+      // Group by date
       const map: Record<string, TodayAppointment[]> = {};
-      for (const [key, val] of results) map[key] = val;
+      for (const d of dates) map[toDateStr(d)] = [];
+      for (const appt of allAppts) {
+        const apptDate = new Date(appt.startTime).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+        if (map[apptDate]) {
+          map[apptDate].push(appt);
+        } else {
+          map[apptDate] = [appt];
+        }
+      }
       setWeekData(map);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
