@@ -3685,6 +3685,14 @@ footer {
     grid-template-columns: 1fr;
   }
 
+  .blog-card-footer {
+    justify-content: flex-start;
+  }
+
+  .resource-card-footer {
+    justify-content: flex-start;
+  }
+
   /* Client info page */
   .info-header h1 {
     font-size: 2rem;
