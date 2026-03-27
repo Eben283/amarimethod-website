@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, ApiError } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
 import NotesList from '../components/NotesList';
@@ -27,6 +27,8 @@ export default function ClientDetailPage() {
   const [showAddNote, setShowAddNote] = useState(false);
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
+  const [sendingToolkit, setSendingToolkit] = useState(false);
+  const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
 
   async function handleMarkAttended(appt: ContactAppointment) {
     if (!client || markingAttended) return;
@@ -56,6 +58,24 @@ export default function ClientDetailPage() {
       setAttendedError(err instanceof Error ? err.message : 'Failed to mark attended');
     } finally {
       setMarkingAttended(null);
+    }
+  }
+
+  async function handleSendToolkit() {
+    if (!client || sendingToolkit) return;
+    setSendingToolkit(true);
+    setToolkitStatus('idle');
+    try {
+      await sendToolkit(client.id);
+      setToolkitStatus('sent');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setToolkitStatus('error');
+    } finally {
+      setSendingToolkit(false);
     }
   }
 
@@ -139,6 +159,30 @@ export default function ClientDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Send Toolkit — only for affiliate partners */}
+      {client.tags.includes('affiliate-partner') && (
+        <div className="mb-4">
+          <button
+            onClick={handleSendToolkit}
+            disabled={sendingToolkit || toolkitStatus === 'sent'}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
+              toolkitStatus === 'sent'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-amari-accent-warm text-white hover:bg-[#e0926f] active:bg-[#d4825f] disabled:opacity-50'
+            }`}
+          >
+            {sendingToolkit ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : toolkitStatus === 'sent' ? (
+              <CheckCircle2 className="w-4 h-4" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+            {toolkitStatus === 'sent' ? 'Toolkit Sent' : toolkitStatus === 'error' ? 'Failed — Tap to Retry' : 'Send Partner Toolkit'}
+          </button>
+        </div>
+      )}
 
       {/* Session Brief — the 30-second read before the client walks in */}
       <div className="mb-4">

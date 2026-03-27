@@ -107,4 +107,11 @@ export async function markAttended(
   });
 }
 
+export async function sendToolkit(contactId: string): Promise<{ success: boolean }> {
+  return fetchApi('/staff-send-toolkit', {
+    method: 'POST',
+    body: JSON.stringify({ contactId }),
+  });
+}
+
 export { ApiError };
