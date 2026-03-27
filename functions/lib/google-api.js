@@ -94,6 +94,21 @@ export async function getTodayCalendar(context) {
     const endOfDay = new Date(pacific);
     endOfDay.setHours(23, 59, 59, 999);
 
+    // First, get all calendars the user has access to
+    const calListResp = await fetch(
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    let calendarIds = ["primary"];
+    if (calListResp.ok) {
+      const calListData = await calListResp.json();
+      calendarIds = (calListData.items || [])
+        .filter(cal => !cal.deleted && cal.selected !== false)
+        .map(cal => cal.id);
+    }
+
+    // Fetch events from all calendars in parallel
     const params = new URLSearchParams({
       timeMin: startOfDay.toISOString(),
       timeMax: endOfDay.toISOString(),
@@ -102,18 +117,32 @@ export async function getTodayCalendar(context) {
       maxResults: "20",
     });
 
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-      { headers: { Authorization: `Bearer ${token}` } }
+    const allEvents = await Promise.all(
+      calendarIds.map(async (calId) => {
+        const response = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.items || [];
+      })
     );
 
-    if (!response.ok) {
-      console.error("[google] Calendar fetch failed:", response.status);
-      return null;
-    }
-
-    const data = await response.json();
-    const events = data.items || [];
+    // Flatten, dedupe by event ID, and sort by start time
+    const seen = new Set();
+    const events = allEvents
+      .flat()
+      .filter(event => {
+        if (seen.has(event.id)) return false;
+        seen.add(event.id);
+        return true;
+      })
+      .sort((a, b) => {
+        const aTime = a.start?.dateTime || a.start?.date || "";
+        const bTime = b.start?.dateTime || b.start?.date || "";
+        return aTime.localeCompare(bTime);
+      });
 
     if (events.length === 0) {
       return "No events scheduled today.";
