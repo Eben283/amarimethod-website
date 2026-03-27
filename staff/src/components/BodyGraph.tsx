@@ -167,13 +167,13 @@ export default function BodyGraph({ contactId }: Props) {
           {/* Center dividing line */}
           <line x1="100" y1="56" x2="100" y2="372" stroke="#B8B4AC" strokeWidth="0.5" strokeDasharray="4,3" />
 
-          {/* Region labels */}
-          <text x="75" y="108" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
-          <text x="125" y="108" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
-          <text x="78" y="198" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
-          <text x="122" y="198" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
-          <text x="82" y="310" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
-          <text x="118" y="310" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
+          {/* Region labels — clickable, pointer-events enabled */}
+          <text x="75" y="108" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('active-upper')}>Upper</text>
+          <text x="125" y="108" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('passive-upper')}>Upper</text>
+          <text x="78" y="198" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('active-middle')}>Middle</text>
+          <text x="122" y="198" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('passive-middle')}>Middle</text>
+          <text x="82" y="310" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('active-lower')}>Lower</text>
+          <text x="118" y="310" textAnchor="middle" className="text-[9px] font-medium cursor-pointer" fill="#666" onClick={() => handleToggle('passive-lower')}>Lower</text>
         </svg>
 
         {/* Passive label */}
