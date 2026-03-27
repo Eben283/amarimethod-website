@@ -2,6 +2,7 @@
 // Main chat endpoint — streams Claude responses via SSE through OpenRouter
 
 import { verifySessionToken } from "../lib/auth.js";
+import { getTodayCalendar, getRecentEmails } from "../lib/google-api.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -188,9 +189,16 @@ export async function onRequestPost(context) {
   // Add user message to history
   conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
 
+  // Fetch calendar and email context in parallel
+  const [calendarText, emailText] = await Promise.all([
+    getTodayCalendar(context).catch(() => null),
+    getRecentEmails(context).catch(() => null),
+  ]);
+
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
   const recentMessages = conversation.messages.slice(-30);
-  const systemPrompt = buildSystemPrompt(contextDoc, null);
+  const calendarAndEmail = [calendarText, emailText].filter(Boolean).join("\n\n");
+  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null);
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },
