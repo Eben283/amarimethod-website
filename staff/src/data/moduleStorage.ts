@@ -1,7 +1,9 @@
+export type BodyRegionState = 'active' | 'passive' | null;
+
 export interface ClientModuleData {
   modules: Record<string, boolean>;
   yogaBlockSize: '3' | '4' | null;
-  bodyGraph: Record<string, boolean>;
+  bodyGraph: Record<string, BodyRegionState>;
 }
 
 export const MODULES = [
@@ -18,12 +20,9 @@ export const MODULES = [
 ] as const;
 
 export const BODY_REGIONS = [
-  { id: 'active-upper', label: 'Upper', side: 'active' },
-  { id: 'passive-upper', label: 'Upper', side: 'passive' },
-  { id: 'active-middle', label: 'Middle', side: 'active' },
-  { id: 'passive-middle', label: 'Middle', side: 'passive' },
-  { id: 'active-lower', label: 'Lower', side: 'active' },
-  { id: 'passive-lower', label: 'Lower', side: 'passive' },
+  { id: 'upper', label: 'Upper Body' },
+  { id: 'middle', label: 'Middle Body' },
+  { id: 'lower', label: 'Lower Body' },
 ] as const;
 
 const STORAGE_PREFIX = 'staff_client_modules_';
@@ -61,9 +60,11 @@ export function setYogaBlockSize(data: ClientModuleData, size: '3' | '4'): Clien
   return { ...data, yogaBlockSize: size };
 }
 
-export function toggleBodyRegion(data: ClientModuleData, regionId: string): ClientModuleData {
+export function cycleBodyRegion(data: ClientModuleData, regionId: string): ClientModuleData {
+  const current = data.bodyGraph[regionId] ?? null;
+  const next: BodyRegionState = current === null ? 'active' : current === 'active' ? 'passive' : null;
   return {
     ...data,
-    bodyGraph: { ...data.bodyGraph, [regionId]: !data.bodyGraph[regionId] },
+    bodyGraph: { ...data.bodyGraph, [regionId]: next },
   };
 }
