@@ -244,9 +244,42 @@ export async function onRequestPost(context) {
   // Process the OpenRouter stream in the background
   context.waitUntil((async () => {
     let fullContent = "";
+    let sendBuffer = ""; // Buffer for stripping <!--ACTION/CONTEXT--> blocks
     const reader = openRouterResponse.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
+
+    async function flushSafe() {
+      // Send everything in sendBuffer that we're sure isn't part of a block.
+      // Hold back content from the last "<!--" onward (might be an incomplete block).
+      const markerIdx = sendBuffer.lastIndexOf("<!--");
+      if (markerIdx === -1) {
+        // No marker — safe to send everything
+        if (sendBuffer) {
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: sendBuffer })}\n\n`));
+          sendBuffer = "";
+        }
+      } else {
+        // Check if there's a complete block (has closing -->)
+        const afterMarker = sendBuffer.slice(markerIdx);
+        const closeIdx = afterMarker.indexOf("-->");
+        if (closeIdx !== -1) {
+          // Complete block found — strip it and send what's safe
+          const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT):.*?-->/gs, "");
+          if (cleaned) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: cleaned })}\n\n`));
+          }
+          sendBuffer = "";
+        } else {
+          // Incomplete block — send everything before the marker, hold the rest
+          const safe = sendBuffer.slice(0, markerIdx);
+          if (safe) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: safe })}\n\n`));
+          }
+          sendBuffer = sendBuffer.slice(markerIdx);
+        }
+      }
+    }
 
     try {
       while (true) {
@@ -267,16 +300,22 @@ export async function onRequestPost(context) {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               fullContent += delta;
-              // Strip action/context blocks from streamed content
-              const cleanDelta = delta.replace(/<!--(?:ACTION|CONTEXT):.*?-->/gs, "");
-              if (cleanDelta) {
-                await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: cleanDelta })}\n\n`));
-              }
+              sendBuffer += delta;
+              await flushSafe();
             }
           } catch {
             // Skip unparseable chunks
           }
         }
+      }
+
+      // Flush any remaining buffered content (strip complete blocks)
+      if (sendBuffer) {
+        const finalClean = sendBuffer.replace(/<!--(?:ACTION|CONTEXT):.*?-->/gs, "");
+        if (finalClean) {
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: finalClean })}\n\n`));
+        }
+        sendBuffer = "";
       }
 
       // Parse actions and context from the full response
