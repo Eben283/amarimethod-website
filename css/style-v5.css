@@ -216,6 +216,16 @@ nav {
   width: 100%;
 }
 
+.nav-login {
+  font-size: 0.85rem !important;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.nav-login:hover {
+  opacity: 1;
+}
+
 .nav-cta {
   background: var(--color-button-primary-bg);
   color: white;
