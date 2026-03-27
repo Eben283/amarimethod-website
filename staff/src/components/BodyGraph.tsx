@@ -1,14 +1,12 @@
-import { useState } from 'react';
 import {
-  loadModuleData,
-  saveModuleData,
   cycleBodyRegion,
   type ClientModuleData,
   type BodyRegionState,
 } from '../data/moduleStorage';
 
 interface Props {
-  contactId: string;
+  data: ClientModuleData;
+  onUpdate: (data: ClientModuleData) => void;
 }
 
 const COLORS: Record<string, string> = {
@@ -28,13 +26,9 @@ function stateLabel(state: BodyRegionState): string {
   return '';
 }
 
-export default function BodyGraph({ contactId }: Props) {
-  const [data, setData] = useState<ClientModuleData>(() => loadModuleData(contactId));
-
+export default function BodyGraph({ data, onUpdate }: Props) {
   function handleCycle(regionId: string) {
-    const next = cycleBodyRegion(data, regionId);
-    setData(next);
-    saveModuleData(contactId, next);
+    onUpdate(cycleBodyRegion(data, regionId));
   }
 
   const upper = data.bodyGraph['upper'] ?? null;
@@ -78,7 +72,6 @@ export default function BodyGraph({ contactId }: Props) {
           <path d="M92,50 L92,60 Q92,64 96,64 L104,64 Q108,64 108,60 L108,50" fill="#D4D0C8" stroke="#B8B4AC" strokeWidth="1" />
 
           {/* ── UPPER BODY — shoulders to waist ── */}
-          {/* Left shoulder + arm */}
           <path
             d="M96,64 C80,64 60,66 48,72 C38,78 30,88 26,100 Q22,112 20,128 L16,148 Q14,156 18,162 L22,168 Q26,172 28,168 L34,148 Q38,130 40,118 L40,170 L100,170 L100,64 Z"
             fill={regionFill(upper)}
@@ -87,7 +80,6 @@ export default function BodyGraph({ contactId }: Props) {
             onClick={() => handleCycle('upper')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Right shoulder + arm */}
           <path
             d="M104,64 C120,64 140,66 152,72 C162,78 170,88 174,100 Q178,112 180,128 L184,148 Q186,156 182,162 L178,168 Q174,172 172,168 L166,148 Q162,130 160,118 L160,170 L100,170 L100,64 Z"
             fill={regionFill(upper)}
@@ -98,7 +90,6 @@ export default function BodyGraph({ contactId }: Props) {
           />
 
           {/* ── MIDDLE BODY — waist to ankles ── */}
-          {/* Left torso + leg */}
           <path
             d="M40,172 L100,172 L100,400 Q98,408 94,412 L86,412 Q82,408 82,402 L80,380 Q76,340 72,310 Q68,280 66,260 C60,240 52,218 44,200 Z"
             fill={regionFill(middle)}
@@ -107,7 +98,6 @@ export default function BodyGraph({ contactId }: Props) {
             onClick={() => handleCycle('middle')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Right torso + leg */}
           <path
             d="M160,172 L100,172 L100,400 Q102,408 106,412 L114,412 Q118,408 118,402 L120,380 Q124,340 128,310 Q132,280 134,260 C140,240 148,218 156,200 Z"
             fill={regionFill(middle)}
@@ -117,8 +107,7 @@ export default function BodyGraph({ contactId }: Props) {
             className="cursor-pointer transition-colors duration-200"
           />
 
-          {/* ── LOWER BODY — ankles to feet ── */}
-          {/* Left foot */}
+          {/* ── LOWER BODY — feet ── */}
           <path
             d="M82,412 L86,412 Q94,412 94,412 L96,420 Q98,430 92,434 L76,434 Q72,432 72,426 L74,418 Z"
             fill={regionFill(lower)}
@@ -127,7 +116,6 @@ export default function BodyGraph({ contactId }: Props) {
             onClick={() => handleCycle('lower')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Right foot */}
           <path
             d="M118,412 L114,412 Q106,412 106,412 L104,420 Q102,430 108,434 L124,434 Q128,432 128,426 L126,418 Z"
             fill={regionFill(lower)}

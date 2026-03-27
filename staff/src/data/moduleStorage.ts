@@ -25,28 +25,12 @@ export const BODY_REGIONS = [
   { id: 'lower', label: 'Lower Body' },
 ] as const;
 
-const STORAGE_PREFIX = 'staff_client_modules_';
-
-function defaultData(): ClientModuleData {
+export function defaultData(): ClientModuleData {
   return {
     modules: {},
     yogaBlockSize: null,
     bodyGraph: {},
   };
-}
-
-export function loadModuleData(contactId: string): ClientModuleData {
-  try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + contactId);
-    if (!raw) return defaultData();
-    return { ...defaultData(), ...JSON.parse(raw) };
-  } catch {
-    return defaultData();
-  }
-}
-
-export function saveModuleData(contactId: string, data: ClientModuleData): void {
-  localStorage.setItem(STORAGE_PREFIX + contactId, JSON.stringify(data));
 }
 
 export function toggleModule(data: ClientModuleData, moduleId: string): ClientModuleData {

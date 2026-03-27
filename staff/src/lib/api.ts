@@ -107,6 +107,16 @@ export async function markAttended(
   });
 }
 
+export async function saveProgress(
+  contactId: string,
+  progress: { modules: Record<string, boolean>; yogaBlockSize: string | null; bodyGraph: Record<string, string | null> },
+): Promise<{ success: boolean }> {
+  return fetchApi('/staff-save-progress', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, progress }),
+  });
+}
+
 export async function sendToolkit(contactId: string): Promise<{ success: boolean }> {
   return fetchApi('/staff-send-toolkit', {
     method: 'POST',

@@ -42,6 +42,11 @@ export interface ContactDetail {
   notes: ContactNote[];
   messages: ContactMessage[];
   quizResults: QuizResults | null;
+  clientProgress: {
+    modules: Record<string, boolean>;
+    yogaBlockSize: '3' | '4' | null;
+    bodyGraph: Record<string, 'active' | 'passive' | null>;
+  } | null;
 }
 
 export interface ContactAppointment {

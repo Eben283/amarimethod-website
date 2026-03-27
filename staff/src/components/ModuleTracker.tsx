@@ -1,30 +1,22 @@
-import { useState } from 'react';
 import {
   MODULES,
-  loadModuleData,
-  saveModuleData,
   toggleModule,
   setYogaBlockSize,
   type ClientModuleData,
 } from '../data/moduleStorage';
 
 interface Props {
-  contactId: string;
+  data: ClientModuleData;
+  onUpdate: (data: ClientModuleData) => void;
 }
 
-export default function ModuleTracker({ contactId }: Props) {
-  const [data, setData] = useState<ClientModuleData>(() => loadModuleData(contactId));
-
+export default function ModuleTracker({ data, onUpdate }: Props) {
   function handleToggle(moduleId: string) {
-    const next = toggleModule(data, moduleId);
-    setData(next);
-    saveModuleData(contactId, next);
+    onUpdate(toggleModule(data, moduleId));
   }
 
   function handleBlockSize(size: '3' | '4') {
-    const next = setYogaBlockSize(data, size);
-    setData(next);
-    saveModuleData(contactId, next);
+    onUpdate(setYogaBlockSize(data, size));
   }
 
   const taughtCount = MODULES.filter((m) => data.modules[m.id]).length;

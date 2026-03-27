@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, ApiError } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
 import NotesList from '../components/NotesList';
@@ -13,6 +13,7 @@ import QuizResultsCard from '../components/QuizResults';
 import SessionBrief from '../components/SessionBrief';
 import ModuleTracker from '../components/ModuleTracker';
 import BodyGraph from '../components/BodyGraph';
+import { defaultData, type ClientModuleData } from '../data/moduleStorage';
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,21 @@ export default function ClientDetailPage() {
   const [attendedError, setAttendedError] = useState('');
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [progress, setProgress] = useState<ClientModuleData>(defaultData());
+  const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleProgressUpdate(next: ClientModuleData) {
+    setProgress(next);
+    // Debounce save to GHL — wait 800ms after last change
+    if (saveTimerRef[0]) clearTimeout(saveTimerRef[0]);
+    saveTimerRef[0] = setTimeout(() => {
+      if (client) {
+        saveProgress(client.id, next).catch((err) => {
+          console.error('Failed to save progress:', err);
+        });
+      }
+    }, 800);
+  }
 
   async function handleMarkAttended(appt: ContactAppointment) {
     if (!client || markingAttended) return;
@@ -86,6 +102,7 @@ export default function ClientDetailPage() {
     try {
       const data = await getContactDetail(id);
       setClient(data);
+      setProgress(data.clientProgress ? { ...defaultData(), ...data.clientProgress } : defaultData());
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         logout();
@@ -191,12 +208,12 @@ export default function ClientDetailPage() {
 
       {/* Module Tracker — which exercises has Garrett taught this client */}
       <div className="mb-4">
-        <ModuleTracker contactId={client.id} />
+        <ModuleTracker data={progress} onUpdate={handleProgressUpdate} />
       </div>
 
       {/* Body Map — active/passive region marking */}
       <div className="mb-4">
-        <BodyGraph contactId={client.id} />
+        <BodyGraph data={progress} onUpdate={handleProgressUpdate} />
       </div>
 
       {/* Session Stats */}

@@ -190,6 +190,17 @@ export async function onRequestGet(context) {
       ? sessionsCompleted
       : completedSessions.length;
 
+    // Client progress (modules taught, body graph, yoga block size) — stored as JSON string
+    let clientProgress = null;
+    const progressRaw = getCustomField(contact, "client_progress", fieldDefs);
+    if (progressRaw) {
+      try {
+        clientProgress = JSON.parse(progressRaw);
+      } catch {
+        clientProgress = null;
+      }
+    }
+
     const result = {
       id: contact.id,
       firstName: capitalize(contact.firstName) || "",
@@ -206,6 +217,7 @@ export async function onRequestGet(context) {
       notes,
       messages,
       quizResults,
+      clientProgress,
     };
 
     return new Response(JSON.stringify(result), { status: 200, headers });
