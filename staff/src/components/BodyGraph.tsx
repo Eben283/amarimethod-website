@@ -58,26 +58,26 @@ export default function BodyGraph({ contactId }: Props) {
           Active
         </span>
 
-        <svg viewBox="0 0 200 360" className="w-48 h-auto" xmlns="http://www.w3.org/2000/svg">
-          {/* Head (not interactive — just for shape context) */}
-          <ellipse cx="100" cy="28" rx="20" ry="24" fill="#D4D0C8" stroke="#B8B4AC" strokeWidth="1" />
+        <svg viewBox="0 0 200 380" className="w-48 h-auto" xmlns="http://www.w3.org/2000/svg">
+          {/* Head */}
+          <ellipse cx="100" cy="24" rx="16" ry="20" fill="#D4D0C8" stroke="#B8B4AC" strokeWidth="1" />
 
           {/* Neck */}
-          <rect x="92" y="50" width="16" height="12" rx="4" fill="#D4D0C8" />
+          <rect x="94" y="42" width="12" height="14" rx="3" fill="#D4D0C8" />
 
           {/* ── UPPER BODY ── */}
-          {/* Active upper (left side of figure) */}
+          {/* Active upper torso (left) — broad shoulders, narrow waist */}
           <path
-            d="M50,62 L98,62 L98,150 L40,150 L30,120 L28,90 L35,70 Z"
+            d="M58,56 L98,56 L98,148 L68,148 L62,130 L58,100 L55,75 Z"
             fill={fill('active-upper')}
             stroke="#B8B4AC"
             strokeWidth="1"
             onClick={() => handleToggle('active-upper')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Active upper arm */}
+          {/* Active upper arm (left) — lean athletic arm */}
           <path
-            d="M35,70 L28,90 L30,120 L20,145 L10,140 L15,100 L20,75 L30,65 Z"
+            d="M55,75 L58,56 L48,58 L38,65 L32,80 L30,100 L32,125 L26,148 L18,145 L22,120 L24,95 L28,75 L36,62 Z"
             fill={fill('active-upper')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -85,18 +85,18 @@ export default function BodyGraph({ contactId }: Props) {
             className="cursor-pointer transition-colors duration-200"
           />
 
-          {/* Passive upper (right side of figure) */}
+          {/* Passive upper torso (right) */}
           <path
-            d="M102,62 L150,62 L165,70 L172,90 L170,120 L160,150 L102,150 Z"
+            d="M102,56 L142,56 L145,75 L142,100 L138,130 L132,148 L102,148 Z"
             fill={fill('passive-upper')}
             stroke="#B8B4AC"
             strokeWidth="1"
             onClick={() => handleToggle('passive-upper')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Passive upper arm */}
+          {/* Passive upper arm (right) */}
           <path
-            d="M165,70 L172,90 L170,120 L180,145 L190,140 L185,100 L180,75 L170,65 Z"
+            d="M145,75 L142,56 L152,58 L162,65 L168,80 L170,100 L168,125 L174,148 L182,145 L178,120 L176,95 L172,75 L164,62 Z"
             fill={fill('passive-upper')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -105,18 +105,18 @@ export default function BodyGraph({ contactId }: Props) {
           />
 
           {/* ── MIDDLE BODY ── */}
-          {/* Active middle (left) */}
+          {/* Active middle torso (left) — tapered waist, hip */}
           <path
-            d="M40,152 L98,152 L98,230 L55,230 L42,190 Z"
+            d="M68,150 L98,150 L98,235 L72,235 L65,210 L64,180 L66,160 Z"
             fill={fill('active-middle')}
             stroke="#B8B4AC"
             strokeWidth="1"
             onClick={() => handleToggle('active-middle')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Active forearm/hand */}
+          {/* Active forearm/hand (left) */}
           <path
-            d="M20,147 L10,142 L2,175 L0,200 L8,202 L12,180 Z"
+            d="M26,150 L18,147 L12,170 L8,200 L6,218 L14,220 L16,200 L20,175 Z"
             fill={fill('active-middle')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -124,18 +124,18 @@ export default function BodyGraph({ contactId }: Props) {
             className="cursor-pointer transition-colors duration-200"
           />
 
-          {/* Passive middle (right) */}
+          {/* Passive middle torso (right) */}
           <path
-            d="M102,152 L160,152 L158,190 L145,230 L102,230 Z"
+            d="M102,150 L132,150 L134,160 L136,180 L135,210 L128,235 L102,235 Z"
             fill={fill('passive-middle')}
             stroke="#B8B4AC"
             strokeWidth="1"
             onClick={() => handleToggle('passive-middle')}
             className="cursor-pointer transition-colors duration-200"
           />
-          {/* Passive forearm/hand */}
+          {/* Passive forearm/hand (right) */}
           <path
-            d="M180,147 L190,142 L198,175 L200,200 L192,202 L188,180 Z"
+            d="M174,150 L182,147 L188,170 L192,200 L194,218 L186,220 L184,200 L180,175 Z"
             fill={fill('passive-middle')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -144,9 +144,9 @@ export default function BodyGraph({ contactId }: Props) {
           />
 
           {/* ── LOWER BODY ── */}
-          {/* Active lower (left leg) */}
+          {/* Active lower — left leg, athletic taper */}
           <path
-            d="M55,232 L98,232 L98,280 L92,320 L88,355 L62,355 L65,320 L60,280 L50,250 Z"
+            d="M72,237 L98,237 L98,290 L94,320 L92,350 L88,372 L66,372 L68,350 L70,320 L68,290 L66,260 Z"
             fill={fill('active-lower')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -154,9 +154,9 @@ export default function BodyGraph({ contactId }: Props) {
             className="cursor-pointer transition-colors duration-200"
           />
 
-          {/* Passive lower (right leg) */}
+          {/* Passive lower — right leg */}
           <path
-            d="M102,232 L145,232 L150,250 L140,280 L135,320 L138,355 L112,355 L108,320 L102,280 Z"
+            d="M102,237 L128,237 L134,260 L132,290 L130,320 L132,350 L134,372 L112,372 L108,350 L106,320 L102,290 Z"
             fill={fill('passive-lower')}
             stroke="#B8B4AC"
             strokeWidth="1"
@@ -165,15 +165,15 @@ export default function BodyGraph({ contactId }: Props) {
           />
 
           {/* Center dividing line */}
-          <line x1="100" y1="62" x2="100" y2="355" stroke="#B8B4AC" strokeWidth="0.5" strokeDasharray="4,3" />
+          <line x1="100" y1="56" x2="100" y2="372" stroke="#B8B4AC" strokeWidth="0.5" strokeDasharray="4,3" />
 
           {/* Region labels */}
-          <text x="65" y="112" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
-          <text x="135" y="112" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
-          <text x="68" y="195" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
-          <text x="132" y="195" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
-          <text x="78" y="295" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
-          <text x="122" y="295" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
+          <text x="75" y="108" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
+          <text x="125" y="108" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Upper</text>
+          <text x="78" y="198" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
+          <text x="122" y="198" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Middle</text>
+          <text x="82" y="310" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
+          <text x="118" y="310" textAnchor="middle" className="text-[9px] font-medium" fill="#666">Lower</text>
         </svg>
 
         {/* Passive label */}
