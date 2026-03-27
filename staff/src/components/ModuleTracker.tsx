@@ -65,8 +65,8 @@ export default function ModuleTracker({ contactId }: Props) {
                 {mod.name}
               </button>
 
-              {/* Yoga block size selector for Bridge Variations */}
-              {mod.id === 'bridge-variations' && taught && (
+              {/* Yoga block size selector for bridge modules */}
+              {(mod.id === 'active-bridge' || mod.id === 'passive-bridge') && taught && (
                 <div className="flex items-center gap-2 mt-1.5 ml-1">
                   <span className="text-xs text-amari-text-muted">Block:</span>
                   {(['3', '4'] as const).map((size) => (

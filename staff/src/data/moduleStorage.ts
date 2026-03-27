@@ -9,12 +9,12 @@ export const MODULES = [
   { id: 'hand-balancer', name: 'Hand Balancer' },
   { id: 'power-posture', name: 'Power Posture' },
   { id: 'vertical-drop', name: 'Vertical Drop' },
-  { id: 'bridge-variations', name: 'Bridge Variations' },
+  { id: 'active-bridge', name: 'Active Bridge' },
+  { id: 'passive-bridge', name: 'Passive Bridge' },
   { id: 'spinal-wave', name: 'Spinal Wave' },
   { id: 'spring-step', name: 'Spring Step' },
   { id: 'elbow-reset', name: 'Elbow Reset' },
   { id: 'jaw-align', name: 'Jaw Align' },
-  { id: 'putting-it-together', name: 'Putting It All Together' },
 ] as const;
 
 export const BODY_REGIONS = [
