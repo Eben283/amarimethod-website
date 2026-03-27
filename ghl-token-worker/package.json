@@ -1,0 +1,6 @@
+{
+  "name": "ghl-token-refresh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that proactively refreshes GHL OAuth tokens every 12 hours"
+}

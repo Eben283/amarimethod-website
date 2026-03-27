@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <!-- Background -->
+  <rect width="180" height="180" rx="36" fill="#252525"/>
+
+  <!-- Clipboard body -->
+  <rect x="42" y="48" width="96" height="108" rx="8" fill="none" stroke="#EBA584" stroke-width="5"/>
+
+  <!-- Clipboard clip -->
+  <rect x="66" y="36" width="48" height="20" rx="6" fill="#252525" stroke="#EBA584" stroke-width="5"/>
+  <circle cx="90" cy="46" r="4" fill="#EBA584"/>
+
+  <!-- Checklist lines with checks -->
+  <!-- Line 1 - checked -->
+  <polyline points="56,82 62,88 72,76" fill="none" stroke="#EBA584" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="82" y1="82" x2="126" y2="82" stroke="#EBA584" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Line 2 - checked -->
+  <polyline points="56,106 62,112 72,100" fill="none" stroke="#EBA584" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="82" y1="106" x2="118" y2="106" stroke="#EBA584" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Line 3 - unchecked circle -->
+  <circle cx="64" cy="130" r="8" fill="none" stroke="#EBA584" stroke-width="3" opacity="0.4"/>
+  <line x1="82" y1="130" x2="122" y2="130" stroke="#EBA584" stroke-width="4" stroke-linecap="round" opacity="0.3"/>
+</svg>

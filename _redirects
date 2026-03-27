@@ -7,5 +7,8 @@
 # SPA fallback for staff dashboard
 /staff/* /staff/index.html 200
 
+# SPA fallback for chief of staff
+/cos/* /cos/index.html 200
+
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301

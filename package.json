@@ -6,7 +6,7 @@
   "description": "Amari Method website with integrated pain assessment quiz",
   "scripts": {
     "dev": "cd quiz && vite",
-    "build": "mkdir -p dist && node scripts/build-html.js && cp -r css js images videos blog favicon* apple-touch-icon.png robots.txt sitemap.xml _redirects partner-manifest.json staff-manifest.json staff-sw.js dist/ 2>/dev/null || true && cd quiz && vite build && cd ../portal && npm install && vite build && cd ../staff && npm install && vite build",
+    "build": "mkdir -p dist && node scripts/build-html.js && cp -r css js images videos blog favicon* apple-touch-icon.png robots.txt sitemap.xml _redirects partner-manifest.json staff-manifest.json cos-manifest.json staff-sw.js dist/ 2>/dev/null || true && cd quiz && vite build && cd ../portal && npm install && vite build && cd ../staff && npm install && vite build && cd ../cos && npm install && vite build",
     "preview": "cd quiz && vite preview",
     "lint": "cd quiz && eslint ."
   },

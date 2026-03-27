@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-cos-bg text-cos-text font-sans antialiased;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
+  /* Safe area padding for notched iPhones */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@layer components {
+  .cos-input {
+    @apply w-full rounded-2xl bg-cos-surface border border-cos-border px-4 py-3 font-sans text-cos-text placeholder:text-cos-text-muted focus:outline-none focus:ring-1 focus:ring-cos-accent focus:border-cos-accent transition-all min-h-[44px] resize-none;
+  }
+
+  .cos-btn {
+    @apply inline-flex items-center justify-center rounded-full p-3 transition-all duration-200 min-h-[44px] min-w-[44px] active:scale-95;
+  }
+
+  .cos-btn-accent {
+    @apply cos-btn bg-cos-accent text-cos-bg;
+  }
+
+  .cos-btn-ghost {
+    @apply cos-btn text-cos-text-secondary hover:text-cos-text;
+  }
+}
+
+/* Typing indicator dots */
+.typing-dot {
+  @apply w-2 h-2 rounded-full bg-cos-text-muted;
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }

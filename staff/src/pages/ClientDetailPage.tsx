@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, ApiError } from '../lib/api';
-import type { ContactDetail } from '../types/staff';
+import { getContactDetail, markAttended, ApiError } from '../lib/api';
+import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
 import NotesList from '../components/NotesList';
 import AddNoteModal from '../components/AddNoteModal';
@@ -11,6 +11,8 @@ import MessageHistory from '../components/MessageHistory';
 import Checklist from '../components/Checklist';
 import QuizResultsCard from '../components/QuizResults';
 import SessionBrief from '../components/SessionBrief';
+import ModuleTracker from '../components/ModuleTracker';
+import BodyGraph from '../components/BodyGraph';
 
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,39 @@ export default function ClientDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
+  const [markingAttended, setMarkingAttended] = useState<string | null>(null);
+  const [attendedError, setAttendedError] = useState('');
+
+  async function handleMarkAttended(appt: ContactAppointment) {
+    if (!client || markingAttended) return;
+    setMarkingAttended(appt.id);
+    setAttendedError('');
+    try {
+      const result = await markAttended(appt.id, client.id, appt.title);
+      // Update local state immutably — mark as showed regardless of whether
+      // it was already attended (idempotent: SMS trigger may have fired first)
+      setClient({
+        ...client,
+        sessionsCompleted: result.sessionsCompleted,
+        sessionsRemaining: result.sessionsRemaining,
+        appointments: client.appointments.map((a) =>
+          a.id === appt.id ? { ...a, status: 'showed' } : a
+        ),
+      });
+      if (result.alreadyAttended) {
+        setAttendedError('Already marked as attended (SMS or workflow handled it)');
+        setTimeout(() => setAttendedError(''), 3000);
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setAttendedError(err instanceof Error ? err.message : 'Failed to mark attended');
+    } finally {
+      setMarkingAttended(null);
+    }
+  }
 
   async function loadClient() {
     if (!id) return;
@@ -110,6 +145,16 @@ export default function ClientDetailPage() {
         <SessionBrief client={client} />
       </div>
 
+      {/* Module Tracker — which exercises has Garrett taught this client */}
+      <div className="mb-4">
+        <ModuleTracker contactId={client.id} />
+      </div>
+
+      {/* Body Map — active/passive region marking */}
+      <div className="mb-4">
+        <BodyGraph contactId={client.id} />
+      </div>
+
       {/* Session Stats */}
       <SessionStats
         seriesType={client.seriesType}
@@ -138,6 +183,9 @@ export default function ClientDetailPage() {
       {/* Appointments */}
       <div className="mt-4">
         <h2 className="text-lg font-serif text-amari-charcoal mb-2">Appointments</h2>
+        {attendedError && (
+          <div className="bg-red-50 text-red-600 text-xs px-3 py-2 rounded-lg mb-2">{attendedError}</div>
+        )}
         {client.appointments.length === 0 ? (
           <p className="text-sm text-amari-text-muted">No appointments</p>
         ) : (
@@ -145,24 +193,43 @@ export default function ClientDetailPage() {
             {client.appointments.map((appt) => {
               const date = new Date(appt.startTime);
               const isPast = date < new Date();
+              const canMarkAttended = appt.status === 'confirmed' && isPast;
+              const isMarking = markingAttended === appt.id;
+              const isAttended = appt.status === 'showed' || appt.status === 'completed';
               return (
-                <div key={appt.id} className={`staff-card ${isPast ? 'opacity-60' : ''}`}>
+                <div key={appt.id} className={`staff-card ${isPast && !canMarkAttended && !isAttended ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{appt.title}</p>
                       <p className="text-xs text-amari-text-muted">
                         {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
                         {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </p>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full ${
-                      appt.status === 'confirmed' ? 'bg-green-50 text-green-700' :
-                      appt.status === 'completed' || appt.status === 'showed' ? 'bg-amari-light-sand text-amari-text-secondary' :
-                      appt.status === 'cancelled' ? 'bg-red-50 text-red-600' :
-                      'bg-gray-50 text-gray-600'
-                    }`}>
-                      {appt.status}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {canMarkAttended && (
+                        <button
+                          onClick={() => handleMarkAttended(appt)}
+                          disabled={isMarking}
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-amari-accent-warm text-white hover:bg-amari-accent-warm/90 active:bg-amari-accent-warm/80 transition-colors min-h-[36px] disabled:opacity-50"
+                        >
+                          {isMarking ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          Attended
+                        </button>
+                      )}
+                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                        appt.status === 'confirmed' ? 'bg-green-50 text-green-700' :
+                        isAttended ? 'bg-amari-light-sand text-amari-text-secondary' :
+                        appt.status === 'cancelled' ? 'bg-red-50 text-red-600' :
+                        'bg-gray-50 text-gray-600'
+                      }`}>
+                        {appt.status}
+                      </span>
+                    </div>
                   </div>
                 </div>
               );

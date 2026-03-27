@@ -130,7 +130,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             {[...Array(5)].map((_, i) => <StarIcon key={i} />)}
           </div>
           <p className="text-lg text-amari-charcoal italic mb-4 text-center font-sans leading-relaxed">
-            "After years of chronic back pain, one session with Dr. Garrett completely changed my relationship with my body. I finally understand what's been causing my pain—and more importantly, how to fix it."
+            "After years of chronic back pain, one session completely changed my relationship with my body. I finally understand what's been causing it — and more importantly, how to fix it."
           </p>
           <p className="text-sm text-amari-text-light text-center font-medium font-sans">
             — Sarah M., San Francisco

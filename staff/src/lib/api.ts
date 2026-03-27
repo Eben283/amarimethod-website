@@ -86,4 +86,25 @@ export async function addNote(contactId: string, body: string): Promise<{ succes
   });
 }
 
+export interface MarkAttendedResult {
+  success: boolean;
+  alreadyAttended: boolean;
+  appointmentUpdated: boolean;
+  sessionCountUpdated: boolean;
+  isSession: boolean;
+  sessionsCompleted: number;
+  sessionsRemaining: number;
+}
+
+export async function markAttended(
+  appointmentId: string,
+  contactId: string,
+  appointmentTitle: string,
+): Promise<MarkAttendedResult> {
+  return fetchApi('/staff-mark-attended', {
+    method: 'POST',
+    body: JSON.stringify({ appointmentId, contactId, appointmentTitle }),
+  });
+}
+
 export { ApiError };

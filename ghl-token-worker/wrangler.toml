@@ -1,0 +1,16 @@
+name = "ghl-token-refresh"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Proactive token refresh every 12 hours
+[triggers]
+crons = ["0 */12 * * *"]
+
+# Bind the same KV namespace used by Cloudflare Pages
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# GHL_CLIENT_ID and GHL_CLIENT_SECRET are set via:
+#   npx wrangler secret put GHL_CLIENT_ID
+#   npx wrangler secret put GHL_CLIENT_SECRET
