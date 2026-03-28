@@ -209,13 +209,28 @@ export async function getRevenueSummary(context) {
     const weekStartDate = weekStart.toISOString().split("T")[0];
     const today = pacific.toISOString().split("T")[0];
 
-    // Try the orders/transactions endpoint
-    const resp = await ghlFetch(context,
-      `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&startAt=${startDate}&endAt=${today}&limit=100`
-    );
+    // Try multiple GHL payment endpoints — transactions first, then orders
+    const endpoints = [
+      `https://services.leadconnectorhq.com/payments/transactions?altId=${locationId}&altType=location&startAt=${monthStart.toISOString()}&endAt=${new Date().toISOString()}&limit=100`,
+      `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&startAt=${monthStart.toISOString()}&endAt=${new Date().toISOString()}&limit=100`,
+      `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&limit=100`,
+    ];
 
-    if (!resp.ok) {
-      // Fallback: try opportunities with monetary value
+    let orders = [];
+    let rawData = null;
+
+    for (const url of endpoints) {
+      const resp = await ghlFetch(context, url);
+      if (resp.ok) {
+        rawData = await resp.json();
+        // GHL responses vary — check multiple possible array locations
+        orders = rawData.data || rawData.orders || rawData.transactions || [];
+        if (orders.length > 0) break;
+      }
+    }
+
+    if (!orders.length) {
+      // Last fallback: try opportunities with monetary value
       const oppResp = await ghlFetch(context,
         `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`
       );
@@ -229,28 +244,31 @@ export async function getRevenueSummary(context) {
         : null;
     }
 
-    const data = await resp.json();
-    const orders = data.data || data.orders || [];
-
-    if (!orders.length) return "No payments recorded this month in GHL.";
-
     let monthTotal = 0;
     let weekTotal = 0;
     let todayTotal = 0;
     const recentOrders = [];
 
     for (const order of orders) {
-      const amount = order.amount || order.total || 0;
-      const orderDate = (order.createdAt || order.created_at || "").split("T")[0];
-      const amountDollars = amount; // GHL stores in dollars
+      // GHL might store amount in cents or dollars depending on endpoint
+      const rawAmount = order.amount || order.total || order.chargeAmount || 0;
+      // If amount > 10000, it's probably cents (e.g., 129500 = $1,295)
+      const amountDollars = rawAmount > 10000 ? rawAmount / 100 : rawAmount;
+      const status = order.status || order.paymentStatus || "";
+
+      // Skip failed/refunded
+      if (/fail|refund|cancel|void/i.test(status)) continue;
+
+      const orderDate = (order.createdAt || order.created_at || order.createdOn || "").split("T")[0];
 
       monthTotal += amountDollars;
       if (orderDate >= weekStartDate) weekTotal += amountDollars;
       if (orderDate === today) todayTotal += amountDollars;
 
       if (recentOrders.length < 5) {
-        const name = order.contactName || order.contact_name || "Unknown";
-        recentOrders.push(`- $${amountDollars}: ${name} (${orderDate})`);
+        const name = order.contactName || order.contact_name || order.contactSnapshot?.name || "Unknown";
+        const desc = order.description || order.name || "";
+        recentOrders.push(`- $${amountDollars.toLocaleString()}: ${name}${desc ? ` — ${desc}` : ""} (${orderDate})`);
       }
     }
 
