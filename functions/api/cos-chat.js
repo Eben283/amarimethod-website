@@ -451,11 +451,13 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Not authenticated" }, 401, origin);
   }
 
+  let cosUser = "Eben";
   try {
     const payload = await verifySessionToken(token, context.env.JWT_SECRET);
     if (payload.role !== "cos") {
       return jsonResponse({ error: "Unauthorized" }, 403, origin);
     }
+    cosUser = payload.user || "Eben";
   } catch {
     return jsonResponse({ error: "Invalid or expired token" }, 401, origin);
   }
@@ -475,11 +477,11 @@ export async function onRequestPost(context) {
   const kv = context.env.PORTAL_KV;
   const dateKey = todayKey();
 
-  // Load conversation history, context doc, pending actions, and daily briefing from KV
+  // Load user-scoped conversation history, context doc, pending actions, and shared daily briefing from KV
   const [convRaw, contextRaw, actionsRaw, briefingRaw] = await Promise.all([
-    kv ? kv.get(`cos:conv:${dateKey}`) : null,
-    kv ? kv.get("cos:context") : null,
-    kv ? kv.get("cos:actions:pending") : null,
+    kv ? kv.get(`cos:conv:${cosUser}:${dateKey}`) : null,
+    kv ? kv.get(`cos:context:${cosUser}`) : null,
+    kv ? kv.get(`cos:actions:${cosUser}:pending`) : null,
     kv ? kv.get("cos:daily-briefing:latest") : null,
   ]);
 
@@ -653,22 +655,22 @@ export async function onRequestPost(context) {
 
       if (kv) {
         const kvWrites = [
-          kv.put(`cos:conv:${dateKey}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 }),
+          kv.put(`cos:conv:${cosUser}:${dateKey}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 }),
         ];
 
-        // Save new actions
+        // Save new actions (user-scoped)
         if (actions.length > 0) {
           const allActions = [...pendingActions, ...actions];
-          kvWrites.push(kv.put("cos:actions:pending", JSON.stringify(allActions)));
+          kvWrites.push(kv.put(`cos:actions:${cosUser}:pending`, JSON.stringify(allActions)));
         }
 
-        // Apply context updates
+        // Apply context updates (user-scoped)
         if (contextUpdates.length > 0) {
           let ctx = contextDoc;
           for (const update of contextUpdates) {
             ctx += `\n- **${update.key}**: ${update.value} (learned ${update.learned})`;
           }
-          kvWrites.push(kv.put("cos:context", ctx));
+          kvWrites.push(kv.put(`cos:context:${cosUser}`, ctx));
         }
 
         await Promise.all(kvWrites);

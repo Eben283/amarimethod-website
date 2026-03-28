@@ -65,27 +65,33 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Only Eben gets COS access
-    const cosPin = context.env.COS_PIN_EBEN;
-    if (!cosPin) {
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers }
-      );
-    }
+    // Check PIN against each user's env var
+    const cosUsers = [
+      { envKey: "COS_PIN_EBEN", name: "Eben" },
+      { envKey: "COS_PIN_GARRETT", name: "Garrett" },
+    ];
 
+    let matchedUser = null;
     const pinBytes = new TextEncoder().encode(pin);
-    const expectedBytes = new TextEncoder().encode(cosPin);
 
-    let match = pinBytes.length === expectedBytes.length;
-    let diff = 0;
-    const len = Math.max(pinBytes.length, expectedBytes.length);
-    for (let i = 0; i < len; i++) {
-      diff |= (pinBytes[i] || 0) ^ (expectedBytes[i] || 0);
+    for (const user of cosUsers) {
+      const userPin = context.env[user.envKey];
+      if (!userPin) continue;
+
+      const expectedBytes = new TextEncoder().encode(userPin);
+      if (pinBytes.length !== expectedBytes.length) continue;
+
+      let diff = 0;
+      for (let i = 0; i < pinBytes.length; i++) {
+        diff |= pinBytes[i] ^ expectedBytes[i];
+      }
+      if (diff === 0) {
+        matchedUser = user;
+        break;
+      }
     }
-    match = match && diff === 0;
 
-    if (!match) {
+    if (!matchedUser) {
       return new Response(
         JSON.stringify({ error: "Incorrect PIN." }),
         { status: 401, headers }
@@ -95,7 +101,7 @@ export async function onRequestPost(context) {
     const token = await createToken(
       {
         role: "cos",
-        user: "Eben",
+        user: matchedUser.name,
         exp: Date.now() + 30 * 24 * 60 * 60 * 1000,
       },
       JWT_SECRET

@@ -65,8 +65,9 @@ export async function onRequestGet(context) {
 
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status") || "pending";
+  const user = url.searchParams.get("user") || auth.user || "Eben";
 
-  const key = status === "completed" ? "cos:actions:completed" : "cos:actions:pending";
+  const key = status === "completed" ? `cos:actions:${user}:completed` : `cos:actions:${user}:pending`;
   const raw = await kv.get(key);
   const actions = raw ? JSON.parse(raw) : [];
 
@@ -91,7 +92,9 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "actionId and status required" }, 400, origin);
   }
 
-  const pendingRaw = await kv.get("cos:actions:pending");
+  const user = body.user || auth.user || "Eben";
+
+  const pendingRaw = await kv.get(`cos:actions:${user}:pending`);
   const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
 
   const actionIndex = pending.findIndex(a => a.id === actionId);
@@ -106,12 +109,12 @@ export async function onRequestPost(context) {
   const updatedPending = [...pending.slice(0, actionIndex), ...pending.slice(actionIndex + 1)];
 
   // Add to completed if completed
-  const kvWrites = [kv.put("cos:actions:pending", JSON.stringify(updatedPending))];
+  const kvWrites = [kv.put(`cos:actions:${user}:pending`, JSON.stringify(updatedPending))];
 
   if (status === "completed" || status === "cancelled") {
-    const completedRaw = await kv.get("cos:actions:completed");
+    const completedRaw = await kv.get(`cos:actions:${user}:completed`);
     const completed = completedRaw ? JSON.parse(completedRaw) : [];
-    kvWrites.push(kv.put("cos:actions:completed", JSON.stringify([...completed, action])));
+    kvWrites.push(kv.put(`cos:actions:${user}:completed`, JSON.stringify([...completed, action])));
   }
 
   await Promise.all(kvWrites);
