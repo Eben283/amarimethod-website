@@ -4,6 +4,7 @@
 import { verifySessionToken } from "../lib/auth.js";
 import { getTodayCalendar, getRecentEmails, createCalendarReminder } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
+import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -123,6 +124,18 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
 PARKING: When Eben mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then SET A REMINDER using the reminder block so his phone buzzes him before time runs out.
+
+WEATHER: When asked about weather, you'll have current SF conditions + forecast. Give practical advice (jacket? umbrella?), not a weather report.
+
+DIRECTIONS/TRAVEL: When asked about travel time, you'll have driving distance and duration. Add context for bridge traffic (Oakland/Berkeley = add 15-30 min during rush hour).
+
+RESTAURANTS/PLACES: When asked for food or place recommendations, you'll have nearby results. Add your own knowledge about SF neighborhoods to give better suggestions.
+
+PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.
+
+REVENUE: When asked about money/revenue/payments, you'll have GHL payment data. Summarize this month, this week, and recent transactions.
+
+MATH: You can do math directly — session pricing, revenue projections, tip calculations, whatever. No API needed.
 
 BUSINESS/GHL: You know the Amari Method GHL system deeply. Answer questions about workflows, pipelines, contacts, sessions, pricing, partner program. Reference the GHL section below.
 
@@ -576,15 +589,29 @@ export async function onRequestPost(context) {
   // Add user message to history
   conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
 
-  // Fetch calendar, email, GHL summary, contact lookups, and parking in parallel
-  const [calendarText, emailText, ghlSummary, contactContext, parkingContext] = await Promise.all([
+  // Detect what contextual lookups the message needs
+  const msg = userMessage.toLowerCase();
+  const needsWeather = /weather|temperature|cold|hot|rain|jacket|umbrella|fog|chilly|warm/i.test(msg);
+  const needsDirections = /how (long|far)|directions|drive|driving|get to|travel time|route|traffic/i.test(msg);
+  const needsPlaces = /restaurant|food|eat|lunch|dinner|coffee|cafe|bar|shop near|place near/i.test(msg);
+  const needsPackages = /package|shipping|deliver|tracking|order|amazon|where.s my/i.test(msg);
+  const needsRevenue = /revenue|income|money|made|earned|payments?|sales|how much.*(we|business|practice)/i.test(msg);
+  const needsParking = mentionsParking(userMessage);
+
+  // Fetch all context in parallel — only fetch what's relevant
+  const [calendarText, emailText, ghlSummary, contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText] = await Promise.all([
     getTodayCalendar(context).catch(() => null),
     getRecentEmails(context).catch(() => null),
     getGhlSummary(context).catch(() => null),
     getContactContext(context, userMessage).catch(() => null),
-    mentionsParking(userMessage)
+    needsParking
       ? getParkingRegulations(userMessage.replace(/\b(i\s+)?park(ed|ing)?\b/gi, "").trim()).catch(() => null)
       : Promise.resolve(null),
+    needsWeather ? getWeather().catch(() => null) : Promise.resolve(null),
+    needsDirections ? getDirections("San Francisco", userMessage.replace(/how (long|far)|directions|drive to|get to|traffic to/gi, "").trim()).catch(() => null) : Promise.resolve(null),
+    needsPlaces ? searchPlaces(userMessage.replace(/restaurant|food|eat|lunch|dinner|near|good|best|find/gi, "").trim()).catch(() => null) : Promise.resolve(null),
+    needsPackages ? getPackageTracking(context).catch(() => null) : Promise.resolve(null),
+    needsRevenue ? getRevenueSummary(context).catch(() => null) : Promise.resolve(null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -602,12 +629,17 @@ export async function onRequestPost(context) {
     }
   }
 
-  // Combine live GHL data with daily briefing (briefing is richer)
+  // Combine all contextual data
   const ghlParts = [
     dailyBriefing,
     ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
     contactContext,
     parkingContext,
+    weatherText,
+    directionsText,
+    placesText,
+    packagesText,
+    revenueText,
   ].filter(Boolean);
 
   const ghlContext = ghlParts.length > 0 ? ghlParts.join("\n\n") : null;
