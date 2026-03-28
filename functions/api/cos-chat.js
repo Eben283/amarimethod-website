@@ -253,13 +253,9 @@ async function getGhlSummary(context) {
   try {
     const locationId = "7pIO7FHVAyBT1jKGhfQM";
 
-    // Today's date range in Pacific
+    // Today's date in Pacific — use toLocaleDateString to avoid UTC/Pacific mismatch
     const now = new Date();
-    const pacific = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-    const y = pacific.getFullYear();
-    const m = String(pacific.getMonth() + 1).padStart(2, "0");
-    const d = String(pacific.getDate()).padStart(2, "0");
-    const startDate = `${y}-${m}-${d}`;
+    const startDate = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
 
     // Fetch appointments and pipeline in parallel
     const [apptResp, pipeResp] = await Promise.all([

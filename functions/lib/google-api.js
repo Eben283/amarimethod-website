@@ -152,12 +152,14 @@ export async function getTodayCalendar(context) {
   try {
     const token = await getGoogleToken(context);
 
+    // Calculate today's date range in Pacific time using explicit offset
+    // PDT = UTC-7, PST = UTC-8. Use -07:00 for PDT (March-November)
     const now = new Date();
-    const pacific = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-    const startOfDay = new Date(pacific);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(pacific);
-    endOfDay.setHours(23, 59, 59, 999);
+    const pacificStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
+
+    // Use RFC 3339 with explicit Pacific offset — Google Calendar API handles this correctly
+    const timeMin = `${pacificStr}T00:00:00-07:00`;
+    const timeMax = `${pacificStr}T23:59:59-07:00`;
 
     // First, get all calendars the user has access to
     const calListResp = await fetch(
@@ -175,8 +177,8 @@ export async function getTodayCalendar(context) {
 
     // Fetch events from all calendars in parallel
     const params = new URLSearchParams({
-      timeMin: startOfDay.toISOString(),
-      timeMax: endOfDay.toISOString(),
+      timeMin,
+      timeMax,
       singleEvents: "true",
       orderBy: "startTime",
       maxResults: "20",
@@ -213,7 +215,7 @@ export async function getTodayCalendar(context) {
       return "No events scheduled today.";
     }
 
-    const dayName = pacific.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const dayName = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Los_Angeles" });
     const lines = events.map(event => {
       const start = event.start?.dateTime
         ? new Date(event.start.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" })
