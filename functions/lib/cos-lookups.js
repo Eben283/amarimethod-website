@@ -242,7 +242,7 @@ export async function getRevenueSummary(context) {
     for (const order of orders) {
       const amount = order.amount || order.total || 0;
       const orderDate = (order.createdAt || order.created_at || "").split("T")[0];
-      const amountDollars = amount / 100; // GHL stores in cents
+      const amountDollars = amount; // GHL stores in dollars
 
       monthTotal += amountDollars;
       if (orderDate >= weekStartDate) weekTotal += amountDollars;
