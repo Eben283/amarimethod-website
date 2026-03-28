@@ -194,91 +194,79 @@ export async function getPackageTracking(context) {
  */
 export async function getRevenueSummary(context) {
   try {
-    const locationId = "7pIO7FHVAyBT1jKGhfQM";
+    const stripeKey = context.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) return "Stripe not configured — cannot pull revenue data.";
 
-    // Get current month date range
+    // Get current month date range in Pacific
     const now = new Date();
     const pacific = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
     const monthStart = new Date(pacific.getFullYear(), pacific.getMonth(), 1);
-    const startDate = monthStart.toISOString().split("T")[0];
+    const monthStartUnix = Math.floor(monthStart.getTime() / 1000);
 
     // Also get this week
     const dayOfWeek = pacific.getDay();
     const weekStart = new Date(pacific);
     weekStart.setDate(pacific.getDate() - dayOfWeek);
-    const weekStartDate = weekStart.toISOString().split("T")[0];
-    const today = pacific.toISOString().split("T")[0];
+    const weekStartUnix = Math.floor(weekStart.getTime() / 1000);
 
-    // Try multiple GHL payment endpoints — transactions first, then orders
-    const endpoints = [
-      `https://services.leadconnectorhq.com/payments/transactions?altId=${locationId}&altType=location&startAt=${monthStart.toISOString()}&endAt=${new Date().toISOString()}&limit=100`,
-      `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&startAt=${monthStart.toISOString()}&endAt=${new Date().toISOString()}&limit=100`,
-      `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&limit=100`,
-    ];
+    const todayStart = new Date(pacific);
+    todayStart.setHours(0, 0, 0, 0);
+    const todayUnix = Math.floor(todayStart.getTime() / 1000);
 
-    let orders = [];
-    let rawData = null;
+    // Fetch successful charges from Stripe for this month
+    const params = new URLSearchParams({
+      "created[gte]": String(monthStartUnix),
+      "limit": "100",
+    });
 
-    for (const url of endpoints) {
-      const resp = await ghlFetch(context, url);
-      if (resp.ok) {
-        rawData = await resp.json();
-        // GHL responses vary — check multiple possible array locations
-        orders = rawData.data || rawData.orders || rawData.transactions || [];
-        if (orders.length > 0) break;
-      }
+    const resp = await fetch(`https://api.stripe.com/v1/charges?${params}`, {
+      headers: { "Authorization": `Bearer ${stripeKey}` },
+    });
+
+    if (!resp.ok) {
+      console.error("[cos] Stripe API error:", resp.status);
+      return "Failed to fetch Stripe data.";
     }
 
-    if (!orders.length) {
-      // Last fallback: try opportunities with monetary value
-      const oppResp = await ghlFetch(context,
-        `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`
-      );
-      if (!oppResp.ok) return null;
-      const oppData = await oppResp.json();
-      const opps = oppData.opportunities || [];
-      const withValue = opps.filter(o => o.monetaryValue > 0);
-      const totalValue = withValue.reduce((sum, o) => sum + (o.monetaryValue || 0), 0);
-      return totalValue > 0
-        ? `Pipeline monetary value: $${totalValue.toLocaleString()} across ${withValue.length} opportunities`
-        : null;
-    }
+    const data = await resp.json();
+    const charges = data.data || [];
 
     let monthTotal = 0;
     let weekTotal = 0;
     let todayTotal = 0;
-    const recentOrders = [];
+    let succeededCount = 0;
+    let failedCount = 0;
+    const recentCharges = [];
 
-    for (const order of orders) {
-      // GHL might store amount in cents or dollars depending on endpoint
-      const rawAmount = order.amount || order.total || order.chargeAmount || 0;
-      // If amount > 10000, it's probably cents (e.g., 129500 = $1,295)
-      const amountDollars = rawAmount > 10000 ? rawAmount / 100 : rawAmount;
-      const status = order.status || order.paymentStatus || "";
+    for (const charge of charges) {
+      if (charge.status !== "succeeded") {
+        failedCount++;
+        continue;
+      }
 
-      // Skip failed/refunded
-      if (/fail|refund|cancel|void/i.test(status)) continue;
-
-      const orderDate = (order.createdAt || order.created_at || order.createdOn || "").split("T")[0];
+      succeededCount++;
+      const amountDollars = charge.amount / 100; // Stripe always stores in cents
+      const chargeDate = charge.created;
 
       monthTotal += amountDollars;
-      if (orderDate >= weekStartDate) weekTotal += amountDollars;
-      if (orderDate === today) todayTotal += amountDollars;
+      if (chargeDate >= weekStartUnix) weekTotal += amountDollars;
+      if (chargeDate >= todayUnix) todayTotal += amountDollars;
 
-      if (recentOrders.length < 5) {
-        const name = order.contactName || order.contact_name || order.contactSnapshot?.name || "Unknown";
-        const desc = order.description || order.name || "";
-        recentOrders.push(`- $${amountDollars.toLocaleString()}: ${name}${desc ? ` — ${desc}` : ""} (${orderDate})`);
+      if (recentCharges.length < 5) {
+        const name = charge.billing_details?.name || charge.customer_email || "Unknown";
+        const desc = charge.description || "";
+        const date = new Date(chargeDate * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" });
+        recentCharges.push(`- $${amountDollars.toLocaleString()}: ${name}${desc ? ` — ${desc}` : ""} (${date})`);
       }
     }
 
     const lines = [
-      `Revenue this month: $${monthTotal.toLocaleString()}`,
+      `Revenue this month: $${monthTotal.toLocaleString()} (${succeededCount} succeeded${failedCount > 0 ? `, ${failedCount} failed` : ""})`,
       `This week: $${weekTotal.toLocaleString()}`,
     ];
     if (todayTotal > 0) lines.push(`Today: $${todayTotal.toLocaleString()}`);
-    if (recentOrders.length > 0) {
-      lines.push(`\nRecent payments:\n${recentOrders.join("\n")}`);
+    if (recentCharges.length > 0) {
+      lines.push(`\nRecent payments:\n${recentCharges.join("\n")}`);
     }
 
     return lines.join("\n");
