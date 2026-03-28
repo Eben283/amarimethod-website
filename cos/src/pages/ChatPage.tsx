@@ -85,7 +85,7 @@ export default function ChatPage() {
   return (
     <div className="h-screen h-[100dvh] flex flex-col bg-cos-bg">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-cos-border safe-top">
+      <header className="flex items-center justify-between px-4 pb-3 pt-14 border-b border-cos-border">
         <h1 className="text-base font-semibold text-cos-text">Chief of Staff</h1>
         <div className="flex items-center gap-1">
           <button
