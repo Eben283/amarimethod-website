@@ -47,6 +47,7 @@ export async function cosLogin(pin: string): Promise<{ token: string }> {
 
 export async function sendMessage(
   message: string,
+  image: string | undefined,
   onChunk: (text: string) => void,
   onDone: (actions: unknown[]) => void,
   onError: (error: string) => void,
@@ -58,10 +59,13 @@ export async function sendMessage(
   }
 
   try {
+    const body: Record<string, unknown> = { message };
+    if (image) body.image = image;
+
     const response = await fetch(`${API_BASE}/cos-chat`, {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ message }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {

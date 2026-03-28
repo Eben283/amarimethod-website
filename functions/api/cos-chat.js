@@ -562,7 +562,8 @@ export async function onRequestPost(context) {
   // Parse request
   const body = await context.request.json();
   const userMessage = (body.message || "").trim();
-  if (!userMessage) {
+  const userImage = body.image || null; // base64 data URI
+  if (!userMessage && !userImage) {
     return jsonResponse({ error: "Message is required" }, 400, origin);
   }
 
@@ -648,8 +649,21 @@ export async function onRequestPost(context) {
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },
-    ...recentMessages.map(m => ({ role: m.role, content: m.content })),
+    ...recentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
   ];
+
+  // Add the latest user message — with image if present
+  if (userImage) {
+    openRouterMessages.push({
+      role: "user",
+      content: [
+        { type: "text", text: userMessage || "What's in this image?" },
+        { type: "image_url", image_url: { url: userImage } },
+      ],
+    });
+  } else {
+    openRouterMessages.push({ role: "user", content: userMessage });
+  }
 
   // Add pending actions context if any
   if (pendingActions.length > 0) {
