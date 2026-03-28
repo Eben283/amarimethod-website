@@ -305,11 +305,12 @@ export async function onRequestPost(context) {
   const kv = context.env.PORTAL_KV;
   const dateKey = todayKey();
 
-  // Load conversation history, context doc, and pending actions from KV
-  const [convRaw, contextRaw, actionsRaw] = await Promise.all([
+  // Load conversation history, context doc, pending actions, and daily briefing from KV
+  const [convRaw, contextRaw, actionsRaw, briefingRaw] = await Promise.all([
     kv ? kv.get(`cos:conv:${dateKey}`) : null,
     kv ? kv.get("cos:context") : null,
     kv ? kv.get("cos:actions:pending") : null,
+    kv ? kv.get("cos:daily-briefing:latest") : null,
   ]);
 
   const conversation = convRaw ? JSON.parse(convRaw) : { messages: [], created: Date.now(), updated: Date.now() };
@@ -329,7 +330,24 @@ export async function onRequestPost(context) {
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
   const recentMessages = conversation.messages.slice(-30);
   const calendarAndEmail = [calendarText, emailText].filter(Boolean).join("\n\n");
-  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlSummary);
+
+  // Parse daily briefing if available
+  let dailyBriefing = null;
+  if (briefingRaw) {
+    try {
+      const parsed = JSON.parse(briefingRaw);
+      dailyBriefing = parsed.briefing;
+    } catch {
+      dailyBriefing = briefingRaw;
+    }
+  }
+
+  // Combine live GHL data with daily briefing (briefing is richer)
+  const ghlContext = dailyBriefing
+    ? `${dailyBriefing}${ghlSummary ? `\n\nLive update:\n${ghlSummary}` : ""}`
+    : ghlSummary;
+
+  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlContext);
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },
