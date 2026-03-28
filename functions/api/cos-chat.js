@@ -3,6 +3,7 @@
 
 import { verifySessionToken } from "../lib/auth.js";
 import { getTodayCalendar, getRecentEmails } from "../lib/google-api.js";
+import { ghlFetch } from "../lib/ghl.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -77,7 +78,7 @@ function stripContext(text) {
 }
 
 // Build the system prompt
-function buildSystemPrompt(context, calendarEvents) {
+function buildSystemPrompt(context, calendarEvents, ghlSummary) {
   const contextDoc = context || "No context learned yet. As you learn about Eben's life, preferences, and routines, this will grow.";
 
   return `You are Eben's chief of staff. Your job is to THINK, not sort.
@@ -102,6 +103,8 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
+BUSINESS/GHL: You know the Amari Method GHL system deeply. Answer questions about workflows, pipelines, contacts, sessions, pricing, partner program. Reference the GHL section below.
+
 ## Queuing Actions
 When something needs to happen at Eben's desk (purchases, email, cart automation, etc.), include an action block at the END of your response. Format:
 <!--ACTION:{"type":"grocery","item":"cilantro","store":"Safeway","reason":"single item, on your block"}-->
@@ -125,12 +128,139 @@ ${contextDoc}
 ## Today's Calendar
 ${calendarEvents || "Calendar not connected yet. Ask Eben about his schedule if relevant."}
 
+## Amari Method — GoHighLevel (GHL) System
+
+### Business
+Amari Method — solo bodywork practice in San Francisco run by Dr. Garrett. Eben manages ops/tech.
+
+### Pipeline Stages
+New Lead → Engaged Lead → Booked Consult → Showed → Consultation Attended → Active Client
+Partnership Pipeline: New Lead → Messaged → Meeting Booked
+
+### Pricing
+- Initial Session: $225 (60 min)
+- Follow-up Session: $190 (50 min)
+- 4-Session Series: $720 (sessions_remaining = 4)
+- 8-Session Series: $1,295 (includes Living Practice video program)
+- Upgrade from 1 initial: 4-pack $495, 8-pack $1,070
+- Living Practice standalone: $347
+- Discovery Call: Free (15 min)
+
+### Session Tracking
+- sessions_remaining: decrements per attended session
+- sessions_completed: increments per attended session
+- series_type: none / 4-session / 8-session
+- Attendance tracked via staff dashboard "Mark Attended" button + SMS trigger link
+- Double-count risk exists (idempotency guard needed on SMS workflow)
+
+### Key Workflows
+- Booking confirmations/reminders for all calendar types
+- Discovery Call funnel (book → confirm → attend → no-show)
+- No Show recovery (3-email sequence)
+- New Partner Onboarding (partner toolkit SMS)
+- Attendance Confirmed (session count increment)
+- Referral Credit (webhook on session booked by referred client)
+- Follow-up reminder (all 4 calendars, confirmed-only triggers)
+
+### Tags
+- affiliate-partner: active paid partner (relationship tag, NOT payment status)
+- ambassador-prospect: prospect for partner program
+- affiliate-referral: client referred by partner
+- trainer-outreach: bulk trainer outreach list
+- discovery-call-attended: attended discovery, pending purchase
+- partner-session-booked: booked comp session
+
+### Custom Fields
+- sessions_remaining, sessions_completed, series_type, portal_access
+- client_progress (JSON — module tracker + body graph data)
+- referral_source, partner_contact_id (for affiliate tracking)
+
+### Partner Program
+- Partners get comp sessions, paid when referred client books
+- Partner portal: amarimethod.com/partner-app
+- Toolkit SMS sent on partner session attendance
+- Tags: affiliate-partner (active), ambassador-prospect (prospect), affiliate-referral (referred client)
+
+### Calendars
+Initial Session (in-person + virtual), Follow-up Session (in-person + virtual), Discovery Call (standard + ambassador), Partner Session, Entrainment
+
+### Known Issues
+- M2: Attendance exclusion may over-exclude contacts with discovery-call-attended tag even after purchase
+- Idempotency guard needed on Attendance Confirmed workflow
+- Lead Engagement Tracking disabled (was creating junk pipeline entries)
+
+### Website
+amarimethod.com — static HTML + Vite React SPAs (quiz, portal, staff dashboard), Cloudflare Pages
+Staff dashboard: amarimethod.com/staff/ (PIN auth, today's schedule, client lookup, session checklists)
+
+${ghlSummary ? `### Live GHL Data\n${ghlSummary}` : ""}
+
 ## Style
 - Be concise but thoughtful. No filler.
 - Think out loud when connecting dots — show your reasoning.
 - If you're not sure about something, say so and ask.
 - You're talking to one person on his phone while he walks. Keep it conversational.
 - Don't use markdown headers or bullet points unless listing options. Just talk.`;
+}
+
+// Fetch live GHL summary — today's appointments + pipeline counts
+async function getGhlSummary(context) {
+  try {
+    const locationId = "7pIO7FHVAyBT1jKGhfQM";
+
+    // Today's date range in Pacific
+    const now = new Date();
+    const pacific = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+    const y = pacific.getFullYear();
+    const m = String(pacific.getMonth() + 1).padStart(2, "0");
+    const d = String(pacific.getDate()).padStart(2, "0");
+    const startDate = `${y}-${m}-${d}`;
+
+    // Fetch appointments and pipeline in parallel
+    const [apptResp, pipeResp] = await Promise.all([
+      ghlFetch(context, `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&startTime=${startDate}T00:00:00-07:00&endTime=${startDate}T23:59:59-07:00`),
+      ghlFetch(context, `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`),
+    ]);
+
+    const lines = [];
+
+    if (apptResp.ok) {
+      const apptData = await apptResp.json();
+      const events = apptData.events || [];
+      const upcoming = events.filter(e => e.appointmentStatus !== "cancelled");
+      if (upcoming.length > 0) {
+        lines.push(`Today's appointments: ${upcoming.length}`);
+        for (const e of upcoming.slice(0, 8)) {
+          const time = e.startTime ? new Date(e.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "TBD";
+          lines.push(`- ${time}: ${e.title || "Session"} — ${e.contactName || "Unknown"} (${e.appointmentStatus})`);
+        }
+      } else {
+        lines.push("No appointments today.");
+      }
+    }
+
+    if (pipeResp.ok) {
+      const pipeData = await pipeResp.json();
+      const opps = pipeData.opportunities || [];
+      if (opps.length > 0) {
+        const stages = {};
+        for (const o of opps) {
+          const stage = o.pipelineStageId || "unknown";
+          const name = o.stageName || o.pipelineStageName || stage;
+          stages[name] = (stages[name] || 0) + 1;
+        }
+        lines.push(`Pipeline: ${opps.length} total`);
+        for (const [name, count] of Object.entries(stages)) {
+          lines.push(`- ${name}: ${count}`);
+        }
+      }
+    }
+
+    return lines.length > 0 ? lines.join("\n") : null;
+  } catch (err) {
+    console.error("[cos-chat] GHL summary error:", err.message);
+    return null;
+  }
 }
 
 export async function onRequestOptions(context) {
@@ -189,16 +319,17 @@ export async function onRequestPost(context) {
   // Add user message to history
   conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
 
-  // Fetch calendar and email context in parallel
-  const [calendarText, emailText] = await Promise.all([
+  // Fetch calendar, email, and GHL context in parallel
+  const [calendarText, emailText, ghlSummary] = await Promise.all([
     getTodayCalendar(context).catch(() => null),
     getRecentEmails(context).catch(() => null),
+    getGhlSummary(context).catch(() => null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
   const recentMessages = conversation.messages.slice(-30);
   const calendarAndEmail = [calendarText, emailText].filter(Boolean).join("\n\n");
-  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null);
+  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlSummary);
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },
