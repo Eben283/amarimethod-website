@@ -263,6 +263,176 @@ async function getGhlSummary(context) {
   }
 }
 
+// Common words to skip when extracting potential names from messages
+const SKIP_WORDS = new Set([
+  "the","a","an","is","are","was","were","be","been","being","have","has","had",
+  "do","does","did","will","would","shall","should","may","might","must","can","could",
+  "i","me","my","we","our","you","your","he","him","his","she","her","it","its","they","them","their",
+  "this","that","these","those","what","which","who","whom","when","where","why","how",
+  "not","no","nor","and","but","or","so","if","then","than","too","very","just",
+  "about","after","again","all","also","any","back","because","before","between",
+  "both","by","come","day","each","even","first","for","from","get","give","go",
+  "going","good","great","here","into","know","last","like","look","make","many",
+  "more","most","much","need","new","now","of","off","on","one","only","other","out",
+  "over","own","part","people","place","same","say","see","some","still","such",
+  "take","tell","thing","think","time","to","up","us","use","want","way","well",
+  "with","work","year","session","sessions","appointment","appointments","client",
+  "prepaid","paid","today","tomorrow","yesterday","booked","confirmed","done",
+  "many","much","often","does","didn","don","hasn","haven","isn","wasn","weren",
+  "next","week","month","already","really","actually","right","left",
+]);
+
+// Extract potential person names from a message
+function extractNames(message) {
+  const words = message.split(/[\s,?.!;:]+/).filter(w => w.length >= 3);
+  const candidates = [];
+
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i].replace(/[^a-zA-Z'-]/g, "");
+    if (word.length < 3) continue;
+    if (SKIP_WORDS.has(word.toLowerCase())) continue;
+
+    // Capitalized words are likely names
+    if (word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) {
+      candidates.push(word);
+      continue;
+    }
+
+    // Even lowercase — if it's not a common word, could be a name typed casually
+    if (!SKIP_WORDS.has(word.toLowerCase()) && /^[a-zA-Z]+$/.test(word)) {
+      // Only include if it's reasonably name-like (not too long, not a verb/adjective)
+      if (word.length <= 15) {
+        candidates.push(word);
+      }
+    }
+  }
+
+  // Dedupe and limit to top 3
+  return [...new Set(candidates)].slice(0, 3);
+}
+
+// Look up a contact in GHL and fetch their full data
+async function lookupContact(context, name) {
+  const locationId = "7pIO7FHVAyBT1jKGhfQM";
+
+  // Search for the contact
+  const searchResp = await ghlFetch(context,
+    `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&name=${encodeURIComponent(name)}`
+  );
+
+  if (!searchResp.ok) return null;
+  const searchData = await searchResp.json();
+  const contacts = searchData.contacts || [];
+  if (contacts.length === 0) return null;
+
+  const contact = contacts[0]; // Best match
+  const contactId = contact.id;
+
+  // Fetch appointments for this contact
+  const apptResp = await ghlFetch(context,
+    `https://services.leadconnectorhq.com/contacts/${contactId}/appointments`
+  );
+
+  let appointments = [];
+  if (apptResp.ok) {
+    const apptData = await apptResp.json();
+    appointments = apptData.events || apptData.appointments || [];
+  }
+
+  // Parse custom fields
+  const customFields = contact.customFields || contact.customField || [];
+  const fieldMap = {};
+  for (const f of (Array.isArray(customFields) ? customFields : [])) {
+    fieldMap[f.id] = f.value;
+  }
+
+  // Known field IDs
+  const sessionsRemaining = fieldMap["wrQSkx6BhXwDGIn1d0V4"] || contact.sessionsRemaining || "unknown";
+  const sessionsCompleted = fieldMap["TE0udwVH1Km5RsKaN5H0"] || contact.sessionsCompleted || "unknown";
+  const seriesType = fieldMap["3i93lTkmuAV49s9nh0q8"] || contact.seriesType || "none";
+
+  // Categorize appointments
+  const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|pain assessment/i;
+  const sessions = [];
+  const discoveryCalls = [];
+
+  for (const appt of appointments) {
+    const title = appt.title || appt.calendarName || "";
+    const status = appt.appointmentStatus || appt.status || "unknown";
+    const startTime = appt.startTime || appt.start_time || "";
+    const entry = {
+      date: startTime ? new Date(startTime).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" }) : "Unknown",
+      time: startTime ? new Date(startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "",
+      title,
+      status,
+      isToday: startTime && new Date(startTime).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }) === todayKey(),
+    };
+
+    if (discoveryPatterns.test(title)) {
+      discoveryCalls.push(entry);
+    } else {
+      sessions.push(entry);
+    }
+  }
+
+  const confirmedSessions = sessions.filter(s => s.status === "showed" || s.status === "completed").length;
+  const upcomingConfirmed = sessions.filter(s => s.status === "confirmed" && !s.isToday);
+  const todaySession = sessions.find(s => s.isToday);
+  const isPrepaid = seriesType !== "none" && parseInt(sessionsRemaining) > 0;
+
+  // Build readable summary
+  const lines = [
+    `**${contact.firstName || ""} ${contact.lastName || ""}** (${contact.email || "no email"})`,
+    `Series: ${seriesType === "none" ? "No series (single sessions)" : `${seriesType} series`}`,
+    `Sessions completed: ${confirmedSessions} showed/completed (GHL field: ${sessionsCompleted})`,
+    `Sessions remaining: ${sessionsRemaining}`,
+    `Prepaid: ${isPrepaid ? `Yes (${sessionsRemaining} remaining on ${seriesType})` : "No active series"}`,
+    `Tags: ${(contact.tags || []).join(", ") || "none"}`,
+  ];
+
+  if (todaySession) {
+    lines.push(`TODAY: ${todaySession.time} — ${todaySession.title} (${todaySession.status}) ${isPrepaid ? "— PREPAID" : "— NOT prepaid, needs payment"}`);
+  }
+
+  if (sessions.length > 0) {
+    lines.push(`\nSession history (excluding discovery calls):`);
+    for (const s of sessions.slice(-10)) {
+      const marker = s.isToday ? " ← TODAY" : "";
+      lines.push(`- ${s.date} ${s.time}: ${s.title} (${s.status})${marker}`);
+    }
+  }
+
+  if (discoveryCalls.length > 0) {
+    lines.push(`\nDiscovery calls (NOT counted as sessions): ${discoveryCalls.length}`);
+  }
+
+  if (upcomingConfirmed.length > 0) {
+    lines.push(`\nUpcoming confirmed: ${upcomingConfirmed.map(s => `${s.date} ${s.time}`).join(", ")}`);
+  }
+
+  return lines.join("\n");
+}
+
+// Search GHL for any names mentioned in the user's message
+async function getContactContext(context, message) {
+  const names = extractNames(message);
+  if (names.length === 0) return null;
+
+  const results = [];
+  for (const name of names) {
+    try {
+      const data = await lookupContact(context, name);
+      if (data) results.push(data);
+    } catch (err) {
+      console.error(`[cos-chat] Contact lookup failed for "${name}":`, err.message);
+    }
+  }
+
+  return results.length > 0
+    ? `## Client Data (from GHL — live lookup)\n\n${results.join("\n\n---\n\n")}`
+    : null;
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -320,11 +490,12 @@ export async function onRequestPost(context) {
   // Add user message to history
   conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
 
-  // Fetch calendar, email, and GHL context in parallel
-  const [calendarText, emailText, ghlSummary] = await Promise.all([
+  // Fetch calendar, email, GHL summary, and contact lookups in parallel
+  const [calendarText, emailText, ghlSummary, contactContext] = await Promise.all([
     getTodayCalendar(context).catch(() => null),
     getRecentEmails(context).catch(() => null),
     getGhlSummary(context).catch(() => null),
+    getContactContext(context, userMessage).catch(() => null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -343,9 +514,13 @@ export async function onRequestPost(context) {
   }
 
   // Combine live GHL data with daily briefing (briefing is richer)
-  const ghlContext = dailyBriefing
-    ? `${dailyBriefing}${ghlSummary ? `\n\nLive update:\n${ghlSummary}` : ""}`
-    : ghlSummary;
+  const ghlParts = [
+    dailyBriefing,
+    ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
+    contactContext,
+  ].filter(Boolean);
+
+  const ghlContext = ghlParts.length > 0 ? ghlParts.join("\n\n") : null;
 
   const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlContext);
 
