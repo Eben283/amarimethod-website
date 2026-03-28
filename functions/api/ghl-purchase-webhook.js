@@ -277,11 +277,15 @@ export async function onRequestPost(context) {
     const contact = contactData.contact;
 
     // ── 6. Compute new sessions_remaining ──
+    // Series purchases and upgrades: SET to the package value (clean reset).
+    // Single follow-ups (seriesType === null): ADD to current balance.
     const currentRemaining = parseInt(
       getCustomFieldValue(contact, FIELD_IDS.sessionsRemaining) ?? "0",
       10
     ) || 0;
-    const newRemaining = currentRemaining + pkg.sessionsToAdd;
+    const newRemaining = pkg.seriesType !== null
+      ? pkg.sessionsToAdd
+      : currentRemaining + pkg.sessionsToAdd;
 
     // ── 7. Build field updates ──
     const fieldUpdates = [

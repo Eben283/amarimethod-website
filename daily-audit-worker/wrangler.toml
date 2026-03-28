@@ -1,0 +1,17 @@
+name = "daily-audit"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# 4 AM PDT = 11:00 UTC | 3 AM PST = 11:00 UTC
+# During PST this runs at 3 AM instead of 4 AM — still well before 5 AM throttle window.
+[triggers]
+crons = ["0 11 * * *"]
+
+# Same KV namespace as Pages + ghl-token-refresh
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Secrets (set via `npx wrangler secret put <KEY>`):
+#   GHL_CLIENT_ID     — same as ghl-token-refresh
+#   GHL_CLIENT_SECRET — same as ghl-token-refresh

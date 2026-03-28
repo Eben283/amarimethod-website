@@ -27,12 +27,15 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const isOnSeries = client.seriesType !== 'none';
-  // Total = all sessions ever purchased (completed + still remaining).
-  // Reflects reality correctly even after re-purchases or single add-ons.
-  const totalSessions = client.sessionsCompleted + client.sessionsRemaining;
+  // Derive total from series_type, not from completed + remaining.
+  // sessions_completed is cumulative (lifetime total, never resets), so adding
+  // it to remaining inflates the denominator after re-purchases.
+  const totalSessions = client.seriesType === '8-session' ? 8
+    : client.seriesType === '4-session' ? 4
+    : 0;
 
-  // Use (total - remaining) for the bar — reliable regardless of whether
-  // sessions_completed in GHL is per-series or cumulative (it's cumulative).
+  // Current series progress = how many of THIS series they've used.
+  // Clamped to 0 for the rare case remaining > total (mid-series re-buy).
   const currentSeriesCompleted = isOnSeries
     ? Math.max(0, totalSessions - client.sessionsRemaining)
     : 0;

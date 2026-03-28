@@ -1,0 +1,6 @@
+{
+  "name": "daily-audit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker cron that audits GHL automations at 4 AM Pacific and caches results in KV"
+}

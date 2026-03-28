@@ -7,9 +7,11 @@ interface Props {
 
 export default function SessionStats({ seriesType, sessionsCompleted, sessionsRemaining, tags }: Props) {
   const totalSessions = seriesType === '8-session' ? 8 : seriesType === '4-session' ? 4 : 0;
-  const progressPct = totalSessions > 0 ? Math.min(100, ((totalSessions - sessionsRemaining) / totalSessions) * 100) : 0;
+  const currentSeriesCompleted = totalSessions > 0 ? Math.max(0, totalSessions - sessionsRemaining) : 0;
+  const progressPct = totalSessions > 0 ? Math.min(100, (currentSeriesCompleted / totalSessions) * 100) : 0;
 
   const isPartner = tags.includes('affiliate-partner');
+  const isReturning = sessionsCompleted > currentSeriesCompleted;
 
   return (
     <div className="staff-card">
@@ -24,8 +26,8 @@ export default function SessionStats({ seriesType, sessionsCompleted, sessionsRe
 
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div className="text-center">
-          <p className="text-2xl font-serif text-amari-charcoal">{sessionsCompleted}</p>
-          <p className="text-xs text-amari-text-muted">Completed</p>
+          <p className="text-2xl font-serif text-amari-charcoal">{currentSeriesCompleted}</p>
+          <p className="text-xs text-amari-text-muted">This Series</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-serif text-amari-charcoal">{sessionsRemaining}</p>
@@ -46,6 +48,12 @@ export default function SessionStats({ seriesType, sessionsCompleted, sessionsRe
             style={{ width: `${progressPct}%` }}
           />
         </div>
+      )}
+
+      {isReturning && (
+        <p className="text-xs text-amari-text-muted mt-2 text-center">
+          {sessionsCompleted} lifetime sessions
+        </p>
       )}
     </div>
   );
