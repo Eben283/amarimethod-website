@@ -80,6 +80,71 @@ async function refreshGoogleToken(context, refreshToken) {
 }
 
 /**
+ * Create a Google Calendar event with a reminder.
+ * @param {object} context - Cloudflare Pages context
+ * @param {string} title - Event title
+ * @param {number} minutesFromNow - When the event should be (minutes from now)
+ * @param {number} reminderMinutes - Reminder before event (default 10)
+ * @param {string} description - Optional event description
+ * @returns {object} Created event data or null
+ */
+export async function createCalendarReminder(context, title, minutesFromNow, reminderMinutes = 10, description = "") {
+  try {
+    const token = await getGoogleToken(context);
+
+    const start = new Date(Date.now() + minutesFromNow * 60 * 1000);
+    const end = new Date(start.getTime() + 15 * 60 * 1000); // 15 min duration
+
+    const event = {
+      summary: title,
+      description,
+      start: {
+        dateTime: start.toISOString(),
+        timeZone: "America/Los_Angeles",
+      },
+      end: {
+        dateTime: end.toISOString(),
+        timeZone: "America/Los_Angeles",
+      },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "popup", minutes: reminderMinutes },
+        ],
+      },
+    };
+
+    const response = await fetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(event),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("[google] Calendar event create failed:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    return {
+      id: data.id,
+      title: data.summary,
+      start: data.start?.dateTime,
+      link: data.htmlLink,
+    };
+  } catch (err) {
+    console.error("[google] Calendar reminder error:", err.message);
+    return null;
+  }
+}
+
+/**
  * Fetch today's calendar events.
  * Returns a formatted string for the system prompt.
  */

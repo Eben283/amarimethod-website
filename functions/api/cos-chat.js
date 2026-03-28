@@ -2,7 +2,7 @@
 // Main chat endpoint — streams Claude responses via SSE through OpenRouter
 
 import { verifySessionToken } from "../lib/auth.js";
-import { getTodayCalendar, getRecentEmails } from "../lib/google-api.js";
+import { getTodayCalendar, getRecentEmails, createCalendarReminder } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
 
 const ALLOWED_ORIGINS = [
@@ -77,6 +77,25 @@ function stripContext(text) {
   return text.replace(/<!--CONTEXT:.*?-->/gs, "").trim();
 }
 
+// Parse <!--REMINDER:{...}--> blocks
+function parseReminders(text) {
+  const reminders = [];
+  const regex = /<!--REMINDER:(.*?)-->/gs;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    try {
+      reminders.push(JSON.parse(match[1]));
+    } catch {
+      // Skip invalid
+    }
+  }
+  return reminders;
+}
+
+function stripReminders(text) {
+  return text.replace(/<!--REMINDER:.*?-->/gs, "").trim();
+}
+
 // Build the system prompt
 function buildSystemPrompt(context, calendarEvents, ghlSummary) {
   const contextDoc = context || "No context learned yet. As you learn about Eben's life, preferences, and routines, this will grow.";
@@ -103,7 +122,7 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
-PARKING: When Eben mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then suggest he set a Siri timer: "Say 'Hey Siri, set a timer for [time limit minus 15 min]' so you have time to get back." You can't send reminders — Siri can.
+PARKING: When Eben mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then SET A REMINDER using the reminder block so his phone buzzes him before time runs out.
 
 BUSINESS/GHL: You know the Amari Method GHL system deeply. Answer questions about workflows, pipelines, contacts, sessions, pricing, partner program. Reference the GHL section below.
 
@@ -117,6 +136,17 @@ When something needs to happen at Eben's desk (purchases, email, cart automation
 
 Types: grocery, purchase, task, research, calendar.
 Only queue things that need desk action. Suggestions and thinking stay in the conversation.
+
+## Setting Reminders
+You CAN set reminders that will buzz Eben's phone via Google Calendar. Include a reminder block:
+<!--REMINDER:{"title":"Move car — 5th & Clement","minutes_from_now":105,"description":"2hr parking limit, parked at 2:15pm"}-->
+
+Use this for:
+- Parking time limits (set to limit minus 15 min)
+- "Remind me to..." requests
+- Anything time-sensitive that needs a phone notification
+
+The reminder creates a calendar event with a popup alert. It actually works — use it.
 
 ## Learning Context
 When you learn something new about Eben's life, include:
@@ -649,7 +679,7 @@ export async function onRequestPost(context) {
         const closeIdx = afterMarker.indexOf("-->");
         if (closeIdx !== -1) {
           // Complete block found — strip it and send what's safe
-          const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT):.*?-->/gs, "");
+          const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER):.*?-->/gs, "");
           if (cleaned) {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: cleaned })}\n\n`));
           }
@@ -695,17 +725,18 @@ export async function onRequestPost(context) {
 
       // Flush any remaining buffered content (strip complete blocks)
       if (sendBuffer) {
-        const finalClean = sendBuffer.replace(/<!--(?:ACTION|CONTEXT):.*?-->/gs, "");
+        const finalClean = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER):.*?-->/gs, "");
         if (finalClean) {
           await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: finalClean })}\n\n`));
         }
         sendBuffer = "";
       }
 
-      // Parse actions and context from the full response
+      // Parse actions, context, and reminders from the full response
       const actions = parseActions(fullContent);
       const contextUpdates = parseContextUpdates(fullContent);
-      const cleanContent = stripContext(stripActions(fullContent));
+      const reminders = parseReminders(fullContent);
+      const cleanContent = stripReminders(stripContext(stripActions(fullContent)));
 
       // Save conversation to KV
       conversation.messages.push({ role: "assistant", content: cleanContent, timestamp: Date.now() });
@@ -720,6 +751,21 @@ export async function onRequestPost(context) {
         if (actions.length > 0) {
           const allActions = [...pendingActions, ...actions];
           kvWrites.push(kv.put(`cos:actions:${cosUser}:pending`, JSON.stringify(allActions)));
+        }
+
+        // Create calendar reminders
+        for (const reminder of reminders) {
+          try {
+            await createCalendarReminder(
+              context,
+              reminder.title || "Reminder",
+              reminder.minutes_from_now || 60,
+              10,
+              reminder.description || ""
+            );
+          } catch (err) {
+            console.error("[cos-chat] Reminder creation failed:", err.message);
+          }
         }
 
         // Apply context updates (user-scoped)
