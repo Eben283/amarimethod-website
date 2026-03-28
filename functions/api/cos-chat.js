@@ -433,6 +433,58 @@ async function getContactContext(context, message) {
     : null;
 }
 
+// Look up SF parking regulations near a location
+async function getParkingRegulations(location) {
+  try {
+    // Step 1: Geocode the location using Nominatim (free, no API key)
+    const geoResp = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location + ", San Francisco, CA")}&format=json&limit=1`,
+      { headers: { "User-Agent": "ChiefOfStaff/1.0" } }
+    );
+    if (!geoResp.ok) return null;
+    const geoData = await geoResp.json();
+    if (!geoData.length) return null;
+
+    const lat = parseFloat(geoData[0].lat);
+    const lon = parseFloat(geoData[0].lon);
+
+    // Step 2: Query SF parking regulations near these coordinates
+    // Use within_circle to find regulations within ~100 meters
+    const parkResp = await fetch(
+      `https://data.sfgov.org/resource/hi6h-neyh.json?$where=within_circle(shape,${lat},${lon},100)&$limit=10&$select=regulation,days,hours,hrlimit,from_time,to_time,exceptions,rpparea1,analysis_neighborhood`
+    );
+    if (!parkResp.ok) return null;
+    const regs = await parkResp.json();
+    if (!regs.length) return null;
+
+    // Step 3: Format for the system prompt
+    const lines = [`Parking regulations near ${location} (${geoData[0].display_name}):`];
+    const seen = new Set();
+    for (const r of regs) {
+      const key = `${r.regulation}|${r.days}|${r.hours}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      let desc = `- ${r.regulation}`;
+      if (r.hrlimit && r.hrlimit !== "0") desc += ` (${r.hrlimit}hr limit)`;
+      desc += `: ${r.days} ${r.from_time}–${r.to_time}`;
+      if (r.rpparea1) desc += ` | RPP Area ${r.rpparea1}`;
+      if (r.exceptions) desc += ` | ${r.exceptions}`;
+      lines.push(desc);
+    }
+
+    return lines.join("\n");
+  } catch (err) {
+    console.error("[cos-chat] Parking lookup error:", err.message);
+    return null;
+  }
+}
+
+// Detect if the user's message mentions parking
+function mentionsParking(message) {
+  return /\bpark(ed|ing|s)?\b/i.test(message);
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -492,12 +544,15 @@ export async function onRequestPost(context) {
   // Add user message to history
   conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
 
-  // Fetch calendar, email, GHL summary, and contact lookups in parallel
-  const [calendarText, emailText, ghlSummary, contactContext] = await Promise.all([
+  // Fetch calendar, email, GHL summary, contact lookups, and parking in parallel
+  const [calendarText, emailText, ghlSummary, contactContext, parkingContext] = await Promise.all([
     getTodayCalendar(context).catch(() => null),
     getRecentEmails(context).catch(() => null),
     getGhlSummary(context).catch(() => null),
     getContactContext(context, userMessage).catch(() => null),
+    mentionsParking(userMessage)
+      ? getParkingRegulations(userMessage.replace(/\b(i\s+)?park(ed|ing)?\b/gi, "").trim()).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -520,6 +575,7 @@ export async function onRequestPost(context) {
     dailyBriefing,
     ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
     contactContext,
+    parkingContext,
   ].filter(Boolean);
 
   const ghlContext = ghlParts.length > 0 ? ghlParts.join("\n\n") : null;
