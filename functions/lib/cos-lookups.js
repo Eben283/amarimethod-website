@@ -1,7 +1,7 @@
 // Chief of Staff contextual lookups — weather, directions, restaurants, packages, revenue
 // All functions return formatted strings for the system prompt or null on failure.
 
-import { getGoogleToken } from "./google-api.js";
+import { getGoogleToken, getPacificOffset } from "./google-api.js";
 import { ghlFetch } from "./ghl.js";
 
 const SF_LAT = 37.78;
@@ -41,7 +41,7 @@ export async function getWeather() {
     const rainProbs = hourly.precipitation_probability || [];
     const hours = hourly.time || [];
     const now = new Date();
-    const currentHour = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" })).getHours();
+    const currentHour = parseInt(now.toLocaleTimeString("en-US", { timeZone: "America/Los_Angeles", hour12: false, hour: "2-digit" }));
 
     let rainLater = false;
     let maxRainProb = 0;
@@ -197,21 +197,18 @@ export async function getRevenueSummary(context) {
     const stripeKey = context.env.STRIPE_SECRET_KEY;
     if (!stripeKey) return "Stripe not configured — cannot pull revenue data.";
 
-    // Get current month date range in Pacific
     const now = new Date();
-    const pacific = new Date(now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-    const monthStart = new Date(pacific.getFullYear(), pacific.getMonth(), 1);
-    const monthStartUnix = Math.floor(monthStart.getTime() / 1000);
+    const offset = getPacificOffset();
+    const pacificDate = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const [y, m] = pacificDate.split("-").map(Number);
 
-    // Also get this week
-    const dayOfWeek = pacific.getDay();
-    const weekStart = new Date(pacific);
-    weekStart.setDate(pacific.getDate() - dayOfWeek);
-    const weekStartUnix = Math.floor(weekStart.getTime() / 1000);
+    const monthStartUnix = Math.floor(new Date(`${y}-${String(m).padStart(2, "0")}-01T00:00:00${offset}`).getTime() / 1000);
 
-    const todayStart = new Date(pacific);
-    todayStart.setHours(0, 0, 0, 0);
-    const todayUnix = Math.floor(todayStart.getTime() / 1000);
+    const currentDayOfWeek = now.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", weekday: "short" });
+    const dayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    const daysBack = dayMap[currentDayOfWeek] || 0;
+    const todayUnix = Math.floor(new Date(`${pacificDate}T00:00:00${offset}`).getTime() / 1000);
+    const weekStartUnix = todayUnix - (daysBack * 86400);
 
     // Fetch successful charges from Stripe for this month
     const params = new URLSearchParams({

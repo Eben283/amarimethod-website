@@ -2,7 +2,7 @@
 // Main chat endpoint — streams Claude responses via SSE through OpenRouter
 
 import { verifySessionToken } from "../lib/auth.js";
-import { getTodayCalendar, getRecentEmails, createCalendarReminder } from "../lib/google-api.js";
+import { getTodayCalendar, getRecentEmails, createCalendarReminder, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 
@@ -98,19 +98,11 @@ function stripReminders(text) {
 }
 
 // Build the system prompt
-function buildSystemPrompt(context, calendarEvents, ghlSummary) {
-  const contextDoc = context || "No context learned yet. As you learn about Eben's life, preferences, and routines, this will grow.";
+function buildSystemPrompt(context, calendarEvents, ghlSummary, userName) {
+  const isEben = userName === "Eben";
+  const contextDoc = context || `No context learned yet. As you learn about ${userName}'s life, preferences, and routines, this will grow.`;
 
-  return `You are Eben's chief of staff. Your job is to THINK, not sort.
-
-When Eben says something, don't just categorize it. Pull on the thread:
-- What does he actually need? (not what he literally said)
-- What else in his life does this connect to?
-- What should he be thinking about that he's not?
-- What questions should you ask before acting?
-
-## How to handle different inputs
-
+  const personalContext = isEben ? `
 GROCERY/SHOPPING: Don't just add to a list. Think about:
 - Which store based on what else is needed and quantity
 - His stores: Safeway (on his block at 6628th Ave SF, quick single items), Costco (bulk, Instacart same-day), Asian mart on Clement (specialty, walkable)
@@ -123,7 +115,7 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
-PARKING: When Eben mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then SET A REMINDER using the reminder block so his phone buzzes him before time runs out.
+PARKING: When ${userName} mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then SET A REMINDER using the reminder block so his phone buzzes him before time runs out.
 
 WEATHER: When asked about weather, you'll have current SF conditions + forecast. Give practical advice (jacket? umbrella?), not a weather report.
 
@@ -131,16 +123,26 @@ DIRECTIONS/TRAVEL: When asked about travel time, you'll have driving distance an
 
 RESTAURANTS/PLACES: When asked for food or place recommendations, you'll have nearby results. Add your own knowledge about SF neighborhoods to give better suggestions.
 
-PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.
+PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.` : "";
 
-REVENUE: When asked about money/revenue/payments, you'll have GHL payment data. Summarize this month, this week, and recent transactions.
+  return `You are ${userName}'s chief of staff. Your job is to THINK, not sort.
+
+When ${userName} says something, don't just categorize it. Pull on the thread:
+- What does he actually need? (not what he literally said)
+- What else in his life does this connect to?
+- What should he be thinking about that he's not?
+- What questions should you ask before acting?
+
+## How to handle different inputs
+${personalContext}
+REVENUE: When asked about money/revenue/payments, you'll have Stripe payment data. Summarize this month, this week, and recent transactions.
 
 MATH: You can do math directly — session pricing, revenue projections, tip calculations, whatever. No API needed.
 
 BUSINESS/GHL: You know the Amari Method GHL system deeply. Answer questions about workflows, pipelines, contacts, sessions, pricing, partner program. Reference the GHL section below.
 
 ## Queuing Actions
-When something needs to happen at Eben's desk (purchases, email, cart automation, etc.), include an action block at the END of your response. Format:
+When something needs to happen at ${userName}'s desk (purchases, email, cart automation, etc.), include an action block at the END of your response. Format:
 <!--ACTION:{"type":"grocery","item":"cilantro","store":"Safeway","reason":"single item, on your block"}-->
 <!--ACTION:{"type":"purchase","item":"dog leash","status":"needs_research","questions":["size?","retractable or fixed?"]}-->
 <!--ACTION:{"type":"task","item":"recalculate Lorenzo macros","blocked_by":"need current weight"}-->
@@ -151,7 +153,7 @@ Types: grocery, purchase, task, research, calendar.
 Only queue things that need desk action. Suggestions and thinking stay in the conversation.
 
 ## Setting Reminders
-You CAN set reminders that will buzz Eben's phone via Google Calendar. Include a reminder block:
+You CAN set reminders that will buzz ${userName}'s phone via Google Calendar. Include a reminder block:
 <!--REMINDER:{"title":"Move car — 5th & Clement","minutes_from_now":105,"description":"2hr parking limit, parked at 2:15pm"}-->
 
 Use this for:
@@ -162,7 +164,7 @@ Use this for:
 The reminder creates a calendar event with a popup alert. It actually works — use it.
 
 ## Learning Context
-When you learn something new about Eben's life, include:
+When you learn something new about ${userName}'s life, include:
 <!--CONTEXT:{"key":"descriptive.key","value":"what you learned","learned":"${todayKey()}"}-->
 
 Examples: lorenzo.weight, routine.morning, stores.preferred_asian_mart
@@ -171,7 +173,7 @@ Examples: lorenzo.weight, routine.morning, stores.preferred_asian_mart
 ${contextDoc}
 
 ## Today's Calendar
-${calendarEvents || "Calendar not connected yet. Ask Eben about his schedule if relevant."}
+${calendarEvents || "Calendar not connected yet. Ask about the schedule if relevant."}
 
 ## Amari Method — GoHighLevel (GHL) System
 
@@ -259,7 +261,7 @@ async function getGhlSummary(context) {
 
     // Fetch appointments and pipeline in parallel
     const [apptResp, pipeResp] = await Promise.all([
-      ghlFetch(context, `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&startTime=${startDate}T00:00:00-07:00&endTime=${startDate}T23:59:59-07:00`),
+      ghlFetch(context, `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&startTime=${startDate}T00:00:00${getPacificOffset()}&endTime=${startDate}T23:59:59${getPacificOffset()}`),
       ghlFetch(context, `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`),
     ]);
 
@@ -323,33 +325,10 @@ const SKIP_WORDS = new Set([
   "next","week","month","already","really","actually","right","left",
 ]);
 
-// Extract potential person names from a message
 function extractNames(message) {
-  const words = message.split(/[\s,?.!;:]+/).filter(w => w.length >= 3);
-  const candidates = [];
-
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i].replace(/[^a-zA-Z'-]/g, "");
-    if (word.length < 3) continue;
-    if (SKIP_WORDS.has(word.toLowerCase())) continue;
-
-    // Capitalized words are likely names
-    if (word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) {
-      candidates.push(word);
-      continue;
-    }
-
-    // Even lowercase — if it's not a common word, could be a name typed casually
-    if (!SKIP_WORDS.has(word.toLowerCase()) && /^[a-zA-Z]+$/.test(word)) {
-      // Only include if it's reasonably name-like (not too long, not a verb/adjective)
-      if (word.length <= 15) {
-        candidates.push(word);
-      }
-    }
-  }
-
-  // Dedupe and limit to top 3
-  return [...new Set(candidates)].slice(0, 3);
+  const words = message.match(/\b[A-Z][a-z]{2,}\b/g) || [];
+  const filtered = words.filter(w => !SKIP_WORDS.has(w.toLowerCase()));
+  return [...new Set(filtered)].slice(0, 2);
 }
 
 // Look up a contact in GHL and fetch their full data
@@ -358,7 +337,7 @@ async function lookupContact(context, name) {
 
   // Search for the contact
   const searchResp = await ghlFetch(context,
-    `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&name=${encodeURIComponent(name)}`
+    `https://services.leadconnectorhq.com/contacts/search?locationId=${locationId}&query=${encodeURIComponent(name)}&limit=5`
   );
 
   if (!searchResp.ok) return null;
@@ -588,6 +567,8 @@ export async function onRequestPost(context) {
 
   // Detect what contextual lookups the message needs
   const msg = userMessage.toLowerCase();
+  const needsContact = /who|client|contact|session|appointment|prepaid|series|book/i.test(msg) ||
+    /(?:^|\.\s+)[a-z].*\b[A-Z][a-z]{2,}/.test(userMessage);
   const needsWeather = /weather|temperature|cold|hot|rain|jacket|umbrella|fog|chilly|warm/i.test(msg);
   const needsDirections = /how (long|far)|directions|drive|driving|get to|travel time|route|traffic/i.test(msg);
   const needsPlaces = /restaurant|food|eat|lunch|dinner|coffee|cafe|bar|shop near|place near/i.test(msg);
@@ -595,12 +576,32 @@ export async function onRequestPost(context) {
   const needsRevenue = /revenue|income|money|made|earned|payments?|sales|how much.*(we|business|practice)/i.test(msg);
   const needsParking = mentionsParking(userMessage);
 
-  // Fetch all context in parallel — only fetch what's relevant
-  const [calendarText, emailText, ghlSummary, contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText] = await Promise.all([
-    getTodayCalendar(context).catch(() => null),
-    getRecentEmails(context).catch(() => null),
-    getGhlSummary(context).catch(() => null),
-    getContactContext(context, userMessage).catch(() => null),
+  const cacheKey = `cos:cache:${cosUser}:${dateKey}`;
+  const cachedRaw = kv ? await kv.get(cacheKey) : null;
+  const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
+  const cacheAge = cached ? (Date.now() - cached.timestamp) : Infinity;
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  let calendarText, emailText, ghlSummary;
+  if (cached && cacheAge < CACHE_TTL) {
+    calendarText = cached.calendar;
+    emailText = cached.email;
+    ghlSummary = cached.ghl;
+  } else {
+    [calendarText, emailText, ghlSummary] = await Promise.all([
+      getTodayCalendar(context).catch(() => null),
+      getRecentEmails(context).catch(() => null),
+      getGhlSummary(context).catch(() => null),
+    ]);
+    if (kv) {
+      await kv.put(cacheKey, JSON.stringify({
+        calendar: calendarText, email: emailText, ghl: ghlSummary, timestamp: Date.now()
+      }), { expirationTtl: 300 });
+    }
+  }
+
+  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText] = await Promise.all([
+    needsContact ? getContactContext(context, userMessage).catch(() => null) : Promise.resolve(null),
     needsParking
       ? getParkingRegulations(userMessage.replace(/\b(i\s+)?park(ed|ing)?\b/gi, "").trim()).catch(() => null)
       : Promise.resolve(null),
@@ -641,7 +642,7 @@ export async function onRequestPost(context) {
 
   const ghlContext = ghlParts.length > 0 ? ghlParts.join("\n\n") : null;
 
-  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlContext);
+  const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlContext, cosUser);
 
   const openRouterMessages = [
     { role: "system", content: systemPrompt },

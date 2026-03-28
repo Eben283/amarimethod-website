@@ -4,6 +4,17 @@
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
+export function getPacificOffset() {
+  const now = new Date();
+  const utcStr = now.toLocaleString("en-US", { timeZone: "UTC" });
+  const pacStr = now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+  const utcDate = new Date(utcStr);
+  const pacDate = new Date(pacStr);
+  const diffHours = Math.round((pacDate - utcDate) / (60 * 60 * 1000));
+  const sign = diffHours >= 0 ? "+" : "-";
+  return `${sign}${String(Math.abs(diffHours)).padStart(2, "0")}:00`;
+}
+
 const KV_ACCESS_TOKEN = "google_access_token";
 const KV_REFRESH_TOKEN = "google_refresh_token";
 const KV_TOKEN_EXPIRY = "google_token_expiry";
@@ -152,14 +163,13 @@ export async function getTodayCalendar(context) {
   try {
     const token = await getGoogleToken(context);
 
-    // Calculate today's date range in Pacific time using explicit offset
-    // PDT = UTC-7, PST = UTC-8. Use -07:00 for PDT (March-November)
     const now = new Date();
     const pacificStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
 
     // Use RFC 3339 with explicit Pacific offset — Google Calendar API handles this correctly
-    const timeMin = `${pacificStr}T00:00:00-07:00`;
-    const timeMax = `${pacificStr}T23:59:59-07:00`;
+    const offset = getPacificOffset();
+    const timeMin = `${pacificStr}T00:00:00${offset}`;
+    const timeMax = `${pacificStr}T23:59:59${offset}`;
 
     // First, get all calendars the user has access to
     const calListResp = await fetch(
