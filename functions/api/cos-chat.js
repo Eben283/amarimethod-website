@@ -125,7 +125,20 @@ RESTAURANTS/PLACES: When asked for food or place recommendations, you'll have ne
 
 PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.` : "";
 
+  const currentTime = new Date().toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
   return `You are ${userName}'s chief of staff. Your job is to THINK, not sort.
+
+Current date and time (Pacific): ${currentTime}
 
 When ${userName} says something, don't just categorize it. Pull on the thread:
 - What does he actually need? (not what he literally said)
@@ -505,6 +518,41 @@ function mentionsParking(message) {
   return /\bpark(ed|ing|s)?\b/i.test(message);
 }
 
+// Extract a geocodable location string from a message by stripping parking verbs and filler
+function extractParkingLocation(message) {
+  const cleaned = message
+    .replace(/\b(i\s+)?(just\s+)?park(ed|ing|s)?\b/gi, "")
+    .replace(/\b(and|you|should|know|what|the|sign|says|i'm|at|on|near)\b/gi, "")
+    .replace(/[,.\-!?]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  // Only use if there's a plausible street/location name left (at least 4 chars)
+  return cleaned.length >= 4 ? cleaned : null;
+}
+
+// Search conversation history for the most recent parking location
+function findParkingLocationInHistory(messages) {
+  // Walk backwards through messages to find the most recent location mention near parking context
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    const text = m.content || "";
+    if (!mentionsParking(text)) continue;
+    const loc = extractParkingLocation(text);
+    if (loc) return loc;
+  }
+  // Also check assistant messages for "at <location>" patterns in parking context
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "assistant") continue;
+    const text = m.content || "";
+    if (!mentionsParking(text)) continue;
+    // Try to extract "at <Street> at/and/& <Street>" or "on <Street>"
+    const streetMatch = text.match(/(?:at|on|near)\s+([\w\s]+?(?:street|st|ave|avenue|blvd|boulevard|road|rd|way|drive|dr|place|pl|court|ct|lane|ln)\b[\w\s]*?(?:at|and|&|\/)\s*[\w\s]+)/i);
+    if (streetMatch) return streetMatch[1].trim();
+  }
+  return null;
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -603,7 +651,9 @@ export async function onRequestPost(context) {
   const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText] = await Promise.all([
     needsContact ? getContactContext(context, userMessage).catch(() => null) : Promise.resolve(null),
     needsParking
-      ? getParkingRegulations(userMessage.replace(/\b(i\s+)?park(ed|ing)?\b/gi, "").trim()).catch(() => null)
+      ? getParkingRegulations(
+          extractParkingLocation(userMessage) || findParkingLocationInHistory(conversation.messages) || userMessage
+        ).catch(() => null)
       : Promise.resolve(null),
     needsWeather ? getWeather().catch(() => null) : Promise.resolve(null),
     needsDirections ? getDirections("San Francisco", userMessage.replace(/how (long|far)|directions|drive to|get to|traffic to/gi, "").trim()).catch(() => null) : Promise.resolve(null),
