@@ -6,6 +6,8 @@ interface Props {
   onTap: () => void;
 }
 
+const NON_SESSION_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+
 export default function AppointmentCard({ appointment, onTap }: Props) {
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
@@ -54,13 +56,15 @@ export default function AppointmentCard({ appointment, onTap }: Props) {
               Now
             </span>
           )}
-          <span className={`text-xs px-1.5 py-0.5 rounded ${
-            appointment.sessionPrepaid
-              ? 'bg-green-50 text-green-700'
-              : 'bg-amber-50 text-amber-700'
-          }`}>
-            {appointment.sessionPrepaid ? 'Paid' : '$'}
-          </span>
+          {!NON_SESSION_PATTERN.test(appointment.title) && (
+            <span className={`text-xs px-1.5 py-0.5 rounded ${
+              appointment.sessionPrepaid
+                ? 'bg-green-50 text-green-700'
+                : 'bg-amber-50 text-amber-700'
+            }`}>
+              {appointment.sessionPrepaid ? 'Paid' : 'Unpaid'}
+            </span>
+          )}
         </div>
       </div>
 
