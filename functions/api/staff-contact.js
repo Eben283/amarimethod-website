@@ -206,14 +206,23 @@ export async function onRequestGet(context) {
       ? sessionsCompleted
       : completedSessions.length;
 
-    // Client progress (modules taught, body graph, yoga block size) — stored as JSON string
-    let clientProgress = null;
-    const progressRaw = getCustomField(contact, "client_progress", fieldDefs);
-    if (progressRaw) {
-      try {
-        clientProgress = JSON.parse(progressRaw);
-      } catch {
-        clientProgress = null;
+    // Client progress — derived from tags (taught:*, body:*, block:*)
+    const contactTags = contact.tags || [];
+    const clientProgress = {
+      modules: {},
+      yogaBlockSize: null,
+      bodyGraph: {},
+    };
+    for (const tag of contactTags) {
+      if (tag.startsWith("taught:")) {
+        clientProgress.modules[tag.slice(7)] = true;
+      } else if (tag.startsWith("body:")) {
+        const parts = tag.slice(5).split("-");
+        const region = parts[0];
+        const state = parts[1]; // "active" or "passive"
+        if (region && state) clientProgress.bodyGraph[region] = state;
+      } else if (tag.startsWith("block:")) {
+        clientProgress.yogaBlockSize = tag.slice(6);
       }
     }
 

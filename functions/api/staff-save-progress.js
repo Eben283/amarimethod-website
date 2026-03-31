@@ -1,12 +1,10 @@
 // Cloudflare Pages Function: POST /api/staff-save-progress
-// Saves client progress (modules taught, body graph, yoga block) to GHL custom field
+// Saves client progress as GHL tags (taught:*, body:*, block:*)
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-const FIELD_ID_CLIENT_PROGRESS = "n2F1hn5U59qtv1dx8mJG";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -30,6 +28,15 @@ export async function onRequestOptions(context) {
   });
 }
 
+// All known module IDs and body regions — used to compute removals
+const ALL_MODULES = [
+  "suspension-squat", "hand-balancer", "power-posture", "vertical-drop",
+  "active-bridge", "passive-bridge", "spinal-wave", "spring-step",
+  "elbow-reset", "jaw-align",
+];
+const ALL_BODY_REGIONS = ["upper", "middle", "lower"];
+const ALL_BODY_STATES = ["active", "passive"];
+
 export async function onRequestPost(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
@@ -40,7 +47,6 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
     }
 
-    // Verify staff auth
     const authHeader = context.request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
@@ -57,7 +63,6 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
     }
 
-    // Parse request body
     const body = await context.request.json();
     const { contactId, progress } = body;
 
@@ -65,24 +70,59 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "contactId and progress are required" }), { status: 400, headers });
     }
 
-    // Validate progress shape
-    if (typeof progress.modules !== "object" || typeof progress.bodyGraph !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid progress format" }), { status: 400, headers });
+    // Compute desired tags from progress state
+    const desiredTags = new Set();
+    for (const moduleId of ALL_MODULES) {
+      if (progress.modules?.[moduleId]) {
+        desiredTags.add(`taught:${moduleId}`);
+      }
+    }
+    for (const region of ALL_BODY_REGIONS) {
+      const state = progress.bodyGraph?.[region];
+      if (state === "active" || state === "passive") {
+        desiredTags.add(`body:${region}-${state}`);
+      }
+    }
+    if (progress.yogaBlockSize === "3" || progress.yogaBlockSize === "4") {
+      desiredTags.add(`block:${progress.yogaBlockSize}`);
     }
 
-    // Save progress as JSON string to the client_progress custom field
-    const progressJson = JSON.stringify(progress);
+    // Compute all possible progress tags (to know what to remove)
+    const allPossibleTags = new Set();
+    for (const m of ALL_MODULES) allPossibleTags.add(`taught:${m}`);
+    for (const r of ALL_BODY_REGIONS) {
+      for (const s of ALL_BODY_STATES) allPossibleTags.add(`body:${r}-${s}`);
+    }
+    allPossibleTags.add("block:3");
+    allPossibleTags.add("block:4");
 
-    const updateRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        customFields: [{ id: FIELD_ID_CLIENT_PROGRESS, field_value: progressJson }],
-      }),
-    });
+    const tagsToAdd = [...desiredTags];
+    const tagsToRemove = [...allPossibleTags].filter((t) => !desiredTags.has(t));
 
-    if (!updateRes.ok) {
-      const errText = await updateRes.text();
-      console.error(`[staff-save-progress] Contact update failed: ${updateRes.status} ${errText}`);
+    // Add and remove tags in parallel
+    const ops = [];
+    if (tagsToAdd.length > 0) {
+      ops.push(
+        ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/tags`, {
+          method: "POST",
+          body: JSON.stringify({ tags: tagsToAdd }),
+        })
+      );
+    }
+    if (tagsToRemove.length > 0) {
+      ops.push(
+        ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/tags`, {
+          method: "DELETE",
+          body: JSON.stringify({ tags: tagsToRemove }),
+        })
+      );
+    }
+
+    const results = await Promise.all(ops);
+    const failed = results.find((r) => !r.ok);
+    if (failed) {
+      const errText = await failed.text();
+      console.error(`[staff-save-progress] Tag update failed: ${failed.status} ${errText}`);
       return new Response(JSON.stringify({ error: "Failed to save progress" }), { status: 422, headers });
     }
 
