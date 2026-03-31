@@ -6,6 +6,7 @@ import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const FIELD_ID_CLIENT_PROGRESS = "n2F1hn5U59qtv1dx8mJG";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -69,54 +70,13 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Invalid progress format" }), { status: 400, headers });
     }
 
-    // Look up the client_progress custom field ID
-    const fieldDefsRes = await ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`);
-    if (!fieldDefsRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to load field definitions" }), { status: 422, headers });
-    }
-
-    const fieldDefsData = await fieldDefsRes.json();
-    const allFields = fieldDefsData.customFields || [];
-    let fieldId = null;
-    for (const f of allFields) {
-      const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
-      if (shortKey === "client_progress") {
-        fieldId = f.id;
-        break;
-      }
-    }
-
-    if (!fieldId) {
-      // Field doesn't exist yet — create it
-      const createRes = await ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`, {
-        method: "POST",
-        body: JSON.stringify({
-          name: "Client Progress",
-          dataType: "TEXT",
-          fieldKey: "contact.client_progress",
-        }),
-      });
-
-      if (!createRes.ok) {
-        const errText = await createRes.text();
-        console.error(`[staff-save-progress] Failed to create custom field: ${createRes.status} ${errText}`);
-        return new Response(JSON.stringify({ error: "Failed to create progress field" }), { status: 422, headers });
-      }
-
-      const created = await createRes.json();
-      fieldId = created.customField?.id || created.id;
-      if (!fieldId) {
-        return new Response(JSON.stringify({ error: "Created field but no ID returned" }), { status: 422, headers });
-      }
-    }
-
-    // Save progress as JSON string to the custom field
+    // Save progress as JSON string to the client_progress custom field
     const progressJson = JSON.stringify(progress);
 
     const updateRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
       method: "PUT",
       body: JSON.stringify({
-        customFields: [{ id: fieldId, field_value: progressJson }],
+        customFields: [{ id: FIELD_ID_CLIENT_PROGRESS, field_value: progressJson }],
       }),
     });
 
