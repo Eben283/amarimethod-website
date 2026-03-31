@@ -147,6 +147,7 @@ export async function onRequestGet(context) {
         let sessionsCompleted = 0;
         let seriesType = "none";
         let tags = [];
+        let sessionPrepaid = false;
 
         if (contactId) {
           try {
@@ -165,6 +166,8 @@ export async function onRequestGet(context) {
               sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
               sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
               tags = contact.tags || [];
+              const prepaidRaw = getCustomField(contact, "session_prepaid", fieldDefs) || "";
+              sessionPrepaid = sessionsRemaining > 0 || prepaidRaw.toLowerCase() === "yes";
             }
             // Derive session count from appointment history if custom field is empty
             if (sessionsCompleted === 0 && apptRes.ok) {
@@ -195,6 +198,7 @@ export async function onRequestGet(context) {
           sessionsCompleted,
           seriesType,
           tags,
+          sessionPrepaid,
         };
       })
     );

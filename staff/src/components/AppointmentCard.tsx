@@ -54,6 +54,13 @@ export default function AppointmentCard({ appointment, onTap }: Props) {
               Now
             </span>
           )}
+          <span className={`text-xs px-1.5 py-0.5 rounded ${
+            appointment.sessionPrepaid
+              ? 'bg-green-50 text-green-700'
+              : 'bg-amber-50 text-amber-700'
+          }`}>
+            {appointment.sessionPrepaid ? 'Paid' : '$'}
+          </span>
         </div>
       </div>
 

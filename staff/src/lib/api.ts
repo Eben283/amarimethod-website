@@ -124,4 +124,14 @@ export async function sendToolkit(contactId: string): Promise<{ success: boolean
   });
 }
 
+export async function togglePrepaid(
+  contactId: string,
+  prepaid: boolean,
+): Promise<{ success: boolean; prepaid: boolean }> {
+  return fetchApi('/staff-toggle-prepaid', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, prepaid }),
+  });
+}
+
 export { ApiError };

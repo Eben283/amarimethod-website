@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, ApiError } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
+import PaymentStatus from '../components/PaymentStatus';
 import NotesList from '../components/NotesList';
 import AddNoteModal from '../components/AddNoteModal';
 import MessageHistory from '../components/MessageHistory';
@@ -30,6 +31,7 @@ export default function ClientDetailPage() {
   const [attendedError, setAttendedError] = useState('');
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
+  const [togglingPrepaid, setTogglingPrepaid] = useState(false);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
   const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
 
@@ -74,6 +76,23 @@ export default function ClientDetailPage() {
       setAttendedError(err instanceof Error ? err.message : 'Failed to mark attended');
     } finally {
       setMarkingAttended(null);
+    }
+  }
+
+  async function handleTogglePrepaid() {
+    if (!client || togglingPrepaid) return;
+    setTogglingPrepaid(true);
+    try {
+      const newValue = !client.sessionPrepaid;
+      await togglePrepaid(client.id, newValue);
+      setClient({ ...client, sessionPrepaid: newValue });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+    } finally {
+      setTogglingPrepaid(false);
     }
   }
 
@@ -216,6 +235,17 @@ export default function ClientDetailPage() {
         <BodyGraph data={progress} onUpdate={handleProgressUpdate} />
       </div>
 
+      {/* Payment Status */}
+      <div className="mt-4">
+        <PaymentStatus
+          sessionPrepaid={client.sessionPrepaid}
+          sessionsRemaining={client.sessionsRemaining}
+          seriesType={client.seriesType}
+          onToggle={handleTogglePrepaid}
+          isToggling={togglingPrepaid}
+        />
+      </div>
+
       {/* Session Stats */}
       <SessionStats
         seriesType={client.seriesType}
@@ -254,7 +284,7 @@ export default function ClientDetailPage() {
             {client.appointments.map((appt) => {
               const date = new Date(appt.startTime);
               const isPast = date < new Date();
-              const canMarkAttended = appt.status === 'confirmed' && isPast;
+              const canMarkAttended = isPast && appt.status !== 'showed' && appt.status !== 'completed' && appt.status !== 'cancelled';
               const isMarking = markingAttended === appt.id;
               const isAttended = appt.status === 'showed' || appt.status === 'completed';
               return (

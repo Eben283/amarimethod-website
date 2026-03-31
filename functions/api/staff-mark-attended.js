@@ -12,6 +12,7 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const FIELD_IDS = {
   sessions_completed: "TE0udwVH1Km5RsKaN5H0",
   sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
 };
 
 // Appointment types that are NOT paid sessions — skip session counting
@@ -156,14 +157,20 @@ export async function onRequestPost(context) {
       newCompleted = currentCompleted + 1;
       newRemaining = currentRemaining > 0 ? currentRemaining - 1 : 0;
 
+      // Build custom field updates — always update session counts
+      const customFields = [
+        { id: FIELD_IDS.sessions_completed, field_value: String(newCompleted) },
+        { id: FIELD_IDS.sessions_remaining, field_value: String(newRemaining) },
+      ];
+
+      // Clear the single-session prepaid flag if this was a non-series session
+      if (newRemaining === 0) {
+        customFields.push({ id: FIELD_IDS.session_prepaid, field_value: "no" });
+      }
+
       const updateRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
         method: "PUT",
-        body: JSON.stringify({
-          customFields: [
-            { id: FIELD_IDS.sessions_completed, field_value: String(newCompleted) },
-            { id: FIELD_IDS.sessions_remaining, field_value: String(newRemaining) },
-          ],
-        }),
+        body: JSON.stringify({ customFields }),
       });
 
       if (!updateRes.ok) {

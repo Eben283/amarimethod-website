@@ -14,6 +14,7 @@ export interface TodayAppointment {
   sessionsCompleted: number;
   seriesType: string;
   tags: string[];
+  sessionPrepaid: boolean;
 }
 
 export interface ContactListItem {
@@ -35,6 +36,7 @@ export interface ContactDetail {
   seriesType: string;
   sessionsCompleted: number;
   sessionsRemaining: number;
+  sessionPrepaid: boolean;
   tags: string[];
   dateAdded: string;
   lastAppointment: string | null;

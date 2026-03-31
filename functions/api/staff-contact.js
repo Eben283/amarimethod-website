@@ -165,6 +165,8 @@ export async function onRequestGet(context) {
     const seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
     const sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
     const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
+    const sessionPrepaidRaw = getCustomField(contact, "session_prepaid", fieldDefs) || "";
+    const sessionPrepaid = sessionsRemaining > 0 || sessionPrepaidRaw.toLowerCase() === "yes";
 
     // Parse quiz results from custom fields (set by /api/send-to-ghl)
     const quizPattern = getCustomField(contact, "BvTGZ9O9ayecw5f0Nj76", fieldDefs);
@@ -210,6 +212,7 @@ export async function onRequestGet(context) {
       seriesType,
       sessionsCompleted: derivedSessionsCompleted,
       sessionsRemaining,
+      sessionPrepaid,
       tags: contact.tags || [],
       dateAdded: contact.dateAdded || "",
       lastAppointment: lastCompleted ? lastCompleted.startTime : null,
