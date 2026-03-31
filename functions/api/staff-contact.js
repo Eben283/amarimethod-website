@@ -62,12 +62,13 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers });
     }
 
-    // Fetch contact, appointments, notes, conversations, and field defs in parallel
-    const [contactRes, appointmentsRes, notesRes, conversationsRes, fieldDefsRes] = await Promise.all([
+    // Fetch contact, appointments, notes, conversations, orders, and field defs in parallel
+    const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, fieldDefsRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`),
       ghlFetch(context, `${GHL_API_BASE}/conversations/search?contactId=${contactId}&locationId=${GHL_LOCATION_ID}`),
+      ghlFetch(context, `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=50`),
       ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`),
     ]);
 
@@ -165,8 +166,21 @@ export async function onRequestGet(context) {
     const seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
     const sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
     const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
-    const sessionPrepaidRaw = getCustomField(contact, "session_prepaid", fieldDefs) || "";
-    const sessionPrepaid = sessionsRemaining > 0 || sessionPrepaidRaw.toLowerCase() === "yes";
+
+    // Derive prepaid status: series remaining, OR payment history > attended, OR manual override
+    const sessionPrepaidOverride = (getCustomField(contact, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
+    let sessionPrepaid = sessionsRemaining > 0 || sessionPrepaidOverride;
+    if (!sessionPrepaid && ordersRes.ok) {
+      const ordersData = await ordersRes.json();
+      const allOrders = ordersData.data || [];
+      const SERIES_PATTERN = /series|upgrade/i;
+      const individualPayments = allOrders.filter(
+        (o) => o.status === "completed" && (o.amount || 0) > 0 && !SERIES_PATTERN.test(o.sourceName || "")
+      ).length;
+      if (individualPayments > completedSessions.length) {
+        sessionPrepaid = true;
+      }
+    }
 
     // Parse quiz results from custom fields (set by /api/send-to-ghl)
     const quizPattern = getCustomField(contact, "BvTGZ9O9ayecw5f0Nj76", fieldDefs);
