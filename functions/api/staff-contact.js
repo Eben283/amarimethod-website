@@ -206,24 +206,33 @@ export async function onRequestGet(context) {
       ? sessionsCompleted
       : completedSessions.length;
 
-    // Client progress — derived from tags (taught:*, body:*, block:*)
-    const contactTags = contact.tags || [];
+    // Client progress — from custom fields in "Session Progress" folder
+    const MODULE_KEYS = [
+      "suspension_squat", "hand_balancer", "power_posture", "vertical_drop",
+      "active_bridge", "passive_bridge", "spinal_wave", "spring_step",
+      "elbow_reset", "jaw_align",
+    ];
     const clientProgress = {
       modules: {},
       yogaBlockSize: null,
       bodyGraph: {},
     };
-    for (const tag of contactTags) {
-      if (tag.startsWith("taught:")) {
-        clientProgress.modules[tag.slice(7)] = true;
-      } else if (tag.startsWith("body:")) {
-        const parts = tag.slice(5).split("-");
-        const region = parts[0];
-        const state = parts[1]; // "active" or "passive"
-        if (region && state) clientProgress.bodyGraph[region] = state;
-      } else if (tag.startsWith("block:")) {
-        clientProgress.yogaBlockSize = tag.slice(6);
+    for (const key of MODULE_KEYS) {
+      const val = getCustomField(contact, key, fieldDefs);
+      const moduleId = key.replace(/_/g, "-");
+      if (val && (val === "Taught" || (Array.isArray(val) && val.includes("Taught")))) {
+        clientProgress.modules[moduleId] = true;
       }
+    }
+    for (const region of ["upper", "middle", "lower"]) {
+      const val = getCustomField(contact, `${region}_body`, fieldDefs);
+      if (val === "Active" || val === "Passive") {
+        clientProgress.bodyGraph[region] = val.toLowerCase();
+      }
+    }
+    const blockVal = getCustomField(contact, "yoga_block_size", fieldDefs);
+    if (blockVal === '3"' || blockVal === '4"') {
+      clientProgress.yogaBlockSize = blockVal.charAt(0);
     }
 
     const result = {
