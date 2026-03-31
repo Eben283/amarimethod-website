@@ -1,0 +1,16 @@
+name = "ecosystem-scanner"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# 2 AM PDT = 9:00 UTC | 1 AM PST = 9:00 UTC
+# Runs before the 4 AM daily audit so both are ready for morning /day.
+[triggers]
+crons = ["0 9 * * *"]
+
+# Same KV namespace as Pages + daily-audit + ghl-token-refresh
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Optional (v2): GITHUB_TOKEN for higher rate limits
+# Set via: npx wrangler secret put GITHUB_TOKEN

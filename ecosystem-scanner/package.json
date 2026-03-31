@@ -1,0 +1,6 @@
+{
+  "name": "ecosystem-scanner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker cron that scans dependency ecosystem for updates and caches results in KV"
+}
