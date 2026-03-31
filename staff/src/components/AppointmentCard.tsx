@@ -6,16 +6,34 @@ interface Props {
   onTap: () => void;
 }
 
-const NON_SESSION_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation/i;
+
+function isFreeSession(appointment: TodayAppointment): boolean {
+  return FREE_SESSION_PATTERN.test(appointment.title) || FREE_SESSION_PATTERN.test(appointment.calendarName);
+}
+
+function sessionTypeLabel(calendarName: string): string {
+  if (!calendarName) return '';
+  // Shorten common calendar names for display
+  if (/discovery call/i.test(calendarName)) return 'Discovery';
+  if (/initial/i.test(calendarName)) return 'Initial';
+  if (/follow.?up/i.test(calendarName)) return 'Follow-up';
+  if (/partner/i.test(calendarName)) return 'Partner';
+  if (/entrainment/i.test(calendarName)) return 'Entrainment';
+  if (/virtual/i.test(calendarName)) return 'Virtual';
+  if (/balance protocol/i.test(calendarName)) return 'Balance Protocol';
+  return calendarName.length > 20 ? calendarName.slice(0, 18) + '...' : calendarName;
+}
 
 export default function AppointmentCard({ appointment, onTap }: Props) {
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
-  const timeStr = `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
 
   const now = new Date();
   const isNow = start <= now && end >= now;
   const isPast = end < now;
+  const isFree = isFreeSession(appointment);
+  const typeLabel = sessionTypeLabel(appointment.calendarName);
 
   return (
     <button
@@ -40,7 +58,12 @@ export default function AppointmentCard({ appointment, onTap }: Props) {
         <p className="text-sm font-medium text-amari-charcoal truncate">
           {appointment.contactName}
         </p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          {typeLabel && (
+            <span className="text-xs text-amari-text-muted">
+              {typeLabel}
+            </span>
+          )}
           {appointment.seriesType !== 'none' && (
             <span className="text-xs text-amari-text-muted">
               {appointment.sessionsRemaining} left
@@ -56,7 +79,7 @@ export default function AppointmentCard({ appointment, onTap }: Props) {
               Now
             </span>
           )}
-          {!NON_SESSION_PATTERN.test(appointment.title) && (
+          {!isFree && (
             <span className={`text-xs px-1.5 py-0.5 rounded ${
               appointment.sessionPrepaid
                 ? 'bg-green-50 text-green-700'

@@ -62,13 +62,14 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers });
     }
 
-    // Fetch contact, appointments, notes, conversations, orders, and field defs in parallel
-    const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, fieldDefsRes] = await Promise.all([
+    // Fetch contact, appointments, notes, conversations, orders, calendars, and field defs in parallel
+    const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, calendarsRes, fieldDefsRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`),
       ghlFetch(context, `${GHL_API_BASE}/conversations/search?contactId=${contactId}&locationId=${GHL_LOCATION_ID}`),
       ghlFetch(context, `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=50`),
+      ghlFetch(context, `${GHL_API_BASE}/calendars/?locationId=${GHL_LOCATION_ID}`),
       ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`),
     ]);
 
@@ -79,6 +80,15 @@ export async function onRequestGet(context) {
 
     const contactData = await contactRes.json();
     const contact = contactData.contact;
+
+    // Build calendar name map
+    const calendarMap = {};
+    if (calendarsRes.ok) {
+      const calData = await calendarsRes.json();
+      for (const cal of (calData.calendars || [])) {
+        calendarMap[cal.id] = cal.name;
+      }
+    }
 
     // Build field defs map
     let fieldDefs = {};
@@ -99,6 +109,7 @@ export async function onRequestGet(context) {
         .map((a) => ({
           id: a.id,
           title: a.title || a.calendarName || "Session",
+          calendarName: calendarMap[a.calendarId] || a.calendarName || "",
           startTime: a.startTime || a.start_time,
           endTime: a.endTime || a.end_time,
           status: (a.appointmentStatus || a.status || "confirmed").toLowerCase(),

@@ -295,6 +295,7 @@ export default function ClientDetailPage() {
                       <p className="text-xs text-amari-text-muted">
                         {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
                         {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        {appt.calendarName && ` · ${appt.calendarName}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">

@@ -209,6 +209,7 @@ export async function onRequestGet(context) {
           startTime: event.startTime || event.start_time,
           endTime: event.endTime || event.end_time,
           title: event.title || event.calendarName || "Session",
+          calendarName: event.calendarName || "",
           sessionsRemaining,
           sessionsCompleted,
           seriesType,

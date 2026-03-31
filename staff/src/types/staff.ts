@@ -10,6 +10,7 @@ export interface TodayAppointment {
   startTime: string;
   endTime: string;
   title: string;
+  calendarName: string;
   sessionsRemaining: number;
   sessionsCompleted: number;
   seriesType: string;
@@ -54,6 +55,7 @@ export interface ContactDetail {
 export interface ContactAppointment {
   id: string;
   title: string;
+  calendarName: string;
   startTime: string;
   endTime: string;
   status: string;
