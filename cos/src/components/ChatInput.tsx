@@ -1,18 +1,34 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Camera, Image, X } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Send, Camera, Image, X, Mic, MicOff } from 'lucide-react';
 
 interface Props {
   onSend: (message: string, image?: string) => void;
   disabled: boolean;
 }
 
+// Speech recognition — Web Speech API with cross-browser support
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SpeechRecognitionInstance = any;
+
+function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
 export default function ChatInput({ onSend, disabled }: Props) {
   const [text, setText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSupported] = useState(() => !!getSpeechRecognition());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transcriptRef = useRef('');
+  const autoSendRef = useRef(false);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -21,9 +37,133 @@ export default function ChatInput({ onSend, disabled }: Props) {
     }
   }, [text]);
 
+  // Clean up speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Re-start listening after a response comes back (hands-free mode)
+  const prevDisabledRef = useRef(disabled);
+  useEffect(() => {
+    if (prevDisabledRef.current && !disabled && autoSendRef.current) {
+      // Response just finished — restart listening for hands-free mode
+      startListening();
+    }
+    prevDisabledRef.current = disabled;
+  }, [disabled]);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return;
+
+    // Clean up any existing instance
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
+    transcriptRef.current = '';
+
+    recognition.onresult = (event: any) => {
+      let finalTranscript = '';
+      let interimTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript;
+        } else {
+          interimTranscript += result[0].transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        transcriptRef.current += finalTranscript;
+      }
+
+      // Show current transcript in textarea
+      const display = transcriptRef.current + interimTranscript;
+      setText(display);
+
+      // Reset silence timer on any speech activity
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+      }
+
+      // Auto-send after 1.5s of silence (for driving hands-free)
+      if (transcriptRef.current.trim()) {
+        silenceTimerRef.current = setTimeout(() => {
+          const finalText = transcriptRef.current.trim();
+          if (finalText && !disabled) {
+            recognition.stop();
+            autoSendRef.current = true;
+            onSend(finalText);
+            setText('');
+            transcriptRef.current = '';
+          }
+        }, 1500);
+      }
+    };
+
+    recognition.onend = () => {
+      // If we didn't auto-send, just stop listening
+      if (!autoSendRef.current) {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        setIsListening(false);
+        autoSendRef.current = false;
+      }
+    };
+
+    recognition.start();
+    setIsListening(true);
+  }, [disabled, onSend]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+    setIsListening(false);
+    autoSendRef.current = false;
+    transcriptRef.current = '';
+  }, []);
+
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  }, [isListening, startListening, stopListening]);
+
   function handleSubmit() {
     const trimmed = text.trim();
     if ((!trimmed && !imageBase64) || disabled) return;
+
+    // Stop listening if active (manual send overrides auto-send)
+    if (isListening) {
+      stopListening();
+    }
+
     onSend(trimmed || "What's in this image?", imageBase64 || undefined);
     setText('');
     setImagePreview(null);
@@ -105,6 +245,17 @@ export default function ChatInput({ onSend, disabled }: Props) {
         </div>
       )}
 
+      {/* Voice listening indicator */}
+      {isListening && (
+        <div className="mb-2 flex items-center gap-2 text-sm">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+          </span>
+          <span className="text-cos-text-secondary">Listening... speak naturally</span>
+        </div>
+      )}
+
       <div className="flex items-end gap-2">
         {/* Camera button */}
         <button
@@ -125,6 +276,18 @@ export default function ChatInput({ onSend, disabled }: Props) {
         >
           <Image className="w-5 h-5" />
         </button>
+
+        {/* Voice button */}
+        {voiceSupported && (
+          <button
+            onClick={toggleVoice}
+            disabled={disabled && !isListening}
+            className={`shrink-0 ${isListening ? 'cos-btn-ghost text-red-500' : 'cos-btn-ghost'} disabled:opacity-30`}
+            title={isListening ? 'Stop listening' : 'Voice input'}
+          >
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </button>
+        )}
 
         {/* Hidden file inputs */}
         <input
@@ -148,7 +311,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="What's on your mind..."
+          placeholder={isListening ? 'Listening...' : 'What\'s on your mind...'}
           disabled={disabled}
           rows={1}
           className="cos-input flex-1"

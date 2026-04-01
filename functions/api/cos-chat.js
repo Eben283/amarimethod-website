@@ -5,6 +5,7 @@ import { verifySessionToken } from "../lib/auth.js";
 import { getTodayCalendar, getRecentEmails, createCalendarReminder, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
+import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -97,6 +98,25 @@ function stripReminders(text) {
   return text.replace(/<!--REMINDER:.*?-->/gs, "").trim();
 }
 
+// Parse <!--SPOTIFY:{...}--> blocks
+function parseSpotifyActions(text) {
+  const actions = [];
+  const regex = /<!--SPOTIFY:(.*?)-->/gs;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    try {
+      actions.push(JSON.parse(match[1]));
+    } catch {
+      // Skip invalid
+    }
+  }
+  return actions;
+}
+
+function stripSpotify(text) {
+  return text.replace(/<!--SPOTIFY:.*?-->/gs, "").trim();
+}
+
 // Build the system prompt
 function buildSystemPrompt(context, calendarEvents, ghlSummary, userName) {
   const isEben = userName === "Eben";
@@ -150,6 +170,8 @@ When ${userName} says something, don't just categorize it. Pull on the thread:
 ${personalContext}
 REVENUE: When asked about money/revenue/payments, you'll have Stripe payment data. Summarize this month, this week, and recent transactions.
 
+MUSIC/SPOTIFY: You can control ${userName}'s Spotify directly. When he asks to play music, change songs, create playlists, or adjust volume, include a SPOTIFY block (see below). You have his playlist list in the context — use it to find the right one. For vague requests like "play something chill" or "put on some music", pick something good based on what you know about him. Be decisive — don't ask "what genre?" Just play something.
+
 MATH: You can do math directly — session pricing, revenue projections, tip calculations, whatever. No API needed.
 
 BUSINESS/GHL: You know the Amari Method GHL system deeply. Answer questions about workflows, pipelines, contacts, sessions, pricing, partner program. Reference the GHL section below.
@@ -181,6 +203,22 @@ When you learn something new about ${userName}'s life, include:
 <!--CONTEXT:{"key":"descriptive.key","value":"what you learned","learned":"${todayKey()}"}-->
 
 Examples: lorenzo.weight, routine.morning, stores.preferred_asian_mart
+
+## Controlling Spotify
+Include a SPOTIFY block to control music. These execute immediately — the music changes while ${userName} reads your response.
+<!--SPOTIFY:{"action":"play","query":"chill jazz playlist"}-->
+<!--SPOTIFY:{"action":"play","uri":"spotify:playlist:xxxxx"}-->
+<!--SPOTIFY:{"action":"pause"}-->
+<!--SPOTIFY:{"action":"resume"}-->
+<!--SPOTIFY:{"action":"skip"}-->
+<!--SPOTIFY:{"action":"previous"}-->
+<!--SPOTIFY:{"action":"volume","level":80}-->
+<!--SPOTIFY:{"action":"shuffle","enabled":true}-->
+<!--SPOTIFY:{"action":"create_playlist","name":"Driving Vibes","description":"chill indie rock","search_queries":["alt-j breezeblocks","bon iver skinny love","radiohead fake plastic trees"]}-->
+<!--SPOTIFY:{"action":"add_tracks","playlist_name":"Driving Vibes","search_queries":["tame impala let it happen"]}-->
+<!--SPOTIFY:{"action":"queue","query":"bohemian rhapsody"}-->
+
+For "play" with a query: first checks ${userName}'s playlists for a name match, then searches Spotify if no match. For genre/mood queries, prefers playlists. For specific songs, plays the track.
 
 ## Your context (grows over time)
 ${contextDoc}
@@ -623,6 +661,8 @@ export async function onRequestPost(context) {
   const needsPackages = /package|shipping|deliver|tracking|order|amazon|where.s my/i.test(msg);
   const needsRevenue = /revenue|income|money|made|earned|payments?|sales|how much.*(we|business|practice)/i.test(msg);
   const needsParking = mentionsParking(userMessage);
+  const needsMusic = /music|song|play|playing|playlist|spotify|skip|pause|volume|shuffle|track|album|artist|listen|queue|what.s playing|next song|previous song/i.test(msg);
+  const needsWorkflow = /workflow|trigger|automat|no.show|attendance|nurture|sequence|funnel|what (email|sms|message).*(send|get|receive)|what happens when|how does .* work|tag.*(add|remov)|condition|branch|purchase system|sessions?.remaining|series.completion|known issue|pending fix|ghl.*(audit|fix|issue|bug)|calendar.*coverage|tier [1-4]/i.test(msg);
 
   const cacheKey = `cos:cache:${cosUser}:${dateKey}`;
   const cachedRaw = kv ? await kv.get(cacheKey) : null;
@@ -648,7 +688,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText] = await Promise.all([
+  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText, spotifyPlayback, spotifyPlaylists, ghlKnowledgeRaw] = await Promise.all([
     needsContact ? getContactContext(context, userMessage).catch(() => null) : Promise.resolve(null),
     needsParking
       ? getParkingRegulations(
@@ -660,6 +700,9 @@ export async function onRequestPost(context) {
     needsPlaces ? searchPlaces(userMessage.replace(/restaurant|food|eat|lunch|dinner|near|good|best|find/gi, "").trim()).catch(() => null) : Promise.resolve(null),
     needsPackages ? getPackageTracking(context).catch(() => null) : Promise.resolve(null),
     needsRevenue ? getRevenueSummary(context).catch(() => null) : Promise.resolve(null),
+    needsMusic ? getCurrentPlayback(context).catch(() => null) : Promise.resolve(null),
+    needsMusic ? getUserPlaylists(context).catch(() => []) : Promise.resolve([]),
+    needsWorkflow && kv ? kv.get("cos:ghl:knowledge").catch(() => null) : Promise.resolve(null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -677,17 +720,51 @@ export async function onRequestPost(context) {
     }
   }
 
+  // Build Spotify context string if music-related
+  let spotifyContext = null;
+  if (needsMusic) {
+    const parts = [];
+    if (spotifyPlayback) {
+      const pb = spotifyPlayback;
+      parts.push(`Now playing: "${pb.track}" by ${pb.artist}${pb.isPlaying ? "" : " (paused)"} on ${pb.device}. Volume: ${pb.volume}%. Shuffle: ${pb.shuffle ? "on" : "off"}.`);
+    } else {
+      parts.push("Spotify: No active playback. User may need to open Spotify on their phone first.");
+    }
+    if (spotifyPlaylists.length > 0) {
+      const playlistList = spotifyPlaylists.map(p => `- ${p.name} (${p.tracks} tracks)`).join("\n");
+      parts.push(`Your playlists:\n${playlistList}`);
+    }
+    spotifyContext = parts.join("\n\n");
+  }
+
+  // Parse GHL workflow knowledge if fetched
+  let ghlKnowledgeContext = null;
+  if (ghlKnowledgeRaw) {
+    try {
+      const parsed = JSON.parse(ghlKnowledgeRaw);
+      const knowledgeParts = [];
+      if (parsed.workflows) knowledgeParts.push(`## GHL Workflow Reference\n${parsed.workflows}`);
+      if (parsed.issues) knowledgeParts.push(`## Known GHL Issues\n${parsed.issues}`);
+      if (parsed.pendingFixes) knowledgeParts.push(`## Pending GHL Fixes\n${parsed.pendingFixes}`);
+      ghlKnowledgeContext = knowledgeParts.join("\n\n");
+    } catch {
+      ghlKnowledgeContext = `## GHL Workflow Reference\n${ghlKnowledgeRaw}`;
+    }
+  }
+
   // Combine all contextual data
   const ghlParts = [
     dailyBriefing,
     ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
     contactContext,
+    ghlKnowledgeContext,
     parkingContext,
     weatherText,
     directionsText,
     placesText,
     packagesText,
     revenueText,
+    spotifyContext,
   ].filter(Boolean);
 
   const ghlContext = ghlParts.length > 0 ? ghlParts.join("\n\n") : null;
@@ -772,7 +849,7 @@ export async function onRequestPost(context) {
         const closeIdx = afterMarker.indexOf("-->");
         if (closeIdx !== -1) {
           // Complete block found — strip it and send what's safe
-          const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER):.*?-->/gs, "");
+          const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER|SPOTIFY):.*?-->/gs, "");
           if (cleaned) {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: cleaned })}\n\n`));
           }
@@ -825,11 +902,12 @@ export async function onRequestPost(context) {
         sendBuffer = "";
       }
 
-      // Parse actions, context, and reminders from the full response
+      // Parse actions, context, reminders, and Spotify commands from the full response
       const actions = parseActions(fullContent);
       const contextUpdates = parseContextUpdates(fullContent);
       const reminders = parseReminders(fullContent);
-      const cleanContent = stripReminders(stripContext(stripActions(fullContent)));
+      const spotifyActions = parseSpotifyActions(fullContent);
+      const cleanContent = stripSpotify(stripReminders(stripContext(stripActions(fullContent))));
 
       // Save conversation to KV
       conversation.messages.push({ role: "assistant", content: cleanContent, timestamp: Date.now() });
@@ -858,6 +936,18 @@ export async function onRequestPost(context) {
             );
           } catch (err) {
             console.error("[cos-chat] Reminder creation failed:", err.message);
+          }
+        }
+
+        // Execute Spotify commands
+        for (const spotifyAction of spotifyActions) {
+          try {
+            const result = await executeSpotifyAction(context, spotifyAction);
+            if (!result.ok) {
+              console.error(`[cos-chat] Spotify action failed: ${result.message}`);
+            }
+          } catch (err) {
+            console.error("[cos-chat] Spotify execution error:", err.message);
           }
         }
 
