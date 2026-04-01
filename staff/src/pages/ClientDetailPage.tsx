@@ -53,7 +53,7 @@ export default function ClientDetailPage() {
     setMarkingAttended(appt.id);
     setAttendedError('');
     try {
-      const result = await markAttended(appt.id, client.id, appt.title);
+      const result = await markAttended(appt.id, client.id, appt.title, appt.calendarName);
       // Update local state immutably — mark as showed regardless of whether
       // it was already attended (idempotent: SMS trigger may have fired first)
       setClient({

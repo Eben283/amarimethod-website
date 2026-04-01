@@ -100,10 +100,11 @@ export async function markAttended(
   appointmentId: string,
   contactId: string,
   appointmentTitle: string,
+  calendarName?: string,
 ): Promise<MarkAttendedResult> {
   return fetchApi('/staff-mark-attended', {
     method: 'POST',
-    body: JSON.stringify({ appointmentId, contactId, appointmentTitle }),
+    body: JSON.stringify({ appointmentId, contactId, appointmentTitle, calendarName: calendarName || '' }),
   });
 }
 

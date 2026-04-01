@@ -16,7 +16,7 @@ const FIELD_IDS = {
 };
 
 // Appointment types that are NOT paid sessions — skip session counting
-const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -148,7 +148,8 @@ export async function onRequestPost(context) {
 
     // Check if this is a paid session (not a discovery call / pain assessment)
     const appointmentTitle = body.appointmentTitle || "";
-    const isSession = !NON_SESSION_PATTERNS.test(appointmentTitle);
+    const calendarName = body.calendarName || "";
+    const isSession = !NON_SESSION_PATTERNS.test(appointmentTitle) && !NON_SESSION_PATTERNS.test(calendarName);
 
     let newCompleted = currentCompleted;
     let newRemaining = currentRemaining;

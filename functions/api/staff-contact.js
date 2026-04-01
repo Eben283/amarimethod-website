@@ -118,7 +118,7 @@ export async function onRequestGet(context) {
     }
 
     // Exclude non-session appointments (discovery calls, pain assessments) from session count
-    const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+    const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
     const sessionAppointments = appointments.filter(
       (a) => !NON_SESSION_PATTERNS.test(a.title)
     );

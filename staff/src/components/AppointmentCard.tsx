@@ -6,7 +6,7 @@ interface Props {
   onTap: () => void;
 }
 
-const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation/i;
+const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
 
 function isFreeSession(appointment: TodayAppointment): boolean {
   return FREE_SESSION_PATTERN.test(appointment.title) || FREE_SESSION_PATTERN.test(appointment.calendarName);

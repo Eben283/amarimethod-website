@@ -175,7 +175,7 @@ export async function onRequestGet(context) {
             if (sessionsCompleted === 0 && apptRes.ok) {
               const apptData = await apptRes.json();
               const allAppts = apptData.appointments || apptData.events || [];
-              const nonSessionPattern = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+              const nonSessionPattern = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
               attendedCount = allAppts.filter(
                 (a) => {
                   const status = (a.appointmentStatus || a.status || "").toLowerCase();
