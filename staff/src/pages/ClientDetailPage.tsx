@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
 import PaymentStatus from '../components/PaymentStatus';
@@ -32,6 +32,8 @@ export default function ClientDetailPage() {
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [togglingPrepaid, setTogglingPrepaid] = useState(false);
+  const [markingNotFit, setMarkingNotFit] = useState(false);
+  const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
   const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
 
@@ -111,6 +113,24 @@ export default function ClientDetailPage() {
       setToolkitStatus('error');
     } finally {
       setSendingToolkit(false);
+    }
+  }
+
+  async function handleNotAFit() {
+    if (!client || markingNotFit) return;
+    setMarkingNotFit(true);
+    setNotFitStatus('idle');
+    try {
+      await markNotAFit(client.id);
+      setNotFitStatus('done');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setNotFitStatus('error');
+    } finally {
+      setMarkingNotFit(false);
     }
   }
 
@@ -196,12 +216,12 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* Send Toolkit — for affiliate partners and contacts with partner session booked */}
+      {/* Partner actions — for affiliate partners and contacts with partner session booked */}
       {(client.tags.includes('affiliate-partner') || client.tags.includes('partner-session-booked')) && (
-        <div className="mb-4">
+        <div className="mb-4 space-y-2">
           <button
             onClick={handleSendToolkit}
-            disabled={sendingToolkit || toolkitStatus === 'sent'}
+            disabled={sendingToolkit || toolkitStatus === 'sent' || notFitStatus === 'done'}
             className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
               toolkitStatus === 'sent'
                 ? 'bg-green-50 text-green-700 border border-green-200'
@@ -217,6 +237,26 @@ export default function ClientDetailPage() {
             )}
             {toolkitStatus === 'sent' ? 'Toolkit Sent' : toolkitStatus === 'error' ? 'Failed — Tap to Retry' : 'Send Partner Toolkit'}
           </button>
+          {!client.tags.includes('affiliate-partner') && toolkitStatus !== 'sent' && (
+            <button
+              onClick={handleNotAFit}
+              disabled={markingNotFit || notFitStatus === 'done'}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
+                notFitStatus === 'done'
+                  ? 'bg-gray-50 text-gray-500 border border-gray-200'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300 disabled:opacity-50'
+              }`}
+            >
+              {markingNotFit ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : notFitStatus === 'done' ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              {notFitStatus === 'done' ? 'Marked — Future Potential' : notFitStatus === 'error' ? 'Failed — Tap to Retry' : 'Not a Fit'}
+            </button>
+          )}
         </div>
       )}
 
