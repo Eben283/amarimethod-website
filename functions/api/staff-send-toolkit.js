@@ -1,10 +1,11 @@
 // Cloudflare Pages Function: POST /api/staff-send-toolkit
-// Sends the partner toolkit SMS to an affiliate partner
+// Sends the partner toolkit SMS, adds affiliate-partner tag, and updates pipeline to Partner/Won
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 const TOOLKIT_MESSAGE = `Hey! Here's your Amari Method partner toolkit — everything you need to refer clients and track your earnings:\n\nhttps://www.amarimethod.com/partner-app\n\nLog in with your email and you're all set. Reach out anytime if you have questions!`;
 
@@ -91,6 +92,46 @@ export async function onRequestPost(context) {
           tags: [...tags, "affiliate-partner"],
         }),
       });
+    }
+
+    // Update Partnership Pipeline opportunity to Partner/Won
+    try {
+      const pipelinesRes = await ghlFetch(context, `${GHL_API_BASE}/opportunities/pipelines?locationId=${GHL_LOCATION_ID}`);
+      if (pipelinesRes.ok) {
+        const pipelinesData = await pipelinesRes.json();
+        const partnership = (pipelinesData.pipelines || []).find(
+          (p) => p.name.toLowerCase().includes("partnership")
+        );
+        if (partnership) {
+          const partnerStage = (partnership.stages || []).find(
+            (s) => s.name === "Partner"
+          );
+          if (partnerStage) {
+            const oppsRes = await ghlFetch(
+              context,
+              `${GHL_API_BASE}/opportunities/search?location_id=${GHL_LOCATION_ID}&pipeline_id=${partnership.id}&contact_id=${contactId}`
+            );
+            if (oppsRes.ok) {
+              const oppsData = await oppsRes.json();
+              const opp = (oppsData.opportunities || []).find(
+                (o) => o.pipelineId === partnership.id
+              );
+              if (opp) {
+                await ghlFetch(context, `${GHL_API_BASE}/opportunities/${opp.id}`, {
+                  method: "PUT",
+                  body: JSON.stringify({
+                    pipelineStageId: partnerStage.id,
+                    status: "won",
+                  }),
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Pipeline update is best-effort — don't block toolkit send
+      console.error(`[staff-send-toolkit] Pipeline update failed: ${err.message}`);
     }
 
     // Send SMS via GHL conversations API
