@@ -196,8 +196,8 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* Send Toolkit — only for affiliate partners */}
-      {client.tags.includes('affiliate-partner') && (
+      {/* Send Toolkit — for affiliate partners and contacts with partner session booked */}
+      {(client.tags.includes('affiliate-partner') || client.tags.includes('partner-session-booked')) && (
         <div className="mb-4">
           <button
             onClick={handleSendToolkit}

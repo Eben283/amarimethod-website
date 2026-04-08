@@ -75,12 +75,22 @@ export async function onRequestPost(context) {
     const contact = contactData.contact;
     const tags = contact.tags || [];
 
-    if (!tags.includes("affiliate-partner")) {
-      return new Response(JSON.stringify({ error: "Contact is not an affiliate partner" }), { status: 400, headers });
+    if (!tags.includes("partner-session-booked") && !tags.includes("affiliate-partner")) {
+      return new Response(JSON.stringify({ error: "Contact is not a partner" }), { status: 400, headers });
     }
 
     if (!contact.phone) {
       return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers });
+    }
+
+    // Add affiliate-partner tag if not already present
+    if (!tags.includes("affiliate-partner")) {
+      await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          tags: [...tags, "affiliate-partner"],
+        }),
+      });
     }
 
     // Send SMS via GHL conversations API
