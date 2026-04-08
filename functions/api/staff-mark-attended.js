@@ -16,7 +16,7 @@ const FIELD_IDS = {
 };
 
 // Appointment types that are NOT paid sessions — skip session counting
-const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
+const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
