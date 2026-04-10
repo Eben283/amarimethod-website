@@ -156,6 +156,17 @@ export async function onRequestGet(context) {
         debugInfo.conversationIds = conversations.map((c) => c.id);
         debugInfo.conversationKeys = conversations[0] ? Object.keys(conversations[0]) : [];
         debugInfo.rawConvoDataKeys = Object.keys(convoData);
+        // Dump ALL fields of each conversation so we can see if lastMessageBody
+        // is actually populated on the contactId-filtered endpoint
+        debugInfo.rawConversations = conversations.map((c) => ({
+          id: c.id,
+          lastMessageDate: c.lastMessageDate,
+          lastMessageDirection: c.lastMessageDirection,
+          lastMessageType: c.lastMessageType,
+          lastMessageBodyPreview: (c.lastMessageBody || "").slice(0, 120),
+          lastMessageBodyLength: (c.lastMessageBody || "").length,
+          unreadCount: c.unreadCount,
+        }));
       }
       try {
         const allMessageBatches = await Promise.all(
@@ -265,8 +276,17 @@ export async function onRequestGet(context) {
         // object itself carries lastMessageBody/lastMessageDate which IS correct.
         // If conv.lastMessageDate is newer than our newest fetched message, add
         // a synthetic message from the conversation-level fields.
+        if (debugInfo) debugInfo.syntheticSkips = [];
         for (const conv of conversations) {
-          if (!conv.lastMessageDate || !conv.lastMessageBody) continue;
+          if (!conv.lastMessageDate || !conv.lastMessageBody) {
+            if (debugInfo) debugInfo.syntheticSkips.push({
+              convId: conv.id,
+              reason: "missing lastMessageDate or lastMessageBody",
+              hasDate: !!conv.lastMessageDate,
+              hasBody: !!conv.lastMessageBody,
+            });
+            continue;
+          }
           const convDate = typeof conv.lastMessageDate === "number"
             ? new Date(conv.lastMessageDate).toISOString()
             : conv.lastMessageDate;
@@ -274,14 +294,29 @@ export async function onRequestGet(context) {
           const isNewer =
             !newestFetched ||
             new Date(convDate).getTime() > new Date(newestFetched).getTime();
-          if (!isNewer) continue;
+          if (!isNewer) {
+            if (debugInfo) debugInfo.syntheticSkips.push({
+              convId: conv.id,
+              reason: "not newer than fetched",
+              convDate,
+              newestFetched,
+            });
+            continue;
+          }
 
           // Dedupe by checking whether the same body already exists in messages
           const bodyPrefix = conv.lastMessageBody.slice(0, 60);
           const alreadyPresent = messages.some(
             (m) => m.body.slice(0, 60) === bodyPrefix,
           );
-          if (alreadyPresent) continue;
+          if (alreadyPresent) {
+            if (debugInfo) debugInfo.syntheticSkips.push({
+              convId: conv.id,
+              reason: "dedupe match",
+              bodyPrefix,
+            });
+            continue;
+          }
 
           const convTypeStr = String(conv.lastMessageType || "").toUpperCase();
           const convDisplayType = convTypeStr.includes("EMAIL")
