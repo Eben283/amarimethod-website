@@ -40,8 +40,14 @@ function normalizeMessageType(type) {
   if (!type) return "SMS";
   const t = String(type).toUpperCase();
   if (t.includes("EMAIL")) return "Email";
-  if (t.includes("CALL")) return "Call";
+  if (t.includes("CALL") || t.includes("VOICEMAIL")) return "Call";
   return "SMS";
+}
+
+function isCallType(type) {
+  if (!type) return false;
+  const t = String(type).toUpperCase();
+  return t.includes("CALL") || t.includes("VOICEMAIL");
 }
 
 function capitalize(s) {
@@ -104,8 +110,8 @@ export async function onRequestGet(context) {
     const validFilters = new Set(["needs_reply", "all", "unread"]);
     const filter = validFilters.has(filterParam) ? filterParam : "needs_reply";
 
-    const limitParam = parseInt(url.searchParams.get("limit") || "100", 10);
-    const limit = Number.isFinite(limitParam) && limitParam > 0 && limitParam <= 200 ? limitParam : 100;
+    const limitParam = parseInt(url.searchParams.get("limit") || "200", 10);
+    const limit = Number.isFinite(limitParam) && limitParam > 0 && limitParam <= 500 ? limitParam : 200;
 
     // Pull most-recent conversations across the location.
     // GHL's search endpoint supports locationId + sortBy=last_message_date + sort=desc.
@@ -184,6 +190,7 @@ export async function onRequestGet(context) {
         lastMessageType: normalizeMessageType(lastMessageType),
         lastMessageDirection: lastIsInbound ? "inbound" : lastIsOutbound ? "outbound" : "unknown",
         unreadCount,
+        isCall: isCallType(lastMessageType),
         // STRICT needs-reply: client's message must be the most recent one.
         // unreadCount alone is not enough — GHL's unreadCount semantics include
         // outbound-not-yet-seen in some cases, which would falsely flag sent messages.
@@ -195,12 +202,43 @@ export async function onRequestGet(context) {
     const filtered = normalized.filter((c) => {
       if (!c.contactId) return false;
       if (filter === "all") return true;
-      if (filter === "unread") return c.unreadCount > 0;
-      return c.needsReply; // strict: only client-last conversations
+      if (filter === "unread") return c.unreadCount > 0 && !c.isCall;
+      // needs_reply: client sent last AND it's not a call (calls = missed/voicemail, separate concept)
+      return c.needsReply && !c.isCall;
     });
 
+    // Enrich with contact names — GHL's conversation/search response often
+    // omits names. Fetch contacts in parallel for the filtered set only.
+    const enriched = await Promise.all(
+      filtered.map(async (c) => {
+        if (!c.contactId) return c;
+        try {
+          const contactRes = await ghlFetch(
+            context,
+            `${GHL_API_BASE}/contacts/${c.contactId}`,
+          );
+          if (!contactRes.ok) return c;
+          const contactData = await contactRes.json();
+          const contact = contactData.contact || {};
+          const cap = (s) =>
+            s ? s.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "";
+          const first = cap(contact.firstName || "");
+          const last = cap(contact.lastName || "");
+          const name = [first, last].filter(Boolean).join(" ").trim();
+          return {
+            ...c,
+            contactName: name || contact.email || c.contactName,
+            email: contact.email || c.email,
+            phone: contact.phone || c.phone,
+          };
+        } catch {
+          return c;
+        }
+      }),
+    );
+
     // Sort by most recent message first.
-    const sorted = [...filtered].sort((a, b) => {
+    const sorted = [...enriched].sort((a, b) => {
       const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
       const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
       return bTime - aTime;
@@ -215,9 +253,19 @@ export async function onRequestGet(context) {
       conversations: sorted,
       ...(debug && {
         debug: {
-          rawSample: rawConversations[0] || null,
           rawCount: rawConversations.length,
+          normalizedCount: normalized.length,
+          filteredCount: filtered.length,
+          rawSamples: rawConversations.slice(0, 3),
           rawKeys: rawConversations[0] ? Object.keys(rawConversations[0]) : [],
+          directionBreakdown: normalized.reduce((acc, c) => {
+            acc[c.lastMessageDirection] = (acc[c.lastMessageDirection] || 0) + 1;
+            return acc;
+          }, {}),
+          typeBreakdown: normalized.reduce((acc, c) => {
+            acc[c.lastMessageType] = (acc[c.lastMessageType] || 0) + 1;
+            return acc;
+          }, {}),
         },
       }),
     };
