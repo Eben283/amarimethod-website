@@ -4,11 +4,15 @@
 # SPA fallback for client portal
 /portal/* /portal/index.html 200
 
-# SPA fallback for staff dashboard
-# Target is /staff/ (not /staff/index.html) to avoid Cloudflare's
-# automatic trailing-slash canonicalization turning the rewrite into
-# a 308 redirect to /staff/.
-/staff/* /staff/ 200
+# SPA fallback for staff dashboard — explicit routes ONLY.
+# Wildcard /staff/* catches /staff/assets/*.js and serves HTML, which
+# breaks the SPA bundle load. Target is /staff/ (not /staff/index.html)
+# to avoid Cloudflare's trailing-slash canonicalization.
+/staff/messages /staff/ 200
+/staff/balances /staff/ 200
+/staff/clients /staff/ 200
+/staff/client/* /staff/ 200
+/staff/login /staff/ 200
 
 # SPA fallback for chief of staff
 /cos/* /cos/index.html 200
