@@ -107,3 +107,50 @@ export interface ChecklistItem {
 export interface ChecklistState {
   [itemId: string]: boolean;
 }
+
+export type ConversationFilter = 'needs_reply' | 'unread' | 'all';
+
+export interface ConversationSummary {
+  id: string;
+  contactId: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  lastMessagePreview: string;
+  lastMessageDate: string | null;
+  lastMessageType: string;
+  lastMessageDirection: 'inbound' | 'outbound';
+  unreadCount: number;
+  needsReply: boolean;
+  assignedTo: string | null;
+}
+
+export interface ConversationsResponse {
+  filter: ConversationFilter;
+  total: number;
+  conversations: ConversationSummary[];
+}
+
+export interface BalanceRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  seriesType: string;
+  purchased: number | null;
+  attended: number;
+  remaining: number;
+  lastSessionDate: string | null;
+  prepaidOverride: boolean;
+  source: string;
+  confidence: 'high' | 'low';
+  ambiguities: string[];
+}
+
+export interface BalancesResponse {
+  generatedAt: string;
+  count: number;
+  totalRemaining: number;
+  ledgerSource: 'session-ledger' | 'custom-field-fallback';
+  rows: BalanceRow[];
+}

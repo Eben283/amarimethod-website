@@ -4,6 +4,8 @@ import LoginPage from './pages/LoginPage';
 import TodayPage from './pages/TodayPage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
+import MessagesPage from './pages/MessagesPage';
+import BalancesPage from './pages/BalancesPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -71,6 +73,26 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav>
               <ClientsPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <MessagesPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/balances"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <BalancesPage />
             </LayoutWithNav>
           </ProtectedRoute>
         }

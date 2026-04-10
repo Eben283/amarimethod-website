@@ -142,4 +142,16 @@ export async function togglePrepaid(
   });
 }
 
+export async function getConversations(
+  filter: import('../types/staff').ConversationFilter = 'needs_reply',
+): Promise<import('../types/staff').ConversationsResponse> {
+  return fetchApi(`/staff-conversations?filter=${encodeURIComponent(filter)}`);
+}
+
+export async function getBalances(
+  refresh = false,
+): Promise<import('../types/staff').BalancesResponse> {
+  return fetchApi(`/staff-balances${refresh ? '?refresh=1' : ''}`);
+}
+
 export { ApiError };

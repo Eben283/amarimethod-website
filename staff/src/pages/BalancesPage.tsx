@@ -1,0 +1,241 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Loader2, ChevronRight, AlertTriangle, Search } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { getBalances, ApiError } from '../lib/api';
+import type { BalanceRow } from '../types/staff';
+
+type SortKey = 'remaining' | 'recent' | 'name';
+
+const SORTS: { id: SortKey; label: string }[] = [
+  { id: 'remaining', label: 'Remaining' },
+  { id: 'recent', label: 'Recent' },
+  { id: 'name', label: 'Name' },
+];
+
+function relativeDate(iso: string | null): string {
+  if (!iso) return 'never';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return 'never';
+  const days = Math.round((Date.now() - then) / 86_400_000);
+  if (days < 1) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.round(days / 7)}w ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function seriesLabel(seriesType: string): string {
+  const map: Record<string, string> = {
+    '4-session': '4-series',
+    '8-session': '8-series',
+    Single: 'Single',
+    none: '—',
+  };
+  return map[seriesType] || seriesType;
+}
+
+export default function BalancesPage() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [rows, setRows] = useState<BalanceRow[]>([]);
+  const [totalRemaining, setTotalRemaining] = useState(0);
+  const [ledgerSource, setLedgerSource] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [sort, setSort] = useState<SortKey>('remaining');
+  const [query, setQuery] = useState('');
+
+  const load = useCallback(
+    async (refresh = false) => {
+      setIsLoading(true);
+      setError('');
+      try {
+        const data = await getBalances(refresh);
+        setRows(data.rows);
+        setTotalRemaining(data.totalRemaining);
+        setLedgerSource(data.ledgerSource);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          logout();
+          return;
+        }
+        setError(err instanceof Error ? err.message : 'Failed to load');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [logout],
+  );
+
+  useEffect(() => {
+    load(false);
+  }, [load]);
+
+  const visibleRows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = q
+      ? rows.filter(
+          (r) =>
+            r.name.toLowerCase().includes(q) ||
+            r.email.toLowerCase().includes(q) ||
+            r.phone.toLowerCase().includes(q),
+        )
+      : rows;
+
+    const sorted = [...filtered];
+    if (sort === 'remaining') {
+      sorted.sort((a, b) => b.remaining - a.remaining);
+    } else if (sort === 'recent') {
+      sorted.sort((a, b) => {
+        const aD = a.lastSessionDate ? new Date(a.lastSessionDate).getTime() : 0;
+        const bD = b.lastSessionDate ? new Date(b.lastSessionDate).getTime() : 0;
+        return bD - aD;
+      });
+    } else {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [rows, query, sort]);
+
+  const lowConfidenceCount = rows.filter((r) => r.confidence === 'low').length;
+
+  return (
+    <div className="px-4 pt-6 pb-4">
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-xl font-serif text-amari-charcoal">Balances</h1>
+        <button
+          onClick={() => load(true)}
+          disabled={isLoading}
+          className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
+          aria-label="Refresh"
+        >
+          <RefreshCw className={`w-4 h-4 text-amari-text-muted ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+
+      {/* Summary card */}
+      <div className="staff-card mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] text-amari-text-muted uppercase tracking-wide">Prepaid clients</p>
+          <p className="text-2xl font-serif text-amari-charcoal">{rows.length}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[11px] text-amari-text-muted uppercase tracking-wide">Sessions owed</p>
+          <p className="text-2xl font-serif text-amari-accent-warm">{totalRemaining}</p>
+        </div>
+      </div>
+
+      {ledgerSource === 'custom-field-fallback' && lowConfidenceCount > 0 && (
+        <div className="staff-card mb-4 flex items-start gap-2 bg-amber-50 border-amber-200">
+          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-amber-800">
+            Accurate ledger unavailable — showing values from custom fields. Numbers may be stale for{' '}
+            <strong>{lowConfidenceCount}</strong> clients.
+          </div>
+        </div>
+      )}
+
+      {/* Search + sort */}
+      <div className="mb-4 space-y-2">
+        <div className="relative">
+          <Search className="w-4 h-4 text-amari-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search name, email, phone"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-amari-border rounded-lg focus:outline-none focus:border-amari-accent-warm"
+          />
+        </div>
+        <div className="flex bg-amari-light-sand rounded-lg p-0.5">
+          {SORTS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSort(s.id)}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                sort === s.id ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 text-amari-charcoal animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="staff-card text-center py-8">
+          <p className="text-red-500 text-sm mb-3">{error}</p>
+          <button onClick={() => load(true)} className="staff-btn-secondary text-sm">
+            Try Again
+          </button>
+        </div>
+      ) : visibleRows.length === 0 ? (
+        <div className="staff-card text-center py-12">
+          <p className="text-amari-text-muted text-sm">
+            {query ? 'No matches' : 'No prepaid balances'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {visibleRows.map((row) => (
+            <BalanceRowCard
+              key={row.id}
+              row={row}
+              onTap={() => navigate(`/client/${row.id}`)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BalanceRowCard({ row, onTap }: { row: BalanceRow; onTap: () => void }) {
+  const highlight = row.remaining === 0 ? 'border-l-red-400' : row.remaining <= 2 ? 'border-l-amber-400' : 'border-l-amari-accent-warm';
+
+  return (
+    <button
+      onClick={onTap}
+      className={`staff-card-tap w-full text-left flex items-center gap-3 border-l-2 ${highlight}`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-amari-charcoal truncate">{row.name}</p>
+          {row.prepaidOverride && (
+            <span className="text-[10px] uppercase tracking-wide text-amari-text-muted bg-amari-light-sand px-1.5 py-px rounded">
+              manual
+            </span>
+          )}
+          {row.confidence === 'low' && (
+            <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-amari-text-muted">
+          <span>{seriesLabel(row.seriesType)}</span>
+          <span>·</span>
+          <span>last: {relativeDate(row.lastSessionDate)}</span>
+          {row.purchased !== null && (
+            <>
+              <span>·</span>
+              <span>
+                {row.attended}/{row.purchased}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="text-lg font-serif text-amari-charcoal leading-none">{row.remaining}</p>
+        <p className="text-[10px] text-amari-text-muted uppercase tracking-wide">left</p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
+    </button>
+  );
+}
