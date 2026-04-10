@@ -134,13 +134,40 @@ export async function onRequestGet(context) {
     const rawConversations = searchData.conversations || searchData.data || [];
 
     // Normalize every conversation into a stable shape.
+    // GHL's exact field names for direction vary, so we try several.
     const normalized = rawConversations.map((conv) => {
       const unreadCount = Number(conv.unreadCount || 0);
-      const lastMessageDirection = conv.lastMessageDirection ?? conv.direction;
-      const inbound = isInbound(lastMessageDirection);
-      const lastBody = conv.lastMessageBody || conv.lastMessage || "";
-      const preview = lastBody.length > 140 ? `${lastBody.slice(0, 140)}…` : lastBody;
-      const rawDate = conv.lastMessageDate || conv.dateUpdated || conv.dateAdded || null;
+
+      // Try every plausible direction field GHL might use.
+      const directionRaw =
+        conv.lastMessageDirection ??
+        conv.lastMessage?.direction ??
+        conv.direction ??
+        conv.lastOutboundMessageDirection ??
+        null;
+      const inbound = isInbound(directionRaw);
+      const directionKnown = directionRaw !== null && directionRaw !== undefined;
+
+      // GHL message types sometimes encode direction (e.g. "TYPE_SMS_INBOUND").
+      const lastMessageType =
+        conv.lastMessageType || conv.type || conv.lastMessage?.type || "";
+      const typeIsInbound = /inbound/i.test(lastMessageType);
+      const typeIsOutbound = /outbound/i.test(lastMessageType);
+
+      // Final inbound determination — direction field wins, type tag is fallback.
+      const lastIsInbound = directionKnown ? inbound : typeIsInbound;
+      const lastIsOutbound = directionKnown ? !inbound : typeIsOutbound;
+
+      const lastBody = conv.lastMessageBody || conv.lastMessage?.body || conv.lastMessage || "";
+      const preview = typeof lastBody === "string" && lastBody.length > 140
+        ? `${lastBody.slice(0, 140)}…`
+        : (typeof lastBody === "string" ? lastBody : "");
+      const rawDate =
+        conv.lastMessageDate ||
+        conv.lastMessage?.dateAdded ||
+        conv.dateUpdated ||
+        conv.dateAdded ||
+        null;
       const lastMessageDate =
         typeof rawDate === "number"
           ? new Date(rawDate).toISOString()
@@ -154,10 +181,13 @@ export async function onRequestGet(context) {
         phone: conv.phone || "",
         lastMessagePreview: preview,
         lastMessageDate,
-        lastMessageType: normalizeMessageType(conv.lastMessageType || conv.type),
-        lastMessageDirection: inbound ? "inbound" : "outbound",
+        lastMessageType: normalizeMessageType(lastMessageType),
+        lastMessageDirection: lastIsInbound ? "inbound" : lastIsOutbound ? "outbound" : "unknown",
         unreadCount,
-        needsReply: inbound || unreadCount > 0,
+        // STRICT needs-reply: client's message must be the most recent one.
+        // unreadCount alone is not enough — GHL's unreadCount semantics include
+        // outbound-not-yet-seen in some cases, which would falsely flag sent messages.
+        needsReply: lastIsInbound,
         assignedTo: conv.assignedTo || null,
       };
     });
@@ -166,24 +196,33 @@ export async function onRequestGet(context) {
       if (!c.contactId) return false;
       if (filter === "all") return true;
       if (filter === "unread") return c.unreadCount > 0;
-      return c.needsReply;
+      return c.needsReply; // strict: only client-last conversations
     });
 
-    // Sort by most recent inbound first (null dates last).
+    // Sort by most recent message first.
     const sorted = [...filtered].sort((a, b) => {
       const aTime = a.lastMessageDate ? new Date(a.lastMessageDate).getTime() : 0;
       const bTime = b.lastMessageDate ? new Date(b.lastMessageDate).getTime() : 0;
       return bTime - aTime;
     });
 
-    return new Response(
-      JSON.stringify({
-        filter,
-        total: sorted.length,
-        conversations: sorted,
+    // Debug mode: dump one raw conversation alongside the normalized list
+    // so we can see what GHL actually returns and tune the parser.
+    const debug = url.searchParams.get("debug") === "1";
+    const responseBody = {
+      filter,
+      total: sorted.length,
+      conversations: sorted,
+      ...(debug && {
+        debug: {
+          rawSample: rawConversations[0] || null,
+          rawCount: rawConversations.length,
+          rawKeys: rawConversations[0] ? Object.keys(rawConversations[0]) : [],
+        },
       }),
-      { status: 200, headers },
-    );
+    };
+
+    return new Response(JSON.stringify(responseBody), { status: 200, headers });
   } catch (err) {
     console.error("[staff-conversations] Unexpected error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
