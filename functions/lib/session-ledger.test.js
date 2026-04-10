@@ -1,10 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { deriveLedger, classifyOrder, SERIES_CALENDAR_IDS } from './session-ledger.js';
+import {
+  deriveLedger,
+  classifyOrder,
+  classifyInvoice,
+  SERIES_CALENDAR_IDS,
+  ACTIVE_PRODUCTS,
+} from './session-ledger.js';
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 
-function order({ sourceName, amount, status = 'completed', sourceType = 'payment_link' }) {
-  return { sourceName, amount, status, sourceType };
+function order({ sourceName, amount, status = 'completed', sourceType = 'payment_link', createdAt = '2026-03-13T00:00:00Z' }) {
+  return { sourceName, amount, status, sourceType, createdAt };
+}
+
+function invoice({ productId = null, itemName = 'Item', amountPaid, status = 'paid', issueDate = '2026-03-13T00:00:00Z', total = null }) {
+  return {
+    name: 'New Invoice',
+    status,
+    amountPaid,
+    total: total ?? amountPaid,
+    issueDate,
+    invoiceItems: [{ name: itemName, productId, amount: amountPaid, qty: 1 }],
+  };
 }
 
 function appt({ calendarId, status = 'showed', startTime = '2026-03-15T18:00:00Z' }) {
@@ -14,6 +31,26 @@ function appt({ calendarId, status = 'showed', startTime = '2026-03-15T18:00:00Z
 function contact({ customFields = [] } = {}) {
   return { id: 'contact-1', customFields };
 }
+
+// Real productIds from ACTIVE_PRODUCTS (kept in sync with session-ledger.js).
+const PID = {
+  eightSeries: '69987357c839790426996114',
+  fourSeries: '69986faa724ecd2343ebaa6e',
+  eightUpgrade: '699873d6990b71ebc1fa26b4',
+  fourUpgrade: '6998739230cc6054f9bba62d',
+  initialInPerson: '688a1cd770362828afbf08a2',
+  initialVirtual: '690b6b4d333ffa59d40c1823',
+  followupInPerson: '69aee204e80b62d627d8e922',
+  followupVirtual: '69aee3ebcf9cf8ed9f6c928d',
+  singleFollowup: '6998ace59dfde469ecb2aab6',
+  prePurchased: '67b1299f080422451447bdd0',
+  entrainment: '69c5d29c4019ce8e80e2513b',
+  livingPractice: '6998d7f2606fa79c54fa3ff5',
+  // Retired (not in ACTIVE_PRODUCTS)
+  retiredFollowup: '67f57171b6b1019c7b0233cc',
+  retiredFollowupCalendars: '690b6b4d7ca9fb527702f2ec',
+  retiredBalanceForLife: '67b1201e37cdce1f5b09b8ba',
+};
 
 const FIELD_DEFS = {
   sessions_remaining: 'wrQSkx6BhXwDGIn1d0V4',
@@ -107,6 +144,108 @@ describe('classifyOrder', () => {
         order({ sourceName: '4 Session Series Link', amount: 720, sourceType: 'payment_link' }),
       ),
     ).toMatchObject({ type: '4-series', sessions: 4 });
+  });
+});
+
+// ── classifyInvoice ─────────────────────────────────────────────────────────
+
+describe('classifyInvoice', () => {
+  it('classifies 8-Session Series by productId', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.eightSeries, itemName: '8-Session Series', amountPaid: 1295 })),
+    ).toMatchObject({ type: '8-series', sessions: 8 });
+  });
+
+  it('classifies 4-Session Series by productId', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.fourSeries, itemName: '4-Session Series', amountPaid: 720 })),
+    ).toMatchObject({ type: '4-series', sessions: 4 });
+  });
+
+  it('classifies 4-upgrade and 8-upgrade by productId', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.fourUpgrade, amountPaid: 495 })),
+    ).toMatchObject({ type: '4-upgrade', sessions: 3 });
+    expect(
+      classifyInvoice(invoice({ productId: PID.eightUpgrade, amountPaid: 1070 })),
+    ).toMatchObject({ type: '8-upgrade', sessions: 7 });
+  });
+
+  it('classifies follow-ups (in person, virtual, single, pre-purchased) as 1 session', () => {
+    for (const pid of [PID.followupInPerson, PID.followupVirtual, PID.singleFollowup, PID.prePurchased]) {
+      expect(classifyInvoice(invoice({ productId: pid, amountPaid: 190 }))).toMatchObject({
+        sessions: 1,
+      });
+    }
+  });
+
+  it('classifies initial sessions (in person + virtual) as 1 session each', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.initialInPerson, amountPaid: 225 })),
+    ).toMatchObject({ type: 'initial', sessions: 1 });
+    expect(
+      classifyInvoice(invoice({ productId: PID.initialVirtual, amountPaid: 225 })),
+    ).toMatchObject({ type: 'initial', sessions: 1 });
+  });
+
+  it('classifies entrainment and living practice as 0 sessions', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.entrainment, amountPaid: 90 })),
+    ).toMatchObject({ type: 'entrainment', sessions: 0 });
+    expect(
+      classifyInvoice(invoice({ productId: PID.livingPractice, amountPaid: 347 })),
+    ).toMatchObject({ type: 'living-practice', sessions: 0 });
+  });
+
+  it('classifies retired productIds as retired (0 sessions)', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.retiredFollowup, amountPaid: 200 })),
+    ).toMatchObject({ type: 'retired', sessions: 0 });
+    expect(
+      classifyInvoice(invoice({ productId: PID.retiredBalanceForLife, amountPaid: 475 })),
+    ).toMatchObject({ type: 'retired', sessions: 0 });
+  });
+
+  it('classifies custom items with null productId as retired (0 sessions)', () => {
+    expect(
+      classifyInvoice(invoice({ productId: null, itemName: 'Custom Item', amountPaid: 200 })),
+    ).toMatchObject({ type: 'retired', sessions: 0 });
+  });
+
+  it('ignores draft invoices (status != paid)', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.eightSeries, amountPaid: 0, status: 'draft' })),
+    ).toMatchObject({ type: 'ignored', sessions: 0 });
+  });
+
+  it('ignores invoices with amountPaid = 0 even if status=paid', () => {
+    expect(
+      classifyInvoice(invoice({ productId: PID.eightSeries, amountPaid: 0 })),
+    ).toMatchObject({ type: 'ignored', sessions: 0 });
+  });
+
+  it('preserves issueDate on the classification', () => {
+    const result = classifyInvoice(
+      invoice({
+        productId: PID.eightSeries,
+        amountPaid: 1295,
+        issueDate: '2026-03-18T18:44:00Z',
+      }),
+    );
+    expect(result.date).toBe('2026-03-18T18:44:00Z');
+  });
+});
+
+// ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
+
+describe('ACTIVE_PRODUCTS map', () => {
+  it('contains the 12 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(12);
+  });
+
+  it('contains the canonical 8-Session and 4-Session Series IDs', () => {
+    expect(ACTIVE_PRODUCTS[PID.eightSeries]).toEqual({ type: '8-series', sessions: 8 });
+    expect(ACTIVE_PRODUCTS[PID.fourSeries]).toEqual({ type: '4-series', sessions: 4 });
   });
 });
 
@@ -344,14 +483,182 @@ describe('deriveLedger — overrides and edge cases', () => {
     expect(result.lastSessionDate).toBe('2026-03-15T18:00:00Z');
   });
 
-  it('source is "orders+appointments" when orders are present', () => {
+  it('source is "orders+invoices+appointments" when any purchase source is present', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [order({ sourceName: '4-Session Series', amount: 720 })],
       appointments: [],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result.source).toBe('orders+appointments');
+    expect(result.source).toBe('orders+invoices+appointments');
+  });
+});
+
+// ── deriveLedger — invoice merging + active-product allowlist ──────────────
+
+describe('deriveLedger — invoices', () => {
+  it('merges invoice purchases with order purchases', () => {
+    // Contact has an order-based initial + an invoice-based 4-upgrade
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [order({ sourceName: 'Initial Session', amount: 225 })],
+      invoices: [invoice({ productId: PID.fourUpgrade, amountPaid: 495 })],
+      appointments: [appt({ calendarId: CAL.initial, startTime: '2026-03-20T18:00:00Z' })],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4); // 1 initial + 3 upgrade
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
+    expect(result.seriesType).toBe('4-session');
+  });
+
+  it('retired invoice productIds contribute 0 sessions', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        // Danny's historical $200 follow-ups are all retired products
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-08-17T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-09-07T00:00:00Z' }),
+        invoice({ productId: PID.retiredBalanceForLife, amountPaid: 475, issueDate: '2025-05-31T00:00:00Z' }),
+      ],
+      appointments: [],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(0);
+    expect(result.seriesType).toBe('none');
+  });
+
+  it('only counts paid invoices, ignores drafts and partial', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        invoice({ productId: PID.eightSeries, amountPaid: 1295, status: 'paid' }),
+        invoice({ productId: PID.eightSeries, amountPaid: 0, status: 'draft' }),
+        invoice({ productId: PID.fourSeries, amountPaid: 0, status: 'sent' }),
+      ],
+      appointments: [],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8); // only the paid 8-Session Series counts
+  });
+
+  it("Danny's real case: 14 invoices but only the 8-pack counts", () => {
+    // Full reproduction of Danny Blumrich's ground-truth data from 2026-04-10.
+    // 12 retired follow-up invoices, 1 retired "Balanced for Life", 1 real
+    // 8-Session Series. Pre-fix the ledger couldn't see invoices at all.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [], // all 5 of Danny's orders are calendar placeholders → 0
+      invoices: [
+        invoice({ productId: PID.retiredBalanceForLife, amountPaid: 475, issueDate: '2025-05-31T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-06-15T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-06-29T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-07-13T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-08-03T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-08-17T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-09-07T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-10-11T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowup, amountPaid: 200, issueDate: '2025-11-02T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowupCalendars, amountPaid: 200, issueDate: '2025-11-20T00:00:00Z' }),
+        invoice({ productId: null, itemName: 'Custom Item', amountPaid: 200, issueDate: '2025-12-11T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowupCalendars, amountPaid: 200, issueDate: '2026-01-08T00:00:00Z' }),
+        invoice({ productId: PID.retiredFollowupCalendars, amountPaid: 200, issueDate: '2026-02-05T00:00:00Z' }),
+        // The only real active purchase:
+        invoice({ productId: PID.eightSeries, amountPaid: 1295, issueDate: '2026-03-18T18:44:00Z' }),
+      ],
+      appointments: [
+        // 10 real attended sessions, 9 of them BEFORE the 8-pack purchase
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-06-29T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-08-17T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-09-07T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-10-11T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-11-02T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-11-20T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2025-12-11T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2026-01-08T18:00:00Z' }),
+        appt({ calendarId: CAL.followupPackage, startTime: '2026-02-05T18:00:00Z' }),
+        // Only this one is on/after the 2026-03-18 cutoff:
+        appt({ calendarId: CAL.followup, startTime: '2026-03-18T22:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.seriesType).toBe('8-session');
+    expect(result.attended).toBe(1); // only the 2026-03-18 session post-cutoff
+    expect(result.remaining).toBe(7);
+    // lastSessionDate reflects the real last visit, not the post-cutoff count
+    expect(result.lastSessionDate).toBe('2026-03-18T22:00:00Z');
+  });
+});
+
+// ── deriveLedger — earliest-active-package cutoff ──────────────────────────
+
+describe('deriveLedger — attended cutoff', () => {
+  it('excludes attended sessions from before the earliest package purchase', () => {
+    // Betsy's real case: free initial on Feb 20, 4-series purchased Mar 13,
+    // 2 follow-ups attended after. The initial predates the series and
+    // should NOT count against it.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({ sourceName: '4-Session Series', amount: 720, createdAt: '2026-03-13T00:00:00Z' }),
+      ],
+      invoices: [],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-02-20T18:00:00Z' }), // before cutoff
+        appt({ calendarId: CAL.followup, startTime: '2026-03-27T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-04-09T18:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(2); // Feb 20 initial excluded
+    expect(result.remaining).toBe(2);
+  });
+
+  it('mid-series repurchase preserves leftover sessions (uses earliest, not most recent)', () => {
+    // Alice has 2 leftover sessions from a Jan 4-series, then buys another
+    // 4-series in March. Leftover + new = 6 remaining.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({ sourceName: '4-Session Series', amount: 720, createdAt: '2026-01-01T00:00:00Z' }),
+        order({ sourceName: '4-Session Series', amount: 720, createdAt: '2026-03-01T00:00:00Z' }),
+      ],
+      invoices: [],
+      appointments: [
+        appt({ calendarId: CAL.followup, startTime: '2026-01-15T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-02-01T18:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(2); // both on/after Jan 1 earliest
+    expect(result.remaining).toBe(6);
+  });
+
+  it('pay-as-you-go client with no package has no cutoff (all attendances count)', () => {
+    // Client buys individual follow-ups, no series package. No cutoff is
+    // applied, so all attendances count — balance should net to 0.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        invoice({ productId: PID.followupInPerson, amountPaid: 190, issueDate: '2026-02-01T00:00:00Z' }),
+        invoice({ productId: PID.followupInPerson, amountPaid: 190, issueDate: '2026-03-01T00:00:00Z' }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.followup, startTime: '2026-02-05T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-05T18:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(2);
+    expect(result.attended).toBe(2);
+    expect(result.remaining).toBe(0);
+    expect(result.seriesType).toBe('Single');
   });
 });
 

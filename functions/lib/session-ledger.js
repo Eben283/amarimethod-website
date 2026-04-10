@@ -1,9 +1,9 @@
 // Session ledger — single source of truth for prepaid session balances.
 //
-// Derives "purchased / attended / remaining" from GHL orders + appointments
-// rather than trusting the sessions_remaining custom field. The custom field
-// is read for comparison only and surfaces as a discrepancy ambiguity when
-// it disagrees with the derived value.
+// Derives "purchased / attended / remaining" from GHL orders + invoices +
+// appointments rather than trusting the sessions_remaining custom field.
+// The custom field is read for comparison only and surfaces as a discrepancy
+// ambiguity when it disagrees with the derived value.
 //
 // Used by:
 //   functions/api/staff-balances.js  — global prepaid ledger view
@@ -18,6 +18,30 @@ import { getCustomField } from "../api/portal-data.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+
+// Active product allowlist — GHL productId → session bucket.
+// Invoices with unknown productIds or retired product references are
+// classified as "retired" and contribute 0 sessions.
+export const ACTIVE_PRODUCTS = {
+  "69987357c839790426996114": { type: "8-series", sessions: 8 },   // 8-Session Series
+  "69986faa724ecd2343ebaa6e": { type: "4-series", sessions: 4 },   // 4-Session Series
+  "699873d6990b71ebc1fa26b4": { type: "8-upgrade", sessions: 7 },  // Upgrade: Initial → 8-Session
+  "6998739230cc6054f9bba62d": { type: "4-upgrade", sessions: 3 },  // Upgrade: Initial → 4-Session
+  "688a1cd770362828afbf08a2": { type: "initial", sessions: 1 },    // Initial Session — In Person
+  "690b6b4d333ffa59d40c1823": { type: "initial", sessions: 1 },    // Initial Session — Virtual
+  "69aee204e80b62d627d8e922": { type: "followup", sessions: 1 },   // Follow-up Session — In Person
+  "69aee3ebcf9cf8ed9f6c928d": { type: "followup", sessions: 1 },   // Follow-up Session — Virtual
+  "6998ace59dfde469ecb2aab6": { type: "followup", sessions: 1 },   // Single Follow-up Session
+  "67b1299f080422451447bdd0": { type: "followup", sessions: 1 },   // Pre Purchased session
+  "69c5d29c4019ce8e80e2513b": { type: "entrainment", sessions: 0 }, // Entrainment — billed individually
+  "6998d7f2606fa79c54fa3ff5": { type: "living-practice", sessions: 0 }, // Living Practice (video)
+};
+
+// Classification types that represent a series package purchase. Used to
+// compute the "earliest active package purchase date" cutoff for attended
+// sessions — appointments before this date predate the current prepaid
+// balance and should not be counted against it.
+const PACKAGE_TYPES = new Set(["4-series", "8-series", "4-upgrade", "8-upgrade"]);
 
 // Calendar IDs that count against a series. Source: ghl_calendars_source_of_truth.md
 // 2 initial calendars + 4 follow-up calendars. Anything not in this set
@@ -98,6 +122,51 @@ export function classifyOrder(order) {
   return { type: "other", sessions: 0, name, amount };
 }
 
+/**
+ * Classify a single GHL invoice into a session bucket.
+ * Invoices live at a separate endpoint from orders (/invoices/), have a
+ * different shape (invoiceItems[] + productId), and are the primary source
+ * of truth for real purchases that go through GHL's invoicing flow
+ * (e.g., the $1,295 8-Session Series). Payment-link purchases still flow
+ * through /payments/orders and are classified by classifyOrder().
+ *
+ * Rules:
+ * - Only count status="paid" + amountPaid > 0. Drafts, sent, viewed, void,
+ *   and partially-paid invoices contribute 0 — no real money moved yet.
+ * - Primary classifier: productId lookup against ACTIVE_PRODUCTS. This is
+ *   the only reliable signal because invoice.name is usually "New Invoice"
+ *   on every row (GHL default), and invoiceItems[0].name varies by
+ *   product-creation era.
+ * - Unknown productId (retired product, custom item with no productId) →
+ *   classify as "retired" → 0 sessions. All of Danny Blumrich's old per-
+ *   session invoices are retired products — they shouldn't inflate his
+ *   current balance.
+ */
+export function classifyInvoice(invoice) {
+  const status = (invoice.status || "").toLowerCase();
+  const amountPaid = Number(invoice.amountPaid || 0);
+  const items = invoice.invoiceItems || [];
+  const firstItem = items[0] || {};
+  const name = (firstItem.name || invoice.name || "").toLowerCase();
+  const date = invoice.issueDate || invoice.updatedAt || invoice.createdAt || null;
+
+  if (status !== "paid" || amountPaid <= 0) {
+    return { type: "ignored", sessions: 0, name, amount: amountPaid, date: null };
+  }
+
+  const productId = firstItem.productId || null;
+  if (productId && ACTIVE_PRODUCTS[productId]) {
+    const entry = ACTIVE_PRODUCTS[productId];
+    return { type: entry.type, sessions: entry.sessions, name, amount: amountPaid, date };
+  }
+
+  // Unknown productId (retired product, deleted product, or custom item
+  // with no productId) — do not count toward balance. The user's product
+  // catalog is the source of truth; anything outside ACTIVE_PRODUCTS is
+  // historical and already reconciled.
+  return { type: "retired", sessions: 0, name, amount: amountPaid, date };
+}
+
 function determineSeriesType(classifications) {
   // Most authoritative: explicit series purchases.
   const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade");
@@ -126,30 +195,71 @@ function getCustomFieldInt(contact, key, fieldDefs) {
  *
  * @param {object} params
  * @param {object} params.contact         GHL contact object (with customFields)
- * @param {object[]} params.orders        GHL orders array (from /payments/orders)
- * @param {object[]} params.appointments  GHL appointments array (from /contacts/{id}/appointments)
+ * @param {object[]} params.orders        GHL orders (from /payments/orders)
+ * @param {object[]} params.invoices      GHL invoices (from /invoices/)
+ * @param {object[]} params.appointments  GHL appointments (from /contacts/{id}/appointments)
  * @param {object} params.fieldDefs       map of short key → custom field id
  * @returns ledger object — see staff-balances.js BalanceRow shape
  */
-export function deriveLedger({ contact, orders = [], appointments = [], fieldDefs = {} }) {
+export function deriveLedger({
+  contact,
+  orders = [],
+  invoices = [],
+  appointments = [],
+  fieldDefs = {},
+}) {
   const ambiguities = [];
 
-  // 1. Classify orders → derive purchased session count
-  const classifications = orders.map(classifyOrder);
+  // 1. Classify orders + invoices → derive purchased session count.
+  // Each classification carries a date so we can compute a cutoff for
+  // attended sessions (see step 2). Orders use createdAt; invoices use
+  // issueDate. Classifications without dates are still summed into
+  // purchased, they just don't contribute to the cutoff.
+  const orderClassifications = orders.map((o) => ({
+    ...classifyOrder(o),
+    date: o.createdAt || o.updatedAt || null,
+  }));
+  const invoiceClassifications = invoices.map(classifyInvoice);
+  const classifications = [...orderClassifications, ...invoiceClassifications];
+
   const purchased = classifications.reduce((sum, c) => sum + c.sessions, 0);
   const seriesType = determineSeriesType(classifications);
 
-  // 2. Filter appointments → only attended series sessions
-  const attendedSeriesAppts = appointments
+  // 2. Find the earliest active-package purchase date. Attended sessions
+  // before this date pre-date the current prepaid balance (e.g., free
+  // initials, old pay-as-you-go sessions, retired-product purchases)
+  // and should NOT be counted against it. This handles the mid-series
+  // repurchase case correctly because we use EARLIEST, not most recent —
+  // both purchases land after the cutoff, so leftover sessions roll
+  // into the new series.
+  //
+  // If the client has no package purchases (pay-as-you-go only), there's
+  // no cutoff and all attended sessions count.
+  const packageDates = classifications
+    .filter((c) => PACKAGE_TYPES.has(c.type))
+    .map((c) => c.date)
+    .filter(Boolean)
+    .sort();
+  const cutoffDate = packageDates[0] || null;
+
+  // 3. Filter appointments → only attended series sessions, on or after cutoff
+  const attendedAllTime = appointments
     .filter((a) => SERIES_CALENDAR_IDS.has(a.calendarId))
     .filter((a) => {
       const status = (a.appointmentStatus || a.status || "").toLowerCase();
       return ATTENDED_STATUSES.has(status);
     });
 
+  const attendedSeriesAppts = cutoffDate
+    ? attendedAllTime.filter((a) => {
+        const startTime = a.startTime || a.start_time || "";
+        return startTime && startTime >= cutoffDate;
+      })
+    : attendedAllTime;
+
   const attended = attendedSeriesAppts.length;
 
-  // 3. Compute remaining (floor at 0)
+  // 4. Compute remaining (floor at 0)
   let remaining = purchased - attended;
   if (remaining < 0) {
     ambiguities.push(
@@ -158,14 +268,15 @@ export function deriveLedger({ contact, orders = [], appointments = [], fieldDef
     remaining = 0;
   }
 
-  // 4. Last session date — most recent attended series session
-  const lastSessionDate = attendedSeriesAppts
+  // 5. Last session date — most recent attended series session (any time,
+  // not filtered by cutoff, so we show the real last visit)
+  const lastSessionDate = attendedAllTime
     .map((a) => a.startTime || a.start_time || null)
     .filter(Boolean)
     .sort()
     .pop() || null;
 
-  // 5. Read overrides and compare to custom field
+  // 6. Read overrides and compare to custom field
   const prepaidOverride =
     (getCustomField(contact, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
 
@@ -180,7 +291,7 @@ export function deriveLedger({ contact, orders = [], appointments = [], fieldDef
     );
   }
 
-  // 6. If there's a manual prepaid override but no orders, we can't derive — flag it
+  // 7. If there's a manual prepaid override but no orders, we can't derive — flag it
   if (prepaidOverride && purchased === 0) {
     ambiguities.push(
       "manual prepaid override is set but no matching orders found — count is unknown",
@@ -188,7 +299,8 @@ export function deriveLedger({ contact, orders = [], appointments = [], fieldDef
   }
 
   const confidence = ambiguities.length === 0 ? "high" : "low";
-  const source = orders.length > 0 ? "orders+appointments" : "empty";
+  const hasSources = orders.length > 0 || invoices.length > 0;
+  const source = hasSources ? "orders+invoices+appointments" : "empty";
 
   return {
     seriesType,
@@ -238,6 +350,12 @@ export async function computeSessionLedger(context, contactId, options = {}) {
         context,
         `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`,
       ),
+      // GHL's /invoices/ list endpoint requires offset as a non-empty string
+      // or it returns 422. Always pass offset=0 for the first page.
+      ghlFetch(
+        context,
+        `${GHL_API_BASE}/invoices/?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`,
+      ),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
     ];
     if (!options.fieldDefs) {
@@ -246,7 +364,8 @@ export async function computeSessionLedger(context, contactId, options = {}) {
       );
     }
 
-    const [contactRes, ordersRes, apptRes, fieldDefsRes] = await Promise.all(fetches);
+    const [contactRes, ordersRes, invoicesRes, apptRes, fieldDefsRes] =
+      await Promise.all(fetches);
 
     if (!contactRes.ok) {
       return {
@@ -271,6 +390,12 @@ export async function computeSessionLedger(context, contactId, options = {}) {
       orders = ordersData.data || ordersData.orders || [];
     }
 
+    let invoices = [];
+    if (invoicesRes.ok) {
+      const invoicesData = await invoicesRes.json();
+      invoices = invoicesData.invoices || [];
+    }
+
     let appointments = [];
     if (apptRes.ok) {
       const apptData = await apptRes.json();
@@ -287,7 +412,7 @@ export async function computeSessionLedger(context, contactId, options = {}) {
       fieldDefs = map;
     }
 
-    return deriveLedger({ contact, orders, appointments, fieldDefs });
+    return deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
   } catch (err) {
     return {
       seriesType: "none",

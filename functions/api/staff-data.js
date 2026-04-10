@@ -153,10 +153,12 @@ export async function onRequestGet(context) {
         if (contactId) {
           try {
             const capitalize = (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : "";
-            const [contactRes, apptRes, ordersRes] = await Promise.all([
+            const [contactRes, apptRes, ordersRes, invoicesRes] = await Promise.all([
               ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`),
               ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
               ghlFetch(context, `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=50`),
+              // offset=0 required or GHL invoices endpoint returns 422
+              ghlFetch(context, `${GHL_API_BASE}/invoices/?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
             ]);
 
             let contact = null;
@@ -170,6 +172,7 @@ export async function onRequestGet(context) {
             }
 
             const orders = ordersRes.ok ? ((await ordersRes.json()).data || []) : [];
+            const invoices = invoicesRes.ok ? ((await invoicesRes.json()).invoices || []) : [];
             let appointments = [];
             if (apptRes.ok) {
               const apptData = await apptRes.json();
@@ -179,6 +182,7 @@ export async function onRequestGet(context) {
             const ledger = deriveLedger({
               contact: contact || { customFields: [] },
               orders,
+              invoices,
               appointments,
               fieldDefs,
             });
