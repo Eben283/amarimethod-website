@@ -347,7 +347,7 @@ export default function ClientDetailPage() {
                           aria-label="Mark as attended"
                         >
                           <span className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
-                            {isMarking ? 'Marking…' : 'Not attended'}
+                            {isMarking ? 'Marking…' : 'Arrived?'}
                           </span>
                           <div className={`relative w-11 h-6 rounded-full transition-colors ${
                             isMarking ? 'bg-gray-300' : 'bg-gray-300 group-hover:bg-gray-400'
