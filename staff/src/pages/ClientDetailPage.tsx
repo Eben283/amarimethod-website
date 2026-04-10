@@ -343,7 +343,7 @@ export default function ClientDetailPage() {
                         <button
                           onClick={() => handleMarkAttended(appt)}
                           disabled={isMarking}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-amari-accent-warm text-white hover:bg-amari-accent-warm/90 active:bg-amari-accent-warm/80 transition-colors min-h-[36px] disabled:opacity-50"
+                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 transition-colors min-h-[36px] disabled:opacity-50"
                         >
                           {isMarking ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
