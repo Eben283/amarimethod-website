@@ -272,7 +272,10 @@ export async function onRequestGet(context) {
           rawCount: rawConversations.length,
           normalizedCount: normalized.length,
           filteredCount: filtered.length,
-          rawSamples: rawConversations.slice(0, 3),
+          // All conversations that passed the filter — what the user sees
+          filteredRawConvs: rawConversations.filter((r) =>
+            filtered.some((f) => f.id === r.id),
+          ),
           rawKeys: rawConversations[0] ? Object.keys(rawConversations[0]) : [],
           directionBreakdown: normalized.reduce((acc, c) => {
             acc[c.lastMessageDirection] = (acc[c.lastMessageDirection] || 0) + 1;
