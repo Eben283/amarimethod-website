@@ -75,8 +75,11 @@ export async function searchContacts(query: string): Promise<import('../types/st
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
 
-export async function getContactDetail(id: string): Promise<import('../types/staff').ContactDetail> {
-  return fetchApi(`/staff-contact?id=${encodeURIComponent(id)}`);
+export async function getContactDetail(
+  id: string,
+  debug = false,
+): Promise<import('../types/staff').ContactDetail & { _debug?: unknown }> {
+  return fetchApi(`/staff-contact?id=${encodeURIComponent(id)}${debug ? '&debug=1' : ''}`);
 }
 
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {

@@ -21,6 +21,7 @@ export default function ClientDetailPage() {
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');
   const focus = searchParams.get('focus');
+  const debugMode = searchParams.get('debug') === '1';
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -140,7 +141,7 @@ export default function ClientDetailPage() {
     setIsLoading(true);
     setError('');
     try {
-      const data = await getContactDetail(id);
+      const data = await getContactDetail(id, debugMode);
       setClient(data);
       setProgress(data.clientProgress ? { ...defaultData(), ...data.clientProgress } : defaultData());
     } catch (err) {
@@ -415,6 +416,16 @@ export default function ClientDetailPage() {
         <h2 className="text-lg font-serif text-amari-charcoal mb-2">Recent Messages</h2>
         <MessageHistory messages={client.messages} />
       </div>
+
+      {/* Debug panel — only visible when ?debug=1 is in the URL */}
+      {debugMode && (client as unknown as { _debug?: unknown })._debug != null && (
+        <div className="mt-4 border border-amber-300 bg-amber-50 rounded-lg p-3">
+          <h3 className="text-sm font-semibold text-amber-900 mb-2">Debug</h3>
+          <pre className="text-[10px] text-amber-900 whitespace-pre-wrap break-words overflow-auto max-h-96">
+            {JSON.stringify((client as unknown as { _debug?: unknown })._debug, null, 2)}
+          </pre>
+        </div>
+      )}
 
       {/* Add Note Modal */}
       {showAddNote && (
