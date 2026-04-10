@@ -110,8 +110,9 @@ export async function onRequestGet(context) {
     const validFilters = new Set(["needs_reply", "all", "unread"]);
     const filter = validFilters.has(filterParam) ? filterParam : "needs_reply";
 
-    const limitParam = parseInt(url.searchParams.get("limit") || "200", 10);
-    const limit = Number.isFinite(limitParam) && limitParam > 0 && limitParam <= 500 ? limitParam : 200;
+    // GHL conversations/search caps at 100 per page; raising it returns 422.
+    const limitParam = parseInt(url.searchParams.get("limit") || "100", 10);
+    const limit = Number.isFinite(limitParam) && limitParam > 0 && limitParam <= 100 ? limitParam : 100;
 
     // Pull most-recent conversations across the location.
     // GHL's search endpoint supports locationId + sortBy=last_message_date + sort=desc.
@@ -130,8 +131,18 @@ export async function onRequestGet(context) {
     if (!searchRes.ok) {
       const body = await searchRes.text().catch(() => "");
       console.error(`[staff-conversations] Search error ${searchRes.status}: ${body}`);
+      const debug = url.searchParams.get("debug") === "1";
       return new Response(
-        JSON.stringify({ error: "Failed to load conversations" }),
+        JSON.stringify({
+          error: "Failed to load conversations",
+          ...(debug && {
+            debug: {
+              upstreamStatus: searchRes.status,
+              upstreamBody: body.slice(0, 500),
+              requestUrl: `${GHL_API_BASE}/conversations/search?${params}`,
+            },
+          }),
+        }),
         { status: 422, headers },
       );
     }
