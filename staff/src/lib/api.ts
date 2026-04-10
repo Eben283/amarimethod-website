@@ -147,8 +147,9 @@ export async function togglePrepaid(
 
 export async function getConversations(
   filter: import('../types/staff').ConversationFilter = 'needs_reply',
-): Promise<import('../types/staff').ConversationsResponse> {
-  return fetchApi(`/staff-conversations?filter=${encodeURIComponent(filter)}`);
+  debug = false,
+): Promise<import('../types/staff').ConversationsResponse & { debug?: unknown }> {
+  return fetchApi(`/staff-conversations?filter=${encodeURIComponent(filter)}${debug ? '&debug=1' : ''}`);
 }
 
 export async function getBalances(

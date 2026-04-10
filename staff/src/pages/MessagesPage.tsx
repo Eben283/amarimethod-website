@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronRight, Mail, MessageSquare, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getConversations, ApiError } from '../lib/api';
@@ -35,9 +35,12 @@ function ChannelIcon({ type }: { type: string }) {
 export default function MessagesPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const debugMode = searchParams.get('debug') === '1';
 
   const [filter, setFilter] = useState<ConversationFilter>('needs_reply');
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [debugPayload, setDebugPayload] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -46,8 +49,11 @@ export default function MessagesPage() {
       setIsLoading(true);
       setError('');
       try {
-        const data = await getConversations(f);
+        const data = await getConversations(f, debugMode);
         setConversations(data.conversations);
+        if (debugMode) {
+          setDebugPayload((data as { debug?: unknown }).debug ?? null);
+        }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           logout();
@@ -58,7 +64,7 @@ export default function MessagesPage() {
         setIsLoading(false);
       }
     },
-    [logout],
+    [logout, debugMode],
   );
 
   useEffect(() => {
@@ -126,6 +132,16 @@ export default function MessagesPage() {
               onTap={() => navigate(`/client/${conv.contactId}?focus=messages`)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Debug panel — only visible when ?debug=1 is in the URL */}
+      {debugMode && debugPayload != null && (
+        <div className="mt-4 border border-amber-300 bg-amber-50 rounded-lg p-3">
+          <h3 className="text-sm font-semibold text-amber-900 mb-2">Debug</h3>
+          <pre className="text-[10px] text-amber-900 whitespace-pre-wrap break-words overflow-auto max-h-[600px]">
+            {JSON.stringify(debugPayload, null, 2)}
+          </pre>
         </div>
       )}
     </div>
