@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send, XCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
@@ -339,28 +339,44 @@ export default function ClientDetailPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {canMarkAttended && (
+                      {canMarkAttended ? (
                         <button
                           onClick={() => handleMarkAttended(appt)}
                           disabled={isMarking}
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-700 transition-colors min-h-[36px] disabled:opacity-50"
+                          className="flex items-center gap-2 group"
+                          aria-label="Mark as attended"
                         >
-                          {isMarking ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          )}
-                          Attended
+                          <span className="text-xs text-gray-400 group-hover:text-gray-600 transition-colors">
+                            {isMarking ? 'Marking…' : 'Not attended'}
+                          </span>
+                          <div className={`relative w-11 h-6 rounded-full transition-colors ${
+                            isMarking ? 'bg-gray-300' : 'bg-gray-300 group-hover:bg-gray-400'
+                          }`}>
+                            <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform flex items-center justify-center ${
+                              isMarking ? 'translate-x-0' : 'translate-x-0'
+                            }`}>
+                              {isMarking ? (
+                                <Loader2 className="w-3 h-3 text-gray-400 animate-spin" />
+                              ) : (
+                                <Circle className="w-3 h-3 text-gray-400" />
+                              )}
+                            </div>
+                          </div>
                         </button>
+                      ) : isAttended ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-emerald-600 font-medium">Attended</span>
+                          <div className="relative w-11 h-6 rounded-full bg-emerald-500">
+                            <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white shadow flex items-center justify-center">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : appt.status === 'cancelled' ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-red-50 text-red-600">cancelled</span>
+                      ) : (
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-50 text-gray-600">{appt.status}</span>
                       )}
-                      <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
-                        appt.status === 'confirmed' ? 'bg-green-50 text-green-700' :
-                        isAttended ? 'bg-amari-light-sand text-amari-text-secondary' :
-                        appt.status === 'cancelled' ? 'bg-red-50 text-red-600' :
-                        'bg-gray-50 text-gray-600'
-                      }`}>
-                        {appt.status}
-                      </span>
                     </div>
                   </div>
                 </div>
