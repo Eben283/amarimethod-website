@@ -20,27 +20,26 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // Calendar IDs that count against a series. Source: ghl_calendars_source_of_truth.md
-// (3 initial calendars + 4 follow-up calendars). Anything not in this set
-// (entrainment, discovery calls, partner free sessions, ambassador calls)
+// 2 initial calendars + 4 follow-up calendars. Anything not in this set
 // does NOT decrement a series balance.
 export const SERIES_CALENDAR_IDS = new Set([
   "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person
   "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual
-  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner
   "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person
   "ZO1jlGfy01rsxVqicoSB", // Follow-up Session — In Person (Package)
   "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
 ]);
 
-// Calendars that are explicitly free / non-billable / not against series.
-// Kept for documentation; SERIES_CALENDAR_IDS is the actual filter.
+// Calendars that are explicitly NOT against series. Kept for documentation;
+// SERIES_CALENDAR_IDS is the actual filter (anything not in it is excluded).
 export const NON_SERIES_CALENDAR_IDS = new Set([
-  "B5aGXLoS4kzAjZAMMXxk", // Entrainment (billed individually)
+  "B5aGXLoS4kzAjZAMMXxk", // Entrainment (billed individually, not via series)
   "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
   "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
   "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
-  "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (free perk)
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (free perk for partners)
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner (partner POS, no order in GHL)
 ]);
 
 const ATTENDED_STATUSES = new Set(["showed", "completed"]);

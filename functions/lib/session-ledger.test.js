@@ -25,6 +25,7 @@ const FIELD_DEFS = {
 const CAL = {
   initial: 'G7OAnnJuFbMF6nQSlZVQ',
   initialVirtual: 'ySmht5hx4uZGEpgZrlCw',
+  initialPaidAtPartner: 'uUDFD0ZQEWtzGLS9aLq7',
   followup: 'SKDVOL8wtUN6Ne0ppbC9',
   followupPackage: 'ZO1jlGfy01rsxVqicoSB',
   followupVirtual: 'oVn77FcecFY16iS2pHyP',
@@ -166,7 +167,7 @@ describe('deriveLedger — entrainment exclusion', () => {
     expect(result.remaining).toBe(5);
   });
 
-  it('discovery calls and partner sessions excluded from attended', () => {
+  it('discovery calls, partner sessions, and "paid at partner" excluded from attended', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [order({ sourceName: '4-Session Series', amount: 720 })],
@@ -174,6 +175,7 @@ describe('deriveLedger — entrainment exclusion', () => {
         appt({ calendarId: CAL.followup }),
         appt({ calendarId: CAL.discovery }),
         appt({ calendarId: CAL.partner }),
+        appt({ calendarId: CAL.initialPaidAtPartner }),
       ],
       fieldDefs: FIELD_DEFS,
     });
@@ -283,12 +285,15 @@ describe('deriveLedger — overrides and edge cases', () => {
 });
 
 describe('SERIES_CALENDAR_IDS', () => {
-  it('contains the 7 series calendar IDs (3 initial + 4 follow-up)', () => {
-    expect(SERIES_CALENDAR_IDS.size).toBe(7);
+  it('contains the 6 series calendar IDs (2 initial + 4 follow-up)', () => {
+    expect(SERIES_CALENDAR_IDS.size).toBe(6);
     expect(SERIES_CALENDAR_IDS.has(CAL.initial)).toBe(true);
+    expect(SERIES_CALENDAR_IDS.has(CAL.initialVirtual)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.followup)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.entrainment)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.discovery)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.partner)).toBe(false);
+    // "Paid at Partner" — paid at partner POS, no GHL order, excluded from series
+    expect(SERIES_CALENDAR_IDS.has(CAL.initialPaidAtPartner)).toBe(false);
   });
 });
