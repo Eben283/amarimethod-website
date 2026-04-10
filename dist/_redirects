@@ -4,8 +4,15 @@
 # SPA fallback for client portal
 /portal/* /portal/index.html 200
 
-# SPA fallback for staff dashboard
+# SPA fallback for staff dashboard — explicit routes first, then wildcard
+/staff/messages /staff/index.html 200
+/staff/balances /staff/index.html 200
+/staff/clients /staff/index.html 200
+/staff/client/* /staff/index.html 200
 /staff/* /staff/index.html 200
+
+# SPA fallback for chief of staff
+/cos/* /cos/index.html 200
 
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
