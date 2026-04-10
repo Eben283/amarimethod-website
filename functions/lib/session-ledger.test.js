@@ -3,8 +3,8 @@ import { deriveLedger, classifyOrder, SERIES_CALENDAR_IDS } from './session-ledg
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 
-function order({ sourceName, amount, status = 'completed' }) {
-  return { sourceName, amount, status };
+function order({ sourceName, amount, status = 'completed', sourceType = 'payment_link' }) {
+  return { sourceName, amount, status, sourceType };
 }
 
 function appt({ calendarId, status = 'showed', startTime = '2026-03-15T18:00:00Z' }) {
@@ -81,6 +81,33 @@ describe('classifyOrder', () => {
     expect(classifyOrder(order({ sourceName: '4-Session Series', amount: 0 })))
       .toMatchObject({ type: 'ignored', sessions: 0 });
   });
+
+  it('treats booking-generated placeholder orders as 0 sessions', () => {
+    // GHL auto-creates a "completed" order on every calendar booking with
+    // Accept Payments enabled. These have sourceType="calendar" and look
+    // identical to real follow-up purchases except for sourceType.
+    expect(
+      classifyOrder(
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+      ),
+    ).toMatchObject({ type: 'placeholder', sessions: 0 });
+  });
+
+  it('placeholder rule catches entrainment calendar bookings too', () => {
+    // Entrainments are already 0 via the entrainment branch, but should also
+    // hit the placeholder branch first when sourceType=calendar.
+    expect(
+      classifyOrder(order({ sourceName: 'Entrainment', amount: 90, sourceType: 'calendar' })),
+    ).toMatchObject({ type: 'placeholder', sessions: 0 });
+  });
+
+  it('still counts real payment_link purchases', () => {
+    expect(
+      classifyOrder(
+        order({ sourceName: '4 Session Series Link', amount: 720, sourceType: 'payment_link' }),
+      ),
+    ).toMatchObject({ type: '4-series', sessions: 4 });
+  });
 });
 
 // ── deriveLedger ────────────────────────────────────────────────────────────
@@ -145,6 +172,50 @@ describe('deriveLedger — clean cases', () => {
     expect(result.purchased).toBe(8);
     expect(result.attended).toBe(5);
     expect(result.remaining).toBe(3);
+  });
+});
+
+describe('deriveLedger — booking-generated placeholder exclusion', () => {
+  it("Betsy's case: 4-series + 3 booking placeholders → purchased stays at 4", () => {
+    // Reproduces the real-world diagnosis of Betsy Kemp 2026-04-10.
+    // She has one real $720 4-session purchase (payment_link) and three
+    // booking-generated $190 follow-up placeholders (sourceType: "calendar")
+    // from booking her prepaid follow-ups. Pre-fix this showed purchased=7.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({ sourceName: '4 Session Series Link', amount: 720, sourceType: 'payment_link' }),
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+        order({ sourceName: 'Entrainment', amount: 90, sourceType: 'calendar' }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial }),
+        appt({ calendarId: CAL.followup }),
+        appt({ calendarId: CAL.followup }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(3);
+    expect(result.remaining).toBe(1);
+    expect(result.seriesType).toBe('4-session');
+  });
+
+  it('client with only placeholder orders → seriesType "none", no purchases counted', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+        order({ sourceName: 'Follow-up Session — In Person', amount: 190, sourceType: 'calendar' }),
+      ],
+      appointments: [appt({ calendarId: CAL.followup })],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(0);
+    expect(result.seriesType).toBe('none');
+    expect(result.remaining).toBe(0);
   });
 });
 

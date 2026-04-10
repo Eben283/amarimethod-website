@@ -54,9 +54,23 @@ export function classifyOrder(order) {
   const status = (order.status || "").toLowerCase();
   const amount = Number(order.amount || 0);
   const name = (order.sourceName || "").toLowerCase();
+  const sourceType = (order.sourceType || "").toLowerCase();
 
   if (status !== "completed" || amount <= 0) {
     return { type: "ignored", sessions: 0, name, amount };
+  }
+
+  // Booking-generated placeholder orders. GHL auto-creates a "completed" order
+  // for every booking on a calendar with Accept Payments enabled — even when the
+  // client has already paid via a prepaid series. These orders have
+  // sourceType="calendar" and paymentStatus="partially_paid" ($0 actually
+  // collected), and need manual reconciliation per project_order_reconciliation.md.
+  // Counting them as new purchases double-counts the series: each follow-up
+  // booking would inflate `purchased` by 1 while the appointment also decrements
+  // via `attended`, so `remaining` never drops.
+  // Real purchases go through sourceType="payment_link".
+  if (sourceType === "calendar") {
+    return { type: "placeholder", sessions: 0, name, amount };
   }
 
   // Check upgrade BEFORE series — "Upgrade to 4-Session" must not match 4-series.
