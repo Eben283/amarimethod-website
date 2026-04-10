@@ -65,13 +65,15 @@ export async function onRequestGet(context) {
     }
     const debugInfo = debug ? { contactId, steps: [] } : null;
 
-    // Fetch contact, appointments, notes, conversations, orders, calendars, and field defs in parallel
-    const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, calendarsRes, fieldDefsRes] = await Promise.all([
+    // Fetch contact, appointments, notes, conversations, orders, invoices, calendars, and field defs in parallel
+    const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, invoicesRes, calendarsRes, fieldDefsRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`),
       ghlFetch(context, `${GHL_API_BASE}/conversations/search?contactId=${contactId}&locationId=${GHL_LOCATION_ID}`),
       ghlFetch(context, `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=50`),
+      // offset=0 required by GHL or the invoices endpoint returns 422
+      ghlFetch(context, `${GHL_API_BASE}/invoices/?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
       ghlFetch(context, `${GHL_API_BASE}/calendars/?locationId=${GHL_LOCATION_ID}`),
       ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`),
     ]);
@@ -158,7 +160,7 @@ export async function onRequestGet(context) {
       try {
         const allMessageBatches = await Promise.all(
           conversations.map(async (conv) => {
-            const msgRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/${conv.id}/messages`);
+            const msgRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=100`);
             if (!msgRes.ok) {
               if (debugInfo) debugInfo.steps.push({ convId: conv.id, msgStatus: msgRes.status, error: true });
               return [];
@@ -208,24 +210,39 @@ export async function onRequestGet(context) {
 
             // Direction detection — priority order by reliability:
             // 1. Top-level m.direction (most reliable when present)
-            // 2. status/source signals — "sent"/"delivered"/source="app" → outbound
-            // 3. meta.{email,sms}.direction (last resort — seen to reflect thread
-            //    direction, not individual message direction, so only use if nothing else)
-            // 4. userId fallback (staff-sent messages have userId set)
+            // 2. status: "sent"/"delivered" → outbound; "received" → inbound
+            // 3. source: "app"/"workflow"/"integration" → outbound (staff-initiated)
+            // 4. userId presence → outbound (staff user attached)
+            // 5. Default → outbound (safer than guessing inbound)
+            //
+            // Notes from real GHL data:
+            // - meta.email.direction has been observed as "inbound" on outbound
+            //   emails — it does NOT reliably reflect message direction and is
+            //   intentionally NOT used as a signal.
+            // - Workflow-sent emails have source="workflow" and no userId.
             let isInbound;
             if (m.direction === 1 || m.direction === "inbound" || m.direction === "1") {
               isInbound = true;
             } else if (m.direction === 2 || m.direction === "outbound" || m.direction === "2") {
               isInbound = false;
-            } else if (m.status === "sent" || m.status === "delivered" || m.source === "app") {
+            } else if (m.status === "sent" || m.status === "delivered") {
               isInbound = false;
             } else if (m.status === "received") {
               isInbound = true;
-            } else if (m.meta?.email?.direction || m.meta?.sms?.direction) {
-              const metaDir = m.meta.email?.direction || m.meta.sms?.direction;
-              isInbound = metaDir === "inbound";
+            } else if (
+              m.source === "app" ||
+              m.source === "workflow" ||
+              m.source === "integration" ||
+              m.source === "bulk_actions"
+            ) {
+              isInbound = false;
+            } else if (m.userId) {
+              isInbound = false;
             } else {
-              isInbound = !m.userId;
+              // No clear signal — default outbound. Misclassifying an inbound as
+              // outbound hides it from "needs reply" (acceptable); misclassifying
+              // an outbound as inbound creates false urgency (worse).
+              isInbound = false;
             }
 
             return {
@@ -249,16 +266,23 @@ export async function onRequestGet(context) {
       }
     }
 
-    // Source-of-truth ledger from orders + appointments (excludes entrainments,
-    // discovery calls, and partner sessions from series counts).
+    // Source-of-truth ledger from orders + invoices + appointments (excludes
+    // entrainments, discovery calls, partner sessions, booking-generated
+    // placeholder orders, and retired products from series counts).
     let orders = [];
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       orders = ordersData.data || [];
     }
+    let invoices = [];
+    if (invoicesRes.ok) {
+      const invoicesData = await invoicesRes.json();
+      invoices = invoicesData.invoices || [];
+    }
     const ledger = deriveLedger({
       contact,
       orders,
+      invoices,
       appointments: rawAppointments,
       fieldDefs,
     });

@@ -212,10 +212,15 @@ export async function onRequestGet(context) {
 
     const filtered = normalized.filter((c) => {
       if (!c.contactId) return false;
+      if (c.isCall) return false; // calls belong in a different view
       if (filter === "all") return true;
-      if (filter === "unread") return c.unreadCount > 0 && !c.isCall;
-      // needs_reply: client sent last AND it's not a call (calls = missed/voicemail, separate concept)
-      return c.needsReply && !c.isCall;
+      if (filter === "unread") return c.unreadCount > 0;
+      // needs_reply: GHL's unreadCount is the most reliable signal — it reflects
+      // Garrett's actual unread state in the GHL inbox. lastMessageDirection
+      // has been observed to disagree with actual message direction (e.g. email
+      // conversations where the last message is outbound but GHL flags the
+      // conversation as inbound). Trust unreadCount instead.
+      return c.unreadCount > 0;
     });
 
     // Enrich with contact names — GHL's conversation/search response often
