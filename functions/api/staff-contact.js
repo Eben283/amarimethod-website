@@ -4,6 +4,7 @@
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
+import { deriveLedger } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -100,12 +101,13 @@ export async function onRequestGet(context) {
       }
     }
 
-    // Parse appointments
+    // Parse appointments — keep raw GHL fields for the ledger, build display shape separately
+    let rawAppointments = [];
     let appointments = [];
     if (appointmentsRes.ok) {
       const apptData = await appointmentsRes.json();
-      const allAppts = apptData.appointments || apptData.events || [];
-      appointments = allAppts
+      rawAppointments = apptData.appointments || apptData.events || [];
+      appointments = rawAppointments
         .map((a) => ({
           id: a.id,
           title: a.title || a.calendarName || "Session",
@@ -117,20 +119,11 @@ export async function onRequestGet(context) {
         .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
     }
 
-    // Exclude non-session appointments (discovery calls, pain assessments) from session count
-    const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
-    const sessionAppointments = appointments.filter(
-      (a) => !NON_SESSION_PATTERNS.test(a.title)
-    );
-
-    // Find last completed session + count completed sessions from history
-    const completedSessions = sessionAppointments.filter(
-      (a) => a.status === "completed" || a.status === "showed"
-    );
+    // Last completed appointment (any type, including entrainments — for "last visit" display)
     const completedAppointments = appointments.filter(
       (a) => a.status === "completed" || a.status === "showed"
     );
-    const lastCompleted = completedAppointments[0]; // already sorted newest-first
+    const lastCompleted = completedAppointments[0]; // sorted newest-first
 
     // Parse notes
     let notes = [];
@@ -173,25 +166,22 @@ export async function onRequestGet(context) {
       }
     }
 
-    // Parse custom fields
-    const seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
-    const sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
-    const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
-
-    // Derive prepaid status: series remaining, OR payment history > attended, OR manual override
-    const sessionPrepaidOverride = (getCustomField(contact, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
-    let sessionPrepaid = sessionsRemaining > 0 || sessionPrepaidOverride;
-    if (!sessionPrepaid && ordersRes.ok) {
+    // Source-of-truth ledger from orders + appointments (excludes entrainments,
+    // discovery calls, and partner sessions from series counts).
+    let orders = [];
+    if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
-      const allOrders = ordersData.data || [];
-      const SERIES_PATTERN = /series|upgrade/i;
-      const individualPayments = allOrders.filter(
-        (o) => o.status === "completed" && (o.amount || 0) > 0 && !SERIES_PATTERN.test(o.sourceName || "")
-      ).length;
-      if (individualPayments > completedSessions.length) {
-        sessionPrepaid = true;
-      }
+      orders = ordersData.data || [];
     }
+    const ledger = deriveLedger({
+      contact,
+      orders,
+      appointments: rawAppointments,
+      fieldDefs,
+    });
+    const seriesType = ledger.seriesType;
+    const sessionsRemaining = ledger.remaining;
+    const sessionPrepaid = ledger.remaining > 0 || ledger.prepaidOverride;
 
     // Parse quiz results from custom fields (set by /api/send-to-ghl)
     const quizPattern = getCustomField(contact, "BvTGZ9O9ayecw5f0Nj76", fieldDefs);
@@ -212,10 +202,8 @@ export async function onRequestGet(context) {
 
     const capitalize = (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : "";
 
-    // Use appointment history count if custom field is empty/zero
-    const derivedSessionsCompleted = sessionsCompleted > 0
-      ? sessionsCompleted
-      : completedSessions.length;
+    // Sessions completed = derived from appointment history (excludes entrainments etc.)
+    const derivedSessionsCompleted = ledger.attended;
 
     // Client progress — from custom fields in "Session Progress" folder
     const MODULE_KEYS = [

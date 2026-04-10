@@ -4,6 +4,7 @@
 import { ghlHeaders, getGhlToken, ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
+import { deriveLedger } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -157,46 +158,35 @@ export async function onRequestGet(context) {
               ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
               ghlFetch(context, `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=50`),
             ]);
+
+            let contact = null;
             if (contactRes.ok) {
               const contactData = await contactRes.json();
-              const contact = contactData.contact;
+              contact = contactData.contact;
               const firstName = capitalize(contact.firstName || "");
               const lastName = capitalize(contact.lastName || "");
               contactName = [firstName, lastName].filter(Boolean).join(" ") || contactName;
-              seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
-              sessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
-              sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
               tags = contact.tags || [];
-              const prepaidOverride = (getCustomField(contact, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
-              sessionPrepaid = sessionsRemaining > 0 || prepaidOverride;
             }
-            // Derive session count from appointment history if custom field is empty
-            let attendedCount = sessionsCompleted;
-            if (sessionsCompleted === 0 && apptRes.ok) {
+
+            const orders = ordersRes.ok ? ((await ordersRes.json()).data || []) : [];
+            let appointments = [];
+            if (apptRes.ok) {
               const apptData = await apptRes.json();
-              const allAppts = apptData.appointments || apptData.events || [];
-              const nonSessionPattern = /pain assessment|discovery call|15-minute|15 minute|consultation|partner/i;
-              attendedCount = allAppts.filter(
-                (a) => {
-                  const status = (a.appointmentStatus || a.status || "").toLowerCase();
-                  const title = a.title || "";
-                  return (status === "showed" || status === "completed") && !nonSessionPattern.test(title);
-                }
-              ).length;
-              sessionsCompleted = attendedCount;
+              appointments = apptData.appointments || apptData.events || [];
             }
-            // Derive prepaid from payment history if not already paid via series
-            if (!sessionPrepaid && ordersRes.ok) {
-              const ordersData = await ordersRes.json();
-              const allOrders = ordersData.data || [];
-              const SERIES_PATTERN = /series|upgrade/i;
-              const individualPayments = allOrders.filter(
-                (o) => o.status === "completed" && (o.amount || 0) > 0 && !SERIES_PATTERN.test(o.sourceName || "")
-              ).length;
-              if (individualPayments > attendedCount) {
-                sessionPrepaid = true;
-              }
-            }
+
+            const ledger = deriveLedger({
+              contact: contact || { customFields: [] },
+              orders,
+              appointments,
+              fieldDefs,
+            });
+
+            sessionsRemaining = ledger.remaining;
+            sessionsCompleted = ledger.attended;
+            seriesType = ledger.seriesType;
+            sessionPrepaid = ledger.remaining > 0 || ledger.prepaidOverride;
           } catch (err) {
             console.error(`[staff-data] Contact enrich error for ${contactId}:`, err.message);
           }
