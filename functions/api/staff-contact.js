@@ -171,7 +171,20 @@ export async function onRequestGet(context) {
                 convId: conv.id,
                 msgStatus: msgRes.status,
                 rawCount: raw.length,
-                sampleMessage: raw[0] || null,
+                // Dump ALL raw messages (minus large fields) for direction diagnosis
+                allRawMessages: raw.map((m) => ({
+                  id: m.id,
+                  type: m.type,
+                  messageType: m.messageType,
+                  direction: m.direction,
+                  status: m.status,
+                  source: m.source,
+                  userId: m.userId,
+                  dateAdded: m.dateAdded,
+                  bodyPreview: (m.body || m.message || "").slice(0, 80),
+                  metaEmailDirection: m.meta?.email?.direction,
+                  metaSmsDirection: m.meta?.sms?.direction,
+                })),
                 msgDataKeys: Object.keys(msgData),
               });
             }
