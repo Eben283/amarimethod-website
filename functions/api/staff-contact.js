@@ -59,9 +59,11 @@ export async function onRequestGet(context) {
 
     const url = new URL(context.request.url);
     const contactId = url.searchParams.get("id");
+    const debug = url.searchParams.get("debug") === "1";
     if (!contactId) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers });
     }
+    const debugInfo = debug ? { contactId, steps: [] } : null;
 
     // Fetch contact, appointments, notes, conversations, orders, calendars, and field defs in parallel
     const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, calendarsRes, fieldDefsRes] = await Promise.all([
@@ -140,20 +142,44 @@ export async function onRequestGet(context) {
     // A client can have multiple conversations (SMS + Email + etc.), and GHL doesn't
     // guarantee ordering, so we can't just pick conversations[0].
     let messages = [];
+    if (debugInfo) {
+      debugInfo.conversationsResOk = conversationsRes.ok;
+      debugInfo.conversationsResStatus = conversationsRes.status;
+    }
     if (conversationsRes.ok) {
       const convoData = await conversationsRes.json();
       const conversations = convoData.conversations || [];
+      if (debugInfo) {
+        debugInfo.conversationCount = conversations.length;
+        debugInfo.conversationIds = conversations.map((c) => c.id);
+        debugInfo.conversationKeys = conversations[0] ? Object.keys(conversations[0]) : [];
+        debugInfo.rawConvoDataKeys = Object.keys(convoData);
+      }
       try {
         const allMessageBatches = await Promise.all(
           conversations.map(async (conv) => {
             const msgRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/${conv.id}/messages`);
-            if (!msgRes.ok) return [];
+            if (!msgRes.ok) {
+              if (debugInfo) debugInfo.steps.push({ convId: conv.id, msgStatus: msgRes.status, error: true });
+              return [];
+            }
             const msgData = await msgRes.json();
             // GHL double-nests: msgData.messages?.messages
-            return msgData.messages?.messages || msgData.messages || [];
+            const raw = msgData.messages?.messages || msgData.messages || [];
+            if (debugInfo) {
+              debugInfo.steps.push({
+                convId: conv.id,
+                msgStatus: msgRes.status,
+                rawCount: raw.length,
+                sampleMessage: raw[0] || null,
+                msgDataKeys: Object.keys(msgData),
+              });
+            }
+            return raw;
           }),
         );
         const merged = allMessageBatches.flat();
+        if (debugInfo) debugInfo.mergedCount = merged.length;
         messages = merged
           .map((m) => ({
             id: m.id,
@@ -168,8 +194,10 @@ export async function onRequestGet(context) {
             return tb - ta;
           })
           .slice(0, 20);
+        if (debugInfo) debugInfo.finalMessageCount = messages.length;
       } catch (err) {
         console.error(`[staff-contact] Messages fetch error:`, err.message);
+        if (debugInfo) debugInfo.messagesError = err.message;
       }
     }
 
@@ -259,6 +287,7 @@ export async function onRequestGet(context) {
       messages,
       quizResults,
       clientProgress,
+      ...(debugInfo && { _debug: debugInfo }),
     };
 
     return new Response(JSON.stringify(result), { status: 200, headers });
