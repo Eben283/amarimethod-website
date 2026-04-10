@@ -181,13 +181,48 @@ export async function onRequestGet(context) {
         const merged = allMessageBatches.flat();
         if (debugInfo) debugInfo.mergedCount = merged.length;
         messages = merged
-          .map((m) => ({
-            id: m.id,
-            body: m.body || m.message || "",
-            direction: m.direction === 1 || m.direction === "inbound" ? "inbound" : "outbound",
-            dateAdded: m.dateAdded || m.createdAt || "",
-            type: (m.type || "SMS").toUpperCase().includes("EMAIL") ? "Email" : "SMS",
-          }))
+          .map((m) => {
+            // Type detection: prefer messageType string, fall back to numeric type enum.
+            // GHL uses: 1=TYPE_CALL, 2=TYPE_SMS, 3=TYPE_EMAIL, etc.
+            // Previous code did (m.type || "SMS").toUpperCase() which crashes when
+            // m.type is a number.
+            const typeStr = String(m.messageType || m.type || "").toUpperCase();
+            const displayType = typeStr.includes("EMAIL") || m.type === 3
+              ? "Email"
+              : typeStr.includes("CALL") || typeStr.includes("VOICEMAIL") || m.type === 1
+              ? "Call"
+              : "SMS";
+
+            // Direction detection — priority order by reliability:
+            // 1. Top-level m.direction (most reliable when present)
+            // 2. status/source signals — "sent"/"delivered"/source="app" → outbound
+            // 3. meta.{email,sms}.direction (last resort — seen to reflect thread
+            //    direction, not individual message direction, so only use if nothing else)
+            // 4. userId fallback (staff-sent messages have userId set)
+            let isInbound;
+            if (m.direction === 1 || m.direction === "inbound" || m.direction === "1") {
+              isInbound = true;
+            } else if (m.direction === 2 || m.direction === "outbound" || m.direction === "2") {
+              isInbound = false;
+            } else if (m.status === "sent" || m.status === "delivered" || m.source === "app") {
+              isInbound = false;
+            } else if (m.status === "received") {
+              isInbound = true;
+            } else if (m.meta?.email?.direction || m.meta?.sms?.direction) {
+              const metaDir = m.meta.email?.direction || m.meta.sms?.direction;
+              isInbound = metaDir === "inbound";
+            } else {
+              isInbound = !m.userId;
+            }
+
+            return {
+              id: m.id,
+              body: m.body || m.message || "",
+              direction: isInbound ? "inbound" : "outbound",
+              dateAdded: m.dateAdded || m.createdAt || "",
+              type: displayType,
+            };
+          })
           .sort((a, b) => {
             const ta = new Date(a.dateAdded).getTime() || 0;
             const tb = new Date(b.dateAdded).getTime() || 0;
