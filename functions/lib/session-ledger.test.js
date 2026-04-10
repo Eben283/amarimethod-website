@@ -544,10 +544,14 @@ describe('deriveLedger — invoices', () => {
     expect(result.purchased).toBe(8); // only the paid 8-Session Series counts
   });
 
-  it("Danny's real case: 14 invoices but only the 8-pack counts", () => {
+  it("Danny's real case: 14 invoices but only the 8-pack counts (session on purchase day counts as 1/8)", () => {
     // Full reproduction of Danny Blumrich's ground-truth data from 2026-04-10.
     // 12 retired follow-up invoices, 1 retired "Balanced for Life", 1 real
     // 8-Session Series. Pre-fix the ledger couldn't see invoices at all.
+    // The 3/18 session happened ~7 hours before the invoice was issued
+    // that same day — Garrett booked a free session, sold the 8-pack during
+    // it, and applied that session as 1/8. Day-level cutoff comparison
+    // catches this.
     const result = deriveLedger({
       contact: contact(),
       orders: [], // all 5 of Danny's orders are calendar placeholders → 0
@@ -579,17 +583,19 @@ describe('deriveLedger — invoices', () => {
         appt({ calendarId: CAL.followupPackage, startTime: '2025-12-11T18:00:00Z' }),
         appt({ calendarId: CAL.followupPackage, startTime: '2026-01-08T18:00:00Z' }),
         appt({ calendarId: CAL.followupPackage, startTime: '2026-02-05T18:00:00Z' }),
-        // Only this one is on/after the 2026-03-18 cutoff:
-        appt({ calendarId: CAL.followup, startTime: '2026-03-18T22:00:00Z' }),
+        // Session happened ~7 hours BEFORE the invoice on the same day.
+        // Day-granularity cutoff (YYYY-MM-DD) still includes it as part
+        // of the 8-pack because Garrett sold the package during the session.
+        appt({ calendarId: CAL.followup, startTime: '2026-03-18T11:00:00Z' }),
       ],
       fieldDefs: FIELD_DEFS,
     });
     expect(result.purchased).toBe(8);
     expect(result.seriesType).toBe('8-session');
-    expect(result.attended).toBe(1); // only the 2026-03-18 session post-cutoff
+    expect(result.attended).toBe(1); // the 3/18 session applied to the 8-pack
     expect(result.remaining).toBe(7);
-    // lastSessionDate reflects the real last visit, not the post-cutoff count
-    expect(result.lastSessionDate).toBe('2026-03-18T22:00:00Z');
+    // lastSessionDate reflects the real last visit
+    expect(result.lastSessionDate).toBe('2026-03-18T11:00:00Z');
   });
 });
 
@@ -637,6 +643,53 @@ describe('deriveLedger — attended cutoff', () => {
     expect(result.purchased).toBe(8);
     expect(result.attended).toBe(2); // both on/after Jan 1 earliest
     expect(result.remaining).toBe(6);
+  });
+
+  it('session attended same DAY as package purchase counts (day-granularity cutoff)', () => {
+    // Garrett sometimes books a free session, sells a package mid-session,
+    // and applies that session to the new package. The session and the
+    // package purchase share a calendar day — and the session should count.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        invoice({
+          productId: PID.eightSeries,
+          amountPaid: 1295,
+          // Invoice issued at 11:44 AM PT (18:44 UTC)
+          issueDate: '2026-03-18T18:44:00Z',
+        }),
+      ],
+      appointments: [
+        // Session attended at ~4 AM PT same day — 7 hours BEFORE invoice
+        appt({ calendarId: CAL.followup, startTime: '2026-03-18T11:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(7);
+  });
+
+  it('session attended day BEFORE package purchase does NOT count', () => {
+    // Betsy-style: free initial a week before the series buy. Day comparison
+    // still excludes it cleanly.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: '4-Session Series',
+          amount: 720,
+          createdAt: '2026-03-13T00:00:00Z',
+        }),
+      ],
+      invoices: [],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-12T23:59:59Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.attended).toBe(0);
+    expect(result.remaining).toBe(4);
   });
 
   it('pay-as-you-go client with no package has no cutoff (all attendances count)', () => {

@@ -225,24 +225,32 @@ export function deriveLedger({
   const purchased = classifications.reduce((sum, c) => sum + c.sessions, 0);
   const seriesType = determineSeriesType(classifications);
 
-  // 2. Find the earliest active-package purchase date. Attended sessions
-  // before this date pre-date the current prepaid balance (e.g., free
-  // initials, old pay-as-you-go sessions, retired-product purchases)
+  // 2. Find the earliest active-package purchase DAY (YYYY-MM-DD). Attended
+  // sessions before this day pre-date the current prepaid balance (e.g.,
+  // free initials, old pay-as-you-go sessions, retired-product purchases)
   // and should NOT be counted against it. This handles the mid-series
   // repurchase case correctly because we use EARLIEST, not most recent —
   // both purchases land after the cutoff, so leftover sessions roll
   // into the new series.
   //
+  // Comparison is day-granularity (YYYY-MM-DD), not timestamp, because
+  // Garrett sometimes books a session, sells a package during the session,
+  // and applies that session to the new package. Example: Danny 2026-03-18 —
+  // free session at ~11am, buys 8-pack at ~11:44am, session counts as 1/8.
+  // With timestamp-level cutoff the session would fall on the wrong side
+  // by a few hours. Day-level comparison matches human intent.
+  //
   // If the client has no package purchases (pay-as-you-go only), there's
   // no cutoff and all attended sessions count.
+  const toDay = (iso) => (typeof iso === "string" ? iso.slice(0, 10) : "");
   const packageDates = classifications
     .filter((c) => PACKAGE_TYPES.has(c.type))
     .map((c) => c.date)
     .filter(Boolean)
     .sort();
-  const cutoffDate = packageDates[0] || null;
+  const cutoffDay = toDay(packageDates[0] || "");
 
-  // 3. Filter appointments → only attended series sessions, on or after cutoff
+  // 3. Filter appointments → only attended series sessions, on or after cutoff day
   const attendedAllTime = appointments
     .filter((a) => SERIES_CALENDAR_IDS.has(a.calendarId))
     .filter((a) => {
@@ -250,10 +258,10 @@ export function deriveLedger({
       return ATTENDED_STATUSES.has(status);
     });
 
-  const attendedSeriesAppts = cutoffDate
+  const attendedSeriesAppts = cutoffDay
     ? attendedAllTime.filter((a) => {
-        const startTime = a.startTime || a.start_time || "";
-        return startTime && startTime >= cutoffDate;
+        const startDay = toDay(a.startTime || a.start_time || "");
+        return startDay && startDay >= cutoffDay;
       })
     : attendedAllTime;
 
