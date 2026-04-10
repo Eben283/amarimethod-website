@@ -136,33 +136,40 @@ export async function onRequestGet(context) {
       }));
     }
 
-    // Parse messages — get recent from the first conversation
+    // Parse messages — fetch from ALL conversations and merge, sorted newest-first.
+    // A client can have multiple conversations (SMS + Email + etc.), and GHL doesn't
+    // guarantee ordering, so we can't just pick conversations[0].
     let messages = [];
     if (conversationsRes.ok) {
       const convoData = await conversationsRes.json();
       const conversations = convoData.conversations || [];
-      if (conversations.length > 0) {
-        const convoId = conversations[0].id;
-        // Fetch messages for this conversation
-        try {
-          const msgRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/${convoId}/messages`);
-          if (msgRes.ok) {
+      try {
+        const allMessageBatches = await Promise.all(
+          conversations.map(async (conv) => {
+            const msgRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/${conv.id}/messages`);
+            if (!msgRes.ok) return [];
             const msgData = await msgRes.json();
             // GHL double-nests: msgData.messages?.messages
-            const rawMessages = msgData.messages?.messages || msgData.messages || [];
-            messages = rawMessages
-              .slice(0, 20)
-              .map((m) => ({
-                id: m.id,
-                body: m.body || m.message || "",
-                direction: m.direction === 1 || m.direction === "inbound" ? "inbound" : "outbound",
-                dateAdded: m.dateAdded || m.createdAt || "",
-                type: (m.type || "SMS").toUpperCase().includes("EMAIL") ? "Email" : "SMS",
-              }));
-          }
-        } catch (err) {
-          console.error(`[staff-contact] Messages fetch error:`, err.message);
-        }
+            return msgData.messages?.messages || msgData.messages || [];
+          }),
+        );
+        const merged = allMessageBatches.flat();
+        messages = merged
+          .map((m) => ({
+            id: m.id,
+            body: m.body || m.message || "",
+            direction: m.direction === 1 || m.direction === "inbound" ? "inbound" : "outbound",
+            dateAdded: m.dateAdded || m.createdAt || "",
+            type: (m.type || "SMS").toUpperCase().includes("EMAIL") ? "Email" : "SMS",
+          }))
+          .sort((a, b) => {
+            const ta = new Date(a.dateAdded).getTime() || 0;
+            const tb = new Date(b.dateAdded).getTime() || 0;
+            return tb - ta;
+          })
+          .slice(0, 20);
+      } catch (err) {
+        console.error(`[staff-contact] Messages fetch error:`, err.message);
       }
     }
 
