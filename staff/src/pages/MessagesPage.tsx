@@ -123,7 +123,7 @@ export default function MessagesPage() {
             <ConversationRow
               key={conv.id}
               conversation={conv}
-              onTap={() => navigate(`/client/${conv.contactId}`)}
+              onTap={() => navigate(`/client/${conv.contactId}?focus=messages`)}
             />
           ))}
         </div>

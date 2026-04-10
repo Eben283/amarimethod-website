@@ -30,7 +30,7 @@ export default function MessageHistory({ messages }: Props) {
                 {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
-            <p className="text-sm text-amari-charcoal line-clamp-3">{msg.body}</p>
+            <p className="text-sm text-amari-charcoal whitespace-pre-wrap break-words">{msg.body}</p>
           </div>
         );
       })}

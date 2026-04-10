@@ -20,6 +20,7 @@ export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');
+  const focus = searchParams.get('focus');
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -156,6 +157,15 @@ export default function ClientDetailPage() {
   useEffect(() => {
     loadClient();
   }, [id]);
+
+  // Scroll to the messages section when arriving from the Messages tab
+  useEffect(() => {
+    if (!client || focus !== 'messages') return;
+    const el = document.getElementById('messages-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [client, focus]);
 
   if (isLoading && !client) {
     return (
@@ -401,7 +411,7 @@ export default function ClientDetailPage() {
       </div>
 
       {/* Messages */}
-      <div className="mt-4">
+      <div id="messages-section" className="mt-4 scroll-mt-4">
         <h2 className="text-lg font-serif text-amari-charcoal mb-2">Recent Messages</h2>
         <MessageHistory messages={client.messages} />
       </div>
