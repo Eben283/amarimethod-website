@@ -215,12 +215,10 @@ export async function onRequestGet(context) {
       if (c.isCall) return false; // calls belong in a different view
       if (filter === "all") return true;
       if (filter === "unread") return c.unreadCount > 0;
-      // needs_reply: GHL's unreadCount is the most reliable signal — it reflects
-      // Garrett's actual unread state in the GHL inbox. lastMessageDirection
-      // has been observed to disagree with actual message direction (e.g. email
-      // conversations where the last message is outbound but GHL flags the
-      // conversation as inbound). Trust unreadCount instead.
-      return c.unreadCount > 0;
+      // needs_reply: the conversation-level lastMessageDirection is reliable
+      // (verified against raw GHL data). GHL's unreadCount includes outbound
+      // emails the recipient hasn't opened, so it over-counts. Use direction.
+      return c.lastMessageDirection === "inbound";
     });
 
     // Enrich with contact names — GHL's conversation/search response often

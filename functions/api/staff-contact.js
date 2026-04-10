@@ -257,8 +257,57 @@ export async function onRequestGet(context) {
             const ta = new Date(a.dateAdded).getTime() || 0;
             const tb = new Date(b.dateAdded).getTime() || 0;
             return tb - ta;
-          })
-          .slice(0, 20);
+          });
+
+        // Fallback: GHL's /conversations/{id}/messages endpoint has been observed
+        // to miss the most recent inbound email when it arrived via an external
+        // email sync (e.g. replies to a forwarded address). The conversation
+        // object itself carries lastMessageBody/lastMessageDate which IS correct.
+        // If conv.lastMessageDate is newer than our newest fetched message, add
+        // a synthetic message from the conversation-level fields.
+        for (const conv of conversations) {
+          if (!conv.lastMessageDate || !conv.lastMessageBody) continue;
+          const convDate = typeof conv.lastMessageDate === "number"
+            ? new Date(conv.lastMessageDate).toISOString()
+            : conv.lastMessageDate;
+          const newestFetched = messages[0]?.dateAdded || null;
+          const isNewer =
+            !newestFetched ||
+            new Date(convDate).getTime() > new Date(newestFetched).getTime();
+          if (!isNewer) continue;
+
+          // Dedupe by checking whether the same body already exists in messages
+          const bodyPrefix = conv.lastMessageBody.slice(0, 60);
+          const alreadyPresent = messages.some(
+            (m) => m.body.slice(0, 60) === bodyPrefix,
+          );
+          if (alreadyPresent) continue;
+
+          const convTypeStr = String(conv.lastMessageType || "").toUpperCase();
+          const convDisplayType = convTypeStr.includes("EMAIL")
+            ? "Email"
+            : convTypeStr.includes("CALL") || convTypeStr.includes("VOICEMAIL")
+            ? "Call"
+            : "SMS";
+
+          messages.unshift({
+            id: `synthetic-${conv.id}`,
+            body: conv.lastMessageBody,
+            direction: conv.lastMessageDirection === "inbound" ? "inbound" : "outbound",
+            dateAdded: convDate,
+            type: convDisplayType,
+          });
+          if (debugInfo) {
+            debugInfo.syntheticAdded = (debugInfo.syntheticAdded || []).concat({
+              convId: conv.id,
+              convDate,
+              direction: conv.lastMessageDirection,
+            });
+          }
+        }
+
+        // Final cap
+        messages = messages.slice(0, 20);
         if (debugInfo) debugInfo.finalMessageCount = messages.length;
       } catch (err) {
         console.error(`[staff-contact] Messages fetch error:`, err.message);
