@@ -1,0 +1,202 @@
+import { describe, it, expect } from 'vitest';
+import {
+  classifyInvoiceProduct,
+  selectSeriesInvoice,
+  INVOICE_PURCHASE_PRODUCTS,
+} from './ghl-invoice-webhook.js';
+
+// Real productIds kept in sync with ACTIVE_PRODUCTS in session-ledger.js
+const PID = {
+  eightSeries: '69987357c839790426996114',
+  fourSeries: '69986faa724ecd2343ebaa6e',
+  eightUpgrade: '699873d6990b71ebc1fa26b4',
+  fourUpgrade: '6998739230cc6054f9bba62d',
+  followupInPerson: '69aee204e80b62d627d8e922',
+  initialInPerson: '688a1cd770362828afbf08a2',
+  entrainment: '69c5d29c4019ce8e80e2513b',
+  livingPractice: '6998d7f2606fa79c54fa3ff5',
+  retiredFollowup: '67f57171b6b1019c7b0233cc',
+};
+
+function invoice({
+  id = 'inv-1',
+  productId = null,
+  itemName = 'Item',
+  status = 'paid',
+  amountPaid = 1295,
+  issueDate = '2026-03-18T18:44:00Z',
+}) {
+  return {
+    _id: id,
+    status,
+    amountPaid,
+    total: amountPaid,
+    issueDate,
+    invoiceItems: [{ name: itemName, productId, amount: amountPaid, qty: 1 }],
+  };
+}
+
+describe('classifyInvoiceProduct', () => {
+  it('classifies 8-Session Series', () => {
+    expect(classifyInvoiceProduct(PID.eightSeries)).toMatchObject({
+      name: '8-Session Series',
+      sessionsRemaining: 8,
+      seriesType: '8-session',
+      livingPractice: true,
+    });
+  });
+
+  it('classifies 4-Session Series', () => {
+    expect(classifyInvoiceProduct(PID.fourSeries)).toMatchObject({
+      name: '4-Session Series',
+      sessionsRemaining: 4,
+      seriesType: '4-session',
+      livingPractice: false,
+    });
+  });
+
+  it('classifies Upgrade → 8', () => {
+    expect(classifyInvoiceProduct(PID.eightUpgrade)).toMatchObject({
+      sessionsRemaining: 7,
+      seriesType: '8-session',
+      livingPractice: true,
+    });
+  });
+
+  it('classifies Upgrade → 4', () => {
+    expect(classifyInvoiceProduct(PID.fourUpgrade)).toMatchObject({
+      sessionsRemaining: 3,
+      seriesType: '4-session',
+      livingPractice: false,
+    });
+  });
+
+  it('returns null for non-series active products (follow-up, initial, entrainment, living practice)', () => {
+    expect(classifyInvoiceProduct(PID.followupInPerson)).toBe(null);
+    expect(classifyInvoiceProduct(PID.initialInPerson)).toBe(null);
+    expect(classifyInvoiceProduct(PID.entrainment)).toBe(null);
+    expect(classifyInvoiceProduct(PID.livingPractice)).toBe(null);
+  });
+
+  it('returns null for retired productIds', () => {
+    expect(classifyInvoiceProduct(PID.retiredFollowup)).toBe(null);
+  });
+
+  it('returns null for null / undefined / empty', () => {
+    expect(classifyInvoiceProduct(null)).toBe(null);
+    expect(classifyInvoiceProduct(undefined)).toBe(null);
+    expect(classifyInvoiceProduct('')).toBe(null);
+  });
+});
+
+describe('INVOICE_PURCHASE_PRODUCTS map', () => {
+  it('has exactly 4 entries (2 series + 2 upgrades)', () => {
+    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(4);
+  });
+
+  it('does NOT include single-session products, entrainment, or living practice', () => {
+    expect(INVOICE_PURCHASE_PRODUCTS[PID.followupInPerson]).toBeUndefined();
+    expect(INVOICE_PURCHASE_PRODUCTS[PID.initialInPerson]).toBeUndefined();
+    expect(INVOICE_PURCHASE_PRODUCTS[PID.entrainment]).toBeUndefined();
+    expect(INVOICE_PURCHASE_PRODUCTS[PID.livingPractice]).toBeUndefined();
+  });
+});
+
+describe('selectSeriesInvoice', () => {
+  it('returns null on empty list', () => {
+    expect(selectSeriesInvoice([])).toBe(null);
+    expect(selectSeriesInvoice(null)).toBe(null);
+    expect(selectSeriesInvoice(undefined)).toBe(null);
+  });
+
+  it('picks the most recent paid series invoice when id not provided', () => {
+    const result = selectSeriesInvoice([
+      invoice({ id: 'old', productId: PID.fourSeries, issueDate: '2026-01-01T00:00:00Z' }),
+      invoice({ id: 'new', productId: PID.eightSeries, issueDate: '2026-03-18T18:44:00Z' }),
+    ]);
+    expect(result).not.toBe(null);
+    expect(result.invoice._id).toBe('new');
+    expect(result.pkg.name).toBe('8-Session Series');
+  });
+
+  it('honors preferredInvoiceId when provided', () => {
+    const result = selectSeriesInvoice(
+      [
+        invoice({ id: 'old', productId: PID.fourSeries, issueDate: '2026-01-01T00:00:00Z' }),
+        invoice({ id: 'new', productId: PID.eightSeries, issueDate: '2026-03-18T18:44:00Z' }),
+      ],
+      'old',
+    );
+    expect(result.invoice._id).toBe('old');
+    expect(result.pkg.name).toBe('4-Session Series');
+  });
+
+  it('skips non-series invoices (follow-ups, retired, entrainment)', () => {
+    const result = selectSeriesInvoice([
+      invoice({ id: '1', productId: PID.followupInPerson }),
+      invoice({ id: '2', productId: PID.retiredFollowup }),
+      invoice({ id: '3', productId: PID.entrainment }),
+    ]);
+    expect(result).toBe(null);
+  });
+
+  it('skips draft/void/sent invoices', () => {
+    const result = selectSeriesInvoice([
+      invoice({ id: '1', productId: PID.eightSeries, status: 'draft', amountPaid: 0 }),
+      invoice({ id: '2', productId: PID.eightSeries, status: 'void' }),
+      invoice({ id: '3', productId: PID.eightSeries, status: 'sent', amountPaid: 0 }),
+    ]);
+    expect(result).toBe(null);
+  });
+
+  it('skips invoices with amountPaid = 0 even if status is paid', () => {
+    const result = selectSeriesInvoice([
+      invoice({ id: '1', productId: PID.eightSeries, status: 'paid', amountPaid: 0 }),
+    ]);
+    expect(result).toBe(null);
+  });
+
+  it("falls back to scanning when preferredInvoiceId doesn't match anything", () => {
+    const result = selectSeriesInvoice(
+      [
+        invoice({ id: 'existing', productId: PID.fourSeries }),
+      ],
+      'nonexistent-id',
+    );
+    expect(result).not.toBe(null);
+    expect(result.invoice._id).toBe('existing');
+  });
+
+  it("Danny's case: 14 invoices, only 1 is a series → picks the series one", () => {
+    const invoices = [
+      // 12 retired $200 follow-ups
+      ...Array.from({ length: 12 }, (_, i) =>
+        invoice({
+          id: `retired-${i}`,
+          productId: PID.retiredFollowup,
+          amountPaid: 200,
+          issueDate: `2025-${String((i % 12) + 1).padStart(2, '0')}-01T00:00:00Z`,
+        }),
+      ),
+      // 1 retired "Balanced for Life"
+      invoice({
+        id: 'bfl',
+        productId: '67b1201e37cdce1f5b09b8ba',
+        amountPaid: 475,
+        issueDate: '2025-05-31T00:00:00Z',
+      }),
+      // The real 8-pack
+      invoice({
+        id: 'inv-000030',
+        productId: PID.eightSeries,
+        amountPaid: 1295,
+        issueDate: '2026-03-18T18:44:00Z',
+      }),
+    ];
+    const result = selectSeriesInvoice(invoices);
+    expect(result).not.toBe(null);
+    expect(result.invoice._id).toBe('inv-000030');
+    expect(result.pkg.name).toBe('8-Session Series');
+    expect(result.pkg.sessionsRemaining).toBe(8);
+  });
+});
