@@ -15,33 +15,15 @@
 
 import { ghlFetch } from "./ghl.js";
 import { getCustomField } from "../api/portal-data.js";
+import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
-// Active product allowlist — GHL productId → session bucket.
-// Invoices with unknown productIds or retired product references are
-// classified as "retired" and contribute 0 sessions.
-export const ACTIVE_PRODUCTS = {
-  "69987357c839790426996114": { type: "8-series", sessions: 8 },   // 8-Session Series
-  "69986faa724ecd2343ebaa6e": { type: "4-series", sessions: 4 },   // 4-Session Series
-  "699873d6990b71ebc1fa26b4": { type: "8-upgrade", sessions: 7 },  // Upgrade: Initial → 8-Session
-  "6998739230cc6054f9bba62d": { type: "4-upgrade", sessions: 3 },  // Upgrade: Initial → 4-Session
-  "688a1cd770362828afbf08a2": { type: "initial", sessions: 1 },    // Initial Session — In Person
-  "690b6b4d333ffa59d40c1823": { type: "initial", sessions: 1 },    // Initial Session — Virtual
-  "69aee204e80b62d627d8e922": { type: "followup", sessions: 1 },   // Follow-up Session — In Person
-  "69aee3ebcf9cf8ed9f6c928d": { type: "followup", sessions: 1 },   // Follow-up Session — Virtual
-  "6998ace59dfde469ecb2aab6": { type: "followup", sessions: 1 },   // Single Follow-up Session
-  "67b1299f080422451447bdd0": { type: "followup", sessions: 1 },   // Pre Purchased session
-  "69c5d29c4019ce8e80e2513b": { type: "entrainment", sessions: 0 }, // Entrainment — billed individually
-  "6998d7f2606fa79c54fa3ff5": { type: "living-practice", sessions: 0 }, // Living Practice (video)
-};
-
-// Classification types that represent a series package purchase. Used to
-// compute the "earliest active package purchase date" cutoff for attended
-// sessions — appointments before this date predate the current prepaid
-// balance and should not be counted against it.
-const PACKAGE_TYPES = new Set(["4-series", "8-series", "4-upgrade", "8-upgrade"]);
+// Re-export as ACTIVE_PRODUCTS for backward compatibility with tests.
+// Source of truth is ghl-products.js → GHL_PRODUCTS. To add a new product,
+// edit that file only — both the ledger and the invoice webhook pick it up.
+export const ACTIVE_PRODUCTS = LEDGER_PRODUCT_MAP;
 
 // Calendar IDs that count against a series. Source: ghl_calendars_source_of_truth.md
 // 2 initial calendars + 4 follow-up calendars. Anything not in this set

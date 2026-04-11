@@ -40,42 +40,19 @@
 // 12. Store invoice id in KV for idempotency
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const KV_TTL_SECONDS = 30 * 86400; // 30 days
 
-// ── Product allowlist ──
-// Only series / upgrade products trigger the full purchase automation.
-// Anything else (follow-up, initial, entrainment, living practice, retired,
-// unknown) is a silent no-op. Keep in sync with ACTIVE_PRODUCTS in
-// functions/lib/session-ledger.js.
-export const INVOICE_PURCHASE_PRODUCTS = {
-  "69986faa724ecd2343ebaa6e": {
-    name: "4-Session Series",
-    sessionsRemaining: 4,
-    seriesType: "4-session",
-    livingPractice: false,
-  },
-  "69987357c839790426996114": {
-    name: "8-Session Series",
-    sessionsRemaining: 8,
-    seriesType: "8-session",
-    livingPractice: true,
-  },
-  "6998739230cc6054f9bba62d": {
-    name: "Upgrade: Initial → 4-Session",
-    sessionsRemaining: 3,
-    seriesType: "4-session",
-    livingPractice: false,
-  },
-  "699873d6990b71ebc1fa26b4": {
-    name: "Upgrade: Initial → 8-Session",
-    sessionsRemaining: 7,
-    seriesType: "8-session",
-    livingPractice: true,
-  },
-};
+// Product allowlist — only series/upgrade purchases trigger the post-purchase
+// automation. Shape: { [productId]: { name, sessionsRemaining, seriesType, livingPractice } }
+// Source of truth lives in functions/lib/ghl-products.js (GHL_PRODUCTS). Any
+// product marked isPackagePurchase: true is included here automatically.
+// Non-package products (individual follow-ups, entrainments, retired items,
+// custom line items with no productId) are a silent no-op in this webhook.
+export const INVOICE_PURCHASE_PRODUCTS = WEBHOOK_PURCHASE_MAP;
 
 // ── GHL custom field IDs (same as ghl-purchase-webhook.js) ──
 const FIELD_IDS = {
