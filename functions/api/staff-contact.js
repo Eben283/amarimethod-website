@@ -271,38 +271,29 @@ export async function onRequestGet(context) {
           });
 
         // Fallback: GHL's /conversations/{id}/messages endpoint has been observed
-        // to miss the most recent inbound email when it arrived via an external
-        // email sync (e.g. replies to a forwarded address). The conversation
-        // object itself carries lastMessageBody/lastMessageDate which IS correct.
-        // If conv.lastMessageDate is newer than our newest fetched message, add
-        // a synthetic message from the conversation-level fields.
+        // to miss inbound emails entirely (seen with replies to eben@ebenforrest.com
+        // that come in via external email sync). The conversation object itself
+        // carries lastMessageBody/lastMessageDirection which ARE correct and
+        // reflect GHL's view of the actual most recent message in the thread.
+        //
+        // Trust the conversation-level fields: if conv.lastMessageBody is not
+        // already represented in the fetched messages (dedupe), synthesize a
+        // virtual message and insert it. Do NOT compare timestamps — the
+        // dateAdded on fetched messages reflects when GHL synced the message
+        // into its DB, not when it was sent, so timestamps can misorder
+        // messages relative to conv.lastMessageDate.
         if (debugInfo) debugInfo.syntheticSkips = [];
         for (const conv of conversations) {
-          if (!conv.lastMessageDate || !conv.lastMessageBody) {
+          if (!conv.lastMessageBody) {
             if (debugInfo) debugInfo.syntheticSkips.push({
               convId: conv.id,
-              reason: "missing lastMessageDate or lastMessageBody",
-              hasDate: !!conv.lastMessageDate,
-              hasBody: !!conv.lastMessageBody,
+              reason: "missing lastMessageBody",
             });
             continue;
           }
           const convDate = typeof conv.lastMessageDate === "number"
             ? new Date(conv.lastMessageDate).toISOString()
-            : conv.lastMessageDate;
-          const newestFetched = messages[0]?.dateAdded || null;
-          const isNewer =
-            !newestFetched ||
-            new Date(convDate).getTime() > new Date(newestFetched).getTime();
-          if (!isNewer) {
-            if (debugInfo) debugInfo.syntheticSkips.push({
-              convId: conv.id,
-              reason: "not newer than fetched",
-              convDate,
-              newestFetched,
-            });
-            continue;
-          }
+            : conv.lastMessageDate || new Date().toISOString();
 
           // Dedupe by checking whether the same body already exists in messages
           const bodyPrefix = conv.lastMessageBody.slice(0, 60);
