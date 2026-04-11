@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
@@ -413,7 +413,18 @@ export default function ClientDetailPage() {
 
       {/* Messages */}
       <div id="messages-section" className="mt-4 scroll-mt-4">
-        <h2 className="text-lg font-serif text-amari-charcoal mb-2">Recent Messages</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-lg font-serif text-amari-charcoal">Recent Messages</h2>
+          <a
+            href={`https://app.gohighlevel.com/v2/location/7pIO7FHVAyBT1jKGhfQM/contacts/detail/${client.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-amari-accent-warm hover:underline min-h-[36px] px-2 -mr-2"
+          >
+            Reply in GHL
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
         <MessageHistory messages={client.messages} />
       </div>
 
