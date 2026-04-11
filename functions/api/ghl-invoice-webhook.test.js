@@ -119,7 +119,7 @@ describe('selectSeriesInvoice', () => {
     expect(result.pkg.name).toBe('8-Session Series');
   });
 
-  it('honors preferredInvoiceId when provided', () => {
+  it('honors preferredInvoiceId when provided (matches _id)', () => {
     const result = selectSeriesInvoice(
       [
         invoice({ id: 'old', productId: PID.fourSeries, issueDate: '2026-01-01T00:00:00Z' }),
@@ -128,6 +128,24 @@ describe('selectSeriesInvoice', () => {
       'old',
     );
     expect(result.invoice._id).toBe('old');
+    expect(result.pkg.name).toBe('4-Session Series');
+  });
+
+  it('matches preferredInvoiceId against invoiceNumber (GHL merge tag format)', () => {
+    // GHL's {{invoice.number}} merge tag exposes "INV-000030" style numbers,
+    // not the database _id hex. selectSeriesInvoice must match both.
+    const invoices = [
+      {
+        ...invoice({ id: '69bb54a95aa10f5d7a21f0ca', productId: PID.eightSeries }),
+        invoiceNumber: 'INV-000030',
+      },
+      {
+        ...invoice({ id: '698563701ab09d641ba7ec71', productId: PID.fourSeries }),
+        invoiceNumber: 'INV-000028',
+      },
+    ];
+    const result = selectSeriesInvoice(invoices, 'INV-000028');
+    expect(result.invoice._id).toBe('698563701ab09d641ba7ec71');
     expect(result.pkg.name).toBe('4-Session Series');
   });
 

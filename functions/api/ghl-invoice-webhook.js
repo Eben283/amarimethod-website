@@ -115,12 +115,22 @@ function getCustomFieldValue(contact, fieldId) {
 
 // Extract the matching invoice from a list of a contact's invoices.
 // Returns { invoice, pkg } for the first one we can classify, else null.
+//
+// preferredInvoiceId matches against either the database _id / id (hex string)
+// OR the human-readable invoiceNumber / number (like "INV-000030") — GHL's
+// webhook merge tags expose the number, not the _id.
 export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
   if (!Array.isArray(invoices) || invoices.length === 0) return null;
 
-  // If the webhook gave us a specific invoice id, find it first.
   if (preferredInvoiceId) {
-    const match = invoices.find((inv) => (inv._id || inv.id) === preferredInvoiceId);
+    const match = invoices.find((inv) => {
+      return (
+        inv._id === preferredInvoiceId ||
+        inv.id === preferredInvoiceId ||
+        inv.invoiceNumber === preferredInvoiceId ||
+        inv.number === preferredInvoiceId
+      );
+    });
     if (match) {
       const items = match.invoiceItems || [];
       const pid = items[0]?.productId || null;
