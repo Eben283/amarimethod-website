@@ -126,8 +126,11 @@ async function refreshGhlToken(context, refreshToken) {
 }
 
 /**
- * Fetch wrapper for GHL API calls with auto-retry on 401.
- * If the first request returns 401, refreshes the token and retries once.
+ * Fetch wrapper for GHL API calls with auto-retry on 401, 429, and 5xx.
+ * - 401: refreshes OAuth token and retries once.
+ * - 429: waits using Retry-After header (or exponential backoff) then retries.
+ * - 5xx: retries with exponential backoff.
+ * Max 3 retry attempts for 429/5xx. 1 retry for 401.
  *
  * @param {object} context - Cloudflare Pages context (for env/KV)
  * @param {string} url - Full GHL API URL
@@ -138,9 +141,9 @@ export async function ghlFetch(context, url, options = {}) {
   const token = await getGhlToken(context);
   const headers = { ...ghlHeaders(token), ...options.headers };
 
-  const response = await fetch(url, { ...options, headers });
+  let response = await fetch(url, { ...options, headers });
 
-  // If 401, token might have expired mid-request — refresh and retry once
+  // 401 — token expired mid-request, refresh and retry once
   if (response.status === 401) {
     console.warn("[ghl] Got 401, attempting token refresh and retry");
     const kv = context.env.PORTAL_KV;
@@ -154,6 +157,28 @@ export async function ghlFetch(context, url, options = {}) {
         }
       }
     }
+    return response;
+  }
+
+  // 429 / 5xx — retry with backoff (max 3 attempts)
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    if (response.status !== 429 && response.status < 500) break;
+
+    const retryAfter = response.headers.get("Retry-After");
+    const backoffMs = retryAfter
+      ? parseInt(retryAfter, 10) * 1000
+      : Math.min(1000 * Math.pow(2, attempt), 10000);
+
+    console.warn(
+      `[ghl] ${response.status} on ${url.split("?")[0]} — retry ${attempt}/${MAX_RETRIES} after ${backoffMs}ms`,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, backoffMs));
+
+    const currentToken = await getGhlToken(context);
+    const retryHeaders = { ...ghlHeaders(currentToken), ...options.headers };
+    response = await fetch(url, { ...options, headers: retryHeaders });
   }
 
   return response;

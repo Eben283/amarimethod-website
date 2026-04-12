@@ -133,61 +133,71 @@ export async function onRequestGet(context) {
       return seriesType !== "none" || remaining > 0 || prepaidOverride;
     });
 
-    // Enrich each candidate with ledger data
-    const rows = await Promise.all(
-      candidates.map(async (c) => {
-        const capitalize = (s) =>
-          s ? s.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "";
-        const firstName = capitalize(c.firstName || "");
-        const lastName = capitalize(c.lastName || "");
-        const name = [firstName, lastName].filter(Boolean).join(" ") || c.email || "Unknown";
+    // Enrich each candidate with ledger data.
+    // Process in chunks of 5 to avoid GHL rate limits (~100 req/10s)
+    // and Cloudflare subrequest caps. Each candidate triggers ~4 GHL
+    // fetches inside computeSessionLedger.
+    const CONCURRENCY = 5;
+    const rows = [];
 
-        const fallbackSeriesType = getCustomField(c, "series_type", fieldDefs) || "none";
-        const fallbackRemaining = parseInt(getCustomField(c, "sessions_remaining", fieldDefs) ?? "0", 10);
-        const fallbackCompleted = parseInt(getCustomField(c, "sessions_completed", fieldDefs) ?? "0", 10);
-        const fallbackPrepaidOverride = (getCustomField(c, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
+    for (let i = 0; i < candidates.length; i += CONCURRENCY) {
+      const chunk = candidates.slice(i, i + CONCURRENCY);
+      const chunkResults = await Promise.all(
+        chunk.map(async (c) => {
+          const capitalize = (s) =>
+            s ? s.split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") : "";
+          const firstName = capitalize(c.firstName || "");
+          const lastName = capitalize(c.lastName || "");
+          const name = [firstName, lastName].filter(Boolean).join(" ") || c.email || "Unknown";
 
-        let ledger = {
-          seriesType: fallbackSeriesType,
-          purchased: null,
-          attended: fallbackCompleted,
-          remaining: fallbackRemaining,
-          lastSessionDate: null,
-          source: "custom-field",
-          confidence: "low",
-          ambiguities: ["session-ledger not available — reading custom fields directly"],
-          prepaidOverride: fallbackPrepaidOverride,
-        };
+          const fallbackSeriesType = getCustomField(c, "series_type", fieldDefs) || "none";
+          const fallbackRemaining = parseInt(getCustomField(c, "sessions_remaining", fieldDefs) ?? "0", 10);
+          const fallbackCompleted = parseInt(getCustomField(c, "sessions_completed", fieldDefs) ?? "0", 10);
+          const fallbackPrepaidOverride = (getCustomField(c, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
 
-        if (computeLedger) {
-          try {
-            const computed = await computeLedger(context, c.id, { fieldDefs });
-            if (computed) {
-              ledger = { ...ledger, ...computed };
+          let ledger = {
+            seriesType: fallbackSeriesType,
+            purchased: null,
+            attended: fallbackCompleted,
+            remaining: fallbackRemaining,
+            lastSessionDate: null,
+            source: "custom-field",
+            confidence: "low",
+            ambiguities: ["session-ledger not available — reading custom fields directly"],
+            prepaidOverride: fallbackPrepaidOverride,
+          };
+
+          if (computeLedger) {
+            try {
+              const computed = await computeLedger(context, c.id, { fieldDefs });
+              if (computed) {
+                ledger = { ...ledger, ...computed };
+              }
+            } catch (err) {
+              console.error(`[staff-balances] ledger error for ${c.id}: ${err.message}`);
+              ledger.ambiguities = [...ledger.ambiguities, `ledger error: ${err.message}`];
             }
-          } catch (err) {
-            console.error(`[staff-balances] ledger error for ${c.id}: ${err.message}`);
-            ledger.ambiguities = [...ledger.ambiguities, `ledger error: ${err.message}`];
           }
-        }
 
-        return {
-          id: c.id,
-          name,
-          email: c.email || "",
-          phone: c.phone || "",
-          seriesType: ledger.seriesType,
-          purchased: ledger.purchased,
-          attended: ledger.attended,
-          remaining: ledger.remaining,
-          lastSessionDate: ledger.lastSessionDate,
-          prepaidOverride: ledger.prepaidOverride,
-          source: ledger.source,
-          confidence: ledger.confidence,
-          ambiguities: ledger.ambiguities,
-        };
-      })
-    );
+          return {
+            id: c.id,
+            name,
+            email: c.email || "",
+            phone: c.phone || "",
+            seriesType: ledger.seriesType,
+            purchased: ledger.purchased,
+            attended: ledger.attended,
+            remaining: ledger.remaining,
+            lastSessionDate: ledger.lastSessionDate,
+            prepaidOverride: ledger.prepaidOverride,
+            source: ledger.source,
+            confidence: ledger.confidence,
+            ambiguities: ledger.ambiguities,
+          };
+        })
+      );
+      rows.push(...chunkResults);
+    }
 
     // Sort: highest remaining first, then most recent session
     const sorted = [...rows].sort((a, b) => {
