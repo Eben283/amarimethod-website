@@ -366,21 +366,29 @@ export async function onRequestGet(context) {
     const sessionPrepaid = ledger.remaining > 0 || ledger.prepaidOverride;
 
     // Parse quiz results from custom fields (set by /api/send-to-ghl)
-    const quizPattern = getCustomField(contact, "BvTGZ9O9ayecw5f0Nj76", fieldDefs);
-    const quizResults = quizPattern ? {
-      patternSignature: quizPattern,
-      recoveryPotentialScore: getCustomField(contact, "PhQQjTF1fiLgtnAgKZZP", fieldDefs),
-      primaryPainLocation: getCustomField(contact, "vKZTVAG7601lgV8413du", fieldDefs),
-      painDuration: getCustomField(contact, "wrYzlW0ta2SGD8cI5iTM", fieldDefs),
-      painIntensity: getCustomField(contact, "iCMhoomSzLnCUCcludwD", fieldDefs),
-      painTrigger: getCustomField(contact, "NaNk1OVQLu8CcONUnyNz", fieldDefs),
-      additionalPainAreas: getCustomField(contact, "NCDnl1jHDvDATpRKhkeV", fieldDefs),
-      painType: getCustomField(contact, "tIIxUQT8hrkpDYY3WhWn", fieldDefs),
-      treatmentsTried: getCustomField(contact, "y5HBXMycSnfFPSOcnR2y", fieldDefs),
-      treatmentResults: getCustomField(contact, "1MSGnUASa5Zd9lKoNdvO", fieldDefs),
-      aggravatingActivities: getCustomField(contact, "IqxEaCTcZpvGuDUC3O9c", fieldDefs),
-      dailyImpact: getCustomField(contact, "zin4frkDKBWvVoN7ztZW", fieldDefs),
-    } : null;
+    // Use short keys where available, fall back to raw field IDs for quiz fields
+    // that don't have short keys registered in fieldDefs yet.
+    const quizFieldMap = {
+      patternSignature: "BvTGZ9O9ayecw5f0Nj76",
+      recoveryPotentialScore: "PhQQjTF1fiLgtnAgKZZP",
+      primaryPainLocation: "vKZTVAG7601lgV8413du",
+      painDuration: "wrYzlW0ta2SGD8cI5iTM",
+      painIntensity: "iCMhoomSzLnCUCcludwD",
+      painTrigger: "NaNk1OVQLu8CcONUnyNz",
+      additionalPainAreas: "NCDnl1jHDvDATpRKhkeV",
+      painType: "tIIxUQT8hrkpDYY3WhWn",
+      treatmentsTried: "y5HBXMycSnfFPSOcnR2y",
+      treatmentResults: "1MSGnUASa5Zd9lKoNdvO",
+      aggravatingActivities: "IqxEaCTcZpvGuDUC3O9c",
+      dailyImpact: "zin4frkDKBWvVoN7ztZW",
+    };
+    const quizPattern = getCustomField(contact, quizFieldMap.patternSignature, fieldDefs);
+    const quizResults = quizPattern ? Object.fromEntries(
+      Object.entries(quizFieldMap).map(([key, fieldId]) => [
+        key,
+        getCustomField(contact, fieldId, fieldDefs),
+      ]),
+    ) : null;
 
     const capitalize = (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : "";
 

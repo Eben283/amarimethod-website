@@ -97,14 +97,11 @@ export async function onRequestPost(context) {
   const offsetMatch = startTime.match(/([+-]\d{2}:\d{2})$/);
   const tzOffset = offsetMatch ? offsetMatch[1] : '';
 
-  // Compute endTime by adding 50 min to the local time parts, then re-append offset.
-  const localStartTime = startTime.replace(/[+-]\d{2}:\d{2}$/, '').replace('Z', '');
-  const [dateStr, timeStr] = localStartTime.split('T');
-  const [hh, mm, ss = '00'] = timeStr.split(':');
-  const totalMinutes = parseInt(hh, 10) * 60 + parseInt(mm, 10) + 50;
-  const endHH = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
-  const endMM = String(totalMinutes % 60).padStart(2, '0');
-  const endTime = `${dateStr}T${endHH}:${endMM}:${ss}${tzOffset}`; // e.g. "2026-03-15T10:50:00-07:00"
+  // Compute endTime by adding 50 min via epoch ms to handle midnight-crossing slots.
+  const startMs = new Date(startTime).getTime();
+  const endMs = startMs + 50 * 60 * 1000;
+  const endDate = new Date(endMs);
+  const endTime = endDate.toISOString().replace('Z', tzOffset || 'Z');
 
   // Build the appointment payload
   const appointmentPayload = {

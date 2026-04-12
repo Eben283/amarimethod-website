@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { RefreshCw, Loader2, ChevronRight, Mail, MessageSquare, Phone } from 'lucide-react';
+import { RefreshCw, Loader2, ChevronRight, Mail, MessageSquare, Phone, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getConversations, ApiError } from '../lib/api';
 import type { ConversationSummary, ConversationFilter } from '../types/staff';
@@ -156,14 +156,15 @@ function ConversationRow({
   onTap: () => void;
 }) {
   const needsReply = conversation.needsReply;
+  const ghlUrl = `https://app.gohighlevel.com/v2/location/7pIO7FHVAyBT1jKGhfQM/contacts/detail/${conversation.contactId}`;
+
   return (
-    <button
-      onClick={onTap}
-      className={`staff-card-tap w-full text-left flex items-start gap-3 ${
+    <div
+      className={`staff-card-tap w-full flex items-start gap-3 ${
         needsReply ? 'border-l-2 border-l-amari-accent-warm' : ''
       }`}
     >
-      <div className="flex-1 min-w-0">
+      <button onClick={onTap} className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-amari-charcoal truncate">
             {conversation.contactName}
@@ -191,8 +192,18 @@ function ConversationRow({
             </>
           )}
         </div>
-      </div>
-      <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0 mt-1" />
-    </button>
+      </button>
+      <a
+        href={ghlUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 inline-flex items-center justify-center min-w-[36px] min-h-[36px] text-amari-text-muted hover:text-amari-accent-warm"
+        aria-label="Reply in GHL"
+        title="Reply in GHL"
+      >
+        <ExternalLink className="w-4 h-4" />
+      </a>
+    </div>
   );
 }
