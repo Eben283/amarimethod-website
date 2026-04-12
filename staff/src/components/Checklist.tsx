@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { generateChecklist } from '../data/generateChecklist';
 import type { ContactDetail, ChecklistState } from '../types/staff';
@@ -29,8 +29,18 @@ export default function Checklist({ appointmentId, client }: Props) {
   const template = generateChecklist(client);
 
   const [checked, setChecked] = useState<ChecklistState>(() => loadChecklistState(appointmentId));
+  const didMountRef = useRef(false);
 
   useEffect(() => {
+    setChecked(loadChecklistState(appointmentId));
+    didMountRef.current = false;
+  }, [appointmentId]);
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
     saveChecklistState(appointmentId, checked);
   }, [appointmentId, checked]);
 

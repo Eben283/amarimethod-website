@@ -167,7 +167,7 @@ export async function onRequestGet(context) {
     const rewardCode = getCustomField(contact, "referral_reward_code", fieldDefs) || null;
 
     // Sort appointments by date
-    const now = new Date().toISOString();
+    const nowMs = Date.now();
     const sortedAppointments = allAppointments
       .map((appt) => ({
         id: appt.id,
@@ -180,9 +180,15 @@ export async function onRequestGet(context) {
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 
     // Split into past and upcoming
-    const pastAppointments = sortedAppointments.filter((a) => a.startTime < now);
+    const pastAppointments = sortedAppointments.filter((a) => {
+      const ms = new Date(a.startTime).getTime();
+      return Number.isFinite(ms) && ms < nowMs;
+    });
     const upcomingAppointments = sortedAppointments
-      .filter((a) => a.startTime >= now && a.status !== "cancelled")
+      .filter((a) => {
+        const ms = new Date(a.startTime).getTime();
+        return Number.isFinite(ms) && ms >= nowMs && a.status !== "cancelled";
+      })
       .reverse(); // Soonest first for upcoming
 
     // Capitalize first letter of names

@@ -310,9 +310,14 @@ async function getGhlSummary(context) {
     const now = new Date();
     const startDate = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
 
+    // Build startTime + endTime as epoch milliseconds — GHL's /calendars/events
+    // endpoint rejects ISO strings (silently empty or 422).
+    const dayStartMs = new Date(`${startDate}T00:00:00${getPacificOffset()}`).getTime();
+    const dayEndMs = new Date(`${startDate}T23:59:59.999${getPacificOffset()}`).getTime();
+
     // Fetch appointments and pipeline in parallel
     const [apptResp, pipeResp] = await Promise.all([
-      ghlFetch(context, `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&startTime=${startDate}T00:00:00${getPacificOffset()}&endTime=${startDate}T23:59:59${getPacificOffset()}`),
+      ghlFetch(context, `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&startTime=${String(dayStartMs)}&endTime=${String(dayEndMs)}`),
       ghlFetch(context, `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`),
     ]);
 

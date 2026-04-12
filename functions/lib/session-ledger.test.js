@@ -715,6 +715,225 @@ describe('deriveLedger — attended cutoff', () => {
   });
 });
 
+describe('deriveLedger — upgrade-without-initial reconciliation', () => {
+  it('upgrade with matching initial order → purchased 4, no new ambiguity', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-01T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
+    expect(result.confidence).toBe('high');
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(false);
+  });
+
+  it('upgrade without matching initial order → purchased 4, ambiguity flagged', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-01T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
+    expect(result.confidence).toBe('low');
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(true);
+  });
+
+  it('8-upgrade without matching initial → purchased 8', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade to 8-Session',
+          amount: 1070,
+          createdAt: '2026-03-01T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(7);
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(true);
+  });
+
+  it('multiple upgrades without matching initials → adds N to purchased', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-02-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+      ],
+      appointments: [],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.remaining).toBe(8);
+    expect(
+      result.ambiguities.some((a) => /2 upgrade.*without matching initial/i.test(a)),
+    ).toBe(true);
+  });
+
+  it('direct 4-series purchase (Betsy-like) → no change, no new ambiguity', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: '4-Session Series',
+          amount: 720,
+          createdAt: '2026-03-13T14:00:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.followup, startTime: '2026-03-15T14:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-22T14:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(2);
+    expect(result.remaining).toBe(2);
+    expect(result.confidence).toBe('high');
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(false);
+  });
+
+  it('direct 8-series purchase (Danny-like) → no change, no new ambiguity', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        invoice({
+          productId: PID.eightSeries,
+          itemName: '8-Session Series',
+          amountPaid: 1295,
+          issueDate: '2026-03-18T18:00:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.followup, startTime: '2026-03-18T17:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(7);
+    expect(result.confidence).toBe('high');
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(false);
+  });
+
+  it("Zach Taylor regression: exact order set → purchased 12, remaining 7", () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade: Initial → 4-Session',
+          amount: 495,
+          createdAt: '2026-03-05T16:00:00Z',
+        }),
+        order({
+          sourceName: 'Follow-up Session',
+          amount: 190,
+          sourceType: 'calendar',
+          createdAt: '2026-03-14T18:00:00Z',
+        }),
+        order({
+          sourceName: 'Follow-up Session',
+          amount: 190,
+          sourceType: 'calendar',
+          createdAt: '2026-03-21T18:00:00Z',
+        }),
+        order({
+          sourceName: '8-Session Series',
+          amount: 1295,
+          createdAt: '2026-03-27T21:40:00Z',
+        }),
+        order({
+          sourceName: 'Follow-up Session',
+          amount: 190,
+          sourceType: 'calendar',
+          createdAt: '2026-03-27T23:17:00Z',
+        }),
+        order({
+          sourceName: 'Entrainment',
+          amount: 90,
+          sourceType: 'calendar',
+          createdAt: '2026-04-08T20:15:00Z',
+        }),
+        order({
+          sourceName: 'Follow-up Session',
+          amount: 190,
+          sourceType: 'calendar',
+          createdAt: '2026-04-08T21:34:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-05T15:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-13T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-18T17:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-27T20:30:00Z' }),
+        appt({ calendarId: CAL.entrainment, startTime: '2026-04-08T20:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-04-08T21:00:00Z' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(12);
+    expect(result.attended).toBe(5);
+    expect(result.remaining).toBe(7);
+    expect(result.seriesType).toBe('8-session');
+    expect(result.confidence).toBe('low');
+    expect(
+      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
+    ).toBe(true);
+  });
+});
+
 describe('SERIES_CALENDAR_IDS', () => {
   it('contains the 6 series calendar IDs (2 initial + 4 follow-up)', () => {
     expect(SERIES_CALENDAR_IDS.size).toBe(6);

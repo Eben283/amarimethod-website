@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -37,13 +37,18 @@ export default function ClientDetailPage() {
   const [markingNotFit, setMarkingNotFit] = useState(false);
   const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
-  const saveTimerRef = useState<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
 
   function handleProgressUpdate(next: ClientModuleData) {
     setProgress(next);
-    // Debounce save to GHL — wait 800ms after last change
-    if (saveTimerRef[0]) clearTimeout(saveTimerRef[0]);
-    saveTimerRef[0] = setTimeout(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
       if (client) {
         saveProgress(client.id, next).catch((err) => {
           console.error('Failed to save progress:', err);

@@ -204,8 +204,30 @@ export function deriveLedger({
   const invoiceClassifications = invoices.map(classifyInvoice);
   const classifications = [...orderClassifications, ...invoiceClassifications];
 
-  const purchased = classifications.reduce((sum, c) => sum + c.sessions, 0);
+  const purchasedFromClassifications = classifications.reduce(
+    (sum, c) => sum + c.sessions,
+    0,
+  );
   const seriesType = determineSeriesType(classifications);
+
+  // Upgrade-without-initial reconciliation: upgrade classifiers (4-upgrade +3,
+  // 8-upgrade +7) assume a matching `initial` classification exists. When it
+  // doesn't (cash/Square/comped/retired product), purchased is short by 1 per
+  // unmatched upgrade. The attended side still counts the initial appointment,
+  // so we compensate here.
+  const upgradeCount = classifications.filter(
+    (c) => c.type === "4-upgrade" || c.type === "8-upgrade",
+  ).length;
+  const initialCount = classifications.filter((c) => c.type === "initial").length;
+  const unmatchedUpgrades = Math.max(0, upgradeCount - initialCount);
+  const purchased = purchasedFromClassifications + unmatchedUpgrades;
+  if (unmatchedUpgrades > 0) {
+    ambiguities.push(
+      `${unmatchedUpgrades} upgrade order(s) without matching initial — ` +
+        `adding ${unmatchedUpgrades} to purchased (initial likely paid via ` +
+        `cash/Square, retired product, or comped)`,
+    );
+  }
 
   // 2. Find the earliest active-package purchase DAY (YYYY-MM-DD). Attended
   // sessions before this day pre-date the current prepaid balance (e.g.,
