@@ -210,24 +210,18 @@ export function deriveLedger({
   );
   const seriesType = determineSeriesType(classifications);
 
-  // Upgrade-without-initial reconciliation: upgrade classifiers (4-upgrade +3,
-  // 8-upgrade +7) assume a matching `initial` classification exists. When it
-  // doesn't (cash/Square/comped/retired product), purchased is short by 1 per
-  // unmatched upgrade. The attended side still counts the initial appointment,
-  // so we compensate here.
-  const upgradeCount = classifications.filter(
-    (c) => c.type === "4-upgrade" || c.type === "8-upgrade",
-  ).length;
-  const initialCount = classifications.filter((c) => c.type === "initial").length;
-  const unmatchedUpgrades = Math.max(0, upgradeCount - initialCount);
-  const purchased = purchasedFromClassifications + unmatchedUpgrades;
-  if (unmatchedUpgrades > 0) {
-    ambiguities.push(
-      `${unmatchedUpgrades} upgrade order(s) without matching initial — ` +
-        `adding ${unmatchedUpgrades} to purchased (initial likely paid via ` +
-        `cash/Square, retired product, or comped)`,
-    );
-  }
+  // Upgrade orders (4-upgrade +3, 8-upgrade +7) already account for the
+  // initial session correctly: the client paid $225 for the initial, then
+  // paid the upgrade difference ($495 or $1,070). The upgrade gives them
+  // 3 or 7 ADDITIONAL sessions on top of the 1 they already used. Whether
+  // or not a separate "initial" order exists in the system doesn't change
+  // the purchased count — the upgrade math is self-contained.
+  //
+  // The attended side counts the initial appointment via SERIES_CALENDAR_IDS
+  // (which includes initial calendars), but that appointment was the session
+  // they used before upgrading — it's already "consumed" and the upgrade
+  // sessions start after it.
+  const purchased = purchasedFromClassifications;
 
   // 2. Find the earliest active-package purchase DAY (YYYY-MM-DD). Attended
   // sessions before this day pre-date the current prepaid balance (e.g.,

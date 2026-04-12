@@ -715,8 +715,9 @@ describe('deriveLedger — attended cutoff', () => {
   });
 });
 
-describe('deriveLedger — upgrade-without-initial reconciliation', () => {
-  it('upgrade with matching initial order → purchased 4, no new ambiguity', () => {
+describe('deriveLedger — upgrade orders', () => {
+  it('upgrade with matching initial order → purchased 4', () => {
+    // Initial ($225) + upgrade ($495) = 1 + 3 = 4 sessions total
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -739,13 +740,12 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
     expect(result.purchased).toBe(4);
     expect(result.attended).toBe(1);
     expect(result.remaining).toBe(3);
-    expect(result.confidence).toBe('high');
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(false);
   });
 
-  it('upgrade without matching initial order → purchased 4, ambiguity flagged', () => {
+  it('upgrade without matching initial order → purchased 3 (upgrade only)', () => {
+    // No initial order in system — upgrade gives 3 sessions.
+    // The initial session was paid off-platform but the upgrade math
+    // is self-contained: $495 = 3 additional sessions.
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -760,16 +760,12 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
       ],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result.purchased).toBe(4);
+    expect(result.purchased).toBe(3);
     expect(result.attended).toBe(1);
-    expect(result.remaining).toBe(3);
-    expect(result.confidence).toBe('low');
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(true);
+    expect(result.remaining).toBe(2);
   });
 
-  it('8-upgrade without matching initial → purchased 8', () => {
+  it('8-upgrade without matching initial → purchased 7', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -784,15 +780,12 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
       ],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result.purchased).toBe(8);
+    expect(result.purchased).toBe(7);
     expect(result.attended).toBe(1);
-    expect(result.remaining).toBe(7);
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(true);
+    expect(result.remaining).toBe(6);
   });
 
-  it('multiple upgrades without matching initials → adds N to purchased', () => {
+  it('multiple upgrades without matching initials → 3+3=6', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -810,14 +803,11 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
       appointments: [],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result.purchased).toBe(8);
-    expect(result.remaining).toBe(8);
-    expect(
-      result.ambiguities.some((a) => /2 upgrade.*without matching initial/i.test(a)),
-    ).toBe(true);
+    expect(result.purchased).toBe(6);
+    expect(result.remaining).toBe(6);
   });
 
-  it('direct 4-series purchase (Betsy-like) → no change, no new ambiguity', () => {
+  it('direct 4-series purchase (Betsy-like) → purchased 4', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -836,13 +826,9 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
     expect(result.purchased).toBe(4);
     expect(result.attended).toBe(2);
     expect(result.remaining).toBe(2);
-    expect(result.confidence).toBe('high');
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(false);
   });
 
-  it('direct 8-series purchase (Danny-like) → no change, no new ambiguity', () => {
+  it('direct 8-series purchase (Danny-like) → purchased 8', () => {
     const result = deriveLedger({
       contact: contact(),
       orders: [],
@@ -862,13 +848,12 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
     expect(result.purchased).toBe(8);
     expect(result.attended).toBe(1);
     expect(result.remaining).toBe(7);
-    expect(result.confidence).toBe('high');
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(false);
   });
 
-  it("Zach Taylor regression: exact order set → purchased 12, remaining 7", () => {
+  it("Zach Taylor: upgrade (3) + 8-series (8) = 11 purchased, 5 attended, 6 remaining", () => {
+    // Zach: 4-upgrade on 3/5 (+3) + 8-series on 3/27 (+8) = 11 purchased
+    // 5 attended series sessions (initial + 4 follow-ups, entrainment excluded)
+    // 11 - 5 = 6 remaining
     const result = deriveLedger({
       contact: contact(),
       orders: [
@@ -923,14 +908,10 @@ describe('deriveLedger — upgrade-without-initial reconciliation', () => {
       ],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result.purchased).toBe(12);
+    expect(result.purchased).toBe(11);
     expect(result.attended).toBe(5);
-    expect(result.remaining).toBe(7);
+    expect(result.remaining).toBe(6);
     expect(result.seriesType).toBe('8-session');
-    expect(result.confidence).toBe('low');
-    expect(
-      result.ambiguities.some((a) => /upgrade.*without matching initial/i.test(a)),
-    ).toBe(true);
   });
 });
 
