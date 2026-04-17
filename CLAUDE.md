@@ -101,6 +101,46 @@ cd quiz && npx vite build   # Build quiz only
 - CSS utility classes: `portal-card`, `portal-btn-secondary`
 - Font: Serif for headings, sans-serif for body
 
-## Protocol References
-- Amari Method uses an **8-step protocol** (never 7-step — that was the old version)
-- Session count for protocol: 8 (not 7, not 12)
+## Positioning & Brand (locked 2026-04-17)
+
+### One-line position
+"A doctor who teaches you to heal yourself."
+
+### What it is
+Dr. Garrett Hewstan developed 8 core rebalancing protocols after 25 years of clinical practice. Clients learn them in sessions and do them at home. Most feel relief in their first session.
+
+### Terminology rules
+| Use | Don't use |
+|-----|-----------|
+| Protocols | Exercises |
+| 8 core protocols | 8-step protocol |
+| Dr. Garrett Hewstan (no suffix) | Chiropractor, DC, chiropractic |
+| Out of balance / rebalancing | Muscle imbalances, compensation patterns |
+| Guide / coach | Healer (for Garrett) |
+| "Your body can heal you" | "Fix" |
+| Gateway positions | (don't source to Network Spinal) |
+
+### Don't mention
+- Network Spinal / NSA — Garrett doesn't want the association
+- Chiropractic / DC — use "Dr." only, let it work silently
+- Specific client counts (don't say "200+ clients") — let testimonials speak
+- Woo language (reorganizational healing, body-mind-spirit, energetic harmony)
+
+### Homepage structure (current, 2026-04-17)
+6 sections: Hero → Testimonials → Why → How It Works → Dr. Garrett → Booking ($225) → Waterfall CTA → FAQ (6 questions)
+
+### Copy voice
+- Write like a person explaining something they care about
+- No AI copywriter patterns (dramatic fragments, em dash overuse, forced punchline endings)
+- Garrett's actual phrases are better than paraphrases
+- Read every line as a skeptical visitor would hear it
+- If it's not true, don't write it
+
+### Design direction
+- Warm, grounded, confident. Not clinical, not woo.
+- Premium but approachable. Think Aesop, not hospital.
+- Fonts: Bona Nova (serif headings), DM Sans (body)
+- Colors: warm sand (#f5efe8), charcoal (#3A3A3A), accent warm (#EBA584)
+
+### Rewrite brief
+Full positioning document with all transcript insights and decisions: `../../amari/content/website-rewrite-brief.md`

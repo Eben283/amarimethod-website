@@ -491,10 +491,10 @@ document.addEventListener('click', function(e) {
   };
 })();
 
-// Testimonial carousel: pause on mobile touch (touchstart/touchend)
+// Editorial marquee: pause on mobile touch (touchstart/touchend)
 (function() {
-  var wrapper = document.querySelector('.testimonials-scroll-wrapper');
-  var track = document.querySelector('.testimonials-scroll');
+  var wrapper = document.querySelector('.t-scroll');
+  var track = document.querySelector('.t-track');
   if (!wrapper || !track) return;
   var resumeTimer = null;
 
@@ -504,8 +504,6 @@ document.addEventListener('click', function(e) {
   }, { passive: true });
 
   function resumeScroll() {
-    // Small delay lets the browser finish processing the touch event
-    // before toggling animation state — fixes mobile Safari freeze bug
     if (resumeTimer) clearTimeout(resumeTimer);
     resumeTimer = setTimeout(function() {
       track.classList.remove('paused');

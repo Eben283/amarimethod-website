@@ -1,0 +1,21 @@
+{
+  "name": "Chief of Staff",
+  "short_name": "CoS",
+  "start_url": "/cos/",
+  "scope": "/cos/",
+  "display": "standalone",
+  "background_color": "#0F1225",
+  "theme_color": "#1B1F3B",
+  "icons": [
+    {
+      "src": "/cos-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/cos-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
