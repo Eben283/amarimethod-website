@@ -123,23 +123,30 @@ document.addEventListener('DOMContentLoaded', function() {
   let hasAnimated = false;
 
   function animateCounter(element, finalValue) {
-    const is200Plus = element.textContent.includes('200');
-    const target = is200Plus ? 200 : (finalValue === '25+' ? 25 : 1);
-    const duration = 1800;
-    const startTime = Date.now();
+    var suffix = '';
+    var numericTarget;
+
+    if (finalValue.includes('+')) {
+      suffix = '+';
+      numericTarget = parseFloat(finalValue.replace('+', ''));
+    } else {
+      numericTarget = parseFloat(finalValue);
+    }
+
+    var isDecimal = finalValue.includes('.');
+    var duration = 1800;
+    var startTime = Date.now();
 
     function update() {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const currentValue = Math.round(easeOutQuart * target);
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      var easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      var currentValue = easeOutQuart * numericTarget;
 
-      if (is200Plus) {
-        element.textContent = currentValue + '+';
-      } else if (finalValue === '25+') {
-        element.textContent = currentValue + '+';
+      if (isDecimal) {
+        element.textContent = currentValue.toFixed(1) + suffix;
       } else {
-        element.textContent = currentValue;
+        element.textContent = Math.round(currentValue) + suffix;
       }
 
       if (progress < 1) {
