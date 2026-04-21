@@ -263,6 +263,86 @@ export async function auditTagConsistency({ cache }) {
   return issues;
 }
 
+// ── Rule Set 3b: Historical series_type drop detection ──
+//
+// Flags contacts with sessions_completed > 0 but series_type null/empty ONLY IF
+// their order history shows they bought a pack (4-session / 8-session / upgrade).
+// Per-session payers (Single Follow-up, Entrainment only) are correctly null
+// and must NOT be flagged.
+//
+// Example that caused this rule to exist: Tae-Woo Kim had SC=3 + series_type=null
+// and was flagged as a P1 drift gap on 2026-04-11. Investigation on 2026-04-21
+// showed he was a per-session payer (3x single orders totaling $370, no pack).
+// series_type=null was correct; the rule was the bug.
+
+export async function auditSeriesTypeDrops({ env, cache }) {
+  const issues = [];
+
+  // Fetch a wider window of orders to catch pack purchases made months ago.
+  // limit=100 is the API cap; if more are needed later, add pagination.
+  let orders = [];
+  try {
+    const data = await ghlFetch(
+      env,
+      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
+    );
+    const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
+    orders = (data.orders || data.data || []).filter((o) => {
+      const d = new Date(o.createdAt || o.dateAdded);
+      return d.getTime() >= cutoff;
+    });
+  } catch (err) {
+    issues.push(issue(
+      "warning", "consistency", "", "",
+      "series_type_drop_check_skipped",
+      "Should be able to query orders for historical series_type drop detection",
+      `Orders API error: ${err.message}`,
+      "Check payments/orders.readonly scope"
+    ));
+    return issues;
+  }
+
+  // Build: contactId → expected seriesType from most recent pack order
+  const packBuyers = new Map();
+  for (const order of orders) {
+    const contactId = order.contactId || order.contact?.id;
+    if (!contactId) continue;
+    const items = order.items || order.lineItems || [];
+    const productId = items[0]?.priceId || items[0]?.productId || order.productId;
+    const productConfig = productId ? PRODUCT_MAP[productId] : null;
+    if (!productConfig || !productConfig.seriesType) continue;
+    packBuyers.set(contactId, {
+      expected: productConfig.seriesType,
+      productName: productConfig.name,
+    });
+  }
+
+  for (const [, cached] of cache.contacts) {
+    if (!cached) continue;
+    const { contact, name, fields } = cached;
+
+    const sc = parseInt(fields.sessions_completed, 10);
+    if (isNaN(sc) || sc <= 0) continue;
+
+    const seriesType = fields.series_type;
+    const isMissing = !seriesType || seriesType === "" || seriesType === "none";
+    if (!isMissing) continue;
+
+    const pack = packBuyers.get(contact.id);
+    if (!pack) continue; // Per-session payer — correct state, skip.
+
+    issues.push(issue(
+      "critical", "consistency", contact.id, name,
+      "series_type_dropped",
+      `series_type should be "${pack.expected}" — contact bought ${pack.productName}`,
+      `series_type is "${fields.series_type ?? "null"}" with sessions_completed=${sc}`,
+      "Set series_type field manually in GHL; check purchase webhook for the drop"
+    ));
+  }
+
+  return issues;
+}
+
 // ── Rule Set 4: Communication verification ──
 
 export async function auditCommunications({ cache, appointments }) {

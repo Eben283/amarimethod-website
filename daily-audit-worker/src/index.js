@@ -3,7 +3,7 @@
 // Results are read by /api/daily-audit Pages Function → consumed by /day skill.
 
 import { ghlFetch, fetchAppointmentsForDate, todayPacific, LOCATION_ID, ContactCache } from "./ghl.js";
-import { auditAppointments, auditPurchases, auditTagConsistency, auditCommunications, auditStateMismatches } from "./rules.js";
+import { auditAppointments, auditPurchases, auditTagConsistency, auditSeriesTypeDrops, auditCommunications, auditStateMismatches } from "./rules.js";
 
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
@@ -83,10 +83,11 @@ async function runAudit(env) {
 
   const ctx = { env, cache, appointments: allAppointments, auditStart, auditEnd };
 
-  // Run all 5 rule sets sequentially (they share the cache and may make API calls)
+  // Run all rule sets sequentially (they share the cache and may make API calls)
   const apptIssues = await auditAppointments(ctx);
   const purchaseResult = await auditPurchases(ctx);
   const consistencyIssues = await auditTagConsistency(ctx);
+  const seriesDropIssues = await auditSeriesTypeDrops(ctx);
   const commIssues = await auditCommunications(ctx);
   const mismatchIssues = await auditStateMismatches(ctx);
 
@@ -94,6 +95,7 @@ async function runAudit(env) {
     ...apptIssues,
     ...purchaseResult.issues,
     ...consistencyIssues,
+    ...seriesDropIssues,
     ...commIssues,
     ...mismatchIssues,
   ];
