@@ -3963,6 +3963,59 @@ footer {
   letter-spacing: 0.02em;
 }
 
+/* Editorial Light CTA — softer off-ramp (e.g. free discovery call) */
+.editorial-cta-light {
+  --ink: #1a1613;
+  --paper: #f7f2e8;
+  --accent: #c56b4e;
+  padding: 120px 0;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid rgba(26, 22, 19, 0.08);
+}
+
+.editorial-cta-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(197, 107, 78, 0.08), transparent 60%);
+  pointer-events: none;
+}
+
+.editorial-cta-light .editorial-cta-heading {
+  font-size: clamp(32px, 5vw, 64px);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  color: var(--ink);
+  max-width: 20ch;
+}
+
+.editorial-cta-light .editorial-cta-heading em {
+  color: var(--accent);
+}
+
+.editorial-cta-light .editorial-cta-subtitle {
+  color: rgba(26, 22, 19, 0.7);
+  margin-top: 24px;
+}
+
+.editorial-cta-light .editorial-cta-btn {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.editorial-cta-light .editorial-cta-btn:hover {
+  background: var(--accent);
+  color: var(--paper);
+}
+
+.editorial-cta-light .editorial-cta-meta {
+  color: rgba(26, 22, 19, 0.45);
+}
+
 .hero-cta {
   display: flex;
   gap: 1rem;
