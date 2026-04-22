@@ -2906,6 +2906,19 @@ footer {
   color: white;
 }
 
+/* Ghost-on-dark variant for .btn-secondary inside the dark .cta-section */
+.cta-section .btn-secondary {
+  background: transparent;
+  border-color: rgba(247, 242, 232, 0.4);
+  color: #f7f2e8 !important;
+}
+
+.cta-section .btn-secondary:hover {
+  background: #f7f2e8;
+  border-color: #f7f2e8;
+  color: #252525 !important;
+}
+
 .cta-subtitle {
   color: var(--color-text-muted);
   font-size: 1.05rem;
@@ -6121,13 +6134,13 @@ textarea:focus-visible {
 
 .about-cta .btn-secondary {
   border-color: rgba(247, 242, 232, 0.3);
-  color: var(--bg-primary, #FFFCF5);
+  color: var(--bg-primary, #FFFCF5) !important;
 }
 
 .about-cta .btn-secondary:hover {
   border-color: var(--bg-primary, #FFFCF5);
   background: var(--bg-primary, #FFFCF5);
-  color: var(--amari-charcoal, #1F1D1A);
+  color: var(--amari-charcoal, #1F1D1A) !important;
 }
 
 /* --- About Page Responsive --- */
