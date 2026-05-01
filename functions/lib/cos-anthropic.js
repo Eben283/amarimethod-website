@@ -20,14 +20,25 @@ const FIELD_SERIES_TYPE = "3i93lTkmuAV49s9nh0q8";
 export const TOOLS = [
   {
     name: "search_contacts",
-    description: "Search GHL contacts by name, email, or phone substring. Returns matching contacts with their custom fields (sessions_remaining, sessions_completed, series_type), tags, and dates. Use to look up a specific person by name, or to get candidates for further filtering by tag.",
+    description: "Search GHL contacts by name, email, phone, or tag. Returns matching contacts with custom fields (sessions_remaining, sessions_completed, series_type), tags, and dates. Use 'name' for substring search, 'tag' to filter by an exact tag like 'affiliate-partner' or 'affiliate-referral'. You can combine name + tag.",
     input_schema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Name, email, or phone substring to search for. Use empty string '' to list all contacts (paginated)." },
+        name: { type: "string", description: "Name/email/phone substring (case-insensitive)" },
+        tag: { type: "string", description: "Exact tag value (e.g. 'affiliate-partner', 'affiliate-referral', 'trainer-outreach')" },
         limit: { type: "integer", description: "Max contacts to return (default 50, max 100)" },
       },
-      required: ["query"],
+    },
+  },
+  {
+    name: "get_contact",
+    description: "Fetch a single contact by ID. Returns full contact record including all custom fields (use this when search_contacts found someone by tag and you need their referralSource, partner_contact_id, etc.)",
+    input_schema: {
+      type: "object",
+      properties: {
+        contact_id: { type: "string", description: "The GHL contact ID" },
+      },
+      required: ["contact_id"],
     },
   },
   {
@@ -81,12 +92,29 @@ export async function executeTool(context, toolName, input) {
   try {
     if (toolName === "search_contacts") {
       const limit = Math.min(Number(input.limit) || 50, 100);
-      const query = String(input.query || "");
-      const url = `https://services.leadconnectorhq.com/contacts/search?locationId=${LOCATION_ID}&query=${encodeURIComponent(query)}&limit=${limit}`;
-      const resp = await ghlFetch(context, url);
+      const filters = [];
+      if (input.name) {
+        // GHL multi-search: queries name/email/phone via 'searchAfter' or filter
+        // The simple approach: use the 'query' field at top level
+      }
+      if (input.tag) {
+        filters.push({ field: "tags", operator: "contains", value: input.tag });
+      }
+      const body = {
+        locationId: LOCATION_ID,
+        pageLimit: limit,
+        ...(input.name ? { query: input.name } : {}),
+        ...(filters.length > 0 ? { filters } : {}),
+      };
+      const url = `https://services.leadconnectorhq.com/contacts/search`;
+      const resp = await ghlFetch(context, url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
       if (!resp.ok) {
         const errBody = await resp.text().catch(() => "");
-        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)} req=${JSON.stringify(body).slice(0, 200)}`);
         return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
       }
       const data = await resp.json();
@@ -107,6 +135,35 @@ export async function executeTool(context, toolName, input) {
         };
       });
       return JSON.stringify({ count: contacts.length, contacts }, null, 2);
+    }
+
+    if (toolName === "get_contact") {
+      const url = `https://services.leadconnectorhq.com/contacts/${encodeURIComponent(input.contact_id)}`;
+      const resp = await ghlFetch(context, url);
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      }
+      const data = await resp.json();
+      const c = data.contact || data;
+      const fields = {};
+      for (const f of (c.customFields || c.customField || [])) fields[f.id] = f.value;
+      return JSON.stringify({
+        id: c.id,
+        name: `${c.firstName || ""} ${c.lastName || ""}`.trim(),
+        email: c.email,
+        phone: c.phone,
+        tags: c.tags || [],
+        custom_fields_named: {
+          sessions_remaining: fields[FIELD_SESSIONS_REMAINING] ?? null,
+          sessions_completed: fields[FIELD_SESSIONS_COMPLETED] ?? null,
+          series_type: fields[FIELD_SERIES_TYPE] ?? null,
+        },
+        custom_fields_raw: fields,
+        last_activity: c.lastActivity ? new Date(c.lastActivity).toISOString() : null,
+        date_added: c.dateAdded ? new Date(c.dateAdded).toISOString() : null,
+      }, null, 2);
     }
 
     if (toolName === "get_contact_appointments") {

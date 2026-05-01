@@ -420,9 +420,14 @@ function extractNames(message) {
 async function lookupContact(context, name) {
   const locationId = "7pIO7FHVAyBT1jKGhfQM";
 
-  // Search for the contact
+  // Search for the contact via POST /contacts/search (the GET form returns 400)
   const searchResp = await ghlFetch(context,
-    `https://services.leadconnectorhq.com/contacts/search?locationId=${locationId}&query=${encodeURIComponent(name)}&limit=5`
+    `https://services.leadconnectorhq.com/contacts/search`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locationId, pageLimit: 5, query: name }),
+    }
   );
 
   if (!searchResp.ok) return null;
