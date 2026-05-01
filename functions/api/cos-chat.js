@@ -6,8 +6,8 @@ import { getTodayCalendar, getRecentEmails, createCalendarReminder, getPacificOf
 import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
-import { runGhlPlanner } from "../lib/cos-ghl-planner.js";
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
+import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -674,9 +674,9 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Message is required" }, 400, origin);
   }
 
-  const OPENROUTER_API_KEY = context.env.OPENROUTER_API_KEY;
-  if (!OPENROUTER_API_KEY) {
-    return jsonResponse({ error: "Chat not configured" }, 500, origin);
+  const ANTHROPIC_API_KEY = context.env.ANTHROPIC_API_KEY;
+  if (!ANTHROPIC_API_KEY) {
+    return jsonResponse({ error: "Chat not configured (missing ANTHROPIC_API_KEY)" }, 500, origin);
   }
 
   const kv = context.env.PORTAL_KV;
@@ -710,8 +710,8 @@ export async function onRequestPost(context) {
   const needsParking = mentionsParking(userMessage);
   const needsMusic = /music|song|play|playing|playlist|spotify|skip|pause|volume|shuffle|track|album|artist|listen|queue|what.s playing|next song|previous song/i.test(msg);
   const needsWorkflow = /workflow|trigger|automat|no.show|attendance|nurture|sequence|funnel|what (email|sms|message).*(send|get|receive)|what happens when|how does .* work|tag.*(add|remov)|condition|branch|purchase system|sessions?.remaining|series.completion|known issue|pending fix|ghl.*(audit|fix|issue|bug)|calendar.*coverage|tier [1-4]/i.test(msg);
-  // Broader segmentation/data-question trigger — fires when narrow lookups would miss
-  const needsGhlPlanner = /lapsed|inactive|haven.t (booked|come|been|referr|sent)|reach out|reactivat|near (end|completion|finish)|paused|stalled|active client|in.{0,4}pipeline|funnel|how many (clients|leads|opportunities|trainers|partners)|who (has|hasn|haven|needs|should|got|received)|series.{0,3}(end|completion|near)|past due|overdue|drop.?off|churn|trainer|partner|comp(ed)? session|referr/i.test(msg);
+  // Note: segmentation questions are now handled via native Anthropic tool use
+  // (search_contacts, get_contact_appointments, etc.) — no regex gate needed.
 
   const cacheKey = `cos:cache:${cosUser}:${dateKey}`;
   const cachedRaw = kv ? await kv.get(cacheKey) : null;
@@ -737,7 +737,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText, spotifyPlayback, spotifyPlaylists, ghlKnowledgeRaw, ghlPlannerResult] = await Promise.all([
+  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText, spotifyPlayback, spotifyPlaylists, ghlKnowledgeRaw] = await Promise.all([
     needsContact ? getContactContext(context, userMessage).catch(() => null) : Promise.resolve(null),
     needsParking
       ? getParkingRegulations(
@@ -752,7 +752,6 @@ export async function onRequestPost(context) {
     needsMusic ? getCurrentPlayback(context).catch(() => null) : Promise.resolve(null),
     needsMusic ? getUserPlaylists(context).catch(() => []) : Promise.resolve([]),
     needsWorkflow && kv ? kv.get("cos:ghl:knowledge").catch(() => null) : Promise.resolve(null),
-    needsGhlPlanner ? runGhlPlanner(context, userMessage, OPENROUTER_API_KEY).catch(() => null) : Promise.resolve(null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -810,7 +809,6 @@ export async function onRequestPost(context) {
     dailyBriefing,
     ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
     contactContext,
-    ghlPlannerResult,
     ghlKnowledgeContext,
     vaultContext,
     parkingContext,
@@ -826,91 +824,66 @@ export async function onRequestPost(context) {
 
   const systemPrompt = buildSystemPrompt(contextDoc, calendarAndEmail || null, ghlContext, cosUser);
 
-  const openRouterMessages = [
-    { role: "system", content: systemPrompt },
-    ...recentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content })),
-  ];
+  // Build the Anthropic messages array — system goes in body.system, not here
+  const anthropicMessages = recentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
 
-  // Add the latest user message — with image if present
+  // Add the latest user message — with image if present (Anthropic image block format)
   if (userImage) {
-    openRouterMessages.push({
-      role: "user",
-      content: [
-        { type: "text", text: userMessage || "What's in this image?" },
-        { type: "image_url", image_url: { url: userImage } },
-      ],
-    });
+    const imageMatch = userImage.match(/^data:([^;]+);base64,(.+)$/);
+    const userContent = [{ type: "text", text: userMessage || "What's in this image?" }];
+    if (imageMatch) {
+      userContent.push({
+        type: "image",
+        source: { type: "base64", media_type: imageMatch[1], data: imageMatch[2] },
+      });
+    }
+    anthropicMessages.push({ role: "user", content: userContent });
   } else {
-    openRouterMessages.push({ role: "user", content: userMessage });
+    anthropicMessages.push({ role: "user", content: userMessage });
   }
 
-  // Add pending actions context if any
+  // Append pending actions to system prompt (kept inside cached block — usually stable)
+  let finalSystemPrompt = systemPrompt;
   if (pendingActions.length > 0) {
     const actionSummary = pendingActions.map(a =>
       `- [${a.type}] ${a.item} (${a.status})`
     ).join("\n");
-    openRouterMessages[0].content += `\n\n## Pending Actions (queued for desk processing)\n${actionSummary}`;
+    finalSystemPrompt += `\n\n## Pending Actions (queued for desk processing)\n${actionSummary}`;
   }
 
-  // Call OpenRouter with streaming
-  const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": "https://www.amarimethod.com",
-      "X-Title": "Chief of Staff",
-    },
-    body: JSON.stringify({
-      model: "anthropic/claude-sonnet-4-6",
-      messages: openRouterMessages,
-      stream: true,
-      max_tokens: 2048,
-    }),
+  // Build Anthropic request with prompt caching + tool use
+  const requestBody = buildRequestBody({
+    system: finalSystemPrompt,
+    messages: anthropicMessages,
+    includeTools: true,
+    maxTokens: 2048,
   });
-
-  if (!openRouterResponse.ok) {
-    const errText = await openRouterResponse.text();
-    console.error("[cos-chat] OpenRouter error:", openRouterResponse.status, errText);
-    return jsonResponse({ error: "Chat service unavailable" }, 422, origin);
-  }
 
   // Stream the response back via SSE
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder = new TextEncoder();
 
-  // Process the OpenRouter stream in the background
   context.waitUntil((async () => {
-    let fullContent = "";
-    let sendBuffer = ""; // Buffer for stripping <!--ACTION/CONTEXT--> blocks
-    const reader = openRouterResponse.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
+    let sendBuffer = ""; // Buffer for stripping <!--ACTION/CONTEXT--> blocks across deltas
 
     async function flushSafe() {
-      // Send everything in sendBuffer that we're sure isn't part of a block.
-      // Hold back content from the last "<!--" onward (might be an incomplete block).
       const markerIdx = sendBuffer.lastIndexOf("<!--");
       if (markerIdx === -1) {
-        // No marker — safe to send everything
         if (sendBuffer) {
           await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: sendBuffer })}\n\n`));
           sendBuffer = "";
         }
       } else {
-        // Check if there's a complete block (has closing -->)
         const afterMarker = sendBuffer.slice(markerIdx);
         const closeIdx = afterMarker.indexOf("-->");
         if (closeIdx !== -1) {
-          // Complete block found — strip it and send what's safe
           const cleaned = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER|SPOTIFY):.*?-->/gs, "");
           if (cleaned) {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: cleaned })}\n\n`));
           }
           sendBuffer = "";
         } else {
-          // Incomplete block — send everything before the marker, hold the rest
           const safe = sendBuffer.slice(0, markerIdx);
           if (safe) {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: safe })}\n\n`));
@@ -920,42 +893,34 @@ export async function onRequestPost(context) {
       }
     }
 
+    let fullContent = "";
+
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      const result = await streamWithTools({
+        apiKey: ANTHROPIC_API_KEY,
+        requestBody,
+        onTextDelta: async (delta) => {
+          fullContent += delta;
+          sendBuffer += delta;
+          await flushSafe();
+        },
+        executeToolFn: async (name, input) => {
+          console.log(`[cos-chat] tool call: ${name}`, JSON.stringify(input).slice(0, 200));
+          return await executeAnthropicTool(context, name, input);
+        },
+      });
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(data);
-            const delta = parsed.choices?.[0]?.delta?.content;
-            if (delta) {
-              fullContent += delta;
-              sendBuffer += delta;
-              await flushSafe();
-            }
-          } catch {
-            // Skip unparseable chunks
-          }
-        }
-      }
-
-      // Flush any remaining buffered content (strip complete blocks)
+      // Flush any tail content (strip remaining complete blocks)
       if (sendBuffer) {
-        const finalClean = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER):.*?-->/gs, "");
+        const finalClean = sendBuffer.replace(/<!--(?:ACTION|CONTEXT|REMINDER|SPOTIFY):.*?-->/gs, "");
         if (finalClean) {
           await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: finalClean })}\n\n`));
         }
         sendBuffer = "";
       }
+
+      // Log usage for cost monitoring
+      console.log(`[cos-chat] usage: in=${result.usage.input_tokens} out=${result.usage.output_tokens} cache_read=${result.usage.cache_read_input_tokens} cache_create=${result.usage.cache_creation_input_tokens} tools=${result.tool_calls.length}`);
 
       // Parse actions, context, reminders, and Spotify commands from the full response
       const actions = parseActions(fullContent);
