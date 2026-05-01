@@ -291,16 +291,28 @@ export default function ClientDetailPage() {
         <BodyGraph data={progress} onUpdate={handleProgressUpdate} />
       </div>
 
-      {/* Payment Status */}
-      <div className="mt-4">
-        <PaymentStatus
-          sessionPrepaid={client.sessionPrepaid}
-          sessionsRemaining={client.sessionsRemaining}
-          seriesType={client.seriesType}
-          onToggle={handleTogglePrepaid}
-          isToggling={togglingPrepaid}
-        />
-      </div>
+      {/* Payment Status — only relevant for per-session clients with an upcoming
+          visit. Series clients have their session balance shown elsewhere; clients
+          with no upcoming appointment don't have a payment moment to flag. */}
+      {(() => {
+        const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
+        const now = Date.now();
+        const hasUpcomingAppt = client.appointments.some(
+          (a) => new Date(a.startTime).getTime() >= now && a.status !== 'cancelled',
+        );
+        if (hasActiveSeries || !hasUpcomingAppt) return null;
+        return (
+          <div className="mt-4">
+            <PaymentStatus
+              sessionPrepaid={client.sessionPrepaid}
+              sessionsRemaining={client.sessionsRemaining}
+              seriesType={client.seriesType}
+              onToggle={handleTogglePrepaid}
+              isToggling={togglingPrepaid}
+            />
+          </div>
+        );
+      })()}
 
       {/* Session Stats */}
       <SessionStats

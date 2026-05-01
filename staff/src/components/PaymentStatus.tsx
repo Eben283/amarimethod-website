@@ -22,7 +22,7 @@ export default function PaymentStatus({
     ? `Paid — ${sessionsRemaining} session${sessionsRemaining !== 1 ? 's' : ''} left`
     : isPaid
     ? 'Prepaid'
-    : 'Payment needed';
+    : 'Pay at visit';
 
   const bgClass = isPaid
     ? 'bg-green-50 border-green-200'
@@ -55,9 +55,9 @@ export default function PaymentStatus({
           {isToggling ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
           ) : isPaid ? (
-            'Mark Unpaid'
+            'Unmark prepaid'
           ) : (
-            'Mark Paid'
+            'Mark prepaid'
           )}
         </button>
       )}
