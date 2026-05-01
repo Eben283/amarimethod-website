@@ -6,6 +6,7 @@ import { getTodayCalendar, getRecentEmails, createCalendarReminder, getPacificOf
 import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
+import { runGhlPlanner } from "../lib/cos-ghl-planner.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -159,6 +160,18 @@ PACKAGES: When asked about orders or deliveries, you'll have recent shipping ema
   return `You are ${userName}'s chief of staff. Your job is to THINK, not sort.
 
 Current date and time (Pacific): ${currentTime}
+
+## CRITICAL — NEVER FABRICATE BUSINESS DATA
+If you are asked a specific factual question about a client, appointment, session, payment, tag, pipeline stage, or any GHL data, you may ONLY answer using data that explicitly appears in the "Client Data", "GHL Query Result", "Live appointments/pipeline", or "Today's Calendar" sections below.
+
+If the relevant data is NOT in the prompt — even if the user clearly expects you to know — you MUST say so plainly. Examples of acceptable responses when data is missing:
+- "I couldn't pull that from GHL right now — check the calendar in GHL directly."
+- "That lookup didn't return — try asking again, or check in GHL."
+- "I don't see that in the data I got. Want me to try a different way?"
+
+NEVER invent: client names, appointment dates, appointment times, session counts, sessions remaining, series type, payment status, tags, or any other business fact. Hallucinating is worse than admitting the lookup failed. ${userName} will lose trust in this assistant permanently if you guess and are wrong.
+
+This rule overrides every other instruction. When in doubt, say you don't have the data.
 
 When ${userName} says something, don't just categorize it. Pull on the thread:
 - What does he actually need? (not what he literally said)
@@ -495,18 +508,30 @@ async function getContactContext(context, message) {
   if (names.length === 0) return null;
 
   const results = [];
+  const failed = [];
   for (const name of names) {
     try {
       const data = await lookupContact(context, name);
-      if (data) results.push(data);
+      if (data) {
+        results.push(data);
+      } else {
+        failed.push(name);
+      }
     } catch (err) {
       console.error(`[cos-chat] Contact lookup failed for "${name}":`, err.message);
+      failed.push(name);
     }
   }
 
-  return results.length > 0
-    ? `## Client Data (from GHL — live lookup)\n\n${results.join("\n\n---\n\n")}`
-    : null;
+  const sections = [];
+  if (results.length > 0) {
+    sections.push(`## Client Data (from GHL — live lookup)\n\n${results.join("\n\n---\n\n")}`);
+  }
+  if (failed.length > 0) {
+    sections.push(`## GHL Lookup Failed\nCould not find or fetch data for: ${failed.join(", ")}. DO NOT guess this client's appointments, sessions, or status. Tell the user the lookup failed and to check GHL directly, or to confirm the spelling.`);
+  }
+
+  return sections.length > 0 ? sections.join("\n\n") : null;
 }
 
 // Look up SF parking regulations near a location
@@ -668,6 +693,8 @@ export async function onRequestPost(context) {
   const needsParking = mentionsParking(userMessage);
   const needsMusic = /music|song|play|playing|playlist|spotify|skip|pause|volume|shuffle|track|album|artist|listen|queue|what.s playing|next song|previous song/i.test(msg);
   const needsWorkflow = /workflow|trigger|automat|no.show|attendance|nurture|sequence|funnel|what (email|sms|message).*(send|get|receive)|what happens when|how does .* work|tag.*(add|remov)|condition|branch|purchase system|sessions?.remaining|series.completion|known issue|pending fix|ghl.*(audit|fix|issue|bug)|calendar.*coverage|tier [1-4]/i.test(msg);
+  // Broader segmentation/data-question trigger — fires when narrow lookups would miss
+  const needsGhlPlanner = /lapsed|inactive|haven.t (booked|come|been|referr|sent)|reach out|reactivat|near (end|completion|finish)|paused|stalled|active client|in.{0,4}pipeline|funnel|how many (clients|leads|opportunities|trainers|partners)|who (has|hasn|haven|needs|should|got|received)|series.{0,3}(end|completion|near)|past due|overdue|drop.?off|churn|trainer|partner|comp(ed)? session|referr/i.test(msg);
 
   const cacheKey = `cos:cache:${cosUser}:${dateKey}`;
   const cachedRaw = kv ? await kv.get(cacheKey) : null;
@@ -693,7 +720,7 @@ export async function onRequestPost(context) {
     }
   }
 
-  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText, spotifyPlayback, spotifyPlaylists, ghlKnowledgeRaw] = await Promise.all([
+  const [contactContext, parkingContext, weatherText, directionsText, placesText, packagesText, revenueText, spotifyPlayback, spotifyPlaylists, ghlKnowledgeRaw, ghlPlannerResult] = await Promise.all([
     needsContact ? getContactContext(context, userMessage).catch(() => null) : Promise.resolve(null),
     needsParking
       ? getParkingRegulations(
@@ -708,6 +735,7 @@ export async function onRequestPost(context) {
     needsMusic ? getCurrentPlayback(context).catch(() => null) : Promise.resolve(null),
     needsMusic ? getUserPlaylists(context).catch(() => []) : Promise.resolve([]),
     needsWorkflow && kv ? kv.get("cos:ghl:knowledge").catch(() => null) : Promise.resolve(null),
+    needsGhlPlanner ? runGhlPlanner(context, userMessage, OPENROUTER_API_KEY).catch(() => null) : Promise.resolve(null),
   ]);
 
   // Build messages array for OpenRouter (keep last 30 turns to manage tokens)
@@ -762,6 +790,7 @@ export async function onRequestPost(context) {
     dailyBriefing,
     ghlSummary ? `Live appointments/pipeline:\n${ghlSummary}` : null,
     contactContext,
+    ghlPlannerResult,
     ghlKnowledgeContext,
     parkingContext,
     weatherText,
