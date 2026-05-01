@@ -161,6 +161,7 @@ export interface OutreachCard {
   sessionsCompleted: number | null;
   sessionsRemaining: number | null;
   totalSpend: number;
+  clientReferralCount: number;
   lastAppointment: OutreachAppointment | null;
   nextAppointment: OutreachAppointment | null;
   cancelledAppointment: { date: string; title: string } | null;

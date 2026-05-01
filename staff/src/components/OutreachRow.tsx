@@ -31,10 +31,21 @@ export default function OutreachRow({ card, onTap }: Props) {
     >
       <Icon className="w-4 h-4 shrink-0 text-amari-text-muted mt-0.5" />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-medium text-amari-charcoal truncate">{card.name}</p>
           {card.bucket === 'partner-active' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">Partner</span>
+          )}
+          {(card.bucket === 'partner-active' || card.bucket === 'partner-pending') && (
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded ${
+                card.clientReferralCount === 0
+                  ? 'bg-amber-100 text-amber-900'
+                  : 'bg-emerald-100 text-emerald-900'
+              }`}
+            >
+              {card.clientReferralCount === 0 ? '0 refs' : `${card.clientReferralCount} ref${card.clientReferralCount === 1 ? '' : 's'}`}
+            </span>
           )}
         </div>
         <p className="text-xs text-amari-text-muted line-clamp-2 mt-0.5">
