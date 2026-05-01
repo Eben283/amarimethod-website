@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronRight, Mail, MessageSquare, Phone, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getConversations, ApiError } from '../lib/api';
-import type { ConversationSummary, ConversationFilter } from '../types/staff';
+import { getConversations, getOutreachCards, ApiError } from '../lib/api';
+import type { ConversationSummary, ConversationFilter, OutreachCard } from '../types/staff';
+import OutreachRow from '../components/OutreachRow';
 
 const FILTERS: { id: ConversationFilter; label: string }[] = [
   { id: 'needs_reply', label: 'Needs Reply' },
   { id: 'unread', label: 'Unread' },
+  { id: 'reach_out', label: 'Reach Out' },
   { id: 'all', label: 'All' },
 ];
 
@@ -40,6 +42,8 @@ export default function MessagesPage() {
 
   const [filter, setFilter] = useState<ConversationFilter>('needs_reply');
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [outreachCards, setOutreachCards] = useState<OutreachCard[]>([]);
+  const [snapshotMeta, setSnapshotMeta] = useState<{ generatedAt: string | null; uploadedAt: string | null }>({ generatedAt: null, uploadedAt: null });
   const [debugPayload, setDebugPayload] = useState<unknown>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,10 +53,17 @@ export default function MessagesPage() {
       setIsLoading(true);
       setError('');
       try {
-        const data = await getConversations(f, debugMode);
-        setConversations(data.conversations);
-        if (debugMode) {
-          setDebugPayload((data as { debug?: unknown }).debug ?? null);
+        if (f === 'reach_out') {
+          const data = await getOutreachCards();
+          setOutreachCards(data.cards);
+          setSnapshotMeta({ generatedAt: data.generatedAt, uploadedAt: data.uploadedAt });
+          if (debugMode) setDebugPayload(data);
+        } else {
+          const data = await getConversations(f, debugMode);
+          setConversations(data.conversations);
+          if (debugMode) {
+            setDebugPayload((data as { debug?: unknown }).debug ?? null);
+          }
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
@@ -113,6 +124,31 @@ export default function MessagesPage() {
             Try Again
           </button>
         </div>
+      ) : filter === 'reach_out' ? (
+        outreachCards.length === 0 ? (
+          <div className="staff-card text-center py-12">
+            <p className="text-amari-text-muted text-sm">
+              {snapshotMeta.generatedAt
+                ? 'All caught up — nobody to reach out to'
+                : 'No snapshot yet — runs nightly at 5 AM'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {snapshotMeta.generatedAt && (
+              <p className="text-[11px] text-amari-text-muted px-1">
+                Snapshot taken {new Date(snapshotMeta.generatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              </p>
+            )}
+            {outreachCards.map((card) => (
+              <OutreachRow
+                key={card.contactId}
+                card={card}
+                onTap={() => navigate(`/client/${card.contactId}?focus=messages`)}
+              />
+            ))}
+          </div>
+        )
       ) : conversations.length === 0 ? (
         <div className="staff-card text-center py-12">
           <p className="text-amari-text-muted text-sm">

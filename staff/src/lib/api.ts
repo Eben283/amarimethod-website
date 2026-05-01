@@ -158,4 +158,8 @@ export async function getBalances(
   return fetchApi(`/staff-balances${refresh ? '?refresh=1' : ''}`);
 }
 
+export async function getOutreachCards(): Promise<import('../types/staff').OutreachSnapshotResponse> {
+  return fetchApi('/staff-outreach-cards');
+}
+
 export { ApiError };

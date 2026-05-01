@@ -108,7 +108,85 @@ export interface ChecklistState {
   [itemId: string]: boolean;
 }
 
-export type ConversationFilter = 'needs_reply' | 'unread' | 'all';
+export type ConversationFilter = 'needs_reply' | 'unread' | 'reach_out' | 'all';
+
+export type OutreachStatus =
+  | 'cancellation-not-followed-up'
+  | 'pre-session-text-owed'
+  | 'next-booking-owed'
+  | 'recently-completed'
+  | 'data-drift'
+  | 'too-soon'
+  | 'recently-contacted-silent'
+  | 'truly-cold'
+  | 'engaged';
+
+export type OutreachBucket =
+  | 'partner-active'
+  | 'partner-pending'
+  | 'partner-future'
+  | 'mid-pack'
+  | 'lapsed-initial'
+  | 'lapsed-long'
+  | 'other';
+
+export interface OutreachAction {
+  label: string;
+  type: 'primary' | 'secondary' | 'destructive';
+  reason: string;
+}
+
+export interface OutreachMessage {
+  date: string;
+  channel: 'sms' | 'email';
+  body: string;
+}
+
+export interface OutreachAppointment {
+  date: string;
+  status: string;
+  title: string;
+}
+
+export interface OutreachCard {
+  contactId: string;
+  name: string;
+  firstName: string;
+  email: string | null;
+  phone: string | null;
+  tags: string[];
+  bucket: OutreachBucket;
+  pipelineStage: string | null;
+  seriesType: string | null;
+  sessionsCompleted: number | null;
+  sessionsRemaining: number | null;
+  totalSpend: number;
+  lastAppointment: OutreachAppointment | null;
+  nextAppointment: OutreachAppointment | null;
+  cancelledAppointment: { date: string; title: string } | null;
+  lastOutbound: OutreachMessage | null;
+  lastInbound: OutreachMessage | null;
+  daysSinceLastOutbound: number | null;
+  daysSinceLastInbound: number | null;
+  recommendation: {
+    headline: string;
+    status: OutreachStatus;
+    priority: number;
+    actions: OutreachAction[];
+    suggestedTemplate: string | null;
+  };
+}
+
+export interface OutreachSnapshotResponse {
+  generatedAt: string | null;
+  uploadedAt: string | null;
+  counts: {
+    total: number;
+    byStatus?: Record<string, number>;
+    byBucket?: Record<string, number>;
+  };
+  cards: OutreachCard[];
+}
 
 export interface ConversationSummary {
   id: string;
