@@ -7,6 +7,7 @@ import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 import { runGhlPlanner } from "../lib/cos-ghl-planner.js";
+import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -144,7 +145,22 @@ DIRECTIONS/TRAVEL: When asked about travel time, you'll have driving distance an
 
 RESTAURANTS/PLACES: When asked for food or place recommendations, you'll have nearby results. Add your own knowledge about SF neighborhoods to give better suggestions.
 
-PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.` : "";
+PACKAGES: When asked about orders or deliveries, you'll have recent shipping emails from Gmail. Summarize what's coming and when.` : `
+You're Garrett's assistant. Garrett is the practitioner at Amari Method (Eben handles ops/tech/website). Garrett is usually between sessions on his phone — give him fast, practical answers.
+
+CLIENT LOOKUP: When Garrett asks about a specific client, the live GHL data will be in the "Client Data" section below. Read it carefully — sessions completed, sessions remaining, series type, recent appointments, tags. If the data isn't there, say so plainly. NEVER guess.
+
+CLIENT MESSAGES: When Garrett asks for help drafting a message to a client, trainer, or partner — write in the Amari voice (see vault knowledge: garrett-voice + positioning). No woo language. No "healer." No "fix." Use "protocols" not "exercises." Warm, grounded, confident — Garrett's actual words over polished marketing copy. Default to short and direct unless he asks for longer.
+
+CHANNEL DECISIONS (text vs email): Default text for short personal messages (check-ins, scheduling, "how are you doing"). Default email for anything that needs to be referenced later (treatment summaries, longer follow-ups, anything with links). When in doubt, ask Garrett what feels right for this client.
+
+SEGMENTATION: When Garrett asks "which clients/trainers/partners [meet some criteria]" — the GHL planner will return a list. Read the list, then suggest who to prioritize and why. Don't just dump the list.
+
+SESSION PREP: When Garrett asks about a client he's about to see, lead with: when they last came, what series/status, what tags suggest, and one suggested opener if he wants it.
+
+POSITIONING + VOICE: Always grounded in vault knowledge. If Garrett's question touches positioning, brand, copy, or messaging, the relevant vault docs will be loaded. Quote directly from them rather than paraphrasing.
+
+DON'T offer Garrett: parking reminders, restaurant suggestions, grocery lists, dog food research, package tracking — those are Eben's needs, not his. Stay focused on his practitioner workflows.` ;
 
   const currentTime = new Date().toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
@@ -666,12 +682,13 @@ export async function onRequestPost(context) {
   const kv = context.env.PORTAL_KV;
   const dateKey = todayKey();
 
-  // Load user-scoped conversation history, context doc, pending actions, and shared daily briefing from KV
-  const [convRaw, contextRaw, actionsRaw, briefingRaw] = await Promise.all([
+  // Load user-scoped conversation history, context doc, pending actions, daily briefing, and vault knowledge from KV
+  const [convRaw, contextRaw, actionsRaw, briefingRaw, vaultData] = await Promise.all([
     kv ? kv.get(`cos:conv:${cosUser}:${dateKey}`) : null,
     kv ? kv.get(`cos:context:${cosUser}`) : null,
     kv ? kv.get(`cos:actions:${cosUser}:pending`) : null,
     kv ? kv.get("cos:daily-briefing:latest") : null,
+    loadVaultKnowledge(kv).catch(() => null),
   ]);
 
   const conversation = convRaw ? JSON.parse(convRaw) : { messages: [], created: Date.now(), updated: Date.now() };
@@ -785,6 +802,9 @@ export async function onRequestPost(context) {
     }
   }
 
+  // Build vault knowledge context (always-include + on-demand sections)
+  const vaultContext = buildVaultContext(vaultData, userMessage);
+
   // Combine all contextual data
   const ghlParts = [
     dailyBriefing,
@@ -792,6 +812,7 @@ export async function onRequestPost(context) {
     contactContext,
     ghlPlannerResult,
     ghlKnowledgeContext,
+    vaultContext,
     parkingContext,
     weatherText,
     directionsText,
