@@ -84,7 +84,11 @@ export async function executeTool(context, toolName, input) {
       const query = String(input.query || "");
       const url = `https://services.leadconnectorhq.com/contacts/search?locationId=${LOCATION_ID}&query=${encodeURIComponent(query)}&limit=${limit}`;
       const resp = await ghlFetch(context, url);
-      if (!resp.ok) return `Error: GHL ${resp.status}`;
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      }
       const data = await resp.json();
       const contacts = (data.contacts || []).map(c => {
         const fields = {};
@@ -108,7 +112,11 @@ export async function executeTool(context, toolName, input) {
     if (toolName === "get_contact_appointments") {
       const url = `https://services.leadconnectorhq.com/contacts/${encodeURIComponent(input.contact_id)}/appointments`;
       const resp = await ghlFetch(context, url);
-      if (!resp.ok) return `Error: GHL ${resp.status}`;
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      }
       const data = await resp.json();
       const appts = (data.events || data.appointments || []).map(a => ({
         id: a.id,
@@ -123,7 +131,11 @@ export async function executeTool(context, toolName, input) {
       const limit = Math.min(Number(input.limit) || 100, 100);
       const url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&limit=${limit}`;
       const resp = await ghlFetch(context, url);
-      if (!resp.ok) return `Error: GHL ${resp.status}`;
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      }
       const data = await resp.json();
       const opps = (data.opportunities || []).map(o => ({
         id: o.id,
@@ -143,7 +155,11 @@ export async function executeTool(context, toolName, input) {
       const endMs = new Date(`${input.end_date}T23:59:59${endOffset}`).getTime();
       const url = `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&startTime=${startMs}&endTime=${endMs}`;
       const resp = await ghlFetch(context, url);
-      if (!resp.ok) return `Error: GHL ${resp.status}`;
+      if (!resp.ok) {
+        const errBody = await resp.text().catch(() => "");
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      }
       const data = await resp.json();
       const events = (data.events || []).map(e => ({
         title: e.title || null,

@@ -905,7 +905,7 @@ export async function onRequestPost(context) {
           await flushSafe();
         },
         executeToolFn: async (name, input) => {
-          console.log(`[cos-chat] tool call: ${name}`, JSON.stringify(input).slice(0, 200));
+          console.log(`[cos-chat] tool call: ${name} input=${JSON.stringify(input).slice(0, 200)}`);
           return await executeAnthropicTool(context, name, input);
         },
       });
