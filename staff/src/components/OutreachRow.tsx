@@ -1,4 +1,4 @@
-import { ChevronRight, AlertTriangle, Clock, Snowflake, CalendarClock, RefreshCcw, CheckCircle2, Wrench } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Clock, Snowflake, CalendarClock, RefreshCcw, CheckCircle2, Wrench, UserPlus, HandHeart } from 'lucide-react';
 import type { OutreachCard, OutreachStatus } from '../types/staff';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
 // Visual treatment per status. Border accent + icon. Mirrors the existing
 // `border-l-amari-accent-warm` pattern used by needs-reply rows.
 const STATUS_STYLE: Record<OutreachStatus, { accent: string; Icon: typeof AlertTriangle }> = {
+  'referral-never-booked':        { accent: 'border-l-purple-500', Icon: UserPlus },
   'cancellation-not-followed-up': { accent: 'border-l-red-500', Icon: AlertTriangle },
   'pre-session-text-owed':        { accent: 'border-l-amari-accent-warm', Icon: CalendarClock },
   'next-booking-owed':            { accent: 'border-l-amari-pine-teal', Icon: CalendarClock },
@@ -17,6 +18,7 @@ const STATUS_STYLE: Record<OutreachStatus, { accent: string; Icon: typeof AlertT
   'too-soon':                     { accent: 'border-l-amari-text-muted', Icon: Clock },
   'recently-contacted-silent':    { accent: 'border-l-amari-pine-teal', Icon: Clock },
   'truly-cold':                   { accent: 'border-l-amari-pine-teal', Icon: Snowflake },
+  'partner-no-referrals':         { accent: 'border-l-amber-500', Icon: HandHeart },
   'engaged':                      { accent: 'border-l-emerald-500', Icon: CheckCircle2 },
 };
 
@@ -35,6 +37,9 @@ export default function OutreachRow({ card, onTap }: Props) {
           <p className="text-sm font-medium text-amari-charcoal truncate">{card.name}</p>
           {card.bucket === 'partner-active' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">Partner</span>
+          )}
+          {card.isReferral && card.referralSource && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-900">via {card.referralSource}</span>
           )}
           {(card.bucket === 'partner-active' || card.bucket === 'partner-pending') && (
             <span

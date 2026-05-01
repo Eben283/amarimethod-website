@@ -111,6 +111,7 @@ export interface ChecklistState {
 export type ConversationFilter = 'needs_reply' | 'unread' | 'reach_out' | 'all';
 
 export type OutreachStatus =
+  | 'referral-never-booked'
   | 'cancellation-not-followed-up'
   | 'pre-session-text-owed'
   | 'next-booking-owed'
@@ -119,6 +120,7 @@ export type OutreachStatus =
   | 'too-soon'
   | 'recently-contacted-silent'
   | 'truly-cold'
+  | 'partner-no-referrals'
   | 'engaged';
 
 export type OutreachBucket =
@@ -162,6 +164,8 @@ export interface OutreachCard {
   sessionsRemaining: number | null;
   totalSpend: number;
   clientReferralCount: number;
+  referralSource: string | null;
+  isReferral: boolean;
   lastAppointment: OutreachAppointment | null;
   nextAppointment: OutreachAppointment | null;
   cancelledAppointment: { date: string; title: string } | null;
