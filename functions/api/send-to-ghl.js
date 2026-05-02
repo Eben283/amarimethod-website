@@ -166,6 +166,28 @@ export async function onRequestPost(context) {
       if (locationSlug) tags.push(`pain-location-${locationSlug}`);
     }
 
+    // Audience region tag — Bay Area vs Remote, derived from Cloudflare geo
+    // headers. Used by the quiz result page to emphasize in-person vs virtual
+    // CTAs, and by GHL workflows for audience-segmented nurture.
+    const lat = parseFloat(context.request.headers.get("cf-iplatitude") || "");
+    const lng = parseFloat(context.request.headers.get("cf-iplongitude") || "");
+    let audience = null;
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      // Haversine distance from SF (37.7749, -122.4194), 75-mile radius
+      const SF_LAT = 37.7749;
+      const SF_LNG = -122.4194;
+      const R = 3958.8;
+      const toRad = (d) => (d * Math.PI) / 180;
+      const dLat = toRad(lat - SF_LAT);
+      const dLng = toRad(lng - SF_LNG);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(SF_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+      const miles = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      audience = miles <= 75 ? "bay-area" : "remote";
+      tags.push(`audience-${audience}`);
+    }
+
     // Referral tracking
     const referralSource = body.referralSource ? String(body.referralSource).trim() : null;
     if (referralSource) {
@@ -254,7 +276,7 @@ export async function onRequestPost(context) {
     }
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, audience }),
       { status: 200, headers }
     );
   } catch (err) {

@@ -21,6 +21,7 @@ type QuizContextType = {
   isCompleted: boolean;
   submissionError: string | null;
   referralSource: string | null;
+  audience: 'bay-area' | 'remote' | null;
   validationError: string;
   goToNextStep: () => void;
   goToPrevStep: () => void;
@@ -68,6 +69,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [validationError, setValidationError] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const [referralSource, setReferralSource] = useState<string | null>(null);
+  const [audience, setAudience] = useState<'bay-area' | 'remote' | null>(null);
   const startQuiz = useCallback(() => setHasStarted(true), []);
 
   // Read ?ref= URL parameter for affiliate tracking
@@ -294,6 +296,16 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
         throw new Error(`API error (${response.status}): ${errorText}`);
       }
 
+      // Read audience classification from response (Cloudflare geo-derived)
+      try {
+        const data = await response.clone().json();
+        if (data?.audience === 'bay-area' || data?.audience === 'remote') {
+          setAudience(data.audience);
+        }
+      } catch {
+        // Non-JSON response — audience stays null, BookingCTA shows neutral default
+      }
+
       setIsProcessing(false);
       setIsCompleted(true);
       localStorage.removeItem('quiz_ref');
@@ -420,6 +432,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       retrySubmission,
       resetQuiz,
       referralSource,
+      audience,
       hasStarted,
       startQuiz,
     }}>

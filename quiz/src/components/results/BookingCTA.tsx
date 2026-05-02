@@ -28,8 +28,14 @@ function buildBookingUrl(base: string, painLocation: string | null): string {
 }
 
 const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
-  const { referralSource, answers } = useQuiz();
+  const { referralSource, answers, audience } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
+
+  // In-person is the preferred experience; remote users default to virtual
+  // because in-person isn't realistic for them. Both buttons remain visible
+  // (Bay Area users may prefer virtual for convenience; remote users
+  // sometimes travel to SF) — only the visual emphasis flips.
+  const remotePreferred = audience === 'remote';
 
   // Capitalize first letter of referral name for display
   const referralName = referralSource
@@ -104,8 +110,8 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               href={buildBookingUrl("https://amarimethodbooking.amarimethod.com/amari-method-funnel", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary text-center"
-              style={{ flex: 1, display: 'block' }}
+              className={`${remotePreferred ? 'btn-secondary' : 'btn-primary'} text-center`}
+              style={{ flex: 1, display: 'block', order: remotePreferred ? 2 : 1 }}
             >
               <span>Book In-Person<span className="arrow">→</span></span>
             </a>
@@ -113,14 +119,16 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               href={buildBookingUrl("https://introsessionvirtual.amarimethod.com/is-virtual-info", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-primary text-center"
-              style={{ flex: 1, display: 'block' }}
+              className={`${remotePreferred ? 'btn-primary' : 'btn-secondary'} text-center`}
+              style={{ flex: 1, display: 'block', order: remotePreferred ? 1 : 2 }}
             >
               <span>Book Virtual<span className="arrow">→</span></span>
             </a>
           </div>
           <p className="text-sm text-amari-text-light mt-3 text-center font-sans">
-            San Francisco in-person or virtual from anywhere · HSA/FSA accepted
+            {remotePreferred
+              ? 'Virtual from anywhere · In-person available if you visit SF · HSA/FSA accepted'
+              : 'San Francisco in-person or virtual from anywhere · HSA/FSA accepted'}
           </p>
         </div>
 
