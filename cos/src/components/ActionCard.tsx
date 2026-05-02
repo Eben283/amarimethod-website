@@ -1,5 +1,5 @@
 import type { QueuedAction } from '../types/cos';
-import { ShoppingCart, Package, ListTodo, Search, Calendar } from 'lucide-react';
+import { ShoppingCart, Package, ListTodo, Search, Calendar, Sparkles } from 'lucide-react';
 
 interface Props {
   action: QueuedAction;
@@ -11,6 +11,7 @@ const ICONS: Record<string, typeof ShoppingCart> = {
   task: ListTodo,
   research: Search,
   calendar: Calendar,
+  coach: Sparkles,
 };
 
 const LABELS: Record<string, string> = {
@@ -19,6 +20,7 @@ const LABELS: Record<string, string> = {
   task: 'Task',
   research: 'Research',
   calendar: 'Calendar',
+  coach: 'Coach',
 };
 
 export default function ActionCard({ action }: Props) {

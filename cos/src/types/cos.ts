@@ -13,7 +13,7 @@ export interface ChatMessage {
 
 export interface QueuedAction {
   id: string;
-  type: 'grocery' | 'purchase' | 'task' | 'research' | 'calendar';
+  type: 'grocery' | 'purchase' | 'task' | 'research' | 'calendar' | 'coach';
   item: string;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   details?: Record<string, unknown>;
