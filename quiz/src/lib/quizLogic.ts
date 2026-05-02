@@ -224,8 +224,9 @@ export function calculateScores(answers: QuizAnswer[]): ScoreCategories {
     recoveryPotential -= 15;  // More complex, but still treatable
   }
 
-  // Normalize to 0-100 scale (most people will be 65-90%)
-  scores.recoveryPotential = Math.min(100, Math.max(88, recoveryPotential));
+  // Normalize to 0-100 scale. Lower bound of 30 prevents impossible negatives;
+  // upper bound of 100 caps the ceiling. Real distribution falls roughly 45-95.
+  scores.recoveryPotential = Math.min(100, Math.max(30, recoveryPotential));
 
   return scores;
 }

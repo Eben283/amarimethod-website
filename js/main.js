@@ -231,14 +231,25 @@ document.addEventListener('click', function(e) {
     const buttonHref = button.getAttribute('href') || 'internal-link';
     const pageLocation = window.location.pathname;
 
-    gtag('event', 'cta_button_click', {
+    const params = {
       'event_category': 'engagement',
       'event_label': buttonText,
       'button_text': buttonText,
       'button_url': buttonHref,
       'page_location': pageLocation,
       'value': 1
-    });
+    };
+
+    gtag('event', 'cta_button_click', params);
+
+    // Fire named conversion events so they can be marked as Key events in GA4.
+    const href = (buttonHref || '').toLowerCase();
+    const text = (buttonText || '').toLowerCase();
+    if (href.includes('discoverycall') || text.includes('discovery call')) {
+      gtag('event', 'click_discovery_call', params);
+    } else if (href.includes('booking') || text.includes('book session') || text.includes('book now')) {
+      gtag('event', 'click_book_session', params);
+    }
   }
 });
 

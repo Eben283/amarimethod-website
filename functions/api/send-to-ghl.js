@@ -152,6 +152,20 @@ export async function onRequestPost(context) {
     else if (severity === "severe") tags.push("pain-severity-severe");
     else tags.push("pain-severity-moderate");
 
+    // Pain location tag — slugified primary pain location for audience targeting
+    // (mirrors quiz_complete GA4 event param `pain_location`)
+    const primaryPainLocation = body.primaryPainLocation
+      ? String(body.primaryPainLocation).trim()
+      : "";
+    if (primaryPainLocation && primaryPainLocation !== "Unknown") {
+      const locationSlug = primaryPainLocation
+        .toLowerCase()
+        .replace(/\s*\/\s*/g, "-")
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+      if (locationSlug) tags.push(`pain-location-${locationSlug}`);
+    }
+
     // Referral tracking
     const referralSource = body.referralSource ? String(body.referralSource).trim() : null;
     if (referralSource) {
