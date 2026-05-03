@@ -56,7 +56,7 @@
     .book-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
     .book-frame { padding: 0 24px 64px; max-width: 980px; margin: 0 auto; }
-    .book-frame iframe { width: 100%; border: none; min-height: 1400px; display: block; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    .book-frame iframe { width: 100%; border: none; height: 600px; display: block; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); transition: height 0.2s ease; }
     .book-frame.failed iframe { display: none; }
 
     .book-fallback { display: none; max-width: 560px; margin: 0 auto; padding: 32px; background: var(--bg-secondary, #f7f3e9); border-radius: 12px; text-align: center; }
@@ -68,7 +68,7 @@
     @media (max-width: 720px) {
       .book-hero { padding: 40px 20px 24px; }
       .book-frame { padding: 0 12px 48px; }
-      .book-frame iframe { min-height: 1500px; border-radius: 8px; }
+      .book-frame iframe { border-radius: 8px; }
     }
   </style>
 </head>
@@ -114,7 +114,8 @@
         id="bookIframe"
         src="https://introsessionvirtual.amarimethod.com/is-virtual-info"
         title="Book your first virtual session with Dr. Garrett"
-        allow="payment *">
+        allow="payment *"
+        scrolling="no">
       </iframe>
       <div class="book-fallback" id="bookFallback">
         <h3>The calendar isn't loading right now.</h3>
@@ -179,6 +180,8 @@
     </div>
   </footer>
 
+  <!-- GHL form embed script — auto-resizes iframe to inner content height via postMessage -->
+  <script src="https://link.amarimethod.com/js/form_embed.js" async></script>
   <script>
     (function() {
       var iframe = document.getElementById('bookIframe');
@@ -196,6 +199,16 @@
           fallback.classList.add('show');
         }
       }, 8000);
+      window.addEventListener('message', function(e) {
+        if (!e.data) return;
+        var h = null;
+        if (typeof e.data === 'object' && (e.data.type === 'hsFormCallback' || e.data.type === 'iframe-resize') && e.data.height) {
+          h = parseInt(e.data.height, 10);
+        } else if (typeof e.data === 'string' && e.data.indexOf('iframe-height:') === 0) {
+          h = parseInt(e.data.split(':')[1], 10);
+        }
+        if (h && h > 200 && h < 5000) iframe.style.height = (h + 20) + 'px';
+      });
       if (window.gtag) {
         gtag('event', 'booking_page_view', {
           booking_type: 'initial_virtual',
