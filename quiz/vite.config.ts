@@ -8,6 +8,16 @@ export default defineConfig({
   build: {
     outDir: "../dist/quiz",  // Output to dist/quiz
     emptyOutDir: true,
+    // Smaller initial bundle = faster LCP. React + ReactDOM stay in vendor;
+    // results page (only seen by ~5% of visitors who finish) splits out.
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "react-vendor": ["react", "react-dom"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
   },
   server: {
     host: "::",
