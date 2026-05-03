@@ -172,8 +172,8 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
   const contactAction: Action = {
     icon: MessageCircle,
     label: 'Contact Dr. Garrett',
-    description: 'Questions about your care?',
-    href: 'mailto:hello@amarimethod.com',
+    description: 'eben@amarimethod.com',
+    href: 'mailto:eben@amarimethod.com',
     style: 'secondary',
   };
 
