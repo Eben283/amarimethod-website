@@ -272,6 +272,10 @@
     .bk-offer .price-row { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
     .bk-offer .price-num { font-family: var(--font-serif-primary); font-size: 48px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; color: var(--color-text); }
     .bk-offer .price-unit, .bk-offer .duration { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--color-text-muted); }
+    .bk-offer .affirm-est { font-size: 13px; color: var(--color-text-secondary); margin-top: -8px; line-height: 1.4; }
+    .bk-offer .affirm-est b { color: var(--color-text); font-weight: 500; }
+    .bk-offer.feat .affirm-est { color: #D9CFB8; }
+    .bk-offer.feat .affirm-est b { color: var(--bg-primary); }
     .bk-offer ul { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: var(--color-text-secondary); line-height: 1.5; padding: 0; margin: 0; }
     .bk-offer ul li { padding-left: 18px; position: relative; }
     .bk-offer ul li::before { content: ""; position: absolute; left: 0; top: .6em; width: 8px; height: 1px; background: var(--color-accent-warm); }
@@ -496,6 +500,7 @@
           <span class="price-num">$1,295</span>
           <span class="price-unit">total · $162/session avg.</span>
         </div>
+        <p class="affirm-est">or <b>as low as $108/mo</b> with Affirm at checkout</p>
         <ul>
           <li>Initial session (60 min) plus 7 follow-ups (50 min each)</li>
           <li>Includes Living Practice video library — 53 self-paced videos, lifetime access.</li>
@@ -517,6 +522,7 @@
           <span class="price-num">$720</span>
           <span class="price-unit">$180/session avg.</span>
         </div>
+        <p class="affirm-est">or <b>as low as $60/mo</b> with Affirm at checkout</p>
         <ul>
           <li>Initial session plus 3 follow-ups</li>
           <li>Smaller commitment ladder</li>
