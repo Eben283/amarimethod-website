@@ -11,9 +11,9 @@ interface QuickActionsProps {
 
 // Booking URLs
 const BOOKING_URLS = {
-  initial_inperson: 'https://amarimethodbooking.amarimethod.com/amari-method-funnel',
-  initial_virtual: 'https://introsessionvirtual.amarimethod.com/is-virtual-info',
-  followup: 'https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session',
+  initial_inperson: '/book-initial-in-person',
+  initial_virtual: '/book-initial-virtual',
+  followup: '/book-follow-up',
   discovery: 'https://discoverycall.amarimethod.com/discovery-call-booking',
 };
 

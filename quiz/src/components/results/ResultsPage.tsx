@@ -151,7 +151,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             </p>
             <div className="flex gap-3 justify-center flex-wrap">
               <a
-                href={buildBookingUrl("https://amarimethodbooking.amarimethod.com/amari-method-funnel")}
+                href={buildBookingUrl("/book-initial-in-person")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"
@@ -159,7 +159,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
                 <span>Book In-Person<span className="arrow">→</span></span>
               </a>
               <a
-                href={buildBookingUrl("https://introsessionvirtual.amarimethod.com/is-virtual-info")}
+                href={buildBookingUrl("/book-initial-virtual")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary"

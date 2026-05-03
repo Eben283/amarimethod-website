@@ -74,8 +74,8 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   function getRescheduleUrl(title: string): string | null {
     const t = title.toLowerCase();
     if (t.includes('discovery')) return 'https://discoverycall.amarimethod.com/discovery-call-booking';
-    if (t.includes('initial') && t.includes('virtual')) return 'https://introsessionvirtual.amarimethod.com/is-virtual-info';
-    if (t.includes('initial')) return 'https://amarimethodbooking.amarimethod.com/amari-method-funnel';
+    if (t.includes('initial') && t.includes('virtual')) return '/book-initial-virtual';
+    if (t.includes('initial')) return '/book-initial-in-person';
     return null; // follow-up — use modal
   }
 

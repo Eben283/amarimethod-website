@@ -107,7 +107,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
 
           <div className="flex gap-3" style={{ width: '100%' }}>
             <a
-              href={buildBookingUrl("https://amarimethodbooking.amarimethod.com/amari-method-funnel", painLocation)}
+              href={buildBookingUrl("/book-initial-in-person", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
               className={`${remotePreferred ? 'btn-secondary' : 'btn-primary'} text-center`}
@@ -116,7 +116,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               <span>Book In-Person<span className="arrow">→</span></span>
             </a>
             <a
-              href={buildBookingUrl("https://introsessionvirtual.amarimethod.com/is-virtual-info", painLocation)}
+              href={buildBookingUrl("/book-initial-virtual", painLocation)}
               target="_blank"
               rel="noopener noreferrer"
               className={`${remotePreferred ? 'btn-primary' : 'btn-secondary'} text-center`}
