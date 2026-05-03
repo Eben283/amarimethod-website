@@ -55,8 +55,8 @@
     .book-hero .meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 13px; color: var(--color-text-muted, #888); }
     .book-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
-    .book-frame { padding: 0 24px 64px; max-width: 980px; margin: 0 auto; }
-    .book-frame iframe { width: 100%; border: none; height: 600px; display: block; background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); transition: height 0.2s ease; }
+    .book-frame { padding: 0 24px 64px; max-width: 1200px; margin: 0 auto; }
+    .book-frame iframe { width: 100%; border: none; height: 600px; display: block; background: transparent; transition: height 0.2s ease; }
     .book-frame.failed iframe { display: none; }
 
     .book-fallback { display: none; max-width: 560px; margin: 0 auto; padding: 32px; background: var(--bg-secondary, #f7f3e9); border-radius: 12px; text-align: center; }
@@ -68,7 +68,6 @@
     @media (max-width: 720px) {
       .book-hero { padding: 40px 20px 24px; }
       .book-frame { padding: 0 12px 48px; }
-      .book-frame iframe { border-radius: 8px; }
     }
   </style>
 </head>
