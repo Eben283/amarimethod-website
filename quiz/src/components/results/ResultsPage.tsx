@@ -6,8 +6,10 @@ import ScoreRadar from './ScoreRadar';
 import InsightCards from './InsightCards';
 import BookingCTA from './BookingCTA';
 import ShareCard from './ShareCard';
+import ConditionStory from './ConditionStory';
 import { useShareResults } from '@/hooks/useShareResults';
 import { useQuiz } from '@/contexts/QuizContext';
+import { getConditionContent } from '@/lib/conditionContent';
 
 type ResultsPageProps = {
   firstName: string;
@@ -27,6 +29,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
   const { share, state: shareState } = useShareResults(shareCardRef);
   const { answers } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
+  const conditionContent = getConditionContent(painLocation);
 
   function buildBookingUrl(base: string): string {
     if (!painLocation) return base;
@@ -78,7 +81,13 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
 
       <Divider />
 
-      {/* 2 — Personalized insights (what we discovered) */}
+      {/* 2 — Pain-location-specific story (lifted from condition pages).
+              This is what makes the result actually different per visitor. */}
+      {conditionContent ? <ConditionStory content={conditionContent} /> : null}
+
+      {conditionContent ? <Divider /> : null}
+
+      {/* 3 — Personalized insights (what we discovered from their answers) */}
       <InsightCards insights={insights} />
 
       <Divider />
