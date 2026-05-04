@@ -54,23 +54,36 @@
     }
     </script>
 
-    <!-- Google Fonts for Amari Method branding -->
+    <!-- Google Fonts — preconnect early, preload the LCP font CSS so the H1 doesn't FOUT. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:wght@400;700&family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-      <!-- Microsoft Clarity -->
-    <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "vuvx43xu8h");
-    </script>
-    <script type="module" crossorigin src="/quiz/assets/index-CJvL22z5.js"></script>
-    <link rel="stylesheet" crossorigin href="/quiz/assets/index-D_8tKuk8.css">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bona+Nova:wght@400;700&family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:wght@400;700&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:wght@400;700&family=Inter:wght@400;500;600&display=swap"></noscript>
+    <script type="module" crossorigin src="/quiz/assets/index-CNt-zMNm.js"></script>
+    <link rel="modulepreload" crossorigin href="/quiz/assets/react-vendor-BbBoHzlf.js">
+    <link rel="stylesheet" crossorigin href="/quiz/assets/index-C8ykLJcc.css">
   </head>
 
   <body>
     <div id="root"></div>
+
+    <!-- Analytics — moved to end of body to remove render-blocking -->
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "vuvx43xu8h");
+    </script>
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-DGQM32BMYZ');
+    </script>
   </body>
 </html>

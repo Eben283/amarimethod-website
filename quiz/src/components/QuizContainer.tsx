@@ -1,15 +1,18 @@
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useQuiz } from '@/contexts/QuizContext';
 import ProgressBar from './ProgressBar';
 import QuizStack, { QUIZ_QUESTIONS } from './QuizStack';
 import ContactInfoForm from './questions/ContactInfoForm';
-import ResultsPage from './results/ResultsPage';
 import WelcomeScreen from './WelcomeScreen';
 import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
 import { Loader2 } from 'lucide-react';
+
+// ResultsPage is lazy-loaded so its dependency tree (html2canvas, ShareCard, etc.)
+// stays out of the initial welcome-screen bundle.
+const ResultsPage = React.lazy(() => import('./results/ResultsPage'));
 
 const QuizContainer = () => {
   const {
@@ -180,12 +183,14 @@ const QuizContainer = () => {
         ) : (
           <div>
             {scores && patternSignature && (
-              <ResultsPage
-                firstName={firstName}
-                patternSignature={patternSignature}
-                scores={scores}
-                insights={insights}
-              />
+              <Suspense fallback={renderLoadingState()}>
+                <ResultsPage
+                  firstName={firstName}
+                  patternSignature={patternSignature}
+                  scores={scores}
+                  insights={insights}
+                />
+              </Suspense>
             )}
           </div>
         )}
