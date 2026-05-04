@@ -371,7 +371,11 @@ document.addEventListener('click', function(e) {
       'a[href*="amarimethodbooking.amarimethod.com"],' +
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
-      'a[href*="amarimethodfollowup.amarimethod.com"]'
+      'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book-discovery-call"],' +
+      'a[href^="/book-initial-in-person"],' +
+      'a[href^="/book-initial-virtual"],' +
+      'a[href^="/book-follow-up"]'
     );
 
     bookingLinks.forEach(function (link) {
@@ -404,7 +408,11 @@ document.addEventListener('click', function(e) {
       'a[href*="amarimethodbooking.amarimethod.com"],' +
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
-      'a[href*="amarimethodfollowup.amarimethod.com"]'
+      'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book-discovery-call"],' +
+      'a[href^="/book-initial-in-person"],' +
+      'a[href^="/book-initial-virtual"],' +
+      'a[href^="/book-follow-up"]'
     );
 
     bookingLinks.forEach(function (link) {

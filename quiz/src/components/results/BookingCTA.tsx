@@ -176,7 +176,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             {referralName ? 'Have questions? Book a free discovery call' : 'Not ready to book? Start with a free call'}
           </p>
           <a
-            href={buildBookingUrl("https://discoverycall.amarimethod.com/discovery-call-booking", painLocation)}
+            href={buildBookingUrl("/book-discovery-call", painLocation)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary"

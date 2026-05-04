@@ -14,7 +14,7 @@ const BOOKING_URLS = {
   initial_inperson: '/book-initial-in-person',
   initial_virtual: '/book-initial-virtual',
   followup: '/book-follow-up',
-  discovery: 'https://discoverycall.amarimethod.com/discovery-call-booking',
+  discovery: '/book-discovery-call',
 };
 
 // GHL Payment Links
