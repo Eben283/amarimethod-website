@@ -43,7 +43,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
     : null;
 
   return (
-    <section className="px-6 py-12 bg-amari-bone-white">
+    <section id="booking-cta" className="px-6 py-12 bg-amari-bone-white">
       <div className="max-w-2xl mx-auto">
 
         {/* Headline that bridges from the diagnostic → the offer */}

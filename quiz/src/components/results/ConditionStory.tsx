@@ -56,6 +56,45 @@ const ConditionStory = ({ content }: Props) => {
           ))}
         </div>
 
+        {/* ─── PROTOCOL INTRO VIDEO ─── */}
+        {/* Garrett introduces the protocol that matches this pain pattern. The
+            actual exercise demo lives in the $225 session or Living Practice —
+            this is the framing-only intro, builds appetite without satiating. */}
+        {content.protocolIntro ? (
+          <div className="mb-16">
+            <div className="text-center mb-6 max-w-2xl mx-auto">
+              <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">
+                A taste of the work
+              </p>
+              <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-3">
+                {content.protocolIntro.name}
+              </h2>
+              <p className="text-base md:text-lg font-serif italic text-amari-text-light leading-relaxed">
+                {content.protocolIntro.framingLine}
+              </p>
+            </div>
+
+            <div className="max-w-3xl mx-auto rounded-xl overflow-hidden bg-black border border-amari-border shadow-lg">
+              <video
+                src={content.protocolIntro.introVideoUrl}
+                controls
+                preload="metadata"
+                playsInline
+                className="w-full h-auto block"
+                style={{ aspectRatio: '16 / 9' }}
+              />
+            </div>
+
+            <p className="text-center mt-4 text-xs font-sans uppercase tracking-widest text-amari-text-light">
+              {content.protocolIntro.durationLabel} · Dr. Garrett introducing the protocol
+            </p>
+
+            <p className="text-center mt-6 text-sm font-sans text-amari-text-light max-w-xl mx-auto leading-relaxed">
+              The actual hands-on guidance lives in your first session, where Dr. Garrett adapts the protocol to your specific body. <a href="#booking-cta" className="text-amari-charcoal underline underline-offset-4 decoration-amari-border hover:decoration-amari-pine-teal transition-colors">See what session 1 covers ↓</a>
+            </p>
+          </div>
+        ) : null}
+
         {/* ─── WHERE IT ACTUALLY COMES FROM ─── */}
         <div className="text-center mb-10 max-w-2xl mx-auto">
           <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">

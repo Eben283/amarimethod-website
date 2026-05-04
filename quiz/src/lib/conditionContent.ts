@@ -25,6 +25,17 @@ export type ChainStep = {
   body: string;
 };
 
+export type ProtocolIntro = {
+  /** Protocol name as Garrett refers to it, e.g., "Spinal Wave" */
+  name: string;
+  /** A real Garrett quote pulled from the intro transcript — sets tone */
+  framingLine: string;
+  /** Direct video URL — currently filesafe.space (GHL/groups.amarimethod.com asset CDN) */
+  introVideoUrl: string;
+  /** Approximate runtime, shown to the visitor so they know what they're committing to */
+  durationLabel: string;
+};
+
 export type ConditionContent = {
   /** Display label, e.g., "Lower Back Pain" */
   displayName: string;
@@ -41,6 +52,16 @@ export type ConditionContent = {
   chainSubline: string;
   /** 3 or 4 cards — the postural chain that produces this pain */
   chainSteps: ChainStep[];
+  /** Protocol intro to play between the why-cards and the chain explanation.
+   *  Maps to the same protocol the GHL email sequence later sends.
+   *  Mapping (Option B, agreed 2026-05-04):
+   *    Lower back / Hips      → Spinal Wave
+   *    Neck / Shoulders / Up. → Power Posture
+   *    Knees / Ankles/Feet    → Spring Step
+   *    Wrists/Hands           → Hand Balancer
+   *    Elbows                 → Elbow Reset (the only divergence from GHL —
+   *                              GHL workflow needs a matching split). */
+  protocolIntro?: ProtocolIntro;
 };
 
 // ─── LOWER BACK ──────────────────────────────────────────────────────
@@ -324,6 +345,67 @@ const fallback = (displayName: string): ConditionContent => ({
   ],
 });
 
+// ─── PROTOCOL INTRO LIBRARY ──────────────────────────────────────────
+// Video URLs from amari/Course Videos/course-video-urls.json (filesafe.space CDN).
+// Framing lines pulled from Garrett's actual intro transcripts —
+// his words, not Claude paraphrase.
+//
+// Mapping decided 2026-05-04 (Option B): mirrors the GHL email branch
+// logic for 8 of 9 pain locations; Elbows uses the dedicated Elbow Reset
+// protocol instead of Hand Balancer (small divergence — GHL workflow
+// should be split to match when next iterating that branch).
+
+const SPINAL_WAVE: ProtocolIntro = {
+  name: 'The Spinal Wave',
+  framingLine: '"Go for the feeling of it, not the doing of it. Let the ocean move you."',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30c3bfe4d0d3ac8d60938.mp4',
+  durationLabel: '4 min',
+};
+
+const POWER_POSTURE: ProtocolIntro = {
+  name: 'Power Posture',
+  framingLine: '"We have a huge over-flexion problem in the culture, and this exercise totally corrects it."',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c306b5f5a389ab2aa4c3a0.mp4',
+  durationLabel: '2 min',
+};
+
+const SPRING_STEP: ProtocolIntro = {
+  name: 'Spring Step',
+  framingLine: '"Imagine feeling the bottom of your body as buoyant and free, rather than stuck."',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30d0ef5a3893acea59684.mp4',
+  durationLabel: '3 min',
+};
+
+const HAND_BALANCER: ProtocolIntro = {
+  name: 'The Hand Balancer',
+  framingLine: '"Most people are experiencing some kind of hand issue these days. This balances out the hand so the front and back are working equally."',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c305e33ab4d91e7fc7763d.mp4',
+  durationLabel: '1 min',
+};
+
+const ELBOW_RESET: ProtocolIntro = {
+  name: 'The Elbow Reset',
+  framingLine: '"From all the overuse we do with the forearm, the tendon gets inflamed. This is a great tool for any kind of dysfunction of the elbow or forearm."',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30e9b6bd30ff0fd318d61.mp4',
+  durationLabel: '1 min',
+};
+
+// Maps every Q0 pain location slug → matched protocol intro
+const PROTOCOL_BY_LOCATION: Record<string, ProtocolIntro> = {
+  'lower-back': SPINAL_WAVE,
+  'hips': SPINAL_WAVE,
+  'hip': SPINAL_WAVE,
+  'neck': POWER_POSTURE,
+  'shoulders': POWER_POSTURE,
+  'shoulder': POWER_POSTURE,
+  'upper-back': POWER_POSTURE,
+  'knees': SPRING_STEP,
+  'knee': SPRING_STEP,
+  'ankles-feet': SPRING_STEP,
+  'wrists-hands': HAND_BALANCER,
+  'elbows': ELBOW_RESET,
+};
+
 // ─── MAP + LOOKUP ────────────────────────────────────────────────────
 const CONTENT_MAP: Record<string, ConditionContent> = {
   'lower-back': lowerBack,
@@ -343,8 +425,7 @@ const CONTENT_MAP: Record<string, ConditionContent> = {
 export function getConditionContent(painLocation: string | null): ConditionContent | null {
   if (!painLocation) return null;
   const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
-  const matched = CONTENT_MAP[normalized];
-  if (matched) return matched;
-  // Fallback for upper-back, ankles-feet, wrists-hands, elbows, "other" answers
-  return fallback(painLocation);
+  const base = CONTENT_MAP[normalized] ?? fallback(painLocation);
+  const protocolIntro = PROTOCOL_BY_LOCATION[normalized];
+  return protocolIntro ? { ...base, protocolIntro } : base;
 }
