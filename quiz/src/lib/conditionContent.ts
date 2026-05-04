@@ -36,6 +36,12 @@ export type ProtocolIntro = {
   durationLabel: string;
 };
 
+export type MatchedTestimonial = {
+  quote: string;
+  name: string;        // real first name (per site-wide convention)
+  attribution: string; // short tag like "Lower back relief" or "Photographer"
+};
+
 export type ConditionContent = {
   /** Display label, e.g., "Lower Back Pain" */
   displayName: string;
@@ -62,6 +68,10 @@ export type ConditionContent = {
    *    Elbows                 → Elbow Reset (the only divergence from GHL —
    *                              GHL workflow needs a matching split). */
   protocolIntro?: ProtocolIntro;
+  /** Pain-location-matched testimonial used in the booking CTA below.
+   *  Replaces the old hardcoded "Sarah, San Francisco" back-pain quote
+   *  that was showing for every visitor regardless of where their pain was. */
+  matchedTestimonial?: MatchedTestimonial;
 };
 
 // ─── LOWER BACK ──────────────────────────────────────────────────────
@@ -394,6 +404,58 @@ const ELBOW_RESET: ProtocolIntro = {
   durationLabel: '1 min',
 };
 
+// ─── TESTIMONIAL LIBRARY ─────────────────────────────────────────────
+// Real client first names (per site-wide convention, no pseudonyms).
+// Quotes lifted from the Garrett-approved condition page copy where each
+// of these clients was assigned. Visitor sees the testimonial whose pain
+// location matches theirs, instead of the one-size-fits-all back-pain
+// quote that used to appear on every quiz result.
+
+const T_SARAH: MatchedTestimonial = {
+  quote: 'Getting out of bed used to be this whole production. My husband would literally have to help me up. Every morning. I thought that was just my life now. After one session I actually felt something shift. My kids don\'t have to watch me wince anymore.',
+  name: 'Sarah',
+  attribution: 'Lower back relief',
+};
+
+const T_AMY: MatchedTestimonial = {
+  quote: 'I couldn\'t hike, couldn\'t do yoga, couldn\'t even get on the floor with my dog. This was the first time anyone actually watched me move and explained why. Three weeks later I was back on trails.',
+  name: 'Amy',
+  attribution: 'Hip pain',
+};
+
+const T_TYLER: MatchedTestimonial = {
+  quote: 'Fifteen years of cameras wrecked my neck. PT helped for a week then it came right back. What actually made the difference was understanding why — muscles that had stopped firing. Once that clicked, things changed fast. It\'s been over a year.',
+  name: 'Tyler',
+  attribution: 'Photographer · neck',
+};
+
+const T_DAN: MatchedTestimonial = {
+  quote: 'Shoulder was getting worse for months. PT helped a little but it always came back. Turns out it wasn\'t even my shoulder. It was my shoulder blade. Nobody had caught that. One correction, and that was eight months ago.',
+  name: 'Dan',
+  attribution: 'Shoulder relief',
+};
+
+const T_KATE: MatchedTestimonial = {
+  quote: 'Two years without running. PT, cortisone shots, rest — nothing stuck. After one session it was like oh, THAT\'S what\'s been wrong. I\'m at five miles now. Keep waiting for it to come back and it doesn\'t.',
+  name: 'Kate',
+  attribution: 'Runner recovery',
+};
+
+const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
+  'lower-back':   T_SARAH,
+  'hips':         T_AMY,
+  'hip':          T_AMY,
+  'neck':         T_TYLER,
+  'shoulders':    T_DAN,
+  'shoulder':     T_DAN,
+  'upper-back':   T_TYLER,    // anatomy-adjacent; Tyler's neck/upper-back story applies
+  'knees':        T_KATE,
+  'knee':         T_KATE,
+  'ankles-feet':  T_KATE,     // running/lower-extremity story applies
+  'wrists-hands': T_SARAH,    // no specific testimonial; fall back to Sarah
+  'elbows':       T_SARAH,    // ditto
+};
+
 // Maps every Q0 pain location slug → matched protocol intro
 const PROTOCOL_BY_LOCATION: Record<string, ProtocolIntro> = {
   'lower-back': SPINAL_WAVE,
@@ -431,5 +493,10 @@ export function getConditionContent(painLocation: string | null): ConditionConte
   const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
   const base = CONTENT_MAP[normalized] ?? fallback(painLocation);
   const protocolIntro = PROTOCOL_BY_LOCATION[normalized];
-  return protocolIntro ? { ...base, protocolIntro } : base;
+  const matchedTestimonial = TESTIMONIAL_BY_LOCATION[normalized];
+  return {
+    ...base,
+    ...(protocolIntro && { protocolIntro }),
+    ...(matchedTestimonial && { matchedTestimonial }),
+  };
 }

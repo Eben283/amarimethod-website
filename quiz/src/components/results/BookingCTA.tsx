@@ -2,6 +2,7 @@
 import React from 'react';
 import { PatternSignature } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
+import { getConditionContent } from '@/lib/conditionContent';
 
 type BookingCTAProps = {
   patternSignature: PatternSignature;
@@ -30,6 +31,8 @@ function buildBookingUrl(base: string, painLocation: string | null): string {
 const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
   const { referralSource, answers, audience } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
+  const conditionContent = getConditionContent(painLocation);
+  const testimonial = conditionContent?.matchedTestimonial;
 
   // In-person is the preferred experience; remote users default to virtual
   // because in-person isn't realistic for them. Both buttons remain visible
@@ -150,18 +153,22 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           </p>
         </div>
 
-        {/* Testimonial */}
-        <div className="bg-white p-8 rounded-xl shadow-md border border-amari-border mb-10">
-          <div className="flex gap-1 mb-4 justify-center">
-            {[...Array(5)].map((_, i) => <StarIcon key={i} />)}
+        {/* Testimonial — pain-location-matched. Falls back to Sarah's
+            back-pain quote for locations without a specific match
+            (handled in conditionContent.ts → TESTIMONIAL_BY_LOCATION). */}
+        {testimonial ? (
+          <div className="bg-white p-8 rounded-xl shadow-md border border-amari-border mb-10">
+            <div className="flex gap-1 mb-4 justify-center">
+              {[...Array(5)].map((_, i) => <StarIcon key={i} />)}
+            </div>
+            <p className="text-lg text-amari-charcoal italic mb-4 text-center font-sans leading-relaxed">
+              "{testimonial.quote}"
+            </p>
+            <p className="text-sm text-amari-text-light text-center font-medium font-sans">
+              — {testimonial.name} · {testimonial.attribution}
+            </p>
           </div>
-          <p className="text-lg text-amari-charcoal italic mb-4 text-center font-sans leading-relaxed">
-            "After years of chronic back pain, one session completely changed my relationship with my body. I finally understand what's been causing it — and more importantly, how to address it on my own."
-          </p>
-          <p className="text-sm text-amari-text-light text-center font-medium font-sans">
-            — Sarah, San Francisco
-          </p>
-        </div>
+        ) : null}
 
         {/* Discovery call secondary CTA */}
         <div className="text-center border-t border-amari-border pt-8">
