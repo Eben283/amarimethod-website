@@ -18,6 +18,17 @@ const FIELD_IDS = {
 // Appointment types that are NOT paid sessions — skip session counting
 const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
 
+// Garrett's protocol pairs a follow-up with an immediately-adjacent entrainment.
+// When a follow-up is marked showed, the entrainment within ±90 min is auto-flipped.
+const ENTRAINMENT_CALENDAR_ID = "B5aGXLoS4kzAjZAMMXxk";
+const FOLLOWUP_CALENDAR_IDS = new Set([
+  "ZO1jlGfy01rsxVqicoSB", // Follow-up Session — In Person (Package)
+  "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person
+  "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
+  "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
+]);
+const PAIR_WINDOW_MS = 90 * 60 * 1000;
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -97,10 +108,12 @@ export async function onRequestPost(context) {
 
     // Check current appointment status — if already showed/completed, skip (idempotent)
     let currentApptStatus = null;
+    let allAppts = [];
+    let thisAppt = null;
     if (apptListRes.ok) {
       const apptListData = await apptListRes.json();
-      const allAppts = apptListData.appointments || apptListData.events || [];
-      const thisAppt = allAppts.find((a) => a.id === appointmentId);
+      allAppts = apptListData.appointments || apptListData.events || [];
+      thisAppt = allAppts.find((a) => a.id === appointmentId);
       if (thisAppt) {
         currentApptStatus = (thisAppt.appointmentStatus || thisAppt.status || "").toLowerCase();
       }
@@ -144,6 +157,42 @@ export async function onRequestPost(context) {
       const errText = await apptRes.text();
       console.error(`[staff-mark-attended] Appointment update error: ${apptRes.status} ${errText}`);
       return new Response(JSON.stringify({ error: "Failed to update appointment" }), { status: 422, headers });
+    }
+
+    // Pair-mark: when a follow-up is marked showed, auto-flip a paired entrainment
+    // appointment within ±90 min. Entrainment is excluded from session counting by
+    // NON_SESSION_PATTERNS, so this can never double-decrement sessions_remaining.
+    let pairedEntrainmentId = null;
+    if (thisAppt && thisAppt.calendarId && FOLLOWUP_CALENDAR_IDS.has(thisAppt.calendarId)) {
+      const thisStartRaw = thisAppt.startTime || thisAppt.start_time;
+      const thisStartMs = thisStartRaw ? new Date(thisStartRaw).getTime() : NaN;
+      if (Number.isFinite(thisStartMs)) {
+        const paired = allAppts.find((a) => {
+          if (a.id === appointmentId) return false;
+          if (a.calendarId !== ENTRAINMENT_CALENDAR_ID) return false;
+          const status = (a.appointmentStatus || a.status || "").toLowerCase();
+          if (status !== "confirmed") return false;
+          const aStartRaw = a.startTime || a.start_time;
+          const aStartMs = aStartRaw ? new Date(aStartRaw).getTime() : NaN;
+          return Number.isFinite(aStartMs) && Math.abs(aStartMs - thisStartMs) <= PAIR_WINDOW_MS;
+        });
+        if (paired) {
+          try {
+            const pairRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments/${paired.id}`, {
+              method: "PUT",
+              body: JSON.stringify({ appointmentStatus: "showed" }),
+            });
+            if (pairRes.ok) {
+              pairedEntrainmentId = paired.id;
+            } else {
+              const errText = await pairRes.text();
+              console.error(`[staff-mark-attended] Paired entrainment update failed: ${pairRes.status} ${errText}`);
+            }
+          } catch (err) {
+            console.error("[staff-mark-attended] Paired entrainment update error:", err);
+          }
+        }
+      }
     }
 
     // Check if this is a paid session (not a discovery call / pain assessment)
@@ -195,6 +244,7 @@ export async function onRequestPost(context) {
       isSession,
       sessionsCompleted: newCompleted,
       sessionsRemaining: newRemaining,
+      pairedEntrainmentId,
     }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-mark-attended] Unexpected error:", err);
