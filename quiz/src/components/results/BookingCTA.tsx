@@ -8,7 +8,7 @@ type BookingCTAProps = {
 };
 
 const CheckIcon = () => (
-  <svg className="w-6 h-6 text-amari-pine-teal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-5 h-5 text-amari-pine-teal flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
   </svg>
 );
@@ -46,54 +46,71 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
     <section className="px-6 py-12 bg-amari-bone-white">
       <div className="max-w-2xl mx-auto">
 
-        {/* Main headline */}
+        {/* Headline that bridges from the diagnostic → the offer */}
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-4">
-            You're not broken.<br />You're out of balance.
+            You're not broken.<br />
+            <em className="italic" style={{ color: '#C56B4E' }}>You're out of balance.</em>
           </h2>
           <p className="text-lg font-sans text-amari-text-light max-w-xl mx-auto mb-5">
-            The pain you feel isn't a failure—it's your body asking for a reset. The Amari Method shows you how to respond with precision, not guesswork.
+            Most people manage symptoms for years. The Amari Method finds where your body is out of balance and teaches you how to correct it yourself.
           </p>
-          {/* Social proof pill */}
           <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold font-sans bg-green-50 text-green-700 border border-green-200">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            Most clients feel noticeable change within one session
+            Most clients feel a noticeable shift in their first session
           </span>
         </div>
 
-        {/* Booking card */}
+        {/* Pricebox — $225 as ENTRY, not a wall */}
         <div className="bg-amari-light-sand p-8 md:p-10 rounded-xl shadow-lg border-2 border-amari-pine-teal mb-10">
-          <h3 className="text-2xl md:text-3xl font-serif text-amari-charcoal text-center mb-6">
-            What's Included in Your Private Session
-          </h3>
-          <ul className="space-y-3 mb-8 text-base md:text-lg">
+
+          {/* Eyebrow + price */}
+          <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal text-center mb-2">
+            Start with one session
+          </p>
+          <div className="text-center mb-1">
+            <span className="text-5xl md:text-6xl font-serif text-amari-charcoal" style={{ fontWeight: 300, letterSpacing: '-0.02em' }}>$225</span>
+          </div>
+          <p className="text-xs uppercase tracking-widest font-sans text-amari-text-light text-center mb-7">
+            60 min · in person or virtual
+          </p>
+
+          {/* What's in the session */}
+          <ul className="space-y-2.5 mb-7">
             <li className="flex items-start gap-3">
               <CheckIcon />
-              <span className="font-sans text-amari-charcoal">60-minute Initial Amari Method session (virtual or in-person)</span>
+              <span className="font-sans text-amari-charcoal">Full assessment with Dr. Garrett</span>
             </li>
             <li className="flex items-start gap-3">
               <CheckIcon />
-              <span className="font-sans text-amari-charcoal">Immediate pain relief strategies tailored to your pattern</span>
+              <span className="font-sans text-amari-charcoal">Your first guided protocol</span>
             </li>
             <li className="flex items-start gap-3">
               <CheckIcon />
-              <span className="font-sans text-amari-charcoal">Personalized tools for long-term alignment</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <CheckIcon />
-              <span className="font-sans text-amari-charcoal">Follow-up care options and take-home kit available</span>
+              <span className="font-sans text-amari-charcoal">Take-home practice you can do tonight</span>
             </li>
           </ul>
 
-          <div className="text-center mb-6">
-            <div className="text-3xl font-serif text-amari-charcoal mb-1">$225</div>
-            <p className="text-sm text-amari-text-light font-sans">
-              <strong>Satisfaction guaranteed:</strong> If you don't feel a real shift, we'll keep working at no extra charge.
+          {/* Path explainer — same logic as the booking page */}
+          <div className="bg-white rounded-lg p-5 mb-6 border border-amari-border">
+            <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">
+              How the path works
             </p>
+            <ol className="space-y-2.5 text-sm text-amari-charcoal font-sans leading-relaxed">
+              <li><span className="font-semibold">Today:</span> Book your first session — $225.</li>
+              <li><span className="font-semibold">After session 1:</span> Decide whether to continue. No pressure.</li>
+              <li><span className="font-semibold">Before session 2:</span> If you continue, upgrade for the difference — your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</li>
+            </ol>
           </div>
 
+          {/* Guarantee */}
+          <p className="text-sm text-amari-text-light font-sans text-center mb-6 leading-relaxed">
+            <strong className="text-amari-charcoal">Satisfaction guaranteed.</strong> If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.
+          </p>
+
+          {/* Referral pill (existing logic) */}
           {referralName ? (
             <div className="flex justify-center mb-4">
               <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold font-sans bg-amari-pine-teal bg-opacity-10 text-amari-pine-teal border border-amari-pine-teal border-opacity-20">
@@ -105,6 +122,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             </div>
           ) : null}
 
+          {/* Booking buttons */}
           <div className="flex gap-3" style={{ width: '100%' }}>
             <a
               href={buildBookingUrl("/book-initial-in-person", painLocation)}
@@ -138,10 +156,10 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             {[...Array(5)].map((_, i) => <StarIcon key={i} />)}
           </div>
           <p className="text-lg text-amari-charcoal italic mb-4 text-center font-sans leading-relaxed">
-            "After years of chronic back pain, one session completely changed my relationship with my body. I finally understand what's been causing it — and more importantly, how to fix it."
+            "After years of chronic back pain, one session completely changed my relationship with my body. I finally understand what's been causing it — and more importantly, how to address it on my own."
           </p>
           <p className="text-sm text-amari-text-light text-center font-medium font-sans">
-            — Sarah M., San Francisco
+            — Sarah, San Francisco
           </p>
         </div>
 
