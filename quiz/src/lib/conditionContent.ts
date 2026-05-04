@@ -362,17 +362,21 @@ const SPINAL_WAVE: ProtocolIntro = {
   durationLabel: '4 min',
 };
 
+// NOTE 2026-05-04: course-video-urls.json has Power Posture and Spring Step
+// URLs swapped (verified by byte-size comparison against local masters in
+// amari/Course Videos/). The URLs below are the *corrected* mapping —
+// content matches the protocol name. Do not "fix" by reverting to the JSON.
 const POWER_POSTURE: ProtocolIntro = {
   name: 'Power Posture',
   framingLine: '"We have a huge over-flexion problem in the culture, and this exercise totally corrects it."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c306b5f5a389ab2aa4c3a0.mp4',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30d0ef5a3893acea59684.mp4',
   durationLabel: '2 min',
 };
 
 const SPRING_STEP: ProtocolIntro = {
   name: 'Spring Step',
   framingLine: '"Imagine feeling the bottom of your body as buoyant and free, rather than stuck."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30d0ef5a3893acea59684.mp4',
+  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c306b5f5a389ab2aa4c3a0.mp4',
   durationLabel: '3 min',
 };
 
