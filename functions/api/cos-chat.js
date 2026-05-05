@@ -918,7 +918,13 @@ export async function onRequestPost(context) {
         } else {
           const safe = sendBuffer.slice(0, markerIdx);
           if (safe) {
-            await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: safe })}\n\n`));
+            // Strip any COMPLETED comment blocks before sending (the slice may
+            // contain finished <!--TYPE:...--> blocks even though a new one is
+            // pending after markerIdx).
+            const safeCleaned = safe.replace(/<!--(?:ACTION|CONTEXT|REMINDER|SPOTIFY):.*?-->/gs, "");
+            if (safeCleaned) {
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: safeCleaned })}\n\n`));
+            }
           }
           sendBuffer = sendBuffer.slice(markerIdx);
         }
