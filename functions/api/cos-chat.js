@@ -1016,7 +1016,7 @@ export async function onRequestPost(context) {
               context,
               title,
               reminder.minutes_from_now || 60,
-              10,
+              30,
               description
             );
             if (isParking && kv && created && created.id) {

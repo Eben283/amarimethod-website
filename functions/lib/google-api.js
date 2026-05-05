@@ -99,7 +99,7 @@ async function refreshGoogleToken(context, refreshToken) {
  * @param {string} description - Optional event description
  * @returns {object} Created event data or null
  */
-export async function createCalendarReminder(context, title, minutesFromNow, reminderMinutes = 10, description = "") {
+export async function createCalendarReminder(context, title, minutesFromNow, reminderMinutes = 30, description = "") {
   try {
     const token = await getGoogleToken(context);
 
