@@ -156,6 +156,33 @@ export async function createCalendarReminder(context, title, minutesFromNow, rem
 }
 
 /**
+ * Delete a Google Calendar event by ID. Used to cancel stale reminders
+ * (e.g. an old parking reminder when the user moves to a new spot).
+ * Returns true on success, false on failure. 404/410 are treated as success
+ * since the event is already gone.
+ */
+export async function deleteCalendarEvent(context, eventId) {
+  try {
+    const token = await getGoogleToken(context);
+    const response = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    if (response.ok || response.status === 404 || response.status === 410) {
+      return true;
+    }
+    console.error("[google] Calendar event delete failed:", response.status);
+    return false;
+  } catch (err) {
+    console.error("[google] Calendar delete error:", err.message);
+    return false;
+  }
+}
+
+/**
  * Fetch today's calendar events.
  * Returns a formatted string for the system prompt.
  */

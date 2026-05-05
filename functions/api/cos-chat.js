@@ -2,7 +2,7 @@
 // Main chat endpoint — streams Claude responses via SSE through OpenRouter
 
 import { verifySessionToken } from "../lib/auth.js";
-import { getTodayCalendar, getRecentEmails, createCalendarReminder, getPacificOffset } from "../lib/google-api.js";
+import { getTodayCalendar, getRecentEmails, createCalendarReminder, deleteCalendarEvent, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
@@ -137,7 +137,14 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
-PARKING: When ${userName} mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly, then SET A REMINDER using the reminder block so his phone buzzes him before time runs out.
+PARKING: When ${userName} mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly. Reminders are for time-pressure situations only — apply these rules before deciding whether to set one:
+- **SF residential 2-hour and 4-hour time limits stop being enforced after 5 PM** in practice (posted hours are usually 8 AM–6 PM but late-afternoon enforcement is loose). If he parks at or after 3 PM in a residential zone with a 2hr or 4hr limit, do NOT set a reminder — tell him he's fine for the night and the limit resets at 8 AM.
+- Downtown peak-hour tow lanes (e.g. Battery, Sansome, Fell, Oak, market-street arteries — typically 7–9 AM and 3–7 PM) are the exception: those WILL tow. Always reminder for those.
+- RPP (residential permit) zones: if he doesn't have a permit and the limit applies right now, reminder before the window expires.
+- Street sweeping: reminder the night before if it's posted for the next morning.
+- Otherwise: just tell him the rule, don't set a reminder.
+
+When you DO set a parking reminder, prior parking reminders for ${userName} are auto-cancelled — you don't need to ask him about old spots.
 
 WEATHER: When asked about weather, you'll have current SF conditions + forecast. Give practical advice (jacket? umbrella?), not a weather report.
 
@@ -982,16 +989,43 @@ export async function onRequestPost(context) {
           kvWrites.push(kv.put(`cos:actions:${cosUser}:pending`, JSON.stringify(allActions)));
         }
 
-        // Create calendar reminders
+        // Create calendar reminders. Parking reminders replace any prior
+        // active parking reminder for this user — when the car moves to a new
+        // spot, the old buzzer for the previous spot should not still fire.
+        const PARKING_REMINDER_RE = /\b(move\s+(the\s+|my\s+|your\s+)?car|parking\s+limit|2-?hour\s+limit|street\s+sweep)/i;
         for (const reminder of reminders) {
           try {
-            await createCalendarReminder(
+            const title = reminder.title || "Reminder";
+            const description = reminder.description || "";
+            const isParking = PARKING_REMINDER_RE.test(title) || PARKING_REMINDER_RE.test(description);
+            const parkingKey = `cos:active-parking-reminder:${cosUser}`;
+            if (isParking && kv) {
+              const priorRaw = await kv.get(parkingKey);
+              if (priorRaw) {
+                try {
+                  const prior = JSON.parse(priorRaw);
+                  if (prior && prior.id) {
+                    await deleteCalendarEvent(context, prior.id);
+                  }
+                } catch {
+                  // malformed prior entry — ignore
+                }
+              }
+            }
+            const created = await createCalendarReminder(
               context,
-              reminder.title || "Reminder",
+              title,
               reminder.minutes_from_now || 60,
               10,
-              reminder.description || ""
+              description
             );
+            if (isParking && kv && created && created.id) {
+              await kv.put(
+                parkingKey,
+                JSON.stringify({ id: created.id, title: created.title, start: created.start }),
+                { expirationTtl: 24 * 60 * 60 }
+              );
+            }
           } catch (err) {
             console.error("[cos-chat] Reminder creation failed:", err.message);
           }
