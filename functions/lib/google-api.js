@@ -15,38 +15,75 @@ export function getPacificOffset() {
   return `${sign}${String(Math.abs(diffHours)).padStart(2, "0")}:00`;
 }
 
-const KV_ACCESS_TOKEN = "google_access_token";
-const KV_REFRESH_TOKEN = "google_refresh_token";
-const KV_TOKEN_EXPIRY = "google_token_expiry";
+// Legacy un-namespaced keys (Eben's original setup, pre-multi-user).
+// Read as a fallback for the "Eben" user only; writes always go to the
+// new namespaced keys below. After Eben's first refresh post-deploy the
+// new keys are populated and these become dead.
+const LEGACY_KV_ACCESS_TOKEN = "google_access_token";
+const LEGACY_KV_REFRESH_TOKEN = "google_refresh_token";
+const LEGACY_KV_TOKEN_EXPIRY = "google_token_expiry";
+
+const LEGACY_USER = "Eben";
+
+function kvKeys(user) {
+  const u = String(user || "").toLowerCase().trim() || "eben";
+  return {
+    access: `google:${u}:access_token`,
+    refresh: `google:${u}:refresh_token`,
+    expiry: `google:${u}:token_expiry`,
+  };
+}
 
 /**
- * Get a valid Google access token. Auto-refreshes from KV if expired.
+ * Get a valid Google access token for a specific user. Auto-refreshes
+ * from KV if expired. Each user (Eben, Garrett, …) needs to have their
+ * refresh_token written to KV via the setup flow before this works.
  */
-export async function getGoogleToken(context) {
+export async function getGoogleToken(context, user) {
   const kv = context.env.PORTAL_KV;
   if (!kv) throw new Error("KV not available");
 
+  const keys = kvKeys(user);
+  const isLegacyUser = String(user || "").trim() === LEGACY_USER;
+
   const [accessToken, expiryStr] = await Promise.all([
-    kv.get(KV_ACCESS_TOKEN),
-    kv.get(KV_TOKEN_EXPIRY),
+    kv.get(keys.access),
+    kv.get(keys.expiry),
   ]);
 
-  const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+  let activeAccess = accessToken;
+  let activeExpiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+
+  // Legacy fallback: if no namespaced access token but the user is Eben,
+  // try the original un-namespaced keys so existing setups keep working.
+  if (!activeAccess && isLegacyUser) {
+    const [legacyAccess, legacyExpiryStr] = await Promise.all([
+      kv.get(LEGACY_KV_ACCESS_TOKEN),
+      kv.get(LEGACY_KV_TOKEN_EXPIRY),
+    ]);
+    if (legacyAccess) {
+      activeAccess = legacyAccess;
+      activeExpiry = legacyExpiryStr ? parseInt(legacyExpiryStr, 10) : 0;
+    }
+  }
+
   const now = Date.now();
-
-  if (accessToken && expiry > now + REFRESH_BUFFER_MS) {
-    return accessToken;
+  if (activeAccess && activeExpiry > now + REFRESH_BUFFER_MS) {
+    return activeAccess;
   }
 
-  const refreshToken = await kv.get(KV_REFRESH_TOKEN);
+  let refreshToken = await kv.get(keys.refresh);
+  if (!refreshToken && isLegacyUser) {
+    refreshToken = await kv.get(LEGACY_KV_REFRESH_TOKEN);
+  }
   if (!refreshToken) {
-    throw new Error("No Google refresh token in KV — run setup first");
+    throw new Error(`No Google refresh token in KV for user "${user}" — run setup first`);
   }
 
-  return refreshGoogleToken(context, refreshToken);
+  return refreshGoogleToken(context, user, refreshToken);
 }
 
-async function refreshGoogleToken(context, refreshToken) {
+async function refreshGoogleToken(context, user, refreshToken) {
   const clientId = context.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = context.env.GOOGLE_OAUTH_CLIENT_SECRET;
 
@@ -81,11 +118,17 @@ async function refreshGoogleToken(context, refreshToken) {
 
   const kv = context.env.PORTAL_KV;
   const newExpiry = Date.now() + expiresIn * 1000;
+  const keys = kvKeys(user);
 
-  await Promise.all([
-    kv.put(KV_ACCESS_TOKEN, newAccessToken),
-    kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
-  ]);
+  // Always write to the namespaced keys. If the response included a fresh
+  // refresh_token (Google sometimes rotates them), persist that too — and
+  // backfill from the legacy slot if the namespaced refresh wasn't there yet.
+  const writes = [
+    kv.put(keys.access, newAccessToken),
+    kv.put(keys.expiry, String(newExpiry)),
+    kv.put(keys.refresh, data.refresh_token || refreshToken),
+  ];
+  await Promise.all(writes);
 
   return newAccessToken;
 }
@@ -99,9 +142,9 @@ async function refreshGoogleToken(context, refreshToken) {
  * @param {string} description - Optional event description
  * @returns {object} Created event data or null
  */
-export async function createCalendarReminder(context, title, minutesFromNow, reminderMinutes = 30, description = "") {
+export async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
   try {
-    const token = await getGoogleToken(context);
+    const token = await getGoogleToken(context, user);
 
     const start = new Date(Date.now() + minutesFromNow * 60 * 1000);
     const end = new Date(start.getTime() + 15 * 60 * 1000); // 15 min duration
@@ -161,9 +204,9 @@ export async function createCalendarReminder(context, title, minutesFromNow, rem
  * Returns true on success, false on failure. 404/410 are treated as success
  * since the event is already gone.
  */
-export async function deleteCalendarEvent(context, eventId) {
+export async function deleteCalendarEvent(context, user, eventId) {
   try {
-    const token = await getGoogleToken(context);
+    const token = await getGoogleToken(context, user);
     const response = await fetch(
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
       {
@@ -186,9 +229,9 @@ export async function deleteCalendarEvent(context, eventId) {
  * Fetch today's calendar events.
  * Returns a formatted string for the system prompt.
  */
-export async function getTodayCalendar(context) {
+export async function getTodayCalendar(context, user) {
   try {
-    const token = await getGoogleToken(context);
+    const token = await getGoogleToken(context, user);
 
     const now = new Date();
     const pacificStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }); // YYYY-MM-DD
@@ -275,9 +318,9 @@ export async function getTodayCalendar(context) {
  * Fetch recent emails (last 24h, max 10).
  * Returns a formatted string for context.
  */
-export async function getRecentEmails(context) {
+export async function getRecentEmails(context, user) {
   try {
-    const token = await getGoogleToken(context);
+    const token = await getGoogleToken(context, user);
 
     const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000);
     const params = new URLSearchParams({

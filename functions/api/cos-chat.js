@@ -765,8 +765,8 @@ export async function onRequestPost(context) {
     ghlSummary = cached.ghl;
   } else {
     [calendarText, emailText, ghlSummary] = await Promise.all([
-      getTodayCalendar(context).catch(() => null),
-      getRecentEmails(context).catch(() => null),
+      getTodayCalendar(context, cosUser).catch(() => null),
+      getRecentEmails(context, cosUser).catch(() => null),
       getGhlSummary(context).catch(() => null),
     ]);
     if (kv) {
@@ -786,7 +786,7 @@ export async function onRequestPost(context) {
     needsWeather ? getWeather().catch(() => null) : Promise.resolve(null),
     needsDirections ? getDirections("San Francisco", userMessage.replace(/how (long|far)|directions|drive to|get to|traffic to/gi, "").trim()).catch(() => null) : Promise.resolve(null),
     needsPlaces ? searchPlaces(userMessage.replace(/restaurant|food|eat|lunch|dinner|near|good|best|find/gi, "").trim()).catch(() => null) : Promise.resolve(null),
-    needsPackages ? getPackageTracking(context).catch(() => null) : Promise.resolve(null),
+    needsPackages ? getPackageTracking(context, cosUser).catch(() => null) : Promise.resolve(null),
     needsRevenue ? getRevenueSummary(context).catch(() => null) : Promise.resolve(null),
     needsMusic ? getCurrentPlayback(context).catch(() => null) : Promise.resolve(null),
     needsMusic ? getUserPlaylists(context).catch(() => []) : Promise.resolve([]),
@@ -1005,7 +1005,7 @@ export async function onRequestPost(context) {
                 try {
                   const prior = JSON.parse(priorRaw);
                   if (prior && prior.id) {
-                    await deleteCalendarEvent(context, prior.id);
+                    await deleteCalendarEvent(context, cosUser, prior.id);
                   }
                 } catch {
                   // malformed prior entry — ignore
@@ -1014,6 +1014,7 @@ export async function onRequestPost(context) {
             }
             const created = await createCalendarReminder(
               context,
+              cosUser,
               title,
               reminder.minutes_from_now || 60,
               30,

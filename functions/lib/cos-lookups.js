@@ -141,9 +141,9 @@ export async function searchPlaces(query) {
  * Search Gmail for shipping/tracking notifications.
  * Requires Google OAuth token.
  */
-export async function getPackageTracking(context) {
+export async function getPackageTracking(context, user) {
   try {
-    const token = await getGoogleToken(context);
+    const token = await getGoogleToken(context, user);
 
     // Search for recent shipping notifications
     const params = new URLSearchParams({
