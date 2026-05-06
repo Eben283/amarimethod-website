@@ -52,3 +52,10 @@ AMARI-CLAUDE-CONTEXT/
 videos/Partner Program Explainer.mp4
 *.mp4
 .wrangler/
+
+# Hero loop working files (the candidate cuts; final assets live in condition-hero/)
+videos/hero-candidates/
+videos/hero-candidates-v2/
+
+# Exception: condition-page hero loops are committed assets
+!videos/condition-hero/*.mp4
