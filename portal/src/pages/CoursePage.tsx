@@ -134,7 +134,7 @@ export default function CoursePage() {
 
             {/* Video player */}
             <VideoPlayer
-              videoUrl={currentLesson.videoUrl}
+              streamUid={currentLesson.streamUid}
               initialSeconds={lessonProg?.watchedSeconds ?? 0}
               onTimeUpdate={handleTimeUpdate}
             />

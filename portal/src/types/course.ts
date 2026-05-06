@@ -1,7 +1,7 @@
 export interface Lesson {
   readonly slug: string;
   readonly title: string;
-  readonly videoUrl: string;
+  readonly streamUid: string;
   readonly durationSeconds: number;
   /** Optional section label — renders a divider/heading before this lesson */
   readonly section?: string;
