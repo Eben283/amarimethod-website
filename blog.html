@@ -238,10 +238,11 @@
       display: grid; grid-template-columns: 5fr 7fr; min-height: 520px;
     }
     main.field-notes .assessment .photo {
-      background: #2a2520; position: relative; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; padding: 48px;
+      background: var(--paper); position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; padding: 64px 48px;
+      border-right: 1px solid var(--line);
     }
-    main.field-notes .assessment .photo img { width: 100%; max-width: 360px; height: auto; box-shadow: 0 20px 60px rgba(0,0,0,.4); border-radius: 4px; }
+    main.field-notes .assessment .photo img { width: 100%; max-width: 360px; height: auto; box-shadow: 0 20px 60px rgba(58,55,51,.18); border-radius: 4px; }
     main.field-notes .assessment .body { padding: 96px 80px; display: flex; flex-direction: column; justify-content: center; gap: 28px; }
     main.field-notes .assessment .body .eyebrow {
       font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
@@ -254,6 +255,15 @@
     main.field-notes .assessment .body ul li { font-size: 15px; color: var(--ink); display: flex; gap: 14px; align-items: flex-start; }
     main.field-notes .assessment .body ul li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 8px; flex-shrink: 0; }
     main.field-notes .assessment .body .actions { display: flex; gap: 16px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+    main.field-notes .assessment .body .actions .btn {
+      display: inline-flex; align-items: center; gap: 10px; padding: 16px 26px;
+      background: var(--ink); color: var(--paper) !important;
+      border-radius: 999px; font-family: var(--sans); font-size: 15px; font-weight: 500;
+      transition: transform .25s, background .25s; border: 0;
+    }
+    main.field-notes .assessment .body .actions .btn:hover { background: var(--accent); transform: translateY(-1px); }
+    main.field-notes .assessment .body .actions .btn .arrow { transition: transform .25s; }
+    main.field-notes .assessment .body .actions .btn:hover .arrow { transform: translateX(3px); }
     main.field-notes .assessment .body .secondary {
       font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
       color: var(--mute); border-bottom: 1px solid var(--line-2); padding-bottom: 2px;
@@ -341,10 +351,10 @@
       <div class="dateline" id="dateline">Loading…</div>
     </div>
 
-    <header class="index-head">
+    <section class="index-head">
       <h1>Notes on <em>moving better,</em> from the practice.</h1>
       <p class="lede">Exercise breakdowns, body mechanics, and observations from twenty-five years of clinical work. <em>These guides introduce the method</em> — the actual change happens in session.</p>
-    </header>
+    </section>
 
     <div class="topics" id="topics">
       <span class="label">Browse by topic</span>
@@ -536,7 +546,7 @@
             <li>No email or commitment required</li>
           </ul>
           <div class="actions">
-            <a href="/quiz/" class="btn-primary"><span class="btn-content"><span class="btn-text">Start your assessment</span><span class="arrow">→</span></span></a>
+            <a href="/quiz/" class="btn"><span>Start your assessment</span><span class="arrow">→</span></a>
             <a href="/book-discovery-call" class="secondary">Or book a free 15-min discovery call</a>
           </div>
         </div>
