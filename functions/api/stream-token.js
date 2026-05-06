@@ -10,7 +10,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { computeHasLivingPractice, getCustomField } from "./portal-data.js";
+import { computeHasLivingPractice, getCustomField } from "../lib/portal-helpers.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
