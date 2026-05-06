@@ -356,14 +356,7 @@
       <p class="lede">Exercise breakdowns, body mechanics, and observations from twenty-five years of clinical work. <em>These guides introduce the method</em> — the actual change happens in session.</p>
     </section>
 
-    <div class="topics" id="topics">
-      <span class="label">Browse by topic</span>
-      <button class="topic on" data-topic="all">All <span class="ct">14</span></button>
-      <button class="topic" data-topic="exercises">Exercises <span class="ct">11</span></button>
-      <button class="topic" data-topic="conditions">Conditions <span class="ct">3</span></button>
-    </div>
-
-    <article class="feature" data-topic="exercises">
+    <article class="feature">
       <div class="feature-inner">
         <a href="blog-power-posture-shoulder-blades" class="photo">
           <span class="badge">Garrett's pick</span>
@@ -636,18 +629,6 @@
         el.textContent = monthsShort[m.getMonth()] + ' ' + m.getFullYear();
       });
 
-      // Topic filter
-      var topics = document.querySelectorAll('#topics .topic');
-      var items = document.querySelectorAll('main.field-notes [data-topic]');
-      topics.forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var t = btn.dataset.topic;
-          topics.forEach(function(b) { b.classList.toggle('on', b === btn); });
-          items.forEach(function(el) {
-            el.classList.toggle('hidden', t !== 'all' && el.dataset.topic !== t);
-          });
-        });
-      });
     })();
   </script>
   <script src="js/main.js?v=2" defer></script>
