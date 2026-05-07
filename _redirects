@@ -21,3 +21,22 @@
 
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
+
+# === SEO 301s — old URLs Google still indexes (recover crawl signals) ===
+# Old blog post structure: /blog/<long-slug> → topic match where possible, else /blog
+/blog/the-amari-method-a-gentle-path-to-back-pain-relief /lower-back-pain-san-francisco 301
+/blog/beyond-pain-relief-how-the-amari-method-evolved-from-25-years-of-healing-practice /about 301
+/blog/index.html /blog 301
+/blog/* /blog 301
+
+# Old /therapy/* section: blog posts kept their slugs, everything else → /how-it-works
+/therapy/blog-power-posture-shoulder-blades.html /blog-power-posture-shoulder-blades 301
+/therapy/blog-* /blog-:splat 301
+/therapy/abm /how-it-works 301
+/therapy /how-it-works 301
+/therapy/* /how-it-works 301
+
+# Renamed/removed pages
+/journal /blog 301
+/experience /how-it-works 301
+/client-information /client-info 301
