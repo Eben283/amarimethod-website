@@ -1,0 +1,415 @@
+<!--
+  ============================================================================
+  DESIGN REFERENCE — DO NOT DEPLOY DIRECTLY
+  ============================================================================
+
+  This is the cleaned editorial cover for the Pain Pattern Assessment, written
+  2026-05-06. Origin: Claude Design canvas (claude.ai/design) bundle, then
+  cleaned by Claude Code on the live site.
+
+  PURPOSE: Source-of-truth design + copy for the React app's landing screen
+  at /quiz. Port these visual + copy patterns into the React/Tailwind
+  components in projects/amarimethod-website/quiz/src/.
+
+  WHAT WAS CLEANED FROM THE ORIGINAL CANVAS VERSION:
+  - Dropped "5 distinct pain patterns" framing — Garrett does not say this
+  - Dropped §02 "The Five Patterns" section entirely
+  - Dropped "Reviewed by Dr. Garrett Hewstan, DC" — misleading (he doesn't
+    review user answers) and brand voice never names DC credential
+  - Replaced "No email gate" claims with accurate "Free · Report by email"
+  - Specimen "Primary pattern: Protective Tension" → "Primary reading: Out
+    of balance" in Garrett's actual voice
+  - Specimen radar axes updated to match the actual React quiz's 6 axes
+    (Soft Tissue / Joint+Bone / Duration / Daily Impact / Adaptations /
+    Recovery) — see WelcomeScreen.tsx in the React app for the source
+  - Added GA4 + Microsoft Clarity tracking to match the rest of the site
+  - Begin Assessment links point at /quiz/
+
+  WHAT TO PRESERVE WHEN PORTING:
+  - Form 01 / Issued by / Revision instrument framing on cover
+  - Examiner's Note section (sets up "pain has a shape" thesis)
+  - Specimen output frame with sample report + radar (shows what they get
+    back — reduces uncertainty)
+  - Scope of Use section (For / Not for / What it returns) — strongest
+    trust-building section in the design
+  - Both Begin Assessment links (cover + foot, per Eben's call — foot link
+    just bounces back to top)
+
+  TYPOGRAPHY: Bona Nova (display, italic accent on key words) + Inter
+  (sans body) + JetBrains Mono (instrument metadata).
+  COLORS: --paper #F7F2E8, --ink #1F1D1A, --accent #C56B4E (warm clay).
+
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pain Pattern Assessment · Form 01 | Amari Method</title>
+<meta name="description" content="A short clinical instrument that maps where your body is out of balance across six dimensions. Free, ~3 minutes. Issued by Amari Method.">
+<meta name="robots" content="noindex,follow">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/quiz">
+<meta property="og:title" content="Pain Pattern Assessment · Form 01 | Amari Method">
+<meta property="og:description" content="A short clinical instrument that maps where your body is out of balance across six dimensions.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+
+<link rel="canonical" href="https://www.amarimethod.com/quiz">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "vuvx43xu8h");
+</script>
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+
+<style>
+  :root{
+    --paper:#F7F2E8; --paper-2:#F0E9D8; --ink:#1F1D1A; --ink-2:#3A3733;
+    --mute:#7A746B; --line:#E0D7C2; --line-2:#CCC1A8; --accent:#C56B4E; --accent-soft:#E8A38A;
+    --display:'Bona Nova',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{font-size:16px;line-height:1.55;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+  h1,h2,h3,h4{font-family:var(--display);font-weight:400;letter-spacing:-0.02em;line-height:1.02;color:var(--ink);text-wrap:balance}
+  p{text-wrap:pretty}
+  em{font-style:italic;color:var(--accent)}
+  .mono{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+
+  /* Document frame — the whole page lives inside an instrument */
+  .doc{max-width:1100px;margin:0 auto;padding:0 32px}
+  .tick{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
+  .tick::before,.tick::after{content:"";flex:1;height:1px;background:var(--line)}
+  .tick > span{display:inline-flex;align-items:center;gap:8px}
+  .tick > span::before{content:"§";color:var(--accent);font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:0;font-weight:400}
+
+  /* ===== TOP BAR (instrument header) ===== */
+  .doc-bar{border-bottom:1px solid var(--line);background:var(--paper)}
+  .doc-bar-inner{max-width:1100px;margin:0 auto;padding:14px 32px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px}
+  .doc-bar a.brand{font-family:var(--display);font-size:18px;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px;color:var(--ink)}
+  .doc-bar a.brand .mark{width:18px;height:18px;border-radius:50%;background:var(--ink);position:relative}
+  .doc-bar a.brand .mark::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--paper)}
+  .doc-bar .center{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);text-align:center}
+  .doc-bar .right{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);display:inline-flex;align-items:center;gap:8px}
+  .doc-bar .right a{color:var(--ink-2)}
+  .doc-bar .right a:hover{color:var(--accent)}
+
+  /* ===== COVER ===== */
+  .cover{padding-top:64px;padding-bottom:48px}
+  .cover-head{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:start;gap:24px;padding-bottom:48px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
+  .cover-head .col{display:flex;flex-direction:column;gap:6px}
+  .cover-head .col b{color:var(--ink);font-weight:500;letter-spacing:.18em}
+  .cover-head .center{text-align:center}
+  .cover-head .right{text-align:right}
+
+  .cover-title{padding:80px 0 64px;display:grid;grid-template-columns:1fr;gap:48px;text-align:center;position:relative}
+  .cover-title .form-id{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);text-wrap:balance}
+  .cover-title .form-id span{color:var(--mute)}
+  .cover-title h1{font-family:var(--display);font-weight:300;font-size:clamp(44px,6.4vw,108px);letter-spacing:-0.035em;line-height:0.96;max-width:18ch;margin:0 auto}
+  .cover-title h1 em{font-style:italic;color:var(--accent);font-weight:300}
+  .cover-title .lede{font-family:var(--display);font-style:italic;font-size:clamp(18px,2vw,24px);max-width:48ch;margin:0 auto;color:var(--ink-2);line-height:1.45;font-weight:400}
+  .cover-rule{display:flex;justify-content:center;align-items:center;gap:14px;font-family:var(--display);font-style:italic;color:var(--accent);font-size:18px;letter-spacing:.4em}
+  .cover-rule::before,.cover-rule::after{content:"";width:60px;height:1px;background:var(--line-2)}
+
+  /* Cover entry: where Begin lives. Made to look like an instrument plate. */
+  .entry{margin-top:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:32px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px}
+  .entry .meta-l,.entry .meta-r{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);display:flex;flex-direction:column;gap:6px}
+  .entry .meta-r{text-align:right}
+  .entry .meta-l b,.entry .meta-r b{color:var(--ink);font-weight:500;letter-spacing:.16em}
+  .begin{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;padding:22px 40px;border-radius:0;border:none;cursor:pointer;gap:18px;transition:background .2s,gap .2s}
+  .begin:hover{background:var(--accent);gap:24px}
+  .begin .arrow{font-family:var(--display);font-style:italic;font-size:18px;letter-spacing:0;line-height:0}
+
+  /* ===== INSTRUMENT NOTES (margin-style) ===== */
+  .notes{padding-top:64px;padding-bottom:48px;display:grid;grid-template-columns:1fr 2.4fr;gap:64px;border-bottom:1px solid var(--line)}
+  .notes .label{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  .notes .label-name{font-family:var(--display);font-style:italic;font-size:24px;font-weight:400;color:var(--ink);line-height:1.15;max-width:14ch}
+  .notes .body{display:flex;flex-direction:column;gap:24px}
+  .notes .body p{font-family:var(--display);font-size:21px;line-height:1.55;color:var(--ink);max-width:54ch;font-weight:400}
+  .notes .body p em{font-style:italic;color:var(--accent)}
+  .notes .body p.foot{font-family:var(--sans);font-size:13px;color:var(--mute);line-height:1.6;border-top:1px solid var(--line);padding-top:18px;margin-top:8px;max-width:54ch}
+
+  /* ===== SECTION TITLES (instrument-style) ===== */
+  .section-head{padding-top:80px;padding-bottom:32px}
+  .section-head .num{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+  .section-head .num::before{content:"§ ";font-family:var(--display);font-style:italic;font-size:16px;color:var(--accent);letter-spacing:0;font-weight:400;margin-right:4px}
+  .section-head h2{font-family:var(--display);font-size:clamp(28px,3.4vw,42px);font-weight:300;letter-spacing:-0.02em;line-height:1.1;margin-top:14px;max-width:24ch}
+  .section-head h2 em{font-style:italic;color:var(--accent)}
+
+  /* ===== §01 SAMPLE REPORT ===== */
+  .specimen{padding-bottom:64px;border-bottom:1px solid var(--line)}
+  .specimen-frame{position:relative;margin-top:8px}
+  .specimen-frame::before,.specimen-frame::after{content:"";position:absolute;width:14px;height:14px;border:1px solid var(--line-2)}
+  .specimen-frame::before{top:-7px;left:-7px;border-right:0;border-bottom:0}
+  .specimen-frame::after{top:-7px;right:-7px;border-left:0;border-bottom:0}
+  .specimen-frame .corners{position:absolute;inset:0;pointer-events:none}
+  .specimen-frame .corners::before,.specimen-frame .corners::after{content:"";position:absolute;width:14px;height:14px;border:1px solid var(--line-2)}
+  .specimen-frame .corners::before{bottom:-7px;left:-7px;border-right:0;border-top:0}
+  .specimen-frame .corners::after{bottom:-7px;right:-7px;border-left:0;border-top:0}
+  .specimen-cap{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin-bottom:18px}
+  .specimen-cap .stamp{color:var(--accent);border:1px solid var(--accent);padding:4px 10px;border-radius:0;font-size:10px;letter-spacing:.2em}
+
+  .report{background:var(--paper);border:1px solid var(--ink-2);position:relative}
+  .report-head{padding:24px 32px;border-bottom:1px solid var(--ink-2);display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;background:var(--paper-2)}
+  .report-head .doc-id{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
+  .report-head .doc-id b{color:var(--accent);font-weight:500}
+  .report-head .doc-title{font-family:var(--display);font-size:18px;font-style:italic;font-weight:400;color:var(--ink);text-align:center}
+  .report-head .stamp{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:5px 10px}
+  .report-body{display:grid;grid-template-columns:1.05fr 1fr;gap:0}
+  .report-left{padding:36px 32px;border-right:1px solid var(--ink-2);display:flex;flex-direction:column;gap:36px;min-height:380px}
+  .field{display:flex;flex-direction:column;gap:6px;border-bottom:1px dotted var(--line-2);padding-bottom:18px}
+  .field:last-child{border-bottom:0;padding-bottom:0}
+  .field .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
+  .pattern-name{font-family:var(--display);font-size:38px;font-weight:300;font-style:italic;letter-spacing:-0.02em;color:var(--ink);line-height:1.05}
+  .pattern-name em{color:var(--accent)}
+  .pattern-desc{font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px;max-width:42ch;font-family:var(--sans)}
+  .finding{font-family:var(--display);font-size:18px;line-height:1.5;color:var(--ink);max-width:36ch;font-weight:400}
+  .finding em{font-style:italic;color:var(--accent)}
+  .report-right{padding:32px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,var(--paper) 0,var(--paper) 12px,var(--paper-2) 12px,var(--paper-2) 13px);position:relative;min-height:380px}
+  .radar-wrap{width:100%;max-width:340px;aspect-ratio:1;position:relative;background:var(--paper);padding:18px;border:1px dotted var(--line-2)}
+  .radar-svg{width:100%;height:auto;display:block}
+  .specimen-foot{margin-top:18px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);flex-wrap:wrap;gap:12px}
+
+  /* ===== §02 SCOPE OF USE ===== */
+  .scope{padding-bottom:80px}
+  .scope-grid{margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;font-family:var(--sans);border-top:1px solid var(--line);padding-top:32px}
+  .scope-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:500}
+  .scope-col p{font-size:14px;color:var(--ink-2);line-height:1.6;max-width:36ch}
+
+  /* ===== INSTRUMENT FOOT ===== */
+  .doc-foot{padding:48px 0 64px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:end;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin-top:48px}
+  .doc-foot .col b{color:var(--ink);font-weight:500;letter-spacing:.18em;display:block;margin-bottom:6px}
+  .doc-foot .center{text-align:center;font-family:var(--display);font-style:italic;font-size:16px;letter-spacing:0;color:var(--ink-2);text-transform:none}
+  .doc-foot .right{text-align:right}
+  .doc-foot a{color:var(--ink-2)}
+  .doc-foot a:hover{color:var(--accent)}
+
+  /* foot text link */
+  .foot-entry{padding:24px 0 0;display:flex;justify-content:center}
+  .foot-link{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--line-2);transition:color .2s,border-color .2s}
+  .foot-link:hover{color:var(--accent);border-color:var(--accent)}
+  .foot-link .arrow{font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:0;margin-left:6px}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:880px){
+    .doc-bar-inner{grid-template-columns:auto 1fr;gap:14px}
+    .doc-bar .center{display:none}
+    .cover{padding-top:32px;padding-bottom:24px}
+    .cover-head{grid-template-columns:1fr;text-align:left;padding-bottom:24px;gap:14px}
+    .cover-head .center,.cover-head .right{text-align:left}
+    .cover-title{padding:40px 0 32px;gap:32px}
+    .entry{grid-template-columns:1fr;text-align:center;padding:24px 0;gap:18px}
+    .entry .meta-l,.entry .meta-r{text-align:center}
+    .notes{grid-template-columns:1fr;gap:24px;padding-top:48px;padding-bottom:32px}
+    .section-head{padding-top:48px;padding-bottom:24px}
+    .report-body{grid-template-columns:1fr}
+    .report-left{border-right:0;border-bottom:1px solid var(--ink-2);min-height:auto}
+    .report-right{min-height:auto}
+    .report-head{grid-template-columns:1fr;gap:8px;text-align:left}
+    .report-head .doc-title{text-align:left}
+    .scope-grid{grid-template-columns:1fr;gap:24px}
+    .doc-foot{grid-template-columns:1fr;text-align:left;gap:18px}
+    .doc-foot .center,.doc-foot .right{text-align:left}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== DOC BAR ===== -->
+<div class="doc-bar">
+  <div class="doc-bar-inner">
+    <a class="brand" href="/"><span class="mark"></span><span>Amari Method</span></a>
+    <div class="center">Form 01 · Pain Pattern Assessment</div>
+    <div class="right"><a href="/">← Return</a></div>
+  </div>
+</div>
+
+<!-- ===== COVER ===== -->
+<section class="cover doc">
+
+  <div class="cover-head">
+    <div class="col"><span>Document</span><b>Form № 01</b></div>
+    <div class="col center"><span>Issued by</span><b>Amari Method</b></div>
+    <div class="col right"><span>Revision</span><b>2026 · v1.0</b></div>
+  </div>
+
+  <div class="cover-title">
+    <span class="form-id">Pain Pattern Assessment <span>·</span> Self-administered <span>·</span> ~3 min</span>
+    <h1>An instrument for reading <em>why pain keeps coming back.</em></h1>
+    <p class="lede">A short clinical instrument. You answer twelve questions. It returns a balance reading across six dimensions and a recommended next step.</p>
+    <div class="cover-rule">· · ·</div>
+  </div>
+
+  <div class="entry">
+    <div class="meta-l">
+      <span>Time required</span>
+      <b>~ 3 minutes</b>
+    </div>
+    <a class="begin" href="#begin"><span>Begin Assessment</span><span class="arrow">→</span></a>
+    <div class="meta-r">
+      <span>Cost</span>
+      <b>Free · Report by email</b>
+    </div>
+  </div>
+
+</section>
+
+<!-- ===== NOTES ===== -->
+<section class="notes doc">
+  <div>
+    <div class="label">Examiner's Note</div>
+    <div class="label-name">On the use of <em>this instrument.</em></div>
+  </div>
+  <div class="body">
+    <p>Most people manage symptoms for years without addressing the real pattern. This is not because they aren't trying. It is because pain has a <em>shape,</em> and most approaches measure only one axis of it.</p>
+    <p>The instrument below was developed across twenty-five years of clinical practice. It will not diagnose you. It will not replace a clinician. It <em>will</em> tell you, with reasonable confidence, where your body is most out of balance — and what that means for what to do next.</p>
+    <p class="foot">Self-administered · Not a medical diagnosis · For orientation toward the right approach. Designed by Dr. Garrett Hewstan, drawing on 25 years of clinical practice.</p>
+  </div>
+</section>
+
+<!-- ===== §01 — SAMPLE OUTPUT ===== -->
+<section class="specimen doc">
+  <div class="section-head">
+    <span class="num">01 · Specimen output</span>
+    <h2>What the report <em>looks like</em> when it returns to you.</h2>
+  </div>
+
+  <div class="specimen-cap">
+    <span>Specimen · Anonymized · Sample reading · 2026</span>
+    <span class="stamp">Sample only</span>
+  </div>
+
+  <div class="specimen-frame">
+    <div class="corners"></div>
+    <div class="report">
+      <div class="report-head">
+        <span class="doc-id">№ 0428 · <b>Reading Returned</b></span>
+        <span class="doc-title">Pain Pattern Report · Form 01</span>
+        <span class="stamp">Returned</span>
+      </div>
+      <div class="report-body">
+        <div class="report-left">
+          <div class="field">
+            <span class="lbl">Primary reading</span>
+            <span class="pattern-name">Out of <em>balance</em></span>
+            <p class="pattern-desc">Adaptations are carrying more than their share. Something else has stopped doing its job, and the body has built a chain around the original site to keep moving.</p>
+          </div>
+          <div class="field">
+            <span class="lbl">Recovery reading</span>
+            <p class="finding">Recovery potential reads <em>high</em> — the system can rebalance with the right input.</p>
+          </div>
+        </div>
+        <div class="report-right">
+          <div class="radar-wrap">
+            <svg class="radar-svg" viewBox="-160 -160 320 320" aria-hidden="true">
+              <defs>
+                <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#C56B4E" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#C56B4E" stop-opacity="0.1"/>
+                </radialGradient>
+              </defs>
+              <g fill="none" stroke="#CCC1A8" stroke-width="1">
+                <polygon points="0,-130 113,-65 113,65 0,130 -113,65 -113,-65"/>
+                <polygon points="0,-97 84,-49 84,49 0,97 -84,49 -84,-49"/>
+                <polygon points="0,-65 56,-32 56,32 0,65 -56,32 -56,-32"/>
+                <polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16"/>
+              </g>
+              <g stroke="#CCC1A8" stroke-width="1">
+                <line x1="0" y1="-130" x2="0" y2="130"/>
+                <line x1="-113" y1="-65" x2="113" y2="65"/>
+                <line x1="-113" y1="65" x2="113" y2="-65"/>
+              </g>
+              <polygon points="0,-100 102,-58 78,45 0,80 -88,52 -98,-56" fill="url(#radarFill)" stroke="#C56B4E" stroke-width="2" stroke-linejoin="round"/>
+              <g fill="#C56B4E">
+                <circle cx="0" cy="-100" r="4"/>
+                <circle cx="102" cy="-58" r="4"/>
+                <circle cx="78" cy="45" r="4"/>
+                <circle cx="0" cy="80" r="4"/>
+                <circle cx="-88" cy="52" r="4"/>
+                <circle cx="-98" cy="-56" r="4"/>
+              </g>
+              <g font-family="JetBrains Mono, monospace" font-size="9" fill="#7A746B" letter-spacing="1.2">
+                <text x="0" y="-142" text-anchor="middle">SOFT TISSUE</text>
+                <text x="128" y="-68" text-anchor="start">JOINT / BONE</text>
+                <text x="128" y="78" text-anchor="start">DURATION</text>
+                <text x="0" y="148" text-anchor="middle">DAILY IMPACT</text>
+                <text x="-128" y="78" text-anchor="end">ADAPTATIONS</text>
+                <text x="-128" y="-68" text-anchor="end">RECOVERY</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="specimen-foot">
+    <span>Fig. 1 · Sample output</span>
+    <span>Plotted on six axes · Six dimensions of pain</span>
+  </div>
+</section>
+
+<!-- ===== §02 — SCOPE OF USE ===== -->
+<section class="scope doc">
+  <div class="section-head">
+    <span class="num">02 · Scope of use</span>
+    <h2>What this instrument is <em>and isn't.</em></h2>
+  </div>
+  <div class="scope-grid">
+    <div class="scope-col">
+      <h4>For</h4>
+      <p>People whose pain keeps returning. People who have tried everything. People who want a name for what they feel before deciding what to do about it.</p>
+    </div>
+    <div class="scope-col">
+      <h4>Not for</h4>
+      <p>Acute injury, post-surgical care, or anything that requires imaging. If pain is severe, sudden, or accompanied by neurological symptoms, see a clinician first.</p>
+    </div>
+    <div class="scope-col">
+      <h4>What it returns</h4>
+      <p>An orientation, not a diagnosis. The report tells you where your body reads as most out of balance — and which next step tends to work for that pattern.</p>
+    </div>
+  </div>
+</section>
+
+<section class="doc">
+  <div class="foot-entry">
+    <a class="foot-link" href="#begin">Begin Assessment <span class="arrow">↗</span></a>
+  </div>
+
+  <div class="doc-foot">
+    <div class="col"><b>Form 01 · v1.0</b><span>Issued 2026</span></div>
+    <div class="col center">~ 3 minutes · Free · Report by email</div>
+    <div class="col right"><b>Amari Method</b><a href="/">Return to home ↗</a></div>
+  </div>
+</section>
+
+</body>
+</html>
