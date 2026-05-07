@@ -123,23 +123,30 @@ document.addEventListener('DOMContentLoaded', function() {
   let hasAnimated = false;
 
   function animateCounter(element, finalValue) {
-    const is200Plus = element.textContent.includes('200');
-    const target = is200Plus ? 200 : (finalValue === '25+' ? 25 : 1);
-    const duration = 1800;
-    const startTime = Date.now();
+    var suffix = '';
+    var numericTarget;
+
+    if (finalValue.includes('+')) {
+      suffix = '+';
+      numericTarget = parseFloat(finalValue.replace('+', ''));
+    } else {
+      numericTarget = parseFloat(finalValue);
+    }
+
+    var isDecimal = finalValue.includes('.');
+    var duration = 1800;
+    var startTime = Date.now();
 
     function update() {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const currentValue = Math.round(easeOutQuart * target);
+      var elapsed = Date.now() - startTime;
+      var progress = Math.min(elapsed / duration, 1);
+      var easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      var currentValue = easeOutQuart * numericTarget;
 
-      if (is200Plus) {
-        element.textContent = currentValue + '+';
-      } else if (finalValue === '25+') {
-        element.textContent = currentValue + '+';
+      if (isDecimal) {
+        element.textContent = currentValue.toFixed(1) + suffix;
       } else {
-        element.textContent = currentValue;
+        element.textContent = Math.round(currentValue) + suffix;
       }
 
       if (progress < 1) {
@@ -224,14 +231,25 @@ document.addEventListener('click', function(e) {
     const buttonHref = button.getAttribute('href') || 'internal-link';
     const pageLocation = window.location.pathname;
 
-    gtag('event', 'cta_button_click', {
+    const params = {
       'event_category': 'engagement',
       'event_label': buttonText,
       'button_text': buttonText,
       'button_url': buttonHref,
       'page_location': pageLocation,
       'value': 1
-    });
+    };
+
+    gtag('event', 'cta_button_click', params);
+
+    // Fire named conversion events so they can be marked as Key events in GA4.
+    const href = (buttonHref || '').toLowerCase();
+    const text = (buttonText || '').toLowerCase();
+    if (href.includes('discoverycall') || text.includes('discovery call')) {
+      gtag('event', 'click_discovery_call', params);
+    } else if (href.includes('booking') || text.includes('book session') || text.includes('book now')) {
+      gtag('event', 'click_book_session', params);
+    }
   }
 });
 
@@ -353,7 +371,11 @@ document.addEventListener('click', function(e) {
       'a[href*="amarimethodbooking.amarimethod.com"],' +
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
-      'a[href*="amarimethodfollowup.amarimethod.com"]'
+      'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book-discovery-call"],' +
+      'a[href^="/book-initial-in-person"],' +
+      'a[href^="/book-initial-virtual"],' +
+      'a[href^="/book-follow-up"]'
     );
 
     bookingLinks.forEach(function (link) {
@@ -386,7 +408,11 @@ document.addEventListener('click', function(e) {
       'a[href*="amarimethodbooking.amarimethod.com"],' +
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
-      'a[href*="amarimethodfollowup.amarimethod.com"]'
+      'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book-discovery-call"],' +
+      'a[href^="/book-initial-in-person"],' +
+      'a[href^="/book-initial-virtual"],' +
+      'a[href^="/book-follow-up"]'
     );
 
     bookingLinks.forEach(function (link) {

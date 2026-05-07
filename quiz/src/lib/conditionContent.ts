@@ -405,55 +405,54 @@ const ELBOW_RESET: ProtocolIntro = {
 };
 
 // ─── TESTIMONIAL LIBRARY ─────────────────────────────────────────────
-// Real client first names (per site-wide convention, no pseudonyms).
-// Quotes lifted from the Garrett-approved condition page copy where each
-// of these clients was assigned. Visitor sees the testimonial whose pain
-// location matches theirs, instead of the one-size-fits-all back-pain
-// quote that used to appear on every quiz result.
+// Pseudonyms per site-wide privacy convention (Sara/Becca/Paul/Katie/Tyler
+// in display; image filenames preserve the original first names internally).
+// Quotes are the canonical homepage testimonials — visitor sees the one
+// whose pain location matches theirs.
 
-const T_SARAH: MatchedTestimonial = {
-  quote: 'Getting out of bed used to be this whole production. My husband would literally have to help me up. Every morning. I thought that was just my life now. After one session I actually felt something shift. My kids don\'t have to watch me wince anymore.',
-  name: 'Sarah',
-  attribution: 'Lower back relief',
+const T_SARA: MatchedTestimonial = {
+  quote: 'I thought the best I could hope for was less pain. I\'ve never felt this at home in my body.',
+  name: 'Sara',
+  attribution: 'Low back relief',
 };
 
-const T_AMY: MatchedTestimonial = {
-  quote: 'I couldn\'t hike, couldn\'t do yoga, couldn\'t even get on the floor with my dog. This was the first time anyone actually watched me move and explained why. Three weeks later I was back on trails.',
-  name: 'Amy',
+const T_BECCA: MatchedTestimonial = {
+  quote: 'I went from barely walking to six-mile hikes. I didn\'t think that was possible for me again after my accident.',
+  name: 'Becca',
   attribution: 'Hip pain',
 };
 
 const T_TYLER: MatchedTestimonial = {
-  quote: 'Fifteen years of cameras wrecked my neck. PT helped for a week then it came right back. What actually made the difference was understanding why — muscles that had stopped firing. Once that clicked, things changed fast. It\'s been over a year.',
+  quote: 'I finally understand WHY my neck has been hurting. That\'s worth more than any treatment I\'ve ever had.',
   name: 'Tyler',
   attribution: 'Photographer · neck',
 };
 
-const T_DAN: MatchedTestimonial = {
-  quote: 'Shoulder was getting worse for months. PT helped a little but it always came back. Turns out it wasn\'t even my shoulder. It was my shoulder blade. Nobody had caught that. One correction, and that was eight months ago.',
-  name: 'Dan',
-  attribution: 'Shoulder relief',
+const T_PAUL: MatchedTestimonial = {
+  quote: 'My shoulder was just the weakest link. Huge a-ha moment.',
+  name: 'Paul',
+  attribution: 'Weightlifter · shoulder',
 };
 
-const T_KATE: MatchedTestimonial = {
-  quote: 'Two years without running. PT, cortisone shots, rest — nothing stuck. After one session it was like oh, THAT\'S what\'s been wrong. I\'m at five miles now. Keep waiting for it to come back and it doesn\'t.',
-  name: 'Kate',
+const T_KATIE: MatchedTestimonial = {
+  quote: 'One visit with Dr. Garrett gave me more results than two years of physical therapy.',
+  name: 'Katie',
   attribution: 'Runner recovery',
 };
 
 const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
-  'lower-back':   T_SARAH,
-  'hips':         T_AMY,
-  'hip':          T_AMY,
+  'lower-back':   T_SARA,
+  'hips':         T_BECCA,
+  'hip':          T_BECCA,
   'neck':         T_TYLER,
-  'shoulders':    T_DAN,
-  'shoulder':     T_DAN,
+  'shoulders':    T_PAUL,
+  'shoulder':     T_PAUL,
   'upper-back':   T_TYLER,    // anatomy-adjacent; Tyler's neck/upper-back story applies
-  'knees':        T_KATE,
-  'knee':         T_KATE,
-  'ankles-feet':  T_KATE,     // running/lower-extremity story applies
-  'wrists-hands': T_SARAH,    // no specific testimonial; fall back to Sarah
-  'elbows':       T_SARAH,    // ditto
+  'knees':        T_KATIE,
+  'knee':         T_KATIE,
+  'ankles-feet':  T_KATIE,    // running/lower-extremity story applies
+  'wrists-hands': T_SARA,     // no specific testimonial; fall back to Sara
+  'elbows':       T_SARA,     // ditto
 };
 
 // Maps every Q0 pain location slug → matched protocol intro

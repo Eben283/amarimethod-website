@@ -1,5 +1,7 @@
-# SPA fallback for quiz - serves index.html for all /quiz/* routes
-/quiz/* /quiz/index.html 200
+# Astro static output for quiz — serves /quiz/index.html (cover) and
+# /quiz/take/index.html (assessment) natively. SPA fallback removed
+# because Astro emits both routes as static HTML; the previous wildcard
+# would intercept /quiz/take and serve the cover instead.
 
 # SPA fallback for client portal
 /portal/* /portal/index.html 200
