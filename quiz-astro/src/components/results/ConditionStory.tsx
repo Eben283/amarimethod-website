@@ -1,14 +1,13 @@
-// Pain-location-specific story for the results page.
+// Pain-location-specific story for the results page (editorial restyle).
 //
-// Lifts the "why your X keeps hurting" + "where X actually comes from"
-// blocks from the live condition pages (Garrett-approved copy) and shows
-// them on the quiz result, scoped to the visitor's Q0 answer. This is
-// what makes the diagnosis actually different per visitor — back-pain
-// person and knee-pain person now see different cards, different chain
-// explanations.
+// Renders three editorial sections sequentially:
+//   1. "Why your X keeps hurting" — 3-up cred-grid sourced from whyCards
+//   2. "A taste of the work" — protocolIntro video block
+//   3. "Where X pain actually comes from" — chain steps grid
 //
-// Falls back to a generic block for pain locations without a condition
-// page (upper back, ankles/feet, wrists/hands, elbows).
+// Falls back to a generic chain for pain locations without a condition page
+// (upper back, ankles/feet, wrists/hands, elbows). All copy is sourced from
+// `lib/conditionContent.ts` — never hardcoded per-location here.
 
 import React from 'react';
 import { ConditionContent } from '@/lib/conditionContent';
@@ -17,144 +16,159 @@ type Props = {
   content: ConditionContent;
 };
 
+/**
+ * Splits a heading and wraps the final emphasis phrase in <em>.
+ * Tries known suffixes first ("keeps hurting", "keeps coming back",
+ * "comes from", "actually comes from"), falls back to the last two words.
+ */
+function renderItalicTail(heading: string): React.ReactNode {
+  const suffixes = [
+    'actually comes from',
+    'keeps coming back',
+    'keeps hurting',
+    'comes from',
+  ];
+  for (const suffix of suffixes) {
+    if (heading.toLowerCase().endsWith(suffix)) {
+      const head = heading.slice(0, heading.length - suffix.length);
+      const tail = heading.slice(heading.length - suffix.length);
+      return (
+        <>
+          {head}<em>{tail}.</em>
+        </>
+      );
+    }
+  }
+  // Fallback: italicize last two words
+  const parts = heading.split(' ');
+  if (parts.length < 3) return <em>{heading}.</em>;
+  const head = parts.slice(0, -2).join(' ') + ' ';
+  const tail = parts.slice(-2).join(' ');
+  return (
+    <>
+      {head}<em>{tail}.</em>
+    </>
+  );
+}
+
+/**
+ * Renders a protocol name with the noun phrase italicized.
+ * "The Spinal Wave"   → The <em>Spinal Wave.</em>
+ * "Power Posture"     → <em>Power Posture.</em>
+ * "The Hand Balancer" → The <em>Hand Balancer.</em>
+ */
+function renderProtocolName(name: string): React.ReactNode {
+  if (name.toLowerCase().startsWith('the ')) {
+    return (
+      <>
+        The <em>{name.slice(4)}.</em>
+      </>
+    );
+  }
+  return <em>{name}.</em>;
+}
+
 const ConditionStory = ({ content }: Props) => {
   const stepCount = content.chainSteps.length;
+  const protocolDurationLabel = content.protocolIntro?.durationLabel?.toUpperCase() ?? '';
 
   return (
-    <section className="px-6 py-14 bg-amari-bone-white border-t border-amari-border">
-      <div className="max-w-5xl mx-auto">
-
-        {/* ─── WHY YOUR X KEEPS HURTING ─── */}
-        <div className="text-center mb-10 max-w-2xl mx-auto">
-          <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">
-            Why it keeps hurting
-          </p>
-          <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-3">
-            {content.whyHeading}
-          </h2>
-          <p className="text-base font-sans text-amari-text-light leading-relaxed">
-            {content.whySubline}
-          </p>
+    <>
+      {/* ─── WHY YOUR X KEEPS HURTING ─── */}
+      <section className="doc">
+        <div className="section-head">
+          <span className="eyebrow">Why it keeps hurting</span>
+          {/* Italicize the trailing verb phrase. "keeps hurting" matches 5 of 9
+              locations; "keeps coming back" matches hips. Anything else falls
+              back to italicizing the last two words. */}
+          <h2>{renderItalicTail(content.whyHeading)}</h2>
+          <p className="lede">{content.whySubline}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+        <div className="cred-grid">
           {content.whyCards.map((card) => (
-            <div key={card.num} className="bg-white border border-amari-border rounded-xl p-6">
-              <div
-                className="font-serif text-3xl mb-3"
-                style={{ color: '#C56B4E', fontStyle: 'italic', fontWeight: 300 }}
-              >
-                {card.num}
-              </div>
-              <h3 className="font-serif text-lg text-amari-charcoal mb-3 leading-snug">
-                {card.title}
-              </h3>
-              <p className="text-sm font-sans text-amari-text-light leading-relaxed">
-                {card.body}
-              </p>
+            <div key={card.num} className="cred-cell">
+              <span className="num">{card.num}</span>
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* ─── PROTOCOL INTRO VIDEO ─── */}
-        {/* Garrett introduces the protocol that matches this pain pattern. The
-            actual exercise demo lives in the $225 session or Living Practice —
-            this is the framing-only intro, builds appetite without satiating. */}
-        {content.protocolIntro ? (
-          <div className="mb-16">
-            <div className="text-center mb-6 max-w-2xl mx-auto">
-              <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">
-                A taste of the work
-              </p>
-              <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-3">
-                {content.protocolIntro.name}
-              </h2>
-              <p className="text-base md:text-lg font-serif italic text-amari-text-light leading-relaxed">
-                {content.protocolIntro.framingLine}
-              </p>
+      {/* ─── PROTOCOL INTRO VIDEO ─── */}
+      {content.protocolIntro ? (
+        <section className="doc">
+          <div className="section-head">
+            <span className="eyebrow">A taste of the work</span>
+            <h2>
+              {/* Italicize the protocol name itself. e.g. "The Spinal Wave"
+                  becomes "The <em>Spinal Wave.</em>" */}
+              {renderProtocolName(content.protocolIntro.name)}
+            </h2>
+          </div>
+
+          <div className="video-block">
+            <p className="pull">{content.protocolIntro.framingLine}</p>
+
+            <div className="video-frame-outer">
+              <span className="corner-bl" aria-hidden="true" />
+              <span className="corner-br" aria-hidden="true" />
+              <div className="video-frame-inner">
+                <video
+                  src={content.protocolIntro.introVideoUrl}
+                  controls
+                  preload="metadata"
+                  playsInline
+                />
+              </div>
             </div>
 
-            <div className="max-w-3xl mx-auto rounded-xl overflow-hidden bg-black border border-amari-border shadow-lg">
-              <video
-                src={content.protocolIntro.introVideoUrl}
-                controls
-                preload="metadata"
-                playsInline
-                className="w-full h-auto block"
-                style={{ aspectRatio: '16 / 9' }}
-              />
+            <div className="video-cap">
+              <span>{protocolDurationLabel} · Dr. Garrett introducing the protocol</span>
+              <span>Fig. {content.protocolIntro.name}</span>
             </div>
 
-            <p className="text-center mt-4 text-xs font-sans uppercase tracking-widest text-amari-text-light">
-              {content.protocolIntro.durationLabel} · Dr. Garrett introducing the protocol
-            </p>
-
-            <p className="text-center mt-6 text-sm font-sans text-amari-text-light max-w-xl mx-auto leading-relaxed">
-              The actual hands-on guidance lives in your first session, where Dr. Garrett adapts the protocol to your specific body. <a href="#booking-cta" className="text-amari-charcoal underline underline-offset-4 decoration-amari-border hover:decoration-amari-pine-teal transition-colors">See what session 1 covers ↓</a>
+            <p className="video-note">
+              The actual hands-on guidance lives in your first session, where Dr. Garrett adapts the protocol to your specific body.
             </p>
           </div>
-        ) : null}
+        </section>
+      ) : null}
 
-        {/* ─── WHERE IT ACTUALLY COMES FROM ─── */}
-        <div className="text-center mb-10 max-w-2xl mx-auto">
-          <p className="text-xs uppercase tracking-widest font-semibold font-sans text-amari-pine-teal mb-3">
-            The pattern
-          </p>
-          <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-3">
-            {content.chainHeading}
-          </h2>
-          <p className="text-base font-sans text-amari-text-light leading-relaxed">
-            {content.chainSubline}
-          </p>
+      {/* ─── WHERE PAIN ACTUALLY COMES FROM ─── */}
+      <section className="doc">
+        <div className="section-head">
+          <span className="eyebrow">The pattern</span>
+          <h2>{renderItalicTail(content.chainHeading)}</h2>
+          <p className="lede">{content.chainSubline}</p>
         </div>
 
-        <div
-          className={`grid grid-cols-1 ${stepCount === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'} gap-0 border-t border-amari-charcoal`}
-        >
-          {content.chainSteps.map((step, i) => (
-            <div
-              key={step.num}
-              className={`p-6 md:p-8 flex flex-col gap-3 ${i < stepCount - 1 ? 'md:border-r border-amari-border' : ''} ${i > 0 ? 'border-t md:border-t-0' : ''} border-amari-border`}
-            >
-              <div
-                className="font-serif text-4xl"
-                style={{ color: '#C56B4E', fontStyle: 'italic', fontWeight: 300, lineHeight: 1 }}
-              >
-                {step.num}
-              </div>
-              <div
-                className="font-mono text-[10px] tracking-widest uppercase text-amari-text-light"
-                style={{ letterSpacing: '0.14em' }}
-              >
-                {step.flow}
-              </div>
-              <h3 className="font-serif text-lg text-amari-charcoal leading-snug">
-                {step.title}
-              </h3>
-              <p className="text-sm font-sans text-amari-text-light leading-relaxed mt-auto">
-                {step.body}
-              </p>
+        <div className={`chain-grid${stepCount === 4 ? ' is-4' : ''}`}>
+          {content.chainSteps.map((step) => (
+            <div key={step.num} className="chain-cell">
+              <span className="num">{step.num}</span>
+              <span className="flow">{step.flow}</span>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
             </div>
           ))}
         </div>
 
-        {/* Optional link to full condition page for visitors who want depth */}
         {content.conditionPageSlug ? (
-          <p className="text-center mt-10 text-sm font-sans text-amari-text-light">
+          <p className="chain-foot">
             Want the full breakdown?{' '}
             <a
               href={`https://www.amarimethod.com/${content.conditionPageSlug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amari-charcoal underline underline-offset-4 decoration-amari-border hover:decoration-amari-pine-teal transition-colors"
             >
               Read the full {content.displayName.toLowerCase()} page →
             </a>
           </p>
         ) : null}
-
-      </div>
-    </section>
+      </section>
+    </>
   );
 };
 
