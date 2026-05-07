@@ -6,6 +6,8 @@ Allow: /
 Disallow: /portal/
 Disallow: /dist/
 Disallow: /member-agreement
+Disallow: /cdn-cgi/
+Disallow: /api/
 
 # AI search bots — explicitly allowed for citation
 User-agent: GPTBot
