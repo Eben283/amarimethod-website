@@ -228,9 +228,13 @@ const EDITORIAL_STYLES = `
 /* ── EXAMINER NOTE ────────────────────────────────────────────────── */
 [data-results] .examiner{padding:64px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 [data-results] .examiner-grid{
-  display:grid;grid-template-columns:1fr 2.4fr;gap:64px;align-items:start;
+  display:grid;grid-template-columns:1fr 2.4fr;gap:80px;align-items:start;
+  padding-left:32px;
 }
-[data-results] .examiner-id{display:flex;flex-direction:column;gap:14px}
+[data-results] .examiner-id{display:flex;flex-direction:column;gap:14px;padding-top:8px}
+@media (max-width:760px){
+  [data-results] .examiner-grid{grid-template-columns:1fr;gap:32px;padding-left:0}
+}
 [data-results] .examiner-avatar{
   width:64px;height:64px;border-radius:50%;background:var(--ink);
   display:flex;align-items:center;justify-content:center;
