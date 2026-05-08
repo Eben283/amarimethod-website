@@ -4,12 +4,16 @@ export type QuizAnswer = {
   answer: string | string[] | null;
 };
 
-export type PatternSignature = 
-  | 'Protective Tension'
-  | 'Structural Adaptation'
-  | 'Established Pattern'
-  | 'Functional Limitation'
-  | 'Compensatory Movement';
+// Plain-English observations grounded in Garrett's actual vocabulary
+// (out-of-balance, working too hard / not enough, workaround patterns).
+// Replaces the prior pseudo-clinical labels which weren't from his
+// methodology and read as fabricated diagnoses on the results page.
+export type PatternSignature =
+  | 'Overworking muscles'
+  | 'Joint-side strain'
+  | 'Long-standing imbalance'
+  | 'Daily-life impact'
+  | 'Built-in workarounds';
 
 export type ScoreCategories = {
   softTissueTension: number;

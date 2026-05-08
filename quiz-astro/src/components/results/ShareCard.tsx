@@ -7,11 +7,11 @@ type ShareCardProps = {
 };
 
 const patternAccents: Record<PatternSignature, { bg: string; text: string }> = {
-  'Protective Tension':    { bg: '#fef3c7', text: '#92400e' },
-  'Structural Adaptation': { bg: '#dbeafe', text: '#1e40af' },
-  'Established Pattern':   { bg: '#f3e8ff', text: '#7e22ce' },
-  'Functional Limitation': { bg: '#ffe4e6', text: '#9f1239' },
-  'Compensatory Movement': { bg: '#ccfbf1', text: '#134e4a' },
+  'Overworking muscles':     { bg: '#fef3c7', text: '#92400e' },
+  'Joint-side strain':       { bg: '#dbeafe', text: '#1e40af' },
+  'Long-standing imbalance': { bg: '#f3e8ff', text: '#7e22ce' },
+  'Daily-life impact':       { bg: '#ffe4e6', text: '#9f1239' },
+  'Built-in workarounds':    { bg: '#ccfbf1', text: '#134e4a' },
 };
 
 // SVG ring — no CSS animation so html2canvas captures the final state immediately

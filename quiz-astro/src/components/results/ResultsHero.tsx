@@ -33,7 +33,7 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
 
       <div className="hero-meta">
         <div className="cell">
-          <span className="lbl">Pattern</span>
+          <span className="lbl">Primary observation</span>
           <span className="val">{patternSignature}</span>
         </div>
         <div className="cell">

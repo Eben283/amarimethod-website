@@ -354,18 +354,23 @@ const EDITORIAL_STYLES = `
   text-transform:uppercase;color:var(--mute);
 }
 
-/* ── ASIDE LINKS ─────────────────────────────────────────────────── */
+/* ── ASIDE LINKS — ghost-button pills (more visible secondary CTAs) ── */
 [data-results] .aside-links{
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-  padding:28px 0;display:grid;grid-template-columns:1fr 1fr;gap:0;
+  padding:32px 0;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;
   max-width:780px;margin:0 auto;
 }
 [data-results] .aside-links a{
-  font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
-  color:var(--mute);text-align:center;padding:8px 12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink);text-align:center;padding:14px 26px;
+  border:1px solid var(--ink);border-radius:999px;
+  transition:background-color .18s ease, color .18s ease;
+  white-space:nowrap;
 }
-[data-results] .aside-links a + a{border-left:1px solid var(--line)}
-[data-results] .aside-links a:hover{color:var(--accent)}
+[data-results] .aside-links a:hover{background:var(--ink);color:var(--paper)}
+@media (max-width:520px){
+  [data-results] .aside-links{flex-direction:column;align-items:stretch;padding:24px 16px}
+  [data-results] .aside-links a{white-space:normal}
+}
 
 /* ── APPENDIX ────────────────────────────────────────────────────── */
 [data-results] .appendix{
@@ -373,20 +378,27 @@ const EDITORIAL_STYLES = `
 }
 [data-results] .appendix summary{
   list-style:none;cursor:pointer;display:flex;justify-content:space-between;
-  align-items:baseline;padding:18px 0;border-bottom:1px solid var(--line);
+  align-items:center;padding:22px 24px;
+  border:1px solid var(--line);border-radius:14px;
+  background:var(--paper);
   font-family:var(--mono);font-size:11px;letter-spacing:.24em;
   text-transform:uppercase;color:var(--ink-2);gap:16px;flex-wrap:wrap;
+  transition:border-color .18s ease, background-color .18s ease;
 }
+[data-results] .appendix summary:hover{border-color:var(--ink);background:#f6f1e6}
 [data-results] .appendix summary::-webkit-details-marker{display:none}
 [data-results] .appendix summary .label{
-  font-family:var(--display);font-style:italic;font-size:18px;
+  font-family:var(--display);font-style:italic;font-size:20px;
   letter-spacing:-0.01em;color:var(--ink);text-transform:none;
 }
 [data-results] .appendix summary .label::before{
   content:"§ ";font-style:italic;color:var(--accent);
 }
 [data-results] .appendix summary .toggle{
-  font-family:var(--display);font-style:italic;font-size:18px;color:var(--accent);
+  font-family:var(--display);font-style:italic;font-size:24px;color:var(--accent);
+  width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--accent);border-radius:50%;line-height:1;
+  transition:transform .18s ease;
 }
 [data-results] details[open] .appendix summary .toggle,
 [data-results] .appendix details[open] summary .toggle{transform:rotate(45deg)}
@@ -448,8 +460,7 @@ const EDITORIAL_STYLES = `
   [data-results] .offer-pane + .offer-pane{border-left:0;border-top:1px solid var(--ink-2)}
   [data-results] .offer-cta{padding:20px}
   [data-results] .testimonial{padding:48px 0}
-  [data-results] .aside-links{grid-template-columns:1fr}
-  [data-results] .aside-links a + a{border-left:0;border-top:1px solid var(--line)}
+  /* aside-links responsive handling lives in its own @media (max-width:520px) above */
   [data-results] .doc-foot{grid-template-columns:1fr;text-align:left;gap:18px;padding:32px 20px}
   [data-results] .doc-foot .center,[data-results] .doc-foot .right{text-align:left}
   [data-results] .video-frame-outer{padding:8px}
@@ -554,7 +565,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           </div>
           <div className="examiner-body">
             <p>
-              Your reading came back as <em>{patternSignature}</em>. That means your body has built a chain around the original site — but the chain is <em>identifiable</em>, and your system hasn't built deep compensations yet.
+              What stood out in your answers: <em>{patternSignature.toLowerCase()}</em>. That means your body has built a chain around the original site — but the chain is <em>identifiable</em>, and your system hasn't built deep compensations yet.
             </p>
             <p>
               What I'd do next is simple: <em>book one session.</em> Not a package. Not a commitment. One. We find the specific imbalance creating your pattern and I show you the protocol that addresses it.

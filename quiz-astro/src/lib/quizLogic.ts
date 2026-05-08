@@ -232,17 +232,18 @@ export function calculateScores(answers: QuizAnswer[]): ScoreCategories {
 }
 
 export function determinePatternSignature(scores: ScoreCategories): PatternSignature {
-  // Find the category with the highest score
+  // Map each score category to a plain-English observation that matches
+  // Garrett's actual framing (no fake clinical labels).
   const categories = [
-    { name: 'Protective Tension', score: scores.softTissueTension },
-    { name: 'Structural Adaptation', score: scores.jointBoneAlignment },
-    { name: 'Established Pattern', score: scores.patternDuration },
-    { name: 'Functional Limitation', score: scores.dailyActivitiesImpact },
-    { name: 'Compensatory Movement', score: scores.bodyAdaptations },
+    { name: 'Overworking muscles',     score: scores.softTissueTension },
+    { name: 'Joint-side strain',       score: scores.jointBoneAlignment },
+    { name: 'Long-standing imbalance', score: scores.patternDuration },
+    { name: 'Daily-life impact',       score: scores.dailyActivitiesImpact },
+    { name: 'Built-in workarounds',    score: scores.bodyAdaptations },
   ];
-  
+
   const sortedCategories = [...categories].sort((a, b) => b.score - a.score);
-  
+
   return sortedCategories[0].name as PatternSignature;
 }
 
