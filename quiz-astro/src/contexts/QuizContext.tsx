@@ -131,12 +131,36 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       setValidationError('Please select what triggered your pain');
       return;
     }
+    if (step === 2 && (!Array.isArray(ans[2]?.answer) || (ans[2]?.answer as string[]).length === 0)) {
+      setValidationError('Select any additional areas where you experience pain (or pick the same primary area if it\'s the only one)');
+      return;
+    }
     if (step === 3 && !ans[3]?.answer) {
       setValidationError("Please select how long you've been experiencing this pain");
       return;
     }
     if (step === 4 && !ans[4]?.answer) {
       setValidationError('Please select your pain intensity');
+      return;
+    }
+    if (step === 5 && (!Array.isArray(ans[5]?.answer) || (ans[5]?.answer as string[]).length === 0)) {
+      setValidationError('Please select when you typically experience pain');
+      return;
+    }
+    if (step === 6 && (!Array.isArray(ans[6]?.answer) || (ans[6]?.answer as string[]).length === 0)) {
+      setValidationError('Please describe what your pain feels like');
+      return;
+    }
+    if (step === 7 && (!Array.isArray(ans[7]?.answer) || (ans[7]?.answer as string[]).length === 0)) {
+      setValidationError('Please select what makes your pain worse');
+      return;
+    }
+    if (step === 8 && (!Array.isArray(ans[8]?.answer) || (ans[8]?.answer as string[]).length === 0)) {
+      setValidationError('Please select how your pain affects your daily life');
+      return;
+    }
+    if (step === 9 && (!Array.isArray(ans[9]?.answer) || (ans[9]?.answer as string[]).length === 0)) {
+      setValidationError('Please select any treatments you\'ve tried (or pick "I haven\'t tried any treatments")');
       return;
     }
     if (
@@ -147,6 +171,10 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       !ans[10]?.answer
     ) {
       setValidationError('Please describe your results from previous treatments');
+      return;
+    }
+    if (step === 11 && (!Array.isArray(ans[11]?.answer) || (ans[11]?.answer as string[]).length === 0)) {
+      setValidationError('Please select any other health conditions (or pick "None of the above")');
       return;
     }
     if (step === 12) {
@@ -177,8 +205,14 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const goToPrevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
   const jumpToStep = useCallback((n: number) => {
+    // Allow back-navigation only — block forward-skips so users can't bypass
+    // unanswered questions and submit with sparse data (which produced
+    // all-zero radar/pattern displays on the results page).
     setValidationError('');
-    setCurrentStep(Math.max(0, Math.min(n, totalSteps - 1)));
+    setCurrentStep((prev) => {
+      const target = Math.max(0, Math.min(n, totalSteps - 1));
+      return target <= prev ? target : prev;
+    });
   }, [totalSteps]);
 
   const skipStep = () => {

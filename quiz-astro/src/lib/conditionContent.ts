@@ -312,10 +312,22 @@ const knee: ConditionContent = {
 // ─── GENERIC FALLBACK ────────────────────────────────────────────────
 // Used for upper back, ankles/feet, wrists/hands, elbows — areas without
 // dedicated condition pages. Avoids faking anatomy-specific copy.
-const fallback = (displayName: string): ConditionContent => ({
+
+// Natural-language phrases for the fallback heading. Avoids the grammar
+// bug where `${displayName.toLowerCase()} keeps hurting` produces
+// "elbows keeps hurting" / "wrists/hands keeps hurting" (plural noun +
+// singular verb) and "wrists/hands" (slash in display).
+const PAIN_PHRASE: Record<string, string> = {
+  'elbows': 'elbow pain',
+  'wrists-hands': 'wrist or hand pain',
+  'ankles-feet': 'ankle or foot pain',
+  'upper-back': 'upper back pain',
+};
+
+const fallback = (displayName: string, normalized: string): ConditionContent => ({
   displayName,
   conditionPageSlug: null,
-  whyHeading: `Why your ${displayName.toLowerCase()} keeps hurting`,
+  whyHeading: `Why your ${PAIN_PHRASE[normalized] ?? `${displayName.toLowerCase()} pain`} keeps coming back`,
   whySubline: 'The pain is where you feel it. The problem is rarely where it starts.',
   whyCards: [
     {
@@ -440,6 +452,16 @@ const T_KATIE: MatchedTestimonial = {
   attribution: 'Runner recovery',
 };
 
+// Body-agnostic fallback for areas where no specific homepage testimonial
+// applies (elbows, wrists/hands). The quote doesn't reference any body
+// part, so attribution stays generic. Sourced from index.html homepage
+// testimonials (Marisol · Teacher).
+const T_MARISOL: MatchedTestimonial = {
+  quote: 'I follow his protocol every day. 8 months no pain.',
+  name: 'Marisol',
+  attribution: 'Teacher',
+};
+
 const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
   'lower-back':   T_SARA,
   'hips':         T_BECCA,
@@ -451,8 +473,8 @@ const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
   'knees':        T_KATIE,
   'knee':         T_KATIE,
   'ankles-feet':  T_KATIE,    // running/lower-extremity story applies
-  'wrists-hands': T_SARA,     // no specific testimonial; fall back to Sara
-  'elbows':       T_SARA,     // ditto
+  'wrists-hands': T_MARISOL,  // body-agnostic; quote doesn't tie to a location
+  'elbows':       T_MARISOL,  // ditto
 };
 
 // Maps every Q0 pain location slug → matched protocol intro
@@ -490,7 +512,7 @@ const CONTENT_MAP: Record<string, ConditionContent> = {
 export function getConditionContent(painLocation: string | null): ConditionContent | null {
   if (!painLocation) return null;
   const normalized = painLocation.toLowerCase().replace(/\s*\/\s*/g, '-').replace(/\s+/g, '-');
-  const base = CONTENT_MAP[normalized] ?? fallback(painLocation);
+  const base = CONTENT_MAP[normalized] ?? fallback(painLocation, normalized);
   const protocolIntro = PROTOCOL_BY_LOCATION[normalized];
   const matchedTestimonial = TESTIMONIAL_BY_LOCATION[normalized];
   return {

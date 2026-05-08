@@ -40,9 +40,9 @@ export const QUIZ_QUESTIONS: QDef[] = [
   {
     index: 2, type: 'multi',
     question: 'Do you experience pain in any additional areas?',
-    description: 'Select all other areas where you experience pain or discomfort. (Optional)',
-    options: ['Neck', 'Shoulders', 'Upper back', 'Lower back', 'Hips', 'Knees', 'Ankles/Feet', 'Wrists/Hands', 'Elbows'],
-    otherOption: true,
+    description: 'Select all other areas where you experience pain or discomfort.',
+    options: ['Neck', 'Shoulders', 'Upper back', 'Lower back', 'Hips', 'Knees', 'Ankles/Feet', 'Wrists/Hands', 'Elbows', 'Only my primary area'],
+    required: true, otherOption: true,
     category: 'Pain Location', questionNum: 3,
   },
   {
@@ -64,41 +64,41 @@ export const QUIZ_QUESTIONS: QDef[] = [
   {
     index: 5, type: 'multi',
     question: 'When do you typically experience pain?',
-    description: 'Select all times when you typically experience pain. (Optional)',
+    description: 'Select all times when you typically experience pain.',
     options: ['In the morning, right after waking up', 'During the day, while active', 'After physical activity', 'After sitting for long periods', 'At night, when trying to sleep', 'The pain is constant throughout the day'],
-    otherOption: true,
+    required: true, otherOption: true,
     category: 'Timing', questionNum: 6,
   },
   {
     index: 6, type: 'multi',
     question: 'What type of pain are you experiencing?',
-    description: 'Select all words that describe the quality of your pain. (Optional)',
+    description: 'Select all words that describe the quality of your pain.',
     options: ['Sharp or stabbing', 'Dull or achy', 'Tight or stiff', 'Burning', 'Shooting down arm/leg', 'Tingling or numbness', 'Throbbing', 'Pinching'],
-    otherOption: true,
+    required: true, otherOption: true,
     category: 'Pain Quality', questionNum: 7,
   },
   {
     index: 7, type: 'multi',
     question: 'What activities make your pain worse?',
-    description: 'Select all activities that tend to worsen your pain. (Optional)',
-    options: ['Walking/Running', 'Sitting', 'Standing for long periods', 'Bending forward', 'Bending backward', 'Twisting or rotating', 'Lifting or carrying objects', 'Going up/down stairs', 'Repetitive movements', 'Specific exercise/sports'],
-    otherOption: true,
+    description: 'Select all activities that tend to worsen your pain.',
+    options: ['Walking/Running', 'Sitting', 'Standing for long periods', 'Bending forward', 'Bending backward', 'Twisting or rotating', 'Lifting or carrying objects', 'Going up/down stairs', 'Repetitive movements', 'Specific exercise/sports', 'Nothing specific — pain is constant'],
+    required: true, otherOption: true,
     category: 'Aggravating Factors', questionNum: 8,
   },
   {
     index: 8, type: 'multi',
     question: 'Does your pain affect any of the following aspects of your life?',
-    description: 'Select all areas of life that are impacted by your pain. (Optional)',
-    options: ['Sleep quality', 'Work performance', 'Ability to exercise', 'Social activities', 'Household chores', 'Hobbies/Recreation', 'Mood and mental health', 'Relationships', 'Driving'],
-    otherOption: true,
+    description: 'Select all areas of life that are impacted by your pain.',
+    options: ['Sleep quality', 'Work performance', 'Ability to exercise', 'Social activities', 'Household chores', 'Hobbies/Recreation', 'Mood and mental health', 'Relationships', 'Driving', 'No significant daily impact'],
+    required: true, otherOption: true,
     category: 'Daily Impact', questionNum: 9,
   },
   {
     index: 9, type: 'multi',
     question: 'Have you tried any treatments for your pain?',
-    description: 'Select all treatments you have tried for your pain. (Optional)',
+    description: 'Select all treatments you have tried for your pain.',
     options: ['Physical therapy', 'Chiropractic care', 'Massage therapy', 'Acupuncture', 'Pain medication', 'Anti-inflammatory medication', 'Injections (cortisone, etc.)', 'Surgery', 'Exercise/Stretching', 'Heat/Ice therapy', "I haven't tried any treatments"],
-    otherOption: true,
+    required: true, otherOption: true,
     category: 'Treatment History', questionNum: 10,
   },
   {
@@ -112,9 +112,9 @@ export const QUIZ_QUESTIONS: QDef[] = [
   {
     index: 11, type: 'multi',
     question: 'Do you have any other health conditions?',
-    description: 'Select any health conditions you have been diagnosed with. (Optional)',
+    description: 'Select any health conditions you have been diagnosed with.',
     options: ['Arthritis', 'Fibromyalgia', 'Sciatica', 'Disc herniation/bulge', 'Scoliosis', 'Previous injury/trauma', 'Previous surgery', 'Diabetes', 'Autoimmune condition', 'Depression/Anxiety', 'Chronic fatigue', 'None of the above'],
-    otherOption: true,
+    required: true, otherOption: true,
     category: 'Health Background', questionNum: 12,
   },
 ];
@@ -333,15 +333,13 @@ export default function QuizStack({ onNext, onPrev, isSubmitting, validationErro
               </div>
             )}
 
-            {/* ── FUTURE: faded preview row ──────────────────────────── */}
+            {/* ── FUTURE: faded preview row (non-interactive — forward
+                jumps are blocked so users can't bypass unanswered Qs) ── */}
             {isFuture && (
-              <button
-                type="button"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-amari-oat cursor-pointer hover:border-gray-400 transition-all text-left"
+              <div
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-amari-oat text-left"
                 style={{ opacity: 0.38 }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.6'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.38'; }}
-                onClick={() => jumpToStep(q.index)}
+                aria-disabled="true"
               >
                 <span className="text-xs text-gray-400 font-mono flex-shrink-0">
                   {String(q.questionNum).padStart(2, '0')}
@@ -355,7 +353,7 @@ export default function QuizStack({ onNext, onPrev, isSubmitting, validationErro
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-              </button>
+              </div>
             )}
 
           </div>
