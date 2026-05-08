@@ -126,10 +126,15 @@ const QuizContainer = () => {
 
   const isNavVisible = hasStarted && !isProcessing && !isCompleted && !submissionError && !isLoading;
 
+  // Results renders its own editorial doc-bar (brand + "Your result" center)
+  // and doc-foot, so hide the generic AmariLogo + QuizFooter on results to
+  // avoid showing the brand twice. Quiz steps + processing keep them.
+  const isResultsView = isCompleted && !isProcessing;
+
   return (
     <div className="min-h-screen bg-amari-bone-white">
-      <div className="container max-w-4xl mx-auto px-4 py-8">
-        <AmariLogo />
+      <div className={isResultsView ? '' : 'container max-w-4xl mx-auto px-4 py-8'}>
+        {!isResultsView && <AmariLogo />}
 
         {isProcessing ? (
           <ProcessingScreen />
@@ -200,7 +205,7 @@ const QuizContainer = () => {
           </div>
         )}
 
-        <QuizFooter />
+        {!isResultsView && <QuizFooter />}
       </div>
     </div>
   );
