@@ -55,7 +55,7 @@
     .book-hero .meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 13px; color: var(--color-text-muted, #888); }
     .book-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
-    .format-toggle { display: flex; justify-content: center; margin: 0 auto 40px; padding: 0 16px; }
+    .format-toggle { position: static; display: flex; justify-content: center; margin: 0 auto 40px; padding: 0 16px; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: none; z-index: auto; }
     .format-toggle-inner { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg-secondary, #f5efe8); border-radius: 999px; }
     .ft-option { display: inline-flex; flex-direction: column; align-items: center; padding: 10px 24px; border-radius: 999px; text-decoration: none; color: var(--color-text-secondary, #555); line-height: 1.2; transition: background 0.2s ease, color 0.2s ease; }
     .ft-option .ft-label { font-size: 15px; font-weight: 600; letter-spacing: 0.01em; font-family: 'Inter', sans-serif; }
@@ -65,7 +65,7 @@
     @media (max-width: 480px) { .ft-option { padding: 8px 18px; } .ft-option .ft-label { font-size: 14px; } }
 
     .book-frame { padding: 0 16px 64px; max-width: 1400px; margin: 0 auto; }
-    .book-frame iframe { width: 100%; border: none; height: 720px; display: block; background: transparent; transition: height 0.2s ease; }
+    .book-frame iframe { width: 100%; border: none; height: 2000px; display: block; background: transparent; transition: height 0.2s ease; }
     .book-frame.failed iframe { display: none; }
 
     .book-fallback { display: none; max-width: 560px; margin: 0 auto; padding: 32px; background: var(--bg-secondary, #f7f3e9); border-radius: 12px; text-align: center; }
