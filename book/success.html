@@ -36,6 +36,18 @@
     .btn-primary-pill:hover { color: #fff; }
     .btn-text-link { font-size: 14px; color: var(--color-text-secondary, #555); text-decoration: underline; text-underline-offset: 3px; }
 
+    .calendar-actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; max-width: 360px; margin: 32px auto 0; }
+    .calendar-actions-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 6px; text-align: center; }
+    .btn-cal { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 22px; min-height: 48px; background: #fff; border: 1px solid #d5cdbb; color: var(--color-text, #1d1d1d); border-radius: 999px; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; transition: border-color 0.15s ease, background 0.15s ease; }
+    .btn-cal:hover { border-color: var(--color-text, #1d1d1d); background: #faf6ec; color: var(--color-text, #1d1d1d); }
+    .btn-cal svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .booking-recap { max-width: 420px; margin: 32px auto 0; padding: 20px 24px; background: #fff; border: 1px solid #e8dfc7; border-radius: 12px; text-align: left; }
+    .recap-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 8px; }
+    .recap-title { font-family: 'Bona Nova', serif; font-size: 18px; font-weight: 400; line-height: 1.2; color: var(--color-text, #1d1d1d); margin: 0 0 6px; }
+    .recap-when { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--color-text, #1d1d1d); margin: 0 0 4px; }
+    .recap-where { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); margin: 0; }
+
     @media (max-width: 600px) {
       .confirm-shell { padding: 64px 16px; }
     }
@@ -55,8 +67,30 @@
     <div class="confirm-shell">
       <div class="confirm-icon" aria-hidden="true">✓</div>
       <h1>You're <em>booked.</em></h1>
-      <p>Payment received and your session is on the calendar. A confirmation email is on its way with everything you need to know — including how to reach us if anything comes up.</p>
-      <p style="font-size: 14px; color: var(--color-text-muted, #888);">If you don't see the email in a few minutes, check your spam folder or email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a>.</p>
+      <p>Payment received and your session is on the calendar. A confirmation email is on its way.</p>
+
+      <!-- Booking recap — populated by JS if URL params are present -->
+      <section class="booking-recap" id="bookingRecap" hidden>
+        <p class="recap-label">Your booking</p>
+        <p class="recap-title" id="recapTitle">—</p>
+        <p class="recap-when" id="recapWhen">—</p>
+        <p class="recap-where" id="recapWhere">—</p>
+      </section>
+
+      <!-- Add-to-calendar buttons — populated by JS if a slot is in URL -->
+      <div class="calendar-actions" id="calendarActions" hidden>
+        <p class="calendar-actions-label">Add to your calendar</p>
+        <a href="#" id="gcalBtn" class="btn-cal" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Add to Google Calendar
+        </a>
+        <a href="#" id="icalBtn" download="amari-session.ics" class="btn-cal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Add to Apple Calendar / Outlook
+        </a>
+      </div>
+
+      <p style="font-size: 14px; color: var(--color-text-muted, #888); margin-top: 32px;">If you don't see the email in a few minutes, check your spam folder or email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a>.</p>
       <div class="confirm-actions">
         <a href="/portal/" class="btn-primary-pill">Go to your client portal →</a>
         <a href="/" class="btn-text-link">Back to home</a>
@@ -66,10 +100,9 @@
 
   <script>
     (function() {
-      // GA4 conversion event — fires once on success page load. URL params
-      // are set by the GHL post-purchase redirect (in-person / virtual).
       var url = new URL(window.location.href);
       var product = url.searchParams.get('product') || 'initial_in_person';
+      var slotParam = url.searchParams.get('slot') || '';
       var transactionId = url.searchParams.get('order_id')
         || url.searchParams.get('session_id')
         || ('ghl-' + Date.now());
@@ -77,15 +110,24 @@
       var PRODUCT_CATALOG = {
         initial_in_person: {
           item_name: 'Amari Method Initial Session — In Person',
+          short_name: 'Initial Session — In Person',
           price: 225,
+          durationMinutes: 60,
+          location: '662 8th Ave, San Francisco, CA',
+          details: 'Your first 60-minute session with Dr. Garrett Hewstan. Full assessment, your first guided protocol, and a take-home practice.',
         },
         initial_virtual: {
           item_name: 'Amari Method Initial Session — Virtual',
+          short_name: 'Initial Session — Virtual',
           price: 225,
+          durationMinutes: 60,
+          location: 'Video call (link sent before your session)',
+          details: 'Your first 60-minute session with Dr. Garrett Hewstan over secure video. Full assessment, your first guided protocol, and a take-home practice.',
         },
       };
       var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.initial_in_person;
 
+      // ---------- GA4 purchase event ----------
       if (window.gtag) {
         window.gtag('event', 'purchase', {
           transaction_id: transactionId,
@@ -103,6 +145,71 @@
           booking_price: item.price,
         });
       }
+
+      // ---------- Booking recap + calendar buttons ----------
+      // GHL substitutes {{contact.requested_session_slot}} in the redirect
+      // URL. If the merge tag wasn't substituted (older GHL config, or the
+      // tag failed), slotParam will contain the literal "{{...}}" string —
+      // detect and bail.
+      var slotValid = slotParam && slotParam.indexOf('{{') === -1;
+      var slotDate = slotValid ? new Date(slotParam) : null;
+      if (slotDate && isNaN(slotDate.getTime())) slotDate = null;
+
+      if (slotDate) {
+        // Render recap card
+        var whenText = slotDate.toLocaleDateString(undefined, {
+          weekday: 'long', month: 'long', day: 'numeric',
+        }) + ' at ' + slotDate.toLocaleTimeString(undefined, {
+          hour: 'numeric', minute: '2-digit',
+        });
+        document.getElementById('recapTitle').textContent = item.short_name;
+        document.getElementById('recapWhen').textContent = whenText;
+        document.getElementById('recapWhere').textContent = item.location;
+        document.getElementById('bookingRecap').hidden = false;
+
+        // Build calendar URLs
+        var endDate = new Date(slotDate.getTime() + item.durationMinutes * 60 * 1000);
+        // Google Calendar wants UTC stamps without dashes/colons/millis.
+        function gcalStamp(d) {
+          return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+        }
+        var gcalUrl = 'https://calendar.google.com/calendar/render'
+          + '?action=TEMPLATE'
+          + '&text=' + encodeURIComponent(item.item_name)
+          + '&dates=' + gcalStamp(slotDate) + '/' + gcalStamp(endDate)
+          + '&location=' + encodeURIComponent(item.location)
+          + '&details=' + encodeURIComponent(item.details);
+        document.getElementById('gcalBtn').href = gcalUrl;
+
+        // Build .ics for Apple Calendar / Outlook via Blob URL
+        var ics = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'PRODID:-//Amari Method//Booking//EN',
+          'CALSCALE:GREGORIAN',
+          'METHOD:PUBLISH',
+          'BEGIN:VEVENT',
+          'UID:' + transactionId + '@amarimethod.com',
+          'DTSTAMP:' + gcalStamp(new Date()),
+          'DTSTART:' + gcalStamp(slotDate),
+          'DTEND:' + gcalStamp(endDate),
+          'SUMMARY:' + item.item_name,
+          'LOCATION:' + item.location.replace(/,/g, '\\,'),
+          'DESCRIPTION:' + item.details.replace(/,/g, '\\,'),
+          'STATUS:CONFIRMED',
+          'END:VEVENT',
+          'END:VCALENDAR',
+        ].join('\r\n');
+        var icsBlob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        var icsUrl = URL.createObjectURL(icsBlob);
+        var icalBtn = document.getElementById('icalBtn');
+        icalBtn.href = icsUrl;
+        icalBtn.setAttribute('download', 'amari-session.ics');
+
+        document.getElementById('calendarActions').hidden = false;
+      }
+      // If no valid slot in URL → recap + calendar buttons stay hidden,
+      // user just sees the generic confirmation + portal CTA.
     })();
   </script>
 </body>
