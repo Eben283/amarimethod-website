@@ -66,8 +66,8 @@
   <main>
     <div class="confirm-shell">
       <div class="confirm-icon" aria-hidden="true">✓</div>
-      <h1>You're <em>booked.</em></h1>
-      <p>Payment received and your session is on the calendar. A confirmation email is on its way.</p>
+      <h1 id="confirmTitle">You're <em>booked.</em></h1>
+      <p id="confirmBody">Payment received and your session is on the calendar. A confirmation email is on its way.</p>
 
       <!-- Booking recap — populated by JS if URL params are present -->
       <section class="booking-recap" id="bookingRecap" hidden>
@@ -107,6 +107,10 @@
         || url.searchParams.get('session_id')
         || ('ghl-' + Date.now());
 
+      // Full product catalog. `hasSlot: true` products show the recap +
+      // calendar buttons (initial sessions only — they book an appointment
+      // at a specific time). Everything else is a package purchase that
+      // unlocks future bookings without a fixed slot.
       var PRODUCT_CATALOG = {
         initial_in_person: {
           item_name: 'Amari Method Initial Session — In Person',
@@ -115,6 +119,7 @@
           durationMinutes: 60,
           location: '662 8th Ave, San Francisco, CA',
           details: 'Your first 60-minute session with Dr. Garrett Hewstan. Full assessment, your first guided protocol, and a take-home practice.',
+          hasSlot: true,
         },
         initial_virtual: {
           item_name: 'Amari Method Initial Session — Virtual',
@@ -123,6 +128,63 @@
           durationMinutes: 60,
           location: 'Video call (link sent before your session)',
           details: 'Your first 60-minute session with Dr. Garrett Hewstan over secure video. Full assessment, your first guided protocol, and a take-home practice.',
+          hasSlot: true,
+        },
+        single_followup: {
+          item_name: 'Amari Method Single Follow-up Session',
+          short_name: 'Single Follow-up Session',
+          price: 190,
+          hasSlot: false,
+          purchaseLabel: 'Follow-up session purchased',
+          purchaseBody: 'Your session credit is on your account. Book your follow-up from the client portal whenever you\'re ready.',
+        },
+        '4_session_series': {
+          item_name: 'Amari Method 4-Session Series',
+          short_name: '4-Session Series',
+          price: 720,
+          hasSlot: false,
+          purchaseLabel: '4-Session Series unlocked',
+          purchaseBody: 'Four sessions are now on your account. Book each one from the client portal as you\'re ready.',
+        },
+        '8_session_series': {
+          item_name: 'Amari Method 8-Session Series',
+          short_name: '8-Session Series',
+          price: 1295,
+          hasSlot: false,
+          purchaseLabel: '8-Session Series + Living Practice unlocked',
+          purchaseBody: 'Eight sessions are on your account, and Living Practice is now available in your portal. Book your sessions whenever you\'re ready.',
+        },
+        upgrade_initial_to_4: {
+          item_name: 'Amari Method Upgrade: Initial → 4-Session',
+          short_name: 'Upgrade to 4-Session Series',
+          price: 495,
+          hasSlot: false,
+          purchaseLabel: 'Upgraded to 4-Session Series',
+          purchaseBody: 'Three more sessions are on your account (your initial counts as the first). Book each one from the client portal.',
+        },
+        upgrade_initial_to_8: {
+          item_name: 'Amari Method Upgrade: Initial → 8-Session',
+          short_name: 'Upgrade to 8-Session Series',
+          price: 1070,
+          hasSlot: false,
+          purchaseLabel: 'Upgraded to 8-Session Series + Living Practice',
+          purchaseBody: 'Seven more sessions are on your account (your initial counts as the first), and Living Practice is now available in your portal.',
+        },
+        upgrade_4_to_8: {
+          item_name: 'Amari Method Upgrade: 4-Session → 8-Session',
+          short_name: 'Upgrade to 8-Session Series',
+          price: 575, // VERIFY: assumes $1,295 - $720 = $575
+          hasSlot: false,
+          purchaseLabel: 'Upgraded to 8-Session Series',
+          purchaseBody: 'Four more sessions are on your account, and Living Practice is now available in your portal.',
+        },
+        living_practice: {
+          item_name: 'Amari Method Living Practice',
+          short_name: 'Living Practice',
+          price: 347,
+          hasSlot: false,
+          purchaseLabel: 'Living Practice unlocked',
+          purchaseBody: 'Living Practice is now available in your client portal — the full standalone video program is yours to explore.',
         },
       };
       var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.initial_in_person;
@@ -146,12 +208,23 @@
         });
       }
 
-      // ---------- Booking recap + calendar buttons ----------
+      // ---------- Headline + body for non-booking purchases ----------
+      // Series/upgrades/Living Practice purchases don't book a slot — show
+      // a purchase-flavored confirmation instead of "You're booked."
+      if (!item.hasSlot && item.purchaseLabel) {
+        document.getElementById('confirmTitle').innerHTML =
+          'You\'re <em>in.</em>';
+        document.getElementById('confirmBody').textContent =
+          item.purchaseBody;
+      }
+
+      // ---------- Booking recap + calendar buttons (initial sessions) ----------
       // GHL substitutes {{contact.requested_session_slot}} in the redirect
       // URL. If the merge tag wasn't substituted (older GHL config, or the
       // tag failed), slotParam will contain the literal "{{...}}" string —
-      // detect and bail.
-      var slotValid = slotParam && slotParam.indexOf('{{') === -1;
+      // detect and bail. Also skipped entirely for non-booking products
+      // (series purchases, upgrades, Living Practice).
+      var slotValid = item.hasSlot && slotParam && slotParam.indexOf('{{') === -1;
       var slotDate = slotValid ? new Date(slotParam) : null;
       if (slotDate && isNaN(slotDate.getTime())) slotDate = null;
 
