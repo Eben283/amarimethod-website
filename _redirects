@@ -50,3 +50,9 @@
 /journal /blog 301
 /experience /how-it-works 301
 /client-information /client-info 301
+
+# Modality "service" pages converted to question-form blog posts 2026-05-10
+# (we don't offer these modalities; question-keyword target is more aligned)
+/deep-tissue-bodywork-san-francisco /blog-why-deep-tissue-doesnt-last 301
+/myofascial-release-san-francisco /blog-why-myofascial-release-doesnt-work 301
+/psoas-release-san-francisco /blog-why-psoas-tightens-back 301
