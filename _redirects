@@ -22,12 +22,15 @@
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
 
-# === Booking redirects — funnel URLs go straight to GHL (no wrapper) ===
-# Iframing the GHL Nuxt funnel breaks fireFormSurveyEvent with a 422,
-# so the wrapper now just 301s to the funnel URL. Query params (utm_*,
-# _gl, ?pain= from the quiz) forward by default.
-/book-initial-in-person https://amarimethodbooking.amarimethod.com/client-info 301
-/book-initial-virtual https://introsessionvirtual.amarimethod.com/is-virtual-info 301
+# === Booking redirects ===
+# Phase 1 cutover (commit-after this one): initial-in-person + initial-
+# virtual now route to the native booking flow at /book/<variant>. The
+# native flow uses GHL payment links for payment so cards still save to
+# the GHL contact's native Payment Methods panel.
+/book-initial-in-person /book/initial-in-person 301
+/book-initial-virtual /book/initial-virtual 301
+# Follow-ups + discovery still 301 straight to GHL (phase 2/3 will port
+# them to the native flow once initial-in-person is proven in production).
 /book-follow-up https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session 301
 /book-follow-up-virtual https://link.amarimethod.com/widget/booking/oVn77FcecFY16iS2pHyP 301
 /book-discovery-call https://discoverycall.amarimethod.com/discovery-call-booking 301
