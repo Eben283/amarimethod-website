@@ -249,7 +249,7 @@
           </div>
 
           <div class="time-slots" id="timeSlotsContainer" hidden>
-            <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p>
+            <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · Pacific Time, at 662 8th Ave San Francisco</p>
             <div class="time-slots-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
           </div>
         </div>
@@ -398,6 +398,11 @@
       const LOOKAHEAD_DAYS = 60;
 
       // ---------- state ----------
+      // Timezone is locked to Pacific because this is an IN-PERSON booking
+      // at 662 8th Ave, San Francisco. Showing slots in the client's local
+      // tz (e.g. "1pm Eastern") would mislead them — they need to know
+      // venue-local time (10am PT) to plan travel. Virtual booking will
+      // auto-detect when phase 2 ships.
       const state = {
         step: 1,
         form: null,
@@ -406,7 +411,7 @@
         selectedDate: null,   // "YYYY-MM-DD"
         selectedSlot: null,
         viewLeftMonth: null,  // "YYYY-MM" — left calendar's month
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles',
+        timezone: 'America/Los_Angeles',
         submitting: false,
       };
 
@@ -419,7 +424,6 @@
         progressStep3: $('progressStep3'),
         step1Section: $('step1Section'),
         step2Section: $('step2Section'),
-        userTimezone: $('userTimezone'),
         slotLoading: $('slotLoading'),
         slotError: $('slotError'),
         slotEmpty: $('slotEmpty'),
@@ -535,7 +539,6 @@
         els.timeSlotsContainer.hidden = true;
         els.orderSummaryStep1.hidden = true;
         els.orderSummaryStep2.hidden = true;
-        els.userTimezone.textContent = state.timezone;
 
         const today = new Date();
         const startDate = ymd(today);
