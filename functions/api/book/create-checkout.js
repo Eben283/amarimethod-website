@@ -227,6 +227,32 @@ async function recordAgreementAudit(context, contactId, payload, ip, ua, booking
 }
 
 /**
+ * Find an existing Stripe Customer by email, or return null. We use
+ * /v1/customers?email=... (list with email filter) — exact match, returns
+ * up to `limit` results. If multiple customers share the email (shouldn't
+ * happen if our flow is the only source, but legacy GHL-funnel customers
+ * may already exist with the same email), we pick the most recently
+ * created one.
+ */
+async function findStripeCustomerByEmail(secretKey, email) {
+  const url = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(email)}&limit=10`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    console.warn(`[book/create-checkout] customer lookup ${res.status}: ${txt.slice(0, 200)}`);
+    return null;
+  }
+  const body = await res.json();
+  if (!body.data || body.data.length === 0) return null;
+  // Most-recent first by `created` desc
+  body.data.sort((a, b) => (b.created || 0) - (a.created || 0));
+  return body.data[0].id;
+}
+
+/**
  * Create a Stripe Checkout session via the v1 REST API. Cloudflare
  * Workers can't use the Node Stripe SDK, so we hit the form-encoded
  * endpoint directly.
@@ -234,7 +260,6 @@ async function recordAgreementAudit(context, contactId, payload, ip, ua, booking
 async function createStripeCheckout(secretKey, params) {
   const form = new URLSearchParams();
   form.set("mode", "payment");
-  form.set("customer_email", params.email);
   form.set("success_url", params.successUrl);
   form.set("cancel_url", params.cancelUrl);
   // Omitting payment_method_types lets Stripe show every method enabled in
@@ -242,6 +267,25 @@ async function createStripeCheckout(secretKey, params) {
   // Cash App Pay, Link, etc.). Affirm is the relevant one here — splits
   // $225 into 3-4 monthly installments. Eligibility: USD + $50–$30,000.
   form.set("expires_at", String(params.expiresAt));
+
+  // Customer + card-on-file: if we found an existing Stripe Customer for
+  // this email, reuse it (returning client). Otherwise let Stripe create
+  // one. setup_future_usage=off_session attaches the card to the Customer
+  // so we can later charge it via Stripe Dashboard (Customers → Create
+  // payment) without the cardholder being present. This is the "charge
+  // the card on file" workflow Eben uses today via GHL's Stripe.
+  // Affirm + some other BNPL methods don't support setup_future_usage, so
+  // we use payment_method_options.card.setup_future_usage to scope it
+  // to card payments only — Stripe will still show Affirm/Klarna/etc as
+  // options, they just don't get saved (which is correct: you can't
+  // "charge an Affirm loan on file" anyway).
+  if (params.existingCustomerId) {
+    form.set("customer", params.existingCustomerId);
+  } else {
+    form.set("customer_email", params.email);
+    form.set("customer_creation", "always");
+  }
+  form.set("payment_method_options[card][setup_future_usage]", "off_session");
 
   // Single line item via inline price_data
   form.set("line_items[0][quantity]", "1");
@@ -330,10 +374,25 @@ export async function onRequestPost(context) {
   const baseUrl = "https://www.amarimethod.com";
   const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60; // 30-min hold
 
+  // Look up existing Stripe Customer by email so returning clients reuse
+  // the same Customer (one record per person across all bookings), and
+  // saved cards from prior bookings stay attached. Failure here is
+  // non-fatal — worst case Stripe creates a new Customer.
+  let existingCustomerId = null;
+  try {
+    existingCustomerId = await findStripeCustomerByEmail(
+      env.STRIPE_SECRET_KEY,
+      body.email,
+    );
+  } catch (err) {
+    console.warn("[book/create-checkout] Stripe customer lookup failed:", err.message);
+  }
+
   let session;
   try {
     session = await createStripeCheckout(env.STRIPE_SECRET_KEY, {
       email: body.email,
+      existingCustomerId,
       successUrl: `${baseUrl}/book/success?session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${baseUrl}/book/initial-in-person/`,
       expiresAt,

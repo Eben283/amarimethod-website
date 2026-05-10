@@ -189,6 +189,39 @@ async function recordGhlOrder(context, meta, session) {
   return res.json();
 }
 
+/**
+ * Persist the Stripe Customer ID on the GHL contact so Garrett can later
+ * find the saved card-on-file. The custom field key must already exist in
+ * GHL — created manually in Settings → Custom Fields → "Stripe Customer
+ * ID" (text type). Without the field defined, GHL silently drops the
+ * customField on PUT, so verify in GHL UI after the first booking.
+ */
+async function persistStripeCustomerOnContact(context, contactId, stripeCustomerId) {
+  if (!stripeCustomerId) return;
+  try {
+    const res = await ghlFetch(
+      context,
+      `https://services.leadconnectorhq.com/contacts/${contactId}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          customFields: [
+            { key: "stripe_customer_id", field_value: stripeCustomerId },
+          ],
+        }),
+      },
+    );
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(
+        `[book/stripe-webhook] stripe_customer_id PUT ${res.status}: ${errText}`,
+      );
+    }
+  } catch (err) {
+    console.error("[book/stripe-webhook] stripe_customer_id PUT threw:", err);
+  }
+}
+
 async function applyTags(context, contactId, tags) {
   try {
     await ghlFetch(
@@ -347,6 +380,16 @@ export async function onRequestPost(context) {
     .filter(Boolean);
   await applyTags(context, meta.contactId, tags);
 
+  // Save the Stripe Customer ID on the GHL contact so the card can be
+  // charged later via Stripe Dashboard (Customers → search → Create
+  // payment). session.customer is set because create-checkout passed
+  // customer_creation: 'always' (or an existing customer id).
+  await persistStripeCustomerOnContact(
+    context,
+    meta.contactId,
+    session.customer || null,
+  );
+
   await noteOnContact(
     context,
     meta.contactId,
@@ -355,10 +398,12 @@ export async function onRequestPost(context) {
       `Session: ${meta.sessionTitle}`,
       `Slot: ${meta.startTime} (${meta.timezone})`,
       `Stripe session: ${session.id}`,
+      `Stripe customer: ${session.customer || "—"}`,
       `Stripe payment intent: ${session.payment_intent || "—"}`,
       `Amount: $${(session.amount_total || 0) / 100}`,
       `Appointment id: ${appointment.id || appointment.appointment?.id || "—"}`,
       `GHL order id: ${orderResult?.id || orderResult?.order?.id || (orderError ? "FAILED — see RECONCILE note above" : "—")}`,
+      `Card on file: yes (charge later via Stripe Dashboard → Customers)`,
     ].join("\n"),
   );
 
