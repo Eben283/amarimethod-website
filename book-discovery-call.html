@@ -55,19 +55,16 @@
     .book-hero .meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 13px; color: var(--color-text-muted, #888); }
     .book-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
-    .book-frame { padding: 0 16px 64px; max-width: 1400px; margin: 0 auto; }
-    .book-frame iframe { width: 100%; border: none; height: 1200px; min-height: 1100px; display: block; background: transparent; transition: height 0.2s ease; }
-    .book-frame.failed iframe { display: none; }
-
-    .book-fallback { display: none; max-width: 560px; margin: 0 auto; padding: 32px; background: var(--bg-secondary, #f7f3e9); border-radius: 12px; text-align: center; }
-    .book-fallback h3 { font-family: 'Bona Nova', serif; font-size: 22px; margin: 0 0 12px; color: var(--color-text, #1d1d1d); }
-    .book-fallback p { color: var(--color-text-secondary, #555); margin: 0 0 16px; line-height: 1.55; }
-    .book-fallback a { color: var(--color-text, #1d1d1d); font-weight: 600; }
-    .book-fallback.show { display: block; }
+    .book-cta-frame { padding: 16px 16px 96px; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+    .book-cta-btn { display: inline-flex; align-items: center; gap: 12px; padding: 18px 40px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border-radius: 999px; text-decoration: none; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 0.01em; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .book-cta-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); color: #fff; }
+    .book-cta-arrow { transition: transform 0.15s ease; }
+    .book-cta-btn:hover .book-cta-arrow { transform: translateX(4px); }
+    .book-cta-help { font-size: 14px; color: var(--color-text-muted, #888); max-width: 44ch; line-height: 1.5; margin: 0; }
 
     @media (max-width: 720px) {
       .book-hero { padding: 40px 20px 24px; }
-      .book-frame { padding: 0 12px 48px; }
+      .book-cta-frame { padding: 12px 16px 72px; }
     }
   </style>
 </head>
@@ -108,18 +105,12 @@
       </div>
     </section>
 
-    <section class="book-frame" id="bookFrame">
-      <iframe
-        id="bookIframe"
-        data-src="https://discoverycall.amarimethod.com/discovery-call-booking"
-        title="Book a free discovery call with Dr. Garrett"
-        allow="payment *"
-        scrolling="no">
-      </iframe>
-      <div class="book-fallback" id="bookFallback">
-        <h3>The calendar isn't loading right now.</h3>
-        <p>Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> with your preferred days and times. We'll book you in within one business day.</p>
-      </div>
+    <section class="book-cta-frame">
+      <a href="https://discoverycall.amarimethod.com/discovery-call-booking" class="book-cta-btn" id="bookCtaBtn" data-base-href="https://discoverycall.amarimethod.com/discovery-call-booking">
+        <span>Continue to booking</span>
+        <span class="book-cta-arrow" aria-hidden="true">&rarr;</span>
+      </a>
+      <p class="book-cta-help">You'll be taken to our scheduling system to pick a 15-minute time slot. Free, no card required.</p>
     </section>
   </main>
 
@@ -179,50 +170,28 @@
     </div>
   </footer>
 
-  <!-- GHL form embed script — auto-resizes iframe to inner content height via postMessage -->
-  <script src="https://link.amarimethod.com/js/form_embed.js" async></script>
   <script>
     (function() {
-      var iframe = document.getElementById('bookIframe');
-      var frame = document.getElementById('bookFrame');
-      var fallback = document.getElementById('bookFallback');
-      // Forward incoming query params (?pain=neck, utm_*, _gl) to the GHL iframe
-      var baseSrc = iframe.getAttribute('data-src');
-      iframe.src = baseSrc + (window.location.search || '');
-      var loaded = false;
-      iframe.addEventListener('load', function() { loaded = true; });
-      iframe.addEventListener('error', function() {
-        frame.classList.add('failed');
-        fallback.classList.add('show');
-      });
-      setTimeout(function() {
-        if (!loaded) {
-          frame.classList.add('failed');
-          fallback.classList.add('show');
-        }
-      }, 8000);
-      window.addEventListener('message', function(e) {
-        if (!e.data) return;
-        var h = null;
-        var d = e.data;
-        if (typeof d === 'object') {
-          // GHL leadConnector calendar widget shape
-          if (d.context === 'leadConnector' && d.payload && d.payload.body && d.payload.body.height) {
-            h = parseInt(d.payload.body.height, 10);
-          } else if ((d.type === 'hsFormCallback' || d.type === 'iframe-resize') && d.height) {
-            h = parseInt(d.height, 10);
-          } else if (d.type === 'resize' && d.height) {
-            h = parseInt(d.height, 10);
-          }
-        } else if (typeof d === 'string' && d.indexOf('iframe-height:') === 0) {
-          h = parseInt(d.split(':')[1], 10);
-        }
-        if (h && h > 200 && h < 5000) iframe.style.height = (h + 20) + 'px';
-      });
+      // Forward incoming query params (?pain=neck, utm_*, _gl) to the GHL funnel
+      // so attribution + quiz context survives the click-through.
+      var btn = document.getElementById('bookCtaBtn');
+      if (btn && window.location.search) {
+        btn.href = btn.getAttribute('data-base-href') + window.location.search;
+      }
       if (window.gtag) {
         gtag('event', 'booking_page_view', {
           booking_type: 'discovery_call',
           booking_price: 0
+        });
+      }
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (window.gtag) {
+            gtag('event', 'booking_cta_click', {
+              booking_type: 'discovery_call',
+              booking_price: 0
+            });
+          }
         });
       }
     })();
