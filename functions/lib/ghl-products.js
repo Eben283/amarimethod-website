@@ -60,6 +60,20 @@ export const GHL_PRODUCTS = {
     isPackagePurchase: true,
   },
 
+  // Upgrade: 4-Session → 8-Session ($575) — rebuilt 2026-05-10 after the
+  // original GHL product was deleted. Customer has consumed their 4-pack
+  // and is now extending to the full 8-pack: adds 4 more sessions and
+  // unlocks Living Practice.
+  "6a010952e41b442c862d3c01": {
+    name: "Upgrade: 4-Session → 8-Session",
+    classification: "4-to-8-upgrade",
+    sessions: 4, // 4-pack already counted as +4; this adds 4
+    seriesType: "8-session",
+    sessionsRemaining: 4,
+    livingPractice: true,
+    isPackagePurchase: true,
+  },
+
   // ── Individual sessions (not package purchases) ──
   "688a1cd770362828afbf08a2": {
     name: "Initial Session — In Person",

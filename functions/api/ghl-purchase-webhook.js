@@ -56,6 +56,13 @@ const PRODUCT_MAP = {
     seriesType: "8-session",
     livingPractice: true,
   },
+  // Upgrade: 4-Session → 8-Session ($575) — rebuilt 2026-05-10
+  "6a010952e41b442c862d3c01": {
+    name: "Upgrade: 4-Session → 8-Session",
+    sessionsToAdd: 4,
+    seriesType: "8-session",
+    livingPractice: true,
+  },
   // Single Follow-up ($190)
   "67f57171b6b1019c7b0233cc": {
     name: "Single Follow-up",
