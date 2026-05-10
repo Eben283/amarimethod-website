@@ -40,6 +40,17 @@ const ALLOWED_BOOKINGS = {
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a00f7c1c959774531bed6b6",
   },
+  initial_virtual: {
+    calendarId: "ySmht5hx4uZGEpgZrlCw",
+    productId: "690b6b4d333ffa59d40c1823",
+    price: 225,
+    title: "Amari Method Initial Session — Virtual",
+    durationMinutes: 60,
+    pmaTag: "agreed-pma-v2026-04-17",
+    sessionTag: "booked-initial-virtual",
+    paymentLinkUrl:
+      "https://link.amarimethod.com/payment-link/6a00f80c1d5a394a682e3fcb",
+  },
 };
 
 function corsHeaders(requestOrigin) {
