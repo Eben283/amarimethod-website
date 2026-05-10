@@ -19,10 +19,13 @@ const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // Mirrors public-slots.js — same allowlist so this endpoint can't book
-// arbitrary calendars.
+// arbitrary calendars. productId references GHL Products (see
+// lib/ghl-products.js) so the Stripe webhook can record an /payments/orders
+// row that classifies correctly in the staff dashboard's session ledger.
 const ALLOWED_BOOKINGS = {
   initial_in_person: {
     calendarId: "G7OAnnJuFbMF6nQSlZVQ",
+    productId: "688a1cd770362828afbf08a2", // GHL: "Initial Session — In Person"
     price: 225,
     title: "Amari Method Initial Session — In Person",
     durationMinutes: 60,
@@ -335,6 +338,7 @@ export async function onRequestPost(context) {
         contactId,
         locationId,
         calendarId: booking.calendarId,
+        productId: booking.productId,
         sessionType: body.sessionType,
         sessionTitle: booking.title,
         durationMinutes: booking.durationMinutes,

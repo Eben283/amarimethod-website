@@ -132,6 +132,63 @@ async function createAppointment(context, meta) {
   return res.json();
 }
 
+/**
+ * Record the Stripe payment as a GHL /payments/orders row so it shows up in
+ * the GHL Payments dashboard, the staff session-ledger (lib/session-ledger.js
+ * classifyOrder), and any downstream "Order Submitted" workflow triggers.
+ *
+ * Without this, native-checkout payments are invisible to the staff
+ * dashboard's Today/Balances tabs and to the /day daily briefing.
+ *
+ * sourceType is set to "payment_link" because that's what the existing
+ * session-ledger logic treats as a real purchase (sourceType="calendar"
+ * is reserved for booking-generated $0 placeholders).
+ */
+async function recordGhlOrder(context, meta, session) {
+  const amountTotal = (session.amount_total || 0) / 100;
+  const orderPayload = {
+    altId: meta.locationId,
+    altType: "location",
+    contactId: meta.contactId,
+    currency: (session.currency || "usd").toUpperCase(),
+    totalAmount: amountTotal,
+    amount: amountTotal,
+    status: "completed",
+    sourceType: "payment_link",
+    sourceName: meta.sessionTitle,
+    sourceSubType: "native_checkout",
+    sourceMeta: {
+      stripe_session_id: session.id,
+      stripe_payment_intent: session.payment_intent || null,
+      source: "native_booking_flow",
+    },
+    items: [
+      {
+        productId: meta.productId,
+        name: meta.sessionTitle,
+        qty: 1,
+        amount: amountTotal,
+        currency: (session.currency || "usd").toUpperCase(),
+      },
+    ],
+  };
+
+  const res = await ghlFetch(
+    context,
+    "https://services.leadconnectorhq.com/payments/orders",
+    {
+      method: "POST",
+      body: JSON.stringify(orderPayload),
+    },
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`GHL order create ${res.status}: ${errText}`);
+  }
+  return res.json();
+}
+
 async function applyTags(context, contactId, tags) {
   try {
     await ghlFetch(
@@ -218,6 +275,7 @@ export async function onRequestPost(context) {
     "contactId",
     "locationId",
     "calendarId",
+    "productId",
     "sessionType",
     "sessionTitle",
     "durationMinutes",
@@ -258,6 +316,31 @@ export async function onRequestPost(context) {
     return txt("appointment create failed", 500);
   }
 
+  // Record the GHL order so the staff dashboard, daily briefing, GHL Payments
+  // tab, and any "Order Submitted" workflow triggers all see this purchase.
+  // Best-effort — failure here means GHL Payments tab won't show it but the
+  // appointment is still booked, so we surface via URGENT note for manual
+  // reconciliation rather than failing the whole webhook (which would cause
+  // Stripe to retry and risk a double appointment).
+  let orderResult = null;
+  let orderError = null;
+  try {
+    orderResult = await recordGhlOrder(context, meta, session);
+  } catch (err) {
+    orderError = err.message;
+    console.error(
+      `[book/stripe-webhook] GHL order record failed for session ${session.id}:`,
+      err.message,
+    );
+    await noteOnContact(
+      context,
+      meta.contactId,
+      `RECONCILE NEEDED: appointment booked + Stripe payment received (session ${session.id}, $${(session.amount_total || 0) / 100}) ` +
+        `but GHL /payments/orders POST failed. Staff dashboard and Payments tab will not show this purchase until it's reconciled. ` +
+        `Error: ${err.message}`,
+    );
+  }
+
   // Tag the contact + add a confirmation note. Best-effort — appointment
   // is already on the calendar so these failures don't block.
   const tags = [meta.pmaTag, meta.sessionTag, "paid-via-native-checkout"]
@@ -275,6 +358,7 @@ export async function onRequestPost(context) {
       `Stripe payment intent: ${session.payment_intent || "—"}`,
       `Amount: $${(session.amount_total || 0) / 100}`,
       `Appointment id: ${appointment.id || appointment.appointment?.id || "—"}`,
+      `GHL order id: ${orderResult?.id || orderResult?.order?.id || (orderError ? "FAILED — see RECONCILE note above" : "—")}`,
     ].join("\n"),
   );
 
