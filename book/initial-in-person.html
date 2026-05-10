@@ -166,12 +166,12 @@
       <div class="book-progress" aria-label="Booking progress">
         <span class="book-progress-step is-active" id="progressStep1">
           <span class="book-progress-dot">1</span>
-          <span class="book-progress-label">Your details</span>
+          <span class="book-progress-label">Pick a time</span>
         </span>
         <span class="book-progress-bar"></span>
         <span class="book-progress-step" id="progressStep2">
           <span class="book-progress-dot">2</span>
-          <span class="book-progress-label">Pick a time</span>
+          <span class="book-progress-label">Your details</span>
         </span>
         <span class="book-progress-bar"></span>
         <span class="book-progress-step" id="progressStep3">
@@ -182,10 +182,48 @@
 
       <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
 
-      <!-- ============ STEP 1: client info form ============ -->
+      <!-- ============ STEP 1: slot picker ============ -->
       <section class="book-card step-section is-active" id="step1Section" aria-labelledby="step1Heading">
-        <h2 id="step1Heading">Tell us about you.</h2>
+        <h2 id="step1Heading">Pick a time.</h2>
+        <p class="subhead">All times shown in <span id="userTimezone">your local time</span>. Sessions are at 662 8th Ave, San Francisco.</p>
+
+        <div class="slot-picker-container" id="slotPicker">
+          <div class="slot-loading" id="slotLoading">Loading available times…</div>
+          <div class="slot-error" id="slotError" hidden></div>
+          <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 30 days. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
+          <div id="slotGrid" hidden>
+            <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Available days"></div>
+            <div class="slot-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
+          </div>
+        </div>
+
+        <div class="order-summary" id="orderSummaryStep1" hidden>
+          <p class="order-summary-title">Your booking</p>
+          <div class="order-summary-row"><span>Initial Session — In Person</span><strong>$225</strong></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+          <div class="order-summary-divider"></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><strong>$225</strong></div>
+        </div>
+
+        <button type="button" class="btn-primary-full" id="step1ContinueBtn" disabled>
+          <span id="step1ContinueLabel">Pick a time to continue</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </section>
+
+      <!-- ============ STEP 2: client info form ============ -->
+      <section class="book-card step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
+        <button type="button" class="btn-secondary" id="backToStep1">← Pick a different time</button>
+        <h2 id="step2Heading" style="margin-top: 8px;">Tell us about you.</h2>
         <p class="subhead">We'll send your confirmation here and use this for your client record.</p>
+
+        <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0; margin-bottom: 24px;">
+          <p class="order-summary-title">Your booking</p>
+          <div class="order-summary-row"><span>Initial Session — In Person</span><strong>$225</strong></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+          <div class="order-summary-divider"></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><strong>$225</strong></div>
+        </div>
 
         <form id="clientForm" novalidate>
           <div class="form-row cols-2">
@@ -214,52 +252,22 @@
           </div>
 
           <div class="form-row" style="margin-top: 24px;">
-            <label class="checkbox-row" data-error-for="agreeCommunications">
-              <input type="checkbox" id="agreeCommunications" name="agreeCommunications" required>
-              <span>I agree to receive appointment reminders, follow-up communications, and occasional wellness tips from Amari Method. I can unsubscribe at any time.</span>
-            </label>
-
             <label class="checkbox-row" data-error-for="agreePolicies">
               <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
               <span>I have read and agree to the <a href="/missed-appointment-policy" target="_blank" rel="noopener">Missed Appointment Policy</a> and the <a href="/member-agreement" target="_blank" rel="noopener">Practice Membership Agreement</a>.</span>
             </label>
+
+            <label class="checkbox-row" data-error-for="agreeCommunications">
+              <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
+              <span><strong style="font-weight: 600; color: var(--color-text, #1d1d1d);">Optional:</strong> Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
+            </label>
           </div>
 
-          <button type="submit" class="btn-primary-full" id="step1SubmitBtn">
-            <span>Continue to schedule</span>
+          <button type="submit" class="btn-primary-full" id="step2SubmitBtn">
+            <span id="step2SubmitLabel">Continue to payment — $225</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
         </form>
-      </section>
-
-      <!-- ============ STEP 2: slot picker ============ -->
-      <section class="book-card step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
-        <button type="button" class="btn-secondary" id="backToStep1">← Edit details</button>
-        <h2 id="step2Heading" style="margin-top: 8px;">Pick a time.</h2>
-        <p class="subhead">All times shown in <span id="userTimezone">your local time</span>. Sessions are at 662 8th Ave, San Francisco.</p>
-
-        <div class="slot-picker-container" id="slotPicker">
-          <div class="slot-loading" id="slotLoading">Loading available times…</div>
-          <div class="slot-error" id="slotError" hidden></div>
-          <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 30 days. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
-          <div id="slotGrid" hidden>
-            <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Available days"></div>
-            <div class="slot-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
-          </div>
-        </div>
-
-        <div class="order-summary" id="orderSummary" hidden>
-          <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session — In Person</span><strong>$225</strong></div>
-          <div class="order-summary-row"><span id="summaryDateTime">—</span></div>
-          <div class="order-summary-divider"></div>
-          <div class="order-summary-row order-summary-total"><span>Total today</span><strong>$225</strong></div>
-        </div>
-
-        <button type="button" class="btn-primary-full" id="step2SubmitBtn" disabled>
-          <span id="step2SubmitLabel">Pick a time to continue</span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </button>
       </section>
 
     </div>
@@ -355,9 +363,7 @@
         progressStep3: $('progressStep3'),
         step1Section: $('step1Section'),
         step2Section: $('step2Section'),
-        clientForm: $('clientForm'),
-        step1SubmitBtn: $('step1SubmitBtn'),
-        backToStep1: $('backToStep1'),
+        // Step 1 (slot picker) ---
         userTimezone: $('userTimezone'),
         slotLoading: $('slotLoading'),
         slotError: $('slotError'),
@@ -365,8 +371,14 @@
         slotGrid: $('slotGrid'),
         dayTabs: $('dayTabs'),
         timeSlots: $('timeSlots'),
-        orderSummary: $('orderSummary'),
-        summaryDateTime: $('summaryDateTime'),
+        orderSummaryStep1: $('orderSummaryStep1'),
+        orderSummaryStep2: $('orderSummaryStep2'),
+        summaryDateTimeEls: document.querySelectorAll('.summary-datetime'),
+        step1ContinueBtn: $('step1ContinueBtn'),
+        step1ContinueLabel: $('step1ContinueLabel'),
+        // Step 2 (form) ---
+        clientForm: $('clientForm'),
+        backToStep1: $('backToStep1'),
         step2SubmitBtn: $('step2SubmitBtn'),
         step2SubmitLabel: $('step2SubmitLabel'),
       };
@@ -405,7 +417,7 @@
       }
 
       function clearAllFieldErrors() {
-        ['firstName', 'lastName', 'email', 'phone', 'agreeCommunications', 'agreePolicies'].forEach(function (n) {
+        ['firstName', 'lastName', 'email', 'phone', 'agreePolicies'].forEach(function (n) {
           setFieldError(n, '');
         });
       }
@@ -455,7 +467,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      // ---------- step 1 ----------
+      // ---------- form helpers (used by step 2) ----------
       function readForm() {
         const f = els.clientForm.elements;
         return {
@@ -477,33 +489,23 @@
         else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
         if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
         else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
-        if (!data.agreeCommunications) { setFieldError('agreeCommunications', 'Required'); ok = false; }
+        // agreeCommunications is OPTIONAL — no validation
         if (!data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
         return ok;
       }
-
-      els.clientForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        setBannerError('');
-        const data = readForm();
-        if (!validateForm(data)) return;
-        state.form = data;
-        track('book_form_step1_complete');
-        setStep(2);
-        loadSlots();
-      });
 
       els.backToStep1.addEventListener('click', function () {
         setStep(1);
       });
 
-      // ---------- step 2: slot loading ----------
+      // ---------- step 1: slot loading (runs on page init) ----------
       async function loadSlots() {
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
         els.slotEmpty.hidden = true;
         els.slotGrid.hidden = true;
-        els.orderSummary.hidden = true;
+        els.orderSummaryStep1.hidden = true;
+        els.orderSummaryStep2.hidden = true;
         els.userTimezone.textContent = state.timezone;
 
         const today = new Date();
@@ -591,31 +593,52 @@
         });
         const dateLabel = formatDateLong(slot.date);
         const timeLabel = formatTime(slot.hour, slot.minute);
-        els.summaryDateTime.textContent = dateLabel + ' at ' + timeLabel;
-        els.orderSummary.hidden = false;
-        els.step2SubmitBtn.disabled = false;
-        els.step2SubmitLabel.textContent = 'Continue to payment — $' + SESSION_PRICE;
+        // Mirror the picked slot into both step 1 + step 2 order summaries
+        els.summaryDateTimeEls.forEach(function (el) {
+          el.textContent = dateLabel + ' at ' + timeLabel;
+        });
+        els.orderSummaryStep1.hidden = false;
+        els.step1ContinueBtn.disabled = false;
+        els.step1ContinueLabel.textContent = 'Continue to your details';
         track('book_slot_selected', { slot_datetime: slot.datetime });
       }
 
-      // ---------- step 3: checkout ----------
-      els.step2SubmitBtn.addEventListener('click', async function () {
+      // ---------- step 1 → step 2 ----------
+      els.step1ContinueBtn.addEventListener('click', function () {
+        if (!state.selectedSlot) return;
+        setBannerError('');
+        els.orderSummaryStep2.hidden = false;
+        track('book_form_step1_complete');
+        setStep(2);
+      });
+
+      // ---------- step 2 → checkout ----------
+      els.clientForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
         if (state.submitting) return;
-        if (!state.form || !state.selectedSlot) return;
+        if (!state.selectedSlot) {
+          setBannerError("Pick a time first.");
+          setStep(1);
+          return;
+        }
+
+        setBannerError('');
+        const data = readForm();
+        if (!validateForm(data)) return;
+        state.form = data;
 
         state.submitting = true;
-        setBannerError('');
         els.step2SubmitBtn.disabled = true;
         els.step2SubmitLabel.textContent = 'Redirecting to secure payment…';
 
         try {
           const payload = {
-            firstName: state.form.firstName,
-            lastName: state.form.lastName,
-            email: state.form.email,
-            phone: state.form.phone,
-            agreeCommunications: state.form.agreeCommunications,
-            agreePolicies: state.form.agreePolicies,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            agreeCommunications: data.agreeCommunications,
+            agreePolicies: data.agreePolicies,
             agreementVersion: AGREEMENT_VERSION,
             calendarId: CALENDAR_ID,
             sessionType: SESSION_TYPE,
@@ -647,6 +670,7 @@
 
       // ---------- init ----------
       track('book_form_view');
+      loadSlots();
     })();
   </script>
   <script src="/js/main.js?v=3" defer></script>
