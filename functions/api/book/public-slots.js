@@ -80,57 +80,101 @@ export async function onRequestGet(context) {
     return json({ error: "dates must be YYYY-MM-DD" }, 400, origin);
   }
 
-  // Cap the lookahead at 60 days to prevent abusive wide-range requests.
+  // GHL's /free-slots endpoint silently rejects ranges longer than ~31 days
+  // with a 422. To support the two-month calendar view (60 days), we chunk
+  // the request into ≤30-day slices and merge the results.
   const startMs = Date.parse(`${startDate}T00:00:00Z`);
   const endMs = Date.parse(`${endDate}T23:59:59Z`) + 12 * 60 * 60 * 1000;
   if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
     return json({ error: "invalid date range" }, 400, origin);
   }
-  if (endMs - startMs > 65 * 86400 * 1000) {
-    return json({ error: "date range too wide (max 60 days)" }, 400, origin);
+  if (endMs <= startMs) {
+    return json({ error: "endDate must be after startDate" }, 400, origin);
   }
-
-  const ghlUrl =
-    `https://services.leadconnectorhq.com/calendars/${calendarId}/free-slots` +
-    `?startDate=${startMs}&endDate=${endMs}&timezone=${encodeURIComponent(timezone)}`;
-
-  let ghlRes;
-  try {
-    ghlRes = await ghlFetch(context, ghlUrl, { method: "GET" });
-  } catch (err) {
-    console.error("[book/public-slots] ghlFetch threw:", err);
-    return json({ error: "Upstream calendar lookup failed" }, 422, origin);
-  }
-
-  if (!ghlRes.ok) {
-    const body = await ghlRes.text();
-    console.error(
-      `[book/public-slots] GHL ${ghlRes.status} ${calendarId}: ${body}`,
+  // Cap the total range at 90 days to prevent abuse.
+  const MAX_TOTAL_DAYS = 90;
+  if (endMs - startMs > MAX_TOTAL_DAYS * 86400 * 1000) {
+    return json(
+      { error: `date range too wide (max ${MAX_TOTAL_DAYS} days)` },
+      400,
+      origin,
     );
+  }
+
+  // Build chunk boundaries — each chunk ≤ 30 days
+  const CHUNK_DAYS = 30;
+  const CHUNK_MS = CHUNK_DAYS * 86400 * 1000;
+  const chunks = [];
+  for (let cursor = startMs; cursor < endMs; cursor += CHUNK_MS) {
+    const chunkEnd = Math.min(cursor + CHUNK_MS, endMs);
+    chunks.push({ start: cursor, end: chunkEnd });
+  }
+
+  // Fetch all chunks in parallel
+  const responses = await Promise.allSettled(
+    chunks.map((c) => {
+      const ghlUrl =
+        `https://services.leadconnectorhq.com/calendars/${calendarId}/free-slots` +
+        `?startDate=${c.start}&endDate=${c.end}&timezone=${encodeURIComponent(timezone)}`;
+      return ghlFetch(context, ghlUrl, { method: "GET" });
+    }),
+  );
+
+  // Merge slot results from all chunks into a single date-keyed object.
+  // If any chunk fails, we still return what we got from the others —
+  // user sees partial calendar instead of a hard error.
+  const merged = {};
+  let hadAnySuccess = false;
+  for (let i = 0; i < responses.length; i++) {
+    const settled = responses[i];
+    if (settled.status !== "fulfilled") {
+      console.error(
+        `[book/public-slots] chunk ${i} threw:`,
+        settled.reason && settled.reason.message,
+      );
+      continue;
+    }
+    const ghlRes = settled.value;
+    if (!ghlRes.ok) {
+      const body = await ghlRes.text();
+      console.error(
+        `[book/public-slots] chunk ${i} GHL ${ghlRes.status}: ${body.slice(0, 200)}`,
+      );
+      continue;
+    }
+    hadAnySuccess = true;
+    const data = await ghlRes.json();
+    for (const [key, val] of Object.entries(data)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+      const dailySlots = val && Array.isArray(val.slots) ? val.slots : [];
+      if (!merged[key]) merged[key] = [];
+      // GHL may return the same slot twice if our chunks overlap by even a
+      // millisecond on a boundary day — dedupe by ISO datetime string.
+      for (const iso of dailySlots) {
+        if (!merged[key].includes(iso)) merged[key].push(iso);
+      }
+    }
+  }
+
+  if (!hadAnySuccess) {
     return json({ error: "Upstream calendar lookup failed" }, 422, origin);
   }
 
-  const data = await ghlRes.json();
-
-  // Flatten { "YYYY-MM-DD": { slots: ["...ISO..."] }, traceId: "..." }
-  // into [{ date, time, hour, minute, datetime }]. Mirrors portal-slots.js.
+  // Flatten merged { "YYYY-MM-DD": ["...ISO..."] } into the slot array shape
+  // the frontend expects. Mirrors portal-slots.js.
   const slots = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
-    const dailySlots = (val && Array.isArray(val.slots)) ? val.slots : [];
-    for (const iso of dailySlots) {
+  const sortedDates = Object.keys(merged).sort();
+  for (const date of sortedDates) {
+    const isoSlots = (merged[date] || []).slice().sort();
+    for (const iso of isoSlots) {
       // GHL slot format: "2026-05-14T10:30:00-07:00"
-      // We split by ":" to grab hour/minute. The third segment ("00-07")
-      // contains the offset and is discarded, so we don't need to strip
-      // the offset suffix manually — and trying to do so with a regex
-      // character class like [+-Z] is a bug (the dash is interpreted as
-      // a range operator, matching every char from + to Z including ":"
-      // and digits, which collapses timePart to "" → every slot 12am).
+      // Split by ":" to grab hour/minute. The third segment ("00-07")
+      // contains the offset and is discarded.
       const timePart = iso.split("T")[1] || "";
       const hour = parseInt(timePart.split(":")[0], 10) || 0;
       const minute = parseInt(timePart.split(":")[1], 10) || 0;
       slots.push({
-        date: key,
+        date,
         time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
         hour,
         minute,
