@@ -237,9 +237,10 @@ async function createStripeCheckout(secretKey, params) {
   form.set("customer_email", params.email);
   form.set("success_url", params.successUrl);
   form.set("cancel_url", params.cancelUrl);
-  form.set("payment_method_types[0]", "card");
-  // Affirm requires USD + min $50 — we're $225, so it's eligible.
-  form.set("payment_method_types[1]", "affirm");
+  // Omitting payment_method_types lets Stripe show every method enabled in
+  // the Dashboard (Card, Affirm, Klarna, Afterpay, Apple Pay, Google Pay,
+  // Cash App Pay, Link, etc.). Affirm is the relevant one here — splits
+  // $225 into 3-4 monthly installments. Eligibility: USD + $50–$30,000.
   form.set("expires_at", String(params.expiresAt));
 
   // Single line item via inline price_data
