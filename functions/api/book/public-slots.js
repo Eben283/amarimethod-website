@@ -119,10 +119,16 @@ export async function onRequestGet(context) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
     const dailySlots = (val && Array.isArray(val.slots)) ? val.slots : [];
     for (const iso of dailySlots) {
-      const timePart = (iso.split("T")[1] || "").split(/[+-Z]/)[0] || "";
-      const [hStr, mStr] = timePart.split(":");
-      const hour = parseInt(hStr, 10) || 0;
-      const minute = parseInt(mStr, 10) || 0;
+      // GHL slot format: "2026-05-14T10:30:00-07:00"
+      // We split by ":" to grab hour/minute. The third segment ("00-07")
+      // contains the offset and is discarded, so we don't need to strip
+      // the offset suffix manually — and trying to do so with a regex
+      // character class like [+-Z] is a bug (the dash is interpreted as
+      // a range operator, matching every char from + to Z including ":"
+      // and digits, which collapses timePart to "" → every slot 12am).
+      const timePart = iso.split("T")[1] || "";
+      const hour = parseInt(timePart.split(":")[0], 10) || 0;
+      const minute = parseInt(timePart.split(":")[1], 10) || 0;
       slots.push({
         date: key,
         time: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
