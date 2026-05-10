@@ -9,10 +9,11 @@ interface QuickActionsProps {
   onBookSession: () => void;
 }
 
-// Booking URLs
+// Booking URLs. Initial sessions point to the native flow at /book/<variant>;
+// follow-up + discovery still 301 to GHL (phase 2/3).
 const BOOKING_URLS = {
-  initial_inperson: '/book-initial-in-person',
-  initial_virtual: '/book-initial-virtual',
+  initial_inperson: '/book/initial-in-person',
+  initial_virtual: '/book/initial-virtual',
   followup: '/book-follow-up',
   discovery: '/book-discovery-call',
 };

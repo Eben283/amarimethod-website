@@ -68,7 +68,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
 
         <div className="offer-cta">
           <a
-            href={buildBookingUrl('/book-initial-in-person')}
+            href={buildBookingUrl('/book/initial-in-person')}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-ink"
