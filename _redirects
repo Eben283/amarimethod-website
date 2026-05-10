@@ -22,6 +22,16 @@
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
 
+# === Booking redirects — funnel URLs go straight to GHL (no wrapper) ===
+# Iframing the GHL Nuxt funnel breaks fireFormSurveyEvent with a 422,
+# so the wrapper now just 301s to the funnel URL. Query params (utm_*,
+# _gl, ?pain= from the quiz) forward by default.
+/book-initial-in-person https://amarimethodbooking.amarimethod.com/client-info 301
+/book-initial-virtual https://introsessionvirtual.amarimethod.com/is-virtual-info 301
+/book-follow-up https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session 301
+/book-follow-up-virtual https://link.amarimethod.com/widget/booking/oVn77FcecFY16iS2pHyP 301
+/book-discovery-call https://discoverycall.amarimethod.com/discovery-call-booking 301
+
 # === SEO 301s — old URLs Google still indexes (recover crawl signals) ===
 # Old blog post structure: /blog/<long-slug> → topic match where possible, else /blog
 /blog/the-amari-method-a-gentle-path-to-back-pain-relief /lower-back-pain-san-francisco 301
