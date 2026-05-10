@@ -66,24 +66,41 @@
 
   <script>
     (function() {
-      // GA4 conversion event — fires once on success page load
+      // GA4 conversion event — fires once on success page load. URL params
+      // are set by the GHL post-purchase redirect (in-person / virtual).
       var url = new URL(window.location.href);
-      var sessionId = url.searchParams.get('session_id') || '';
+      var product = url.searchParams.get('product') || 'initial_in_person';
+      var transactionId = url.searchParams.get('order_id')
+        || url.searchParams.get('session_id')
+        || ('ghl-' + Date.now());
+
+      var PRODUCT_CATALOG = {
+        initial_in_person: {
+          item_name: 'Amari Method Initial Session — In Person',
+          price: 225,
+        },
+        initial_virtual: {
+          item_name: 'Amari Method Initial Session — Virtual',
+          price: 225,
+        },
+      };
+      var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.initial_in_person;
+
       if (window.gtag) {
         window.gtag('event', 'purchase', {
-          transaction_id: sessionId,
-          value: 225,
+          transaction_id: transactionId,
+          value: item.price,
           currency: 'USD',
           items: [{
-            item_id: 'initial_in_person',
-            item_name: 'Amari Method Initial Session — In Person',
-            price: 225,
+            item_id: product,
+            item_name: item.item_name,
+            price: item.price,
             quantity: 1,
           }],
         });
         window.gtag('event', 'booking_confirmed', {
-          booking_type: 'initial_in_person',
-          booking_price: 225,
+          booking_type: product,
+          booking_price: item.price,
         });
       }
     })();
