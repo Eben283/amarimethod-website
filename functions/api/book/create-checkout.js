@@ -1,16 +1,19 @@
 /**
  * POST /api/book/create-checkout
  *
- * Creates the GHL contact (or updates an existing one) with clickwrap
- * agreement metadata, then creates a Stripe Checkout session for the
- * session price. Returns { checkoutUrl } so the browser can redirect.
+ * Upserts the GHL contact with the form data + the picked slot (stored
+ * on `requested_session_*` custom fields), then returns the GHL payment
+ * link URL the browser should redirect to. Payment happens on GHL — GHL
+ * saves the card to its native Payment Methods panel, records the order
+ * automatically, and fires the existing "Order Submitted" workflow chain.
  *
- * The Stripe webhook (functions/api/book/stripe-webhook.js) is what
- * actually creates the GHL appointment after payment succeeds — this
- * endpoint only sets up the payment intent + holds the contact data.
+ * The actual appointment is booked by ghl-purchase-webhook.js when GHL
+ * fires the order-submitted webhook — that handler reads the contact's
+ * `requested_session_slot` field and calls /calendars/events/appointments
+ * to put the appointment on the calendar at the picked time.
  *
- * Requires env vars: STRIPE_SECRET_KEY (live), GHL_LOCATION_ID (defaults
- * to 7pIO7FHVAyBT1jKGhfQM if not set).
+ * No Stripe API keys / webhook secrets needed for this flow. GHL ↔ Stripe
+ * Connect handles all the payment plumbing.
  */
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../../lib/ghl.js";
@@ -18,19 +21,24 @@ import { ghlFetch, ghlHeaders, getGhlToken } from "../../lib/ghl.js";
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
-// Mirrors public-slots.js — same allowlist so this endpoint can't book
-// arbitrary calendars. productId references GHL Products (see
-// lib/ghl-products.js) so the Stripe webhook can record an /payments/orders
-// row that classifies correctly in the staff dashboard's session ledger.
+// Booking configuration. Each entry maps a sessionType (from the booking
+// page) to the GHL payment link URL the customer should be redirected to
+// after we've prepped the contact + stored the slot info on them.
+//
+// productId references GHL Products (see lib/ghl-products.js) so the
+// purchase webhook can recognize this payment as an initial-session
+// booking and create the appointment.
 const ALLOWED_BOOKINGS = {
   initial_in_person: {
     calendarId: "G7OAnnJuFbMF6nQSlZVQ",
-    productId: "688a1cd770362828afbf08a2", // GHL: "Initial Session — In Person"
+    productId: "688a1cd770362828afbf08a2",
     price: 225,
     title: "Amari Method Initial Session — In Person",
     durationMinutes: 60,
     pmaTag: "agreed-pma-v2026-04-17",
     sessionTag: "booked-initial-in-person",
+    paymentLinkUrl:
+      "https://link.amarimethod.com/payment-link/6a00f7c1c959774531bed6b6",
   },
 };
 
@@ -79,8 +87,7 @@ function validateBody(b) {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) return "Invalid email";
   if (b.phone.replace(/\D/g, "").length < 10) return "Invalid phone";
-  // agreeCommunications is OPTIONAL (marketing-comms opt-in) — only the
-  // policies/PMA agreement is required for the booking to proceed.
+  // agreeCommunications is optional — only the policies/PMA agreement is required
   if (!b.agreePolicies) {
     return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
   }
@@ -92,12 +99,12 @@ function validateBody(b) {
 }
 
 /**
- * Find existing contact by email or create a new one. Returns the
- * contactId. Updates basic fields (name, phone) on every call so a
- * returning client's record stays current.
+ * Find existing contact by email or create a new one. Returns the contactId.
+ * Sets the slot-request custom fields + communications consent in the same
+ * PUT/POST so the GHL purchase webhook has everything it needs once the
+ * order lands.
  */
-async function upsertContact(context, GHL_API_KEY, locationId, payload) {
-  // GHL contact lookup by email
+async function upsertContact(context, GHL_API_KEY, locationId, payload, booking) {
   const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(payload.email)}`;
   let existingId = null;
   try {
@@ -115,12 +122,28 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload) {
     console.error("[book/create-checkout] contact lookup failed:", err);
   }
 
-  // Only set communications_policies_new_client if the optional checkbox
-  // was actually checked. Leaving it unset for non-opters keeps the
-  // marketing-comms list clean.
-  const customFields = payload.agreeCommunications
-    ? [{ key: "communications_policies_new_client", field_value: "true" }]
-    : [];
+  // Slot-request fields drive what the purchase webhook books after payment.
+  // Field keys must exist in GHL Settings → Custom Fields → Object: Contact.
+  const customFields = [
+    {
+      key: "requested_session_slot",
+      field_value: payload.startTime,
+    },
+    {
+      key: "requested_session_calendar",
+      field_value: booking.calendarId,
+    },
+    {
+      key: "requested_session_type",
+      field_value: payload.sessionType,
+    },
+  ];
+  if (payload.agreeCommunications) {
+    customFields.push({
+      key: "communications_policies_new_client",
+      field_value: "true",
+    });
+  }
 
   if (existingId) {
     const updateRes = await ghlFetch(
@@ -141,7 +164,6 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload) {
       console.error(
         `[book/create-checkout] contact update ${updateRes.status}: ${errText}`,
       );
-      // Non-fatal — we still have the contact, continue with checkout
     }
     return existingId;
   }
@@ -175,13 +197,11 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload) {
 }
 
 /**
- * Add the agreement-version + session tag and write the clickwrap
- * audit trail to a contact note. Failures here are logged but don't
- * block the checkout — the source of truth is Stripe metadata, which
- * the webhook re-applies on success.
+ * Add tags + a clickwrap audit note. Best-effort — non-fatal if either
+ * fails. Tags help the purchase webhook + GHL workflows identify how the
+ * contact arrived, even before payment lands.
  */
-async function recordAgreementAudit(context, contactId, payload, ip, ua, booking) {
-  // Tag the contact with the PMA version + the booking tag
+async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booking) {
   try {
     await ghlFetch(
       context,
@@ -189,7 +209,7 @@ async function recordAgreementAudit(context, contactId, payload, ip, ua, booking
       {
         method: "POST",
         body: JSON.stringify({
-          tags: [booking.pmaTag, booking.sessionTag],
+          tags: [booking.pmaTag, "native-booking-started"],
         }),
       },
     );
@@ -197,19 +217,21 @@ async function recordAgreementAudit(context, contactId, payload, ip, ua, booking
     console.error("[book/create-checkout] tag add failed:", err);
   }
 
-  // Audit note — readable in GHL contact view + searchable
   const noteBody = [
-    `Native booking flow — clickwrap agreement captured`,
+    `Native booking flow — checkout initiated`,
     ``,
     `Session: ${booking.title}`,
-    `Slot: ${payload.startTime} (${payload.timezone})`,
+    `Requested slot: ${payload.startTime} (${payload.timezone})`,
     `Agreement version: ${payload.agreementVersion || "unspecified"}`,
-    `Communications consent: yes`,
+    `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
     `Practice Member Agreement: yes (clickwrap)`,
     `Missed Appointment Policy: yes (clickwrap)`,
     `IP: ${ip || "unknown"}`,
     `User agent: ${(ua || "").slice(0, 200)}`,
     `Captured at: ${new Date().toISOString()}`,
+    ``,
+    `Next: customer redirected to GHL payment link. Appointment will be`,
+    `booked automatically when the order is paid.`,
   ].join("\n");
 
   try {
@@ -226,112 +248,9 @@ async function recordAgreementAudit(context, contactId, payload, ip, ua, booking
   }
 }
 
-/**
- * Find an existing Stripe Customer by email, or return null. We use
- * /v1/customers?email=... (list with email filter) — exact match, returns
- * up to `limit` results. If multiple customers share the email (shouldn't
- * happen if our flow is the only source, but legacy GHL-funnel customers
- * may already exist with the same email), we pick the most recently
- * created one.
- */
-async function findStripeCustomerByEmail(secretKey, email) {
-  const url = `https://api.stripe.com/v1/customers?email=${encodeURIComponent(email)}&limit=10`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${secretKey}` },
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    console.warn(`[book/create-checkout] customer lookup ${res.status}: ${txt.slice(0, 200)}`);
-    return null;
-  }
-  const body = await res.json();
-  if (!body.data || body.data.length === 0) return null;
-  // Most-recent first by `created` desc
-  body.data.sort((a, b) => (b.created || 0) - (a.created || 0));
-  return body.data[0].id;
-}
-
-/**
- * Create a Stripe Checkout session via the v1 REST API. Cloudflare
- * Workers can't use the Node Stripe SDK, so we hit the form-encoded
- * endpoint directly.
- */
-async function createStripeCheckout(secretKey, params) {
-  const form = new URLSearchParams();
-  form.set("mode", "payment");
-  form.set("success_url", params.successUrl);
-  form.set("cancel_url", params.cancelUrl);
-  // Omitting payment_method_types lets Stripe show every method enabled in
-  // the Dashboard (Card, Affirm, Klarna, Afterpay, Apple Pay, Google Pay,
-  // Cash App Pay, Link, etc.). Affirm is the relevant one here — splits
-  // $225 into 3-4 monthly installments. Eligibility: USD + $50–$30,000.
-  form.set("expires_at", String(params.expiresAt));
-
-  // Customer + card-on-file: if we found an existing Stripe Customer for
-  // this email, reuse it (returning client). Otherwise let Stripe create
-  // one. setup_future_usage=off_session attaches the card to the Customer
-  // so we can later charge it via Stripe Dashboard (Customers → Create
-  // payment) without the cardholder being present. This is the "charge
-  // the card on file" workflow Eben uses today via GHL's Stripe.
-  // Affirm + some other BNPL methods don't support setup_future_usage, so
-  // we use payment_method_options.card.setup_future_usage to scope it
-  // to card payments only — Stripe will still show Affirm/Klarna/etc as
-  // options, they just don't get saved (which is correct: you can't
-  // "charge an Affirm loan on file" anyway).
-  if (params.existingCustomerId) {
-    form.set("customer", params.existingCustomerId);
-  } else {
-    form.set("customer_email", params.email);
-    form.set("customer_creation", "always");
-  }
-  form.set("payment_method_options[card][setup_future_usage]", "off_session");
-
-  // Single line item via inline price_data
-  form.set("line_items[0][quantity]", "1");
-  form.set("line_items[0][price_data][currency]", "usd");
-  form.set("line_items[0][price_data][unit_amount]", String(params.unitAmount));
-  form.set("line_items[0][price_data][product_data][name]", params.productName);
-  form.set(
-    "line_items[0][price_data][product_data][description]",
-    params.productDescription,
-  );
-
-  // Metadata that the webhook reads to actually book the appointment.
-  // Stripe enforces 50 keys, 500 chars/value — we're well under.
-  for (const [k, v] of Object.entries(params.metadata)) {
-    form.set(`metadata[${k}]`, String(v).slice(0, 500));
-    form.set(`payment_intent_data[metadata][${k}]`, String(v).slice(0, 500));
-  }
-
-  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: form.toString(),
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`Stripe checkout create ${res.status}: ${text}`);
-  }
-  return JSON.parse(text);
-}
-
 export async function onRequestPost(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
-
-  if (!env.STRIPE_SECRET_KEY) {
-    console.error("[book/create-checkout] STRIPE_SECRET_KEY not configured");
-    return json(
-      { error: "Payment not configured. Email eben@amarimethod.com." },
-      500,
-      origin,
-    );
-  }
 
   let body;
   try {
@@ -354,7 +273,13 @@ export async function onRequestPost(context) {
   let contactId;
   try {
     const GHL_API_KEY = await getGhlToken(context);
-    contactId = await upsertContact(context, GHL_API_KEY, locationId, body);
+    contactId = await upsertContact(
+      context,
+      GHL_API_KEY,
+      locationId,
+      body,
+      booking,
+    );
   } catch (err) {
     console.error("[book/create-checkout] contact upsert failed:", err);
     return json(
@@ -364,70 +289,24 @@ export async function onRequestPost(context) {
     );
   }
 
-  // Don't await this — the audit doesn't need to block redirect to Stripe.
-  // The webhook re-applies the same tags on payment, so even if this
-  // best-effort call fails the contact still ends up tagged correctly.
+  // Tags + audit note in parallel — neither blocks the redirect to payment.
   context.waitUntil(
-    recordAgreementAudit(context, contactId, body, ip, userAgent, booking),
+    recordPreCheckoutAudit(context, contactId, body, ip, userAgent, booking),
   );
 
-  const baseUrl = "https://www.amarimethod.com";
-  const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60; // 30-min hold
+  // Append contact identifiers to the payment link so GHL associates the
+  // resulting order with the right contact. The order webhook also uses
+  // email-matching as a fallback if the URL params get stripped.
+  const paymentUrl = new URL(booking.paymentLinkUrl);
+  paymentUrl.searchParams.set("contact_id", contactId);
+  paymentUrl.searchParams.set("email", body.email);
+  paymentUrl.searchParams.set("first_name", body.firstName);
+  paymentUrl.searchParams.set("last_name", body.lastName);
+  paymentUrl.searchParams.set("phone", body.phone);
 
-  // Look up existing Stripe Customer by email so returning clients reuse
-  // the same Customer (one record per person across all bookings), and
-  // saved cards from prior bookings stay attached. Failure here is
-  // non-fatal — worst case Stripe creates a new Customer.
-  let existingCustomerId = null;
-  try {
-    existingCustomerId = await findStripeCustomerByEmail(
-      env.STRIPE_SECRET_KEY,
-      body.email,
-    );
-  } catch (err) {
-    console.warn("[book/create-checkout] Stripe customer lookup failed:", err.message);
-  }
-
-  let session;
-  try {
-    session = await createStripeCheckout(env.STRIPE_SECRET_KEY, {
-      email: body.email,
-      existingCustomerId,
-      successUrl: `${baseUrl}/book/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${baseUrl}/book/initial-in-person/`,
-      expiresAt,
-      unitAmount: booking.price * 100,
-      productName: booking.title,
-      productDescription: `${booking.durationMinutes}-minute session with Dr. Garrett`,
-      metadata: {
-        contactId,
-        locationId,
-        calendarId: booking.calendarId,
-        productId: booking.productId,
-        sessionType: body.sessionType,
-        sessionTitle: booking.title,
-        durationMinutes: booking.durationMinutes,
-        startTime: body.startTime,
-        timezone: body.timezone,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        email: body.email,
-        phone: body.phone,
-        agreementVersion: body.agreementVersion || "",
-        agreementIp: ip,
-        agreedAt: new Date().toISOString(),
-        pmaTag: booking.pmaTag,
-        sessionTag: booking.sessionTag,
-      },
-    });
-  } catch (err) {
-    console.error("[book/create-checkout] Stripe session create failed:", err);
-    return json(
-      { error: "Could not start payment. Please try again." },
-      422,
-      origin,
-    );
-  }
-
-  return json({ checkoutUrl: session.url, sessionId: session.id }, 200, origin);
+  return json(
+    { checkoutUrl: paymentUrl.toString(), contactId },
+    200,
+    origin,
+  );
 }

@@ -63,7 +63,167 @@ const PRODUCT_MAP = {
     seriesType: null, // Don't change series_type if client already has one
     livingPractice: false,
   },
+  // Initial Session — In Person ($225) — sold via native booking flow
+  "688a1cd770362828afbf08a2": {
+    name: "Initial Session — In Person",
+    sessionsToAdd: 1,
+    seriesType: null, // Don't auto-set series — client hasn't committed to a pack
+    livingPractice: false,
+    isInitialBooking: true,
+    calendarId: "G7OAnnJuFbMF6nQSlZVQ",
+    durationMinutes: 60,
+    sessionTitle: "Amari Method Initial Session — In Person",
+    sessionTag: "booked-initial-in-person",
+  },
+  // Initial Session — Virtual ($225) — sold via native booking flow (phase 2)
+  "690b6b4d333ffa59d40c1823": {
+    name: "Initial Session — Virtual",
+    sessionsToAdd: 1,
+    seriesType: null,
+    livingPractice: false,
+    isInitialBooking: true,
+    calendarId: "ySmht5hx4uZGEpgZrlCw",
+    durationMinutes: 60,
+    sessionTitle: "Amari Method Initial Session — Virtual",
+    sessionTag: "booked-initial-virtual",
+  },
 };
+
+// Field keys for the slot-request fields written by create-checkout.js
+// (Settings → Custom Fields → Session Tracking folder)
+const REQUESTED_SLOT_FIELD_KEYS = [
+  "requested_session_slot",
+  "requested_session_calendar",
+  "requested_session_type",
+];
+
+/**
+ * Read a custom field value from a GHL contact object by FIELD KEY
+ * (not ID). The contact's customFields array entries may have `fieldKey`
+ * or `key` depending on the API version that returned them.
+ */
+function getCustomFieldValueByKey(contact, fieldKey) {
+  if (!contact.customFields) return null;
+  const field = contact.customFields.find(
+    (f) => f.fieldKey === fieldKey || f.key === fieldKey ||
+           // Some payloads return the key as "contact.<key>"
+           f.fieldKey === `contact.${fieldKey}` || f.key === `contact.${fieldKey}`,
+  );
+  return field ? (field.value ?? field.field_value ?? null) : null;
+}
+
+/**
+ * Book the appointment that the user picked during native-flow checkout.
+ * Reads requested_session_slot off the contact; if missing, this purchase
+ * came from an old-style GHL funnel (which booked the appointment itself)
+ * so we skip and return null without erroring.
+ */
+async function bookInitialSessionAppointment(context, contact, pkg, token) {
+  const slot = getCustomFieldValueByKey(contact, "requested_session_slot");
+  if (!slot) {
+    console.log(
+      `[ghl-purchase-webhook] No requested_session_slot on contact ${contact.id} — assuming legacy funnel purchase, skipping appointment creation`,
+    );
+    return null;
+  }
+
+  // Compute endTime by adding duration to start. Preserve any timezone
+  // offset suffix on the slot (GHL rejects appointments where the offset
+  // is stripped — mirrors the logic in functions/api/portal-book.js).
+  const offsetMatch = slot.match(/([+-]\d{2}:\d{2}|Z)$/);
+  const offset = offsetMatch ? offsetMatch[1] : "Z";
+  const startMs = new Date(slot).getTime();
+  if (!Number.isFinite(startMs)) {
+    throw new Error(`Invalid requested_session_slot: ${slot}`);
+  }
+  const endMs = startMs + pkg.durationMinutes * 60 * 1000;
+  const endTime = new Date(endMs)
+    .toISOString()
+    .replace("Z", offset === "Z" ? "Z" : offset);
+
+  const payload = {
+    calendarId: pkg.calendarId,
+    locationId: LOCATION_ID,
+    contactId: contact.id,
+    startTime: slot,
+    endTime,
+    selectedTimezone: "America/Los_Angeles", // safe default; appointment's local TZ
+    title: pkg.sessionTitle,
+    appointmentStatus: "confirmed",
+    firstName: contact.firstName || "",
+    lastName: contact.lastName || "",
+    email: contact.email || "",
+    phone: contact.phone || "",
+  };
+
+  const res = await fetch(
+    `${GHL_API_BASE}/calendars/events/appointments`,
+    {
+      method: "POST",
+      headers: ghlHeaders(token),
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(
+      `Appointment create failed (${res.status}): ${errText.slice(0, 500)}`,
+    );
+  }
+
+  const data = await res.json();
+  console.log(
+    `[ghl-purchase-webhook] Booked initial session appointment for ${contact.id} at ${slot} (apptId: ${data.id || data.appointment?.id})`,
+  );
+
+  return data;
+}
+
+/**
+ * After booking, apply tags + write a confirmation note. Best-effort —
+ * non-fatal if any fail.
+ */
+async function recordInitialSessionPaid(context, contactId, pkg, appointment) {
+  try {
+    await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contactId}/tags`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          tags: [pkg.sessionTag, "paid-via-native-checkout"],
+        }),
+      },
+    );
+  } catch (err) {
+    console.error("[ghl-purchase-webhook] tag apply failed:", err);
+  }
+
+  const apptId = appointment?.id || appointment?.appointment?.id || "—";
+  try {
+    await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contactId}/notes`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          body: [
+            `Native booking payment received — appointment booked`,
+            ``,
+            `Session: ${pkg.name}`,
+            `Appointment id: ${apptId}`,
+            `Calendar: ${pkg.calendarId}`,
+            `Card saved on this contact's GHL Payment Methods (visible in`,
+            `the contact's Payments panel — chargeable for future purchases).`,
+          ].join("\n"),
+        }),
+      },
+    );
+  } catch (err) {
+    console.error("[ghl-purchase-webhook] note add failed:", err);
+  }
+}
 
 // ── GHL custom field IDs ──
 const FIELD_IDS = {
@@ -328,6 +488,63 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} → ${newRemaining} (${pkg.name})`);
+
+    // ── 8b. Native-booking-flow initial session: also book the appointment ──
+    // If this product is an Initial Session sold via the native flow, the
+    // contact has requested_session_slot/calendar/type fields with the slot
+    // they picked. Create the appointment on the calendar + tag the
+    // contact. Legacy GHL-funnel purchases skip this branch (slot missing).
+    if (pkg.isInitialBooking) {
+      try {
+        const appointment = await bookInitialSessionAppointment(
+          context,
+          contact,
+          pkg,
+          token,
+        );
+        if (appointment) {
+          await recordInitialSessionPaid(
+            context,
+            sanitizedContactId,
+            pkg,
+            appointment,
+          );
+        }
+      } catch (err) {
+        // Don't fail the whole webhook — the payment succeeded, the
+        // sessions_remaining update succeeded. Surface the booking
+        // failure via a contact note so Eben can recover manually.
+        console.error(
+          `[ghl-purchase-webhook] Initial session appointment booking failed:`,
+          err.message,
+        );
+        try {
+          await ghlFetch(
+            context,
+            `${GHL_API_BASE}/contacts/${sanitizedContactId}/notes`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                body: [
+                  `URGENT — RECONCILE NEEDED`,
+                  ``,
+                  `${pkg.name} payment received and recorded, but the`,
+                  `appointment failed to auto-book.`,
+                  ``,
+                  `Error: ${err.message}`,
+                  ``,
+                  `Action: manually book the slot on the ${pkg.name}`,
+                  `calendar. Check the requested_session_slot custom field`,
+                  `for the slot the customer picked.`,
+                ].join("\n"),
+              }),
+            },
+          );
+        } catch (noteErr) {
+          console.error("[ghl-purchase-webhook] urgent note failed:", noteErr);
+        }
+      }
+    }
 
     // ── 9. Store order ID in KV for idempotency ──
     if (kv && idempotencyKey) {
