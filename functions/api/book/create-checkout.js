@@ -79,8 +79,10 @@ function validateBody(b) {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) return "Invalid email";
   if (b.phone.replace(/\D/g, "").length < 10) return "Invalid phone";
-  if (!b.agreeCommunications || !b.agreePolicies) {
-    return "Both consent boxes must be checked";
+  // agreeCommunications is OPTIONAL (marketing-comms opt-in) — only the
+  // policies/PMA agreement is required for the booking to proceed.
+  if (!b.agreePolicies) {
+    return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
   }
   if (!ALLOWED_BOOKINGS[b.sessionType]) return "Invalid sessionType";
   if (ALLOWED_BOOKINGS[b.sessionType].calendarId !== b.calendarId) {
@@ -113,9 +115,12 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload) {
     console.error("[book/create-checkout] contact lookup failed:", err);
   }
 
-  const customFields = [
-    { key: "communications_policies_new_client", field_value: "true" },
-  ];
+  // Only set communications_policies_new_client if the optional checkbox
+  // was actually checked. Leaving it unset for non-opters keeps the
+  // marketing-comms list clean.
+  const customFields = payload.agreeCommunications
+    ? [{ key: "communications_policies_new_client", field_value: "true" }]
+    : [];
 
   if (existingId) {
     const updateRes = await ghlFetch(
