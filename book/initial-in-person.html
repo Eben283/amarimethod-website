@@ -42,86 +42,107 @@
   </script>
 
   <style>
-    .book-shell { max-width: 720px; margin: 0 auto; padding: 48px 24px 96px; }
-    .book-hero { text-align: center; margin-bottom: 32px; }
-    .book-hero .kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted, #888); margin-bottom: 12px; }
-    .book-hero h1 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(32px, 4.4vw, 48px); line-height: 1.1; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 14px; }
-    .book-hero h1 em { font-style: italic; }
-    .book-hero .sub { font-size: 16px; line-height: 1.55; color: var(--color-text-secondary, #555); max-width: 50ch; margin: 0 auto 18px; }
-    .book-hero .meta { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13px; color: var(--color-text-muted, #888); }
-    .book-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+    /* ---- Layout ---- */
+    .book-layout { max-width: 1180px; margin: 0 auto; padding: 56px 40px 96px; display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1.4fr); gap: 80px; align-items: start; }
+    .book-context { position: sticky; top: 32px; }
+    .book-flow { min-width: 0; }
 
-    .book-progress { display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 32px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted, #888); }
+    /* ---- Left column: context ---- */
+    .book-portrait { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; margin-bottom: 28px; }
+    .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 16px; }
+    .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 20px; }
+    .book-headline em { font-style: italic; }
+    .book-sub { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; color: var(--color-text-secondary, #555); margin: 0 0 32px; max-width: 38ch; }
+
+    .book-details { margin: 0; padding: 0; list-style: none; border-top: 1px solid #e8dfc7; }
+    .book-details li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid #e8dfc7; font-family: 'Inter', sans-serif; font-size: 14px; }
+    .book-details li .label { color: var(--color-text-muted, #888); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; font-size: 11px; }
+    .book-details li .value { color: var(--color-text, #1d1d1d); font-weight: 500; text-align: right; }
+    .book-details li .value small { display: block; font-weight: 400; font-size: 12px; color: var(--color-text-muted, #888); margin-top: 2px; }
+
+    /* ---- Right column: flow ---- */
+    .book-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); }
     .book-progress-step { display: inline-flex; align-items: center; gap: 8px; }
-    .book-progress-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #e5e0d6; color: #999; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; }
-    .book-progress-step.is-active .book-progress-dot { background: var(--color-text, #1d1d1d); color: #fff; }
-    .book-progress-step.is-done .book-progress-dot { background: var(--accent-warm, #EBA584); color: #fff; }
+    .book-progress-num { font-family: 'Bona Nova', serif; font-style: italic; font-size: 16px; font-weight: 400; color: var(--color-text-muted, #aaa); letter-spacing: 0; text-transform: none; }
+    .book-progress-step.is-active .book-progress-num,
     .book-progress-step.is-active .book-progress-label { color: var(--color-text, #1d1d1d); }
-    .book-progress-bar { width: 32px; height: 1px; background: #e5e0d6; }
+    .book-progress-step.is-done .book-progress-num,
+    .book-progress-step.is-done .book-progress-label { color: var(--accent-warm, #EBA584); }
+    .book-progress-bar { flex: 0 0 24px; height: 1px; background: #e8dfc7; }
 
-    .book-card { background: #fff; border-radius: 16px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04); }
-    .book-card h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: 24px; line-height: 1.2; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
-    .book-card .subhead { font-size: 14px; color: var(--color-text-muted, #888); margin: 0 0 24px; }
-
-    .form-row { margin-bottom: 18px; }
-    .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-label { display: block; font-size: 13px; font-weight: 500; letter-spacing: 0.01em; color: var(--color-text, #1d1d1d); margin-bottom: 6px; font-family: 'Inter', sans-serif; }
-    .form-label .req { color: #c64a3a; margin-left: 2px; }
-    .form-input { width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 15px; font-family: 'Inter', sans-serif; line-height: 1.4; color: var(--color-text, #1d1d1d); background: #fdfaf3; border: 1px solid #d5cdbb; border-radius: 8px; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
-    .form-input:focus { outline: none; border-color: var(--color-text, #1d1d1d); box-shadow: 0 0 0 3px rgba(29,29,29,0.08); }
-    .form-input.is-invalid { border-color: #c64a3a; background: #fdf3f0; }
-    .form-error { font-size: 12px; color: #c64a3a; margin-top: 4px; min-height: 1em; font-family: 'Inter', sans-serif; }
-
-    .checkbox-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: #faf6ec; border: 1px solid #ece4cf; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease; }
-    .checkbox-row:hover { background: #f5eedc; }
-    .checkbox-row.is-invalid { border-color: #c64a3a; background: #fdf3f0; }
-    .checkbox-row input[type=checkbox] { margin: 3px 0 0 0; flex-shrink: 0; cursor: pointer; }
-    .checkbox-row label { flex: 1; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary, #555); cursor: pointer; font-family: 'Inter', sans-serif; }
-    .checkbox-row a { color: var(--color-text, #1d1d1d); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-
-    .btn-primary-full { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 16px 28px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border: none; border-radius: 999px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; letter-spacing: 0.01em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; margin-top: 8px; }
-    .btn-primary-full:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .btn-primary-full:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary-full .arrow { transition: transform 0.15s ease; }
-    .btn-primary-full:hover:not(:disabled) .arrow { transform: translateX(4px); }
-
-    .btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 10px 0; font-size: 14px; font-family: 'Inter', sans-serif; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
-    .btn-secondary:hover { color: var(--color-text, #1d1d1d); }
+    .form-banner-error { padding: 14px 16px; background: #fdf3f0; border-left: 3px solid #c64a3a; color: #8a2e1f; font-size: 14px; line-height: 1.55; margin-bottom: 24px; font-family: 'Inter', sans-serif; }
+    .form-banner-error.is-hidden { display: none; }
 
     .step-section { display: none; }
     .step-section.is-active { display: block; }
+    .step-section h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
+    .step-section .subhead { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: var(--color-text-muted, #888); margin: 0 0 28px; }
 
-    .slot-picker-container { margin-top: 20px; }
-    .slot-loading, .slot-error, .slot-empty { padding: 32px; text-align: center; color: var(--color-text-muted, #888); font-size: 14px; }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 14px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
+    .btn-back:hover { color: var(--color-text, #1d1d1d); }
+
+    /* ---- Slot picker ---- */
+    .slot-loading, .slot-error, .slot-empty { padding: 32px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text-muted, #888); }
     .slot-error { color: #c64a3a; }
 
-    .day-tabs { display: flex; overflow-x: auto; gap: 6px; padding: 0 0 12px; margin: 0 -8px 16px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .day-tab { flex-shrink: 0; min-width: 72px; padding: 12px 8px; text-align: center; background: #faf6ec; border: 1px solid #ece4cf; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; font-family: 'Inter', sans-serif; }
-    .day-tab:hover { background: #f5eedc; }
+    .day-strip { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 16px; margin: 0 -4px 24px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+    .day-tab { flex-shrink: 0; min-width: 64px; padding: 10px 8px; text-align: center; background: transparent; border: 1px solid #e8dfc7; border-radius: 4px; cursor: pointer; transition: all 0.15s ease; font-family: 'Inter', sans-serif; color: var(--color-text-secondary, #555); }
+    .day-tab:hover { border-color: var(--color-text, #1d1d1d); color: var(--color-text, #1d1d1d); }
     .day-tab.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
-    .day-tab .day-name { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.7; }
-    .day-tab .day-num { font-size: 18px; font-weight: 600; margin-top: 2px; }
-    .day-tab .day-month { font-size: 10px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.6; margin-top: 2px; }
+    .day-tab .day-name { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; }
+    .day-tab .day-num { font-family: 'Bona Nova', serif; font-size: 22px; font-weight: 400; line-height: 1; margin-top: 4px; }
+    .day-tab .day-month { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; margin-top: 4px; }
 
-    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-    .slot-btn { padding: 12px 10px; background: #fff; border: 1px solid #d5cdbb; border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.15s ease; }
-    .slot-btn:hover { border-color: var(--color-text, #1d1d1d); background: #faf6ec; }
+    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+    .slot-btn { padding: 11px 8px; background: transparent; border: 1px solid #d5cdbb; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.12s ease; }
+    .slot-btn:hover { background: #faf6ec; border-color: var(--color-text, #1d1d1d); }
     .slot-btn.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
 
-    .order-summary { margin-top: 24px; padding: 18px; background: #faf6ec; border-radius: 10px; }
-    .order-summary-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 8px; font-family: 'Inter', sans-serif; }
-    .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 0; font-size: 14px; font-family: 'Inter', sans-serif; }
-    .order-summary-row strong { font-weight: 600; }
-    .order-summary-divider { height: 1px; background: #e5e0d6; margin: 8px 0; }
-    .order-summary-total { font-size: 16px; font-weight: 700; }
+    /* ---- Order summary (inline, editorial) ---- */
+    .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid #e8dfc7; border-bottom: 1px solid #e8dfc7; }
+    .order-summary-title { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 10px; }
+    .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text, #1d1d1d); }
+    .order-summary-row .summary-datetime { color: var(--color-text-secondary, #555); font-weight: 500; }
+    .order-summary-total { padding-top: 8px; margin-top: 6px; border-top: 1px solid #e8dfc7; font-size: 15px; font-weight: 600; }
 
-    .form-banner-error { padding: 14px; background: #fdf3f0; border: 1px solid #f0c6bb; color: #8a2e1f; border-radius: 8px; font-size: 14px; margin-bottom: 16px; line-height: 1.5; font-family: 'Inter', sans-serif; }
-    .form-banner-error.is-hidden { display: none; }
+    /* ---- Form (step 2) ---- */
+    .form-row { margin-bottom: 18px; }
+    .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-label { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted, #888); margin-bottom: 8px; }
+    .form-label .req { color: #c64a3a; margin-left: 2px; }
+    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.4; color: var(--color-text, #1d1d1d); background: transparent; border: none; border-bottom: 1px solid #d5cdbb; border-radius: 0; transition: border-color 0.15s ease; }
+    .form-input:focus { outline: none; border-bottom-color: var(--color-text, #1d1d1d); border-bottom-width: 2px; padding-bottom: 11px; }
+    .form-input.is-invalid { border-bottom-color: #c64a3a; }
+    .form-input::placeholder { color: #b8b0a0; }
+    .form-error { font-family: 'Inter', sans-serif; font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
 
-    @media (max-width: 600px) {
-      .book-shell { padding: 32px 16px 64px; }
-      .book-card { padding: 24px 20px; border-radius: 12px; }
+    .checkbox-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; cursor: pointer; }
+    .checkbox-row + .checkbox-row { border-top: 1px solid #e8dfc7; }
+    .checkbox-row input[type=checkbox] { margin: 4px 0 0 0; flex-shrink: 0; cursor: pointer; accent-color: var(--color-text, #1d1d1d); }
+    .checkbox-row label, .checkbox-row > span { flex: 1; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.55; color: var(--color-text-secondary, #555); cursor: pointer; }
+    .checkbox-row a { color: var(--color-text, #1d1d1d); text-decoration: underline; text-underline-offset: 2px; }
+    .checkbox-row.is-invalid > span { color: #c64a3a; }
+    .checkbox-row .opt-tag { font-weight: 600; color: var(--color-text, #1d1d1d); margin-right: 4px; }
+
+    /* ---- Primary button ---- */
+    .btn-primary-pill { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 18px 28px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border: none; border-radius: 999px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; margin-top: 28px; }
+    .btn-primary-pill:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .btn-primary-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary-pill .arrow { transition: transform 0.15s ease; }
+    .btn-primary-pill:hover:not(:disabled) .arrow { transform: translateX(4px); }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 880px) {
+      .book-layout { grid-template-columns: 1fr; gap: 36px; padding: 32px 20px 64px; }
+      .book-context { position: static; }
+      .book-portrait { aspect-ratio: 16 / 9; max-height: 320px; }
+      .book-headline { max-width: 18ch; }
+    }
+    @media (max-width: 480px) {
+      .book-layout { padding: 24px 16px 48px; }
       .form-row.cols-2 { grid-template-columns: 1fr; }
+      .day-tab { min-width: 56px; padding: 8px 6px; }
+      .day-tab .day-num { font-size: 18px; }
     }
   </style>
 </head>
@@ -149,125 +170,138 @@
   </nav>
 
   <main>
-    <div class="book-shell">
-      <section class="book-hero">
-        <div class="kicker">In-person initial session · San Francisco</div>
-        <h1>Book your <em>first session.</em></h1>
-        <p class="sub">60 minutes with Dr. Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
-        <div class="meta">
-          <span>$225</span>
-          <span class="dot"></span>
-          <span>HSA/FSA accepted</span>
-          <span class="dot"></span>
-          <span>Pay over time with Affirm</span>
-        </div>
-      </section>
+    <div class="book-layout">
 
-      <div class="book-progress" aria-label="Booking progress">
-        <span class="book-progress-step is-active" id="progressStep1">
-          <span class="book-progress-dot">1</span>
-          <span class="book-progress-label">Pick a time</span>
-        </span>
-        <span class="book-progress-bar"></span>
-        <span class="book-progress-step" id="progressStep2">
-          <span class="book-progress-dot">2</span>
-          <span class="book-progress-label">Your details</span>
-        </span>
-        <span class="book-progress-bar"></span>
-        <span class="book-progress-step" id="progressStep3">
-          <span class="book-progress-dot">3</span>
-          <span class="book-progress-label">Payment</span>
-        </span>
-      </div>
+      <!-- ============ LEFT: persistent context ============ -->
+      <aside class="book-context">
+        <img class="book-portrait" src="/images/dr-garrett-hewstan-amari-method-session.avif" alt="Dr. Garrett Hewstan guiding a client through an Amari Method session in San Francisco" width="800" height="1000" loading="eager">
+        <p class="book-kicker">In-person initial session</p>
+        <h1 class="book-headline">Book your <em>first session.</em></h1>
+        <p class="book-sub">60 minutes with Dr. Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
+        <ul class="book-details">
+          <li>
+            <span class="label">Duration</span>
+            <span class="value">60 minutes</span>
+          </li>
+          <li>
+            <span class="label">Location</span>
+            <span class="value">662 8th Ave<small>San Francisco, CA</small></span>
+          </li>
+          <li>
+            <span class="label">Investment</span>
+            <span class="value">$225<small>HSA/FSA · pay over time with Affirm</small></span>
+          </li>
+        </ul>
+      </aside>
 
-      <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
+      <!-- ============ RIGHT: booking flow ============ -->
+      <section class="book-flow">
 
-      <!-- ============ STEP 1: slot picker ============ -->
-      <section class="book-card step-section is-active" id="step1Section" aria-labelledby="step1Heading">
-        <h2 id="step1Heading">Pick a time.</h2>
-        <p class="subhead">All times shown in <span id="userTimezone">your local time</span>. Sessions are at 662 8th Ave, San Francisco.</p>
-
-        <div class="slot-picker-container" id="slotPicker">
-          <div class="slot-loading" id="slotLoading">Loading available times…</div>
-          <div class="slot-error" id="slotError" hidden></div>
-          <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 30 days. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
-          <div id="slotGrid" hidden>
-            <div class="day-tabs" id="dayTabs" role="tablist" aria-label="Available days"></div>
-            <div class="slot-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
-          </div>
+        <div class="book-progress" aria-label="Booking progress">
+          <span class="book-progress-step is-active" id="progressStep1">
+            <span class="book-progress-num">01</span>
+            <span class="book-progress-label">Pick a time</span>
+          </span>
+          <span class="book-progress-bar"></span>
+          <span class="book-progress-step" id="progressStep2">
+            <span class="book-progress-num">02</span>
+            <span class="book-progress-label">Your details</span>
+          </span>
+          <span class="book-progress-bar"></span>
+          <span class="book-progress-step" id="progressStep3">
+            <span class="book-progress-num">03</span>
+            <span class="book-progress-label">Payment</span>
+          </span>
         </div>
 
-        <div class="order-summary" id="orderSummaryStep1" hidden>
-          <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session — In Person</span><strong>$225</strong></div>
-          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-          <div class="order-summary-divider"></div>
-          <div class="order-summary-row order-summary-total"><span>Total today</span><strong>$225</strong></div>
-        </div>
+        <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
 
-        <button type="button" class="btn-primary-full" id="step1ContinueBtn" disabled>
-          <span id="step1ContinueLabel">Pick a time to continue</span>
-          <span class="arrow" aria-hidden="true">→</span>
-        </button>
-      </section>
+        <!-- ============ STEP 1: slot picker ============ -->
+        <div class="step-section is-active" id="step1Section" aria-labelledby="step1Heading">
+          <h2 id="step1Heading">Pick a time.</h2>
+          <p class="subhead">All times in <span id="userTimezone">your local time</span>.</p>
 
-      <!-- ============ STEP 2: client info form ============ -->
-      <section class="book-card step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
-        <button type="button" class="btn-secondary" id="backToStep1">← Pick a different time</button>
-        <h2 id="step2Heading" style="margin-top: 8px;">Tell us about you.</h2>
-        <p class="subhead">We'll send your confirmation here and use this for your client record.</p>
-
-        <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0; margin-bottom: 24px;">
-          <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session — In Person</span><strong>$225</strong></div>
-          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-          <div class="order-summary-divider"></div>
-          <div class="order-summary-row order-summary-total"><span>Total today</span><strong>$225</strong></div>
-        </div>
-
-        <form id="clientForm" novalidate>
-          <div class="form-row cols-2">
-            <div>
-              <label class="form-label" for="firstName">First name<span class="req">*</span></label>
-              <input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required>
-              <div class="form-error" data-error-for="firstName"></div>
-            </div>
-            <div>
-              <label class="form-label" for="lastName">Last name<span class="req">*</span></label>
-              <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
-              <div class="form-error" data-error-for="lastName"></div>
+          <div class="slot-picker-container" id="slotPicker">
+            <div class="slot-loading" id="slotLoading">Loading available times…</div>
+            <div class="slot-error" id="slotError" hidden></div>
+            <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 30 days. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
+            <div id="slotGrid" hidden>
+              <div class="day-strip" id="dayTabs" role="tablist" aria-label="Available days"></div>
+              <div class="slot-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
             </div>
           </div>
 
-          <div class="form-row">
-            <label class="form-label" for="email">Email<span class="req">*</span></label>
-            <input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
-            <div class="form-error" data-error-for="email"></div>
+          <div class="order-summary" id="orderSummaryStep1" hidden>
+            <p class="order-summary-title">Your booking</p>
+            <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+            <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+            <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
           </div>
 
-          <div class="form-row">
-            <label class="form-label" for="phone">Phone<span class="req">*</span></label>
-            <input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required>
-            <div class="form-error" data-error-for="phone"></div>
-          </div>
-
-          <div class="form-row" style="margin-top: 24px;">
-            <label class="checkbox-row" data-error-for="agreePolicies">
-              <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
-              <span>I have read and agree to the <a href="/missed-appointment-policy" target="_blank" rel="noopener">Missed Appointment Policy</a> and the <a href="/member-agreement" target="_blank" rel="noopener">Practice Membership Agreement</a>.</span>
-            </label>
-
-            <label class="checkbox-row" data-error-for="agreeCommunications">
-              <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
-              <span><strong style="font-weight: 600; color: var(--color-text, #1d1d1d);">Optional:</strong> Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
-            </label>
-          </div>
-
-          <button type="submit" class="btn-primary-full" id="step2SubmitBtn">
-            <span id="step2SubmitLabel">Continue to payment — $225</span>
+          <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled>
+            <span id="step1ContinueLabel">Pick a time to continue</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
-        </form>
+        </div>
+
+        <!-- ============ STEP 2: client info form ============ -->
+        <div class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
+          <button type="button" class="btn-back" id="backToStep1">← Pick a different time</button>
+          <h2 id="step2Heading">Tell us about you.</h2>
+          <p class="subhead">We'll send your confirmation here and use this for your client record.</p>
+
+          <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
+            <p class="order-summary-title">Your booking</p>
+            <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+            <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+            <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+          </div>
+
+          <form id="clientForm" novalidate style="margin-top: 28px;">
+            <div class="form-row cols-2">
+              <div>
+                <label class="form-label" for="firstName">First name<span class="req">*</span></label>
+                <input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required>
+                <div class="form-error" data-error-for="firstName"></div>
+              </div>
+              <div>
+                <label class="form-label" for="lastName">Last name<span class="req">*</span></label>
+                <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
+                <div class="form-error" data-error-for="lastName"></div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="email">Email<span class="req">*</span></label>
+              <input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+              <div class="form-error" data-error-for="email"></div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="phone">Phone<span class="req">*</span></label>
+              <input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required>
+              <div class="form-error" data-error-for="phone"></div>
+            </div>
+
+            <div class="form-row" style="margin-top: 32px;">
+              <label class="checkbox-row" data-error-for="agreePolicies">
+                <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
+                <span>I have read and agree to the <a href="/missed-appointment-policy" target="_blank" rel="noopener">Missed Appointment Policy</a> and the <a href="/member-agreement" target="_blank" rel="noopener">Practice Membership Agreement</a>.</span>
+              </label>
+
+              <label class="checkbox-row" data-error-for="agreeCommunications">
+                <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
+                <span><span class="opt-tag">Optional:</span>Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-primary-pill" id="step2SubmitBtn">
+              <span id="step2SubmitLabel">Continue to payment — $225</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </button>
+          </form>
+        </div>
+
       </section>
 
     </div>
@@ -363,7 +397,6 @@
         progressStep3: $('progressStep3'),
         step1Section: $('step1Section'),
         step2Section: $('step2Section'),
-        // Step 1 (slot picker) ---
         userTimezone: $('userTimezone'),
         slotLoading: $('slotLoading'),
         slotError: $('slotError'),
@@ -376,14 +409,12 @@
         summaryDateTimeEls: document.querySelectorAll('.summary-datetime'),
         step1ContinueBtn: $('step1ContinueBtn'),
         step1ContinueLabel: $('step1ContinueLabel'),
-        // Step 2 (form) ---
         clientForm: $('clientForm'),
         backToStep1: $('backToStep1'),
         step2SubmitBtn: $('step2SubmitBtn'),
         step2SubmitLabel: $('step2SubmitLabel'),
       };
 
-      // ---------- analytics ----------
       function track(event, params) {
         if (window.gtag) {
           window.gtag('event', event, Object.assign({
@@ -393,7 +424,6 @@
         }
       }
 
-      // ---------- helpers ----------
       function setBannerError(msg) {
         if (!msg) {
           els.bannerError.classList.add('is-hidden');
@@ -408,7 +438,7 @@
       function setFieldError(name, msg) {
         const errEl = document.querySelector('[data-error-for="' + name + '"]');
         const inputEl = els.clientForm.elements[name];
-        if (errEl) errEl.textContent = msg || '';
+        if (errEl && errEl.classList.contains('form-error')) errEl.textContent = msg || '';
         if (inputEl && inputEl.tagName === 'INPUT' && inputEl.type !== 'checkbox') {
           inputEl.classList.toggle('is-invalid', !!msg);
         }
@@ -422,19 +452,12 @@
         });
       }
 
-      function isValidEmail(s) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-      }
-
-      function isValidPhone(s) {
-        // Allow flexible formats; require at least 10 digits.
-        return s.replace(/\D/g, '').length >= 10;
-      }
+      function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+      function isValidPhone(s) { return s.replace(/\D/g, '').length >= 10; }
 
       function formatDateLong(yyyymmdd) {
         const [y, m, d] = yyyymmdd.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
-        return date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
       }
 
       function formatDayShort(yyyymmdd) {
@@ -454,7 +477,6 @@
         return minute === 0 ? h12 + ampm : h12 + ':' + mm + ampm;
       }
 
-      // ---------- step transitions ----------
       function setStep(n) {
         state.step = n;
         els.step1Section.classList.toggle('is-active', n === 1);
@@ -467,7 +489,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      // ---------- form helpers (used by step 2) ----------
       function readForm() {
         const f = els.clientForm.elements;
         return {
@@ -489,16 +510,12 @@
         else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
         if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
         else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
-        // agreeCommunications is OPTIONAL — no validation
         if (!data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
         return ok;
       }
 
-      els.backToStep1.addEventListener('click', function () {
-        setStep(1);
-      });
+      els.backToStep1.addEventListener('click', function () { setStep(1); });
 
-      // ---------- step 1: slot loading (runs on page init) ----------
       async function loadSlots() {
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
@@ -513,10 +530,8 @@
         const end = new Date(today.getTime() + 30 * 86400000);
         const endDate = end.toISOString().slice(0, 10);
 
-        const url = SLOTS_API
-          + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
-          + '&startDate=' + startDate
-          + '&endDate=' + endDate
+        const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
+          + '&startDate=' + startDate + '&endDate=' + endDate
           + '&timezone=' + encodeURIComponent(state.timezone);
 
         try {
@@ -526,17 +541,12 @@
           state.slots = Array.isArray(data.slots) ? data.slots : [];
 
           const byDay = {};
-          state.slots.forEach(function (s) {
-            (byDay[s.date] = byDay[s.date] || []).push(s);
-          });
+          state.slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
           state.slotsByDay = byDay;
           state.days = Object.keys(byDay).sort();
 
           els.slotLoading.hidden = true;
-          if (state.days.length === 0) {
-            els.slotEmpty.hidden = false;
-            return;
-          }
+          if (state.days.length === 0) { els.slotEmpty.hidden = false; return; }
           els.slotGrid.hidden = false;
           renderDayTabs();
           selectDay(state.days[0]);
@@ -593,7 +603,6 @@
         });
         const dateLabel = formatDateLong(slot.date);
         const timeLabel = formatTime(slot.hour, slot.minute);
-        // Mirror the picked slot into both step 1 + step 2 order summaries
         els.summaryDateTimeEls.forEach(function (el) {
           el.textContent = dateLabel + ' at ' + timeLabel;
         });
@@ -603,7 +612,6 @@
         track('book_slot_selected', { slot_datetime: slot.datetime });
       }
 
-      // ---------- step 1 → step 2 ----------
       els.step1ContinueBtn.addEventListener('click', function () {
         if (!state.selectedSlot) return;
         setBannerError('');
@@ -612,7 +620,6 @@
         setStep(2);
       });
 
-      // ---------- step 2 → checkout ----------
       els.clientForm.addEventListener('submit', async function (e) {
         e.preventDefault();
         if (state.submitting) return;
@@ -621,7 +628,6 @@
           setStep(1);
           return;
         }
-
         setBannerError('');
         const data = readForm();
         if (!validateForm(data)) return;
@@ -646,18 +652,15 @@
             startTime: state.selectedSlot.datetime,
             timezone: state.timezone,
           };
-
           const res = await fetch(CHECKOUT_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
           });
           const body = await res.json().catch(function () { return {}; });
-
           if (!res.ok || !body.checkoutUrl) {
             throw new Error(body.error || ('checkout_failed_' + res.status));
           }
-
           track('book_checkout_initiated');
           window.location.href = body.checkoutUrl;
         } catch (err) {
@@ -668,7 +671,6 @@
         }
       });
 
-      // ---------- init ----------
       track('book_form_view');
       loadSlots();
     })();
