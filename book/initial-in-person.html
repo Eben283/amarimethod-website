@@ -46,7 +46,7 @@
     .book-page { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
 
     /* ---- Top header ---- */
-    .book-header { text-align: center; margin-bottom: 44px; }
+    .book-header { text-align: center; margin-bottom: 44px; background: transparent; }
     .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
     .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 18px; }
     .book-headline em { font-style: italic; }
@@ -157,7 +157,7 @@
     }
 
     /* ---- Format toggle (In person / Virtual) ---- */
-    .format-toggle { display: flex; justify-content: center; margin: 0 auto 32px; }
+    .format-toggle { display: flex; justify-content: center; margin: 0 auto 56px; }
     .format-toggle-inner { display: inline-flex; gap: 4px; padding: 4px; background: #f5eedc; border-radius: 999px; }
     .ft-option { display: inline-flex; flex-direction: column; align-items: center; padding: 8px 22px; border-radius: 999px; text-decoration: none; color: var(--color-text-secondary, #555); line-height: 1.2; transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif; }
     .ft-option .ft-label { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
@@ -192,7 +192,7 @@
   <main>
     <div class="book-page">
 
-      <header class="book-header">
+      <section class="book-header">
         <p class="book-kicker">Initial session · San Francisco</p>
         <h1 class="book-headline">Book your <em>first session.</em></h1>
         <p class="book-sub">60 minutes with Dr. Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
@@ -203,7 +203,7 @@
           <span class="dot"></span>
           <span>Pay over time with Affirm</span>
         </div>
-      </header>
+      </section>
 
       <nav class="format-toggle" aria-label="Session format">
         <div class="format-toggle-inner" role="tablist">
