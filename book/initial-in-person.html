@@ -21,7 +21,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
 
   <link rel="stylesheet" href="/css/style-v5.css?v=35">
 
@@ -42,26 +42,20 @@
   </script>
 
   <style>
-    /* ---- Layout ---- */
-    .book-layout { max-width: 1180px; margin: 0 auto; padding: 56px 40px 96px; display: grid; grid-template-columns: minmax(300px, 1fr) minmax(0, 1.4fr); gap: 80px; align-items: start; }
-    .book-context { position: sticky; top: 32px; }
-    .book-flow { min-width: 0; }
+    /* ---- Page shell ---- */
+    .book-page { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
 
-    /* ---- Left column: context ---- */
-    .book-portrait { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; margin-bottom: 28px; }
-    .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 16px; }
-    .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 4vw, 52px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 20px; }
+    /* ---- Top header ---- */
+    .book-header { text-align: center; margin-bottom: 44px; }
+    .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
+    .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 18px; }
     .book-headline em { font-style: italic; }
-    .book-sub { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; color: var(--color-text-secondary, #555); margin: 0 0 32px; max-width: 38ch; }
+    .book-sub { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.55; color: var(--color-text-secondary, #555); margin: 0 auto 18px; max-width: 50ch; }
+    .book-meta { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-muted, #888); }
+    .book-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
-    .book-details { margin: 0; padding: 0; list-style: none; border-top: 1px solid #e8dfc7; }
-    .book-details li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid #e8dfc7; font-family: 'Inter', sans-serif; font-size: 14px; }
-    .book-details li .label { color: var(--color-text-muted, #888); font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; font-size: 11px; }
-    .book-details li .value { color: var(--color-text, #1d1d1d); font-weight: 500; text-align: right; }
-    .book-details li .value small { display: block; font-weight: 400; font-size: 12px; color: var(--color-text-muted, #888); margin-top: 2px; }
-
-    /* ---- Right column: flow ---- */
-    .book-progress { display: flex; align-items: center; gap: 12px; margin-bottom: 36px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); }
+    /* ---- Progress strip ---- */
+    .book-progress { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 36px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); }
     .book-progress-step { display: inline-flex; align-items: center; gap: 8px; }
     .book-progress-num { font-family: 'Bona Nova', serif; font-style: italic; font-size: 16px; font-weight: 400; color: var(--color-text-muted, #aaa); letter-spacing: 0; text-transform: none; }
     .book-progress-step.is-active .book-progress-num,
@@ -75,30 +69,43 @@
 
     .step-section { display: none; }
     .step-section.is-active { display: block; }
-    .step-section h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
-    .step-section .subhead { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: var(--color-text-muted, #888); margin: 0 0 28px; }
 
-    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 14px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
-    .btn-back:hover { color: var(--color-text, #1d1d1d); }
+    /* ---- TWO-MONTH CALENDAR (Tock pattern) ---- */
+    .cal-frame { padding: 32px 0; border-top: 1px solid #e8dfc7; }
+    .cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .cal-month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-month-header.is-left { padding-left: 0; }
+    .cal-month-header.is-right { padding-right: 0; }
+    .cal-month-label { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--color-text, #1d1d1d); letter-spacing: 0.01em; }
+    .cal-nav-btn { background: transparent; border: 1px solid #e8dfc7; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary, #555); transition: all 0.12s ease; padding: 0; font-family: 'Inter', sans-serif; font-size: 14px; }
+    .cal-nav-btn:hover:not(:disabled) { border-color: var(--color-text, #1d1d1d); color: var(--color-text, #1d1d1d); }
+    .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .cal-nav-spacer { width: 28px; height: 28px; }
 
-    /* ---- Slot picker ---- */
-    .slot-loading, .slot-error, .slot-empty { padding: 32px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text-muted, #888); }
-    .slot-error { color: #c64a3a; }
+    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted, #999); padding-bottom: 8px; }
+    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
+    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--color-text, #1d1d1d); background: transparent; border: none; cursor: pointer; border-radius: 50%; transition: background 0.12s ease, color 0.12s ease; padding: 0; }
+    .cal-day.is-empty { visibility: hidden; pointer-events: none; }
+    .cal-day:disabled, .cal-day.is-unavailable { color: #c8bfa8; cursor: default; }
+    .cal-day:hover:not(:disabled):not(.is-unavailable):not(.is-selected) { background: #faf6ec; }
+    .cal-day.is-selected { background: var(--color-text, #1d1d1d); color: #fff; font-weight: 600; }
+    .cal-day.is-today:not(.is-selected) { font-weight: 700; }
+    .cal-day.is-today:not(.is-selected)::after { content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-warm, #EBA584); transform: translateY(14px); }
+    .cal-day { position: relative; }
 
-    .day-strip { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 16px; margin: 0 -4px 24px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-    .day-tab { flex-shrink: 0; min-width: 64px; padding: 10px 8px; text-align: center; background: transparent; border: 1px solid #e8dfc7; border-radius: 4px; cursor: pointer; transition: all 0.15s ease; font-family: 'Inter', sans-serif; color: var(--color-text-secondary, #555); }
-    .day-tab:hover { border-color: var(--color-text, #1d1d1d); color: var(--color-text, #1d1d1d); }
-    .day-tab.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
-    .day-tab .day-name { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.65; }
-    .day-tab .day-num { font-family: 'Bona Nova', serif; font-size: 22px; font-weight: 400; line-height: 1; margin-top: 4px; }
-    .day-tab .day-month { font-size: 9px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; margin-top: 4px; }
-
-    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
-    .slot-btn { padding: 11px 8px; background: transparent; border: 1px solid #d5cdbb; border-radius: 4px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.12s ease; }
-    .slot-btn:hover { background: #faf6ec; border-color: var(--color-text, #1d1d1d); }
+    /* ---- Time slot list (below calendar after a date is picked) ---- */
+    .time-slots { padding: 28px 0 0; border-top: 1px solid #e8dfc7; margin-top: 32px; }
+    .time-slots-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
+    .time-slots-label strong { color: var(--color-text, #1d1d1d); font-weight: 600; }
+    .time-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+    .slot-btn { padding: 14px 10px; background: #fff; border: 1px solid #d5cdbb; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.12s ease; }
+    .slot-btn:hover { border-color: var(--color-text, #1d1d1d); }
     .slot-btn.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
 
-    /* ---- Order summary (inline, editorial) ---- */
+    .slot-loading, .slot-error, .slot-empty { padding: 24px 0; text-align: center; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text-muted, #888); }
+    .slot-error { color: #c64a3a; }
+
+    /* ---- Order summary ---- */
     .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid #e8dfc7; border-bottom: 1px solid #e8dfc7; }
     .order-summary-title { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 10px; }
     .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text, #1d1d1d); }
@@ -106,6 +113,11 @@
     .order-summary-total { padding-top: 8px; margin-top: 6px; border-top: 1px solid #e8dfc7; font-size: 15px; font-weight: 600; }
 
     /* ---- Form (step 2) ---- */
+    .step-section h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
+    .step-section .subhead { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: var(--color-text-muted, #888); margin: 0 0 28px; }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
+    .btn-back:hover { color: var(--color-text, #1d1d1d); }
+
     .form-row { margin-bottom: 18px; }
     .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-label { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted, #888); margin-bottom: 8px; }
@@ -119,7 +131,7 @@
     .checkbox-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; cursor: pointer; }
     .checkbox-row + .checkbox-row { border-top: 1px solid #e8dfc7; }
     .checkbox-row input[type=checkbox] { margin: 4px 0 0 0; flex-shrink: 0; cursor: pointer; accent-color: var(--color-text, #1d1d1d); }
-    .checkbox-row label, .checkbox-row > span { flex: 1; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.55; color: var(--color-text-secondary, #555); cursor: pointer; }
+    .checkbox-row > span { flex: 1; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.55; color: var(--color-text-secondary, #555); cursor: pointer; }
     .checkbox-row a { color: var(--color-text, #1d1d1d); text-decoration: underline; text-underline-offset: 2px; }
     .checkbox-row.is-invalid > span { color: #c64a3a; }
     .checkbox-row .opt-tag { font-weight: 600; color: var(--color-text, #1d1d1d); margin-right: 4px; }
@@ -127,22 +139,21 @@
     /* ---- Primary button ---- */
     .btn-primary-pill { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 18px 28px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border: none; border-radius: 999px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; margin-top: 28px; }
     .btn-primary-pill:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
-    .btn-primary-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary-pill:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-primary-pill .arrow { transition: transform 0.15s ease; }
     .btn-primary-pill:hover:not(:disabled) .arrow { transform: translateX(4px); }
 
     /* ---- Mobile ---- */
-    @media (max-width: 880px) {
-      .book-layout { grid-template-columns: 1fr; gap: 36px; padding: 32px 20px 64px; }
-      .book-context { position: static; }
-      .book-portrait { aspect-ratio: 16 / 9; max-height: 320px; }
-      .book-headline { max-width: 18ch; }
+    @media (max-width: 720px) {
+      .book-page { padding: 32px 20px 64px; }
+      .cal-months { grid-template-columns: 1fr; gap: 32px; }
+      .book-progress { gap: 8px; font-size: 10px; letter-spacing: 0.1em; }
+      .book-progress-bar { flex: 0 0 14px; }
     }
     @media (max-width: 480px) {
-      .book-layout { padding: 24px 16px 48px; }
+      .book-page { padding: 24px 16px 48px; }
       .form-row.cols-2 { grid-template-columns: 1fr; }
-      .day-tab { min-width: 56px; padding: 8px 6px; }
-      .day-tab .day-num { font-size: 18px; }
+      .cal-day { font-size: 13px; }
     }
   </style>
 </head>
@@ -170,139 +181,149 @@
   </nav>
 
   <main>
-    <div class="book-layout">
+    <div class="book-page">
 
-      <!-- ============ LEFT: persistent context ============ -->
-      <aside class="book-context">
-        <img class="book-portrait" src="/images/dr-garrett-hewstan-amari-method-session.avif" alt="Dr. Garrett Hewstan guiding a client through an Amari Method session in San Francisco" width="800" height="1000" loading="eager">
-        <p class="book-kicker">In-person initial session</p>
+      <header class="book-header">
+        <p class="book-kicker">In-person initial session · San Francisco</p>
         <h1 class="book-headline">Book your <em>first session.</em></h1>
         <p class="book-sub">60 minutes with Dr. Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
-        <ul class="book-details">
-          <li>
-            <span class="label">Duration</span>
-            <span class="value">60 minutes</span>
-          </li>
-          <li>
-            <span class="label">Location</span>
-            <span class="value">662 8th Ave<small>San Francisco, CA</small></span>
-          </li>
-          <li>
-            <span class="label">Investment</span>
-            <span class="value">$225<small>HSA/FSA · pay over time with Affirm</small></span>
-          </li>
-        </ul>
-      </aside>
-
-      <!-- ============ RIGHT: booking flow ============ -->
-      <section class="book-flow">
-
-        <div class="book-progress" aria-label="Booking progress">
-          <span class="book-progress-step is-active" id="progressStep1">
-            <span class="book-progress-num">01</span>
-            <span class="book-progress-label">Pick a time</span>
-          </span>
-          <span class="book-progress-bar"></span>
-          <span class="book-progress-step" id="progressStep2">
-            <span class="book-progress-num">02</span>
-            <span class="book-progress-label">Your details</span>
-          </span>
-          <span class="book-progress-bar"></span>
-          <span class="book-progress-step" id="progressStep3">
-            <span class="book-progress-num">03</span>
-            <span class="book-progress-label">Payment</span>
-          </span>
+        <div class="book-meta">
+          <span>$225</span>
+          <span class="dot"></span>
+          <span>HSA/FSA accepted</span>
+          <span class="dot"></span>
+          <span>Pay over time with Affirm</span>
         </div>
+      </header>
 
-        <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
+      <div class="book-progress" aria-label="Booking progress">
+        <span class="book-progress-step is-active" id="progressStep1">
+          <span class="book-progress-num">01</span>
+          <span class="book-progress-label">Pick a time</span>
+        </span>
+        <span class="book-progress-bar"></span>
+        <span class="book-progress-step" id="progressStep2">
+          <span class="book-progress-num">02</span>
+          <span class="book-progress-label">Your details</span>
+        </span>
+        <span class="book-progress-bar"></span>
+        <span class="book-progress-step" id="progressStep3">
+          <span class="book-progress-num">03</span>
+          <span class="book-progress-label">Payment</span>
+        </span>
+      </div>
 
-        <!-- ============ STEP 1: slot picker ============ -->
-        <div class="step-section is-active" id="step1Section" aria-labelledby="step1Heading">
-          <h2 id="step1Heading">Pick a time.</h2>
-          <p class="subhead">All times in <span id="userTimezone">your local time</span>.</p>
+      <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
 
-          <div class="slot-picker-container" id="slotPicker">
-            <div class="slot-loading" id="slotLoading">Loading available times…</div>
-            <div class="slot-error" id="slotError" hidden></div>
-            <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 30 days. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
-            <div id="slotGrid" hidden>
-              <div class="day-strip" id="dayTabs" role="tablist" aria-label="Available days"></div>
-              <div class="slot-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
+      <!-- ============ STEP 1: two-month calendar + time slots ============ -->
+      <div class="step-section is-active" id="step1Section">
+
+        <div class="slot-loading" id="slotLoading">Loading available times…</div>
+        <div class="slot-error" id="slotError" hidden></div>
+        <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 2 months. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
+
+        <div class="cal-frame" id="calFrame" hidden>
+          <div class="cal-months">
+            <div class="cal-month" id="calMonthLeft">
+              <div class="cal-month-header is-left">
+                <button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="Previous month">‹</button>
+                <span class="cal-month-label" id="calLeftLabel">—</span>
+                <span class="cal-nav-spacer"></span>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-days" id="calDaysLeft" role="grid"></div>
+            </div>
+            <div class="cal-month" id="calMonthRight">
+              <div class="cal-month-header is-right">
+                <span class="cal-nav-spacer"></span>
+                <span class="cal-month-label" id="calRightLabel">—</span>
+                <button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="Next month">›</button>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-days" id="calDaysRight" role="grid"></div>
             </div>
           </div>
 
-          <div class="order-summary" id="orderSummaryStep1" hidden>
-            <p class="order-summary-title">Your booking</p>
-            <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
-            <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-            <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+          <div class="time-slots" id="timeSlotsContainer" hidden>
+            <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p>
+            <div class="time-slots-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
+          </div>
+        </div>
+
+        <div class="order-summary" id="orderSummaryStep1" hidden>
+          <p class="order-summary-title">Your booking</p>
+          <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+        </div>
+
+        <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled>
+          <span id="step1ContinueLabel">Pick a time to continue</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <!-- ============ STEP 2: client info form ============ -->
+      <div class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
+        <button type="button" class="btn-back" id="backToStep1">← Pick a different time</button>
+        <h2 id="step2Heading">Tell us about you.</h2>
+        <p class="subhead">We'll send your confirmation here and use this for your client record.</p>
+
+        <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
+          <p class="order-summary-title">Your booking</p>
+          <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+        </div>
+
+        <form id="clientForm" novalidate style="margin-top: 28px;">
+          <div class="form-row cols-2">
+            <div>
+              <label class="form-label" for="firstName">First name<span class="req">*</span></label>
+              <input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required>
+              <div class="form-error" data-error-for="firstName"></div>
+            </div>
+            <div>
+              <label class="form-label" for="lastName">Last name<span class="req">*</span></label>
+              <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
+              <div class="form-error" data-error-for="lastName"></div>
+            </div>
           </div>
 
-          <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled>
-            <span id="step1ContinueLabel">Pick a time to continue</span>
+          <div class="form-row">
+            <label class="form-label" for="email">Email<span class="req">*</span></label>
+            <input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+            <div class="form-error" data-error-for="email"></div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="phone">Phone<span class="req">*</span></label>
+            <input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required>
+            <div class="form-error" data-error-for="phone"></div>
+          </div>
+
+          <div class="form-row" style="margin-top: 32px;">
+            <label class="checkbox-row" data-error-for="agreePolicies">
+              <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
+              <span>I have read and agree to the <a href="/missed-appointment-policy" target="_blank" rel="noopener">Missed Appointment Policy</a> and the <a href="/member-agreement" target="_blank" rel="noopener">Practice Membership Agreement</a>.</span>
+            </label>
+
+            <label class="checkbox-row" data-error-for="agreeCommunications">
+              <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
+              <span><span class="opt-tag">Optional:</span>Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary-pill" id="step2SubmitBtn">
+            <span id="step2SubmitLabel">Continue to payment — $225</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
-        </div>
-
-        <!-- ============ STEP 2: client info form ============ -->
-        <div class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
-          <button type="button" class="btn-back" id="backToStep1">← Pick a different time</button>
-          <h2 id="step2Heading">Tell us about you.</h2>
-          <p class="subhead">We'll send your confirmation here and use this for your client record.</p>
-
-          <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
-            <p class="order-summary-title">Your booking</p>
-            <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
-            <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-            <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
-          </div>
-
-          <form id="clientForm" novalidate style="margin-top: 28px;">
-            <div class="form-row cols-2">
-              <div>
-                <label class="form-label" for="firstName">First name<span class="req">*</span></label>
-                <input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required>
-                <div class="form-error" data-error-for="firstName"></div>
-              </div>
-              <div>
-                <label class="form-label" for="lastName">Last name<span class="req">*</span></label>
-                <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
-                <div class="form-error" data-error-for="lastName"></div>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="email">Email<span class="req">*</span></label>
-              <input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
-              <div class="form-error" data-error-for="email"></div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="phone">Phone<span class="req">*</span></label>
-              <input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required>
-              <div class="form-error" data-error-for="phone"></div>
-            </div>
-
-            <div class="form-row" style="margin-top: 32px;">
-              <label class="checkbox-row" data-error-for="agreePolicies">
-                <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
-                <span>I have read and agree to the <a href="/missed-appointment-policy" target="_blank" rel="noopener">Missed Appointment Policy</a> and the <a href="/member-agreement" target="_blank" rel="noopener">Practice Membership Agreement</a>.</span>
-              </label>
-
-              <label class="checkbox-row" data-error-for="agreeCommunications">
-                <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
-                <span><span class="opt-tag">Optional:</span>Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
-              </label>
-            </div>
-
-            <button type="submit" class="btn-primary-pill" id="step2SubmitBtn">
-              <span id="step2SubmitLabel">Continue to payment — $225</span>
-              <span class="arrow" aria-hidden="true">→</span>
-            </button>
-          </form>
-        </div>
-
-      </section>
+        </form>
+      </div>
 
     </div>
   </main>
@@ -374,16 +395,17 @@
       const SLOTS_API = '/api/book/public-slots';
       const CHECKOUT_API = '/api/book/create-checkout';
       const AGREEMENT_VERSION = 'practice-member-v2026-04-17';
+      const LOOKAHEAD_DAYS = 60;
 
       // ---------- state ----------
       const state = {
         step: 1,
         form: null,
-        slots: [],
-        slotsByDay: {},
-        days: [],
-        selectedDay: null,
+        slotsByDay: {},   // "YYYY-MM-DD" → [slot, ...]
+        availableDates: new Set(),
+        selectedDate: null,   // "YYYY-MM-DD"
         selectedSlot: null,
+        viewLeftMonth: null,  // "YYYY-MM" — left calendar's month
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles',
         submitting: false,
       };
@@ -401,8 +423,15 @@
         slotLoading: $('slotLoading'),
         slotError: $('slotError'),
         slotEmpty: $('slotEmpty'),
-        slotGrid: $('slotGrid'),
-        dayTabs: $('dayTabs'),
+        calFrame: $('calFrame'),
+        calLeftLabel: $('calLeftLabel'),
+        calRightLabel: $('calRightLabel'),
+        calDaysLeft: $('calDaysLeft'),
+        calDaysRight: $('calDaysRight'),
+        calPrevBtn: $('calPrevBtn'),
+        calNextBtn: $('calNextBtn'),
+        timeSlotsContainer: $('timeSlotsContainer'),
+        timeSlotsLabel: $('timeSlotsLabel'),
         timeSlots: $('timeSlots'),
         orderSummaryStep1: $('orderSummaryStep1'),
         orderSummaryStep2: $('orderSummaryStep2'),
@@ -424,6 +453,41 @@
         }
       }
 
+      // ---------- date helpers ----------
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+      function ym(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+      function ymStr(year, month) { return year + '-' + pad(month + 1); }
+      function nextMonth(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        const d = new Date(y, m - 1 + 1, 1);
+        return ym(d);
+      }
+      function prevMonth(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        const d = new Date(y, m - 1 - 1, 1);
+        return ym(d);
+      }
+      function monthLabel(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      }
+      function isPastDate(yyyymmdd) {
+        const today = ymd(new Date());
+        return yyyymmdd < today;
+      }
+      function formatDateLong(yyyymmdd) {
+        const [y, m, d] = yyyymmdd.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      }
+      function formatTime(hour, minute) {
+        const h12 = hour % 12 === 0 ? 12 : hour % 12;
+        const ampm = hour >= 12 ? 'pm' : 'am';
+        const mm = String(minute).padStart(2, '0');
+        return minute === 0 ? h12 + ampm : h12 + ':' + mm + ampm;
+      }
+
+      // ---------- ui helpers ----------
       function setBannerError(msg) {
         if (!msg) {
           els.bannerError.classList.add('is-hidden');
@@ -434,7 +498,6 @@
           els.bannerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
-
       function setFieldError(name, msg) {
         const errEl = document.querySelector('[data-error-for="' + name + '"]');
         const inputEl = els.clientForm.elements[name];
@@ -445,37 +508,11 @@
         const wrapper = document.querySelector('.checkbox-row[data-error-for="' + name + '"]');
         if (wrapper) wrapper.classList.toggle('is-invalid', !!msg);
       }
-
       function clearAllFieldErrors() {
-        ['firstName', 'lastName', 'email', 'phone', 'agreePolicies'].forEach(function (n) {
-          setFieldError(n, '');
-        });
+        ['firstName', 'lastName', 'email', 'phone', 'agreePolicies'].forEach(function (n) { setFieldError(n, ''); });
       }
-
       function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
       function isValidPhone(s) { return s.replace(/\D/g, '').length >= 10; }
-
-      function formatDateLong(yyyymmdd) {
-        const [y, m, d] = yyyymmdd.split('-').map(Number);
-        return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-      }
-
-      function formatDayShort(yyyymmdd) {
-        const [y, m, d] = yyyymmdd.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
-        return {
-          name: date.toLocaleDateString(undefined, { weekday: 'short' }),
-          num: date.getDate(),
-          month: date.toLocaleDateString(undefined, { month: 'short' }),
-        };
-      }
-
-      function formatTime(hour, minute) {
-        const h12 = hour % 12 === 0 ? 12 : hour % 12;
-        const ampm = hour >= 12 ? 'pm' : 'am';
-        const mm = String(minute).padStart(2, '0');
-        return minute === 0 ? h12 + ampm : h12 + ':' + mm + ampm;
-      }
 
       function setStep(n) {
         state.step = n;
@@ -489,46 +526,21 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      function readForm() {
-        const f = els.clientForm.elements;
-        return {
-          firstName: f.firstName.value.trim(),
-          lastName: f.lastName.value.trim(),
-          email: f.email.value.trim(),
-          phone: f.phone.value.trim(),
-          agreeCommunications: f.agreeCommunications.checked,
-          agreePolicies: f.agreePolicies.checked,
-        };
-      }
-
-      function validateForm(data) {
-        clearAllFieldErrors();
-        let ok = true;
-        if (!data.firstName) { setFieldError('firstName', 'Required'); ok = false; }
-        if (!data.lastName) { setFieldError('lastName', 'Required'); ok = false; }
-        if (!data.email) { setFieldError('email', 'Required'); ok = false; }
-        else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
-        if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
-        else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
-        if (!data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
-        return ok;
-      }
-
-      els.backToStep1.addEventListener('click', function () { setStep(1); });
-
+      // ---------- slot loading ----------
       async function loadSlots() {
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
         els.slotEmpty.hidden = true;
-        els.slotGrid.hidden = true;
+        els.calFrame.hidden = true;
+        els.timeSlotsContainer.hidden = true;
         els.orderSummaryStep1.hidden = true;
         els.orderSummaryStep2.hidden = true;
         els.userTimezone.textContent = state.timezone;
 
         const today = new Date();
-        const startDate = today.toISOString().slice(0, 10);
-        const end = new Date(today.getTime() + 30 * 86400000);
-        const endDate = end.toISOString().slice(0, 10);
+        const startDate = ymd(today);
+        const end = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
+        const endDate = ymd(end);
 
         const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
           + '&startDate=' + startDate + '&endDate=' + endDate
@@ -538,18 +550,22 @@
           const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
           if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
           const data = await res.json();
-          state.slots = Array.isArray(data.slots) ? data.slots : [];
+          const slots = Array.isArray(data.slots) ? data.slots : [];
 
           const byDay = {};
-          state.slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
+          slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
           state.slotsByDay = byDay;
-          state.days = Object.keys(byDay).sort();
+          state.availableDates = new Set(Object.keys(byDay));
 
           els.slotLoading.hidden = true;
-          if (state.days.length === 0) { els.slotEmpty.hidden = false; return; }
-          els.slotGrid.hidden = false;
-          renderDayTabs();
-          selectDay(state.days[0]);
+          if (state.availableDates.size === 0) {
+            els.slotEmpty.hidden = false;
+            return;
+          }
+          els.calFrame.hidden = false;
+          // Show the current month + next month by default
+          state.viewLeftMonth = ym(today);
+          renderCalendar();
         } catch (err) {
           els.slotLoading.hidden = true;
           els.slotError.hidden = false;
@@ -557,34 +573,73 @@
         }
       }
 
-      function renderDayTabs() {
-        els.dayTabs.innerHTML = '';
-        state.days.forEach(function (day) {
-          const meta = formatDayShort(day);
+      // ---------- calendar render ----------
+      function renderCalendar() {
+        const leftMonth = state.viewLeftMonth;
+        const rightMonth = nextMonth(leftMonth);
+        els.calLeftLabel.textContent = monthLabel(leftMonth);
+        els.calRightLabel.textContent = monthLabel(rightMonth);
+        renderMonth(els.calDaysLeft, leftMonth);
+        renderMonth(els.calDaysRight, rightMonth);
+        // Disable prev if going back would show months entirely before today
+        const todayMonth = ym(new Date());
+        els.calPrevBtn.disabled = leftMonth <= todayMonth;
+      }
+
+      function renderMonth(container, yyyymm) {
+        container.innerHTML = '';
+        const [y, m] = yyyymm.split('-').map(Number);
+        const firstOfMonth = new Date(y, m - 1, 1);
+        const startWeekday = firstOfMonth.getDay(); // 0=Sun
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const todayStr = ymd(new Date());
+
+        // Empty cells before the 1st
+        for (let i = 0; i < startWeekday; i++) {
+          const empty = document.createElement('span');
+          empty.className = 'cal-day is-empty';
+          container.appendChild(empty);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dayStr = yyyymm + '-' + pad(d);
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'day-tab';
-          btn.setAttribute('role', 'tab');
-          btn.dataset.day = day;
-          btn.innerHTML = '<div class="day-name">' + meta.name + '</div>'
-            + '<div class="day-num">' + meta.num + '</div>'
-            + '<div class="day-month">' + meta.month + '</div>';
-          btn.addEventListener('click', function () { selectDay(day); });
-          els.dayTabs.appendChild(btn);
-        });
+          btn.className = 'cal-day';
+          btn.dataset.date = dayStr;
+          btn.textContent = d;
+
+          const isPast = isPastDate(dayStr);
+          const isAvail = state.availableDates.has(dayStr);
+
+          if (isPast || !isAvail) {
+            btn.classList.add('is-unavailable');
+            btn.disabled = true;
+          } else {
+            btn.addEventListener('click', function () { selectDate(dayStr); });
+          }
+          if (dayStr === todayStr) btn.classList.add('is-today');
+          if (dayStr === state.selectedDate) btn.classList.add('is-selected');
+
+          container.appendChild(btn);
+        }
       }
 
-      function selectDay(day) {
-        state.selectedDay = day;
-        Array.prototype.forEach.call(els.dayTabs.children, function (el) {
-          el.classList.toggle('is-selected', el.dataset.day === day);
-        });
-        renderTimeSlots();
+      function selectDate(dayStr) {
+        state.selectedDate = dayStr;
+        // Clear previously selected slot since date changed
+        state.selectedSlot = null;
+        // Re-render calendars to update is-selected highlight
+        renderCalendar();
+        // Render time slots for this date
+        renderTimeSlots(dayStr);
       }
 
-      function renderTimeSlots() {
+      function renderTimeSlots(dayStr) {
+        els.timeSlotsContainer.hidden = false;
+        els.timeSlotsLabel.textContent = formatDateLong(dayStr);
         els.timeSlots.innerHTML = '';
-        const slotsForDay = state.slotsByDay[state.selectedDay] || [];
+        const slotsForDay = state.slotsByDay[dayStr] || [];
         slotsForDay.forEach(function (slot) {
           const btn = document.createElement('button');
           btn.type = 'button';
@@ -594,6 +649,13 @@
           btn.addEventListener('click', function () { selectSlot(slot, btn); });
           els.timeSlots.appendChild(btn);
         });
+        // If we already had a selected slot for this date, re-mark it (rare path)
+        // Otherwise reset the continue button until a time is picked.
+        els.orderSummaryStep1.hidden = true;
+        els.step1ContinueBtn.disabled = true;
+        els.step1ContinueLabel.textContent = 'Pick a time to continue';
+        // Smooth scroll the time slots into view
+        els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
       function selectSlot(slot, btn) {
@@ -612,6 +674,18 @@
         track('book_slot_selected', { slot_datetime: slot.datetime });
       }
 
+      // ---------- month navigation ----------
+      els.calPrevBtn.addEventListener('click', function () {
+        if (els.calPrevBtn.disabled) return;
+        state.viewLeftMonth = prevMonth(state.viewLeftMonth);
+        renderCalendar();
+      });
+      els.calNextBtn.addEventListener('click', function () {
+        state.viewLeftMonth = nextMonth(state.viewLeftMonth);
+        renderCalendar();
+      });
+
+      // ---------- step transitions ----------
       els.step1ContinueBtn.addEventListener('click', function () {
         if (!state.selectedSlot) return;
         setBannerError('');
@@ -619,6 +693,32 @@
         track('book_form_step1_complete');
         setStep(2);
       });
+      els.backToStep1.addEventListener('click', function () { setStep(1); });
+
+      // ---------- form submit (step 2 → checkout) ----------
+      function readForm() {
+        const f = els.clientForm.elements;
+        return {
+          firstName: f.firstName.value.trim(),
+          lastName: f.lastName.value.trim(),
+          email: f.email.value.trim(),
+          phone: f.phone.value.trim(),
+          agreeCommunications: f.agreeCommunications.checked,
+          agreePolicies: f.agreePolicies.checked,
+        };
+      }
+      function validateForm(data) {
+        clearAllFieldErrors();
+        let ok = true;
+        if (!data.firstName) { setFieldError('firstName', 'Required'); ok = false; }
+        if (!data.lastName) { setFieldError('lastName', 'Required'); ok = false; }
+        if (!data.email) { setFieldError('email', 'Required'); ok = false; }
+        else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
+        if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
+        else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
+        if (!data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
+        return ok;
+      }
 
       els.clientForm.addEventListener('submit', async function (e) {
         e.preventDefault();
@@ -671,6 +771,7 @@
         }
       });
 
+      // ---------- init ----------
       track('book_form_view');
       loadSlots();
     })();
