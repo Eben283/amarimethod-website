@@ -435,7 +435,7 @@ const T_PAUL: MatchedTestimonial = {
 };
 
 const T_KATIE: MatchedTestimonial = {
-  quote: 'One visit with Dr. Garrett gave me more results than two years of physical therapy.',
+  quote: 'One visit with Dr. Garrett gave me better results than three months of physical therapy.',
   name: 'Katie',
   attribution: 'Runner recovery',
 };
