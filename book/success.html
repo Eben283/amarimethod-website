@@ -186,29 +186,58 @@
           purchaseLabel: 'Living Practice unlocked',
           purchaseBody: 'Living Practice is now available in your client portal — the full standalone video program is yours to explore.',
         },
+        discovery_call: {
+          item_name: 'Amari Method Discovery Call',
+          short_name: 'Free Discovery Call',
+          price: 0,
+          durationMinutes: 15,
+          location: 'Phone call with Dr. Garrett',
+          details: 'Your free 15-minute discovery call with Dr. Garrett Hewstan. Bring your questions about the Amari Method, your body, or whether this is the right fit for you.',
+          hasSlot: true,
+          isFreeBooking: true,
+        },
       };
       var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.initial_in_person;
 
-      // ---------- GA4 purchase event ----------
+      // ---------- GA4 conversion events ----------
+      // Free bookings (discovery call) fire `discovery_call_booked` so they
+      // can be wired in Google Ads as a separate Secondary conversion action.
+      // Paid bookings fire `purchase` (with revenue) + `booking_confirmed`.
+      // Never fire `purchase` for a $0 product — pollutes purchase reports.
       if (window.gtag) {
-        window.gtag('event', 'purchase', {
-          transaction_id: transactionId,
-          value: item.price,
-          currency: 'USD',
-          items: [{
-            item_id: product,
-            item_name: item.item_name,
-            price: item.price,
-            quantity: 1,
-          }],
-        });
-        window.gtag('event', 'booking_confirmed', {
-          booking_type: product,
-          booking_price: item.price,
-        });
+        if (item.isFreeBooking) {
+          window.gtag('event', 'discovery_call_booked', {
+            transaction_id: transactionId,
+            booking_type: product,
+            value: 0,
+            currency: 'USD',
+          });
+          window.gtag('event', 'generate_lead', {
+            transaction_id: transactionId,
+            booking_type: product,
+            value: 0,
+            currency: 'USD',
+          });
+        } else {
+          window.gtag('event', 'purchase', {
+            transaction_id: transactionId,
+            value: item.price,
+            currency: 'USD',
+            items: [{
+              item_id: product,
+              item_name: item.item_name,
+              price: item.price,
+              quantity: 1,
+            }],
+          });
+          window.gtag('event', 'booking_confirmed', {
+            booking_type: product,
+            booking_price: item.price,
+          });
+        }
       }
 
-      // ---------- Headline + body for non-booking purchases ----------
+      // ---------- Headline + body adjustments ----------
       // Series/upgrades/Living Practice purchases don't book a slot — show
       // a purchase-flavored confirmation instead of "You're booked."
       if (!item.hasSlot && item.purchaseLabel) {
@@ -216,6 +245,12 @@
           'You\'re <em>in.</em>';
         document.getElementById('confirmBody').textContent =
           item.purchaseBody;
+      }
+      // Free discovery call: replace the "Payment received" line with
+      // call-appropriate copy. Still shows the recap + add-to-calendar.
+      if (item.isFreeBooking) {
+        document.getElementById('confirmBody').textContent =
+          "Your discovery call is on the calendar. Dr. Garrett will call you at the number you provided. A confirmation email is on its way.";
       }
 
       // ---------- Booking recap + calendar buttons (initial sessions) ----------

@@ -51,6 +51,19 @@ const ALLOWED_BOOKINGS = {
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a00f80c1d5a394a682e3fcb",
   },
+  // Free 15-min phone call. No Stripe payment link — we book the GHL
+  // appointment directly in this handler and redirect to /book/success.
+  discovery_call: {
+    calendarId: "USgPsktqRcuomdUgpShL",
+    productId: null,
+    price: 0,
+    title: "Amari Method Discovery Call",
+    durationMinutes: 15,
+    pmaTag: null,
+    sessionTag: "booked-discovery-call",
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+  },
 };
 
 function corsHeaders(requestOrigin) {
@@ -98,13 +111,16 @@ function validateBody(b) {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) return "Invalid email";
   if (b.phone.replace(/\D/g, "").length < 10) return "Invalid phone";
-  // agreeCommunications is optional — only the policies/PMA agreement is required
-  if (!b.agreePolicies) {
-    return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
-  }
   if (!ALLOWED_BOOKINGS[b.sessionType]) return "Invalid sessionType";
-  if (ALLOWED_BOOKINGS[b.sessionType].calendarId !== b.calendarId) {
+  const booking = ALLOWED_BOOKINGS[b.sessionType];
+  if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
+  }
+  // PMA + Missed Appointment Policy agreement is only required for paid
+  // bookings. Discovery call is free and has no PMA gate.
+  // agreeCommunications is always optional.
+  if (!booking.isFreeBooking && !b.agreePolicies) {
+    return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
   }
   return null;
 }
@@ -135,20 +151,17 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload, booking)
 
   // Slot-request fields drive what the purchase webhook books after payment.
   // Field keys must exist in GHL Settings → Custom Fields → Object: Contact.
-  const customFields = [
-    {
-      key: "requested_session_slot",
-      field_value: payload.startTime,
-    },
-    {
-      key: "requested_session_calendar",
-      field_value: booking.calendarId,
-    },
-    {
-      key: "requested_session_type",
-      field_value: payload.sessionType,
-    },
-  ];
+  // For free bookings (discovery call) we book the appointment directly in
+  // this handler, so no slot-request fields are needed — the request
+  // doesn't have to wait for a payment webhook to fulfill it.
+  const customFields = [];
+  if (!booking.isFreeBooking) {
+    customFields.push(
+      { key: "requested_session_slot", field_value: payload.startTime },
+      { key: "requested_session_calendar", field_value: booking.calendarId },
+      { key: "requested_session_type", field_value: payload.sessionType },
+    );
+  }
   if (payload.agreeCommunications) {
     customFields.push({
       key: "communications_policies_new_client",
@@ -213,36 +226,52 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload, booking)
  * contact arrived, even before payment lands.
  */
 async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booking) {
+  // Build tag list. pmaTag is null for free bookings (no PMA gate on a
+  // discovery call). sessionTag is set on both paid + free, so we know
+  // what they booked. native-booking-started flags the contact as having
+  // moved through the new flow vs the old GHL funnel iframe.
+  const tags = ["native-booking-started"];
+  if (booking.pmaTag) tags.push(booking.pmaTag);
+  if (booking.sessionTag) tags.push(booking.sessionTag);
+
   try {
     await ghlFetch(
       context,
       `https://services.leadconnectorhq.com/contacts/${contactId}/tags`,
       {
         method: "POST",
-        body: JSON.stringify({
-          tags: [booking.pmaTag, "native-booking-started"],
-        }),
+        body: JSON.stringify({ tags }),
       },
     );
   } catch (err) {
     console.error("[book/create-checkout] tag add failed:", err);
   }
 
+  const isFree = !!booking.isFreeBooking;
   const noteBody = [
-    `Native booking flow — checkout initiated`,
+    isFree
+      ? `Native booking flow — discovery call booked directly`
+      : `Native booking flow — checkout initiated`,
     ``,
     `Session: ${booking.title}`,
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
-    `Agreement version: ${payload.agreementVersion || "unspecified"}`,
+    isFree
+      ? `Free booking: no payment or PMA gate`
+      : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
-    `Practice Member Agreement: yes (clickwrap)`,
-    `Missed Appointment Policy: yes (clickwrap)`,
+    ...(isFree
+      ? []
+      : [
+          `Practice Member Agreement: yes (clickwrap)`,
+          `Missed Appointment Policy: yes (clickwrap)`,
+        ]),
     `IP: ${ip || "unknown"}`,
     `User agent: ${(ua || "").slice(0, 200)}`,
     `Captured at: ${new Date().toISOString()}`,
     ``,
-    `Next: customer redirected to GHL payment link. Appointment will be`,
-    `booked automatically when the order is paid.`,
+    isFree
+      ? `Appointment booked directly via /calendars/events/appointments. No payment step.`
+      : `Next: customer redirected to GHL payment link. Appointment will be booked automatically when the order is paid.`,
   ].join("\n");
 
   try {
@@ -257,6 +286,43 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
   } catch (err) {
     console.error("[book/create-checkout] note add failed:", err);
   }
+}
+
+/**
+ * Book a free appointment directly via GHL Calendar API. Used for the
+ * discovery call flow (no Stripe step). The created appointment fires
+ * GHL's normal "appointment created" workflows (confirmation SMS/email,
+ * reminders, etc.) so the customer experience matches the legacy GHL
+ * funnel booking.
+ *
+ * Returns the appointment id on success. Throws on failure so the caller
+ * can return a 422 to the browser instead of redirecting to a confirm
+ * page that has nothing on the calendar.
+ */
+async function bookFreeAppointment(context, locationId, contactId, payload, booking) {
+  const res = await ghlFetch(
+    context,
+    "https://services.leadconnectorhq.com/calendars/events/appointments",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        calendarId: booking.calendarId,
+        locationId,
+        contactId,
+        startTime: payload.startTime,
+        title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
+        appointmentStatus: "confirmed",
+        ignoreDateRange: false,
+        toNotify: true,
+      }),
+    },
+  );
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`GHL appointment create failed (${res.status}): ${errText}`);
+  }
+  const data = await res.json();
+  return data?.id || data?.appointment?.id || null;
 }
 
 export async function onRequestPost(context) {
@@ -300,11 +366,36 @@ export async function onRequestPost(context) {
     );
   }
 
-  // Tags + audit note in parallel — neither blocks the redirect to payment.
+  // Tags + audit note in parallel — neither blocks the redirect.
   context.waitUntil(
     recordPreCheckoutAudit(context, contactId, body, ip, userAgent, booking),
   );
 
+  // ----- Free booking flow (discovery call) -----
+  // Book the appointment directly + redirect straight to the success
+  // page. No Stripe payment link, no purchase webhook handoff.
+  if (booking.isFreeBooking) {
+    try {
+      await bookFreeAppointment(context, locationId, contactId, body, booking);
+    } catch (err) {
+      console.error("[book/create-checkout] free appointment book failed:", err);
+      return json(
+        { error: "Could not book your call. Please try a different time or email eben@amarimethod.com." },
+        422,
+        origin,
+      );
+    }
+    const successUrl = new URL("https://www.amarimethod.com/book/success");
+    successUrl.searchParams.set("product", body.sessionType);
+    successUrl.searchParams.set("slot", body.startTime);
+    return json(
+      { checkoutUrl: successUrl.toString(), contactId },
+      200,
+      origin,
+    );
+  }
+
+  // ----- Paid booking flow (initial sessions) -----
   // Append contact identifiers to the payment link so GHL associates the
   // resulting order with the right contact. The order webhook also uses
   // email-matching as a fallback if the URL params get stripped.

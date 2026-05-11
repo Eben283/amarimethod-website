@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book a Free Discovery Call | Amari Method</title>
+  <meta name="description" content="Book a free 15-minute discovery call with Dr. Garrett Hewstan. Ask questions, see if the Amari Method is the right fit for your body. No commitment, no sales pitch.">
+  <meta name="robots" content="noindex,follow">
+  <meta name="author" content="Amari Method">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.amarimethod.com/book/discovery-call/">
+  <meta property="og:title" content="Book a Free Discovery Call | Amari Method">
+  <meta property="og:description" content="Free 15-minute phone call with Dr. Garrett. Ask questions, see if Amari Method is right for your body.">
+  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="canonical" href="https://www.amarimethod.com/book/discovery-call/">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+
+  <link rel="stylesheet" href="/css/style-v5.css?v=35">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ');
+  </script>
+
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+  </script>
+
+  <style>
+    /* ---- Page shell ---- */
+    .book-page { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
+
+    /* ---- Top header ---- */
+    .book-header { text-align: center; margin-bottom: 44px; background: transparent; }
+    .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
+    .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 18px; }
+    .book-headline em { font-style: italic; }
+    .book-sub { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.55; color: var(--color-text-secondary, #555); margin: 0 auto 18px; max-width: 50ch; }
+    .book-meta { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-muted, #888); }
+    .book-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
+
+    /* ---- Progress strip (2-step) ---- */
+    .book-progress { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 36px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); }
+    .book-progress-step { display: inline-flex; align-items: center; gap: 8px; }
+    .book-progress-num { font-family: 'Bona Nova', serif; font-style: italic; font-size: 16px; font-weight: 400; color: var(--color-text-muted, #aaa); letter-spacing: 0; text-transform: none; }
+    .book-progress-step.is-active .book-progress-num,
+    .book-progress-step.is-active .book-progress-label { color: var(--color-text, #1d1d1d); }
+    .book-progress-step.is-done .book-progress-num,
+    .book-progress-step.is-done .book-progress-label { color: var(--accent-warm, #EBA584); }
+    .book-progress-bar { flex: 0 0 24px; height: 1px; background: #e8dfc7; }
+
+    .form-banner-error { padding: 14px 16px; background: #fdf3f0; border-left: 3px solid #c64a3a; color: #8a2e1f; font-size: 14px; line-height: 1.55; margin-bottom: 24px; font-family: 'Inter', sans-serif; }
+    .form-banner-error.is-hidden { display: none; }
+
+    .step-section { display: none; }
+    .step-section.is-active { display: block; }
+
+    /* ---- TWO-MONTH CALENDAR (Tock pattern) ---- */
+    .cal-frame { padding: 32px 0; border-top: 1px solid #e8dfc7; }
+    .cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+    .cal-month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .cal-month-header.is-left { padding-left: 0; }
+    .cal-month-header.is-right { padding-right: 0; }
+    .cal-month-label { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--color-text, #1d1d1d); letter-spacing: 0.01em; }
+    .cal-nav-btn { background: transparent; border: 1px solid #e8dfc7; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary, #555); transition: all 0.12s ease; padding: 0; font-family: 'Inter', sans-serif; font-size: 14px; }
+    .cal-nav-btn:hover:not(:disabled) { border-color: var(--color-text, #1d1d1d); color: var(--color-text, #1d1d1d); }
+    .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .cal-nav-spacer { width: 28px; height: 28px; }
+
+    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted, #999); padding-bottom: 8px; }
+    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
+    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--color-text, #1d1d1d); background: transparent; border: none; cursor: pointer; border-radius: 50%; transition: background 0.12s ease, color 0.12s ease; padding: 0; }
+    .cal-day.is-empty { visibility: hidden; pointer-events: none; }
+    .cal-day:disabled, .cal-day.is-unavailable { color: #c8bfa8; cursor: default; }
+    .cal-day:hover:not(:disabled):not(.is-unavailable):not(.is-selected) { background: #faf6ec; }
+    .cal-day.is-selected { background: var(--color-text, #1d1d1d); color: #fff; font-weight: 600; }
+    .cal-day.is-today:not(.is-selected) { font-weight: 700; }
+    .cal-day.is-today:not(.is-selected)::after { content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-warm, #EBA584); transform: translateY(14px); }
+    .cal-day { position: relative; }
+
+    /* ---- Time slot list (below calendar after a date is picked) ---- */
+    .time-slots { padding: 28px 0 0; border-top: 1px solid #e8dfc7; margin-top: 32px; }
+    .time-slots-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
+    .time-slots-label strong { color: var(--color-text, #1d1d1d); font-weight: 600; }
+    .time-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
+    .slot-btn { padding: 14px 10px; background: #fff; border: 1px solid #d5cdbb; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.12s ease; }
+    .slot-btn:hover { border-color: var(--color-text, #1d1d1d); }
+    .slot-btn.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
+
+    .slot-loading, .slot-error, .slot-empty { padding: 24px 0; text-align: center; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text-muted, #888); }
+    .slot-error { color: #c64a3a; }
+
+    /* ---- Order summary ---- */
+    .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid #e8dfc7; border-bottom: 1px solid #e8dfc7; }
+    .order-summary-title { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 10px; }
+    .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text, #1d1d1d); }
+    .order-summary-row .summary-datetime { color: var(--color-text-secondary, #555); font-weight: 500; }
+
+    /* ---- Form (step 2) ---- */
+    .step-section h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
+    .step-section .subhead { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: var(--color-text-muted, #888); margin: 0 0 28px; }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
+    .btn-back:hover { color: var(--color-text, #1d1d1d); }
+
+    .form-row { margin-bottom: 18px; }
+    .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-label { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted, #888); margin-bottom: 8px; }
+    .form-label .req { color: #c64a3a; margin-left: 2px; }
+    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.4; color: var(--color-text, #1d1d1d); background: transparent; border: none; border-bottom: 1px solid #d5cdbb; border-radius: 0; transition: border-color 0.15s ease; }
+    .form-input:focus { outline: none; border-bottom-color: var(--color-text, #1d1d1d); border-bottom-width: 2px; padding-bottom: 11px; }
+    .form-input.is-invalid { border-bottom-color: #c64a3a; }
+    .form-input::placeholder { color: #b8b0a0; }
+    .form-error { font-family: 'Inter', sans-serif; font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
+
+    .checkbox-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; cursor: pointer; }
+    .checkbox-row input[type=checkbox] { margin: 4px 0 0 0; flex-shrink: 0; cursor: pointer; accent-color: var(--color-text, #1d1d1d); }
+    .checkbox-row > span { flex: 1; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.55; color: var(--color-text-secondary, #555); cursor: pointer; }
+    .checkbox-row .opt-tag { font-weight: 600; color: var(--color-text, #1d1d1d); margin-right: 4px; }
+
+    /* ---- Primary button ---- */
+    .btn-primary-pill { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 18px 28px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border: none; border-radius: 999px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; margin-top: 28px; }
+    .btn-primary-pill:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .btn-primary-pill:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary-pill .arrow { transition: transform 0.15s ease; }
+    .btn-primary-pill:hover:not(:disabled) .arrow { transform: translateX(4px); }
+
+    /* ---- Mobile ---- */
+    @media (max-width: 720px) {
+      .book-page { padding: 32px 20px 64px; }
+      .cal-months { grid-template-columns: 1fr; gap: 32px; }
+      .book-progress { gap: 8px; font-size: 10px; letter-spacing: 0.1em; }
+      .book-progress-bar { flex: 0 0 14px; }
+    }
+    @media (max-width: 480px) {
+      .book-page { padding: 24px 16px 48px; }
+      .form-row.cols-2 { grid-template-columns: 1fr; }
+      .cal-day { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="nav-inner">
+      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
+      <a href="/" class="logo" style="text-decoration: none;">
+        <img src="/images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
+      </a>
+      <ul class="nav-menu">
+        <li><a href="/#why">Why Amari Method</a></li>
+        <li><a href="/how-it-works">How It Works</a></li>
+        <li><a href="/#journey">The Journey</a></li>
+        <li><a href="/#testimonials">Stories</a></li>
+        <li><a href="/booking">Pricing</a></li>
+        <li><a href="/blog">Free Resources</a></li>
+      </ul>
+      <div class="nav-right">
+        <a href="/portal/" class="nav-login">Login</a>
+        <a href="/#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="book-page">
+
+      <section class="book-header">
+        <p class="book-kicker">Free 15-min phone call · No commitment</p>
+        <h1 class="book-headline">Talk to <em>Dr. Garrett.</em></h1>
+        <p class="book-sub">Bring your questions about your body, the Amari Method, or whether this is the right fit. No pitch, no pressure — just a conversation.</p>
+        <div class="book-meta">
+          <span>Free</span>
+          <span class="dot"></span>
+          <span>15 minutes</span>
+          <span class="dot"></span>
+          <span>Phone call</span>
+        </div>
+      </section>
+
+      <div class="book-progress" aria-label="Booking progress">
+        <span class="book-progress-step is-active" id="progressStep1">
+          <span class="book-progress-num">01</span>
+          <span class="book-progress-label">Pick a time</span>
+        </span>
+        <span class="book-progress-bar"></span>
+        <span class="book-progress-step" id="progressStep2">
+          <span class="book-progress-num">02</span>
+          <span class="book-progress-label">Your details</span>
+        </span>
+      </div>
+
+      <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
+
+      <!-- ============ STEP 1: two-month calendar + time slots ============ -->
+      <div class="step-section is-active" id="step1Section">
+
+        <div class="slot-loading" id="slotLoading">Loading available times…</div>
+        <div class="slot-error" id="slotError" hidden></div>
+        <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 2 months. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
+
+        <div class="cal-frame" id="calFrame" hidden>
+          <div class="cal-months">
+            <div class="cal-month" id="calMonthLeft">
+              <div class="cal-month-header is-left">
+                <button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="Previous month">‹</button>
+                <span class="cal-month-label" id="calLeftLabel">—</span>
+                <span class="cal-nav-spacer"></span>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-days" id="calDaysLeft" role="grid"></div>
+            </div>
+            <div class="cal-month" id="calMonthRight">
+              <div class="cal-month-header is-right">
+                <span class="cal-nav-spacer"></span>
+                <span class="cal-month-label" id="calRightLabel">—</span>
+                <button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="Next month">›</button>
+              </div>
+              <div class="cal-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div class="cal-days" id="calDaysRight" role="grid"></div>
+            </div>
+          </div>
+
+          <div class="time-slots" id="timeSlotsContainer" hidden>
+            <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p>
+            <div class="time-slots-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
+          </div>
+        </div>
+
+        <div class="order-summary" id="orderSummaryStep1" hidden>
+          <p class="order-summary-title">Your call</p>
+          <div class="order-summary-row"><span>Discovery Call — 15 min phone</span><span>Free</span></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+        </div>
+
+        <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled>
+          <span id="step1ContinueLabel">Pick a time to continue</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+
+      <!-- ============ STEP 2: client info form ============ -->
+      <div class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
+        <button type="button" class="btn-back" id="backToStep1">← Pick a different time</button>
+        <h2 id="step2Heading">Tell us about you.</h2>
+        <p class="subhead">We'll send your confirmation here and Dr. Garrett will call you at the number you provide.</p>
+
+        <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
+          <p class="order-summary-title">Your call</p>
+          <div class="order-summary-row"><span>Discovery Call — 15 min phone</span><span>Free</span></div>
+          <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+        </div>
+
+        <form id="clientForm" novalidate style="margin-top: 28px;">
+          <div class="form-row cols-2">
+            <div>
+              <label class="form-label" for="firstName">First name<span class="req">*</span></label>
+              <input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required>
+              <div class="form-error" data-error-for="firstName"></div>
+            </div>
+            <div>
+              <label class="form-label" for="lastName">Last name<span class="req">*</span></label>
+              <input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required>
+              <div class="form-error" data-error-for="lastName"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="email">Email<span class="req">*</span></label>
+            <input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required>
+            <div class="form-error" data-error-for="email"></div>
+          </div>
+
+          <div class="form-row">
+            <label class="form-label" for="phone">Phone<span class="req">*</span></label>
+            <input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required>
+            <div class="form-error" data-error-for="phone"></div>
+          </div>
+
+          <div class="form-row" style="margin-top: 28px;">
+            <label class="checkbox-row">
+              <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
+              <span><span class="opt-tag">Optional:</span>Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-primary-pill" id="step2SubmitBtn">
+            <span id="step2SubmitLabel">Confirm your call</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <img src="/images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
+        <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">A doctor who teaches you to heal yourself.</p>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
+        eben@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
+      </p>
+    </div>
+    <div class="footer-content" style="padding-top: 2.5rem;">
+      <div class="footer-section">
+        <h3>Services</h3>
+        <ul>
+          <li><a href="/in-person-sessions">In-Person Sessions</a></li>
+          <li><a href="/virtual-sessions">Virtual Sessions</a></li>
+          <li><a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd">Online Program</a></li>
+          <li><a href="/ongoing-care">Ongoing Care</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Conditions</h3>
+        <ul>
+          <li><a href="/neck-pain-san-francisco">Neck Pain</a></li>
+          <li><a href="/shoulder-pain-san-francisco">Shoulder Pain</a></li>
+          <li><a href="/hip-pain-san-francisco">Hip Pain</a></li>
+          <li><a href="/knee-pain-san-francisco">Knee Pain</a></li>
+          <li><a href="/lower-back-pain-san-francisco">Lower Back Pain</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>About</h3>
+        <ul>
+          <li><a href="/#why">Why Amari Method</a></li>
+          <li><a href="/about">About Dr. Garrett</a></li>
+          <li><a href="/how-it-works">How It Works</a></li>
+          <li><a href="/#testimonials">Results &amp; Reviews</a></li>
+          <li><a href="/affiliate">Partnership Program</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h3>Get Started</h3>
+        <ul>
+          <li><a href="/book/discovery-call">Free Discovery Call</a></li>
+          <li><a href="/client-info">Client Information</a></li>
+          <li><a href="/booking">View Pricing &amp; Packages</a></li>
+          <li><a href="/portal">Client Portal</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>Made by Forrest Designs | <a href="/privacy-policy">Privacy Policy</a> | <a href="/terms-of-use">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // ---------- config ----------
+      const CALENDAR_ID = 'USgPsktqRcuomdUgpShL';
+      const SESSION_TYPE = 'discovery_call';
+      const SESSION_PRICE = 0;
+      const SLOTS_API = '/api/book/public-slots';
+      const CHECKOUT_API = '/api/book/create-checkout';
+      const LOOKAHEAD_DAYS = 60;
+
+      // ---------- state ----------
+      const state = {
+        step: 1,
+        form: null,
+        slotsByDay: {},
+        availableDates: new Set(),
+        selectedDate: null,
+        selectedSlot: null,
+        viewLeftMonth: null,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles',
+        submitting: false,
+      };
+
+      // ---------- DOM refs ----------
+      const $ = (id) => document.getElementById(id);
+      const els = {
+        bannerError: $('bannerError'),
+        progressStep1: $('progressStep1'),
+        progressStep2: $('progressStep2'),
+        step1Section: $('step1Section'),
+        step2Section: $('step2Section'),
+        userTimezone: $('userTimezone'),
+        slotLoading: $('slotLoading'),
+        slotError: $('slotError'),
+        slotEmpty: $('slotEmpty'),
+        calFrame: $('calFrame'),
+        calLeftLabel: $('calLeftLabel'),
+        calRightLabel: $('calRightLabel'),
+        calDaysLeft: $('calDaysLeft'),
+        calDaysRight: $('calDaysRight'),
+        calPrevBtn: $('calPrevBtn'),
+        calNextBtn: $('calNextBtn'),
+        timeSlotsContainer: $('timeSlotsContainer'),
+        timeSlotsLabel: $('timeSlotsLabel'),
+        timeSlots: $('timeSlots'),
+        orderSummaryStep1: $('orderSummaryStep1'),
+        orderSummaryStep2: $('orderSummaryStep2'),
+        summaryDateTimeEls: document.querySelectorAll('.summary-datetime'),
+        step1ContinueBtn: $('step1ContinueBtn'),
+        step1ContinueLabel: $('step1ContinueLabel'),
+        clientForm: $('clientForm'),
+        backToStep1: $('backToStep1'),
+        step2SubmitBtn: $('step2SubmitBtn'),
+        step2SubmitLabel: $('step2SubmitLabel'),
+      };
+
+      function track(event, params) {
+        if (window.gtag) {
+          window.gtag('event', event, Object.assign({
+            booking_type: SESSION_TYPE,
+            booking_price: SESSION_PRICE,
+          }, params || {}));
+        }
+      }
+
+      // ---------- date helpers ----------
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+      function ym(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
+      function nextMonth(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        const d = new Date(y, m - 1 + 1, 1);
+        return ym(d);
+      }
+      function prevMonth(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        const d = new Date(y, m - 1 - 1, 1);
+        return ym(d);
+      }
+      function monthLabel(yyyymm) {
+        const [y, m] = yyyymm.split('-').map(Number);
+        return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      }
+      function isPastDate(yyyymmdd) {
+        const today = ymd(new Date());
+        return yyyymmdd < today;
+      }
+      function formatDateLong(yyyymmdd) {
+        const [y, m, d] = yyyymmdd.split('-').map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      }
+      function formatTime(hour, minute) {
+        const h12 = hour % 12 === 0 ? 12 : hour % 12;
+        const ampm = hour >= 12 ? 'pm' : 'am';
+        const mm = String(minute).padStart(2, '0');
+        return minute === 0 ? h12 + ampm : h12 + ':' + mm + ampm;
+      }
+
+      // ---------- ui helpers ----------
+      function setBannerError(msg) {
+        if (!msg) {
+          els.bannerError.classList.add('is-hidden');
+          els.bannerError.textContent = '';
+        } else {
+          els.bannerError.classList.remove('is-hidden');
+          els.bannerError.textContent = msg;
+          els.bannerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+      function setFieldError(name, msg) {
+        const errEl = document.querySelector('[data-error-for="' + name + '"]');
+        const inputEl = els.clientForm.elements[name];
+        if (errEl && errEl.classList.contains('form-error')) errEl.textContent = msg || '';
+        if (inputEl && inputEl.tagName === 'INPUT' && inputEl.type !== 'checkbox') {
+          inputEl.classList.toggle('is-invalid', !!msg);
+        }
+      }
+      function clearAllFieldErrors() {
+        ['firstName', 'lastName', 'email', 'phone'].forEach(function (n) { setFieldError(n, ''); });
+      }
+      function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+      function isValidPhone(s) { return s.replace(/\D/g, '').length >= 10; }
+
+      function setStep(n) {
+        state.step = n;
+        els.step1Section.classList.toggle('is-active', n === 1);
+        els.step2Section.classList.toggle('is-active', n === 2);
+        els.step1Section.toggleAttribute('hidden', n !== 1);
+        els.step2Section.toggleAttribute('hidden', n !== 2);
+        els.progressStep1.classList.toggle('is-active', n === 1);
+        els.progressStep1.classList.toggle('is-done', n > 1);
+        els.progressStep2.classList.toggle('is-active', n === 2);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // ---------- slot loading ----------
+      async function loadSlots() {
+        els.slotLoading.hidden = false;
+        els.slotError.hidden = true;
+        els.slotEmpty.hidden = true;
+        els.calFrame.hidden = true;
+        els.timeSlotsContainer.hidden = true;
+        els.orderSummaryStep1.hidden = true;
+        els.orderSummaryStep2.hidden = true;
+        els.userTimezone.textContent = state.timezone;
+
+        const today = new Date();
+        const startDate = ymd(today);
+        const end = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
+        const endDate = ymd(end);
+
+        const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
+          + '&startDate=' + startDate + '&endDate=' + endDate
+          + '&timezone=' + encodeURIComponent(state.timezone);
+
+        try {
+          const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+          if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
+          const data = await res.json();
+          const slots = Array.isArray(data.slots) ? data.slots : [];
+
+          const byDay = {};
+          slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
+          state.slotsByDay = byDay;
+          state.availableDates = new Set(Object.keys(byDay));
+
+          els.slotLoading.hidden = true;
+          if (state.availableDates.size === 0) {
+            els.slotEmpty.hidden = false;
+            return;
+          }
+          els.calFrame.hidden = false;
+          state.viewLeftMonth = ym(today);
+          renderCalendar();
+        } catch (err) {
+          els.slotLoading.hidden = true;
+          els.slotError.hidden = false;
+          els.slotError.textContent = "Couldn't load times. Try refreshing, or email eben@amarimethod.com.";
+        }
+      }
+
+      // ---------- calendar render ----------
+      function renderCalendar() {
+        const leftMonth = state.viewLeftMonth;
+        const rightMonth = nextMonth(leftMonth);
+        els.calLeftLabel.textContent = monthLabel(leftMonth);
+        els.calRightLabel.textContent = monthLabel(rightMonth);
+        renderMonth(els.calDaysLeft, leftMonth);
+        renderMonth(els.calDaysRight, rightMonth);
+        const todayMonth = ym(new Date());
+        els.calPrevBtn.disabled = leftMonth <= todayMonth;
+      }
+
+      function renderMonth(container, yyyymm) {
+        container.innerHTML = '';
+        const [y, m] = yyyymm.split('-').map(Number);
+        const firstOfMonth = new Date(y, m - 1, 1);
+        const startWeekday = firstOfMonth.getDay();
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const todayStr = ymd(new Date());
+
+        for (let i = 0; i < startWeekday; i++) {
+          const empty = document.createElement('span');
+          empty.className = 'cal-day is-empty';
+          container.appendChild(empty);
+        }
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dayStr = yyyymm + '-' + pad(d);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'cal-day';
+          btn.dataset.date = dayStr;
+          btn.textContent = d;
+
+          const isPast = isPastDate(dayStr);
+          const isAvail = state.availableDates.has(dayStr);
+
+          if (isPast || !isAvail) {
+            btn.classList.add('is-unavailable');
+            btn.disabled = true;
+          } else {
+            btn.addEventListener('click', function () { selectDate(dayStr); });
+          }
+          if (dayStr === todayStr) btn.classList.add('is-today');
+          if (dayStr === state.selectedDate) btn.classList.add('is-selected');
+
+          container.appendChild(btn);
+        }
+      }
+
+      function selectDate(dayStr) {
+        state.selectedDate = dayStr;
+        state.selectedSlot = null;
+        renderCalendar();
+        renderTimeSlots(dayStr);
+      }
+
+      function renderTimeSlots(dayStr) {
+        els.timeSlotsContainer.hidden = false;
+        els.timeSlotsLabel.textContent = formatDateLong(dayStr);
+        els.timeSlots.innerHTML = '';
+        const slotsForDay = state.slotsByDay[dayStr] || [];
+        slotsForDay.forEach(function (slot) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'slot-btn';
+          btn.dataset.datetime = slot.datetime;
+          btn.textContent = formatTime(slot.hour, slot.minute);
+          btn.addEventListener('click', function () { selectSlot(slot, btn); });
+          els.timeSlots.appendChild(btn);
+        });
+        els.orderSummaryStep1.hidden = true;
+        els.step1ContinueBtn.disabled = true;
+        els.step1ContinueLabel.textContent = 'Pick a time to continue';
+        els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      function selectSlot(slot, btn) {
+        state.selectedSlot = slot;
+        Array.prototype.forEach.call(els.timeSlots.children, function (el) {
+          el.classList.toggle('is-selected', el === btn);
+        });
+        const dateLabel = formatDateLong(slot.date);
+        const timeLabel = formatTime(slot.hour, slot.minute);
+        els.summaryDateTimeEls.forEach(function (el) {
+          el.textContent = dateLabel + ' at ' + timeLabel;
+        });
+        els.orderSummaryStep1.hidden = false;
+        els.step1ContinueBtn.disabled = false;
+        els.step1ContinueLabel.textContent = 'Continue to your details';
+        track('book_slot_selected', { slot_datetime: slot.datetime });
+      }
+
+      // ---------- month navigation ----------
+      els.calPrevBtn.addEventListener('click', function () {
+        if (els.calPrevBtn.disabled) return;
+        state.viewLeftMonth = prevMonth(state.viewLeftMonth);
+        renderCalendar();
+      });
+      els.calNextBtn.addEventListener('click', function () {
+        state.viewLeftMonth = nextMonth(state.viewLeftMonth);
+        renderCalendar();
+      });
+
+      // ---------- step transitions ----------
+      els.step1ContinueBtn.addEventListener('click', function () {
+        if (!state.selectedSlot) return;
+        setBannerError('');
+        els.orderSummaryStep2.hidden = false;
+        track('book_form_step1_complete');
+        setStep(2);
+      });
+      els.backToStep1.addEventListener('click', function () { setStep(1); });
+
+      // ---------- form submit ----------
+      function readForm() {
+        const f = els.clientForm.elements;
+        return {
+          firstName: f.firstName.value.trim(),
+          lastName: f.lastName.value.trim(),
+          email: f.email.value.trim(),
+          phone: f.phone.value.trim(),
+          agreeCommunications: f.agreeCommunications.checked,
+        };
+      }
+      function validateForm(data) {
+        clearAllFieldErrors();
+        let ok = true;
+        if (!data.firstName) { setFieldError('firstName', 'Required'); ok = false; }
+        if (!data.lastName) { setFieldError('lastName', 'Required'); ok = false; }
+        if (!data.email) { setFieldError('email', 'Required'); ok = false; }
+        else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
+        if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
+        else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
+        return ok;
+      }
+
+      els.clientForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (state.submitting) return;
+        if (!state.selectedSlot) {
+          setBannerError("Pick a time first.");
+          setStep(1);
+          return;
+        }
+        setBannerError('');
+        const data = readForm();
+        if (!validateForm(data)) return;
+        state.form = data;
+
+        state.submitting = true;
+        els.step2SubmitBtn.disabled = true;
+        els.step2SubmitLabel.textContent = 'Booking your call…';
+
+        try {
+          const payload = {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone,
+            agreeCommunications: data.agreeCommunications,
+            // PMA not required for discovery call but the API expects the key
+            agreePolicies: false,
+            calendarId: CALENDAR_ID,
+            sessionType: SESSION_TYPE,
+            sessionPrice: SESSION_PRICE,
+            startTime: state.selectedSlot.datetime,
+            timezone: state.timezone,
+          };
+          const res = await fetch(CHECKOUT_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const body = await res.json().catch(function () { return {}; });
+          if (!res.ok || !body.checkoutUrl) {
+            throw new Error(body.error || ('book_failed_' + res.status));
+          }
+          track('book_discovery_call_submitted');
+          window.location.href = body.checkoutUrl;
+        } catch (err) {
+          state.submitting = false;
+          els.step2SubmitBtn.disabled = false;
+          els.step2SubmitLabel.textContent = 'Confirm your call';
+          setBannerError("Couldn't book your call. Try a different time, or email eben@amarimethod.com.");
+        }
+      });
+
+      // ---------- init ----------
+      track('book_form_view');
+      loadSlots();
+    })();
+  </script>
+  <script src="/js/main.js?v=3" defer></script>
+</body>
+</html>
