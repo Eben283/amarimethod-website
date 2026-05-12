@@ -31,9 +31,11 @@
 /book-initial-virtual /book/initial-virtual 301
 # Discovery call now uses the native flow at /book/discovery-call (free
 # booking — appointment created directly via GHL Calendar API, no Stripe).
-# Follow-ups still 301 straight to GHL until phase 3 ports them too.
-/book-follow-up https://amarimethodfollowup.amarimethod.com/booking-single-amari-method-followup-session 301
-/book-follow-up-virtual https://link.amarimethod.com/widget/booking/oVn77FcecFY16iS2pHyP 301
+# Follow-ups are pre-purchased via 4/8-session packages, so legacy
+# /book-follow-up URLs land at the portal where series clients book their
+# pre-paid sessions via the in-portal BookingModal (no separate $190 path).
+/book-follow-up /portal/ 301
+/book-follow-up-virtual /portal/ 301
 /book-discovery-call /book/discovery-call 301
 
 # === SEO 301s — old URLs Google still indexes (recover crawl signals) ===
