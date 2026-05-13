@@ -5,6 +5,13 @@
 
 import { ghlFetch } from "./ghl.js";
 import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
+import {
+  recordPark,
+  lookupParkingRules,
+  getParkingHistory,
+  formatHistoryForModel,
+  formatRulesForModel,
+} from "./cos-parking.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-6";
@@ -86,6 +93,44 @@ export const TOOLS = [
         query: { type: "string", description: "Optional case-insensitive substring to filter events by title or location" },
       },
       required: ["start_date", "end_date"],
+    },
+  },
+  {
+    name: "record_park",
+    description: "Record where the user just parked AND (if rule_type is given) save the posted parking rules for that block to the shared rules database, so future parks at the same location auto-recall them. Use whenever the user says they parked somewhere — even if they only mention the location. If they also describe the rule (street sweeping day/time, posted hour limit, RPP zone, overnight ban), include it; the rule gets merged into the database for next time.",
+    input_schema: {
+      type: "object",
+      properties: {
+        location: { type: "string", description: "Free-text location, e.g. '9th Ave between Cabrillo and Lincoln' or '5th & Clement'" },
+        side: { type: "string", description: "Side of the street if known: 'north' | 'south' | 'east' | 'west'. Omit if unsure." },
+        rule_type: { type: "string", description: "What kind of restriction applies: 'street_sweeping' | 'time_limit' | 'rpp' | 'overnight' | 'metered' | 'tow_lane' | 'none' | 'unknown'" },
+        rule_detail: { type: "string", description: "Plain-text rule, e.g. 'Tue 1st & 3rd 8-10am' or '2-hour limit 8a-6p Mon-Fri' or 'RPP zone J, 2hr without permit'" },
+        deadline_iso: { type: "string", description: "ISO timestamp of the next action deadline (when the car has to move). Omit if none." },
+        reminder_event_id: { type: "string", description: "If a Google Calendar reminder was created for this park, the event ID — links the history entry to the buzz." },
+        notes: { type: "string", description: "Anything else worth keeping (which corner, paint color, signs nearby, etc.)" },
+      },
+      required: ["location"],
+    },
+  },
+  {
+    name: "lookup_parking_rules",
+    description: "Search the stored parking-rules database for a location BEFORE asking the user about the rules. If a match comes back, you already know the rule and only need to confirm or fill gaps. Always call this first when the user mentions parking somewhere.",
+    input_schema: {
+      type: "object",
+      properties: {
+        location: { type: "string", description: "Free-text location to look up (street + cross streets work best)" },
+      },
+      required: ["location"],
+    },
+  },
+  {
+    name: "get_parking_history",
+    description: "Return the user's recent parking history (where they've parked, when, what rules applied, deadlines). Use when the user asks 'where have I parked', 'show my parking history', or wants to compare past spots.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Number of recent entries to return (default 20, max 100)" },
+      },
     },
   },
   {
@@ -273,6 +318,43 @@ export async function executeTool(context, toolName, input, user = "Eben") {
             (e.location || "").toLowerCase().includes(q))
         : events;
       return JSON.stringify({ count: filtered.length, events: filtered }, null, 2);
+    }
+
+    if (toolName === "record_park") {
+      const event = await recordPark(context.env, user, {
+        location: input.location,
+        side: input.side,
+        rule_type: input.rule_type || "unknown",
+        rule_detail: input.rule_detail,
+        deadline_iso: input.deadline_iso,
+        reminder_event_id: input.reminder_event_id,
+        notes: input.notes,
+      });
+      return JSON.stringify({
+        recorded: true,
+        event,
+        rule_saved: !!(input.rule_type && input.rule_type !== "unknown" && input.rule_type !== "none"),
+      }, null, 2);
+    }
+
+    if (toolName === "lookup_parking_rules") {
+      const matches = await lookupParkingRules(context.env, input.location || "");
+      return JSON.stringify({
+        query: input.location || "",
+        match_count: matches.length,
+        matches,
+        formatted: formatRulesForModel(matches),
+      }, null, 2);
+    }
+
+    if (toolName === "get_parking_history") {
+      const limit = Math.min(Math.max(Number(input.limit) || 20, 1), 100);
+      const history = await getParkingHistory(context.env, user, limit);
+      return JSON.stringify({
+        count: history.length,
+        history,
+        formatted: formatHistoryForModel(history),
+      }, null, 2);
     }
 
     if (toolName === "cancel_google_calendar_event") {
