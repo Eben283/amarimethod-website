@@ -2,7 +2,7 @@
 // Pulls the canonical dataset (yhqp-riqs) from DataSF, compacts each row,
 // and writes the full index to KV at cos:sf-sweep-index.
 //
-// Auth: POST with header `X-COS-Service-Key: ${env.COS_SERVICE_KEY}`.
+// Auth: POST with header `X-Service-Key: ${env.COS_SERVICE_KEY}`.
 //
 // Idempotent — safe to re-run. Each call replaces the index.
 
@@ -27,7 +27,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   // Auth
-  const provided = request.headers.get("X-COS-Service-Key") || "";
+  const provided = request.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
@@ -81,7 +81,7 @@ export async function onRequestPost(context) {
 // without re-running it.
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const provided = request.headers.get("X-COS-Service-Key") || "";
+  const provided = request.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
