@@ -8,9 +8,11 @@ import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
 import {
   recordPark,
   lookupParkingRules,
+  lookupSfSweep,
   getParkingHistory,
   formatHistoryForModel,
   formatRulesForModel,
+  formatSfSweepForModel,
 } from "./cos-parking.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
@@ -338,12 +340,23 @@ export async function executeTool(context, toolName, input, user = "Eben") {
     }
 
     if (toolName === "lookup_parking_rules") {
-      const matches = await lookupParkingRules(context.env, input.location || "");
+      const [userMatches, sfResult] = await Promise.all([
+        lookupParkingRules(context.env, input.location || ""),
+        lookupSfSweep(context.env, input.location || ""),
+      ]);
       return JSON.stringify({
         query: input.location || "",
-        match_count: matches.length,
-        matches,
-        formatted: formatRulesForModel(matches),
+        user_rules: {
+          match_count: userMatches.length,
+          matches: userMatches,
+          formatted: formatRulesForModel(userMatches),
+        },
+        sf_public_works: {
+          available: sfResult.available,
+          match_count: sfResult.matches ? sfResult.matches.length : 0,
+          matches: sfResult.matches || [],
+          formatted: formatSfSweepForModel(sfResult),
+        },
       }, null, 2);
     }
 

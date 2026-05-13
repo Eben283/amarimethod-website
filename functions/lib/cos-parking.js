@@ -10,6 +10,23 @@ const HISTORY_CAP = 100;
 const RULES_CAP = 300;
 const HISTORY_KEY = (user) => `cos:parking-history:${user}`;
 const RULES_KEY = "cos:parking-rules";
+const SF_SWEEP_KEY = "cos:sf-sweep-index";
+
+// 24-hour numeric hour → "5am" / "12pm" / "1pm"
+function formatHour(h) {
+  const n = Number(h);
+  if (!Number.isFinite(n)) return String(h);
+  if (n === 0) return "12am";
+  if (n < 12) return `${n}am`;
+  if (n === 12) return "12pm";
+  return `${n - 12}pm`;
+}
+
+function humanizeSweep(entry) {
+  const fh = formatHour(entry.fh);
+  const th = formatHour(entry.th);
+  return `${entry.d} ${fh}–${th}`;
+}
 
 // Normalize a location label into a stable lookup key.
 // "9th Ave between Cabrillo and Lincoln" → "9th ave between cabrillo and lincoln"
@@ -73,6 +90,81 @@ export async function lookupParkingRules(env, query) {
   }
   matches.sort((a, b) => b.score - a.score);
   return matches.slice(0, 5);
+}
+
+// Search the seeded SF Public Works street-sweeping index for blocks
+// matching a free-text location query. Returns up to `limit` matches
+// scored by how many query tokens hit the corridor + cross-street label.
+export async function lookupSfSweep(env, query, limit = 6) {
+  const kv = env.PORTAL_KV;
+  if (!kv) return { available: false, matches: [] };
+  const raw = await kv.get(SF_SWEEP_KEY);
+  if (!raw) return { available: false, matches: [] };
+
+  let index;
+  try {
+    index = JSON.parse(raw);
+  } catch {
+    return { available: false, matches: [] };
+  }
+  const rows = Array.isArray(index) ? index : index.rows || [];
+  const q = normalizeLocation(query);
+  if (!q || rows.length === 0) return { available: true, matches: [] };
+
+  const tokens = q.split(" ").filter(t => t.length >= 2);
+  if (tokens.length === 0) return { available: true, matches: [] };
+
+  // Score every row by how many tokens hit its haystack.
+  // First pass: filter rows where the strongest token (typically the
+  // street name) hits — keeps the inner loop cheap on 30k rows.
+  const scored = [];
+  for (const r of rows) {
+    const haystack = `${r.s} ${r.l}`.toLowerCase();
+    let score = 0;
+    for (const t of tokens) {
+      if (haystack.includes(t)) score++;
+    }
+    if (score >= 2 || (score === 1 && tokens.length === 1)) {
+      scored.push({ score, ...r });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, limit).map(r => ({
+    corridor: r.s,
+    limits: r.l,
+    side: r.b,
+    schedule: humanizeSweep(r),
+    score: r.score,
+  }));
+  return { available: true, total_rows: rows.length, matches: top };
+}
+
+export async function writeSfSweepIndex(env, rows) {
+  const kv = env.PORTAL_KV;
+  if (!kv) throw new Error("KV not available");
+  await kv.put(SF_SWEEP_KEY, JSON.stringify({
+    rows,
+    count: rows.length,
+    updated_at: new Date().toISOString(),
+  }));
+  return { count: rows.length };
+}
+
+export async function getSfSweepIndexMeta(env) {
+  const kv = env.PORTAL_KV;
+  if (!kv) return null;
+  const raw = await kv.get(SF_SWEEP_KEY);
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    return {
+      count: data.count ?? (Array.isArray(data) ? data.length : 0),
+      updated_at: data.updated_at || null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // Append a parking event to history. If `rule` is provided, also merges
@@ -205,4 +297,14 @@ export function formatRulesForModel(matches) {
       return `${m.label}\n${sides}`;
     })
     .join("\n\n");
+}
+
+export function formatSfSweepForModel(result) {
+  if (!result || !result.available) return null;
+  if (!result.matches || result.matches.length === 0) {
+    return "No SF Public Works sweep schedule matched that location.";
+  }
+  return result.matches
+    .map(m => `- ${m.corridor} (${m.limits}), ${m.side} side: ${m.schedule}`)
+    .join("\n");
 }
