@@ -502,6 +502,7 @@
         els.progressStep1.classList.toggle('is-active', n === 1);
         els.progressStep1.classList.toggle('is-done', n > 1);
         els.progressStep2.classList.toggle('is-active', n === 2);
+        if (n === 2) track('book_form_view');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
@@ -740,7 +741,7 @@
       });
 
       // ---------- init ----------
-      track('book_form_view');
+      track('book_page_view');
       loadSlots();
     })();
   </script>
