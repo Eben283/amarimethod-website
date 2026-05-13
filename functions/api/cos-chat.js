@@ -261,6 +261,13 @@ Use this for:
 
 The reminder creates a calendar event with a popup alert. It actually works — use it.
 
+## Cancelling Calendar Events
+You CAN cancel events on ${userName}'s Google Calendar. Two-step process:
+1. Call list_google_calendar_events with a date range (and optional query) to find the event. Each result has an event_id and calendar_id.
+2. Call cancel_google_calendar_event with that event_id and calendar_id.
+
+Always look up the event first — never guess IDs. If multiple events match what ${userName} described, list them back and ask which one to cancel before deleting. After cancelling, confirm what you removed (title + time).
+
 ## Learning Context
 When you learn something new about ${userName}'s life, include:
 <!--CONTEXT:{"key":"descriptive.key","value":"what you learned","learned":"${todayKey()}"}-->
@@ -951,7 +958,7 @@ export async function onRequestPost(context) {
         },
         executeToolFn: async (name, input) => {
           console.log(`[cos-chat] tool call: ${name} input=${JSON.stringify(input).slice(0, 200)}`);
-          return await executeAnthropicTool(context, name, input);
+          return await executeAnthropicTool(context, name, input, cosUser);
         },
       });
 

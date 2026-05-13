@@ -4,6 +4,7 @@
 // - SSE streaming with text-delta forwarding + tool execution
 
 import { ghlFetch } from "./ghl.js";
+import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-6";
@@ -74,6 +75,31 @@ export const TOOLS = [
       required: ["start_date", "end_date"],
     },
   },
+  {
+    name: "list_google_calendar_events",
+    description: "List the user's Google Calendar events (across ALL their calendars, not GHL) within a date range. Returns each event with event_id and calendar_id — both are required to cancel an event. Use this when the user wants to find, review, or cancel a personal calendar event (e.g. 'cancel my 3pm', 'what's on my calendar Friday', 'delete that dentist appointment').",
+    input_schema: {
+      type: "object",
+      properties: {
+        start_date: { type: "string", description: "Start date YYYY-MM-DD in Pacific time (inclusive)" },
+        end_date: { type: "string", description: "End date YYYY-MM-DD in Pacific time (inclusive)" },
+        query: { type: "string", description: "Optional case-insensitive substring to filter events by title or location" },
+      },
+      required: ["start_date", "end_date"],
+    },
+  },
+  {
+    name: "cancel_google_calendar_event",
+    description: "Cancel (delete) a Google Calendar event. Requires event_id AND calendar_id from list_google_calendar_events. Always look up the event first via list_google_calendar_events before calling this — never guess IDs. If multiple events match the user's description, ask which one to cancel before calling this tool.",
+    input_schema: {
+      type: "object",
+      properties: {
+        event_id: { type: "string", description: "The Google Calendar event ID (from list_google_calendar_events)" },
+        calendar_id: { type: "string", description: "The calendar the event lives on (from list_google_calendar_events). Defaults to 'primary' if not provided." },
+      },
+      required: ["event_id"],
+    },
+  },
 ];
 
 function pacificOffsetForDate(dateStr) {
@@ -88,7 +114,10 @@ function pacificOffsetForDate(dateStr) {
 }
 
 // Execute a tool call. Returns a string Claude will read as tool_result.
-export async function executeTool(context, toolName, input) {
+// `user` is the COS user ("Eben" or "Garrett") — needed for Google OAuth
+// scoped tools (Google Calendar list/cancel). Defaults to "Eben" so older
+// call sites keep working.
+export async function executeTool(context, toolName, input, user = "Eben") {
   try {
     if (toolName === "search_contacts") {
       const limit = Math.min(Number(input.limit) || 50, 100);
@@ -226,6 +255,51 @@ export async function executeTool(context, toolName, input) {
         status: e.appointmentStatus || null,
       }));
       return JSON.stringify({ count: events.length, events }, null, 2);
+    }
+
+    if (toolName === "list_google_calendar_events") {
+      const startOffset = pacificOffsetForDate(input.start_date);
+      const endOffset = pacificOffsetForDate(input.end_date);
+      const timeMin = `${input.start_date}T00:00:00${startOffset}`;
+      const timeMax = `${input.end_date}T23:59:59${endOffset}`;
+      const events = await listCalendarEventsRaw(context, user, timeMin, timeMax);
+      if (events === null) {
+        return `Error: failed to fetch Google Calendar events for ${user}`;
+      }
+      const q = (input.query || "").trim().toLowerCase();
+      const filtered = q
+        ? events.filter(e =>
+            (e.title || "").toLowerCase().includes(q) ||
+            (e.location || "").toLowerCase().includes(q))
+        : events;
+      return JSON.stringify({ count: filtered.length, events: filtered }, null, 2);
+    }
+
+    if (toolName === "cancel_google_calendar_event") {
+      if (!input.event_id) {
+        return `Error: event_id is required`;
+      }
+      const result = await deleteCalendarEvent(
+        context,
+        user,
+        input.event_id,
+        input.calendar_id || "primary",
+      );
+      if (result.ok) {
+        return JSON.stringify({
+          cancelled: true,
+          event_id: input.event_id,
+          calendar_id: input.calendar_id || "primary",
+          status: result.status,
+        });
+      }
+      return JSON.stringify({
+        cancelled: false,
+        event_id: input.event_id,
+        calendar_id: input.calendar_id || "primary",
+        status: result.status,
+        error: result.error || "delete failed",
+      });
     }
 
     return `Error: unknown tool "${toolName}"`;

@@ -204,24 +204,96 @@ export async function createCalendarReminder(context, user, title, minutesFromNo
  * Returns true on success, false on failure. 404/410 are treated as success
  * since the event is already gone.
  */
-export async function deleteCalendarEvent(context, user, eventId) {
+export async function deleteCalendarEvent(context, user, eventId, calendarId = "primary") {
   try {
     const token = await getGoogleToken(context, user);
     const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       }
     );
     if (response.ok || response.status === 404 || response.status === 410) {
-      return true;
+      return { ok: true, status: response.status };
     }
-    console.error("[google] Calendar event delete failed:", response.status);
-    return false;
+    const errBody = await response.text().catch(() => "");
+    console.error("[google] Calendar event delete failed:", response.status, errBody.slice(0, 200));
+    return { ok: false, status: response.status, error: errBody.slice(0, 200) };
   } catch (err) {
     console.error("[google] Calendar delete error:", err.message);
-    return false;
+    return { ok: false, status: 0, error: err.message };
+  }
+}
+
+/**
+ * List Google Calendar events across ALL of the user's calendars in a
+ * date range. Returns raw events with IDs (so they can be cancelled).
+ * Each event is annotated with its source calendar_id so the caller knows
+ * which calendar to target on delete.
+ */
+export async function listCalendarEventsRaw(context, user, timeMinISO, timeMaxISO, maxResults = 50) {
+  try {
+    const token = await getGoogleToken(context, user);
+
+    const calListResp = await fetch(
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    let calendars = [{ id: "primary", summary: "primary" }];
+    if (calListResp.ok) {
+      const calListData = await calListResp.json();
+      const items = (calListData.items || []).filter(c => !c.deleted && c.selected !== false);
+      if (items.length > 0) {
+        calendars = items.map(c => ({ id: c.id, summary: c.summary || c.id }));
+      }
+    }
+
+    const params = new URLSearchParams({
+      timeMin: timeMinISO,
+      timeMax: timeMaxISO,
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: String(maxResults),
+    });
+
+    const perCalendar = await Promise.all(
+      calendars.map(async (cal) => {
+        const resp = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        return (data.items || []).map(ev => ({ ev, cal }));
+      })
+    );
+
+    const seen = new Set();
+    return perCalendar
+      .flat()
+      .filter(({ ev }) => {
+        if (seen.has(ev.id)) return false;
+        seen.add(ev.id);
+        return true;
+      })
+      .map(({ ev, cal }) => ({
+        event_id: ev.id,
+        calendar_id: cal.id,
+        calendar_name: cal.summary,
+        title: ev.summary || "(untitled)",
+        start: ev.start?.dateTime || ev.start?.date || null,
+        end: ev.end?.dateTime || ev.end?.date || null,
+        location: ev.location || null,
+        organizer: ev.organizer?.email || null,
+        status: ev.status || null,
+        html_link: ev.htmlLink || null,
+      }))
+      .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+  } catch (err) {
+    console.error("[google] Calendar list error:", err.message);
+    return null;
   }
 }
 
