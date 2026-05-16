@@ -37,6 +37,7 @@ export default function ClientDetailPage() {
   const [markingNotFit, setMarkingNotFit] = useState(false);
   const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
+
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -162,6 +163,21 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     loadClient();
+  }, [id]);
+
+  // Refetch when the tab regains focus. Keeps appointment list, message
+  // thread, and time-based UI (e.g. the Attended toggle's isPast check)
+  // fresh after the page has been backgrounded — no manual refresh needed.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') loadClient();
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, [id]);
 
   // Scroll to the messages section when arriving from the Messages tab
