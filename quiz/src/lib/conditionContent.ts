@@ -368,7 +368,7 @@ const fallback = (displayName: string): ConditionContent => ({
 const SPINAL_WAVE: ProtocolIntro = {
   name: 'The Spinal Wave',
   framingLine: '"Go for the feeling of it, not the doing of it. Let the ocean move you."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30c3bfe4d0d3ac8d60938.mp4',
+  introVideoUrl: 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/a6490fd1ae688632d62e165f9ad12ff2/downloads/default.mp4',
   durationLabel: '4 min',
 };
 
@@ -379,28 +379,28 @@ const SPINAL_WAVE: ProtocolIntro = {
 const POWER_POSTURE: ProtocolIntro = {
   name: 'Power Posture',
   framingLine: '"We have a huge over-flexion problem in the culture, and this exercise totally corrects it."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30d0ef5a3893acea59684.mp4',
+  introVideoUrl: 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/90bd2706aae1412e86933855eb9a1797/downloads/default.mp4',
   durationLabel: '2 min',
 };
 
 const SPRING_STEP: ProtocolIntro = {
   name: 'Spring Step',
   framingLine: '"Imagine feeling the bottom of your body as buoyant and free, rather than stuck."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c306b5f5a389ab2aa4c3a0.mp4',
+  introVideoUrl: 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/7c8daa56126ecb25fb86fe65393f364b/downloads/default.mp4',
   durationLabel: '3 min',
 };
 
 const HAND_BALANCER: ProtocolIntro = {
   name: 'The Hand Balancer',
   framingLine: '"Most people are experiencing some kind of hand issue these days. This balances out the hand so the front and back are working equally."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c305e33ab4d91e7fc7763d.mp4',
+  introVideoUrl: 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/25227f315fafdbcaddc08958bd8efd9b/downloads/default.mp4',
   durationLabel: '1 min',
 };
 
 const ELBOW_RESET: ProtocolIntro = {
   name: 'The Elbow Reset',
   framingLine: '"From all the overuse we do with the forearm, the tendon gets inflamed. This is a great tool for any kind of dysfunction of the elbow or forearm."',
-  introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30e9b6bd30ff0fd318d61.mp4',
+  introVideoUrl: 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/8c88a20dad2e49ec7d69ba967a18b61b/downloads/default.mp4',
   durationLabel: '1 min',
 };
 
