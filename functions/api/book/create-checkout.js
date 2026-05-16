@@ -300,6 +300,16 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
  * page that has nothing on the calendar.
  */
 async function bookFreeAppointment(context, locationId, contactId, payload, booking) {
+  // GHL requires endTime AND startTime/endTime to keep their timezone offset
+  // (e.g. "2026-05-21T10:00:00-07:00"). Stripping the offset, or omitting
+  // endTime, causes GHL to reject the slot as "not available" for many
+  // calendar configurations. See portal-book.js for the same pattern.
+  const offsetMatch = payload.startTime.match(/([+-]\d{2}:\d{2})$/);
+  const tzOffset = offsetMatch ? offsetMatch[1] : "";
+  const startMs = new Date(payload.startTime).getTime();
+  const endMs = startMs + booking.durationMinutes * 60 * 1000;
+  const endTime = new Date(endMs).toISOString().replace("Z", tzOffset || "Z");
+
   const res = await ghlFetch(
     context,
     "https://services.leadconnectorhq.com/calendars/events/appointments",
@@ -310,8 +320,14 @@ async function bookFreeAppointment(context, locationId, contactId, payload, book
         locationId,
         contactId,
         startTime: payload.startTime,
+        endTime,
+        selectedTimezone: payload.timezone,
         title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
         appointmentStatus: "confirmed",
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        email: payload.email,
+        phone: payload.phone,
         ignoreDateRange: false,
         toNotify: true,
       }),
