@@ -344,9 +344,17 @@ export default function PlaybookPage() {
             </ul>
           </div>
 
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
+        </StepSection>
+
+        <StepSection title="Handling push-back + objections (anytime)">
+          <p>
+            These can come up anywhere in the call, not just at the close. Treat them as questions worth
+            answering — not battles.
+          </p>
+
+          <div className="pt-2">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Push-back
+              Push-back on the close
             </h4>
             <p className="font-medium">"Can we just start with one?"</p>
             <Quote>
