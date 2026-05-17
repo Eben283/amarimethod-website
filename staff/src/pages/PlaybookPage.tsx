@@ -304,12 +304,12 @@ export default function PlaybookPage() {
             </h4>
             <p className="font-medium">Frame it:</p>
             <Quote>
-              "Great — let's lock you in. Texting you the link now. Takes 30 seconds — you can Apple Pay it.
-              Stay on with me."
+              "Great — let's lock you in. Texting you the link now. Should take about a minute — you can
+              Apple Pay it. Stay on with me."
             </Quote>
             <p className="font-medium">Tap the button.</p>
             <p className="font-medium">Narrate while they tap:</p>
-            <Quote>"Got the text? Tap that — Stripe, totally secure. Face ID it..."</Quote>
+            <Quote>"Got the text? Tap that — Stripe, totally secure..."</Quote>
             <p className="font-medium">When it confirms:</p>
             <Quote>
               "Got it on my end. You're in for Tuesday at 2. Looking forward to working with you."
