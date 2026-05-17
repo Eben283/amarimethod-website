@@ -149,6 +149,16 @@ export async function sendPayLink(
   });
 }
 
+export async function staffCheckIn(
+  contactId: string,
+  payload: { typedName: string; signatureImage: string; agreed: boolean },
+): Promise<{ success: boolean; kvKey: string; signedAt: string; agreementVersion: string }> {
+  return fetchApi('/staff-checkin', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, ...payload }),
+  });
+}
+
 export async function markNotAFit(contactId: string): Promise<{ success: boolean; stage: string }> {
   return fetchApi('/staff-not-a-fit', {
     method: 'POST',

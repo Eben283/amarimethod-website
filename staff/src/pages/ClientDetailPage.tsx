@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle, ExternalLink, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
@@ -342,6 +342,25 @@ export default function ClientDetailPage() {
           )}
         </div>
       )}
+
+      {/* Check-in — hand the iPad to the client to sign policies */}
+      {(() => {
+        const signedTag = 'policies-signed-practice-member-v2026-04-17';
+        const alreadySigned = client.tags.includes(signedTag);
+        return (
+          <button
+            onClick={() => navigate(`/check-in/${client.id}`)}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[44px] mb-4 ${
+              alreadySigned
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : 'bg-amari-charcoal text-white hover:bg-black active:bg-black'
+            }`}
+          >
+            {alreadySigned ? <CheckCircle2 className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
+            {alreadySigned ? 'Policies signed — re-sign' : 'Check in (sign policies)'}
+          </button>
+        );
+      })()}
 
       {/* Pay Link — for disco-call closes and upgrades */}
       {client.phone && (
