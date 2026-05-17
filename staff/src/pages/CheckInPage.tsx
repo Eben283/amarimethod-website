@@ -156,7 +156,7 @@ export default function CheckInPage() {
           <ul className="space-y-2 text-sm">
             <li>
               <a
-                href="/missed-appointment-policy"
+                href="/client-info"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-amari-accent-warm underline underline-offset-2"
