@@ -128,6 +128,27 @@ export async function sendToolkit(contactId: string): Promise<{ success: boolean
   });
 }
 
+export type PayLinkProduct =
+  | 'initial-in-person'
+  | 'initial-virtual'
+  | '4-session-series'
+  | '8-session-series'
+  | 'upgrade-initial-to-4'
+  | 'upgrade-initial-to-8'
+  | 'upgrade-4-to-8'
+  | 'living-practice'
+  | 'follow-up';
+
+export async function sendPayLink(
+  contactId: string,
+  product: PayLinkProduct,
+): Promise<{ success: boolean; product: PayLinkProduct }> {
+  return fetchApi('/staff-send-paylink', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, product }),
+  });
+}
+
 export async function markNotAFit(contactId: string): Promise<{ success: boolean; stage: string }> {
   return fetchApi('/staff-not-a-fit', {
     method: 'POST',

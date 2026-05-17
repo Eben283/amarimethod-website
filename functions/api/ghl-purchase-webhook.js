@@ -104,6 +104,14 @@ const REQUESTED_SLOT_FIELD_KEYS = [
   "requested_session_type",
 ];
 
+// Calendar IDs for Initial Session products — derived from PRODUCT_MAP so this
+// stays in sync if products change. Used to detect when a contact already has
+// an Initial Session on the calendar (e.g., booked manually during a disco
+// call) so the webhook doesn't auto-book a duplicate from stale slot data.
+const INITIAL_CALENDAR_IDS = Object.values(PRODUCT_MAP)
+  .filter((p) => p.isInitialBooking)
+  .map((p) => p.calendarId);
+
 /**
  * Read a custom field value from a GHL contact object by FIELD KEY
  * (not ID). The contact's customFields array entries may have `fieldKey`
@@ -132,6 +140,42 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
       `[ghl-purchase-webhook] No requested_session_slot on contact ${contact.id} — assuming legacy funnel purchase, skipping appointment creation`,
     );
     return null;
+  }
+
+  // Guard against duplicate-booking: if the contact already has an upcoming
+  // appointment on an Initial Session calendar (e.g., Garrett booked it
+  // manually during a disco call), skip the auto-book. requested_session_slot
+  // can be stale from an abandoned website booking flow, which would
+  // otherwise cause a second appointment for a slot the customer never picked.
+  try {
+    const apptRes = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contact.id}/appointments`,
+    );
+    if (apptRes.ok) {
+      const apptData = await apptRes.json();
+      const appointments = apptData.events || apptData.appointments || [];
+      const now = Date.now();
+      const existing = appointments.find((a) => {
+        if (!INITIAL_CALENDAR_IDS.includes(a.calendarId)) return false;
+        const startMs = new Date(a.startTime).getTime();
+        if (!Number.isFinite(startMs) || startMs < now) return false;
+        const status = (a.appointmentStatus || "").toLowerCase();
+        if (status === "cancelled" || status === "noshow") return false;
+        return true;
+      });
+      if (existing) {
+        console.log(
+          `[ghl-purchase-webhook] Contact ${contact.id} already has upcoming Initial Session appointment (${existing.id} at ${existing.startTime}) — skipping auto-book to avoid duplicate`,
+        );
+        return existing;
+      }
+    }
+  } catch (err) {
+    // Guard failure is non-fatal — fall through to the original auto-book.
+    console.warn(
+      `[ghl-purchase-webhook] Duplicate-appointment check failed: ${err.message} — proceeding with auto-book`,
+    );
   }
 
   // Compute endTime by adding duration to start. Preserve any timezone

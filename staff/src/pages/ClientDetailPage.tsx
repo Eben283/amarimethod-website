@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Circle, Send, XCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, ApiError } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct } from '../lib/api';
 import type { ContactDetail, ContactAppointment } from '../types/staff';
 import SessionStats from '../components/SessionStats';
 import PaymentStatus from '../components/PaymentStatus';
@@ -36,6 +36,8 @@ export default function ClientDetailPage() {
   const [togglingPrepaid, setTogglingPrepaid] = useState(false);
   const [markingNotFit, setMarkingNotFit] = useState(false);
   const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
+  const [payLinkStatus, setPayLinkStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
+  const [showMorePayLinks, setShowMorePayLinks] = useState(false);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +126,22 @@ export default function ClientDetailPage() {
     }
   }
 
+  async function handleSendPayLink(product: PayLinkProduct) {
+    if (!client) return;
+    if (payLinkStatus[product] === 'sending') return;
+    setPayLinkStatus((s) => ({ ...s, [product]: 'sending' }));
+    try {
+      await sendPayLink(client.id, product);
+      setPayLinkStatus((s) => ({ ...s, [product]: 'sent' }));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setPayLinkStatus((s) => ({ ...s, [product]: 'error' }));
+    }
+  }
+
   async function handleNotAFit() {
     if (!client || markingNotFit) return;
     setMarkingNotFit(true);
@@ -140,6 +158,39 @@ export default function ClientDetailPage() {
     } finally {
       setMarkingNotFit(false);
     }
+  }
+
+  function renderPayLinkButton(product: PayLinkProduct, label: string, price: string) {
+    const status = payLinkStatus[product] || 'idle';
+    const isSending = status === 'sending';
+    const isSent = status === 'sent';
+    const isError = status === 'error';
+    return (
+      <button
+        key={product}
+        onClick={() => handleSendPayLink(product)}
+        disabled={isSending || isSent}
+        className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all min-h-[44px] ${
+          isSent
+            ? 'bg-green-50 text-green-700 border border-green-200'
+            : isError
+            ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'
+            : 'bg-white text-amari-charcoal border border-amari-border hover:bg-amari-light-sand active:bg-amari-light-sand disabled:opacity-50'
+        }`}
+      >
+        <span className="flex items-center gap-2">
+          {isSending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : isSent ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+          {isSent ? `${label} sent` : isError ? `${label} — retry` : `Send ${label}`}
+        </span>
+        <span className="text-xs text-amari-text-muted">{price}</span>
+      </button>
+    );
   }
 
   async function loadClient() {
@@ -289,6 +340,32 @@ export default function ClientDetailPage() {
               {notFitStatus === 'done' ? 'Marked — Future Potential' : notFitStatus === 'error' ? 'Failed — Tap to Retry' : 'Not a Fit'}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Pay Link — for disco-call closes and upgrades */}
+      {client.phone && (
+        <div className="mb-4 space-y-2">
+          <div className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-1">Send pay link</div>
+          {renderPayLinkButton('8-session-series', '8-Pack', '$1,295')}
+          {renderPayLinkButton('4-session-series', '4-Pack', '$720')}
+          {renderPayLinkButton('initial-in-person', 'Initial — In Person', '$225')}
+          {showMorePayLinks && (
+            <>
+              {renderPayLinkButton('initial-virtual', 'Initial — Virtual', '$225')}
+              {renderPayLinkButton('follow-up', 'Follow-up', '$190')}
+              {renderPayLinkButton('living-practice', 'Living Practice', '$347')}
+              {renderPayLinkButton('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
+              {renderPayLinkButton('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
+              {renderPayLinkButton('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+            </>
+          )}
+          <button
+            onClick={() => setShowMorePayLinks(!showMorePayLinks)}
+            className="w-full text-xs text-amari-text-muted hover:text-amari-charcoal py-2 min-h-[36px]"
+          >
+            {showMorePayLinks ? '— Show fewer' : '+ More products'}
+          </button>
         </div>
       )}
 
