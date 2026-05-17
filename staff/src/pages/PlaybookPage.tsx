@@ -392,8 +392,8 @@ function PartnerCallPlaybook() {
 
       <section className="staff-card mb-4">
         <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-1">
-          <li><strong>Open + frame</strong> → peer compliment, name the three possible outcomes</li>
-          <li><strong>Listen</strong> → their stuck client + their own body</li>
+          <li><strong>Open</strong> → peer compliment + reason for calling</li>
+          <li><strong>Listen</strong> → their body first, then their stuck client</li>
           <li><strong>Reflect</strong> → name the unserved slice in their book</li>
           <li><strong>Frame Amari as the second guide</strong> → not replacement, the stage their work doesn't cover</li>
           <li><strong>Invite + book</strong> → free session as give-before-you-get</li>
@@ -401,14 +401,12 @@ function PartnerCallPlaybook() {
       </section>
 
       <div className="space-y-3">
-        <StepSection title="1. Open + frame (0–1 min)">
-          <p>Specific compliment + reason for calling + name the three possible outcomes upfront. Removes "I'll think about it" as a dead-end.</p>
+        <StepSection title="1. Open (0–1 min)">
+          <p>Specific compliment + reason for calling. Don't pre-negotiate the exit ramps.</p>
           <Quote>
             "Hey [name], it's Garrett. I came across [specific — their gym, their content, a mutual client].
-            Most [trainers / golf pros / etc.] don't do that. The reason I'm calling is we serve similar
-            people, wanted to see if our work overlaps. Three ways we can leave this: one, this sounds
-            interesting and you come experience a free session yourself. Two, it's not a fit and we go our
-            separate ways. Three, you want to think about it and we book a specific follow-up. Sound fair?"
+            Most [trainers / golf pros / etc.] don't do that. The reason I'm calling — we serve similar
+            people. Wanted to see if our work overlaps. You got 15 min?"
           </Quote>
           <p className="font-medium pt-2">Variant — when there's a mutual client (much warmer than cold):</p>
           <Quote>
@@ -417,39 +415,52 @@ function PartnerCallPlaybook() {
           </Quote>
         </StepSection>
 
-        <StepSection title="2. Listen — stuck client + their own body (1–8 min)">
+        <StepSection title="2. Listen — their body first, then their stuck client (1–8 min)">
           <p>
-            Don't ask about their practice in general. Find the <strong>specific stuck client</strong> their
-            current toolkit can't reach. Their stuck client is who Amari serves.
+            Lead with their body. Trainers, golf pros, Pilates teachers — they're all carrying something.
+            Overuse, compensation, things they "train around." Get curious about it first.
           </p>
-          <p className="font-medium">Best question:</p>
-          <Quote>"Which clients do you find yourself wishing you had a better answer for?"</Quote>
-          <p className="font-medium">Follow-ups:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li><em>"What have they tried?"</em></li>
-            <li><em>"What does the plateau look like?"</em></li>
-            <li><em>"Who do you refer when that comes up — and how often does it hold?"</em></li>
-          </ul>
+          <p className="font-medium">Open with body:</p>
+          <Quote>"Before we talk about your clients — how's your own body holding up after all these years?"</Quote>
+          <p>or:</p>
+          <Quote>"You've been [coaching / training / teaching] how long? What's your body like at this point?"</Quote>
+          <p>
+            Listen the same way you would with any chronic-pain client. Permissible interjections:{' '}
+            <em>"Tell me more."</em> <em>"What does that feel like?"</em> <em>"What have you tried?"</em>
+          </p>
+          <p>
+            Their body is the entry point. They're going to feel something shift in the free session — that's
+            what converts them.
+          </p>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Then the wedge — their own body (around min 6)
+              Then — their stuck client (around min 5)
             </h4>
-            <p>Highest-leverage question. Their own pain is the real reason they'll show up.</p>
-            <Quote>"What's going on with your own body?"</Quote>
-            <p>If they admit pain or things they "train around" — that's the invite hook later. If they don't — fine, proceed.</p>
+            <p>Once you've heard about their body, pivot to their work:</p>
+            <Quote>"And which clients do you find yourself wishing you had a better answer for?"</Quote>
+            <p className="font-medium">Follow-ups:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li><em>"What have they tried?"</em></li>
+              <li><em>"What does the plateau look like?"</em></li>
+              <li><em>"Who do you refer when that comes up — and how often does it hold?"</em></li>
+            </ul>
+            <p>
+              You're locating the overlap: their body (what they'll feel shift in the session) + the stuck-client
+              pattern (who Amari serves once they've felt it).
+            </p>
           </div>
         </StepSection>
 
         <StepSection title="3. Reflect (8–10 min)">
-          <p>Mirror back their practice context, their stuck-client pattern, AND their body.</p>
+          <p>Mirror back their body first, then their stuck-client pattern.</p>
           <Quote>
-            "OK so what I'm hearing is — you work with [practice context], the clients you wish you had a
-            better answer for are [pattern], you refer to [where] and it doesn't always hold. And [if
-            applicable] you've got some stuff going on in your own [body part]. Is that about right?"
+            "OK so what I'm hearing is — you've got [body part / how long it's been there], comes with the
+            territory after [years coaching / training]. The clients you wish you had a better answer for are
+            [pattern], and you refer to [where] but it doesn't always hold. Is that about right?"
           </Quote>
           <p className="font-medium pt-2">
-            Don't: summarize abstractly. Skip ahead to telling them about Amari. They need to feel heard first.
+            Don't: summarize abstractly. Skip ahead to telling them about Amari.
           </p>
         </StepSection>
 
@@ -464,10 +475,12 @@ function PartnerCallPlaybook() {
             at home, for life."
           </Quote>
 
-          <p className="font-medium">Paradigm flip (trainer / fitness pro):</p>
+          <p className="font-medium">Different work (trainer / fitness pro):</p>
           <Quote>
-            "Most gym members are chasing <em>look good</em> — that's what gets them hurt. We upgrade the
-            goal from look good to feel good."
+            "We do different things. You're getting them stronger, more capable, looking like they want to
+            look. We're working on what's underneath — the body being out of balance. When someone's out of
+            balance, your work doesn't stick — they plateau or get hurt. Once they're back in balance, your
+            work starts landing again."
           </Quote>
 
           <p className="font-medium">Feeling over doing (trainer-language hook):</p>
@@ -489,9 +502,11 @@ function PartnerCallPlaybook() {
           <Quote>"OK so given all that — want to come feel what this is for yourself?"</Quote>
           <p>Wait for yes. Then the give-before-you-get ask:</p>
           <Quote>
-            "Honestly, reading about it won't tell you what this is. Twenty minutes on the table will. Let me
-            give you the full session — about an hour, totally free. The only ask: 1) try it, 2) tell me
-            what you noticed, 3) if you have stuck clients who'd be a fit, send them my way. Fair?"
+            "Honestly, reading about it won't tell you what this is. Twenty minutes of doing it will. You're
+            going to feel something shift in your [body part they named] — you'll do the work, I'll guide
+            you through it. Let me give you the full session — about an hour, totally free. The only ask:
+            1) try it, 2) tell me what you noticed, 3) if you have stuck clients who'd be a fit, send them
+            my way. Fair?"
           </Quote>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
