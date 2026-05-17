@@ -812,118 +812,161 @@
     }
 
     /* ===== Login Screen ===== */
+    /* ===== Editorial sign-in (replaced 2026-05-17) ===== */
     .login-screen {
       display: none;
-      text-align: center;
-      padding-top: 15vh;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 12vh 24px 48px;
+      text-align: left;
     }
     .login-screen.active { display: block; }
-    .login-screen img {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      margin-bottom: 1.25rem;
-    }
+    .login-screen > img { display: none; } /* hide old logo — header has brand */
     .login-screen h1 {
       font-family: var(--font-serif-primary);
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-weight: 400;
+      font-size: clamp(32px, 7.2vw, 44px);
+      letter-spacing: -0.025em;
+      line-height: 1.05;
       color: var(--color-text);
-      margin-bottom: 0.5rem;
+      margin: 0 0 28px;
+      text-wrap: balance;
     }
-    .login-screen .login-subtitle {
-      font-size: 0.9rem;
-      color: var(--color-text-secondary);
-      margin-bottom: 2rem;
+    .login-screen h1 em {
+      font-style: italic;
+      color: var(--color-accent-warm);
+      font-weight: 400;
     }
+    .login-screen .login-subtitle { display: none; } /* headline carries it */
+
     .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
     }
     .login-card label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 13px;
       font-weight: 500;
-      margin-bottom: 0.35rem;
-      color: var(--color-text);
+      letter-spacing: 0.01em;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
     }
     .login-card input[type="email"] {
       width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-size: 1rem;
-      background: var(--bg-primary);
+      padding: 10px 2px;
+      background: transparent;
+      border: 0;
+      border-bottom: 1.5px solid var(--color-text);
+      border-radius: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 17px;
+      font-weight: 400;
       color: var(--color-text);
       box-sizing: border-box;
-      margin-bottom: 1rem;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .login-card input[type="email"]::placeholder {
+      font-family: var(--font-serif-primary);
+      font-style: italic;
+      color: var(--color-text-muted);
+      opacity: 0.6;
     }
     .login-card input[type="email"]:focus {
       outline: none;
-      border-color: #5E8C8A;
-      box-shadow: 0 0 0 2px rgba(94, 140, 138, 0.2);
+      border-color: var(--color-accent-warm);
+      box-shadow: none;
+    }
+    .login-card input[type="email"][aria-invalid="true"] {
+      border-color: var(--color-accent-warm);
     }
     .login-card .login-btn {
       width: 100%;
-      padding: 0.85rem;
-      border: none;
-      border-radius: 8px;
-      background: #252525;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 16px 22px;
+      border: 0;
+      border-radius: 0;
+      background: var(--color-text);
+      color: var(--bg-primary);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .login-card .login-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    .login-card .login-btn:hover:not(:disabled) { background: var(--color-accent-warm); }
+    .login-card .login-btn:disabled { opacity: 0.65; cursor: default; }
     .login-error {
-      color: #dc2626;
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
+      color: var(--color-accent-warm);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: -12px 0 16px;
       display: none;
     }
     .login-resend {
       margin-top: 12px;
-      font-size: 0.8rem;
-      text-align: center;
-      color: #888;
+      font-size: 13px;
+      color: var(--color-text-muted);
     }
     .login-resend a {
-      color: #333;
-      text-decoration: underline;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border-dark);
+      padding-bottom: 1px;
+      text-decoration: none;
       cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
     }
+    .login-resend a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
     .login-success {
       display: none;
-      text-align: center;
-      padding: 1rem 0;
+      text-align: left;
+      padding: 0;
     }
-    .login-success .check-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: rgba(94, 140, 138, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 0.75rem;
-      font-size: 1.5rem;
-      color: #5E8C8A;
-    }
+    .login-success .check-circle { display: none; } /* drop the icon — editorial copy carries it */
     .login-success h3 {
       font-family: var(--font-serif-primary);
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-weight: 400;
+      font-size: clamp(22px, 5.4vw, 28px);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--color-text);
+      margin-bottom: 12px;
+      text-wrap: balance;
+    }
+    .login-success h3 em {
+      font-style: italic;
+      color: var(--color-accent-warm);
+      font-weight: 400;
     }
     .login-success p {
-      font-size: 0.9rem;
+      font-size: 14px;
+      line-height: 1.55;
       color: var(--color-text-secondary);
+      margin-bottom: 4px;
+    }
+    .login-success p.muted {
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+    .login-apply {
+      margin-top: 24px;
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+    .login-apply a {
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border-dark);
+      padding-bottom: 1px;
+      text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .login-apply a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
+    @media (max-width: 520px) {
+      .login-screen { padding: 8vh 20px 32px; }
+      .login-card input[type="email"] { font-size: 16px; }
     }
 
     /* Dashboard wrapper */
@@ -968,24 +1011,33 @@
 
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
-    <img src="/apple-touch-icon.png" alt="Amari Method">
-    <h1>Partner Toolkit</h1>
-    <p class="login-subtitle">Log in to access your referral tools and track your earnings.</p>
+    <h1>Partner <em>sign-in.</em></h1>
 
     <div class="login-card">
-      <form id="login-form">
-        <label for="login-email">Email address</label>
-        <input type="email" id="login-email" placeholder="you@example.com" required>
-        <div class="login-error" id="login-error"></div>
-        <button type="submit" class="login-btn" id="login-btn">Send Login Link</button>
+      <form id="login-form" autocomplete="on" novalidate>
+        <label for="login-email">Email</label>
+        <input
+          type="email"
+          id="login-email"
+          name="email"
+          placeholder="you@yourpractice.com"
+          required
+          autocomplete="email"
+          autofocus
+          aria-describedby="login-error"
+        >
+        <div class="login-error" id="login-error" role="alert"></div>
+        <button type="submit" class="login-btn" id="login-btn">Send sign-in link &nbsp;&rarr;</button>
       </form>
 
-      <div class="login-success" id="login-success">
-        <div class="check-circle">&#10003;</div>
-        <h3>Check Your Email</h3>
-        <p>We sent a login link to your email. Click it to access your toolkit.</p>
+      <div class="login-success" id="login-success" role="status" aria-live="polite">
+        <h3>Check your inbox <em>&mdash; we sent a link.</em></h3>
+        <p>The link is good for 10 minutes.</p>
+        <p class="muted">Don&rsquo;t see it? Check your spam folder.</p>
         <div class="login-resend" id="login-resend"></div>
       </div>
+
+      <p class="login-apply" id="login-apply">New partner? <a href="/partner">Apply here</a></p>
     </div>
   </div>
 
@@ -1299,7 +1351,7 @@
       if (remaining <= 0) {
         clearInterval(interval);
         btn.disabled = false;
-        btn.textContent = 'Send Login Link';
+        btn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
       } else {
         btn.textContent = 'Wait ' + remaining + 's';
       }
@@ -1319,6 +1371,10 @@
           successDiv.style.display = 'none';
           resendDiv.textContent = '';
           form.style.display = '';
+          var applyLine = document.getElementById('login-apply');
+          if (applyLine) applyLine.style.display = '';
+          var emailInput = document.getElementById('login-email');
+          if (emailInput) emailInput.focus();
         });
       } else {
         resendDiv.textContent = 'Resend in ' + remaining + 's';
@@ -1333,13 +1389,19 @@
     var loginBtn = document.getElementById('login-btn');
     var errorDiv = document.getElementById('login-error');
     var successDiv = document.getElementById('login-success');
+    var applyLine = document.getElementById('login-apply');
     var email = emailInput.value.trim().toLowerCase();
 
-    if (!email) return;
+    if (!email) {
+      emailInput.setAttribute('aria-invalid', 'true');
+      emailInput.focus();
+      return;
+    }
 
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Sending...';
+    loginBtn.textContent = 'Sending…';
     errorDiv.style.display = 'none';
+    emailInput.removeAttribute('aria-invalid');
 
     try {
       var res = await fetch('/api/partner-auth', {
@@ -1356,17 +1418,26 @@
       var form = e.target;
       form.style.display = 'none';
       successDiv.style.display = 'block';
+      if (applyLine) applyLine.style.display = 'none';
       startResendCooldown(document.getElementById('login-resend'), form, successDiv, 60);
     } catch (err) {
       errorDiv.textContent = err.message;
       errorDiv.style.display = 'block';
+      emailInput.setAttribute('aria-invalid', 'true');
       if (res && res.status === 429) {
         startBtnCooldown(loginBtn, 60);
       } else {
         loginBtn.disabled = false;
-        loginBtn.textContent = 'Send Login Link';
+        loginBtn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
       }
     }
+  });
+
+  // Clear error state as soon as user edits the field
+  document.getElementById('login-email').addEventListener('input', function () {
+    this.removeAttribute('aria-invalid');
+    var errorDiv = document.getElementById('login-error');
+    if (errorDiv) errorDiv.style.display = 'none';
   });
 
   // ── Logout ──
@@ -1379,7 +1450,10 @@
     document.getElementById('login-success').style.display = 'none';
     document.getElementById('login-error').style.display = 'none';
     document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').textContent = 'Send Login Link';
+    document.getElementById('login-btn').innerHTML = 'Send sign-in link &nbsp;&rarr;';
+    var applyLine = document.getElementById('login-apply');
+    if (applyLine) applyLine.style.display = '';
+    document.getElementById('login-email').removeAttribute('aria-invalid');
   });
 
   // ── Magic link token verification ──
