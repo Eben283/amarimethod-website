@@ -34,6 +34,9 @@
     <link rel="preload" href="images/video-cover.webp" as="image" fetchpriority="high">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload latin subset of the two font weights actually used above the fold -->
+    <link rel="preload" href="https://fonts.gstatic.com/s/bonanova/v12/B50NF7ZCpX7fcHfvIUB5jKJrPqySLQ.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://www.google-analytics.com">
@@ -332,7 +335,11 @@
 
     <!-- Critical above-the-fold CSS — inlined to eliminate render-blocking on first paint -->
     <style>
-    :root{--bg-primary:#FFFCF5;--bg-secondary:#F6F3E9;--bg-card:#FFFFFF;--color-primary:#252525;--color-text:#252525;--color-text-secondary:#484742;--color-text-muted:#666;--color-text-light:#6a6a6a;--color-border:#F0EADC;--color-border-dark:#C5CDD8;--color-accent-warm:#C56B4E;--color-button-primary-bg:#252525;--font-serif-primary:'Bona Nova',serif;--font-sans-primary:'Inter',system-ui,sans-serif}
+    /* Metric-adjusted fallback fonts — render at the same dimensions as Bona Nova/Inter
+       so when the real font swaps in, no layout shift. */
+    @font-face{font-family:'Bona Nova Fallback';src:local('Georgia');ascent-override:94%;descent-override:25%;line-gap-override:0%;size-adjust:102%}
+    @font-face{font-family:'Inter Fallback';src:local('Arial');ascent-override:90%;descent-override:22.43%;line-gap-override:0%;size-adjust:107.64%}
+    :root{--bg-primary:#FFFCF5;--bg-secondary:#F6F3E9;--bg-card:#FFFFFF;--color-primary:#252525;--color-text:#252525;--color-text-secondary:#484742;--color-text-muted:#666;--color-text-light:#6a6a6a;--color-border:#F0EADC;--color-border-dark:#C5CDD8;--color-accent-warm:#C56B4E;--color-button-primary-bg:#252525;--font-serif-primary:'Bona Nova','Bona Nova Fallback',serif;--font-sans-primary:'Inter','Inter Fallback',system-ui,sans-serif}
     *{margin:0;padding:0;box-sizing:border-box}
     html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
     body{font-family:var(--font-sans-primary);color:var(--color-text);background:var(--bg-primary);line-height:1.6;font-weight:400;letter-spacing:.3px;overflow-x:hidden}
@@ -388,8 +395,8 @@
     }
     </style>
     <!-- Full stylesheet — non-render-blocking via media=print onload swap -->
-    <link rel="preload" href="css/style-v5.css?v=36" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="css/style-v5.css?v=36"></noscript>
+    <link rel="preload" href="css/style-v5.css?v=37" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/style-v5.css?v=37"></noscript>
     <!-- Microsoft Clarity -->
     <script type="text/javascript">
         (function(c,l,a,r,i,t,y){
@@ -596,7 +603,7 @@
         <div class="container">
             <div class="about-content">
                 <div class="about-image-wrapper">
-                    <img src="images/Dr-Garrett-Headshot-2.avif" alt="Dr. Garrett Hewstan" class="about-image" width="854" height="1280" loading="lazy">
+                    <img src="images/Dr-Garrett-Headshot-2.avif" alt="Dr. Garrett Hewstan" class="about-image" width="640" height="959" loading="lazy">
                 </div>
                 <div class="about-text">
                     <span class="about-label">Meet Your Guide</span>
@@ -758,7 +765,7 @@
         <!-- Footer Top: Logo + Contact -->
         <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
             <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
+                <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="200" height="80" style="height: 34px; width: auto;" loading="lazy">
                 <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">A doctor who teaches you to heal yourself.</p>
             </div>
             <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
