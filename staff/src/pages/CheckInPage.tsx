@@ -108,7 +108,7 @@ export default function CheckInPage() {
             Your signature has been recorded. You're all set for your session.
           </p>
           <button
-            onClick={() => navigate(`/client/${id}`)}
+            onClick={() => navigate(`/client/${id}`, { replace: true })}
             className="portal-btn-secondary w-full min-h-[44px]"
           >
             Done
@@ -123,7 +123,7 @@ export default function CheckInPage() {
       <header className="sticky top-0 bg-white border-b border-amari-border z-10">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
-            onClick={() => navigate(`/client/${id}`)}
+            onClick={() => navigate(-1)}
             className="text-amari-charcoal min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2"
             aria-label="Back"
           >
