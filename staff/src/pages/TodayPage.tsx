@@ -193,6 +193,53 @@ export default function TodayPage() {
 
 // ── Day View ──
 
+// Assign each appointment a column within its overlap group so simultaneous
+// appointments render side-by-side instead of stacking on top of each other.
+// Returns id → { col, totalCols } where totalCols is the column count of the
+// overlap group the appointment belongs to (singletons get totalCols=1).
+function assignColumns(
+  appts: TodayAppointment[],
+): Map<string, { col: number; totalCols: number }> {
+  const sorted = [...appts].sort(
+    (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
+  );
+  const result = new Map<string, { col: number; totalCols: number }>();
+  let i = 0;
+  while (i < sorted.length) {
+    // Find the extent of this overlap group: keep extending while the next
+    // appointment starts before the group's running end time.
+    let groupEnd = new Date(sorted[i].endTime).getTime();
+    let j = i + 1;
+    while (j < sorted.length && new Date(sorted[j].startTime).getTime() < groupEnd) {
+      const endJ = new Date(sorted[j].endTime).getTime();
+      if (endJ > groupEnd) groupEnd = endJ;
+      j++;
+    }
+    // Greedy column assignment within the group: each appt takes the lowest
+    // column whose previous appointment has already ended.
+    const columnEnds: number[] = [];
+    const assigned: Array<{ id: string; col: number }> = [];
+    for (let k = i; k < j; k++) {
+      const aStart = new Date(sorted[k].startTime).getTime();
+      const aEnd = new Date(sorted[k].endTime).getTime();
+      let col = columnEnds.findIndex((e) => e <= aStart);
+      if (col === -1) {
+        col = columnEnds.length;
+        columnEnds.push(aEnd);
+      } else {
+        columnEnds[col] = aEnd;
+      }
+      assigned.push({ id: sorted[k].id, col });
+    }
+    const totalCols = columnEnds.length;
+    for (const { id, col } of assigned) {
+      result.set(id, { col, totalCols });
+    }
+    i = j;
+  }
+  return result;
+}
+
 function DayView({ appointments, date, onTapAppointment }: {
   appointments: TodayAppointment[];
   date: Date;
@@ -253,22 +300,35 @@ function DayView({ appointments, date, onTapAppointment }: {
           })}
 
           {/* Appointment blocks */}
-          {appointments.map((appt) => {
-            const top = getTop(appt.startTime);
-            const height = getHeight(appt.startTime, appt.endTime);
-            const startTime = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            return (
-              <button
-                key={appt.id}
-                onClick={() => onTapAppointment(appt)}
-                className="absolute left-14 right-2 rounded-lg bg-amari-accent-warm/15 border-l-3 border-amari-accent-warm px-2 py-1 text-left hover:bg-amari-accent-warm/25 transition-colors"
-                style={{ top: `${top}%`, height: `${Math.max(height, 4)}%`, borderLeftWidth: '3px' }}
-              >
-                <p className="text-xs font-medium text-amari-charcoal truncate">{appt.contactName}</p>
-                <p className="text-[10px] text-amari-text-muted">{startTime}</p>
-              </button>
-            );
-          })}
+          {(() => {
+            const layouts = assignColumns(appointments);
+            return appointments.map((appt) => {
+              const top = getTop(appt.startTime);
+              const height = getHeight(appt.startTime, appt.endTime);
+              const startTime = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+              const layout = layouts.get(appt.id) || { col: 0, totalCols: 1 };
+              const gapPx = layout.totalCols > 1 ? 2 : 0;
+              // Available horizontal space is calc(100% - 64px): 56px left
+              // for the time-label column + 8px right padding.
+              return (
+                <button
+                  key={appt.id}
+                  onClick={() => onTapAppointment(appt)}
+                  className="absolute rounded-lg bg-amari-accent-warm/15 border-l-3 border-amari-accent-warm px-2 py-1 text-left hover:bg-amari-accent-warm/25 transition-colors"
+                  style={{
+                    top: `${top}%`,
+                    height: `${Math.max(height, 4)}%`,
+                    left: `calc(56px + (100% - 64px) * ${layout.col / layout.totalCols})`,
+                    width: `calc((100% - 64px) / ${layout.totalCols} - ${gapPx}px)`,
+                    borderLeftWidth: '3px',
+                  }}
+                >
+                  <p className="text-xs font-medium text-amari-charcoal truncate">{appt.contactName}</p>
+                  <p className="text-[10px] text-amari-text-muted">{startTime}</p>
+                </button>
+              );
+            });
+          })()}
 
           {/* Now line */}
           {isToday(new Date(appointments[0].startTime)) && (() => {
