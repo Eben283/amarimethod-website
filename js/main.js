@@ -545,3 +545,23 @@ document.addEventListener('click', function(e) {
   wrapper.addEventListener('touchend', resumeScroll, { passive: true });
   wrapper.addEventListener('touchcancel', resumeScroll, { passive: true });
 })();
+
+// Hero video facade: swap poster image for Cloudflare Stream iframe on click
+(function() {
+  var facade = document.querySelector('.hero-video-facade');
+  if (!facade) return;
+  var uid = facade.dataset.streamUid;
+  if (!uid) return;
+
+  function activate() {
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/' + uid + '/iframe?autoplay=true&primaryColor=%23EBA584';
+    iframe.title = 'Dr. Garrett Hewstan introduces the Amari Method';
+    iframe.setAttribute('allow', 'accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;');
+    iframe.setAttribute('allowfullscreen', '');
+    facade.replaceWith(iframe);
+  }
+
+  facade.addEventListener('click', activate);
+  facade.addEventListener('touchstart', activate, { passive: true });
+})();
