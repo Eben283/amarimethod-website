@@ -483,11 +483,23 @@
         </div>
     </section>
     <script>
-    // Duplicate marquee track for seamless loop
+    // Duplicate marquee track for seamless loop — deferred off the critical path
+    // to avoid forced reflow during initial HTML parse (~290ms in PSI).
     (function(){
-      var track = document.getElementById('tTrack');
-      if (!track) return;
-      track.innerHTML += track.innerHTML;
+      function dupe(){
+        var track = document.getElementById('tTrack');
+        if (!track) return;
+        var frag = document.createDocumentFragment();
+        Array.prototype.forEach.call(track.children, function(child){
+          frag.appendChild(child.cloneNode(true));
+        });
+        track.appendChild(frag);
+      }
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(dupe, { timeout: 800 });
+      } else {
+        addEventListener('load', function(){ setTimeout(dupe, 0); });
+      }
     })();
     </script>
 
