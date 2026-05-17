@@ -330,7 +330,62 @@
     }
     </script>
 
-    <link rel="stylesheet" href="css/style-v5.css?v=35">
+    <!-- Critical above-the-fold CSS — inlined to eliminate render-blocking on first paint -->
+    <style>
+    :root{--bg-primary:#FFFCF5;--bg-secondary:#F6F3E9;--bg-card:#FFFFFF;--color-primary:#252525;--color-text:#252525;--color-text-secondary:#484742;--color-text-muted:#666;--color-text-light:#6a6a6a;--color-border:#F0EADC;--color-border-dark:#C5CDD8;--color-accent-warm:#C56B4E;--color-button-primary-bg:#252525;--font-serif-primary:'Bona Nova',serif;--font-sans-primary:'Inter',system-ui,sans-serif}
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
+    body{font-family:var(--font-sans-primary);color:var(--color-text);background:var(--bg-primary);line-height:1.6;font-weight:400;letter-spacing:.3px;overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;height:auto}
+    h1,h2,h3,h4,h5,h6{font-family:var(--font-serif-primary);color:var(--color-text);line-height:1.15;font-weight:400;letter-spacing:-.5px}
+    h1{font-size:clamp(2.5rem,8vw,5.5rem)}
+    nav{position:sticky;top:0;z-index:1000;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:color-mix(in oklab,var(--bg-primary) 88%,transparent);border-bottom:1px solid var(--color-border)}
+    .nav-inner{max-width:1360px;margin:0 auto;padding:14px 32px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:32px}
+    .logo{flex-shrink:0;display:flex;align-items:center;gap:10px}
+    .nav-menu{display:flex;list-style:none;gap:28px;align-items:center;justify-content:center;margin:0;padding:0}
+    .nav-menu a{font-family:var(--font-sans-primary);font-size:14px;font-weight:400;color:var(--color-text-secondary);padding:6px 0}
+    .nav-right{display:flex;gap:12px;align-items:center}
+    .nav-login{font-family:var(--font-sans-primary);font-size:13px;color:var(--color-text-muted);text-decoration:none}
+    .menu-toggle{display:none !important;background:none;border:none;cursor:pointer;font-family:var(--font-sans-primary);font-size:1.5rem;font-weight:600;color:var(--color-text);padding:.5rem;min-width:44px;min-height:44px;margin-left:auto}
+    nav > .btn-primary{font-size:14px;padding:12px 18px}
+    .hero{padding:9rem 2.5rem 7rem;text-align:center;background:var(--bg-secondary);border-bottom:1px solid var(--color-border)}
+    .hero.hero--split{text-align:left;padding:5rem 2.5rem 5rem}
+    .hero-split{display:grid;grid-template-columns:1.1fr 1fr;gap:3rem;align-items:center;max-width:1200px;margin:0 auto}
+    .hero-split .hero-copy{text-align:left}
+    .hero-split .hero-copy h1{margin-bottom:1.5rem;font-size:clamp(3rem,6vw,5.5rem);line-height:1.0;letter-spacing:-.03em;font-weight:300}
+    .hero-eyebrow{font-family:var(--font-sans-primary);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--color-text-muted);margin-bottom:1.5rem}
+    .hero .hero-subtitle{font-size:1.15rem;max-width:600px;margin:0 0 2rem;line-height:1.6;text-align:left}
+    .hero-cta{display:flex;gap:1rem;margin-top:1.5rem;flex-wrap:wrap}
+    .hero-meta-line{display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;margin-top:1.5rem;font-size:.85rem;color:var(--color-text-muted)}
+    .hero-video{border-radius:8px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.1);aspect-ratio:4 / 5;max-height:384px;max-width:307px;margin:0 auto;background:var(--color-primary)}
+    .hero-video video,.hero-video iframe{width:100%;height:100%;border:none;display:block;object-fit:cover;object-position:43% center}
+    .btn-primary{background:var(--color-button-primary-bg);color:#fff;display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border:1px solid transparent;border-radius:999px;font-family:var(--font-sans-primary);font-size:14px;font-weight:500;letter-spacing:.01em;cursor:pointer;text-decoration:none;white-space:nowrap}
+    .btn-secondary{background:transparent;color:var(--color-text);font-weight:500;display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border:1px solid var(--color-border-dark);border-radius:999px;font-family:var(--font-sans-primary);font-size:14px;letter-spacing:.01em;cursor:pointer;text-decoration:none;white-space:nowrap}
+    .btn-content{display:flex;align-items:center;gap:8px}
+    .btn-text{display:inline}
+    .arrow{display:inline-block}
+    @media(max-width:768px){
+      .nav-inner{grid-template-columns:auto 1fr auto;padding:12px 20px}
+      .menu-toggle{display:block !important;font-size:1.25rem;color:var(--color-text);padding:.25rem;background:none;border:none;cursor:pointer;order:3}
+      .nav-menu{display:none !important;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:0;background:var(--bg-primary);border-bottom:1px solid var(--color-border);padding:1rem 0;z-index:999;width:100%;margin:0}
+      .nav-menu.active{display:flex !important}
+      .nav-menu li{width:100%;border-bottom:1px solid var(--color-border)}
+      .nav-menu a{display:block;padding:1rem 1.5rem;font-size:14px}
+      .nav-right{display:none !important}
+      h1{font-size:3.5rem}
+      .hero-split{grid-template-columns:1fr;gap:2rem}
+      .hero-split .hero-copy{text-align:center}
+      .hero .hero-subtitle{text-align:center;margin-left:auto;margin-right:auto}
+      .hero-cta{justify-content:center}
+      .hero-meta-line{justify-content:center}
+      .hero-eyebrow{text-align:center}
+      .btn-primary,.btn-secondary{white-space:normal}
+    }
+    </style>
+    <!-- Full stylesheet — non-render-blocking via media=print onload swap -->
+    <link rel="preload" href="css/style-v5.css?v=36" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="css/style-v5.css?v=36"></noscript>
     <!-- Microsoft Clarity -->
     <script type="text/javascript">
         (function(c,l,a,r,i,t,y){
@@ -379,10 +434,12 @@
                 </div>
             </div>
             <div class="hero-video">
-                <video controls poster="images/video-cover.webp">
-                    <source src="videos/dr-garrett-intro.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+                <iframe
+                    src="https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/b61a20ec3b5a34d4235dfbf223eb6138/iframe?poster=https%3A%2F%2Famarimethod.com%2Fimages%2Fvideo-cover.webp&primaryColor=%23EBA584"
+                    loading="lazy"
+                    title="Dr. Garrett Hewstan introduces the Amari Method"
+                    allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                    allowfullscreen></iframe>
             </div>
         </div>
     </section>
