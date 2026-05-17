@@ -22,7 +22,6 @@ export default function CheckInPage() {
 
   const [typedName, setTypedName] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
-  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [done, setDone] = useState(false);
@@ -57,7 +56,6 @@ export default function CheckInPage() {
   const canSubmit =
     typedName.trim().length >= 2 &&
     signature !== null &&
-    agreed &&
     !submitting;
 
   async function handleSubmit() {
@@ -68,7 +66,6 @@ export default function CheckInPage() {
       await staffCheckIn(id, {
         typedName: typedName.trim(),
         signatureImage: signature,
-        agreed: true,
       });
       setDone(true);
     } catch (err) {
@@ -203,19 +200,11 @@ export default function CheckInPage() {
           <span className="text-xs font-medium text-amari-text-muted uppercase tracking-wider">
             Signature
           </span>
-          <SignaturePad onChange={setSignature} className="mt-1 mb-4" />
-
-          <label className="flex items-start gap-3 cursor-pointer min-h-[44px]">
-            <input
-              type="checkbox"
-              checked={agreed}
-              onChange={(e) => setAgreed(e.target.checked)}
-              className="mt-1 w-5 h-5 accent-amari-accent-warm flex-shrink-0"
-            />
-            <span className="text-sm text-amari-charcoal/90 leading-relaxed">
-              I have read and agree to the Missed Appointment Policy and the Practice Member Agreement.
-            </span>
-          </label>
+          <SignaturePad onChange={setSignature} className="mt-1 mb-2" />
+          <p className="text-xs text-amari-text-muted leading-relaxed">
+            By signing above, I confirm I have read and agree to the Missed Appointment Policy
+            and the Practice Member Agreement.
+          </p>
         </section>
 
         {submitError && (

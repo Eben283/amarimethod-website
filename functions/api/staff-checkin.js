@@ -67,7 +67,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await context.request.json();
-    const { contactId, typedName, signatureImage, agreed } = body;
+    const { contactId, typedName, signatureImage } = body;
 
     if (!contactId) {
       return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
@@ -78,9 +78,7 @@ export async function onRequestPost(context) {
     if (!signatureImage || !signatureImage.startsWith("data:image/")) {
       return new Response(JSON.stringify({ error: "Signature is required" }), { status: 400, headers });
     }
-    if (agreed !== true) {
-      return new Response(JSON.stringify({ error: "Agreement checkbox must be checked" }), { status: 400, headers });
-    }
+    // The act of signing is the agreement — no separate checkbox required.
 
     // Cap signature size to prevent abuse — 500KB base64 is way more than a
     // signature canvas at 600x200 produces (~30-80KB typical).
@@ -98,7 +96,6 @@ export async function onRequestPost(context) {
       typedName: typedName.trim(),
       signatureImage,
       agreementVersion: AGREEMENT_VERSION,
-      agreed: true,
       signedAt: timestamp,
       staffUserId: tokenPayload.userId || tokenPayload.sub || null,
       ip,
@@ -138,21 +135,28 @@ export async function onRequestPost(context) {
     }
 
     try {
+      // Embed the signature inline as an HTML img tag so it lives in GHL
+      // alongside the metadata, not only in our KV. GHL note rendering
+      // accepts <img> with data URLs; even if a future renderer strips
+      // them, the base64 bytes are preserved in the note body and
+      // remain extractable.
+      const noteBody = [
+        `Practice policies signed`,
+        ``,
+        `Agreement version: ${AGREEMENT_VERSION}`,
+        `Typed name: ${typedName.trim()}`,
+        `Signed at: ${timestamp}`,
+        `IP: ${ip || "—"}`,
+        ``,
+        `Backup record in staff dashboard KV: ${kvKey}`,
+        ``,
+        `Signature:`,
+        `<img src="${signatureImage}" alt="Signature of ${typedName.trim()}" style="max-width: 480px; border: 1px solid #ccc; background: white;" />`,
+      ].join("\n");
+
       await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`, {
         method: "POST",
-        body: JSON.stringify({
-          body: [
-            `Practice policies signed`,
-            ``,
-            `Agreement version: ${AGREEMENT_VERSION}`,
-            `Typed name: ${typedName.trim()}`,
-            `Signed at: ${timestamp}`,
-            `IP: ${ip || "—"}`,
-            ``,
-            `Signature image stored in staff dashboard KV at:`,
-            `  ${kvKey}`,
-          ].join("\n"),
-        }),
+        body: JSON.stringify({ body: noteBody }),
       });
     } catch (err) {
       console.error("[staff-checkin] Note add failed:", err.message);

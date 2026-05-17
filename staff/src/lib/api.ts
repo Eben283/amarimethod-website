@@ -151,7 +151,7 @@ export async function sendPayLink(
 
 export async function staffCheckIn(
   contactId: string,
-  payload: { typedName: string; signatureImage: string; agreed: boolean },
+  payload: { typedName: string; signatureImage: string },
 ): Promise<{ success: boolean; kvKey: string; signedAt: string; agreementVersion: string }> {
   return fetchApi('/staff-checkin', {
     method: 'POST',
