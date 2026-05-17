@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Force all relative paths in this file to resolve against the site root.
+       Without this, a 404 served at a deep URL like /foo/bar/baz makes the
+       browser try to load /foo/bar/css/style-v5.css, /foo/bar/images/AmariLogo.avif,
+       etc. — and the page renders unstyled with broken images. -->
+  <base href="/">
   <title>Page Not Found | Amari Method</title>
   <meta name="description" content="The page you're looking for doesn't exist. Return to the Amari Method homepage.">
   <meta name="robots" content="noindex, nofollow">

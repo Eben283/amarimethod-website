@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Force all relative paths in this file to resolve against the site root.
+       Without this, a 404 served at a deep URL like /foo/bar/baz makes the
+       browser try to load /foo/bar/css/style-v5.css, /foo/bar/images/AmariLogo.avif,
+       etc. — and the page renders unstyled with broken images. -->
+  <base href="/">
   <title>Page Not Found | Amari Method</title>
   <meta name="description" content="The page you're looking for doesn't exist. Return to the Amari Method homepage.">
   <meta name="robots" content="noindex, nofollow">
@@ -16,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
-  <link rel="stylesheet" href="css/style-v5.css?v=15">
+  <link rel="stylesheet" href="css/style-v5.css?v=37">
 
   <!-- Google Analytics -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
@@ -110,7 +115,7 @@
                 <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Freedom From Pain. Results For Life.</p>
             </div>
             <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarihealth.com &nbsp;·&nbsp; San Francisco, CA
+                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
             </p>
         </div>
         <!-- Footer Links -->
