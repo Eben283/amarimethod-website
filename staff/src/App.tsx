@@ -6,6 +6,7 @@ import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import BalancesPage from './pages/BalancesPage';
+import PlaybookPage from './pages/PlaybookPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -93,6 +94,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav>
               <BalancesPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/playbook"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <PlaybookPage />
             </LayoutWithNav>
           </ProtectedRoute>
         }
