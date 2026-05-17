@@ -357,7 +357,7 @@ export default function ClientDetailPage() {
             }`}
           >
             {alreadySigned ? <CheckCircle2 className="w-4 h-4" /> : <ClipboardCheck className="w-4 h-4" />}
-            {alreadySigned ? 'Policies signed — re-sign' : 'Check in (sign policies)'}
+            {alreadySigned ? 'Policies signed' : 'Check in (sign policies)'}
           </button>
         );
       })()}
