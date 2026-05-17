@@ -34,25 +34,12 @@ export default function PlaybookPage() {
     <div className="px-4 pt-4 pb-8 max-w-2xl mx-auto">
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Discovery Call</h1>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
-          15-minute call. Recommend a session or series and book it.
-        </p>
         <p className="text-sm text-amari-charcoal/80 leading-relaxed">
-          The form is a consult. The outcome is a sale. The consultative form is <em>how</em> you sell — not
-          a substitute for selling. The caller already knows what hurts. They booked to find someone who can
-          credibly tell them what to do.
+          15-minute call. Recommend a session or series and book it.
         </p>
       </header>
 
-      <section className="staff-card mb-3">
-        <h2 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">Intent</h2>
-        <p className="text-sm text-amari-charcoal/90 leading-relaxed mb-2">
-          Goal of every call: recommend a tier, book it.
-        </p>
-        <p className="text-sm text-amari-charcoal/90 leading-relaxed mb-3">
-          Recommending isn't pressure. The caller is in pain, the work helps, a confident recommendation is
-          what they came for. Under-recommending is the bigger risk.
-        </p>
+      <section className="staff-card mb-4">
         <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-1">
           <li><strong>Listen</strong> → they trust a recommendation only after they feel heard</li>
           <li><strong>Reflect</strong> → proves you understood, earns the right to diagnose</li>
@@ -127,10 +114,7 @@ export default function PlaybookPage() {
         </StepSection>
 
         <StepSection title="2. Reflect (8–10 min)">
-          <p>
-            Mirror their specifics back. The most-skipped step, and the main reason callers don't buy — they
-            won't trust a recommendation from someone who hasn't proven they heard.
-          </p>
+          <p>Mirror their specifics back.</p>
           <p className="font-medium">Format:</p>
           <Quote>
             "OK so what I'm hearing is — [body part / duration] → [what they've tried + why it failed] →
@@ -145,14 +129,13 @@ export default function PlaybookPage() {
             "8 months of lower back pain, PT helped briefly but didn't hold, MRI on the table, and it's
             affecting things you care about like picking up your kid. Is that about right?"
           </Quote>
-          <p>This also lets them correct what you missed — they often add a critical detail here.</p>
           <p className="font-medium pt-2">
             Don't: summarize abstractly. Interpret yet. Say "I hear you." Skip ahead to "here's what Amari is."
           </p>
         </StepSection>
 
         <StepSection title="3. Diagnose + reframe (10–12 min)">
-          <p>Tie it to what <em>they</em> said. No generic Amari rundown.</p>
+          <p>Tie it to what <em>they</em> said.</p>
           <p className="font-medium">Underlying frame:</p>
           <Quote>
             "Your body is a suspension bridge. Every part is designed to hold the load equally. When one part
@@ -221,10 +204,8 @@ export default function PlaybookPage() {
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
               Timeline language
             </h4>
-            <p>The real work takes 3–6 months. Lead with the short-term shift, then frame the longer arc.</p>
-            <p className="mt-2">
-              <strong>Don't say:</strong> <em>"It takes months to learn anything."</em> Sounds like "you won't
-              feel better for months." Both <em>learn</em> and <em>anything</em> deflate.
+            <p>
+              <strong>Don't say:</strong> <em>"It takes months to learn anything."</em>
             </p>
             <p className="font-medium mt-3">Say:</p>
             <Quote>
@@ -239,12 +220,11 @@ export default function PlaybookPage() {
         </StepSection>
 
         <StepSection title="4. Recommend + book (12–14 min)">
+          <p className="font-medium">Ask permission first:</p>
+          <Quote>"Want to know what I'd recommend?"</Quote>
           <p>
-            The close. The previous 12 minutes earned you the right to recommend; this is where you do it.
-          </p>
-          <p>
-            <strong>Don't:</strong> <em>"Do you want to book your first session?"</em> That hands the choice
-            back.
+            Wait for yes. Then make the recommendation <em>for</em> them — don't ask{' '}
+            <em>"Do you want to book your first session?"</em>
           </p>
           <p className="font-medium">Do:</p>
           <Quote>
@@ -294,7 +274,7 @@ export default function PlaybookPage() {
                 </tr>
               </tbody>
             </table>
-            <p className="text-amari-text-muted mt-2">Pick one. Don't lay all three out as a menu.</p>
+            <p className="text-amari-text-muted mt-2">Pick one tier.</p>
           </div>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
@@ -307,8 +287,7 @@ export default function PlaybookPage() {
               Takes 5 minutes."</em>
             </p>
             <p className="mt-3">
-              <strong>4-pack $720 / 8-pack $1,295: pay on the call.</strong> The doubt window between yes
-              and paid kills the bigger packages.
+              <strong>4-pack $720 / 8-pack $1,295: pay on the call.</strong>
             </p>
             <ol className="list-decimal pl-5 space-y-1">
               <li>Book the appointment in GHL during the call.</li>
@@ -340,19 +319,14 @@ export default function PlaybookPage() {
               <li>No link until you've heard a clear verbal yes</li>
               <li>Don't hang up before payment confirms</li>
               <li>Don't go silent while they pay — narrate</li>
-              <li>Buyer's remorse spikes in post-payment silence — fill it with confirmation</li>
+              <li>Confirm immediately after payment lands</li>
             </ul>
           </div>
 
         </StepSection>
 
         <StepSection title="Handling push-back + objections (anytime)">
-          <p>
-            These can come up anywhere in the call, not just at the close. Treat them as questions worth
-            answering — not battles.
-          </p>
-
-          <div className="pt-2">
+          <div>
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
               Push-back on the close
             </h4>
