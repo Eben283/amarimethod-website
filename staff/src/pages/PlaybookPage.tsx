@@ -135,7 +135,9 @@ export default function PlaybookPage() {
         </StepSection>
 
         <StepSection title="3. Diagnose + reframe (10–12 min)">
-          <p>Tie it to what <em>they</em> said.</p>
+          <p className="font-medium">Ask permission first:</p>
+          <Quote>"OK so given all that — want to hear what I think?"</Quote>
+          <p>Wait for yes. Tie everything that follows to what <em>they</em> said.</p>
           <p className="font-medium">Underlying frame:</p>
           <Quote>
             "Your body is a suspension bridge. Every part is designed to hold the load equally. When one part
@@ -220,10 +222,8 @@ export default function PlaybookPage() {
         </StepSection>
 
         <StepSection title="4. Recommend + book (12–14 min)">
-          <p className="font-medium">Ask permission first:</p>
-          <Quote>"Want to know what I'd recommend?"</Quote>
           <p>
-            Wait for yes. Then make the recommendation <em>for</em> them — don't ask{' '}
+            Make the recommendation <em>for</em> them — don't ask{' '}
             <em>"Do you want to book your first session?"</em>
           </p>
           <p className="font-medium">Do:</p>
