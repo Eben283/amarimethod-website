@@ -8,7 +8,9 @@ import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const BASE_URL = "https://www.amarimethod.com";
+// GHL payment links are hosted on the GHL-managed subdomain, NOT the
+// main site. Confirmed via existing usage in portal/src/components/QuickActions.tsx.
+const BASE_URL = "https://link.amarimethod.com";
 
 const PRODUCTS = {
   "initial-in-person": {
