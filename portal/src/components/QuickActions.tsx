@@ -52,7 +52,7 @@ function getSeriesActions(client: ClientData): Action[] {
         description: 'Continue with 3 more sessions — your $225 is already applied.',
         price: '$495',
         href: PAYMENT_LINKS.upgrade_to_4,
-        external: true,
+        
         testId: 'upgrade-to-4-card',
       },
       {
@@ -60,7 +60,7 @@ function getSeriesActions(client: ClientData): Action[] {
         description: 'Full 8-step protocol + Living Practice — your $225 is already applied.',
         price: '$1,070',
         href: PAYMENT_LINKS.upgrade_to_8,
-        external: true,
+        
         testId: 'upgrade-to-8-card',
       },
     ];
@@ -87,7 +87,7 @@ function getSeriesActions(client: ClientData): Action[] {
       description: pack4Description,
       price: '$720',
       href: PAYMENT_LINKS.series_4,
-      external: true,
+      
       testId: 'series-4-card',
     },
     {
@@ -95,7 +95,7 @@ function getSeriesActions(client: ClientData): Action[] {
       description: pack8Description,
       price: '$1,295',
       href: PAYMENT_LINKS.series_8,
-      external: true,
+      
       testId: 'series-8-card',
     },
   ];
@@ -121,8 +121,8 @@ function ActionCard({ a }: { a: Action }) {
     return (
       <a
         href={a.href}
-        target={a.external ? '_blank' : undefined}
-        rel={a.external ? 'noopener noreferrer' : undefined}
+        
+        
         className={className}
         data-testid={a.testId}
       >
@@ -161,8 +161,8 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         onOpen={() => setShowInitialChoice(true)}
         onClose={() => setShowInitialChoice(false)}
         choices={[
-          { label: 'In person', href: BOOKING_URLS.initial_inperson, external: true },
-          { label: 'Virtual', href: BOOKING_URLS.initial_virtual, external: true, ghost: true },
+          { label: 'In person', href: BOOKING_URLS.initial_inperson,  },
+          { label: 'Virtual', href: BOOKING_URLS.initial_virtual,  ghost: true },
         ]}
       />
     );
@@ -214,7 +214,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         description: 'Standalone video program for daily home practice.',
         price: '$347',
         href: PAYMENT_LINKS.living_practice,
-        external: true,
+        
         testId: 'living-practice-card',
       };
 
@@ -222,7 +222,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
     label: 'Tools for the protocols',
     description: 'Equipment we recommend for your practice at home.',
     href: TOOLS_URL,
-    external: true,
+    
   };
 
   const giftCardAction: Action | null = GIFT_CARD_URL
@@ -230,7 +230,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         label: 'Buy a gift card',
         description: 'Give the session that changes everything.',
         href: GIFT_CARD_URL,
-        external: true,
+        
       }
     : null;
 
@@ -239,7 +239,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         label: 'Referral toolkit',
         description: 'Refer clients & track your referrals.',
         href: 'https://www.amarimethod.com/partner-app',
-        external: true,
+        
         testId: 'partner-toolkit-card',
       }
     : null;
@@ -352,8 +352,8 @@ function BookingCard({
               <a
                 key={c.label}
                 href={c.href}
-                target={c.external ? '_blank' : undefined}
-                rel={c.external ? 'noopener noreferrer' : undefined}
+                
+                
                 className={cls}
                 style={style}
               >
