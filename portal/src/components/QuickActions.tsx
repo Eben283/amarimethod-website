@@ -121,8 +121,8 @@ function ActionCard({ a }: { a: Action }) {
     return (
       <a
         href={a.href}
-        
-        
+        target={a.external ? '_blank' : undefined}
+        rel={a.external ? 'noopener noreferrer' : undefined}
         className={className}
         data-testid={a.testId}
       >
@@ -214,7 +214,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         description: 'Standalone video program for daily home practice.',
         price: '$347',
         href: PAYMENT_LINKS.living_practice,
-        
+        external: true, // its own app — keep portal open behind it
         testId: 'living-practice-card',
       };
 
