@@ -57,6 +57,7 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
       endTime: addDays(now, 4, 12, 10),
       status: 'confirmed',
       appointmentType: 'Follow-up Virtual',
+      meetingUrl: 'https://meet.google.com/preview-xxx-yyy',
     };
     const later: Appointment = {
       id: 'a-later',

@@ -208,9 +208,15 @@ function toIcsDate(iso: string): string {
 
 function buildIcsUrl(apt: Appointment): string {
   const format = detectFormat(apt);
+  const meet = apt.meetingUrl || '';
   const description = format === 'Virtual'
-    ? 'Virtual session with Dr. Garrett. Meeting link arrives in your calendar invite from Amari Method — check that email for the Google Meet URL.'
+    ? (meet
+        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
+        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
     : 'In-person session with Dr. Garrett at Amari Method.';
+  const locationLine = meet
+    ? `LOCATION:${meet}`
+    : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -222,6 +228,7 @@ function buildIcsUrl(apt: Appointment): string {
     `DTEND:${toIcsDate(apt.endTime)}`,
     `SUMMARY:${apt.title || 'Amari Method session'}`,
     `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    ...(locationLine ? [locationLine] : []),
     'END:VEVENT',
     'END:VCALENDAR',
   ];
@@ -252,18 +259,38 @@ function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onResc
             <span className="cp-dot">·</span>
             <span>with <b>Dr. Garrett</b></span>
           </p>
-          {format === 'Virtual' && (
-            <p className="cp-next-note">Meeting link is in your calendar invite from Dr. Garrett.</p>
+          {format === 'Virtual' && !apt.meetingUrl && (
+            <p className="cp-next-note">Google Meet link is in your confirmation email.</p>
           )}
         </div>
         <div className="cp-next-actions">
-          <a
-            href={buildIcsUrl(apt)}
-            download={`amari-session-${apt.id}.ics`}
-            className="cp-btn cp-btn-primary"
-          >
-            <span>Add to calendar</span><span className="cp-arrow">→</span>
-          </a>
+          {format === 'Virtual' && apt.meetingUrl ? (
+            <a
+              href={apt.meetingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cp-btn cp-btn-primary"
+            >
+              <span>Join Google Meet</span><span className="cp-arrow">→</span>
+            </a>
+          ) : (
+            <a
+              href={buildIcsUrl(apt)}
+              download={`amari-session-${apt.id}.ics`}
+              className="cp-btn cp-btn-primary"
+            >
+              <span>Add to calendar</span><span className="cp-arrow">→</span>
+            </a>
+          )}
+          {format === 'Virtual' && apt.meetingUrl && (
+            <a
+              href={buildIcsUrl(apt)}
+              download={`amari-session-${apt.id}.ics`}
+              className="cp-btn cp-btn-ghost"
+            >
+              Add to calendar
+            </a>
+          )}
           {initialOnly ? (
             <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20initial%20session" className="cp-btn cp-btn-ghost">
               Email to change

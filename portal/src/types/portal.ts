@@ -21,6 +21,7 @@ export interface Appointment {
   endTime: string;
   status: 'confirmed' | 'completed' | 'showed' | 'cancelled' | 'no_show';
   appointmentType: string;
+  meetingUrl?: string | null;
 }
 
 export interface PortalDataResponse {
