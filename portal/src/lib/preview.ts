@@ -1,0 +1,155 @@
+// Synthetic data for previewing the portal without auth.
+// Triggered by ?preview=<state> on the URL.
+import type { PortalDataResponse, Appointment } from '../types/portal';
+
+export type PreviewState = 'empty' | 'active' | 'series' | 'completed' | 'loading' | 'error';
+
+export function getPreviewState(): PreviewState | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get('preview');
+  if (!p) return null;
+  if (['empty', 'active', 'series', 'completed', 'loading', 'error'].includes(p)) {
+    return p as PreviewState;
+  }
+  return null;
+}
+
+function addDays(d: Date, days: number, hour = 10, minute = 0): string {
+  const x = new Date(d);
+  x.setDate(x.getDate() + days);
+  x.setHours(hour, minute, 0, 0);
+  return x.toISOString();
+}
+
+function subDays(d: Date, days: number, hour = 10, minute = 0): string {
+  return addDays(d, -days, hour, minute);
+}
+
+export function getPreviewData(state: PreviewState): PortalDataResponse | null {
+  if (state === 'loading' || state === 'error') return null;
+  const now = new Date();
+
+  if (state === 'empty') {
+    return {
+      client: {
+        contactId: 'preview-empty',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: 'none',
+        sessionsCompleted: 0,
+        sessionsRemaining: 0,
+        hasLivingPractice: false,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: [],
+      upcomingAppointments: [],
+    };
+  }
+
+  if (state === 'active') {
+    const next: Appointment = {
+      id: 'a-next',
+      title: 'Follow-up session',
+      startTime: addDays(now, 4, 11, 20),
+      endTime: addDays(now, 4, 12, 10),
+      status: 'confirmed',
+      appointmentType: 'Follow-up Virtual',
+    };
+    const later: Appointment = {
+      id: 'a-later',
+      title: 'Follow-up session',
+      startTime: addDays(now, 11, 11, 20),
+      endTime: addDays(now, 11, 12, 10),
+      status: 'confirmed',
+      appointmentType: 'Follow-up Virtual',
+    };
+    const past: Appointment[] = [
+      { id: 'a-p1', title: 'Initial assessment', startTime: subDays(now, 7, 10, 0), endTime: subDays(now, 7, 11, 0), status: 'completed', appointmentType: 'Initial In-Person' },
+      { id: 'a-p2', title: 'Discovery call', startTime: subDays(now, 14, 11, 40), endTime: subDays(now, 14, 11, 55), status: 'completed', appointmentType: 'Discovery Virtual' },
+    ];
+    return {
+      client: {
+        contactId: 'preview-active',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: 'none',
+        sessionsCompleted: 2,
+        sessionsRemaining: 0,
+        hasLivingPractice: false,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: past,
+      upcomingAppointments: [next, later],
+    };
+  }
+
+  if (state === 'series') {
+    const next: Appointment = {
+      id: 'a-next',
+      title: 'Follow-up session',
+      startTime: addDays(now, 1, 10, 0),
+      endTime: addDays(now, 1, 10, 50),
+      status: 'confirmed',
+      appointmentType: 'Follow-up In-Person',
+    };
+    const more: Appointment[] = [
+      { id: 'a-m1', title: 'Follow-up session', startTime: addDays(now, 8, 10, 0), endTime: addDays(now, 8, 10, 50), status: 'confirmed', appointmentType: 'Follow-up In-Person' },
+      { id: 'a-m2', title: 'Follow-up session', startTime: addDays(now, 15, 10, 0), endTime: addDays(now, 15, 10, 50), status: 'confirmed', appointmentType: 'Follow-up In-Person' },
+      { id: 'a-m3', title: 'Follow-up session', startTime: addDays(now, 22, 10, 0), endTime: addDays(now, 22, 10, 50), status: 'confirmed', appointmentType: 'Follow-up Virtual' },
+    ];
+    const past: Appointment[] = [
+      { id: 'p1', title: 'Follow-up session', startTime: subDays(now, 7, 10, 0), endTime: subDays(now, 7, 10, 50), status: 'completed', appointmentType: 'Follow-up In-Person' },
+      { id: 'p2', title: 'Follow-up session', startTime: subDays(now, 14, 10, 0), endTime: subDays(now, 14, 10, 50), status: 'completed', appointmentType: 'Follow-up In-Person' },
+      { id: 'p3', title: 'Follow-up session', startTime: subDays(now, 21, 10, 0), endTime: subDays(now, 21, 10, 50), status: 'completed', appointmentType: 'Follow-up In-Person' },
+      { id: 'p4', title: 'Follow-up — rescheduled', startTime: subDays(now, 24, 15, 30), endTime: subDays(now, 24, 16, 20), status: 'cancelled', appointmentType: 'Follow-up In-Person' },
+      { id: 'p5', title: 'Initial assessment', startTime: subDays(now, 28, 10, 0), endTime: subDays(now, 28, 11, 0), status: 'completed', appointmentType: 'Initial In-Person' },
+    ];
+    return {
+      client: {
+        contactId: 'preview-series',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: '8-session',
+        sessionsCompleted: 4,
+        sessionsRemaining: 4,
+        hasLivingPractice: true,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: past,
+      upcomingAppointments: [next, ...more],
+    };
+  }
+
+  // completed
+  const past: Appointment[] = Array.from({ length: 8 }).map((_, i) => ({
+    id: `done-${i}`,
+    title: 'Follow-up session',
+    startTime: subDays(now, (8 - i) * 7, 10, 0),
+    endTime: subDays(now, (8 - i) * 7, 10, 50),
+    status: 'completed',
+    appointmentType: 'Follow-up In-Person',
+  }));
+  return {
+    client: {
+      contactId: 'preview-completed',
+      firstName: 'Eben',
+      lastName: '',
+      email: 'preview@amarimethod.com',
+      seriesType: '8-session',
+      sessionsCompleted: 8,
+      sessionsRemaining: 0,
+      hasLivingPractice: true,
+      portalAccess: true,
+      isPartner: false,
+    },
+    appointments: past,
+    upcomingAppointments: [],
+  };
+}

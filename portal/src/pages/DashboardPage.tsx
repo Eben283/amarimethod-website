@@ -88,7 +88,7 @@ function deriveSeriesSavings(seriesType: ClientData['seriesType']): number {
 
 /* ---------- sub-components ---------- */
 
-function TopBar({ firstName, notifications = 0 }: { firstName: string; notifications?: number }) {
+function TopBar({ firstName, hasLivingPractice }: { firstName: string; hasLivingPractice: boolean }) {
   const { logout } = useAuth();
   return (
     <header className="cp-topbar">
@@ -98,21 +98,11 @@ function TopBar({ firstName, notifications = 0 }: { firstName: string; notificat
       </Link>
       <nav className="cp-topnav">
         <Link to="/" className="cp-topnav-link cp-current">Dashboard</Link>
-        <Link to="/practice" className="cp-topnav-link">Practice</Link>
+        {hasLivingPractice && (
+          <Link to="/practice" className="cp-topnav-link">Living Practice</Link>
+        )}
       </nav>
       <div className="cp-account">
-        <button
-          type="button"
-          className={'cp-bell' + (notifications > 0 ? ' has-unread' : '')}
-          aria-label={notifications > 0 ? `${notifications} notifications` : 'Notifications'}
-        >
-          <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 2v1.2" />
-            <path d="M14 12V9a5 5 0 0 0-10 0v3l-1.2 2h12.4L14 12z" />
-            <path d="M7.6 16a1.5 1.5 0 0 0 2.8 0" />
-          </svg>
-          {notifications > 0 && <span className="cp-bell-dot" aria-hidden="true"></span>}
-        </button>
         <span className="cp-account-name">{firstName}</span>
         <button type="button" className="cp-account-out" onClick={logout}>Sign out</button>
       </div>
@@ -190,11 +180,17 @@ function SessionDate({ m, d, w }: { m: string; d: string; w?: string }) {
   );
 }
 
+function isInitialSession(apt: Appointment): boolean {
+  const t = (apt.appointmentType || apt.title || '').toLowerCase();
+  return t.includes('initial') || t.includes('intro') || t.includes('discovery');
+}
+
 function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onReschedule: () => void; onCancel: () => void }) {
   const { m, d, w } = formatMonthDay(apt.startTime);
   const time = new Date(apt.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
   const format = detectFormat(apt);
   const locked = isWithin24Hours(apt.startTime);
+  const initialOnly = isInitialSession(apt);
 
   return (
     <section className="cp-next">
@@ -213,20 +209,37 @@ function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onResc
             <span className="cp-dot">·</span>
             <span>with <b>Dr. Garrett</b></span>
           </p>
+          {format === 'Virtual' && (
+            <p className="cp-next-note">Meeting link is in your calendar invite from Dr. Garrett.</p>
+          )}
         </div>
         <div className="cp-next-actions">
-          <button type="button" className="cp-btn cp-btn-ghost" onClick={onReschedule} disabled={locked}>
-            Reschedule
-          </button>
-          <button type="button" className="cp-btn cp-btn-text" onClick={onCancel} disabled={locked}>
-            Cancel
-          </button>
+          {initialOnly ? (
+            <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20initial%20session" className="cp-btn cp-btn-ghost">
+              Email to change
+            </a>
+          ) : (
+            <>
+              <button type="button" className="cp-btn cp-btn-ghost" onClick={onReschedule} disabled={locked}>
+                Reschedule
+              </button>
+              <button type="button" className="cp-btn cp-btn-text" onClick={onCancel} disabled={locked}>
+                Cancel
+              </button>
+            </>
+          )}
         </div>
       </div>
-      {locked && (
+      {locked && !initialOnly && (
         <p className="cp-locked">
           <span className="cp-lock-dot"></span>
           Within 24 hours — changes locked. <a href="mailto:hello@amarimethod.com">Need help?</a>
+        </p>
+      )}
+      {initialOnly && (
+        <p className="cp-locked" style={{ background: 'var(--cp-paper-2)', borderLeftColor: 'var(--cp-accent)' }}>
+          <span className="cp-lock-dot" style={{ background: 'var(--cp-accent)' }}></span>
+          Initial sessions are scheduled with Dr. Garrett directly.
         </p>
       )}
     </section>
@@ -247,6 +260,7 @@ function ComingUp({ sessions, onReschedule, onCancel }: { sessions: Appointment[
           const time = new Date(s.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
           const format = detectFormat(s);
           const locked = isWithin24Hours(s.startTime);
+          const initialOnly = isInitialSession(s);
           return (
             <li key={s.id} className="cp-coming-row">
               <SessionDate m={m} d={d} />
@@ -255,8 +269,14 @@ function ComingUp({ sessions, onReschedule, onCancel }: { sessions: Appointment[
                 <span className="cp-coming-meta">{w} · {time} · {format}</span>
               </div>
               <div className="cp-coming-actions">
-                <button type="button" className="cp-btn cp-btn-row" onClick={() => onReschedule(s)} disabled={locked}>Reschedule</button>
-                <button type="button" className="cp-btn cp-btn-row cp-btn-text" onClick={() => onCancel(s)} disabled={locked}>Cancel</button>
+                {initialOnly ? (
+                  <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20initial%20session" className="cp-btn cp-btn-row cp-btn-text">Email to change</a>
+                ) : (
+                  <>
+                    <button type="button" className="cp-btn cp-btn-row" onClick={() => onReschedule(s)} disabled={locked}>Reschedule</button>
+                    <button type="button" className="cp-btn cp-btn-row cp-btn-text" onClick={() => onCancel(s)} disabled={locked}>Cancel</button>
+                  </>
+                )}
               </div>
             </li>
           );
@@ -413,7 +433,7 @@ function Sk({ w, h }: { w: number | string; h: number | string }) {
 function Skeleton({ firstName }: { firstName: string }) {
   return (
     <div className="cp-screen cp-screen-skel">
-      <TopBar firstName={firstName} />
+      <TopBar firstName={firstName} hasLivingPractice={false} />
       <section className="cp-greet">
         <div className="cp-greet-l" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <Sk w="62%" h={60} />
@@ -465,7 +485,7 @@ function Skeleton({ firstName }: { firstName: string }) {
 function ErrorState({ firstName, message, onRetry }: { firstName: string; message: string; onRetry: () => void }) {
   return (
     <div className="cp-screen">
-      <TopBar firstName={firstName} />
+      <TopBar firstName={firstName} hasLivingPractice={false} />
       <Greeting user={firstName} sub="Welcome back." />
       <section className="cp-error">
         <span className="cp-mono cp-accent">Connection lost</span>
@@ -487,7 +507,7 @@ function ErrorState({ firstName, message, onRetry }: { firstName: string; messag
 function DashCompleted({ client, history }: { client: ClientData; history: Appointment[] }) {
   return (
     <div className="cp-screen">
-      <TopBar firstName={client.firstName} />
+      <TopBar firstName={client.firstName} hasLivingPractice={client.hasLivingPractice} />
       <Greeting user={client.firstName} sub="You've moved through all eight steps. The protocols are yours now." />
       <Journey step={JOURNEY_STEP_COUNT + 1} />
       <section className="cp-celebrate">
@@ -546,7 +566,9 @@ export default function DashboardPage() {
     ? "Welcome — let's get your first session on the calendar."
     : hasActiveSeries
       ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} left in your series.`
-      : 'Ready when you are.';
+      : nextApt
+        ? 'Welcome back.'
+        : 'Book your next session whenever you\'re ready.';
 
   // Last visit
   const pastAppointments = appointments.filter(a => a.status === 'completed' || a.status === 'showed');
@@ -591,21 +613,18 @@ export default function DashboardPage() {
     });
   }
 
-  if (!client.hasLivingPractice) {
+  if (client.hasLivingPractice) {
+    actions.push({
+      h: 'Continue Living Practice',
+      p: 'Daily home practice videos with Dr. Garrett.',
+      href: '/portal/practice',
+    });
+  } else {
     actions.push({
       h: 'Living Practice',
       p: 'Standalone video program for daily home practice.',
       price: '$347',
       href: 'https://www.amarimethod.com/living-practice',
-    });
-  }
-
-  if (!client.isPartner) {
-    actions.push({
-      h: 'Refer a friend',
-      p: 'Get $50 off your next session when they book.',
-      muted: true,
-      href: '#',
     });
   }
 
@@ -618,7 +637,7 @@ export default function DashboardPage() {
 
   return (
     <div className="cp-screen">
-      <TopBar firstName={firstName} />
+      <TopBar firstName={firstName} hasLivingPractice={client.hasLivingPractice} />
       {showBookingModal && (
         <BookingModal
           rescheduleFor={rescheduleTarget}

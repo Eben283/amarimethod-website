@@ -6,9 +6,15 @@ import DashboardPage from './pages/DashboardPage';
 import CoursePage, { CourseIndex } from './pages/CoursePage';
 import CourseModulesPage from './pages/CourseModulesPage';
 import { Loader2 } from 'lucide-react';
+import { getPreviewState } from './lib/preview';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Preview mode: skip auth, render the page directly.
+  if (getPreviewState()) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (
