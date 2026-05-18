@@ -476,13 +476,52 @@
       text-align: center;
     }
     .inline-success.active { display: block; }
-    .inline-success .check {
+    .inline-success .check,
+    .success-glyph {
       font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
       font-style: italic;
       font-size: 56px;
       line-height: 1;
       color: var(--pa-accent);
       margin-bottom: 12px;
+    }
+    .success-meta {
+      margin: 18px auto 4px;
+      max-width: 300px;
+      text-align: left;
+      border-top: 1px solid var(--pa-line);
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .success-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 11px 4px;
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .success-meta-row:last-child { border-bottom: 0; }
+    .success-meta-row span {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
+      font-weight: 500;
+    }
+    .success-meta-row b {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--pa-ink);
+      text-align: right;
+    }
+    .success-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .success-actions button {
+      width: 100%;
     }
     .inline-success h3 {
       font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
@@ -1299,17 +1338,26 @@
     </form>
   </div>
 
-  <!-- Shared success state -->
+  <!-- Shared success state — content swaps per type (refer / sold) -->
   <div class="inline-success" id="referral-success">
-    <div class="check">&#10003;</div>
+    <div class="success-glyph" id="success-glyph">&#x2726;</div>
     <h3 id="success-heading">Got it.</h3>
     <p id="success-message">We'll reach out and take it from here.</p>
-    <div class="success-timeline" id="success-timeline">
-      <div class="success-timeline-step"><strong>Now:</strong> Dr. Garrett gets notified</div>
-      <div class="success-timeline-step"><strong>Within 24h:</strong> We reach out to your referral</div>
-      <div class="success-timeline-step"><strong>When they book:</strong> Status updates here automatically</div>
+
+    <div class="success-meta" id="success-meta" style="display:none;">
+      <div class="success-meta-row">
+        <span id="success-meta-k1">Sent to</span>
+        <b id="success-meta-v1">&mdash;</b>
+      </div>
+      <div class="success-meta-row">
+        <span id="success-meta-k2">Submitted</span>
+        <b id="success-meta-v2">&mdash;</b>
+      </div>
     </div>
-    <button type="button" id="btn-another">Submit another</button>
+
+    <div class="success-actions">
+      <button type="button" id="btn-another">Submit another</button>
+    </div>
   </div>
 
   <!-- 3. SHARE LINK -->
@@ -1959,18 +2007,46 @@
 
         lastFormType = type;
         var clientName = payload.clientFirstName;
+        var nameHtml = '<em style="font-style:italic;color:var(--pa-accent);">' + clientName + '</em>';
 
-        var timelineEl = document.getElementById('success-timeline');
+        var glyphEl = document.getElementById('success-glyph');
+        var headingEl = document.getElementById('success-heading');
+        var messageEl = document.getElementById('success-message');
+        var metaEl = document.getElementById('success-meta');
+        var metaK1 = document.getElementById('success-meta-k1');
+        var metaV1 = document.getElementById('success-meta-v1');
+        var metaK2 = document.getElementById('success-meta-k2');
+        var metaV2 = document.getElementById('success-meta-v2');
+        var anotherBtn = document.getElementById('btn-another');
+
+        // Submitted timestamp — "May 17, 3:24 PM" style
+        var now = new Date();
+        var submittedAt = now.toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+
         if (type === 'refer') {
-          document.getElementById('success-heading').textContent = 'Referral Submitted!';
-          document.getElementById('success-message').textContent =
-            "We'll reach out to " + clientName + ". You earn $50 when they book.";
-          if (timelineEl) timelineEl.style.display = '';
+          glyphEl.textContent = '✦'; // ✦
+          headingEl.innerHTML = "We've got " + nameHtml + " from here.";
+          messageEl.textContent =
+            "We'll reach out within 24 hours and let you know when they book. Your $50 lands on the next payout.";
+          metaK1.textContent = 'Sent to';
+          metaV1.textContent = payload.clientPhone;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Refer another';
         } else {
-          document.getElementById('success-heading').textContent = 'Got It!';
-          document.getElementById('success-message').textContent =
-            "We'll get " + clientName + " set up with Dr. Garrett.";
-          if (timelineEl) timelineEl.style.display = 'none';
+          glyphEl.innerHTML = '&#x2295;'; // ⊕
+          headingEl.textContent = 'Logged.';
+          messageEl.textContent =
+            "$225 lands on your next payout. We'll confirm the session with " + clientName + " and put it on the calendar.";
+          metaK1.textContent = 'Client';
+          metaV1.textContent = clientName;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Log another';
         }
 
         closeAllForms();
