@@ -142,13 +142,16 @@ function Greeting({ user, sub, lastVisit }: { user: string; sub: string; lastVis
   );
 }
 
-function Journey({ step }: { step: number }) {
+function Journey({ step, client }: { step: number; client?: ClientData }) {
   const pct = Math.min(100, Math.round((step / JOURNEY_STEP_COUNT) * 100));
   const headline = step === 0
     ? <>The eight-step <em>method.</em></>
     : step > JOURNEY_STEP_COUNT
       ? <>You've completed <em>the method.</em></>
       : <>Step <em>{step}</em> of {JOURNEY_STEP_COUNT}</>;
+
+  const ut = client ? deriveSeriesUsedTotal(client) : null;
+  const savings = client ? deriveSeriesSavings(client.seriesType) : 0;
 
   return (
     <section className="cp-journey">
@@ -181,6 +184,13 @@ function Journey({ step }: { step: number }) {
           );
         })}
       </ol>
+
+      {ut && (
+        <p className="cp-journey-next">
+          <b>{client!.seriesType}</b> · <span>{ut.total - ut.used} session{ut.total - ut.used === 1 ? '' : 's'} left</span>
+          {savings > 0 && <> · <em>${savings}</em> saved vs. one-off</>}
+        </p>
+      )}
     </section>
   );
 }
@@ -310,7 +320,7 @@ function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onResc
       {locked && !initialOnly && (
         <p className="cp-locked">
           <span className="cp-lock-dot"></span>
-          Less than 24 hours away. To change this, <a href="mailto:hello@amarimethod.com?subject=Change%20my%20upcoming%20session">email Dr. Garrett</a> — late changes carry a fee (50% inside 24 hrs, full inside 2).
+          Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Dr. Garrett</a> and we'll review it.
         </p>
       )}
       {initialOnly && (
@@ -738,7 +748,7 @@ export default function DashboardPage() {
         />
       )}
       <Greeting user={firstName} sub={sub} lastVisit={lastVisit} />
-      <Journey step={step} />
+      <Journey step={step} client={client} />
       {nextApt && (
         <NextSession
           apt={nextApt}
@@ -746,7 +756,6 @@ export default function DashboardPage() {
           onCancel={() => setCancelTarget(nextApt)}
         />
       )}
-      {hasActiveSeries && <SeriesPanel client={client} />}
       <ComingUp
         sessions={otherUpcoming}
         onReschedule={(a) => { setRescheduleTarget(a); setShowBookingModal(true); }}

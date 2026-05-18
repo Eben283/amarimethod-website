@@ -62,16 +62,14 @@ export default function CancelModal({ appointment, onClose, onSuccess }: Props) 
           <p className="cp-modal-prose">You're cancelling <b>{formatDateLine(appointment.startTime)}</b> with Dr. Garrett.</p>
           <p className="cp-modal-prose">
             {hrs >= 24
-              ? "You're more than 24 hours out, so there's no charge. If your schedule changed, rescheduling is usually the better option."
-              : hrs >= 2
-                ? "Within 24 hours of the session — a 50% charge applies. If you can't make it, let Dr. Garrett know directly so we can sort it out."
-                : "Within 2 hours of the session — the full fee applies. Email Dr. Garrett directly if something urgent came up."}
+              ? "You're more than 24 hours out — rescheduling is usually the better option. If you cancel, the slot opens for someone else."
+              : "Within 24 hours of the session. If you cancel now, the session counts as used. Emergencies are reviewed case-by-case — tell Dr. Garrett what's going on below."}
           </p>
 
           <div className="cp-modal-policy">
-            <div><span className="cp-policy-glyph">→</span><span><b>More than 24hrs out</b><span>No charge.</span></span></div>
-            <div><span className="cp-policy-glyph">→</span><span><b>Within 24hrs</b><span>50% of the session fee.</span></span></div>
-            <div><span className="cp-policy-glyph">→</span><span><b>Within 2hrs / no-show</b><span>Full session fee.</span></span></div>
+            <div><span className="cp-policy-glyph">→</span><span><b>Reschedule policy</b><span>24 hours' notice required.</span></span></div>
+            <div><span className="cp-policy-glyph">→</span><span><b>If you miss it</b><span>The session counts as used.</span></span></div>
+            <div><span className="cp-policy-glyph">→</span><span><b>Emergencies</b><span>Reviewed case-by-case. Series participants get one complimentary emergency reschedule per series.</span></span></div>
           </div>
 
           <label className="cp-modal-reason">
