@@ -716,6 +716,12 @@ export default function DashboardPage() {
   }
 
   actions.push({
+    h: 'Tools for the protocols',
+    p: 'Equipment we recommend for your practice at home.',
+    href: 'https://www.amarimethod.com/tools',
+  });
+
+  actions.push({
     h: 'Contact Dr. Garrett',
     p: 'Questions, scheduling, or notes between sessions.',
     muted: true,
