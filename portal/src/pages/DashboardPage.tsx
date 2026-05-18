@@ -310,7 +310,7 @@ function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onResc
       {locked && !initialOnly && (
         <p className="cp-locked">
           <span className="cp-lock-dot"></span>
-          Within 24 hours — changes locked. <a href="mailto:hello@amarimethod.com">Need help?</a>
+          Less than 24 hours away. To change this, <a href="mailto:hello@amarimethod.com?subject=Change%20my%20upcoming%20session">email Dr. Garrett</a> — late changes carry a fee (50% inside 24 hrs, full inside 2).
         </p>
       )}
       {initialOnly && (
