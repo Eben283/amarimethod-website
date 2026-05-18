@@ -109,8 +109,6 @@ export default function DashboardPage() {
 
       <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
 
-      <SessionHistory appointments={appointments} />
-
       {!client.isPartner && (
         <div style={{ margin: '22px 20px 0' }}>
           <ReferralCard
@@ -120,6 +118,8 @@ export default function DashboardPage() {
           />
         </div>
       )}
+
+      <SessionHistory appointments={appointments} />
 
       <footer className="cp-foot">
         <span>amarimethod.com</span>
