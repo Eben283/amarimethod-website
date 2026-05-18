@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, ShoppingBag, Play, MessageCircle, TrendingUp, MapPin, Video, Gift } from 'lucide-react';
 import type { ClientData } from '../types/portal';
 import EmbedCalendarModal, { type EmbedCalendarType } from './EmbedCalendarModal';
 
@@ -14,8 +13,6 @@ interface QuickActionsProps {
 const BOOKING_URLS = {
   initial_inperson: '/book/initial-in-person',
   initial_virtual: '/book/initial-virtual',
-  followup: '/book-follow-up',
-  discovery: '/book-discovery-call',
 };
 
 // GHL Payment Links
@@ -25,25 +22,21 @@ const PAYMENT_LINKS = {
   upgrade_to_4:    'https://link.amarimethod.com/payment-link/699873a81a8400115e0381db',
   upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
   living_practice: 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd',
-  single_followup: 'https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26',
 };
-
-// Internal route — course player is now inside the portal
-const LIVING_PRACTICE_ROUTE = '/practice';
-
-// TODO: Once Eben creates the gift card in GHL (Payments → Gift Cards),
-// paste the shareable checkout link here to activate the Buy button.
 const GIFT_CARD_URL = 'https://link.amarimethod.com/gift-card/69ae353a47ad8b40dc3cdb13';
+const LIVING_PRACTICE_ROUTE = '/practice';
+const TOOLS_URL = 'https://www.amarimethod.com/tools';
 
 interface Action {
-  icon: React.ElementType;
   label: string;
   description: string;
+  price?: string;
   href?: string;
   onClick?: () => void;
-  style: 'primary' | 'secondary';
-  disabled?: boolean;
+  primary?: boolean;
+  muted?: boolean;
   testId?: string;
+  external?: boolean; // open in new tab
 }
 
 function getSeriesActions(client: ClientData): Action[] {
@@ -51,65 +44,97 @@ function getSeriesActions(client: ClientData): Action[] {
   const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
   const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
 
-  // Exactly 1 pay-as-you-go session — show credit upgrade links (better deal than full price)
-  // Partners are excluded: they receive a free first session, so the $225 credit does not apply
+  // Exactly 1 pay-as-you-go session — credit upgrade beats buying full price
   if (seriesType === 'none' && sessionsCompleted === 1 && !isPartner) {
     return [
       {
-        icon: ShoppingBag,
-        label: 'Upgrade to a 4-Session Series',
-        description: 'Continue your progress with 3 more sessions — your $225 is already applied',
+        label: 'Upgrade to a 4-session series',
+        description: 'Continue with 3 more sessions — your $225 is already applied.',
+        price: '$495',
         href: PAYMENT_LINKS.upgrade_to_4,
-        style: 'secondary',
+        external: true,
         testId: 'upgrade-to-4-card',
       },
       {
-        icon: TrendingUp,
-        label: 'Upgrade to an 8-Session Series',
-        description: 'The full 8-step protocol + Living Practice — your $225 is already applied',
+        label: 'Upgrade to an 8-session series',
+        description: 'Full 8-step protocol + Living Practice — your $225 is already applied.',
+        price: '$1,070',
         href: PAYMENT_LINKS.upgrade_to_8,
-        style: 'secondary',
+        external: true,
         testId: 'upgrade-to-8-card',
       },
     ];
   }
 
-  // Everyone else — 4 and 8 packs available at any time.
-  // For established clients (on a series or 2+ sessions), frame around continuing their home practice.
   const isEstablished = hasActiveSeries || seriesFinished || sessionsCompleted >= 2;
-
   const hasHadInitialForCopy = client.sessionsCompleted > 0;
 
   const pack4Description = isEstablished
-    ? 'Maintain and evolve your Amari at-home practice ($720)'
+    ? 'Maintain and evolve your at-home practice.'
     : hasHadInitialForCopy
-      ? 'Four sessions at a package rate ($720)'
-      : 'Four follow-up sessions at a package rate ($720 — initial session purchased separately)';
+      ? 'Four sessions at a package rate.'
+      : 'Four follow-up sessions at a package rate (initial purchased separately).';
 
   const pack8Description = isEstablished
-    ? 'Deepen your at-home practice with 8 sessions + Living Practice ($1,295)'
+    ? 'Deepen your at-home practice with 8 sessions + Living Practice.'
     : hasHadInitialForCopy
-      ? 'Eight sessions + Living Practice included ($1,295)'
-      : 'Eight follow-up sessions + Living Practice ($1,295 — initial session purchased separately)';
+      ? 'Eight sessions + Living Practice included.'
+      : 'Eight follow-up sessions + Living Practice (initial purchased separately).';
 
   return [
     {
-      icon: ShoppingBag,
-      label: 'Buy a 4-Session Series',
+      label: '4-session series',
       description: pack4Description,
+      price: '$720',
       href: PAYMENT_LINKS.series_4,
-      style: 'secondary',
+      external: true,
       testId: 'series-4-card',
     },
     {
-      icon: TrendingUp,
-      label: 'Buy an 8-Session Series',
+      label: '8-session series',
       description: pack8Description,
+      price: '$1,295',
       href: PAYMENT_LINKS.series_8,
-      style: 'secondary',
+      external: true,
       testId: 'series-8-card',
     },
   ];
+}
+
+function ActionCard({ a }: { a: Action }) {
+  const className = 'cp-action'
+    + (a.primary ? ' cp-action-primary' : '')
+    + (a.muted ? ' is-muted' : '');
+  const inner = (
+    <>
+      <span className="cp-action-l">
+        <span className="cp-action-h">{a.label}</span>
+        <span className="cp-action-p">{a.description}</span>
+      </span>
+      <span className="cp-action-r">
+        {a.price && <span className="cp-action-price">{a.price}</span>}
+        <span className="cp-arrow">→</span>
+      </span>
+    </>
+  );
+  if (a.href) {
+    return (
+      <a
+        href={a.href}
+        target={a.external ? '_blank' : undefined}
+        rel={a.external ? 'noopener noreferrer' : undefined}
+        className={className}
+        data-testid={a.testId}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <button type="button" className={className} onClick={a.onClick} data-testid={a.testId}>
+      {inner}
+    </button>
+  );
 }
 
 export default function QuickActions({ client, onBookSession: _onBookSession }: QuickActionsProps) {
@@ -120,341 +145,132 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
   const [embedCalendarType, setEmbedCalendarType] = useState<EmbedCalendarType | null>(null);
 
   const hasHadInitial = client.sessionsCompleted > 0;
-  const bookingLabel = hasHadInitial ? 'Book Follow-up Session' : 'Book Initial Session';
-
-  // Active series = on a series with sessions remaining (pre-paid, modal booking)
-  // Pay-as-you-go = has had sessions but no pre-paid sessions left (pay per session)
-  //   Includes: no-series clients who've had sessions, AND finished-series clients
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
   const isPayAsYouGo = hasHadInitial && !hasActiveSeries;
-  const bookingAction: Action = !hasHadInitial
-    ? {
-        icon: Calendar,
-        label: bookingLabel,
-        description: 'Start your journey with a 60-min session',
-        onClick: () => setShowInitialChoice(true),
-        style: 'primary',
-      }
-    : hasActiveSeries
-    ? {
-        icon: Calendar,
-        label: bookingLabel,
-        description: 'Schedule your next in-person or virtual session',
-        onClick: () => setShowSeriesChoice(true),
-        style: 'primary',
-      }
-    : {
-        // Pay-as-you-go or finished series — choose in-person or virtual, then book + pay
-        icon: Calendar,
-        label: bookingLabel,
-        description: 'Book and pay for a single session ($190)',
-        onClick: () => setShowFollowupChoice(true),
-        style: 'primary',
-      };
+
+  // Primary booking card — varies by state
+  let primaryCard: JSX.Element;
+  if (!hasHadInitial) {
+    // Brand new — pick in-person or virtual for the initial
+    primaryCard = (
+      <BookingCard
+        label="Book your initial session"
+        description="60-minute assessment with Dr. Garrett."
+        price="$225"
+        open={showInitialChoice}
+        onOpen={() => setShowInitialChoice(true)}
+        onClose={() => setShowInitialChoice(false)}
+        choices={[
+          { label: 'In person', href: BOOKING_URLS.initial_inperson, external: true },
+          { label: 'Virtual', href: BOOKING_URLS.initial_virtual, external: true, ghost: true },
+        ]}
+      />
+    );
+  } else if (hasActiveSeries) {
+    // Series member — book from pre-paid pool, pick in-person or virtual
+    primaryCard = (
+      <BookingCard
+        label="Book your next session"
+        description={`${client.sessionsRemaining} session${client.sessionsRemaining === 1 ? '' : 's'} left in your series.`}
+        price="Included"
+        open={showSeriesChoice}
+        onOpen={() => setShowSeriesChoice(true)}
+        onClose={() => setShowSeriesChoice(false)}
+        choices={[
+          { label: 'In person', onClick: () => setEmbedCalendarType('prepaid_inperson') },
+          { label: 'Virtual', onClick: () => setEmbedCalendarType('prepaid_virtual'), ghost: true },
+        ]}
+      />
+    );
+  } else {
+    // Pay-as-you-go or finished series — book + pay per session
+    primaryCard = (
+      <BookingCard
+        label="Book a follow-up session"
+        description="Book and pay for a single session."
+        price="$190"
+        open={showFollowupChoice}
+        onOpen={() => setShowFollowupChoice(true)}
+        onClose={() => setShowFollowupChoice(false)}
+        choices={[
+          { label: 'In person', onClick: () => setEmbedCalendarType('followup_inperson') },
+          { label: 'Virtual', onClick: () => setEmbedCalendarType('followup_virtual'), ghost: true },
+        ]}
+      />
+    );
+  }
+
+  const seriesActions = getSeriesActions(client);
 
   const livingPracticeAction: Action = client.hasLivingPractice
     ? {
-        icon: Play,
-        label: 'Living Practice',
-        description: 'Continue your video program →',
+        label: 'Continue Living Practice',
+        description: 'Your daily home-practice videos with Dr. Garrett.',
         onClick: () => navigate(LIVING_PRACTICE_ROUTE),
-        style: 'secondary',
         testId: 'living-practice-card',
       }
     : {
-        icon: Play,
         label: 'Living Practice',
-        description: 'Add the standalone video program ($347)',
+        description: 'Standalone video program for daily home practice.',
+        price: '$347',
         href: PAYMENT_LINKS.living_practice,
-        style: 'secondary',
+        external: true,
         testId: 'living-practice-card',
       };
 
-  const contactAction: Action = {
-    icon: MessageCircle,
-    label: 'Contact Dr. Garrett',
-    description: 'eben@amarimethod.com',
-    href: 'mailto:eben@amarimethod.com',
-    style: 'secondary',
+  const toolsAction: Action = {
+    label: 'Tools for the protocols',
+    description: 'Equipment we recommend for your practice at home.',
+    href: TOOLS_URL,
+    external: true,
   };
+
+  const giftCardAction: Action | null = GIFT_CARD_URL
+    ? {
+        label: 'Buy a gift card',
+        description: 'Give the session that changes everything.',
+        href: GIFT_CARD_URL,
+        external: true,
+      }
+    : null;
 
   const partnerAction: Action | null = client.isPartner
     ? {
-        icon: Gift,
-        label: 'Referral Toolkit',
-        description: 'Refer clients & track your referrals →',
+        label: 'Referral toolkit',
+        description: 'Refer clients & track your referrals.',
         href: 'https://www.amarimethod.com/partner-app',
-        style: 'secondary',
+        external: true,
         testId: 'partner-toolkit-card',
       }
     : null;
 
-  const giftCardAction: Action | null = GIFT_CARD_URL
-    ? {
-        icon: Gift,
-        label: 'Buy a Gift Card',
-        description: 'Give the session that changes everything',
-        href: GIFT_CARD_URL,
-        style: 'secondary',
-      }
-    : null;
+  const contactAction: Action = {
+    label: 'Contact Dr. Garrett',
+    description: 'Questions, scheduling, or notes between sessions.',
+    href: 'mailto:eben@amarimethod.com',
+    muted: true,
+  };
 
-  const seriesActions = getSeriesActions(client);
-
-  const actions: Action[] = [
-    bookingAction,
+  const secondaryActions: Action[] = [
     ...seriesActions,
     livingPracticeAction,
-    ...(partnerAction ? [partnerAction] : []),
+    toolsAction,
     ...(giftCardAction ? [giftCardAction] : []),
+    ...(partnerAction ? [partnerAction] : []),
     contactAction,
   ];
 
   return (
     <>
-      <div className="space-y-4">
-        {/* Primary booking action — full width */}
-        {(() => {
-          const action = actions[0];
-          const Icon = action.icon;
-          const isBookingCard = action.label === bookingLabel && !hasHadInitial;
-          const isSeriesCard = action.label === bookingLabel && hasActiveSeries;
-          const isPayAsYouGoCard = action.label === bookingLabel && isPayAsYouGo;
-
-          if (isSeriesCard) {
-            return (
-              <div key={action.label} className="portal-card border-amari-charcoal">
-                {!showSeriesChoice ? (
-                  <button
-                    onClick={() => setShowSeriesChoice(true)}
-                    className="flex items-start gap-4 w-full text-left"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
-                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
-                    </div>
-                  </button>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEmbedCalendarType('prepaid_inperson')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors"
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                        In Person
-                      </button>
-                      <button
-                        onClick={() => setEmbedCalendarType('prepaid_virtual')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        Virtual
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setShowSeriesChoice(false)}
-                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          if (isPayAsYouGoCard) {
-            return (
-              <div key={action.label} className="portal-card border-amari-charcoal">
-                {!showFollowupChoice ? (
-                  <button
-                    onClick={() => setShowFollowupChoice(true)}
-                    className="flex items-start gap-4 w-full text-left"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
-                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
-                    </div>
-                  </button>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setEmbedCalendarType('followup_inperson')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors"
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                        In Person
-                      </button>
-                      <button
-                        onClick={() => setEmbedCalendarType('followup_virtual')}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        Virtual
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setShowFollowupChoice(false)}
-                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          if (isBookingCard) {
-            return (
-              <div key={action.label} className="portal-card border-amari-charcoal">
-                {!showInitialChoice ? (
-                  <button
-                    onClick={() => setShowInitialChoice(true)}
-                    className="flex items-start gap-4 w-full text-left"
-                  >
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
-                      <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
-                    </div>
-                  </button>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <h3 className="font-sans font-semibold text-amari-charcoal text-sm">How would you like to meet?</h3>
-                    </div>
-                    <div className="flex gap-2">
-                      <a
-                        href={BOOKING_URLS.initial_inperson}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-amari-charcoal text-white rounded-lg text-xs font-semibold hover:bg-opacity-90 transition-colors no-underline"
-                      >
-                        <MapPin className="w-3.5 h-3.5" />
-                        In Person
-                      </a>
-                      <a
-                        href={BOOKING_URLS.initial_virtual}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 border border-amari-charcoal text-amari-charcoal rounded-lg text-xs font-semibold hover:bg-amari-light-sand transition-colors no-underline"
-                      >
-                        <Video className="w-3.5 h-3.5" />
-                        Virtual
-                      </a>
-                    </div>
-                    <button
-                      onClick={() => setShowInitialChoice(false)}
-                      className="mt-2 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors"
-                    >
-                      ← Back
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          }
-
-          // Fallback for primary action that doesn't match special cards
-          const content = (
-            <div data-testid="booking-card" className="portal-card flex items-start gap-4 border-amari-charcoal cursor-pointer hover:shadow-card-hover">
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-charcoal text-white">
-                <Icon className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 data-testid="booking-label" className="font-sans font-semibold text-amari-charcoal text-sm">{action.label}</h3>
-                <p className="text-xs text-amari-text-muted mt-0.5">{action.description}</p>
-              </div>
-            </div>
-          );
-          if (action.onClick) {
-            return <button key={action.label} onClick={action.onClick} className="text-left no-underline w-full">{content}</button>;
-          }
-          if (action.href) {
-            return <a key={action.label} href={action.href} target="_blank" rel="noopener noreferrer" className="no-underline">{content}</a>;
-          }
-          return <div key={action.label}>{content}</div>;
-        })()}
-
-        {/* Secondary actions — 2-column grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {actions.slice(1).map((action) => {
-          const Icon = action.icon;
-          const isDisabled = !!action.disabled;
-
-          const content = (
-            <div
-              data-testid={action.testId}
-              className={`portal-card flex items-start gap-4 ${
-                isDisabled ? 'opacity-50 cursor-default' : 'cursor-pointer hover:shadow-card-hover'
-              }`}
-            >
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
-                <Icon className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
-                  {action.label}
-                </h3>
-                <p data-testid={action.testId ? `${action.testId}-desc` : undefined} className="text-xs text-amari-text-muted mt-0.5">
-                  {action.description}
-                </p>
-              </div>
-            </div>
-          );
-
-          if (action.onClick) {
-            return (
-              <button key={action.label} onClick={action.onClick} className="text-left no-underline w-full">
-                {content}
-              </button>
-            );
-          }
-
-          if (isDisabled || !action.href) {
-            return <div key={action.label}>{content}</div>;
-          }
-
-          return (
-            <a
-              key={action.label}
-              href={action.href}
-              target={action.href.startsWith('http') ? '_blank' : undefined}
-              rel={action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="no-underline"
-            >
-              {content}
-            </a>
-          );
-        })}
+      <section className="cp-actions">
+        <div className="cp-section-head">
+          <h3 className="cp-section-h">Book &amp; manage</h3>
         </div>
-      </div>
+        <div className="cp-actions-grid">
+          {primaryCard}
+          {secondaryActions.map((a) => <ActionCard key={a.label} a={a} />)}
+        </div>
+      </section>
 
       {embedCalendarType && (
         <EmbedCalendarModal
@@ -467,5 +283,91 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
         />
       )}
     </>
+  );
+}
+
+/* --- inline "choose in-person or virtual" expanding card --- */
+interface Choice {
+  label: string;
+  href?: string;
+  external?: boolean;
+  onClick?: () => void;
+  ghost?: boolean;
+}
+function BookingCard({
+  label, description, price, open, onOpen, onClose, choices,
+}: {
+  label: string;
+  description: string;
+  price?: string;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  choices: Choice[];
+}) {
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="cp-action cp-action-primary"
+        onClick={onOpen}
+        data-testid="booking-card"
+      >
+        <span className="cp-action-l">
+          <span className="cp-action-h" data-testid="booking-label">{label}</span>
+          <span className="cp-action-p">{description}</span>
+        </span>
+        <span className="cp-action-r">
+          {price && <span className="cp-action-price">{price}</span>}
+          <span className="cp-arrow">→</span>
+        </span>
+      </button>
+    );
+  }
+  return (
+    <div
+      className="cp-action cp-action-primary"
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 14, gridColumn: '1 / -1' }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+        <span className="cp-action-h">How would you like to meet?</span>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{ background: 'transparent', border: 0, color: '#C9BEA9', fontSize: 13, cursor: 'pointer', padding: 4 }}
+        >
+          ✕
+        </button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        {choices.map((c) => {
+          const cls = c.ghost
+            ? 'cp-btn cp-btn-ghost'
+            : 'cp-btn cp-btn-primary';
+          const style: React.CSSProperties = c.ghost
+            ? { background: 'rgba(247,242,232,0.06)', color: 'var(--cp-paper)', borderColor: 'rgba(245,221,210,0.32)' }
+            : { background: 'var(--cp-paper)', color: 'var(--cp-ink)' };
+          if (c.href) {
+            return (
+              <a
+                key={c.label}
+                href={c.href}
+                target={c.external ? '_blank' : undefined}
+                rel={c.external ? 'noopener noreferrer' : undefined}
+                className={cls}
+                style={style}
+              >
+                {c.label}
+              </a>
+            );
+          }
+          return (
+            <button key={c.label} type="button" onClick={c.onClick} className={cls} style={style}>
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

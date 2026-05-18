@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { TrendingUp, Calendar, ArrowRight, Clock, X, RefreshCw, Loader2 } from 'lucide-react';
 import type { ClientData, Appointment } from '../types/portal';
 import { getMonth, getDay, getRelativeDay, formatTime } from '../lib/utils';
 import { cancelAppointment } from '../lib/api';
@@ -12,11 +11,59 @@ interface ProgressTrackerProps {
   onBookSession?: () => void;
 }
 
+const JOURNEY_STEP_COUNT = 8;
+
 function isWithin24Hours(startTime: string): boolean {
   const apptDate = new Date(startTime);
   const now = new Date();
-  const diff = apptDate.getTime() - now.getTime();
-  return diff < 24 * 60 * 60 * 1000;
+  return apptDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000;
+}
+
+function detectFormat(apt: Appointment): 'Virtual' | 'In-person' {
+  const t = (apt.appointmentType || apt.title || '').toLowerCase();
+  if (t.includes('virtual') || t.includes('zoom') || t.includes('online')) return 'Virtual';
+  return 'In-person';
+}
+
+function isInitialOrDiscovery(apt: Appointment): boolean {
+  const t = (apt.appointmentType || apt.title || '').toLowerCase();
+  return t.includes('initial') || t.includes('intro') || t.includes('discovery');
+}
+
+function pad2(n: number): string { return n < 10 ? `0${n}` : String(n); }
+
+function toIcsDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}00Z`;
+}
+
+function buildIcsUrl(apt: Appointment): string {
+  const format = detectFormat(apt);
+  const meet = apt.meetingUrl || '';
+  const description = format === 'Virtual'
+    ? (meet
+        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
+        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Dr. Garrett at Amari Method.';
+  const locationLine = meet
+    ? `LOCATION:${meet}`
+    : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Amari Method//Portal//EN',
+    'BEGIN:VEVENT',
+    `UID:${apt.id}@amarimethod.com`,
+    `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
+    `DTSTART:${toIcsDate(apt.startTime)}`,
+    `DTEND:${toIcsDate(apt.endTime)}`,
+    `SUMMARY:${apt.title || 'Amari Method session'}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    ...(locationLine ? [locationLine] : []),
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
 }
 
 export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
@@ -27,33 +74,28 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const [cancelError, setCancelError] = useState<string | null>(null);
 
   const isOnSeries = client.seriesType !== 'none';
-  // Derive total from series_type, not from completed + remaining.
-  // sessions_completed is cumulative (lifetime total, never resets), so adding
-  // it to remaining inflates the denominator after re-purchases.
   const totalSessions = client.seriesType === '8-session' ? 8
     : client.seriesType === '4-session' ? 4
     : 0;
-
-  // Current series progress = how many of THIS series they've used.
-  // Clamped to 0 for the rare case remaining > total (mid-series re-buy).
   const currentSeriesCompleted = isOnSeries
     ? Math.max(0, totalSessions - client.sessionsRemaining)
     : 0;
-  const progressPercent = totalSessions > 0
-    ? Math.min((currentSeriesCompleted / totalSessions) * 100, 100)
-    : 0;
-
-  // Lifetime count from actual appointment data — always accurate, never clamped
   const lifetimeCompleted = allAppointments.filter(a => a.status === 'completed' || a.status === 'showed').length;
-
-  // True when client is on their second or later series (lifetime > current series)
   const isReturningClient = isOnSeries && lifetimeCompleted > currentSeriesCompleted;
 
-  // Four UI states
+  // Journey rail step: 1..8 = which step you're on. >8 = completed.
+  // For series clients, anchored to series progress. For others, lifetime.
+  const journeyStep = (() => {
+    const base = isOnSeries ? currentSeriesCompleted : lifetimeCompleted;
+    const onStep = base + (upcomingAppointments.length > 0 ? 1 : 0);
+    return Math.min(onStep, JOURNEY_STEP_COUNT + 1);
+  })();
+  const journeyPct = Math.min(100, Math.round((journeyStep / JOURNEY_STEP_COUNT) * 100));
+
   const seriesInProgress = isOnSeries && client.sessionsRemaining > 0;
   const seriesFinished = isOnSeries && client.sessionsRemaining === 0;
   const payAsYouGo = !isOnSeries && lifetimeCompleted > 0;
-  // brandNew = !isOnSeries && lifetimeCompleted === 0 (default / else branch)
+  const brandNew = !isOnSeries && lifetimeCompleted === 0;
 
   async function handleCancel(appointmentId: string, title: string) {
     setCancellingId(appointmentId);
@@ -63,9 +105,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
       setConfirmingId(null);
       onRefetch();
     } catch (err) {
-      setCancelError(
-        err instanceof Error ? err.message : 'Unable to cancel. Please try again.'
-      );
+      setCancelError(err instanceof Error ? err.message : 'Unable to cancel. Please try again.');
     } finally {
       setCancellingId(null);
     }
@@ -93,246 +133,304 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
         onBookSession();
       }
     } catch (err) {
-      setCancelError(
-        err instanceof Error ? err.message : 'Unable to reschedule. Please try again.'
-      );
+      setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
     } finally {
       setReschedulingId(null);
     }
   }
 
+  const nextApt = upcomingAppointments[0];
+  const moreUpcoming = upcomingAppointments.slice(1, 5);
+
   return (
-    <div className="space-y-6">
-      {/* ── Progress card ── */}
-      <div className="portal-card">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-amari-accent-warm" />
-          <h2 className="font-serif text-lg font-bold text-amari-charcoal">Your Progress</h2>
+    <>
+      {/* ── Journey rail card ── */}
+      <section className="cp-journey">
+        <div className="cp-journey-head">
+          <div>
+            <span className="cp-mono">Your journey</span>
+            <h2 className="cp-journey-title">
+              {brandNew
+                ? <>The eight-step <em>method.</em></>
+                : journeyStep > JOURNEY_STEP_COUNT
+                  ? <>You've completed <em>the method.</em></>
+                  : <>Step <em>{journeyStep}</em> of {JOURNEY_STEP_COUNT}</>}
+            </h2>
+          </div>
+          <div className="cp-journey-pct">
+            <span className="cp-journey-pct-n">{journeyPct}<small>%</small></span>
+            <span className="cp-mono">Complete</span>
+          </div>
         </div>
 
-        {/* State 1: Active series, in progress */}
+        <ol className="cp-rail cp-rail-numbers-only">
+          {Array.from({ length: JOURNEY_STEP_COUNT }).map((_, i) => {
+            const idx = i + 1;
+            const done = idx < journeyStep;
+            const current = idx === journeyStep;
+            return (
+              <li key={idx} className={'cp-rail-step' + (done ? ' is-done' : '') + (current ? ' is-current' : '')}>
+                <span className="cp-rail-mark">
+                  <span className="cp-rail-dot"></span>
+                  {i < JOURNEY_STEP_COUNT - 1 && <span className="cp-rail-line"></span>}
+                </span>
+                <span className="cp-rail-label">
+                  <span className="cp-rail-n">{pad2(idx)}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
         {seriesInProgress && (
-          <div data-testid="state-series-in-progress">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-amari-text-secondary">
-                {currentSeriesCompleted} of {totalSessions} sessions
-              </span>
-              <span className="text-sm font-medium text-amari-accent-warm">
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-            <div className="h-3 bg-amari-light-sand rounded-full overflow-hidden">
-              <div
-                className="h-full bg-amari-accent-warm rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <p className="text-xs text-amari-text-muted mt-2">
-              {`${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`}
-            </p>
-            {isReturningClient && (
-              <p className="text-xs text-amari-text-muted mt-1">
-                ✦ {lifetimeCompleted} sessions with the Amari Method
-              </p>
-            )}
-          </div>
+          <p className="cp-journey-next">
+            <b>{client.seriesType}</b> · <span>{client.sessionsRemaining} session{client.sessionsRemaining === 1 ? '' : 's'} left</span>
+            {isReturningClient && <> · <em>{lifetimeCompleted}</em> with the Amari Method overall</>}
+          </p>
         )}
-
-        {/* State 2: Series just finished — celebration (Peak-End) */}
         {seriesFinished && (
-          <div data-testid="state-series-finished">
-            <div className="h-3 bg-amari-light-sand rounded-full overflow-hidden mb-3">
-              <div className="h-full bg-amari-accent-warm rounded-full w-full transition-all duration-700 ease-out" />
-            </div>
-            <p className="text-sm font-medium text-amari-charcoal">
-              Series complete — {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
-            </p>
-            <p className="text-xs text-amari-text-muted mt-1">
-              You've done meaningful work. Ready to keep the momentum going?
-            </p>
-          </div>
+          <p className="cp-journey-next">
+            Series complete — <em>{lifetimeCompleted}</em> session{lifetimeCompleted === 1 ? '' : 's'} with the Amari Method. Ready to keep the momentum going?
+          </p>
         )}
-
-        {/* State 3: Pay-as-you-go, has sessions */}
         {payAsYouGo && (
-          <div data-testid="state-pay-as-you-go">
-            <p className="text-sm font-medium text-amari-charcoal">
-              ✦ {lifetimeCompleted} session{lifetimeCompleted !== 1 ? 's' : ''} with the Amari Method
-            </p>
-          </div>
+          <p className="cp-journey-next">
+            <em>{lifetimeCompleted}</em> session{lifetimeCompleted === 1 ? '' : 's'} with the Amari Method.
+          </p>
         )}
-
-        {/* State 4: Brand new client — ghost progress bar (Zeigarnik) */}
-        {!seriesInProgress && !seriesFinished && !payAsYouGo && (
-          <div data-testid="state-brand-new">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-amari-text-muted">
-                Your 8-step journey
-              </span>
-              <span className="text-sm font-medium text-amari-text-muted">
-                0%
-              </span>
-            </div>
-            <div className="flex gap-1">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-2.5 flex-1 bg-amari-light-sand rounded-full"
-                />
-              ))}
-            </div>
-            <p className="text-xs text-amari-text-muted mt-2">
-              Book your first session to begin.
-            </p>
-          </div>
+        {brandNew && (
+          <p className="cp-journey-next">
+            Book your first session to begin.
+          </p>
         )}
-      </div>
+      </section>
 
-      {/* ── Upcoming Sessions card ── */}
-      <div className="portal-card">
-        <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-amari-charcoal" />
-          <h2 className="font-serif text-lg font-bold text-amari-charcoal">Upcoming Sessions</h2>
-        </div>
+      {/* ── Next session card ── */}
+      {nextApt ? (
+        (() => {
+          const tooSoon = isWithin24Hours(nextApt.startTime);
+          const isConfirming = confirmingId === nextApt.id;
+          const isCancelling = cancellingId === nextApt.id;
+          const isRescheduling = reschedulingId === nextApt.id;
+          const apptTitle = nextApt.title || nextApt.appointmentType || 'Session';
+          const format = detectFormat(nextApt);
+          const initialOrDisco = isInitialOrDiscovery(nextApt);
+          return (
+            <section className="cp-next">
+              <div className="cp-next-head">
+                <span className="cp-mono cp-accent">Up next</span>
+                <span className="cp-next-when">{getRelativeDay(nextApt.startTime)}</span>
+              </div>
+              <div className="cp-next-body">
+                <div className="cp-date">
+                  <span className="cp-date-m">{getMonth(nextApt.startTime)}</span>
+                  <span className="cp-date-d">{getDay(nextApt.startTime)}</span>
+                </div>
+                <div className="cp-next-info">
+                  <h3 className="cp-next-title">{apptTitle}</h3>
+                  <p className="cp-next-meta">
+                    <span>{formatTime(nextApt.startTime)}</span>
+                    <span className="cp-dot">·</span>
+                    <span>{format}</span>
+                    <span className="cp-dot">·</span>
+                    <span>with <b>Dr. Garrett</b></span>
+                  </p>
+                  {format === 'Virtual' && !nextApt.meetingUrl && (
+                    <p className="cp-next-note">Google Meet link is in your confirmation email.</p>
+                  )}
+                </div>
 
-        {cancelError && (
-          <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{cancelError}</p>
-          </div>
-        )}
-
-        {upcomingAppointments.length > 0 ? (
-          <div className="space-y-3">
-            {upcomingAppointments.slice(0, 5).map((appt) => {
-              const tooSoon = isWithin24Hours(appt.startTime);
-              const isConfirming = confirmingId === appt.id;
-              const isCancelling = cancellingId === appt.id;
-              const isRescheduling = reschedulingId === appt.id;
-              const apptTitle = appt.title || appt.appointmentType || 'Session';
-
-              return (
-                <div
-                  key={appt.id}
-                  className="p-3 bg-amari-light-sand rounded-lg"
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Calendar date block */}
-                    <div className="flex-shrink-0 w-14 h-14 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center border border-amari-border">
-                      <span className="text-[10px] uppercase font-semibold text-amari-accent-warm leading-none">
-                        {getMonth(appt.startTime)}
-                      </span>
-                      <span className="text-xl font-bold text-amari-charcoal leading-tight">
-                        {getDay(appt.startTime)}
-                      </span>
-                    </div>
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-amari-charcoal truncate">
-                        {apptTitle}
-                      </p>
-                      <p className="text-xs text-amari-text-muted mt-0.5">
-                        {getRelativeDay(appt.startTime)}
-                      </p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock className="w-3 h-3 text-amari-text-muted" />
-                        <span className="text-xs text-amari-text-secondary font-medium">
-                          {formatTime(appt.startTime)}
-                        </span>
-                      </div>
-                    </div>
+                {/* Action stack */}
+                {isConfirming ? (
+                  <div className="cp-next-actions" style={{ minWidth: 240 }}>
+                    <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--cp-ink-2)', lineHeight: 1.45, marginBottom: 4 }}>
+                      {confirmMode === 'reschedule'
+                        ? 'Your slot will be released so you can pick a new one.'
+                        : "You'll lose this slot. Cancellations within 24 hours count as used."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => confirmMode === 'reschedule'
+                        ? handleReschedule(nextApt.id, apptTitle)
+                        : handleCancel(nextApt.id, apptTitle)
+                      }
+                      disabled={isCancelling || isRescheduling}
+                      className="cp-btn cp-btn-danger"
+                    >
+                      <span>{
+                        (isCancelling || isRescheduling)
+                          ? 'Working…'
+                          : confirmMode === 'reschedule' ? 'Yes, reschedule' : 'Yes, cancel'
+                      }</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingId(null)}
+                      disabled={isCancelling || isRescheduling}
+                      className="cp-btn cp-btn-ghost"
+                    >
+                      Keep it
+                    </button>
                   </div>
-
-                  {/* Action buttons */}
-                  {isConfirming ? (
-                    <div className="mt-3 p-3 bg-white rounded-lg border border-red-200">
-                      <p className="text-sm text-amari-charcoal mb-3">
-                        {confirmMode === 'reschedule'
-                          ? 'Your current time slot will be released and you can pick a new one. Your session won\'t be lost.'
-                          : 'You\'ll lose this time slot and may need to wait for the next available opening.'}
-                      </p>
-                      <div className="flex gap-2">
+                ) : (
+                  <div className="cp-next-actions">
+                    {format === 'Virtual' && nextApt.meetingUrl ? (
+                      <a href={nextApt.meetingUrl} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
+                        <span>Join Google Meet</span><span className="cp-arrow">→</span>
+                      </a>
+                    ) : (
+                      <a href={buildIcsUrl(nextApt)} download={`amari-session-${nextApt.id}.ics`} className="cp-btn cp-btn-primary">
+                        <span>Add to calendar</span><span className="cp-arrow">→</span>
+                      </a>
+                    )}
+                    {format === 'Virtual' && nextApt.meetingUrl && (
+                      <a href={buildIcsUrl(nextApt)} download={`amari-session-${nextApt.id}.ics`} className="cp-btn cp-btn-ghost">
+                        Add to calendar
+                      </a>
+                    )}
+                    {initialOrDisco ? (
+                      <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20upcoming%20session" className="cp-btn cp-btn-ghost">
+                        Email to change
+                      </a>
+                    ) : tooSoon ? null : (
+                      <>
                         <button
-                          onClick={() => confirmMode === 'reschedule'
-                            ? handleReschedule(appt.id, apptTitle)
-                            : handleCancel(appt.id, apptTitle)
-                          }
-                          disabled={isCancelling || isRescheduling}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors disabled:opacity-50"
+                          type="button"
+                          onClick={() => { setCancelError(null); setConfirmMode('reschedule'); setConfirmingId(nextApt.id); }}
+                          className="cp-btn cp-btn-ghost"
                         >
-                          {(isCancelling || isRescheduling) ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : confirmMode === 'reschedule' ? (
-                            <RefreshCw className="w-3 h-3" />
-                          ) : (
-                            <X className="w-3 h-3" />
-                          )}
-                          {isCancelling ? 'Cancelling...' : isRescheduling ? 'Cancelling...' : confirmMode === 'reschedule' ? 'Yes, reschedule' : 'Yes, cancel'}
-                        </button>
-                        <button
-                          onClick={() => setConfirmingId(null)}
-                          disabled={isCancelling || isRescheduling}
-                          className="px-3 py-1.5 text-xs font-medium text-amari-text-secondary bg-amari-light-sand hover:bg-gray-200 rounded-md transition-colors disabled:opacity-50"
-                        >
-                          Keep it
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-3 flex gap-2">
-                      {tooSoon ? (
-                        <span className="flex items-center px-3 py-1.5 text-xs text-amari-text-muted" title="Changes require 24 hours notice">
-                          Changes unavailable within 24hrs
-                        </span>
-                      ) : (
-                        <>
-                        <button
-                          onClick={() => {
-                            setCancelError(null);
-                            setConfirmMode('reschedule');
-                            setConfirmingId(appt.id);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amari-charcoal bg-white hover:bg-gray-50 border border-amari-border rounded-md transition-colors"
-                        >
-                          <RefreshCw className="w-3 h-3" />
                           Reschedule
                         </button>
                         <button
-                          onClick={() => {
-                            setCancelError(null);
-                            setConfirmMode('cancel');
-                            setConfirmingId(appt.id);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 bg-white hover:bg-red-50 border border-amari-border rounded-md transition-colors"
+                          type="button"
+                          onClick={() => { setCancelError(null); setConfirmMode('cancel'); setConfirmingId(nextApt.id); }}
+                          className="cp-btn cp-btn-text"
                         >
-                          <X className="w-3 h-3" />
                           Cancel
                         </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {tooSoon && !initialOrDisco && !isConfirming && (
+                <p className="cp-locked">
+                  <span className="cp-lock-dot"></span>
+                  Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Dr. Garrett</a> and we'll review it.
+                </p>
+              )}
+
+              {cancelError && (
+                <p className="cp-locked" style={{ background: '#fbe6e1', borderLeftColor: 'var(--cp-err)' }}>
+                  <span className="cp-lock-dot" style={{ background: 'var(--cp-err)' }}></span>
+                  {cancelError}
+                </p>
+              )}
+            </section>
+          );
+        })()
+      ) : (
+        // Empty next-session state: prompt to book
+        <section className="cp-next">
+          <div className="cp-next-head">
+            <span className="cp-mono cp-accent">Up next</span>
           </div>
-        ) : (
-          <div className="text-center py-6">
-            <div className="w-12 h-12 bg-amari-light-sand rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="w-6 h-6 text-amari-text-muted" />
+          <div className="cp-next-body" style={{ gridTemplateColumns: '1fr auto' }}>
+            <div>
+              <h3 className="cp-next-title">No session on the books.</h3>
+              <p className="cp-next-meta"><span>When you're ready, book your next one.</span></p>
             </div>
-            <p className="text-sm text-amari-text-muted mb-3">No upcoming sessions scheduled</p>
             {onBookSession && (
-              <button
-                data-testid="book-next-from-progress"
-                onClick={onBookSession}
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-amari-charcoal hover:underline"
-              >
-                Book your next session <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="cp-next-actions">
+                <button type="button" onClick={onBookSession} className="cp-btn cp-btn-primary">
+                  <span>Book a session</span><span className="cp-arrow">→</span>
+                </button>
+              </div>
             )}
           </div>
-        )}
-      </div>
-    </div>
+        </section>
+      )}
+
+      {/* ── Coming up (additional upcoming) ── */}
+      {moreUpcoming.length > 0 && (
+        <section className="cp-coming">
+          <div className="cp-section-head">
+            <h3 className="cp-section-h">Coming up</h3>
+            <span className="cp-mono">{moreUpcoming.length} scheduled</span>
+          </div>
+          <ul className="cp-coming-rows">
+            {moreUpcoming.map(s => {
+              const tooSoon = isWithin24Hours(s.startTime);
+              const initialOrDisco = isInitialOrDiscovery(s);
+              const isConfirming = confirmingId === s.id;
+              const isCancelling = cancellingId === s.id;
+              const isRescheduling = reschedulingId === s.id;
+              const apptTitle = s.title || s.appointmentType || 'Session';
+              return (
+                <li key={s.id} className="cp-coming-row">
+                  <div className="cp-date">
+                    <span className="cp-date-m">{getMonth(s.startTime)}</span>
+                    <span className="cp-date-d">{getDay(s.startTime)}</span>
+                  </div>
+                  <div className="cp-coming-body">
+                    <span className="cp-coming-title">{apptTitle}</span>
+                    <span className="cp-coming-meta">{getRelativeDay(s.startTime)} · {formatTime(s.startTime)} · {detectFormat(s)}</span>
+                  </div>
+                  <div className="cp-coming-actions">
+                    {isConfirming ? (
+                      <>
+                        <button
+                          type="button"
+                          className="cp-btn cp-btn-row cp-btn-danger"
+                          onClick={() => confirmMode === 'reschedule'
+                            ? handleReschedule(s.id, apptTitle)
+                            : handleCancel(s.id, apptTitle)
+                          }
+                          disabled={isCancelling || isRescheduling}
+                        >
+                          {(isCancelling || isRescheduling) ? 'Working…' : `Yes, ${confirmMode}`}
+                        </button>
+                        <button
+                          type="button"
+                          className="cp-btn cp-btn-row cp-btn-text"
+                          onClick={() => setConfirmingId(null)}
+                          disabled={isCancelling || isRescheduling}
+                        >
+                          Keep it
+                        </button>
+                      </>
+                    ) : initialOrDisco ? (
+                      <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20upcoming%20session" className="cp-btn cp-btn-row cp-btn-text">
+                        Email to change
+                      </a>
+                    ) : tooSoon ? (
+                      <span className="cp-mono" style={{ fontSize: 11 }}>Locked</span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="cp-btn cp-btn-row"
+                          onClick={() => { setCancelError(null); setConfirmMode('reschedule'); setConfirmingId(s.id); }}
+                        >
+                          Reschedule
+                        </button>
+                        <button
+                          type="button"
+                          className="cp-btn cp-btn-row cp-btn-text"
+                          onClick={() => { setCancelError(null); setConfirmMode('cancel'); setConfirmingId(s.id); }}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+    </>
   );
 }
