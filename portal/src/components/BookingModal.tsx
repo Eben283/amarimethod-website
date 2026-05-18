@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { getAvailableSlots, bookAppointment } from '../lib/api';
+import { getAvailableSlots, bookAppointment, cancelAppointment } from '../lib/api';
+import type { Appointment } from '../types/portal';
 
 // Calendar IDs
 const CALENDARS = {
@@ -21,6 +21,8 @@ interface Slot {
 
 interface BookingModalProps {
   onClose: () => void;
+  /** If set, this is a reschedule — old appointment is cancelled after the new one books. */
+  rescheduleFor?: Appointment | null;
 }
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -41,7 +43,6 @@ function formatTime(hour: number, minute: number): string {
 }
 
 function formatDateDisplay(dateStr: string): string {
-  // dateStr is "YYYY-MM-DD"
   const [year, month, day] = dateStr.split('-').map(Number);
   const d = new Date(year, month - 1, day);
   return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -54,31 +55,26 @@ function toYMD(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-export default function BookingModal({ onClose }: BookingModalProps) {
+export default function BookingModal({ onClose, rescheduleFor }: BookingModalProps) {
   const [sessionType, setSessionType] = useState<SessionType>('in-person');
   const [step, setStep] = useState<ModalStep>('select');
 
-  // Calendar navigation
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
-  const [calMonth, setCalMonth] = useState(today.getMonth()); // 0-indexed
+  const [calMonth, setCalMonth] = useState(today.getMonth());
 
-  // Slots state
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [slotsError, setSlotsError] = useState<string | null>(null);
 
-  // Selection
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
 
-  // Booking result
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [bookedTitle, setBookedTitle] = useState<string>('');
 
   const timezone = getUserTimezone();
 
-  // Fetch slots whenever session type or calendar month changes
   const fetchSlots = useCallback(async () => {
     setSlotsLoading(true);
     setSlotsError(null);
@@ -89,7 +85,6 @@ export default function BookingModal({ onClose }: BookingModalProps) {
       ? CALENDARS.followup_inperson
       : CALENDARS.followup_virtual;
 
-    // Fetch the full month (first to last day)
     const firstDay = new Date(calYear, calMonth, 1);
     const lastDay  = new Date(calYear, calMonth + 1, 0);
     const startDate = toYMD(firstDay);
@@ -110,21 +105,25 @@ export default function BookingModal({ onClose }: BookingModalProps) {
     fetchSlots();
   }, [fetchSlots]);
 
-  // Build set of dates that have available slots
-  const availableDates = new Set(slots.map((s) => s.date));
+  // ESC to close
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  // Slots for the selected date
+  const availableDates = new Set(slots.map((s) => s.date));
   const slotsForDate = selectedDate
     ? slots.filter((s) => s.date === selectedDate).sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
     : [];
 
-  // Calendar grid
   const firstOfMonth = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-  const startDow = firstOfMonth.getDay(); // 0=Sun
+  const startDow = firstOfMonth.getDay();
   const todayYMD = toYMD(today);
 
-  // Prev/next month
   function prevMonth() {
     if (calMonth === 0) { setCalYear(y => y - 1); setCalMonth(11); }
     else { setCalMonth(m => m - 1); }
@@ -134,7 +133,6 @@ export default function BookingModal({ onClose }: BookingModalProps) {
     else { setCalMonth(m => m + 1); }
   }
 
-  // Disable going to months before current
   const isPrevDisabled = calYear === today.getFullYear() && calMonth <= today.getMonth();
 
   async function handleConfirm() {
@@ -152,6 +150,17 @@ export default function BookingModal({ onClose }: BookingModalProps) {
         timezone,
         sessionType,
       });
+      // If this is a reschedule, cancel the original after the new one books.
+      // Doing it in this order means a failed cancel still leaves the user
+      // with the new session booked, never with zero sessions.
+      if (rescheduleFor) {
+        try {
+          await cancelAppointment(rescheduleFor.id, rescheduleFor.title || 'Session');
+        } catch (cancelErr) {
+          // Surface but don't block — the new booking succeeded.
+          console.warn('Failed to cancel original session during reschedule', cancelErr);
+        }
+      }
       setBookedTitle(result.appointment.title);
       setStep('success');
     } catch (err: unknown) {
@@ -161,266 +170,187 @@ export default function BookingModal({ onClose }: BookingModalProps) {
     }
   }
 
-  // ──────────────────────────────────────────────
-  // Render helpers
-  // ──────────────────────────────────────────────
-
-  function renderCalendar() {
+  function renderCalendarCells() {
     const cells: React.ReactNode[] = [];
-
-    // Empty cells before the 1st
     for (let i = 0; i < startDow; i++) {
-      cells.push(<div key={`empty-${i}`} />);
+      cells.push(<div key={`empty-${i}`} className="cp-cal-empty" />);
     }
-
     for (let d = 1; d <= daysInMonth; d++) {
       const ymd = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const isPast = ymd < todayYMD;
       const hasSlots = availableDates.has(ymd);
       const isSelected = ymd === selectedDate;
       const isToday = ymd === todayYMD;
-
+      const disabled = isPast || !hasSlots || slotsLoading;
+      const cls = ['cp-cal-day'];
+      if (isSelected) cls.push('is-selected');
+      if (isToday && !isSelected) cls.push('is-today');
+      if (hasSlots && !isPast) cls.push('has-slots');
+      if (disabled) cls.push('is-disabled');
       cells.push(
         <button
           key={ymd}
           data-testid={`calendar-day-${ymd}`}
-          disabled={isPast || !hasSlots || slotsLoading}
+          disabled={disabled}
           onClick={() => { setSelectedDate(ymd); setSelectedSlot(null); }}
-          className={[
-            'relative w-9 h-9 rounded-full text-sm font-medium transition-all duration-150 mx-auto flex items-center justify-center',
-            isSelected
-              ? 'bg-amari-charcoal text-white'
-              : hasSlots && !isPast
-                ? 'text-amari-charcoal hover:bg-amari-light-sand cursor-pointer'
-                : 'text-gray-300 cursor-default',
-            isToday && !isSelected ? 'ring-1 ring-amari-charcoal' : '',
-          ].join(' ')}
+          className={cls.join(' ')}
         >
-          {d}
-          {hasSlots && !isPast && !isSelected && (
-            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amari-accent-warm" />
-          )}
+          <span>{d}</span>
+          {hasSlots && !isPast && !isSelected && <span className="cp-cal-dot" aria-hidden="true" />}
         </button>
       );
     }
-
     return cells;
   }
 
-  // ──────────────────────────────────────────────
-  // Main modal UI
-  // ──────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal panel */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+    <div className="cp-screen cp-with-modal" style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
+      <div className="cp-modal-scrim" onClick={onClose} aria-hidden="true" />
+      <div className="cp-modal cp-modal-sm" role="dialog" aria-label="Book a session">
+        <header className="cp-modal-head">
           <div>
-            <h2 className="font-serif text-xl text-amari-charcoal">Book a Session</h2>
-            <p className="text-xs text-amari-text-muted mt-0.5">{timezone.replace(/_/g, ' ')}</p>
+            <span className="cp-mono">{rescheduleFor ? 'Reschedule' : 'Book a session'}</span>
+            <h2 className="cp-modal-title">
+              {rescheduleFor
+                ? <>Pick a <em>new time.</em></>
+                : <>Find a time <em>that works.</em></>}
+            </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-amari-light-sand text-amari-charcoal transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+          <button type="button" className="cp-modal-close" aria-label="Close" onClick={onClose}>✕</button>
+        </header>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="cp-modal-body">
 
-          {/* ── Step: Success ── */}
+          {/* Success */}
           {step === 'success' && (
-            <div data-testid="booking-success-screen" className="flex flex-col items-center gap-4 py-8 text-center">
-              <CheckCircle className="w-14 h-14 text-green-500" />
-              <div>
-                <h3 className="font-serif text-lg text-amari-charcoal">You're booked!</h3>
-                <p className="text-sm text-amari-text-muted mt-1">{bookedTitle}</p>
-                <p className="text-sm text-amari-text-muted">
-                  {selectedSlot && formatDateDisplay(selectedSlot.date)} at{' '}
-                  {selectedSlot && formatTime(selectedSlot.hour, selectedSlot.minute)}
-                </p>
-              </div>
-              <p className="text-xs text-amari-text-muted max-w-xs">
-                A confirmation email is on its way. See you then!
+            <div data-testid="booking-success-screen" className="cp-bm-success">
+              <div className="cp-bm-glyph">✦</div>
+              <h3 className="cp-bm-success-h">You're <em>booked.</em></h3>
+              <p className="cp-bm-success-p">{bookedTitle}</p>
+              <p className="cp-bm-success-meta">
+                {selectedSlot && formatDateDisplay(selectedSlot.date)} at {selectedSlot && formatTime(selectedSlot.hour, selectedSlot.minute)}
               </p>
-              <button
-                onClick={onClose}
-                className="mt-2 px-6 py-2.5 bg-amari-charcoal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
-              >
-                Close
-              </button>
+              <p className="cp-bm-success-fine">A confirmation email is on its way.</p>
             </div>
           )}
 
-          {/* ── Step: Error ── */}
+          {/* Error */}
           {step === 'error' && (
-            <div data-testid="booking-error-screen" className="flex flex-col items-center gap-4 py-8 text-center">
-              <AlertCircle className="w-14 h-14 text-red-400" />
-              <div>
-                <h3 className="font-serif text-lg text-amari-charcoal">Something went wrong</h3>
-                <p className="text-sm text-amari-text-muted mt-1">{errorMsg}</p>
-              </div>
-              <button
-                onClick={() => setStep('select')}
-                className="px-6 py-2.5 bg-amari-charcoal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
-              >
-                Try Again
-              </button>
+            <div data-testid="booking-error-screen" className="cp-bm-error">
+              <span className="cp-mono cp-accent">Something went wrong</span>
+              <h3 className="cp-bm-error-h">We couldn't <em>book that time.</em></h3>
+              <p className="cp-bm-error-p">{errorMsg}</p>
             </div>
           )}
 
-          {/* ── Step: Loading (submitting) ── */}
+          {/* Loading (submitting) */}
           {step === 'loading' && (
-            <div className="flex flex-col items-center gap-4 py-12">
-              <Loader2 className="w-10 h-10 text-amari-charcoal animate-spin" />
-              <p className="text-sm text-amari-text-muted">Booking your session…</p>
+            <div className="cp-bm-loading">
+              <span className="cp-verify-spinner" aria-hidden="true"></span>
+              <p>Booking your session…</p>
             </div>
           )}
 
-          {/* ── Step: Confirm ── */}
+          {/* Confirm */}
           {step === 'confirm' && selectedSlot && (
-            <div className="space-y-5">
-              <div className="portal-card bg-amari-light-sand border-0 space-y-2">
-                <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider">Appointment Summary</p>
-                <p className="text-amari-charcoal font-medium">
-                  {sessionType === 'in-person' ? 'Follow-up Session (In Person)' : 'Follow-up Session (Virtual)'}
-                </p>
-                <p className="text-sm text-amari-text-muted">
-                  {formatDateDisplay(selectedSlot.date)}
-                </p>
-                <p className="text-sm text-amari-text-muted">
-                  {formatTime(selectedSlot.hour, selectedSlot.minute)}
-                </p>
-                <p className="text-xs text-amari-text-muted">{timezone.replace(/_/g, ' ')}</p>
+            <div className="cp-bm-confirm">
+              <span className="cp-mono cp-accent">Confirm</span>
+              <h3 className="cp-bm-confirm-h">
+                {sessionType === 'in-person' ? 'Follow-up · In person' : 'Follow-up · Virtual'}
+              </h3>
+              <div className="cp-bm-confirm-meta">
+                <div><span className="cp-mono">Date</span><b>{formatDateDisplay(selectedSlot.date)}</b></div>
+                <div><span className="cp-mono">Time</span><b><em>{formatTime(selectedSlot.hour, selectedSlot.minute)}</em></b></div>
+                <div><span className="cp-mono">Timezone</span><b>{timezone.replace(/_/g, ' ')}</b></div>
               </div>
               {sessionType === 'virtual' && (
-                <p className="text-xs text-amari-text-muted bg-blue-50 rounded-lg p-3">
-                  📧 A Google Meet link will be emailed to you and added to the calendar invite.
-                </p>
+                <p className="cp-bm-note">A Google Meet link will be emailed and added to your calendar invite.</p>
               )}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setStep('select')}
-                  className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-amari-charcoal hover:bg-amari-light-sand transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  data-testid="confirm-booking-btn"
-                  onClick={handleConfirm}
-                  className="flex-1 py-2.5 bg-amari-charcoal text-white rounded-lg text-sm font-medium hover:bg-opacity-90 transition-colors"
-                >
-                  Confirm Booking
-                </button>
-              </div>
             </div>
           )}
 
-          {/* ── Step: Select date/time ── */}
+          {/* Select date/time */}
           {step === 'select' && (
             <>
-              {/* Session type toggle */}
-              <div className="flex gap-2 p-1 bg-amari-light-sand rounded-xl">
+              {/* Session type segmented toggle */}
+              <div className="cp-segmented" role="tablist">
                 {(['in-person', 'virtual'] as SessionType[]).map((type) => (
                   <button
                     key={type}
+                    type="button"
+                    role="tab"
+                    aria-selected={sessionType === type}
                     onClick={() => setSessionType(type)}
-                    className={[
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                      sessionType === type
-                        ? 'bg-white shadow-sm text-amari-charcoal'
-                        : 'text-amari-text-muted hover:text-amari-charcoal',
-                    ].join(' ')}
+                    className={'cp-segmented-btn' + (sessionType === type ? ' is-on' : '')}
                   >
-                    {type === 'in-person' ? 'In Person' : 'Virtual'}
+                    {type === 'in-person' ? 'In person' : 'Virtual'}
                   </button>
                 ))}
               </div>
 
-              {/* Calendar header */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
+              {/* Calendar */}
+              <div className="cp-cal">
+                <div className="cp-cal-head">
                   <button
+                    type="button"
                     data-testid="prev-month-btn"
                     onClick={prevMonth}
                     disabled={isPrevDisabled}
-                    className="p-1.5 rounded-lg hover:bg-amari-light-sand disabled:opacity-30 disabled:cursor-default transition-colors"
+                    className="cp-cal-nav"
+                    aria-label="Previous month"
                   >
-                    <ChevronLeft className="w-4 h-4 text-amari-charcoal" />
+                    <span className="cp-arrow cp-arrow-l">←</span>
                   </button>
-                  <span data-testid="calendar-month-label" className="font-medium text-amari-charcoal text-sm">
+                  <span data-testid="calendar-month-label" className="cp-cal-month">
                     {MONTHS[calMonth]} {calYear}
                   </span>
                   <button
+                    type="button"
                     data-testid="next-month-btn"
                     onClick={nextMonth}
-                    className="p-1.5 rounded-lg hover:bg-amari-light-sand transition-colors"
+                    className="cp-cal-nav"
+                    aria-label="Next month"
                   >
-                    <ChevronRight className="w-4 h-4 text-amari-charcoal" />
+                    <span className="cp-arrow">→</span>
                   </button>
                 </div>
 
-                {/* Day-of-week headers */}
-                <div className="grid grid-cols-7 mb-1">
-                  {DAYS.map((d) => (
-                    <div key={d} className="text-center text-xs text-amari-text-muted font-medium py-1">
-                      {d}
-                    </div>
-                  ))}
+                <div className="cp-cal-dows">
+                  {DAYS.map((d) => <span key={d}>{d}</span>)}
                 </div>
 
-                {/* Calendar grid */}
                 {slotsLoading ? (
-                  <div className="flex justify-center items-center py-10">
-                    <Loader2 className="w-6 h-6 text-amari-charcoal animate-spin" />
+                  <div className="cp-cal-loading">
+                    <span className="cp-verify-spinner" aria-hidden="true"></span>
                   </div>
                 ) : slotsError ? (
-                  <div className="text-center py-6 space-y-2">
-                    <p className="text-sm text-red-500">{slotsError}</p>
-                    <button
-                      onClick={fetchSlots}
-                      className="text-xs text-amari-charcoal underline"
-                    >
-                      Try again
-                    </button>
+                  <div className="cp-cal-err">
+                    <p>{slotsError}</p>
+                    <button type="button" onClick={fetchSlots} className="cp-btn cp-btn-ghost cp-btn-row">Try again</button>
                   </div>
                 ) : (
-                  <div data-testid="calendar-grid" className="grid grid-cols-7 gap-y-1">
-                    {renderCalendar()}
+                  <div data-testid="calendar-grid" className="cp-cal-grid">
+                    {renderCalendarCells()}
                   </div>
                 )}
               </div>
 
               {/* Time slots */}
               {selectedDate && (
-                <div>
-                  <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-                    {formatDateDisplay(selectedDate)}
-                  </p>
+                <div className="cp-bm-times">
+                  <span className="cp-mono cp-accent">{formatDateDisplay(selectedDate)}</span>
                   {slotsForDate.length === 0 ? (
-                    <p className="text-sm text-amari-text-muted">No times available for this date.</p>
+                    <p className="cp-bm-empty">No times available for this date.</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="cp-bm-times-grid">
                       {slotsForDate.map((slot) => {
                         const isSelected = selectedSlot?.datetime === slot.datetime;
                         return (
                           <button
                             key={slot.datetime}
+                            type="button"
                             onClick={() => setSelectedSlot(slot)}
-                            className={[
-                              'py-2 px-2 rounded-lg text-sm font-medium border transition-all duration-150',
-                              isSelected
-                                ? 'bg-amari-charcoal text-white border-amari-charcoal'
-                                : 'border-gray-200 text-amari-charcoal hover:border-amari-charcoal hover:bg-amari-light-sand',
-                            ].join(' ')}
+                            className={'cp-slot' + (isSelected ? ' is-picked' : '')}
                           >
                             {formatTime(slot.hour, slot.minute)}
                           </button>
@@ -430,19 +360,48 @@ export default function BookingModal({ onClose }: BookingModalProps) {
                   )}
                 </div>
               )}
-
-              {/* Continue button */}
-              {selectedSlot && (
-                <button
-                  onClick={() => setStep('confirm')}
-                  className="w-full py-3 bg-amari-charcoal text-white rounded-xl text-sm font-semibold hover:bg-opacity-90 transition-colors"
-                >
-                  Continue →
-                </button>
-              )}
             </>
           )}
         </div>
+
+        <footer className="cp-modal-foot">
+          {step === 'select' && (
+            <>
+              <button type="button" className="cp-btn cp-btn-ghost" onClick={onClose}>Cancel</button>
+              <button
+                type="button"
+                className="cp-btn cp-btn-primary"
+                disabled={!selectedSlot}
+                onClick={() => setStep('confirm')}
+              >
+                <span>Continue</span><span className="cp-arrow">→</span>
+              </button>
+            </>
+          )}
+          {step === 'confirm' && (
+            <>
+              <button type="button" className="cp-btn cp-btn-ghost" onClick={() => setStep('select')}>Back</button>
+              <button
+                type="button"
+                data-testid="confirm-booking-btn"
+                className="cp-btn cp-btn-primary"
+                onClick={handleConfirm}
+              >
+                <span>Confirm booking</span><span className="cp-arrow">→</span>
+              </button>
+            </>
+          )}
+          {(step === 'success' || step === 'error') && (
+            <>
+              {step === 'error' && (
+                <button type="button" className="cp-btn cp-btn-ghost" onClick={() => setStep('select')}>Try a different time</button>
+              )}
+              <button type="button" className="cp-btn cp-btn-primary" onClick={onClose}>
+                <span>{step === 'success' ? 'Done' : 'Close'}</span><span className="cp-arrow">→</span>
+              </button>
+            </>
+          )}
+        </footer>
       </div>
     </div>
   );

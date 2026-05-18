@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BookingModal from '../components/BookingModal';
+import CancelModal from '../components/CancelModal';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 import type { ClientData, Appointment } from '../types/portal';
@@ -11,17 +12,8 @@ import type { ClientData, Appointment } from '../types/portal';
    All UI is composed from small inline sub-components below.
    ============================================================ */
 
-// 8 protocol step names — placeholders. TODO: confirm Garrett's actual names.
-const JOURNEY_STEPS = [
-  'Initial',
-  'Foundation',
-  'Pattern integration',
-  'Loosening',
-  'Deepening',
-  'Self-correction',
-  'Integration',
-  'Living practice',
-];
+// 8-step rail — numbered dots only, no fabricated names.
+const JOURNEY_STEP_COUNT = 8;
 
 /* ---------- helpers ---------- */
 function pad2(n: number) {
@@ -76,7 +68,7 @@ function deriveJourneyStep(client: ClientData, upcoming: Appointment[]): number 
   if (client.sessionsCompleted === 0 && upcoming.length === 0) return 0;
   // If there are upcoming sessions, the next is the "current" step.
   const onStep = client.sessionsCompleted + (upcoming.length > 0 ? 1 : 0);
-  return Math.min(onStep, JOURNEY_STEPS.length + 1);
+  return Math.min(onStep, JOURNEY_STEP_COUNT + 1);
 }
 
 function deriveSeriesUsedTotal(client: ClientData): { used: number; total: number } | null {
@@ -146,12 +138,12 @@ function Greeting({ user, sub, lastVisit }: { user: string; sub: string; lastVis
 }
 
 function Journey({ step }: { step: number }) {
-  const pct = Math.min(100, Math.round((step / JOURNEY_STEPS.length) * 100));
+  const pct = Math.min(100, Math.round((step / JOURNEY_STEP_COUNT) * 100));
   const headline = step === 0
     ? <>The eight-step <em>method.</em></>
-    : step > JOURNEY_STEPS.length
+    : step > JOURNEY_STEP_COUNT
       ? <>You've completed <em>the method.</em></>
-      : <>Step <em>{step}</em> of {JOURNEY_STEPS.length} · {JOURNEY_STEPS[step - 1]}</>;
+      : <>Step <em>{step}</em> of {JOURNEY_STEP_COUNT}</>;
 
   return (
     <section className="cp-journey">
@@ -166,8 +158,8 @@ function Journey({ step }: { step: number }) {
         </div>
       </div>
 
-      <ol className="cp-rail">
-        {JOURNEY_STEPS.map((name, i) => {
+      <ol className="cp-rail cp-rail-numbers-only">
+        {Array.from({ length: JOURNEY_STEP_COUNT }).map((_, i) => {
           const idx = i + 1;
           const done = idx < step;
           const current = idx === step;
@@ -175,11 +167,10 @@ function Journey({ step }: { step: number }) {
             <li key={idx} className={'cp-rail-step' + (done ? ' is-done' : '') + (current ? ' is-current' : '')}>
               <span className="cp-rail-mark">
                 <span className="cp-rail-dot"></span>
-                {i < JOURNEY_STEPS.length - 1 && <span className="cp-rail-line"></span>}
+                {i < JOURNEY_STEP_COUNT - 1 && <span className="cp-rail-line"></span>}
               </span>
               <span className="cp-rail-label">
                 <span className="cp-rail-n">{pad2(idx)}</span>
-                <span className="cp-rail-name">{name}</span>
               </span>
             </li>
           );
@@ -199,7 +190,7 @@ function SessionDate({ m, d, w }: { m: string; d: string; w?: string }) {
   );
 }
 
-function NextSession({ apt, onBook }: { apt: Appointment; onBook?: () => void }) {
+function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onReschedule: () => void; onCancel: () => void }) {
   const { m, d, w } = formatMonthDay(apt.startTime);
   const time = new Date(apt.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
   const format = detectFormat(apt);
@@ -224,12 +215,12 @@ function NextSession({ apt, onBook }: { apt: Appointment; onBook?: () => void })
           </p>
         </div>
         <div className="cp-next-actions">
-          <button type="button" className="cp-btn cp-btn-primary" onClick={onBook}>
-            <span>{format === 'Virtual' ? 'Join session' : 'View location'}</span>
-            <span className="cp-arrow">→</span>
+          <button type="button" className="cp-btn cp-btn-ghost" onClick={onReschedule} disabled={locked}>
+            Reschedule
           </button>
-          <button type="button" className="cp-btn cp-btn-ghost" disabled={locked}>Reschedule</button>
-          <button type="button" className="cp-btn cp-btn-text" disabled={locked}>Cancel</button>
+          <button type="button" className="cp-btn cp-btn-text" onClick={onCancel} disabled={locked}>
+            Cancel
+          </button>
         </div>
       </div>
       {locked && (
@@ -242,7 +233,7 @@ function NextSession({ apt, onBook }: { apt: Appointment; onBook?: () => void })
   );
 }
 
-function ComingUp({ sessions }: { sessions: Appointment[] }) {
+function ComingUp({ sessions, onReschedule, onCancel }: { sessions: Appointment[]; onReschedule: (a: Appointment) => void; onCancel: (a: Appointment) => void }) {
   if (sessions.length === 0) return null;
   return (
     <section className="cp-coming">
@@ -255,6 +246,7 @@ function ComingUp({ sessions }: { sessions: Appointment[] }) {
           const { m, d, w } = formatMonthDay(s.startTime);
           const time = new Date(s.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
           const format = detectFormat(s);
+          const locked = isWithin24Hours(s.startTime);
           return (
             <li key={s.id} className="cp-coming-row">
               <SessionDate m={m} d={d} />
@@ -263,8 +255,8 @@ function ComingUp({ sessions }: { sessions: Appointment[] }) {
                 <span className="cp-coming-meta">{w} · {time} · {format}</span>
               </div>
               <div className="cp-coming-actions">
-                <button type="button" className="cp-btn cp-btn-row">Reschedule</button>
-                <button type="button" className="cp-btn cp-btn-row cp-btn-text">Cancel</button>
+                <button type="button" className="cp-btn cp-btn-row" onClick={() => onReschedule(s)} disabled={locked}>Reschedule</button>
+                <button type="button" className="cp-btn cp-btn-row cp-btn-text" onClick={() => onCancel(s)} disabled={locked}>Cancel</button>
               </div>
             </li>
           );
@@ -497,7 +489,7 @@ function DashCompleted({ client, history }: { client: ClientData; history: Appoi
     <div className="cp-screen">
       <TopBar firstName={client.firstName} />
       <Greeting user={client.firstName} sub="You've moved through all eight steps. The protocols are yours now." />
-      <Journey step={JOURNEY_STEPS.length + 1} />
+      <Journey step={JOURNEY_STEP_COUNT + 1} />
       <section className="cp-celebrate">
         <span className="cp-celebrate-glyph">✦</span>
         <div className="cp-celebrate-body">
@@ -527,6 +519,8 @@ export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<Appointment | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null);
 
   const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
 
@@ -536,7 +530,7 @@ export default function DashboardPage() {
 
   const { client, appointments, upcomingAppointments } = data;
   const step = deriveJourneyStep(client, upcomingAppointments);
-  const completed = step > JOURNEY_STEPS.length;
+  const completed = step > JOURNEY_STEP_COUNT;
   const hasHadInitial = client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
 
@@ -625,12 +619,43 @@ export default function DashboardPage() {
   return (
     <div className="cp-screen">
       <TopBar firstName={firstName} />
-      {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
+      {showBookingModal && (
+        <BookingModal
+          rescheduleFor={rescheduleTarget}
+          onClose={() => {
+            const wasReschedule = !!rescheduleTarget;
+            setShowBookingModal(false);
+            setRescheduleTarget(null);
+            // Refetch after a reschedule flow closes (booked new + cancelled old).
+            if (wasReschedule) refetch();
+          }}
+        />
+      )}
+      {cancelTarget && (
+        <CancelModal
+          appointment={cancelTarget}
+          onClose={() => setCancelTarget(null)}
+          onSuccess={() => {
+            setCancelTarget(null);
+            refetch();
+          }}
+        />
+      )}
       <Greeting user={firstName} sub={sub} lastVisit={lastVisit} />
       <Journey step={step} />
-      {nextApt && <NextSession apt={nextApt} />}
+      {nextApt && (
+        <NextSession
+          apt={nextApt}
+          onReschedule={() => { setRescheduleTarget(nextApt); setShowBookingModal(true); }}
+          onCancel={() => setCancelTarget(nextApt)}
+        />
+      )}
       {hasActiveSeries && <SeriesPanel client={client} />}
-      <ComingUp sessions={otherUpcoming} />
+      <ComingUp
+        sessions={otherUpcoming}
+        onReschedule={(a) => { setRescheduleTarget(a); setShowBookingModal(true); }}
+        onCancel={(a) => setCancelTarget(a)}
+      />
       <BookManage actions={actions} />
       <History items={appointments} />
       <Footer />
