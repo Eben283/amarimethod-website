@@ -1,639 +1,130 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import PortalNav from '../components/PortalNav';
+import QuickActions from '../components/QuickActions';
+import ProgressTracker from '../components/ProgressTracker';
+import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
+import ReferralCard from '../components/ReferralCard';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
-import type { ClientData, Appointment } from '../types/portal';
+import { getGreeting } from '../lib/utils';
+import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
-/* ============================================================
-   Client Portal — editorial dashboard
-   Styles live in src/styles/portal.css (cp-* prefix).
-   All UI is composed from small inline sub-components below.
-   ============================================================ */
-
-// 8 protocol step names — placeholders. TODO: confirm Garrett's actual names.
-const JOURNEY_STEPS = [
-  'Initial',
-  'Foundation',
-  'Pattern integration',
-  'Loosening',
-  'Deepening',
-  'Self-correction',
-  'Integration',
-  'Living practice',
-];
-
-/* ---------- helpers ---------- */
-function pad2(n: number) {
-  return n < 10 ? `0${n}` : String(n);
-}
-
-function formatMonthDay(iso: string): { m: string; d: string; w: string } {
-  const dt = new Date(iso);
-  const m = dt.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-  const d = pad2(dt.getDate());
-  const w = dt.toLocaleString('en-US', { weekday: 'short' });
-  return { m, d, w };
-}
-
-function formatLongDate(iso: string): string {
-  const dt = new Date(iso);
-  return dt.toLocaleString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit',
-  });
-}
-
-function formatRelative(iso: string): string {
-  const now = Date.now();
-  const target = new Date(iso).getTime();
-  const diffMs = target - now;
-  const diffHrs = diffMs / (1000 * 60 * 60);
-  const diffDays = diffHrs / 24;
-  if (diffMs < 0) return 'In the past';
-  if (diffHrs < 1) return 'Within the hour';
-  if (diffHrs < 24) return diffHrs < 1.5 ? 'In an hour' : `In ${Math.round(diffHrs)} hours`;
-  if (diffDays < 1.5) return 'Tomorrow';
-  if (diffDays < 7) return `In ${Math.round(diffDays)} days`;
-  if (diffDays < 14) return 'Next week';
-  return `In ${Math.round(diffDays / 7)} weeks`;
-}
-
-function isWithin24Hours(iso: string): boolean {
-  const diff = new Date(iso).getTime() - Date.now();
-  return diff > 0 && diff < 1000 * 60 * 60 * 24;
-}
-
-function detectFormat(apt: Appointment): 'Virtual' | 'In-person' {
-  const t = (apt.appointmentType || apt.title || '').toLowerCase();
-  if (t.includes('virtual') || t.includes('zoom') || t.includes('online')) return 'Virtual';
-  return 'In-person';
-}
-
-function deriveJourneyStep(client: ClientData, upcoming: Appointment[]): number {
-  // Step is 1-indexed: how far along the 8-step rail you are.
-  // 0 = haven't started. 1-8 = currently on that step. 9+ = method completed.
-  if (client.sessionsCompleted === 0 && upcoming.length === 0) return 0;
-  // If there are upcoming sessions, the next is the "current" step.
-  const onStep = client.sessionsCompleted + (upcoming.length > 0 ? 1 : 0);
-  return Math.min(onStep, JOURNEY_STEPS.length + 1);
-}
-
-function deriveSeriesUsedTotal(client: ClientData): { used: number; total: number } | null {
-  if (client.seriesType === 'none' || client.seriesType === 'Single') return null;
-  const total = client.seriesType === '4-session' ? 4 : 8;
-  const used = Math.max(0, total - client.sessionsRemaining);
-  return { used, total };
-}
-
-function deriveSeriesSavings(seriesType: ClientData['seriesType']): number {
-  // 8-session: 8 sessions priced like 1 initial ($225) + 7 follow-ups ($190) = $1,555. Package $1,295. Save $260.
-  // 4-session: 1 initial + 3 follow-ups = $225 + 570 = $795. Package $720. Save $75.
-  if (seriesType === '4-session') return 75;
-  if (seriesType === '8-session') return 260;
-  return 0;
-}
-
-/* ---------- sub-components ---------- */
-
-function TopBar({ firstName, notifications = 0 }: { firstName: string; notifications?: number }) {
-  const { logout } = useAuth();
-  return (
-    <header className="cp-topbar">
-      <Link to="/" className="cp-seal">
-        <span className="cp-mark"></span>
-        <span>Amari Method</span>
-      </Link>
-      <nav className="cp-topnav">
-        <Link to="/" className="cp-topnav-link cp-current">Dashboard</Link>
-        <Link to="/practice" className="cp-topnav-link">Practice</Link>
-      </nav>
-      <div className="cp-account">
-        <button
-          type="button"
-          className={'cp-bell' + (notifications > 0 ? ' has-unread' : '')}
-          aria-label={notifications > 0 ? `${notifications} notifications` : 'Notifications'}
-        >
-          <svg viewBox="0 0 18 18" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 2v1.2" />
-            <path d="M14 12V9a5 5 0 0 0-10 0v3l-1.2 2h12.4L14 12z" />
-            <path d="M7.6 16a1.5 1.5 0 0 0 2.8 0" />
-          </svg>
-          {notifications > 0 && <span className="cp-bell-dot" aria-hidden="true"></span>}
-        </button>
-        <span className="cp-account-name">{firstName}</span>
-        <button type="button" className="cp-account-out" onClick={logout}>Sign out</button>
-      </div>
-    </header>
-  );
-}
-
-function Greeting({ user, sub, lastVisit }: { user: string; sub: string; lastVisit?: string }) {
-  return (
-    <section className="cp-greet">
-      <div className="cp-greet-l">
-        <h1 className="cp-hello">Hey, <em>{user}.</em></h1>
-        <p className="cp-greet-sub">{sub}</p>
-      </div>
-      {lastVisit && (
-        <div className="cp-greet-r">
-          <span className="cp-mono">Last visit</span>
-          <span className="cp-greet-when">{lastVisit}</span>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Journey({ step }: { step: number }) {
-  const pct = Math.min(100, Math.round((step / JOURNEY_STEPS.length) * 100));
-  const headline = step === 0
-    ? <>The eight-step <em>method.</em></>
-    : step > JOURNEY_STEPS.length
-      ? <>You've completed <em>the method.</em></>
-      : <>Step <em>{step}</em> of {JOURNEY_STEPS.length} · {JOURNEY_STEPS[step - 1]}</>;
-
-  return (
-    <section className="cp-journey">
-      <div className="cp-journey-head">
-        <div>
-          <span className="cp-mono">Your journey</span>
-          <h2 className="cp-journey-title">{headline}</h2>
-        </div>
-        <div className="cp-journey-pct">
-          <span className="cp-journey-pct-n">{pct}<small>%</small></span>
-          <span className="cp-mono">Complete</span>
-        </div>
-      </div>
-
-      <ol className="cp-rail">
-        {JOURNEY_STEPS.map((name, i) => {
-          const idx = i + 1;
-          const done = idx < step;
-          const current = idx === step;
-          return (
-            <li key={idx} className={'cp-rail-step' + (done ? ' is-done' : '') + (current ? ' is-current' : '')}>
-              <span className="cp-rail-mark">
-                <span className="cp-rail-dot"></span>
-                {i < JOURNEY_STEPS.length - 1 && <span className="cp-rail-line"></span>}
-              </span>
-              <span className="cp-rail-label">
-                <span className="cp-rail-n">{pad2(idx)}</span>
-                <span className="cp-rail-name">{name}</span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  );
-}
-
-function SessionDate({ m, d, w }: { m: string; d: string; w?: string }) {
-  return (
-    <div className="cp-date">
-      <span className="cp-date-m">{m}</span>
-      <span className="cp-date-d">{d}</span>
-      {w && <span className="cp-date-w">{w}</span>}
-    </div>
-  );
-}
-
-function NextSession({ apt, onBook }: { apt: Appointment; onBook?: () => void }) {
-  const { m, d, w } = formatMonthDay(apt.startTime);
-  const time = new Date(apt.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const format = detectFormat(apt);
-  const locked = isWithin24Hours(apt.startTime);
-
-  return (
-    <section className="cp-next">
-      <div className="cp-next-head">
-        <span className="cp-mono cp-accent">Up next</span>
-        <span className="cp-next-when">{formatRelative(apt.startTime)}</span>
-      </div>
-      <div className="cp-next-body">
-        <SessionDate m={m} d={d} w={w} />
-        <div className="cp-next-info">
-          <h3 className="cp-next-title">{apt.title || 'Session'}</h3>
-          <p className="cp-next-meta">
-            <span>{time}</span>
-            <span className="cp-dot">·</span>
-            <span>{format}</span>
-            <span className="cp-dot">·</span>
-            <span>with <b>Dr. Garrett</b></span>
-          </p>
-        </div>
-        <div className="cp-next-actions">
-          <button type="button" className="cp-btn cp-btn-primary" onClick={onBook}>
-            <span>{format === 'Virtual' ? 'Join session' : 'View location'}</span>
-            <span className="cp-arrow">→</span>
-          </button>
-          <button type="button" className="cp-btn cp-btn-ghost" disabled={locked}>Reschedule</button>
-          <button type="button" className="cp-btn cp-btn-text" disabled={locked}>Cancel</button>
-        </div>
-      </div>
-      {locked && (
-        <p className="cp-locked">
-          <span className="cp-lock-dot"></span>
-          Within 24 hours — changes locked. <a href="mailto:hello@amarimethod.com">Need help?</a>
-        </p>
-      )}
-    </section>
-  );
-}
-
-function ComingUp({ sessions }: { sessions: Appointment[] }) {
-  if (sessions.length === 0) return null;
-  return (
-    <section className="cp-coming">
-      <div className="cp-section-head">
-        <h3 className="cp-section-h">Coming up</h3>
-        <span className="cp-mono">{sessions.length} scheduled</span>
-      </div>
-      <ul className="cp-coming-rows">
-        {sessions.map(s => {
-          const { m, d, w } = formatMonthDay(s.startTime);
-          const time = new Date(s.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
-          const format = detectFormat(s);
-          return (
-            <li key={s.id} className="cp-coming-row">
-              <SessionDate m={m} d={d} />
-              <div className="cp-coming-body">
-                <span className="cp-coming-title">{s.title || 'Session'}</span>
-                <span className="cp-coming-meta">{w} · {time} · {format}</span>
-              </div>
-              <div className="cp-coming-actions">
-                <button type="button" className="cp-btn cp-btn-row">Reschedule</button>
-                <button type="button" className="cp-btn cp-btn-row cp-btn-text">Cancel</button>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-function SeriesPanel({ client }: { client: ClientData }) {
-  const ut = deriveSeriesUsedTotal(client);
-  if (!ut) return null;
-  const saved = deriveSeriesSavings(client.seriesType);
-  return (
-    <section className="cp-series">
-      <div className="cp-section-head">
-        <h3 className="cp-section-h">Your series</h3>
-        <span className="cp-mono">{client.seriesType}</span>
-      </div>
-      <div className="cp-series-body">
-        <div className="cp-series-stat">
-          <span className="cp-series-n"><em>{ut.used}</em>/{ut.total}</span>
-          <span className="cp-mono">Sessions used</span>
-        </div>
-        <div className="cp-series-bar">
-          {Array.from({ length: ut.total }).map((_, i) => (
-            <span key={i} className={'cp-series-pip' + (i < ut.used ? ' is-used' : '')}></span>
-          ))}
-        </div>
-        <div className="cp-series-meta">
-          <div><span className="cp-mono">Remaining</span><b>{ut.total - ut.used} sessions</b></div>
-          {saved > 0 && (
-            <div><span className="cp-mono">Saved</span><b><em>${saved}</em> vs. one-off</b></div>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-interface ActionItem {
-  h: string;
-  p: string;
-  price?: string;
-  href?: string;
-  onClick?: () => void;
-  muted?: boolean;
-  primary?: boolean;
-}
-
-function BookManage({ actions }: { actions: ActionItem[] }) {
-  return (
-    <section className="cp-actions">
-      <div className="cp-section-head">
-        <h3 className="cp-section-h">Book &amp; manage</h3>
-      </div>
-      <div className="cp-actions-grid">
-        {actions.map((a, i) => {
-          const className = 'cp-action'
-            + (a.primary ? ' cp-action-primary' : '')
-            + (a.muted ? ' is-muted' : '');
-          const inner = (
-            <>
-              <span className="cp-action-l">
-                <span className="cp-action-h">{a.h}</span>
-                <span className="cp-action-p">{a.p}</span>
-              </span>
-              <span className="cp-action-r">
-                {a.price && <span className="cp-action-price">{a.price}</span>}
-                <span className="cp-arrow">→</span>
-              </span>
-            </>
-          );
-          if (a.href) {
-            return <a key={i} href={a.href} className={className}>{inner}</a>;
-          }
-          return (
-            <button key={i} type="button" className={className} onClick={a.onClick}>
-              {inner}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function History({ items }: { items: Appointment[] }) {
-  // Filter out no-shows from client view per design feedback
-  const visible = items.filter(a => a.status !== 'no_show');
-  if (visible.length === 0) {
-    return (
-      <section className="cp-history">
-        <div className="cp-section-head">
-          <h3 className="cp-section-h">Session history</h3>
-          <span className="cp-mono">None yet</span>
-        </div>
-        <div className="cp-empty" style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--cp-mute)', fontSize: 13 }}>
-          Your sessions will appear here.
-        </div>
-      </section>
-    );
-  }
-  return (
-    <section className="cp-history">
-      <div className="cp-section-head">
-        <h3 className="cp-section-h">Session history</h3>
-        <span className="cp-mono">{visible.length} session{visible.length === 1 ? '' : 's'}</span>
-      </div>
-      <ul className="cp-hist-rows">
-        {visible.map(a => {
-          const { m, d } = formatMonthDay(a.startTime);
-          const format = detectFormat(a);
-          const isDone = a.status === 'completed' || a.status === 'showed';
-          const isCancelled = a.status === 'cancelled';
-          const statusClass = isDone ? 'cp-completed' : isCancelled ? 'cp-cancelled' : 'cp-rescheduled';
-          const statusLabel = isDone ? 'Completed' : isCancelled ? 'Cancelled' : 'Rescheduled';
-          return (
-            <li key={a.id} className={'cp-hist-row pa-' + a.status}>
-              <SessionDate m={m} d={d} />
-              <div className="cp-hist-body">
-                <span className="cp-hist-title">{a.title || 'Session'}</span>
-                <span className="cp-hist-meta">{formatLongDate(a.startTime)} · {format} · with Dr. Garrett</span>
-              </div>
-              <div className="cp-hist-right">
-                <span className={'cp-status ' + statusClass}>{statusLabel}</span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="cp-foot">
-      <span>amarimethod.com</span>
-      <span className="cp-dot">·</span>
-      <a href="mailto:hello@amarimethod.com">Help &amp; policies</a>
-      <span className="cp-dot">·</span>
-      <a href="mailto:hello@amarimethod.com">Contact Dr. Garrett</a>
-      <span className="cp-foot-r">© {new Date().getFullYear()} Amari Method</span>
-    </footer>
-  );
-}
-
-/* ---------- Skeleton ---------- */
-function Sk({ w, h }: { w: number | string; h: number | string }) {
-  return <span className="cp-sk cp-sk-r" style={{ width: w, height: h, display: 'inline-block' }} />;
-}
-
-function Skeleton({ firstName }: { firstName: string }) {
-  return (
-    <div className="cp-screen cp-screen-skel">
-      <TopBar firstName={firstName} />
-      <section className="cp-greet">
-        <div className="cp-greet-l" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Sk w="62%" h={60} />
-          <Sk w="46%" h={22} />
-        </div>
-      </section>
-      <section className="cp-journey">
-        <div className="cp-journey-head">
-          <div>
-            <Sk w={100} h={12} />
-            <div style={{ height: 10 }} />
-            <Sk w={360} h={32} />
-          </div>
-          <div className="cp-journey-pct">
-            <Sk w={120} h={48} />
-            <Sk w={70} h={12} />
-          </div>
-        </div>
-        <div className="cp-sk-rail">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="cp-sk-step">
-              <Sk w={14} h={14} />
-              <Sk w="80%" h={11} />
-              <Sk w="60%" h={14} />
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="cp-next">
-        <div className="cp-next-body">
-          <Sk w={90} h={86} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-            <Sk w="60%" h={34} />
-            <Sk w="50%" h={16} />
-            <Sk w="70%" h={48} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 200 }}>
-            <Sk w="100%" h={44} />
-            <Sk w="100%" h={44} />
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
-}
-
-/* ---------- Error state ---------- */
-function ErrorState({ firstName, message, onRetry }: { firstName: string; message: string; onRetry: () => void }) {
-  return (
-    <div className="cp-screen">
-      <TopBar firstName={firstName} />
-      <Greeting user={firstName} sub="Welcome back." />
-      <section className="cp-error">
-        <span className="cp-mono cp-accent">Connection lost</span>
-        <h2 className="cp-error-h">We <em>can't reach</em> your portal right now.</h2>
-        <p className="cp-error-p">{message || "Try again in a moment, or contact Dr. Garrett if it persists — your sessions and progress are safe on our end."}</p>
-        <div className="cp-error-actions">
-          <button type="button" className="cp-btn cp-btn-primary" onClick={onRetry}>
-            <span>Try again</span><span className="cp-arrow">→</span>
-          </button>
-          <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Dr. Garrett</a>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
-}
-
-/* ---------- Completed state ---------- */
-function DashCompleted({ client, history }: { client: ClientData; history: Appointment[] }) {
-  return (
-    <div className="cp-screen">
-      <TopBar firstName={client.firstName} />
-      <Greeting user={client.firstName} sub="You've moved through all eight steps. The protocols are yours now." />
-      <Journey step={JOURNEY_STEPS.length + 1} />
-      <section className="cp-celebrate">
-        <span className="cp-celebrate-glyph">✦</span>
-        <div className="cp-celebrate-body">
-          <span className="cp-mono cp-accent">Method completed</span>
-          <h2 className="cp-celebrate-h">Living Practice <em>is yours now.</em></h2>
-          <p className="cp-celebrate-p">The eight-week journey is complete. The protocols are yours to use whenever the body asks. Dr. Garrett opens a check-in slot every quarter — book one when you need it.</p>
-          <div className="cp-celebrate-actions">
-            {client.hasLivingPractice && (
-              <Link to="/practice" className="cp-btn cp-btn-primary">
-                <span>Begin Living Practice</span><span className="cp-arrow">→</span>
-              </Link>
-            )}
-            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Book a quarterly check-in</a>
-          </div>
-        </div>
-      </section>
-      <History items={history} />
-      <Footer />
-    </div>
-  );
-}
-
-/* ============================================================
-   Main page
-   ============================================================ */
 export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
 
-  const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
+  if (isLoading) {
+    return (
+      <>
+        <PortalNav />
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 text-amari-charcoal mx-auto mb-3 animate-spin" />
+            <p className="text-sm text-amari-text-muted">Loading your dashboard...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
-  if (isLoading) return <Skeleton firstName={firstName} />;
-  if (error) return <ErrorState firstName={firstName} message={error} onRetry={refetch} />;
+  if (error) {
+    return (
+      <>
+        <PortalNav />
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="text-center max-w-sm">
+            <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+            <h2 className="font-serif text-xl font-bold text-amari-charcoal mb-2">
+              Something went wrong
+            </h2>
+            <p className="text-sm text-amari-text-secondary mb-4">{error}</p>
+            <button onClick={refetch} className="portal-btn-secondary">
+              <RefreshCw className="w-4 h-4" />
+              Try again
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (!data) return null;
 
   const { client, appointments, upcomingAppointments } = data;
-  const step = deriveJourneyStep(client, upcomingAppointments);
-  const completed = step > JOURNEY_STEPS.length;
   const hasHadInitial = client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
 
-  if (completed) {
-    return <DashCompleted client={client} history={appointments} />;
-  }
-
-  const nextApt = upcomingAppointments[0];
-  const otherUpcoming = upcomingAppointments.slice(1);
-
-  // Greeting subtitle based on state
-  const sub = !hasHadInitial
-    ? "Welcome — let's get your first session on the calendar."
-    : hasActiveSeries
-      ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} left in your series.`
-      : 'Ready when you are.';
-
-  // Last visit
-  const pastAppointments = appointments.filter(a => a.status === 'completed' || a.status === 'showed');
-  const lastVisit = pastAppointments.length > 0
-    ? new Date(pastAppointments[0].startTime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-    : undefined;
-
-  // Book & manage actions — grouped: primary first, then series upgrades, then other
-  const actions: ActionItem[] = [];
-  if (!hasHadInitial) {
-    actions.push({
-      h: 'Book your initial session',
-      p: '60 minutes with Dr. Garrett — assessment, first protocol, take-home practice.',
-      price: '$225',
-      onClick: () => setShowBookingModal(true),
-      primary: true,
-    });
-  } else {
-    actions.push({
-      h: hasActiveSeries ? 'Book your next session' : 'Book another session',
-      p: hasActiveSeries
-        ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} left in your series.`
-        : 'Pick a date that fits your week.',
-      price: hasActiveSeries ? 'Included' : '$190',
-      onClick: () => setShowBookingModal(true),
-      primary: true,
-    });
-  }
-
-  if (client.seriesType === 'none' && hasHadInitial) {
-    actions.push({
-      h: '4-session series',
-      p: 'Four sessions at a package rate — pace one a week.',
-      price: '$720',
-      href: 'https://www.amarimethod.com/4-session-series',
-    });
-    actions.push({
-      h: '8-session series',
-      p: 'Full eight-week journey, plus Living Practice access.',
-      price: '$1,295',
-      href: 'https://www.amarimethod.com/8-session-series',
-    });
-  }
-
-  if (!client.hasLivingPractice) {
-    actions.push({
-      h: 'Living Practice',
-      p: 'Standalone video program for daily home practice.',
-      price: '$347',
-      href: 'https://www.amarimethod.com/living-practice',
-    });
-  }
-
-  if (!client.isPartner) {
-    actions.push({
-      h: 'Refer a friend',
-      p: 'Get $50 off your next session when they book.',
-      muted: true,
-      href: '#',
-    });
-  }
-
-  actions.push({
-    h: 'Contact Dr. Garrett',
-    p: 'Questions, scheduling, or notes between sessions.',
-    muted: true,
-    href: 'mailto:hello@amarimethod.com',
-  });
-
   return (
-    <div className="cp-screen">
-      <TopBar firstName={firstName} />
+    <>
+      <PortalNav firstName={client.firstName || client.lastName} />
       {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
-      <Greeting user={firstName} sub={sub} lastVisit={lastVisit} />
-      <Journey step={step} />
-      {nextApt && <NextSession apt={nextApt} />}
-      {hasActiveSeries && <SeriesPanel client={client} />}
-      <ComingUp sessions={otherUpcoming} />
-      <BookManage actions={actions} />
-      <History items={appointments} />
-      <Footer />
-    </div>
+
+      <main data-testid="dashboard" className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
+
+        {/* ── Greeting ── */}
+        <div className="animate-fade-in">
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-amari-charcoal">
+            {getGreeting()}, {client.firstName || client.lastName}
+          </h1>
+          <p data-testid="dashboard-subtitle" className="text-amari-text-muted mt-1 text-sm">
+            {client.seriesType !== 'none' && client.sessionsRemaining > 0
+              ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`
+              : hasHadInitial
+                ? 'Welcome back — ready to book your next session?'
+                : 'Welcome — your portal is ready.'}
+          </p>
+          {hasHadInitial && (
+            <p className="text-xs text-amari-text-muted mt-1.5">
+              Join hundreds of clients building a practice with the Amari Method.
+            </p>
+          )}
+        </div>
+
+        {/* ── Zone 1: Progress + Upcoming (full width) ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          <ProgressTracker
+            client={client}
+            upcomingAppointments={upcomingAppointments}
+            // `appointments` from the API = past appointments only (not upcoming).
+            // Prop is named allAppointments but only past ones are passed — correct
+            // because completed status only ever appears on past appointments.
+            allAppointments={appointments}
+            onRefetch={refetch}
+            onBookSession={hasActiveSeries && hasHadInitial ? () => setShowBookingModal(true) : undefined}
+          />
+        </section>
+
+        {/* ── Divider ── */}
+        <div className="border-t border-amari-border" />
+
+        {/* ── Zone 2: Book & Manage ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
+            Book &amp; Manage
+          </h2>
+          <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+        </section>
+
+        {/* ── Divider ── */}
+        <div className="border-t border-amari-border" />
+
+        {/* ── Zone 3: History + Refer (bottom row) ── */}
+        <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          <div className={`grid grid-cols-1 gap-6 ${!client.isPartner ? 'lg:grid-cols-2' : ''}`}>
+            <SessionHistory appointments={appointments} />
+            {!client.isPartner && (
+              <ReferralCard
+                contactId={client.contactId}
+                referralCount={client.referralCount ?? 0}
+                rewardCode={client.rewardCode ?? null}
+              />
+            )}
+          </div>
+        </section>
+
+      </main>
+    </>
   );
 }
