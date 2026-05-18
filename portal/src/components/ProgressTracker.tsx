@@ -80,7 +80,12 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const currentSeriesCompleted = isOnSeries
     ? Math.max(0, totalSessions - client.sessionsRemaining)
     : 0;
-  const lifetimeCompleted = allAppointments.filter(a => a.status === 'completed' || a.status === 'showed').length;
+  // allAppointments is past-only per the API contract. Garrett doesn't always
+  // manually flip 'confirmed' to 'completed' after sessions, so any past
+  // appointment that isn't cancelled or no-show effectively ran.
+  const lifetimeCompleted = allAppointments.filter(a =>
+    a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
+  ).length;
   const isReturningClient = isOnSeries && lifetimeCompleted > currentSeriesCompleted;
 
   // Journey rail step: 1..8 = which step you're on. >8 = completed.

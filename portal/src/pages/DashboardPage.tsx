@@ -62,7 +62,13 @@ export default function DashboardPage() {
   if (!data) return null;
 
   const { client, appointments, upcomingAppointments } = data;
-  const hasHadInitial = client.sessionsCompleted > 0;
+  // Trust appointment data over the sessions_completed custom field — Garrett
+  // doesn't always mark sessions complete in GHL, and past 'confirmed'
+  // appointments effectively ran. The custom field is a fallback.
+  const completedAppointments = appointments.filter(a =>
+    a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
+  ).length;
+  const hasHadInitial = completedAppointments > 0 || client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
 
   const sub = !hasHadInitial
