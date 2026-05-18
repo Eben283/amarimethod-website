@@ -42,8 +42,8 @@
 .cp-topnav-link.cp-current::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--cp-accent)}
 .cp-account{display:flex;align-items:center;gap:16px}
 .cp-account-name{font-size:14px;font-weight:500;color:var(--cp-ink);font-family:var(--cp-display);font-style:italic;letter-spacing:-0.005em}
-.cp-account-out{font-size:13px;color:var(--cp-mute);padding:8px 12px;min-height:36px;transition:color .15s,background .15s}
-.cp-account-out:hover{color:var(--cp-ink);background:var(--cp-paper-2)}
+.cp-account-out{font-size:13px;color:var(--cp-ink-2);padding:8px 14px;min-height:36px;border:1px solid var(--cp-line-2);background:transparent;font-family:var(--cp-sans);cursor:pointer;transition:color .15s,background .15s,border-color .15s}
+.cp-account-out:hover{color:var(--cp-ink);background:var(--cp-paper-2);border-color:var(--cp-ink-2)}
 .cp-account-out:active{background:var(--cp-paper-3)}
 
 /* ===== GREETING ===== */
@@ -405,10 +405,11 @@
   .cp-celebrate-meta > div{padding:14px 0!important;border-right:0;border-bottom:1px solid var(--cp-line);flex-direction:row;justify-content:space-between;align-items:baseline}
   .cp-celebrate-meta > div:last-child{border-bottom:0}
 
-  /* modals → full-screen sheet, hide dashboard underneath */
+  /* modals → full-screen sheet on phone */
+  .cp-with-modal{background:var(--cp-paper)}
   .cp-with-modal > .cp-screen{display:none}
   .cp-modal-scrim{display:none}
-  .cp-modal{position:relative;top:auto;left:auto;right:auto;transform:none;width:100%;max-width:none;height:auto;min-height:auto;border:0;box-shadow:none}
+  .cp-modal{position:relative;top:auto;left:auto;right:auto;transform:none;width:100%;max-width:none;min-height:100vh;min-height:100dvh;border:0;box-shadow:none}
   .cp-modal-sm{width:100%;max-width:none}
   .cp-modal-head{padding:16px 20px}
   .cp-modal-title{font-size:22px}

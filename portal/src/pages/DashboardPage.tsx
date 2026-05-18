@@ -15,6 +15,15 @@ import type { ClientData, Appointment } from '../types/portal';
 // 8-step rail — numbered dots only, no fabricated names.
 const JOURNEY_STEP_COUNT = 8;
 
+// Pricing source of truth — keep in sync with /Users/Eben/Desktop/Claude/CLAUDE.md
+const PRICING = {
+  initial: 225,
+  followup: 190,
+  series4: 720,
+  series8: 1295,
+  livingPractice: 347,
+};
+
 /* ---------- helpers ---------- */
 function pad2(n: number) {
   return n < 10 ? `0${n}` : String(n);
@@ -79,10 +88,16 @@ function deriveSeriesUsedTotal(client: ClientData): { used: number; total: numbe
 }
 
 function deriveSeriesSavings(seriesType: ClientData['seriesType']): number {
-  // 8-session: 8 sessions priced like 1 initial ($225) + 7 follow-ups ($190) = $1,555. Package $1,295. Save $260.
-  // 4-session: 1 initial + 3 follow-ups = $225 + 570 = $795. Package $720. Save $75.
-  if (seriesType === '4-session') return 75;
-  if (seriesType === '8-session') return 260;
+  // A series buys you 1 initial + (n-1) follow-ups vs. the package price.
+  // Numbers derive from PRICING so a price change updates here automatically.
+  if (seriesType === '4-session') {
+    const oneOff = PRICING.initial + 3 * PRICING.followup;
+    return oneOff - PRICING.series4;
+  }
+  if (seriesType === '8-session') {
+    const oneOff = PRICING.initial + 7 * PRICING.followup;
+    return oneOff - PRICING.series8;
+  }
   return 0;
 }
 
@@ -185,6 +200,34 @@ function isInitialSession(apt: Appointment): boolean {
   return t.includes('initial') || t.includes('intro') || t.includes('discovery');
 }
 
+function pad(n: number): string { return n < 10 ? `0${n}` : String(n); }
+function toIcsDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
+}
+
+function buildIcsUrl(apt: Appointment): string {
+  const format = detectFormat(apt);
+  const description = format === 'Virtual'
+    ? 'Virtual session with Dr. Garrett. Meeting link arrives in your calendar invite from Amari Method — check that email for the Google Meet URL.'
+    : 'In-person session with Dr. Garrett at Amari Method.';
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Amari Method//Portal//EN',
+    'BEGIN:VEVENT',
+    `UID:${apt.id}@amarimethod.com`,
+    `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
+    `DTSTART:${toIcsDate(apt.startTime)}`,
+    `DTEND:${toIcsDate(apt.endTime)}`,
+    `SUMMARY:${apt.title || 'Amari Method session'}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
+}
+
 function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onReschedule: () => void; onCancel: () => void }) {
   const { m, d, w } = formatMonthDay(apt.startTime);
   const time = new Date(apt.startTime).toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -214,6 +257,13 @@ function NextSession({ apt, onReschedule, onCancel }: { apt: Appointment; onResc
           )}
         </div>
         <div className="cp-next-actions">
+          <a
+            href={buildIcsUrl(apt)}
+            download={`amari-session-${apt.id}.ics`}
+            className="cp-btn cp-btn-primary"
+          >
+            <span>Add to calendar</span><span className="cp-arrow">→</span>
+          </a>
           {initialOnly ? (
             <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20initial%20session" className="cp-btn cp-btn-ghost">
               Email to change
@@ -390,10 +440,12 @@ function History({ items }: { items: Appointment[] }) {
         {visible.map(a => {
           const { m, d } = formatMonthDay(a.startTime);
           const format = detectFormat(a);
-          const isDone = a.status === 'completed' || a.status === 'showed';
+          // Past appointments that weren't no-show or cancelled are effectively
+          // completed — Garrett doesn't always mark "complete" manually after
+          // each session, so 'confirmed' in the past = it ran.
           const isCancelled = a.status === 'cancelled';
-          const statusClass = isDone ? 'cp-completed' : isCancelled ? 'cp-cancelled' : 'cp-rescheduled';
-          const statusLabel = isDone ? 'Completed' : isCancelled ? 'Cancelled' : 'Rescheduled';
+          const statusClass = isCancelled ? 'cp-cancelled' : 'cp-completed';
+          const statusLabel = isCancelled ? 'Cancelled' : 'Completed';
           return (
             <li key={a.id} className={'cp-hist-row pa-' + a.status}>
               <SessionDate m={m} d={d} />
@@ -426,8 +478,8 @@ function Footer() {
 }
 
 /* ---------- Skeleton ---------- */
-function Sk({ w, h }: { w: number | string; h: number | string }) {
-  return <span className="cp-sk cp-sk-r" style={{ width: w, height: h, display: 'inline-block' }} />;
+function Sk({ w, h, mt = 0 }: { w: number | string; h: number | string; mt?: number }) {
+  return <div className="cp-sk cp-sk-r" style={{ width: w, height: h, marginTop: mt }} />;
 }
 
 function Skeleton({ firstName }: { firstName: string }) {
@@ -435,19 +487,18 @@ function Skeleton({ firstName }: { firstName: string }) {
     <div className="cp-screen cp-screen-skel">
       <TopBar firstName={firstName} hasLivingPractice={false} />
       <section className="cp-greet">
-        <div className="cp-greet-l" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="cp-greet-l">
           <Sk w="62%" h={60} />
-          <Sk w="46%" h={22} />
+          <Sk w="46%" h={22} mt={12} />
         </div>
       </section>
       <section className="cp-journey">
         <div className="cp-journey-head">
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Sk w={100} h={12} />
-            <div style={{ height: 10 }} />
             <Sk w={360} h={32} />
           </div>
-          <div className="cp-journey-pct">
+          <div className="cp-journey-pct" style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
             <Sk w={120} h={48} />
             <Sk w={70} h={12} />
           </div>
@@ -456,8 +507,7 @@ function Skeleton({ firstName }: { firstName: string }) {
           {Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="cp-sk-step">
               <Sk w={14} h={14} />
-              <Sk w="80%" h={11} />
-              <Sk w="60%" h={14} />
+              <Sk w="60%" h={11} mt={8} />
             </div>
           ))}
         </div>
@@ -465,10 +515,10 @@ function Skeleton({ firstName }: { firstName: string }) {
       <section className="cp-next">
         <div className="cp-next-body">
           <Sk w={90} h={86} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
             <Sk w="60%" h={34} />
             <Sk w="50%" h={16} />
-            <Sk w="70%" h={48} />
+            <Sk w="70%" h={48} mt={8} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 200 }}>
             <Sk w="100%" h={44} />
@@ -582,7 +632,7 @@ export default function DashboardPage() {
     actions.push({
       h: 'Book your initial session',
       p: '60 minutes with Dr. Garrett — assessment, first protocol, take-home practice.',
-      price: '$225',
+      price: `$${PRICING.initial}`,
       onClick: () => setShowBookingModal(true),
       primary: true,
     });
@@ -592,7 +642,7 @@ export default function DashboardPage() {
       p: hasActiveSeries
         ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} left in your series.`
         : 'Pick a date that fits your week.',
-      price: hasActiveSeries ? 'Included' : '$190',
+      price: hasActiveSeries ? 'Included' : `$${PRICING.followup}`,
       onClick: () => setShowBookingModal(true),
       primary: true,
     });
@@ -602,13 +652,13 @@ export default function DashboardPage() {
     actions.push({
       h: '4-session series',
       p: 'Four sessions at a package rate — pace one a week.',
-      price: '$720',
+      price: `$${PRICING.series4.toLocaleString()}`,
       href: 'https://www.amarimethod.com/4-session-series',
     });
     actions.push({
       h: '8-session series',
       p: 'Full eight-week journey, plus Living Practice access.',
-      price: '$1,295',
+      price: `$${PRICING.series8.toLocaleString()}`,
       href: 'https://www.amarimethod.com/8-session-series',
     });
   }
@@ -623,7 +673,7 @@ export default function DashboardPage() {
     actions.push({
       h: 'Living Practice',
       p: 'Standalone video program for daily home practice.',
-      price: '$347',
+      price: `$${PRICING.livingPractice}`,
       href: 'https://www.amarimethod.com/living-practice',
     });
   }
