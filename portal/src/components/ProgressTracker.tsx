@@ -52,6 +52,37 @@ function buildGoogleCalendarUrl(apt: Appointment): string {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+// .ics file for Apple Calendar / Outlook / Yahoo / any non-Google calendar.
+// On iOS/macOS, tapping a text/calendar link opens Apple Calendar directly.
+function buildIcsUrl(apt: Appointment): string {
+  const format = detectFormat(apt);
+  const meet = apt.meetingUrl || '';
+  const description = format === 'Virtual'
+    ? (meet
+        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
+        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Dr. Garrett at Amari Method.';
+  const locationLine = meet
+    ? `LOCATION:${meet}`
+    : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Amari Method//Portal//EN',
+    'BEGIN:VEVENT',
+    `UID:${apt.id}@amarimethod.com`,
+    `DTSTAMP:${toGcalDate(new Date().toISOString())}`,
+    `DTSTART:${toGcalDate(apt.startTime)}`,
+    `DTEND:${toGcalDate(apt.endTime)}`,
+    `SUMMARY:${apt.title || 'Amari Method session'}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    ...(locationLine ? [locationLine] : []),
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ];
+  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
+}
+
 export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
@@ -66,9 +97,9 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const currentSeriesCompleted = isOnSeries
     ? Math.max(0, totalSessions - client.sessionsRemaining)
     : 0;
-  // allAppointments is past-only per the API contract. Garrett doesn't always
-  // manually flip 'confirmed' to 'completed' after sessions, so any past
-  // appointment that isn't cancelled or no-show effectively ran.
+  // allAppointments is past-only per the API contract. Past 'confirmed'
+  // appointments effectively ran — Garrett doesn't always manually flip
+  // 'confirmed' → 'completed' after a session.
   const lifetimeCompleted = allAppointments.filter(a =>
     a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
   ).length;
@@ -191,7 +222,9 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
         )}
         {brandNew && (
           <p className="cp-journey-next">
-            Book your first session to begin.
+            {upcomingAppointments.length > 0
+              ? 'Your first session is on the books.'
+              : 'Book your first session to begin.'}
           </p>
         )}
       </section>
@@ -264,20 +297,27 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                   </div>
                 ) : (
                   <div className="cp-next-actions">
-                    {format === 'Virtual' && nextApt.meetingUrl ? (
+                    {format === 'Virtual' && nextApt.meetingUrl && (
                       <a href={nextApt.meetingUrl} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
                         <span>Join Google Meet</span><span className="cp-arrow">→</span>
                       </a>
-                    ) : (
-                      <a href={buildGoogleCalendarUrl(nextApt)} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
-                        <span>Add to Google Calendar</span><span className="cp-arrow">→</span>
-                      </a>
                     )}
-                    {format === 'Virtual' && nextApt.meetingUrl && (
-                      <a href={buildGoogleCalendarUrl(nextApt)} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-ghost">
-                        Add to Google Calendar
-                      </a>
-                    )}
+                    <a
+                      href={buildGoogleCalendarUrl(nextApt)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={'cp-btn ' + (format === 'Virtual' && nextApt.meetingUrl ? 'cp-btn-ghost' : 'cp-btn-primary')}
+                    >
+                      <span>Add to Google Calendar</span>
+                      {(!nextApt.meetingUrl || format !== 'Virtual') && <span className="cp-arrow">→</span>}
+                    </a>
+                    <a
+                      href={buildIcsUrl(nextApt)}
+                      download={`amari-session-${nextApt.id}.ics`}
+                      className="cp-btn cp-btn-ghost"
+                    >
+                      Add to Apple Calendar
+                    </a>
                     {!tooSoon && (
                       <>
                         <button
