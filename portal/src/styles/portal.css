@@ -33,7 +33,7 @@
 /* ===== TOP BAR ===== */
 .cp-topbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:48px;padding:18px 40px;border-bottom:1px solid var(--cp-line);background:var(--cp-paper);position:sticky;top:0;z-index:10}
 .cp-seal{font-family:var(--cp-display);font-size:18px;display:inline-flex;align-items:center;gap:10px;color:var(--cp-ink);white-space:nowrap;letter-spacing:-0.005em}
-.cp-seal-logo{height:24px;width:auto;display:block;flex:0 0 auto}
+.cp-seal-logo{height:44px;width:auto;display:block;flex:0 0 auto}
 .cp-mark{width:20px;height:20px;border-radius:50%;background:var(--cp-ink);position:relative;flex:0 0 auto}
 .cp-mark::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--cp-paper)}
 .cp-topnav{display:flex;gap:32px;justify-content:center}

@@ -12,9 +12,8 @@ export default function PortalNav({ firstName, hasLivingPractice }: PortalNavPro
 
   return (
     <header className="cp-topbar">
-      <Link to="/" className="cp-seal">
-        <img src="/images/AmariLogo.avif" alt="" className="cp-seal-logo" />
-        <span>Amari Method</span>
+      <Link to="/" className="cp-seal" aria-label="Amari Method — Dashboard">
+        <img src="/images/AmariLogo.avif" alt="Amari Method" className="cp-seal-logo" />
       </Link>
       <nav className="cp-topnav">
         <Link to="/" className="cp-topnav-link cp-current">Dashboard</Link>

@@ -25,45 +25,31 @@ function detectFormat(apt: Appointment): 'Virtual' | 'In-person' {
   return 'In-person';
 }
 
-function isInitialOrDiscovery(apt: Appointment): boolean {
-  const t = (apt.appointmentType || apt.title || '').toLowerCase();
-  return t.includes('initial') || t.includes('intro') || t.includes('discovery');
-}
-
 function pad2(n: number): string { return n < 10 ? `0${n}` : String(n); }
 
-function toIcsDate(iso: string): string {
+function toGcalDate(iso: string): string {
+  // Google Calendar format: YYYYMMDDTHHMMSSZ (UTC)
   const d = new Date(iso);
   return `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}00Z`;
 }
 
-function buildIcsUrl(apt: Appointment): string {
+function buildGoogleCalendarUrl(apt: Appointment): string {
   const format = detectFormat(apt);
   const meet = apt.meetingUrl || '';
-  const description = format === 'Virtual'
+  const details = format === 'Virtual'
     ? (meet
-        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
+        ? `Virtual session with Dr. Garrett. Join: ${meet}`
         : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
     : 'In-person session with Dr. Garrett at Amari Method.';
-  const locationLine = meet
-    ? `LOCATION:${meet}`
-    : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Amari Method//Portal//EN',
-    'BEGIN:VEVENT',
-    `UID:${apt.id}@amarimethod.com`,
-    `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
-    `DTSTART:${toIcsDate(apt.startTime)}`,
-    `DTEND:${toIcsDate(apt.endTime)}`,
-    `SUMMARY:${apt.title || 'Amari Method session'}`,
-    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
-    ...(locationLine ? [locationLine] : []),
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ];
-  return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
+  const location = meet || (format === 'In-person' ? 'Amari Method' : '');
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: apt.title || 'Amari Method session',
+    dates: `${toGcalDate(apt.startTime)}/${toGcalDate(apt.endTime)}`,
+    details,
+    ...(location ? { location } : {}),
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
@@ -219,7 +205,6 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           const isRescheduling = reschedulingId === nextApt.id;
           const apptTitle = nextApt.title || nextApt.appointmentType || 'Session';
           const format = detectFormat(nextApt);
-          const initialOrDisco = isInitialOrDiscovery(nextApt);
           return (
             <section className="cp-next">
               <div className="cp-next-head">
@@ -284,20 +269,16 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                         <span>Join Google Meet</span><span className="cp-arrow">→</span>
                       </a>
                     ) : (
-                      <a href={buildIcsUrl(nextApt)} download={`amari-session-${nextApt.id}.ics`} className="cp-btn cp-btn-primary">
-                        <span>Add to calendar</span><span className="cp-arrow">→</span>
+                      <a href={buildGoogleCalendarUrl(nextApt)} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-primary">
+                        <span>Add to Google Calendar</span><span className="cp-arrow">→</span>
                       </a>
                     )}
                     {format === 'Virtual' && nextApt.meetingUrl && (
-                      <a href={buildIcsUrl(nextApt)} download={`amari-session-${nextApt.id}.ics`} className="cp-btn cp-btn-ghost">
-                        Add to calendar
+                      <a href={buildGoogleCalendarUrl(nextApt)} target="_blank" rel="noopener noreferrer" className="cp-btn cp-btn-ghost">
+                        Add to Google Calendar
                       </a>
                     )}
-                    {initialOrDisco ? (
-                      <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20upcoming%20session" className="cp-btn cp-btn-ghost">
-                        Email to change
-                      </a>
-                    ) : tooSoon ? null : (
+                    {!tooSoon && (
                       <>
                         <button
                           type="button"
@@ -319,7 +300,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                 )}
               </div>
 
-              {tooSoon && !initialOrDisco && !isConfirming && (
+              {tooSoon && !isConfirming && (
                 <p className="cp-locked">
                   <span className="cp-lock-dot"></span>
                   Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Dr. Garrett</a> and we'll review it.
@@ -367,7 +348,6 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           <ul className="cp-coming-rows">
             {moreUpcoming.map(s => {
               const tooSoon = isWithin24Hours(s.startTime);
-              const initialOrDisco = isInitialOrDiscovery(s);
               const isConfirming = confirmingId === s.id;
               const isCancelling = cancellingId === s.id;
               const isRescheduling = reschedulingId === s.id;
@@ -405,10 +385,6 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                           Keep it
                         </button>
                       </>
-                    ) : initialOrDisco ? (
-                      <a href="mailto:hello@amarimethod.com?subject=Reschedule%20my%20upcoming%20session" className="cp-btn cp-btn-row cp-btn-text">
-                        Email to change
-                      </a>
                     ) : tooSoon ? (
                       <span className="cp-mono" style={{ fontSize: 11 }}>Locked</span>
                     ) : (
