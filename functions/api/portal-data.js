@@ -168,6 +168,22 @@ export async function onRequestGet(context) {
 
     // Sort appointments by date
     const nowMs = Date.now();
+    // Pull the meeting URL out of whatever GHL field carries it for this
+    // appointment. GHL stores Google Meet links in `address`, `meetingLocation`,
+    // or `meeting_location` depending on calendar config and API version.
+    function extractMeetingUrl(appt) {
+      const candidates = [
+        appt.address,
+        appt.meetingLocation,
+        appt.meeting_location,
+        appt.location,
+      ];
+      for (const c of candidates) {
+        if (typeof c === "string" && /^https?:\/\//i.test(c)) return c;
+      }
+      return null;
+    }
+
     const sortedAppointments = allAppointments
       .map((appt) => ({
         id: appt.id,
@@ -176,6 +192,7 @@ export async function onRequestGet(context) {
         endTime: appt.endTime || appt.end_time,
         status: (appt.appointmentStatus || appt.status || "confirmed").toLowerCase(),
         appointmentType: appt.calendarName || appt.title || "Session",
+        meetingUrl: extractMeetingUrl(appt),
       }))
       .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
 

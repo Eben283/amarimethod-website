@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Users, Gift, Copy, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface ReferralCardProps {
   contactId: string;
@@ -14,7 +13,6 @@ async function copyText(text: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(text);
   } catch {
-    // Fallback for older browsers
     const el = document.createElement('textarea');
     el.value = text;
     el.style.position = 'fixed';
@@ -34,186 +32,98 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
 
   const referralLink = `${INVITE_BASE}${contactId}`;
   const hasReachedMilestone = referralCount >= MILESTONE;
+  const remaining = Math.max(0, MILESTONE - referralCount);
 
-  const handleCopyLink = async () => {
+  async function handleCopyLink() {
     await copyText(referralLink);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
-  };
-
-  const handleCopyCode = async () => {
+  }
+  async function handleCopyCode() {
     if (!rewardCode) return;
     await copyText(rewardCode);
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
-  };
-
-  const handleCopyMessage = async () => {
-    const message = `I've been seeing a practitioner who's really helped me — here's a link to book your first session: ${referralLink}`;
-    await copyText(message);
+  }
+  async function handleCopyMessage() {
+    const msg = `I've been seeing a practitioner who's really helped me — here's a link to book your first session: ${referralLink}`;
+    await copyText(msg);
     setMessageCopied(true);
     setTimeout(() => setMessageCopied(false), 2000);
-  };
+  }
 
   return (
-    <div data-testid="referral-card" className="portal-card">
-
-      {/* ── Collapsed header — always visible ── */}
+    <section className="cp-ref" data-testid="referral-card">
       <button
+        type="button"
+        className="cp-ref-summary"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-start gap-4 w-full text-left"
         aria-expanded={isExpanded}
       >
-        <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-amari-light-sand text-amari-charcoal">
-          {hasReachedMilestone && rewardCode
-            ? <Gift className="w-5 h-5" />
-            : <Users className="w-5 h-5" />
-          }
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="font-sans font-semibold text-amari-charcoal text-sm">
-            {hasReachedMilestone && rewardCode ? 'Your free session is ready.' : 'Give a Session. Get a Session.'}
+        <div className="cp-ref-summary-l">
+          <span className="cp-mono">{hasReachedMilestone ? 'Reward ready' : 'Refer & earn'}</span>
+          <h3 className="cp-ref-title">
+            {hasReachedMilestone && rewardCode
+              ? <>Your <em>free session</em> is ready.</>
+              : <>Give a session, <em>get a session.</em></>}
           </h3>
-          <p className="text-xs text-amari-text-muted mt-0.5">
-            {hasReachedMilestone
-              ? rewardCode
-                ? `Code: ${rewardCode} — tap to expand`
-                : 'Milestone reached — reward on the way'
-              : referralCount === 0
-                ? `Refer ${MILESTONE} friends who book — earn a free session`
-                : `${referralCount} of ${MILESTONE} referrals complete · ${MILESTONE - referralCount} more to go`
-            }
-          </p>
         </div>
-
-        <div className="flex-shrink-0 self-center text-amari-text-muted">
-          {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        <div className="cp-ref-summary-r">
+          <div className="cp-ref-pips">
+            {Array.from({ length: MILESTONE }).map((_, i) => (
+              <span key={i} className={'cp-ref-pip' + (i < referralCount ? ' is-filled' : '')} aria-hidden="true" />
+            ))}
+          </div>
+          <span className="cp-ref-chev">{isExpanded ? '–' : '+'}</span>
         </div>
       </button>
 
-      {/* Progress icons — always visible below header */}
-      {!isExpanded && (
-        <div className="flex items-center gap-3 mt-3 pl-14">
-          {Array.from({ length: MILESTONE }).map((_, i) => {
-            const isFilled = i < referralCount;
-            return (
-              <div
-                key={i}
-                className={`w-8 h-8 transition-all ${isFilled ? 'opacity-100' : 'opacity-20'}`}
-                aria-label={isFilled ? `Referral ${i + 1} — complete` : `Referral ${i + 1} — pending`}
-              >
-                <img src="/images/amari-icon.png" alt="" className="w-full h-full" />
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Expanded content ── */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-amari-border space-y-5">
+        <div className="cp-ref-body">
+          <p className="cp-ref-prose">
+            {hasReachedMilestone
+              ? "You hit the milestone. Use the code below for your free session."
+              : `${remaining} more paid referral${remaining === 1 ? '' : 's'} earns a free session for you.`}
+          </p>
 
-          {/* 3 circle indicators */}
-          <div>
-            <p className="text-xs text-amari-text-muted mb-2">
-              {hasReachedMilestone
-                ? 'You\'ve reached the milestone — enjoy your free session!'
-                : `${MILESTONE - Math.min(referralCount, MILESTONE)} more paid referral${MILESTONE - Math.min(referralCount, MILESTONE) !== 1 ? 's' : ''} to earn a free session`
-              }
-            </p>
-            <div className="flex items-center gap-4">
-              {Array.from({ length: MILESTONE }).map((_, i) => {
-                const isFilled = i < referralCount;
-                return (
-                  <div
-                    key={i}
-                    className={`w-11 h-11 transition-all ${isFilled ? 'opacity-100' : 'opacity-20'}`}
-                    aria-label={isFilled ? `Referral ${i + 1} — complete` : `Referral ${i + 1} — pending`}
-                  >
-                    <img
-                      src="/images/amari-icon.png"
-                      alt=""
-                      className="w-full h-full"
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Reward coupon — shown after milestone */}
           {hasReachedMilestone && rewardCode && (
-            <div className="p-3 bg-amari-light-sand rounded-lg">
-              <p className="text-xs text-amari-text-muted mb-1 font-semibold uppercase tracking-widest">
-                Your free session code
-              </p>
-              <div className="flex items-center gap-3">
-                <span className="font-sans font-bold text-amari-charcoal text-lg tracking-widest flex-1">
-                  {rewardCode}
-                </span>
-                <button
-                  onClick={handleCopyCode}
-                  className="portal-btn-secondary flex items-center gap-1.5 text-xs"
-                >
-                  {codeCopied
-                    ? <><Check className="w-3.5 h-3.5" /> Copied!</>
-                    : <><Copy className="w-3.5 h-3.5" /> Copy</>
-                  }
+            <div className="cp-ref-block">
+              <span className="cp-mono">Your free session code</span>
+              <div className="cp-ref-code-row">
+                <code className="cp-ref-code">{rewardCode}</code>
+                <button type="button" className="cp-btn cp-btn-ghost cp-btn-row" onClick={handleCopyCode}>
+                  {codeCopied ? 'Copied' : 'Copy code'}
                 </button>
               </div>
-              <p className="text-xs text-amari-text-muted mt-2 leading-relaxed">
-                Enter this code at checkout when booking your next session.
-              </p>
+              <p className="cp-ref-fine">Enter this at checkout when booking your next session.</p>
             </div>
           )}
 
-          {/* Referral link */}
-          <div>
-            <p className="text-xs text-amari-text-muted mb-1.5">Your invite link</p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-amari-charcoal bg-amari-light-sand px-2.5 py-1.5 rounded flex-1 truncate font-mono min-w-0">
-                {referralLink}
-              </span>
-              <button
-                onClick={handleCopyLink}
-                className="portal-btn-secondary flex items-center gap-1.5 text-xs flex-shrink-0"
-              >
-                {linkCopied
-                  ? <><Check className="w-3.5 h-3.5" /> Copied!</>
-                  : <><Copy className="w-3.5 h-3.5" /> Copy</>
-                }
+          <div className="cp-ref-block">
+            <span className="cp-mono">Your invite link</span>
+            <div className="cp-ref-link-row">
+              <span className="cp-ref-link">{referralLink}</span>
+              <button type="button" className="cp-btn cp-btn-ghost cp-btn-row" onClick={handleCopyLink}>
+                {linkCopied ? 'Copied' : 'Copy link'}
               </button>
             </div>
           </div>
 
-          {/* Pre-written message */}
-          <div>
-            <p className="text-xs text-amari-text-muted mb-1.5">Share this with a friend</p>
-            <div className="bg-amari-light-sand rounded-lg p-3">
-              <p className="text-xs text-amari-charcoal leading-relaxed italic">
-                "I've been seeing a practitioner who's really helped me — here's a link to book your first session:"
-              </p>
-              <p className="text-xs text-amari-text-muted mt-1 truncate">{referralLink}</p>
-            </div>
-            <button
-              onClick={handleCopyMessage}
-              className="portal-btn-secondary flex items-center gap-1.5 text-xs mt-2"
-            >
-              {messageCopied
-                ? <><Check className="w-3.5 h-3.5" /> Message copied!</>
-                : <><Copy className="w-3.5 h-3.5" /> Copy message</>
-              }
+          <div className="cp-ref-block">
+            <span className="cp-mono">Or send this message</span>
+            <p className="cp-ref-message">
+              "I've been seeing a practitioner who's really helped me — here's a link to book your first session: <span className="cp-ref-message-url">{referralLink}</span>"
+            </p>
+            <button type="button" className="cp-btn cp-btn-ghost cp-btn-row" onClick={handleCopyMessage}>
+              {messageCopied ? 'Copied' : 'Copy message'}
             </button>
           </div>
 
-          {/* How it works */}
-          <p className="text-xs text-amari-text-muted leading-relaxed">
-            When a friend books and pays for their first session using your link, it counts toward your free session. One referral credit per person.
+          <p className="cp-ref-fine">
+            When a friend books and pays for their first session using your link, it counts toward your free session. One credit per person.
           </p>
-
         </div>
       )}
-    </div>
+    </section>
   );
 }

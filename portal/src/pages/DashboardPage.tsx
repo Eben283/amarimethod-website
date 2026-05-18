@@ -7,46 +7,55 @@ import BookingModal from '../components/BookingModal';
 import ReferralCard from '../components/ReferralCard';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
-import { getGreeting } from '../lib/utils';
-import { Loader2, RefreshCw, AlertCircle } from 'lucide-react';
 
 export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
 
+  const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
+
   if (isLoading) {
     return (
-      <>
-        <PortalNav />
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center">
-            <Loader2 className="w-8 h-8 text-amari-charcoal mx-auto mb-3 animate-spin" />
-            <p className="text-sm text-amari-text-muted">Loading your dashboard...</p>
+      <div className="cp-screen">
+        <PortalNav firstName={firstName} hasLivingPractice={false} />
+        <section className="cp-greet">
+          <div className="cp-greet-l">
+            <h1 className="cp-hello">Hey, <em>{firstName}.</em></h1>
+            <p className="cp-greet-sub">Loading your portal…</p>
           </div>
-        </div>
-      </>
+        </section>
+        <section className="cp-journey">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 200 }}>
+            <span className="cp-verify-spinner" aria-hidden="true"></span>
+          </div>
+        </section>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <>
-        <PortalNav />
-        <div className="min-h-[60vh] flex items-center justify-center px-4">
-          <div className="text-center max-w-sm">
-            <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
-            <h2 className="font-serif text-xl font-bold text-amari-charcoal mb-2">
-              Something went wrong
-            </h2>
-            <p className="text-sm text-amari-text-secondary mb-4">{error}</p>
-            <button onClick={refetch} className="portal-btn-secondary">
-              <RefreshCw className="w-4 h-4" />
-              Try again
-            </button>
+      <div className="cp-screen">
+        <PortalNav firstName={firstName} hasLivingPractice={false} />
+        <section className="cp-greet">
+          <div className="cp-greet-l">
+            <h1 className="cp-hello">Hey, <em>{firstName}.</em></h1>
+            <p className="cp-greet-sub">Welcome back.</p>
           </div>
-        </div>
-      </>
+        </section>
+        <section className="cp-error">
+          <span className="cp-mono cp-accent">Connection lost</span>
+          <h2 className="cp-error-h">We <em>can't reach</em> your portal right now.</h2>
+          <p className="cp-error-p">{error}</p>
+          <div className="cp-error-actions">
+            <button type="button" className="cp-btn cp-btn-primary" onClick={refetch}>
+              <span>Try again</span><span className="cp-arrow">→</span>
+            </button>
+            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Dr. Garrett</a>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -56,75 +65,70 @@ export default function DashboardPage() {
   const hasHadInitial = client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
 
+  const sub = !hasHadInitial
+    ? "Welcome — let's get your first session on the calendar."
+    : hasActiveSeries
+      ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} left in your series.`
+      : upcomingAppointments.length > 0
+        ? 'Welcome back.'
+        : "Book your next session whenever you're ready.";
+
+  const pastCompleted = appointments.filter(a => a.status === 'completed' || a.status === 'showed');
+  const lastVisit = pastCompleted.length > 0
+    ? new Date(pastCompleted[0].startTime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : undefined;
+
   return (
-    <>
-      <PortalNav firstName={client.firstName || client.lastName} />
-      {showBookingModal && <BookingModal onClose={() => setShowBookingModal(false)} />}
+    <div className="cp-screen">
+      <PortalNav firstName={client.firstName || client.lastName} hasLivingPractice={client.hasLivingPractice} />
 
-      <main data-testid="dashboard" className="max-w-5xl mx-auto px-4 sm:px-8 lg:px-10 py-8 space-y-10">
+      {showBookingModal && (
+        <BookingModal onClose={() => setShowBookingModal(false)} />
+      )}
 
-        {/* ── Greeting ── */}
-        <div className="animate-fade-in">
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-amari-charcoal">
-            {getGreeting()}, {client.firstName || client.lastName}
-          </h1>
-          <p data-testid="dashboard-subtitle" className="text-amari-text-muted mt-1 text-sm">
-            {client.seriesType !== 'none' && client.sessionsRemaining > 0
-              ? `${client.sessionsRemaining} session${client.sessionsRemaining !== 1 ? 's' : ''} remaining`
-              : hasHadInitial
-                ? 'Welcome back — ready to book your next session?'
-                : 'Welcome — your portal is ready.'}
-          </p>
-          {hasHadInitial && (
-            <p className="text-xs text-amari-text-muted mt-1.5">
-              Join hundreds of clients building a practice with the Amari Method.
-            </p>
-          )}
+      <section className="cp-greet">
+        <div className="cp-greet-l">
+          <h1 className="cp-hello">Hey, <em>{client.firstName || client.lastName}.</em></h1>
+          <p className="cp-greet-sub">{sub}</p>
         </div>
-
-        {/* ── Zone 1: Progress + Upcoming (full width) ── */}
-        <section className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <ProgressTracker
-            client={client}
-            upcomingAppointments={upcomingAppointments}
-            // `appointments` from the API = past appointments only (not upcoming).
-            // Prop is named allAppointments but only past ones are passed — correct
-            // because completed status only ever appears on past appointments.
-            allAppointments={appointments}
-            onRefetch={refetch}
-            onBookSession={hasActiveSeries && hasHadInitial ? () => setShowBookingModal(true) : undefined}
-          />
-        </section>
-
-        {/* ── Divider ── */}
-        <div className="border-t border-amari-border" />
-
-        {/* ── Zone 2: Book & Manage ── */}
-        <section className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-amari-text-muted mb-4">
-            Book &amp; Manage
-          </h2>
-          <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
-        </section>
-
-        {/* ── Divider ── */}
-        <div className="border-t border-amari-border" />
-
-        {/* ── Zone 3: History + Refer (bottom row) ── */}
-        <section className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <div className={`grid grid-cols-1 gap-6 ${!client.isPartner ? 'lg:grid-cols-2' : ''}`}>
-            <SessionHistory appointments={appointments} />
-            {!client.isPartner && (
-              <ReferralCard
-                contactId={client.contactId}
-                referralCount={client.referralCount ?? 0}
-                rewardCode={client.rewardCode ?? null}
-              />
-            )}
+        {lastVisit && (
+          <div className="cp-greet-r">
+            <span className="cp-mono">Last visit</span>
+            <span className="cp-greet-when">{lastVisit}</span>
           </div>
-        </section>
+        )}
+      </section>
 
-      </main>
-    </>
+      <ProgressTracker
+        client={client}
+        upcomingAppointments={upcomingAppointments}
+        allAppointments={appointments}
+        onRefetch={refetch}
+        onBookSession={hasActiveSeries && hasHadInitial ? () => setShowBookingModal(true) : undefined}
+      />
+
+      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+
+      {!client.isPartner && (
+        <div style={{ margin: '22px 20px 0' }}>
+          <ReferralCard
+            contactId={client.contactId}
+            referralCount={client.referralCount ?? 0}
+            rewardCode={client.rewardCode ?? null}
+          />
+        </div>
+      )}
+
+      <SessionHistory appointments={appointments} />
+
+      <footer className="cp-foot">
+        <span>amarimethod.com</span>
+        <span className="cp-dot">·</span>
+        <a href="mailto:hello@amarimethod.com">Help &amp; policies</a>
+        <span className="cp-dot">·</span>
+        <a href="mailto:hello@amarimethod.com">Contact Dr. Garrett</a>
+        <span className="cp-foot-r">© {new Date().getFullYear()} Amari Method</span>
+      </footer>
+    </div>
   );
 }
