@@ -108,7 +108,7 @@ function TopBar({ firstName, hasLivingPractice }: { firstName: string; hasLiving
   return (
     <header className="cp-topbar">
       <Link to="/" className="cp-seal">
-        <span className="cp-mark"></span>
+        <img src="/images/AmariLogo.avif" alt="" className="cp-seal-logo" />
         <span>Amari Method</span>
       </Link>
       <nav className="cp-topnav">
