@@ -96,11 +96,11 @@ const ContactInfoForm = ({
       
       <div className="mt-6 text-sm text-gray-500">
         By submitting this form, you agree to our{' '}
-        <a href="https://www.amarimethod.com/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-amari-pine-teal underline">
+        <a href="https://www.amarimethod.com/privacy-policy" className="text-amari-pine-teal underline">
           Privacy Policy
         </a>{' '}
         and{' '}
-        <a href="https://www.amarimethod.com/terms-of-use" target="_blank" rel="noopener noreferrer" className="text-amari-pine-teal underline">
+        <a href="https://www.amarimethod.com/terms-of-use" className="text-amari-pine-teal underline">
           Terms of Use
         </a>.
       </div>

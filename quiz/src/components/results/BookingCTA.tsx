@@ -129,8 +129,6 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           <div className="flex gap-3" style={{ width: '100%' }}>
             <a
               href={buildBookingUrl("/book-initial-in-person", painLocation)}
-              target="_blank"
-              rel="noopener noreferrer"
               className={`${remotePreferred ? 'btn-secondary' : 'btn-primary'} text-center`}
               style={{ flex: 1, display: 'block', order: remotePreferred ? 2 : 1 }}
             >
@@ -138,8 +136,6 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             </a>
             <a
               href={buildBookingUrl("/book-initial-virtual", painLocation)}
-              target="_blank"
-              rel="noopener noreferrer"
               className={`${remotePreferred ? 'btn-primary' : 'btn-secondary'} text-center`}
               style={{ flex: 1, display: 'block', order: remotePreferred ? 1 : 2 }}
             >
@@ -177,8 +173,6 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           </p>
           <a
             href={buildBookingUrl("/book-discovery-call", painLocation)}
-            target="_blank"
-            rel="noopener noreferrer"
             className="btn-secondary"
           >
             <span>Schedule Free 15-Min Discovery Call<span className="arrow">→</span></span>

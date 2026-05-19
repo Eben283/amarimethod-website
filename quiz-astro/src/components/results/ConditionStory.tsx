@@ -160,8 +160,6 @@ const ConditionStory = ({ content }: Props) => {
             Want the full breakdown?{' '}
             <a
               href={`https://www.amarimethod.com/${content.conditionPageSlug}`}
-              target="_blank"
-              rel="noopener noreferrer"
             >
               Read the full {content.displayName.toLowerCase()} page →
             </a>

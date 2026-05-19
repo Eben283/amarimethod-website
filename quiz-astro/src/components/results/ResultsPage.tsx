@@ -595,10 +595,10 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 9 — Aside links */}
       <div className="doc">
         <div className="aside-links">
-          <a href={buildBookingUrl('/book-discovery-call')} target="_blank" rel="noopener noreferrer">
+          <a href={buildBookingUrl('/book-discovery-call')}>
             Schedule free 15-min call ↗
           </a>
-          <a href="https://www.amarimethod.com/booking" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.amarimethod.com/booking">
             See full pricing &amp; packages ↗
           </a>
         </div>

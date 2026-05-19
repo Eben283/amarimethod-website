@@ -161,16 +161,12 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             <div className="flex gap-3 justify-center flex-wrap">
               <a
                 href={buildBookingUrl("/book-initial-in-person")}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-primary"
               >
                 <span>Book In-Person<span className="arrow">→</span></span>
               </a>
               <a
                 href={buildBookingUrl("/book-initial-virtual")}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="btn-primary"
               >
                 <span>Book Virtual<span className="arrow">→</span></span>

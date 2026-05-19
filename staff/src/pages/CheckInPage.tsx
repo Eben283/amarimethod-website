@@ -157,8 +157,6 @@ export default function CheckInPage() {
             <li>
               <a
                 href="/client-info"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-amari-accent-warm underline underline-offset-2"
               >
                 Missed Appointment Policy →
@@ -167,8 +165,6 @@ export default function CheckInPage() {
             <li>
               <a
                 href="/member-agreement"
-                target="_blank"
-                rel="noopener noreferrer"
                 className="text-amari-accent-warm underline underline-offset-2"
               >
                 Practice Member Agreement →

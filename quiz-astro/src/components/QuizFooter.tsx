@@ -8,17 +8,13 @@ const QuizFooter = () => {
     <footer className="mt-12 py-6 border-t border-amari-oat text-center text-sm text-gray-600">
       <div className="flex flex-col md:flex-row justify-center gap-4 md:gap-8">
         <a 
-          href="https://www.amarimethod.com/privacy-policy" 
-          target="_blank" 
-          rel="noopener noreferrer"
+          href="https://www.amarimethod.com/privacy-policy"
           className="text-amari-pine-teal hover:underline"
         >
           Privacy Policy
         </a>
         <a 
-          href="https://www.amarimethod.com/terms-of-use" 
-          target="_blank" 
-          rel="noopener noreferrer"
+          href="https://www.amarimethod.com/terms-of-use"
           className="text-amari-pine-teal hover:underline"
         >
           Terms of Use
