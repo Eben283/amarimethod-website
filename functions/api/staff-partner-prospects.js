@@ -21,20 +21,24 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
-// Tag → category mapping. Order matters: most-specific first.
+// Tags grouped by category. A category may include multiple tags (e.g. the
+// historical `trainer-outreach` batch + the newer `trainer-new-partner` curation
+// both count as "trainer" for filtering + category badge).
 const CATEGORY_TAGS = {
-  golf: "golf-new-partner",
-  tennis: "tennis-new-partner",
-  trainer: "trainer-new-partner",
+  golf: ["golf-new-partner"],
+  tennis: ["tennis-new-partner"],
+  trainer: ["trainer-new-partner", "trainer-outreach"],
 };
 
-// For "all" we union three tags. (We deliberately exclude the very-broad
-// `trainer-outreach` cohort of 237 in v0 — it's the historical email push,
-// not the curated daily-call universe.)
+// Broad partner tags that don't imply a specific sport/practice category.
+// Included in "all" so the universe covers everyone we've ever flagged as a
+// potential partner (~300 unique across all tags after dedupe).
+const BROAD_PARTNER_TAGS = ["partner-prospect", "affiliate-partner"];
+
+// Full universe for category=all: every category tag plus broad tags.
 const ALL_PARTNER_TAGS = [
-  CATEGORY_TAGS.golf,
-  CATEGORY_TAGS.tennis,
-  CATEGORY_TAGS.trainer,
+  ...Object.values(CATEGORY_TAGS).flat(),
+  ...BROAD_PARTNER_TAGS,
 ];
 
 function corsHeaders(origin) {
@@ -49,9 +53,11 @@ function corsHeaders(origin) {
 
 function deriveCategory(tags) {
   if (!Array.isArray(tags)) return "unknown";
-  if (tags.includes(CATEGORY_TAGS.golf)) return "golf";
-  if (tags.includes(CATEGORY_TAGS.tennis)) return "tennis";
-  if (tags.includes(CATEGORY_TAGS.trainer)) return "trainer";
+  // Most-specific first. Falls back to the historical `trainer-outreach`
+  // tag so that legacy trainers still show "trainer" badge, not "unknown".
+  if (CATEGORY_TAGS.golf.some((t) => tags.includes(t))) return "golf";
+  if (CATEGORY_TAGS.tennis.some((t) => tags.includes(t))) return "tennis";
+  if (CATEGORY_TAGS.trainer.some((t) => tags.includes(t))) return "trainer";
   return "unknown";
 }
 
@@ -227,9 +233,7 @@ export async function onRequestGet(context) {
     const tagsToFetch =
       category === "all"
         ? ALL_PARTNER_TAGS
-        : CATEGORY_TAGS[category]
-          ? [CATEGORY_TAGS[category]]
-          : [];
+        : CATEGORY_TAGS[category] || [];
 
     if (tagsToFetch.length === 0) {
       return new Response(
