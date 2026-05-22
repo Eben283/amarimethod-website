@@ -288,10 +288,14 @@ export async function onRequestGet(context) {
       { status: 200, headers },
     );
   } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    // Surface detail in the `error` field so the staff app's generic error UI
+    // (which only displays `error`) reveals the real failure.
+    console.error("[staff-partner-prospects] failed:", detail);
     return new Response(
       JSON.stringify({
-        error: "Failed to load partner prospects",
-        detail: err instanceof Error ? err.message : String(err),
+        error: `Failed to load partner prospects: ${detail}`,
+        detail,
       }),
       { status: 500, headers },
     );
