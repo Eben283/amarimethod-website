@@ -86,9 +86,11 @@ function toProspect(contact, stageInfo) {
 // Fetch the Partnership Pipeline stage definitions + all opps in one call.
 // Returns { stages: [{id, name, order}], byContactId: Map<contactId, {stageId, stageName, opportunityId}> }.
 async function fetchPartnershipPipelineState(ghlToken) {
-  const pipelinesRes = await fetch(`${GHL_API_BASE}/opportunities/pipelines`, {
-    headers: ghlHeaders(ghlToken),
-  });
+  // GHL requires locationId on /opportunities/pipelines or returns 422.
+  const pipelinesRes = await fetch(
+    `${GHL_API_BASE}/opportunities/pipelines?locationId=${GHL_LOCATION_ID}`,
+    { headers: ghlHeaders(ghlToken) },
+  );
   if (!pipelinesRes.ok) {
     throw new Error(`GHL /opportunities/pipelines ${pipelinesRes.status}`);
   }
