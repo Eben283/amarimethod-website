@@ -7,6 +7,7 @@ import ClientDetailPage from './pages/ClientDetailPage';
 import MessagesPage from './pages/MessagesPage';
 import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
+import PartnersPage from './pages/PartnersPage';
 import CheckInPage from './pages/CheckInPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
@@ -105,6 +106,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav>
               <PlaybookPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/partners"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <PartnersPage />
             </LayoutWithNav>
           </ProtectedRoute>
         }

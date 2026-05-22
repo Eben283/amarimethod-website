@@ -193,4 +193,10 @@ export async function getOutreachCards(): Promise<import('../types/staff').Outre
   return fetchApi('/staff-outreach-cards');
 }
 
+export async function getPartnerProspects(
+  category: import('../types/staff').PartnerCategoryFilter = 'all',
+): Promise<import('../types/staff').PartnerProspectsResponse> {
+  return fetchApi(`/staff-partner-prospects?category=${encodeURIComponent(category)}`);
+}
+
 export { ApiError };

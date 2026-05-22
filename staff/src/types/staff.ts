@@ -237,3 +237,31 @@ export interface BalancesResponse {
   ledgerSource: 'session-ledger' | 'custom-field-fallback';
   rows: BalanceRow[];
 }
+
+// Partner outreach workspace (v0 — read-only)
+
+export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'unknown';
+
+export type PartnerCategoryFilter = 'all' | PartnerCategory;
+
+export interface PartnerProspect {
+  contactId: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  category: PartnerCategory;
+  tags: string[];
+  phone: string | null;
+  email: string | null;
+  /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
+  lastActivityAt: string | null;
+  /** Active partner = already did the Partner Session (tag `affiliate-partner`). */
+  isActivePartner: boolean;
+}
+
+export interface PartnerProspectsResponse {
+  generatedAt: string;
+  total: number;
+  countsByCategory: Record<PartnerCategory, number>;
+  prospects: PartnerProspect[];
+}
