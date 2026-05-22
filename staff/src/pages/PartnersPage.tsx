@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Loader2, Phone, MessageSquare, Mail, ChevronRight } from 'lucide-react';
+import { RefreshCw, Loader2, ExternalLink, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getPartnerProspects, ApiError } from '../lib/api';
 import type {
@@ -8,6 +8,19 @@ import type {
   PartnerCategoryFilter,
   PartnerCategory,
 } from '../types/staff';
+
+const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
+const ghlContactUrl = (contactId: string) =>
+  `https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${contactId}`;
+
+// v0: outcomes are UI-only stubs. Slice 2 wires real GHL writes.
+const OUTCOME_OPTIONS: { id: string; label: string }[] = [
+  { id: 'no-answer', label: 'No answer' },
+  { id: 'voicemail', label: 'Voicemail' },
+  { id: 'talked', label: 'Talked' },
+  { id: 'booked', label: 'Booked' },
+  { id: 'not-interested', label: 'Not interested' },
+];
 
 const FILTERS: { id: PartnerCategoryFilter; label: string }[] = [
   { id: 'all', label: 'All' },
@@ -41,67 +54,71 @@ function relativeTime(iso: string | null): string {
 
 function ProspectCard({ prospect, onTap }: { prospect: PartnerProspect; onTap: () => void }) {
   const badgeClass = CATEGORY_BADGE[prospect.category];
-  // Stop propagation on tel:/sms:/mailto: links so taps don't trigger row navigation.
+  // Stop propagation on inner actions so taps don't bubble to row navigation.
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
   return (
-    <button
-      onClick={onTap}
-      className="staff-card-tap w-full flex items-start gap-3 text-left border-l-2 border-l-amari-light-sand"
-    >
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-medium text-amari-charcoal truncate">
-            {prospect.fullName}
-          </p>
-          <span
-            className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${badgeClass}`}
-          >
-            {prospect.category === 'trainer' ? 'PT' : prospect.category}
-          </span>
-          {prospect.isActivePartner && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">
-              Active partner
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-amari-text-muted mt-0.5">
-          Last touch: {relativeTime(prospect.lastActivityAt)}
-        </p>
-        <div className="flex items-center gap-3 mt-1.5">
-          {prospect.phone && (
-            <>
-              <a
-                href={`tel:${prospect.phone}`}
-                onClick={stopProp}
-                className="flex items-center gap-1 text-xs text-amari-charcoal hover:underline"
-              >
-                <Phone className="w-3 h-3" /> Call
-              </a>
-              <a
-                href={`sms:${prospect.phone}`}
-                onClick={stopProp}
-                className="flex items-center gap-1 text-xs text-amari-charcoal hover:underline"
-              >
-                <MessageSquare className="w-3 h-3" /> SMS
-              </a>
-            </>
-          )}
-          {prospect.email && (
-            <a
-              href={`mailto:${prospect.email}`}
-              onClick={stopProp}
-              className="flex items-center gap-1 text-xs text-amari-charcoal hover:underline"
+    <div className="staff-card-tap w-full border-l-2 border-l-amari-light-sand">
+      <button
+        onClick={onTap}
+        className="w-full flex items-start gap-3 text-left"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-sm font-medium text-amari-charcoal truncate">
+              {prospect.fullName}
+            </p>
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${badgeClass}`}
             >
-              <Mail className="w-3 h-3" /> Email
-            </a>
-          )}
-          {!prospect.phone && !prospect.email && (
-            <span className="text-xs text-amari-text-muted italic">no contact info</span>
-          )}
+              {prospect.category === 'trainer' ? 'PT' : prospect.category}
+            </span>
+            {prospect.isActivePartner && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">
+                Active partner
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-amari-text-muted mt-0.5">
+            Last touch: {relativeTime(prospect.lastActivityAt)}
+          </p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-amari-text-muted shrink-0 mt-1" />
+      </button>
+
+      {/* Open in GHL — Garrett does the actual outreach in GHL so the activity gets logged */}
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
+        <a
+          href={ghlContactUrl(prospect.contactId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={stopProp}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amari-charcoal text-white text-xs font-medium hover:opacity-90"
+        >
+          Open in GHL
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
+
+      {/* Outcome buttons — UI stubs in v0; slice 2 wires writes to GHL custom field */}
+      <div className="mt-2">
+        <p className="text-[10px] uppercase tracking-wide text-amari-text-muted mb-1">
+          Log outcome
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {OUTCOME_OPTIONS.map((o) => (
+            <button
+              key={o.id}
+              onClick={stopProp}
+              disabled
+              title="Coming in slice 2 — needs GHL custom fields"
+              className="px-2 py-1 rounded text-xs border border-amari-border text-amari-text-muted hover:bg-amari-light-sand/40 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-amari-text-muted shrink-0 mt-1" />
-    </button>
+    </div>
   );
 }
 
