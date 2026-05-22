@@ -257,11 +257,22 @@ export interface PartnerProspect {
   lastActivityAt: string | null;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */
   isActivePartner: boolean;
+  /** Partnership Pipeline stage. null if contact has no opp in this pipeline yet (shows in "Unstaged" column). */
+  pipelineStageId: string | null;
+  pipelineStageName: string | null;
+  opportunityId: string | null;
+}
+
+export interface PartnerPipelineStage {
+  id: string | null;  // null for the synthetic "Unstaged" pseudo-stage
+  name: string;
+  order: number;
 }
 
 export interface PartnerProspectsResponse {
   generatedAt: string;
   total: number;
   countsByCategory: Record<PartnerCategory, number>;
+  stages: PartnerPipelineStage[];
   prospects: PartnerProspect[];
 }

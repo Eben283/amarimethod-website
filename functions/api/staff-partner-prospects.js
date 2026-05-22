@@ -14,6 +14,7 @@ import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const PARTNERSHIP_PIPELINE_ID = "wTHOvZQMdrrud4f7brTF";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -54,7 +55,7 @@ function deriveCategory(tags) {
   return "unknown";
 }
 
-function toProspect(contact) {
+function toProspect(contact, stageInfo) {
   const tags = Array.isArray(contact.tags) ? contact.tags : [];
   return {
     contactId: contact.id,
@@ -75,7 +76,69 @@ function toProspect(contact) {
       contact.dateUpdated ||
       null,
     isActivePartner: tags.includes("affiliate-partner"),
+    // Partnership Pipeline opp / stage — null if no opp exists yet for this contact.
+    pipelineStageId: stageInfo?.stageId ?? null,
+    pipelineStageName: stageInfo?.stageName ?? null,
+    opportunityId: stageInfo?.opportunityId ?? null,
   };
+}
+
+// Fetch the Partnership Pipeline stage definitions + all opps in one call.
+// Returns { stages: [{id, name, order}], byContactId: Map<contactId, {stageId, stageName, opportunityId}> }.
+async function fetchPartnershipPipelineState(ghlToken) {
+  const pipelinesRes = await fetch(`${GHL_API_BASE}/opportunities/pipelines`, {
+    headers: ghlHeaders(ghlToken),
+  });
+  if (!pipelinesRes.ok) {
+    throw new Error(`GHL /opportunities/pipelines ${pipelinesRes.status}`);
+  }
+  const pipelinesData = await pipelinesRes.json();
+  const pipeline = (pipelinesData.pipelines || []).find(
+    (p) => p.id === PARTNERSHIP_PIPELINE_ID,
+  );
+  const stages = pipeline
+    ? (pipeline.stages || []).map((s, i) => ({ id: s.id, name: s.name, order: i }))
+    : [];
+  const stageById = new Map(stages.map((s) => [s.id, s.name]));
+
+  // Pull all opps in this pipeline. Page through if >100.
+  const byContactId = new Map();
+  let nextPath = `/opportunities/search?${new URLSearchParams({
+    location_id: GHL_LOCATION_ID,
+    pipeline_id: PARTNERSHIP_PIPELINE_ID,
+    limit: "100",
+  }).toString()}`;
+  let safety = 0;
+  while (nextPath && safety < 10) {
+    const res = await fetch(`${GHL_API_BASE}${nextPath}`, {
+      headers: ghlHeaders(ghlToken),
+    });
+    if (!res.ok) {
+      throw new Error(`GHL /opportunities/search ${res.status}`);
+    }
+    const data = await res.json();
+    for (const o of data.opportunities || []) {
+      if (o.contactId || o.contact?.id) {
+        const cid = o.contactId || o.contact.id;
+        // Prefer most recently updated opp if a contact has multiple in this pipeline.
+        const existing = byContactId.get(cid);
+        if (!existing || new Date(o.updatedAt) > new Date(existing.updatedAt)) {
+          byContactId.set(cid, {
+            stageId: o.pipelineStageId,
+            stageName: stageById.get(o.pipelineStageId) || "(unknown stage)",
+            opportunityId: o.id,
+            updatedAt: o.updatedAt,
+          });
+        }
+      }
+    }
+    if (!data.meta?.nextPageUrl) break;
+    const url = new URL(data.meta.nextPageUrl);
+    nextPath = url.pathname.replace("/v1/", "/") + url.search;
+    safety += 1;
+  }
+
+  return { stages, byContactId };
 }
 
 async function fetchByTag(ghlToken, tag, pageLimit = 100) {
@@ -173,17 +236,24 @@ export async function onRequestGet(context) {
       );
     }
 
-    // Fetch contacts per tag in parallel, then dedupe by contactId.
-    const tagResults = await Promise.all(
-      tagsToFetch.map((tag) => fetchByTag(ghlToken, tag)),
-    );
+    // Fetch contacts per tag + the partnership pipeline state in parallel.
+    const [tagResults, pipelineState] = await Promise.all([
+      Promise.all(tagsToFetch.map((tag) => fetchByTag(ghlToken, tag))),
+      fetchPartnershipPipelineState(ghlToken),
+    ]);
+
+    // Dedupe contacts by id.
     const byId = new Map();
     for (const list of tagResults) {
       for (const c of list) {
         if (!byId.has(c.id)) byId.set(c.id, c);
       }
     }
-    const prospects = Array.from(byId.values()).map(toProspect);
+
+    // Join: contact → stage info (may be null if contact has no opp in this pipeline).
+    const prospects = Array.from(byId.values()).map((c) =>
+      toProspect(c, pipelineState.byContactId.get(c.id) || null),
+    );
 
     // Sort: never-touched first (oldest activity = highest priority for a call),
     // then by activity date ascending (oldest touched next).
@@ -207,6 +277,12 @@ export async function onRequestGet(context) {
         generatedAt: new Date().toISOString(),
         total: prospects.length,
         countsByCategory,
+        // Stages for kanban columns, in pipeline order. Includes a synthetic
+        // "Unstaged" pseudo-stage at the front for contacts with no opp yet.
+        stages: [
+          { id: null, name: "Unstaged", order: -1 },
+          ...pipelineState.stages,
+        ],
         prospects,
       }),
       { status: 200, headers },
