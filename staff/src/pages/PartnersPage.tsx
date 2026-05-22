@@ -193,44 +193,52 @@ export default function PartnersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const load = useCallback(
-    async (f: PartnerCategoryFilter) => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const data = await getPartnerProspects(f);
-        setProspects(data.prospects);
-        setStages(data.stages);
-        setCounts(data.countsByCategory);
-        setTotal(data.total);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 401) {
-          logout();
-          return;
-        }
-        setError(err instanceof Error ? err.message : 'Failed to load partners');
-      } finally {
-        setIsLoading(false);
+  // Load the full universe once (independent of filter).
+  const load = useCallback(async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const data = await getPartnerProspects('all');
+      setProspects(data.prospects);
+      setStages(data.stages);
+      setCounts(data.countsByCategory);
+      setTotal(data.total);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
       }
-    },
-    [logout],
-  );
+      setError(err instanceof Error ? err.message : 'Failed to load partners');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [logout]);
 
   useEffect(() => {
-    load(filter);
-  }, [filter, load]);
+    load();
+  }, [load]);
 
-  // Group prospects by pipelineStageId (null = Unstaged).
+  // Apply the category filter client-side. Universe + counts stay stable.
+  const visibleProspects = useMemo(
+    () =>
+      filter === 'all'
+        ? prospects
+        : prospects.filter((p) => p.category === filter),
+    [prospects, filter],
+  );
+
+  // Group filtered prospects by pipelineStageId (null = Unstaged).
   const prospectsByStage = useMemo(() => {
     const map = new Map<string | null, PartnerProspect[]>();
-    for (const p of prospects) {
+    for (const p of visibleProspects) {
       const key = p.pipelineStageId;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(p);
     }
     return map;
-  }, [prospects]);
+  }, [visibleProspects]);
 
+  // Chip counts reflect the full universe — never change with the active filter.
   const filterCount = (f: PartnerCategoryFilter): number => {
     if (f === 'all') return total;
     return counts[f as PartnerCategory] ?? 0;
@@ -242,7 +250,7 @@ export default function PartnersPage() {
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-lg font-serif text-amari-charcoal">Partners</h1>
         <button
-          onClick={() => load(filter)}
+          onClick={() => load()}
           disabled={isLoading}
           className="flex items-center gap-1 text-xs text-amari-text-muted hover:text-amari-charcoal disabled:opacity-50"
         >

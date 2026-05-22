@@ -227,20 +227,11 @@ export async function onRequestGet(context) {
       );
     }
 
-    // Resolve which tags to fetch based on category param.
-    const url = new URL(context.request.url);
-    const category = (url.searchParams.get("category") || "all").toLowerCase();
-    const tagsToFetch =
-      category === "all"
-        ? ALL_PARTNER_TAGS
-        : CATEGORY_TAGS[category] || [];
-
-    if (tagsToFetch.length === 0) {
-      return new Response(
-        JSON.stringify({ error: `Unknown category: ${category}` }),
-        { status: 400, headers },
-      );
-    }
+    // Always fetch the FULL universe (all partner tags) so the frontend's
+    // filter chips show accurate counts regardless of which is selected.
+    // Filtering is then done client-side, instantly.
+    // (The `category` query param is accepted but ignored — kept for future use.)
+    const tagsToFetch = ALL_PARTNER_TAGS;
 
     // Fetch contacts per tag + the partnership pipeline state in parallel.
     const [tagResults, pipelineState] = await Promise.all([
