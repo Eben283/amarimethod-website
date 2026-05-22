@@ -159,6 +159,20 @@ export async function staffCheckIn(
   });
 }
 
+export type StaffAttestation =
+  | { found: false }
+  | {
+      found: true;
+      typedName: string;
+      signatureImage: string;
+      agreementVersion: string;
+      signedAt: string;
+    };
+
+export async function getStaffAttestation(contactId: string): Promise<StaffAttestation> {
+  return fetchApi(`/staff-attestation?contactId=${encodeURIComponent(contactId)}`);
+}
+
 export async function markNotAFit(contactId: string): Promise<{ success: boolean; stage: string }> {
   return fetchApi('/staff-not-a-fit', {
     method: 'POST',

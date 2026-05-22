@@ -1,0 +1,122 @@
+// Cloudflare Pages Function: GET /api/staff-attestation?contactId=...
+// Returns the most recent practice-policies attestation record for a contact,
+// reading from the same PURCHASE_KV namespace where staff-checkin writes them
+// under the key pattern `attestation:{contactId}:{timestamp}`.
+//
+// Used by the staff CheckInPage to render a read-only "already signed" view
+// — typed name, signature image, signed-at, agreement version — instead of
+// presenting a blank signature pad to a client who has already signed.
+
+import { verifySessionToken } from "../lib/auth.js";
+
+const ALLOWED_ORIGINS = [
+  "https://www.amarimethod.com",
+  "https://amarimethod.com",
+];
+
+function corsHeaders(origin) {
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
+export async function onRequestOptions(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders(context.request.headers.get("Origin")),
+  });
+}
+
+export async function onRequestGet(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
+
+  try {
+    const JWT_SECRET = context.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
+    }
+
+    const authHeader = context.request.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
+    }
+
+    let tokenPayload;
+    try {
+      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+    } catch {
+      return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers });
+    }
+
+    if (tokenPayload.role !== "staff") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
+    }
+
+    const url = new URL(context.request.url);
+    const contactId = url.searchParams.get("contactId");
+    if (!contactId) {
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
+    }
+
+    const kv = context.env.PURCHASE_KV;
+    if (!kv) {
+      return new Response(JSON.stringify({ error: "Storage not configured" }), { status: 500, headers });
+    }
+
+    // List all attestation keys for this contact. KV returns keys sorted
+    // lexicographically; since the timestamp suffix is ISO-8601, the LAST
+    // key is the most recent signing.
+    const prefix = `attestation:${contactId}:`;
+    let listResult;
+    try {
+      listResult = await kv.list({ prefix });
+    } catch (err) {
+      console.error("[staff-attestation] KV list failed:", err.message);
+      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers });
+    }
+
+    const keys = listResult.keys || [];
+    if (keys.length === 0) {
+      return new Response(JSON.stringify({ found: false }), { status: 200, headers });
+    }
+
+    const latestKey = keys[keys.length - 1].name;
+    let raw;
+    try {
+      raw = await kv.get(latestKey);
+    } catch (err) {
+      console.error("[staff-attestation] KV get failed:", err.message);
+      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers });
+    }
+
+    if (!raw) {
+      return new Response(JSON.stringify({ found: false }), { status: 200, headers });
+    }
+
+    let record;
+    try {
+      record = JSON.parse(raw);
+    } catch {
+      return new Response(JSON.stringify({ error: "Attestation record is corrupt" }), { status: 500, headers });
+    }
+
+    return new Response(
+      JSON.stringify({
+        found: true,
+        typedName: record.typedName,
+        signatureImage: record.signatureImage,
+        agreementVersion: record.agreementVersion,
+        signedAt: record.signedAt,
+      }),
+      { status: 200, headers },
+    );
+  } catch (err) {
+    console.error("[staff-attestation] Error:", err.message);
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
+  }
+}
