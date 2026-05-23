@@ -273,14 +273,24 @@ export type PartnerLastSignal =
   | 'deferred'
   | 'not-interested';
 
+// Matches the existing GHL "Facility Type" field options.
 export type PartnerFacilityType =
-  | 'boutique'
-  | 'chain'
-  | 'private'
-  | 'gym'
-  | 'studio'
-  | 'country-club'
-  | 'university';
+  | 'Independent'
+  | 'Boutique'
+  | 'Corporate'
+  | 'Online/Mobile';
+
+// Matches the existing GHL "Facility Role" field options.
+export type PartnerFacilityRole =
+  | 'Owner'
+  | 'Manager'
+  | 'Trainer'
+  | 'Physical Therapist'
+  | 'Front Desk'
+  | 'Other';
+
+// Matches the existing GHL "Has PT On Staff" field options.
+export type HasPtOnStaff = 'Yes' | 'No' | 'Unknown';
 
 export interface PartnerProspect {
   contactId: string;
@@ -303,9 +313,12 @@ export interface PartnerProspect {
   partnerLastSignal: PartnerLastSignal | null;
   partnerLastSignalAt: string | null;
   partnerFollowupAt: string | null;
-  partnerFacility: string | null;
+  // Existing facility / context fields (Trainer Outreach group):
+  partnerFacility: string | null;             // Trainer Facility
   partnerFacilityType: PartnerFacilityType | null;
-  partnerFacilityRole: string | null;
+  partnerFacilityRole: PartnerFacilityRole | null;
+  hasPtOnStaff: HasPtOnStaff | null;
+  outreachVerified: boolean;
 }
 
 export type PartnerStageFilter = 'all' | PartnerStage;

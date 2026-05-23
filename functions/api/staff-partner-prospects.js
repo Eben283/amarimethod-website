@@ -20,16 +20,23 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
-// Partner custom field IDs (from ops/ref/partner-custom-fields-2026-05-22.json).
+// Custom field IDs used by the Partners tab.
+// New partner_* fields created 2026-05-23.
+// Existing facility fields are in the "Trainer Outreach" group — already in use; we read but don't duplicate.
+// See ops/ref/partner-custom-fields-2026-05-22.json for full registry.
 const FIELD_IDS = {
+  // New (state / signal tracking)
   partner_stage:           "KfPow1mYDxJqiOCS6mDZ",
   partner_source:          "wFYnPOmI6PzllGGuCWvs",
   partner_last_signal:     "XyUoMtbxadTuZunQwX3Y",
   partner_last_signal_at:  "J0lnfsvtt0vcFOdSbUSf",
   partner_followup_at:     "stVYzQB4Xpi29cuyUYnA",
-  partner_facility:        "7d2kDL7FRrZj0Ii7Nfkp",
-  partner_facility_type:   "UdVJhM7cdFerVI1knOPu",
-  partner_facility_role:   "e73d9kmMcDtm1FKEYHRy",
+  // Existing (facility context)
+  trainer_facility:        "eYBj61zgMnIFMIesoDR5",
+  facility_type:           "gIQEMkO1gV85SAYcYlNx",
+  facility_role:           "FGakk9CgiRqeY0tleGQD",
+  has_pt_on_staff:         "YWglhoiMeTUPSpHA9322",
+  outreach_verified:       "PVftrxrmNRPmfdlQAwzl",
 };
 
 // Tags that identify partner contacts. Union across categories + broad tags.
@@ -82,6 +89,13 @@ function getField(contact, fieldId) {
   return v;
 }
 
+// "Outreach Verified" is a CHECKBOX. GHL returns either true, "true", or ["true"].
+function isChecked(raw) {
+  if (raw === null || raw === undefined) return false;
+  if (Array.isArray(raw)) return raw.some((v) => ["true", "yes", "1"].includes(String(v).toLowerCase()));
+  return ["true", "yes", "1"].includes(String(raw).toLowerCase());
+}
+
 function toProspect(contact) {
   const tags = Array.isArray(contact.tags) ? contact.tags : [];
   return {
@@ -97,7 +111,7 @@ function toProspect(contact) {
     phone: contact.phone || null,
     email: contact.email || null,
     website: contact.website || null,
-    instagram: getField(contact, "instagram") || null,  // best-effort; GHL has no native IG field
+    instagram: null,  // GHL has no native IG field; left blank until enrichment adds it
     lastActivityAt: contact.lastActivity || contact.dateUpdated || null,
     isActivePartner: tags.includes("affiliate-partner"),
     // New partner custom fields — null if not yet migrated.
@@ -106,9 +120,12 @@ function toProspect(contact) {
     partnerLastSignal:    getField(contact, FIELD_IDS.partner_last_signal),
     partnerLastSignalAt:  getField(contact, FIELD_IDS.partner_last_signal_at),
     partnerFollowupAt:    getField(contact, FIELD_IDS.partner_followup_at),
-    partnerFacility:      getField(contact, FIELD_IDS.partner_facility),
-    partnerFacilityType:  getField(contact, FIELD_IDS.partner_facility_type),
-    partnerFacilityRole:  getField(contact, FIELD_IDS.partner_facility_role),
+    // Existing facility / context fields (Trainer Outreach group).
+    partnerFacility:      getField(contact, FIELD_IDS.trainer_facility),
+    partnerFacilityType:  getField(contact, FIELD_IDS.facility_type),
+    partnerFacilityRole:  getField(contact, FIELD_IDS.facility_role),
+    hasPtOnStaff:         getField(contact, FIELD_IDS.has_pt_on_staff),
+    outreachVerified:     isChecked(getField(contact, FIELD_IDS.outreach_verified)),
   };
 }
 

@@ -305,10 +305,16 @@ function ProspectModal({
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{prospect.partnerFacility}</dd></div>
               )}
               {prospect.partnerFacilityType && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility type</dt><dd className="text-amari-charcoal capitalize">{prospect.partnerFacilityType}</dd></div>
+                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility type</dt><dd className="text-amari-charcoal">{prospect.partnerFacilityType}</dd></div>
               )}
               {prospect.partnerFacilityRole && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Role</dt><dd className="text-amari-charcoal">{prospect.partnerFacilityRole}</dd></div>
+              )}
+              {prospect.hasPtOnStaff && prospect.hasPtOnStaff !== 'Unknown' && (
+                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
+              )}
+              {prospect.outreachVerified && (
+                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Verified</dt><dd className="text-emerald-700">✓ contact info verified</dd></div>
               )}
             </dl>
           </section>
