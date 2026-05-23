@@ -544,6 +544,24 @@ function ProspectModal({
             </section>
           )}
 
+          {/* Enrichment note — pulled out of the timeline because it's the most
+              actionable context. Most recent note whose body starts with "Enrichment". */}
+          {(() => {
+            const enrichment = activity.find((e) => e.type === 'note' && (e.body || '').trim().startsWith('Enrichment'));
+            if (!enrichment) return null;
+            return (
+              <section>
+                <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Enrichment summary</h3>
+                <div className="bg-amari-light-sand rounded p-3 text-sm text-amari-charcoal whitespace-pre-wrap leading-relaxed">
+                  {(enrichment.body || '').replace(/^Enrichment[^:]*:\s*/, '')}
+                </div>
+                <p className="text-[10px] text-amari-text-muted mt-1">
+                  Researched {friendlyDate(enrichment.date)}
+                </p>
+              </section>
+            );
+          })()}
+
           {/* Activity Timeline */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Activity Timeline</h3>
@@ -556,29 +574,37 @@ function ProspectModal({
             ) : activity.length === 0 ? (
               <p className="text-xs text-amari-text-muted italic">No activity yet.</p>
             ) : (
-              <ul className="space-y-1 text-xs">
-                {activity.slice(0, 10).map((e, idx) => (
-                  <li key={idx} className="flex gap-2 items-start">
-                    <span className="text-amari-text-muted w-32 shrink-0">{friendlyDate(e.date)}</span>
-                    <span className="inline-flex items-center gap-1 text-amari-charcoal">
-                      {e.type === 'call' && <Phone className="w-3 h-3" />}
-                      {e.type === 'sms' && <MessageSquare className="w-3 h-3" />}
-                      {e.type === 'email' && <Mail className="w-3 h-3" />}
-                      {e.type === 'note' && <StickyNote className="w-3 h-3" />}
-                      {e.type === 'appointment' && <CalendarCheck className="w-3 h-3" />}
-                      {e.type === 'call' ? `Call ${e.direction === 'inbound' ? 'received' : 'placed'}` :
-                       e.type === 'sms' ? `SMS ${e.direction === 'inbound' ? 'received' : 'sent'}` :
-                       e.type === 'email' ? `Email ${e.direction === 'inbound' ? 'received' : 'sent'}` :
-                       e.type === 'appointment' ? (e.body || 'Appointment') :
-                       'Note'}
-                      {e.body && (e.type === 'note') && (
-                        <span className="text-amari-text-muted ml-1">— {e.body.slice(0, 80)}{e.body.length > 80 ? '…' : ''}</span>
-                      )}
-                    </span>
-                  </li>
-                ))}
-                {activity.length > 10 && (
-                  <li className="text-amari-text-muted italic">… +{activity.length - 10} older events (open in GHL to see all)</li>
+              <ul className="space-y-1.5 text-xs">
+                {activity
+                  // Don't show the enrichment note again — it's already rendered above
+                  .filter((e) => !(e.type === 'note' && (e.body || '').trim().startsWith('Enrichment')))
+                  .slice(0, 10)
+                  .map((e, idx) => (
+                    <li key={idx} className="flex gap-2 items-start">
+                      <span className="text-amari-text-muted w-28 shrink-0 mt-0.5">{friendlyDate(e.date)}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="inline-flex items-center gap-1 text-amari-charcoal">
+                          {e.type === 'call' && <Phone className="w-3 h-3" />}
+                          {e.type === 'sms' && <MessageSquare className="w-3 h-3" />}
+                          {e.type === 'email' && <Mail className="w-3 h-3" />}
+                          {e.type === 'note' && <StickyNote className="w-3 h-3" />}
+                          {e.type === 'appointment' && <CalendarCheck className="w-3 h-3" />}
+                          {e.type === 'call' ? `Call ${e.direction === 'inbound' ? 'received' : 'placed'}` :
+                           e.type === 'sms' ? `SMS ${e.direction === 'inbound' ? 'received' : 'sent'}` :
+                           e.type === 'email' ? `Email ${e.direction === 'inbound' ? 'received' : 'sent'}` :
+                           e.type === 'appointment' ? (e.body || 'Appointment') :
+                           'Note'}
+                        </span>
+                        {e.body && e.type === 'note' && (
+                          <p className="text-amari-text-secondary mt-0.5 whitespace-pre-wrap break-words leading-relaxed">
+                            {e.body}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                {activity.filter((e) => !(e.type === 'note' && (e.body || '').trim().startsWith('Enrichment'))).length > 10 && (
+                  <li className="text-amari-text-muted italic">… more older events (open in GHL to see all)</li>
                 )}
               </ul>
             )}
