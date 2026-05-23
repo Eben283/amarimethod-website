@@ -86,7 +86,7 @@ export async function onRequestGet(context) {
     );
     if (convRes.ok) {
       const convData = await convRes.json();
-      const conversations = (convData.conversations || []).slice(0, 5);  // top 5 most recent threads
+      const conversations = (convData.conversations || []).slice(0, 5);
       for (const conv of conversations) {
         const msgRes = await fetch(
           `${GHL_API_BASE}/conversations/${conv.id}/messages?limit=20`,
@@ -94,7 +94,6 @@ export async function onRequestGet(context) {
         );
         if (!msgRes.ok) continue;
         const msgData = await msgRes.json();
-        // GHL double-nests: msgData.messages.messages
         const messages = msgData.messages?.messages || [];
         for (const m of messages) {
           const chan = mapMessageType(m.type);
@@ -109,7 +108,32 @@ export async function onRequestGet(context) {
       }
     }
 
-    // 2) Notes
+    // 2) Appointments (free sessions, partner sessions, etc.)
+    const apptRes = await fetch(
+      `${GHL_API_BASE}/contacts/${contactId}/appointments`,
+      { headers: ghlHeaders(ghlToken) },
+    );
+    if (apptRes.ok) {
+      const apptData = await apptRes.json();
+      const appts = apptData.events || apptData.appointments || [];
+      for (const a of appts) {
+        events.push({
+          date: a.startTime || a.start_time || a.dateAdded,
+          type: "appointment",
+          direction: undefined,
+          body: `${a.title || "Appointment"} — ${a.appointmentStatus || a.status || "scheduled"}`,
+        });
+      }
+    }
+
+    // 3) Notes — filter out auto-generated migration/cleanup audit notes (system noise,
+    // not business events). Keep manual notes Garrett or staff added.
+    const NOISE_PATTERNS = [
+      /^Migrated from /i,
+      /^Migration noise cleanup/i,
+      /^Late migration /i,
+      /^Outcome: \w+/,  // outcome capture auto-notes get rendered as signals already
+    ];
     const notesRes = await fetch(
       `${GHL_API_BASE}/contacts/${contactId}/notes`,
       { headers: ghlHeaders(ghlToken) },
@@ -117,10 +141,13 @@ export async function onRequestGet(context) {
     if (notesRes.ok) {
       const notesData = await notesRes.json();
       for (const n of notesData.notes || []) {
+        const body = typeof n.body === "string" ? n.body : "";
+        const isNoise = NOISE_PATTERNS.some((pat) => pat.test(body.trim()));
+        if (isNoise) continue;
         events.push({
           date: n.dateAdded || n.createdAt,
           type: "note",
-          body: typeof n.body === "string" ? n.body.slice(0, 500) : "",
+          body: body.slice(0, 500),
         });
       }
     }

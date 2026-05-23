@@ -334,10 +334,10 @@ export interface PartnerProspectsResponse {
 // Activity timeline event (returned by staff-partner-activity endpoint, lazy-loaded per contact)
 export interface PartnerActivityEvent {
   date: string;          // ISO timestamp
-  type: 'call' | 'sms' | 'email' | 'signal' | 'note';
+  type: 'call' | 'sms' | 'email' | 'signal' | 'note' | 'appointment';
   // For signal events:
   signal?: PartnerLastSignal;
-  // For note events:
+  // For note + appointment events:
   body?: string;
   // For all:
   direction?: 'inbound' | 'outbound';

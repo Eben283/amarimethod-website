@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, X, Phone, MessageSquare,
-  Mail, StickyNote, Calendar,
+  Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
-  toggleOutreachVerified, ApiError,
+  getPartnerProspects, getPartnerActivity, recordPartnerOutcome, ApiError,
 } from '../lib/api';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
@@ -134,21 +133,24 @@ function priorityScore(p: PartnerProspect): number {
   // to the bottom of the queue. They're still visible (so they can be moved
   // forward when LinkedIn outreach is wired up), just not in his face.
   const noPhonePenalty = hasPhone ? 0 : -50;
+  // Boost verified contacts — they have clean data, more actionable.
+  const verifiedBoost = p.outreachVerified ? 15 : 0;
+  const adjust = noPhonePenalty + verifiedBoost;
 
-  if (stage === 'dropped') return 0 + noPhonePenalty;
+  if (stage === 'dropped') return 0 + adjust;
   if (stage === 'future-potential') {
-    if (dToFollowup !== null && dToFollowup >= -7) return 80 + noPhonePenalty;
-    return 10 + noPhonePenalty;
+    if (dToFollowup !== null && dToFollowup >= -7) return 80 + adjust;
+    return 10 + adjust;
   }
-  if (stage === 'partner') return 20 + noPhonePenalty;
-  if (stage === 'session-booked') return 70 + noPhonePenalty;
+  if (stage === 'partner') return 20 + adjust;
+  if (stage === 'session-booked') return 70 + adjust;
   if (stage === 'working') {
     // Stale only when there's been real outreach that went cold (not "never touched")
-    if (hasRealSignal && (dSince === null || dSince >= STALE_DAYS_THRESHOLD)) return 100 + noPhonePenalty;
-    return 50 + noPhonePenalty;
+    if (hasRealSignal && (dSince === null || dSince >= STALE_DAYS_THRESHOLD)) return 100 + adjust;
+    return 50 + adjust;
   }
-  if (stage === 'no-outreach') return 60 + noPhonePenalty;
-  return 30 + noPhonePenalty;
+  if (stage === 'no-outreach') return 60 + adjust;
+  return 30 + adjust;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -180,6 +182,12 @@ function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () 
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">
             {STAGE_LABEL[stage]}
           </span>
+          {prospect.outreachVerified && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700">
+              <CheckCircle2 className="w-3 h-3" />
+              verified
+            </span>
+          )}
           {isStale && (
             <span className="inline-flex items-center gap-0.5 text-[10px] text-red-700 font-medium">
               <AlertCircle className="w-3 h-3" />
@@ -224,23 +232,6 @@ function ProspectModal({
   const [outcomeError, setOutcomeError] = useState('');
   const [followupDate, setFollowupDate] = useState('');
   const [pendingDeferred, setPendingDeferred] = useState(false);
-  // Optimistic verified state — flips immediately on click, then API persists.
-  const [verified, setVerified] = useState(prospect.outreachVerified);
-  const [verifiedSubmitting, setVerifiedSubmitting] = useState(false);
-
-  const handleToggleVerified = async () => {
-    const next = !verified;
-    setVerified(next);
-    setVerifiedSubmitting(true);
-    try {
-      await toggleOutreachVerified(prospect.contactId, next);
-    } catch {
-      // Roll back on failure
-      setVerified(!next);
-    } finally {
-      setVerifiedSubmitting(false);
-    }
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -346,18 +337,12 @@ function ProspectModal({
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
             </dl>
-            <button
-              onClick={handleToggleVerified}
-              disabled={verifiedSubmitting}
-              className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors disabled:opacity-50 ${
-                verified
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
-                  : 'bg-white border-amari-border text-amari-text-muted hover:bg-amari-light-sand'
-              }`}
-              title={verified ? 'Click to unverify' : 'Mark contact info as verified'}
-            >
-              {verified ? '✓ Outreach verified' : '○ Mark outreach verified'}
-            </button>
+            {prospect.outreachVerified && (
+              <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-700">
+                <CheckCircle2 className="w-3 h-3" />
+                outreach verified
+              </p>
+            )}
           </section>
 
           {/* Follow-up date (if Future Potential) */}
@@ -391,11 +376,13 @@ function ProspectModal({
                       {e.type === 'sms' && <MessageSquare className="w-3 h-3" />}
                       {e.type === 'email' && <Mail className="w-3 h-3" />}
                       {e.type === 'note' && <StickyNote className="w-3 h-3" />}
+                      {e.type === 'appointment' && <CalendarCheck className="w-3 h-3" />}
                       {e.type === 'call' ? `Call ${e.direction === 'inbound' ? 'received' : 'placed'}` :
                        e.type === 'sms' ? `SMS ${e.direction === 'inbound' ? 'received' : 'sent'}` :
                        e.type === 'email' ? `Email ${e.direction === 'inbound' ? 'received' : 'sent'}` :
+                       e.type === 'appointment' ? (e.body || 'Appointment') :
                        'Note'}
-                      {e.body && e.type === 'note' && (
+                      {e.body && (e.type === 'note') && (
                         <span className="text-amari-text-muted ml-1">— {e.body.slice(0, 80)}{e.body.length > 80 ? '…' : ''}</span>
                       )}
                     </span>
