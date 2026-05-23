@@ -181,9 +181,8 @@ function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () 
         <p className="text-xs text-amari-text-muted mt-0.5">{prospect.phone}</p>
       )}
       <p className="text-[11px] text-amari-text-muted mt-0.5">
-        {prospect.partnerLastSignal
-          ? `${SIGNAL_LABEL[prospect.partnerLastSignal]} · ${relativeDays(prospect.partnerLastSignalAt)}`
-          : `Last activity: ${relativeDays(prospect.lastActivityAt)}`}
+        Last contact: {relativeDays(prospect.lastActivityAt)}
+        {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
         {prospect.partnerSource && ` · ${prospect.partnerSource}`}
       </p>
     </button>

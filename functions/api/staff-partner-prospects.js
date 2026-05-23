@@ -45,7 +45,9 @@ const CATEGORY_TAGS = {
   tennis:  ["tennis-new-partner"],
   trainer: ["trainer-new-partner", "trainer-outreach"],
 };
-const BROAD_PARTNER_TAGS = ["partner-prospect", "affiliate-partner"];
+// `ambassador-prospect` added 2026-05-23 after migration missed Troy Weakley
+// (his only tag was ambassador-prospect, so he was excluded entirely).
+const BROAD_PARTNER_TAGS = ["partner-prospect", "affiliate-partner", "ambassador-prospect"];
 const ALL_PARTNER_TAGS = [
   ...Object.values(CATEGORY_TAGS).flat(),
   ...BROAD_PARTNER_TAGS,
