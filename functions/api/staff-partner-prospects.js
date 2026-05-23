@@ -253,6 +253,11 @@ export async function onRequestGet(context) {
     const prospects = Array.from(byId.values()).map(toProspect);
 
     // Counts.
+    // A contact counts as "verified / ready to call" if either:
+    //   (a) Outreach Verified checkbox is true (manual confirm), OR
+    //   (b) the contact is in Garrett's SF Personal Trainers sheet
+    //       (sheet inclusion = his curation, the whole point of joining the sheet).
+    // This matches the user intent: "view this is confirmed enriched data good to call".
     const countsByCategory = { golf: 0, tennis: 0, trainer: 0, unknown: 0 };
     const countsByStage = Object.fromEntries(ALL_STAGES.map((s) => [s, 0]));
     let verifiedCount = 0;
@@ -261,7 +266,8 @@ export async function onRequestGet(context) {
       countsByCategory[p.category] = (countsByCategory[p.category] || 0) + 1;
       const stage = p.partnerStage || "no-outreach";
       countsByStage[stage] = (countsByStage[stage] || 0) + 1;
-      if (p.outreachVerified) verifiedCount += 1;
+      const isReady = p.outreachVerified || p.inGarrettSheet;
+      if (isReady) verifiedCount += 1;
       else unverifiedCount += 1;
     }
 

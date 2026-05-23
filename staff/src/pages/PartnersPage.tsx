@@ -142,8 +142,8 @@ function priorityScore(p: PartnerProspect): number {
   // to the bottom of the queue. They're still visible (so they can be moved
   // forward when LinkedIn outreach is wired up), just not in his face.
   const noPhonePenalty = hasPhone ? 0 : -50;
-  // Boost verified contacts — they have clean data, more actionable.
-  const verifiedBoost = p.outreachVerified ? 15 : 0;
+  // Boost verified / sheet-matched contacts — they have clean data, more actionable.
+  const verifiedBoost = (p.outreachVerified || p.inGarrettSheet) ? 15 : 0;
   const adjust = noPhonePenalty + verifiedBoost;
 
   if (stage === 'dropped') return 0 + adjust;
@@ -410,10 +410,14 @@ function ProspectModal({
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
             </dl>
-            {prospect.outreachVerified && (
+            {(prospect.outreachVerified || prospect.inGarrettSheet) && (
               <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-700">
                 <CheckCircle2 className="w-3 h-3" />
-                outreach verified
+                {prospect.outreachVerified && prospect.inGarrettSheet
+                  ? "verified · in Garrett's sheet"
+                  : prospect.outreachVerified
+                    ? 'outreach verified'
+                    : "in Garrett's sheet"}
               </p>
             )}
           </section>
@@ -674,10 +678,11 @@ export default function PartnersPage() {
   const isSearching = searchQuery.trim().length > 0;
 
   const visibleProspects = useMemo(() => {
-    // Primary filter: view (Ready = verified only, Review = unverified only)
-    let v = prospects.filter((p) =>
-      view === 'ready' ? p.outreachVerified : !p.outreachVerified,
-    );
+    // Ready = explicit verified checkbox OR matched to Garrett's sheet.
+    // Sheet inclusion IS curation — the whole point of joining the sheet.
+    // Review = everything else (truly unconfirmed contacts that need data review).
+    const isReady = (p: PartnerProspect) => p.outreachVerified || p.inGarrettSheet;
+    let v = prospects.filter((p) => (view === 'ready' ? isReady(p) : !isReady(p)));
     if (categoryFilter !== 'all') v = v.filter((p) => p.category === categoryFilter);
     // Stage filter only applies in Ready view
     if (view === 'ready' && stageFilter !== 'all') {
@@ -818,7 +823,7 @@ export default function PartnersPage() {
 
           {view === 'review' && (
             <p className="text-xs text-amari-text-muted mb-2 px-1">
-              These contacts have partner tags but haven't been verified as ready to call. Review the data, then mark verified to move them to the Ready list.
+              These contacts have partner tags but aren't in Garrett's sheet and haven't been manually verified. Review the data, then mark verified to move them to the Ready list.
             </p>
           )}
 
