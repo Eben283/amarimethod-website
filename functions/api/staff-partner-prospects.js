@@ -114,7 +114,13 @@ function toProspect(contact) {
     email: contact.email || null,
     website: contact.website || null,
     instagram: null,  // GHL has no native IG field; left blank until enrichment adds it
-    lastActivityAt: contact.lastActivity || contact.dateUpdated || null,
+    // GHL's `contact.lastActivity` is null for most contacts — the "last activity"
+    // shown in GHL UI is computed from conversation messages, not stored on contact.
+    // Don't fall back to dateUpdated (it just reflects the most recent contact write,
+    // which equals migration time for everyone — misleading).
+    // TODO: backfill real last-activity by querying /conversations on modal open,
+    // cache to a new custom field. For now, null → "never recorded" in UI.
+    lastActivityAt: contact.lastActivity || null,
     isActivePartner: tags.includes("affiliate-partner"),
     // New partner custom fields — null if not yet migrated.
     partnerStage:         getField(contact, FIELD_IDS.partner_stage),

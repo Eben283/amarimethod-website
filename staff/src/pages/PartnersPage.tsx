@@ -47,7 +47,7 @@ function daysSince(iso: string | null | undefined): number | null {
 
 function relativeDays(iso: string | null | undefined): string {
   const d = daysSince(iso);
-  if (d === null) return 'never';
+  if (d === null) return 'not recorded';
   if (d === 0) return 'today';
   if (d === 1) return '1d ago';
   if (d < 30) return `${d}d ago`;
