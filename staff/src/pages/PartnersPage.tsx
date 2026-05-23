@@ -163,7 +163,7 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'talked': 'Talked',
   'link-sent': 'Sent link',
   'booked': 'Booked',
-  'deferred': 'Deferred',
+  'deferred': 'Circle back',
   'not-interested': 'Not interested',
 };
 
@@ -177,8 +177,8 @@ const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string }[] = [
   { id: 'voicemail', label: 'Voicemail' },
   { id: 'talked', label: 'Talked' },
   { id: 'booked', label: 'Booked' },
-  { id: 'deferred', label: 'Deferred' },
-  { id: 'not-interested', label: 'Not Interested' },
+  { id: 'deferred', label: 'Circle back' },
+  { id: 'not-interested', label: 'Not interested' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
