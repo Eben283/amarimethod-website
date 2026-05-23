@@ -31,6 +31,10 @@ const FIELD_IDS = {
   partner_last_signal:     "XyUoMtbxadTuZunQwX3Y",
   partner_last_signal_at:  "J0lnfsvtt0vcFOdSbUSf",
   partner_followup_at:     "stVYzQB4Xpi29cuyUYnA",
+  // Real last-activity date (populated by backfill script — see ops/scripts/...
+  // GHL's contact.lastActivity is null for most contacts; this field caches
+  // the most recent message date computed from /conversations/search.)
+  partner_last_real_activity: "W7JoyJKPKhPI8hZ5EgUv",
   // Existing (facility context)
   trainer_facility:        "eYBj61zgMnIFMIesoDR5",
   facility_type:           "gIQEMkO1gV85SAYcYlNx",
@@ -114,13 +118,15 @@ function toProspect(contact) {
     email: contact.email || null,
     website: contact.website || null,
     instagram: null,  // GHL has no native IG field; left blank until enrichment adds it
-    // GHL's `contact.lastActivity` is null for most contacts — the "last activity"
-    // shown in GHL UI is computed from conversation messages, not stored on contact.
-    // Don't fall back to dateUpdated (it just reflects the most recent contact write,
-    // which equals migration time for everyone — misleading).
-    // TODO: backfill real last-activity by querying /conversations on modal open,
-    // cache to a new custom field. For now, null → "never recorded" in UI.
-    lastActivityAt: contact.lastActivity || null,
+    // Prefer the cached real activity date (populated by backfill script from
+    // /conversations messages). Falls back to GHL's contact.lastActivity (usually
+    // null), and finally to null → "not recorded" in the UI.
+    // We deliberately do NOT fall back to dateUpdated — that reflects when our
+    // own writes happen (e.g., the migration) and is misleading.
+    lastActivityAt:
+      getField(contact, FIELD_IDS.partner_last_real_activity) ||
+      contact.lastActivity ||
+      null,
     isActivePartner: tags.includes("affiliate-partner"),
     // New partner custom fields — null if not yet migrated.
     partnerStage:         getField(contact, FIELD_IDS.partner_stage),
