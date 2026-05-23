@@ -100,10 +100,15 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'not-interested': 'Not interested',
 };
 
+// Note: 'link-sent' intentionally NOT a manual button — sending the partner
+// session link happens via GHL/staff-app send-link button, which already
+// records an outbound message. The enum value still exists (some migrated
+// contacts have it set from sheet status) but Garrett doesn't pick it
+// manually. Future: auto-detect link-sent by scanning outbound messages
+// for the partner-booking-link URL.
 const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string }[] = [
   { id: 'voicemail', label: 'Voicemail' },
   { id: 'talked', label: 'Talked' },
-  { id: 'link-sent', label: 'Sent Link' },
   { id: 'booked', label: 'Booked' },
   { id: 'deferred', label: 'Deferred' },
   { id: 'not-interested', label: 'Not Interested' },
@@ -408,13 +413,13 @@ function ProspectModal({
             </a>
 
             <p className="text-[11px] uppercase tracking-wide text-amari-text-muted mt-2 mb-1.5">Record outcome</p>
-            <div className="grid grid-cols-3 gap-1.5 mb-2">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {OUTCOME_BUTTONS.map((b) => (
                 <button
                   key={b.id}
                   onClick={() => handleOutcome(b.id)}
                   disabled={outcomeSubmitting}
-                  className="px-2 py-1.5 rounded text-xs font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
+                  className="px-3 py-1.5 rounded text-xs font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
                 >
                   {b.label}
                 </button>
