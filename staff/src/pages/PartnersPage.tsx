@@ -13,7 +13,7 @@ import type { ContactListItem } from '../types/staff';
 import ClientRow from '../components/ClientRow';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
-  PartnerStageFilter, PartnerLastSignal, PartnerActivityEvent,
+  PartnerLastSignal, PartnerActivityEvent,
 } from '../types/staff';
 
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -68,16 +68,6 @@ const CATEGORY_FILTERS: { id: PartnerCategoryFilter; label: string }[] = [
   { id: 'trainer', label: 'Personal Trainer' },
 ];
 
-const STAGE_FILTERS: { id: PartnerStageFilter; label: string }[] = [
-  { id: 'all', label: 'All stages' },
-  { id: 'no-outreach', label: 'No outreach' },
-  { id: 'working', label: 'Working' },
-  { id: 'session-booked', label: 'Session booked' },
-  { id: 'partner', label: 'Partner' },
-  { id: 'future-potential', label: 'Future potential' },
-  { id: 'dropped', label: 'Dropped' },
-];
-
 const CATEGORY_BADGE: Record<PartnerCategory, string> = {
   golf: 'bg-emerald-100 text-emerald-900',
   tennis: 'bg-amber-100 text-amber-900',
@@ -85,14 +75,65 @@ const CATEGORY_BADGE: Record<PartnerCategory, string> = {
   unknown: 'bg-gray-100 text-gray-700',
 };
 
+// Display labels — underlying GHL values stay unchanged (working/future-potential
+// in the picklist). Renamed per 2026-05-23 review: "Working" → "In progress",
+// "Future potential" → "Revisit later".
 const STAGE_LABEL: Record<PartnerStage, string> = {
   'no-outreach': 'No outreach',
-  'working': 'Working',
+  'working': 'In progress',
   'session-booked': 'Session booked',
   'partner': 'Partner',
-  'future-potential': 'Future potential',
+  'future-potential': 'Revisit later',
   'dropped': 'Dropped',
 };
+
+// Top-level funnel buckets. Collapses 6 stages to 3 actionable tabs.
+type TopStage = 'no-outreach' | 'in-progress' | 'closed';
+
+const TOP_STAGE_LABEL: Record<TopStage, string> = {
+  'no-outreach': 'No outreach',
+  'in-progress': 'In progress',
+  'closed': 'Closed',
+};
+
+const STAGE_TO_TOP: Record<PartnerStage, TopStage> = {
+  'no-outreach': 'no-outreach',
+  'working': 'in-progress',
+  'session-booked': 'closed',
+  'partner': 'closed',
+  'future-potential': 'closed',
+  'dropped': 'closed',
+};
+
+// Sub-filter inside Closed — answers "what kind of closed?"
+type ClosedSubStage = 'all' | 'session-booked' | 'partner' | 'future-potential' | 'dropped';
+
+const CLOSED_SUB_FILTERS: { id: ClosedSubStage; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'session-booked', label: 'Session booked' },
+  { id: 'partner', label: 'Partner' },
+  { id: 'future-potential', label: 'Revisit later' },
+  { id: 'dropped', label: 'Dropped' },
+];
+
+// Data-quality filter (was the Ready/Review top-level toggle, now a sub-filter).
+type VerificationFilter = 'all' | 'verified' | 'review';
+
+const VERIFICATION_FILTERS: { id: VerificationFilter; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'verified', label: '✓ Verified' },
+  { id: 'review', label: '○ Needs review' },
+];
+
+// Recency filter for In Progress tab — answers "who's been ignored too long?"
+type RecencyFilter = 'all' | '7' | '14' | '30';
+
+const RECENCY_FILTERS: { id: RecencyFilter; label: string }[] = [
+  { id: 'all', label: 'Any time' },
+  { id: '7', label: '> 7d ago' },
+  { id: '14', label: '> 14d ago' },
+  { id: '30', label: '> 30d ago' },
+];
 
 const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'no-answer': 'No answer',
@@ -556,47 +597,7 @@ function ProspectModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Funnel summary panel
-
-function FunnelPanel({
-  countsByStage,
-  total,
-}: {
-  countsByStage: Record<PartnerStage, number>;
-  total: number;
-}) {
-  const stages: PartnerStage[] = ['no-outreach', 'working', 'session-booked', 'partner', 'future-potential', 'dropped'];
-  const max = Math.max(...Object.values(countsByStage), 1);
-
-  return (
-    <div className="bg-white rounded-md border border-amari-border p-3 mb-3">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted">Funnel</h3>
-        <span className="text-xs text-amari-text-muted">Total: <strong className="text-amari-charcoal">{total}</strong></span>
-      </div>
-      <div className="space-y-1">
-        {stages.map((s) => {
-          const n = countsByStage[s] || 0;
-          const width = Math.max(2, (n / max) * 100);
-          return (
-            <div key={s} className="flex items-center gap-2 text-xs">
-              <span className="w-32 shrink-0 text-amari-text-muted">{STAGE_LABEL[s]}</span>
-              <div className="flex-1 bg-amari-light-sand rounded h-3 overflow-hidden">
-                <div className="bg-amari-accent-warm h-full" style={{ width: `${width}%` }} />
-              </div>
-              <span className="w-10 text-right text-amari-charcoal font-medium">{n}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Main page
-
-type PartnerView = 'ready' | 'review';
 
 type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched';
 
@@ -612,20 +613,21 @@ export default function PartnersPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const [view, setView] = useState<PartnerView>('ready');
+  // New structure (2026-05-23 restructure per review feedback):
+  //   topStage:           3 top-level tabs (No outreach / In progress / Closed)
+  //   verificationFilter: data-quality sub-filter (was the Ready/Review toggle)
+  //   closedSubStage:     only meaningful inside Closed
+  //   recencyFilter:      only meaningful inside In progress
+  const [topStage, setTopStage] = useState<TopStage>('no-outreach');
+  const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>('verified');
+  const [closedSubStage, setClosedSubStage] = useState<ClosedSubStage>('all');
+  const [recencyFilter, setRecencyFilter] = useState<RecencyFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<PartnerCategoryFilter>('all');
-  const [stageFilter, setStageFilter] = useState<PartnerStageFilter>('all');
   const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [prospects, setProspects] = useState<PartnerProspect[]>([]);
-  // verified/unverified counts come from backend (universe-wide). Used only for the
-  // view toggle pills. Per-view chip counts are recomputed client-side from prospects
-  // so they always match the visible list.
-  const [verifiedCount, setVerifiedCount] = useState(0);
-  const [unverifiedCount, setUnverifiedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [openContactId, setOpenContactId] = useState<string | null>(null);
-  const [showFunnel, setShowFunnel] = useState(false);
 
   // Search across all GHL contacts (lives in this tab now — partners + general contacts)
   const [searchQuery, setSearchQuery] = useState('');
@@ -640,8 +642,6 @@ export default function PartnersPage() {
     try {
       const data = await getPartnerProspects();
       setProspects(data.prospects);
-      setVerifiedCount(data.verifiedCount);
-      setUnverifiedCount(data.unverifiedCount);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load partners');
@@ -683,51 +683,73 @@ export default function PartnersPage() {
   const isSearching = searchQuery.trim().length > 0;
 
   const isReady = (p: PartnerProspect) => p.outreachVerified || p.inGarrettSheet;
+  const prospectTopStage = (p: PartnerProspect): TopStage =>
+    STAGE_TO_TOP[(p.partnerStage || 'no-outreach') as PartnerStage];
 
-  // Prospects in the current Ready/Review view — used for chip counts so the
-  // numbers always match the visible list (previously chips showed
-  // universe-wide counts, which never added up to the view total).
-  const prospectsInView = useMemo(
-    () => prospects.filter((p) => (view === 'ready' ? isReady(p) : !isReady(p))),
-    [prospects, view],
+  // Top-stage counts (universe-wide, used for the three top-level tab pills).
+  const topStageCounts = useMemo(() => {
+    const counts: Record<TopStage, number> = { 'no-outreach': 0, 'in-progress': 0, 'closed': 0 };
+    for (const p of prospects) counts[prospectTopStage(p)] += 1;
+    return counts;
+  }, [prospects]);
+
+  // Prospects after the top-stage filter — used as base for downstream chip counts.
+  const prospectsInTab = useMemo(
+    () => prospects.filter((p) => prospectTopStage(p) === topStage),
+    [prospects, topStage],
   );
 
-  // Category counts within the current view
-  const categoryCountsInView = useMemo(() => {
-    const counts: Record<PartnerCategory, number> = { golf: 0, tennis: 0, trainer: 0, unknown: 0 };
-    for (const p of prospectsInView) {
-      counts[p.category] = (counts[p.category] || 0) + 1;
-    }
-    return counts;
-  }, [prospectsInView]);
+  // Verification counts within the current tab
+  const verificationCountsInTab = useMemo(() => {
+    let verified = 0, review = 0;
+    for (const p of prospectsInTab) (isReady(p) ? verified++ : review++);
+    return { all: prospectsInTab.length, verified, review };
+  }, [prospectsInTab]);
 
-  // Stage counts within the current view (after category filter applied — so the
-  // stage chips reflect what would actually be shown if you tapped them)
-  const stageCountsInView = useMemo(() => {
-    const counts: Record<PartnerStage, number> = {
-      'no-outreach': 0, 'working': 0, 'session-booked': 0,
-      'partner': 0, 'future-potential': 0, 'dropped': 0,
+  // Prospects after the verification filter too — base for category + closed-sub chips
+  const prospectsAfterVerification = useMemo(() => {
+    if (verificationFilter === 'verified') return prospectsInTab.filter(isReady);
+    if (verificationFilter === 'review') return prospectsInTab.filter((p) => !isReady(p));
+    return prospectsInTab;
+  }, [prospectsInTab, verificationFilter]);
+
+  // Category counts within the current tab + verification filter
+  const categoryCountsInTab = useMemo(() => {
+    const counts: Record<PartnerCategory, number> = { golf: 0, tennis: 0, trainer: 0, unknown: 0 };
+    for (const p of prospectsAfterVerification) counts[p.category] = (counts[p.category] || 0) + 1;
+    return counts;
+  }, [prospectsAfterVerification]);
+
+  // Closed sub-stage counts (only meaningful when topStage === 'closed')
+  const closedSubCounts = useMemo(() => {
+    const counts: Record<Exclude<ClosedSubStage, 'all'>, number> = {
+      'session-booked': 0, 'partner': 0, 'future-potential': 0, 'dropped': 0,
     };
-    for (const p of prospectsInView) {
+    for (const p of prospectsAfterVerification) {
       if (categoryFilter !== 'all' && p.category !== categoryFilter) continue;
       const stage = (p.partnerStage || 'no-outreach') as PartnerStage;
-      counts[stage] = (counts[stage] || 0) + 1;
+      if (stage in counts) counts[stage as Exclude<ClosedSubStage, 'all'>] += 1;
     }
     return counts;
-  }, [prospectsInView, categoryFilter]);
+  }, [prospectsAfterVerification, categoryFilter]);
 
   const visibleProspects = useMemo(() => {
-    let v = prospectsInView;
+    let v = prospectsAfterVerification;
     if (categoryFilter !== 'all') v = v.filter((p) => p.category === categoryFilter);
-    if (view === 'ready' && stageFilter !== 'all') {
-      v = v.filter((p) => (p.partnerStage || 'no-outreach') === stageFilter);
+    if (topStage === 'closed' && closedSubStage !== 'all') {
+      v = v.filter((p) => (p.partnerStage || 'no-outreach') === closedSubStage);
+    }
+    if (topStage === 'in-progress' && recencyFilter !== 'all') {
+      const threshold = Number(recencyFilter);
+      v = v.filter((p) => {
+        const d = daysSince(p.lastActivityAt);
+        return d !== null && d >= threshold;
+      });
     }
     return [...v].sort((a, b) => {
       if (sortMode === 'oldest-contact' || sortMode === 'newest-contact') {
         const da = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : null;
         const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : null;
-        // Never-contacted = null → sort to BOTTOM in both directions, so
-        // "oldest" surfaces the actually-stalest real contacts, not the unknowns.
         if (da === null && db === null) return 0;
         if (da === null) return 1;
         if (db === null) return -1;
@@ -737,12 +759,10 @@ export default function PartnersPage() {
         const ta = a.touchCount ?? 0;
         const tb = b.touchCount ?? 0;
         if (ta !== tb) return sortMode === 'least-touched' ? ta - tb : tb - ta;
-        // Tiebreak by last activity (oldest first when fewest, newest first when most)
         const da = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
         const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
         return sortMode === 'least-touched' ? da - db : db - da;
       }
-      // Priority (default): highest priority first; tiebreak by oldest activity
       const pa = priorityScore(a);
       const pb = priorityScore(b);
       if (pa !== pb) return pb - pa;
@@ -750,15 +770,13 @@ export default function PartnersPage() {
       const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
       return da - db;
     });
-  }, [prospectsInView, view, categoryFilter, stageFilter, sortMode]);
+  }, [prospectsAfterVerification, topStage, categoryFilter, closedSubStage, recencyFilter, sortMode]);
 
   const handleMarkVerified = async (contactId: string) => {
-    // Optimistic: flip the local prospect immediately, then API persists.
+    // Optimistic: flip the local prospect, then API persists.
     setProspects((prev) =>
       prev.map((p) => p.contactId === contactId ? { ...p, outreachVerified: true } : p),
     );
-    setVerifiedCount((c) => c + 1);
-    setUnverifiedCount((c) => Math.max(0, c - 1));
     try {
       await toggleOutreachVerified(contactId, true);
     } catch {
@@ -766,8 +784,6 @@ export default function PartnersPage() {
       setProspects((prev) =>
         prev.map((p) => p.contactId === contactId ? { ...p, outreachVerified: false } : p),
       );
-      setVerifiedCount((c) => Math.max(0, c - 1));
-      setUnverifiedCount((c) => c + 1);
     }
   };
 
@@ -777,32 +793,22 @@ export default function PartnersPage() {
   );
 
   const categoryCount = (f: PartnerCategoryFilter): number => {
-    if (f === 'all') return prospectsInView.length;
-    return categoryCountsInView[f as PartnerCategory] ?? 0;
+    if (f === 'all') return prospectsAfterVerification.length;
+    return categoryCountsInTab[f as PartnerCategory] ?? 0;
   };
 
   return (
     <div className="px-3 pt-3 pb-8 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-lg font-serif text-amari-charcoal">Outreach</h1>
-        <div className="flex items-center gap-3">
-          {!isSearching && view === 'ready' && (
-            <button
-              onClick={() => setShowFunnel((v) => !v)}
-              className="text-xs text-amari-text-muted hover:text-amari-charcoal"
-            >
-              {showFunnel ? 'Hide funnel' : 'Show funnel'}
-            </button>
-          )}
-          <button
-            onClick={() => load()}
-            disabled={isLoading}
-            className="flex items-center gap-1 text-xs text-amari-text-muted hover:text-amari-charcoal disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
+        <button
+          onClick={() => load()}
+          disabled={isLoading}
+          className="flex items-center gap-1 text-xs text-amari-text-muted hover:text-amari-charcoal disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Search bar — searches all GHL contacts (partners + general clients) */}
@@ -855,35 +861,48 @@ export default function PartnersPage() {
         )
       ) : (
         <>
-          {/* View toggle — Ready (verified, Garrett's workflow) vs Review (unverified, Eben's workflow) */}
+          {/* Top-level tabs: No outreach / In progress / Closed (the funnel itself) */}
           <div className="flex gap-1 bg-amari-light-sand rounded-md p-1 mb-3">
-            <button
-              onClick={() => setView('ready')}
-              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                view === 'ready' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
-              }`}
-            >
-              ✓ Ready to call <span className="opacity-70 ml-1">({verifiedCount})</span>
-            </button>
-            <button
-              onClick={() => setView('review')}
-              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                view === 'review' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
-              }`}
-            >
-              ○ Needs review <span className="opacity-70 ml-1">({unverifiedCount})</span>
-            </button>
+            {(['no-outreach', 'in-progress', 'closed'] as TopStage[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setTopStage(s)}
+                className={`flex-1 px-2 py-2 rounded text-sm font-medium transition-colors ${
+                  topStage === s ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
+                }`}
+              >
+                {TOP_STAGE_LABEL[s]} <span className="opacity-70 ml-1">({topStageCounts[s]})</span>
+              </button>
+            ))}
           </div>
 
-          {view === 'review' && (
-            <p className="text-xs text-amari-text-muted mb-2 px-1">
-              These contacts have partner tags but aren't in Garrett's sheet and haven't been manually verified. Review the data, then mark verified to move them to the Ready list.
+          {/* Verification sub-filter — data quality, orthogonal to stage */}
+          <div className="flex gap-1.5 mb-2 -mx-1 px-1 text-[11px]">
+            {VERIFICATION_FILTERS.map((f) => {
+              const active = verificationFilter === f.id;
+              const count = verificationCountsInTab[f.id];
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setVerificationFilter(f.id)}
+                  className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
+                    active ? 'bg-amari-charcoal text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                  }`}
+                >
+                  {f.label} <span className="opacity-70">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Hint when Needs review is selected */}
+          {verificationFilter === 'review' && (
+            <p className="text-[11px] text-amari-text-muted mb-2 px-1">
+              These contacts aren't in Garrett's sheet and haven't been manually verified. Review the data, then mark verified.
             </p>
           )}
 
-          {view === 'ready' && showFunnel && <FunnelPanel countsByStage={stageCountsInView} total={prospectsInView.length} />}
-
-          {/* Category filter chips — counts reflect the current Ready/Review view */}
+          {/* Category chips */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
             {CATEGORY_FILTERS.map((f) => {
               const active = categoryFilter === f.id;
@@ -901,7 +920,7 @@ export default function PartnersPage() {
             })}
           </div>
 
-          {/* Sort toggle — answers "who do I call today?" */}
+          {/* Sort */}
           <div className="flex items-center gap-1.5 mb-2 text-[11px] text-amari-text-muted overflow-x-auto pb-1 -mx-1 px-1">
             <span className="shrink-0">Sort:</span>
             {(['priority', 'oldest-contact', 'newest-contact', 'least-touched', 'most-touched'] as SortMode[]).map((m) => {
@@ -920,18 +939,39 @@ export default function PartnersPage() {
             })}
           </div>
 
-          {/* Stage filter chips — only show in Ready view (stages meaningless for unverified) */}
-          {view === 'ready' && (
+          {/* In Progress: recency filter — "who's been ignored too long?" */}
+          {topStage === 'in-progress' && (
             <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
-              {STAGE_FILTERS.map((f) => {
-                const active = stageFilter === f.id;
-                const count = f.id === 'all'
-                  ? (categoryFilter === 'all' ? prospectsInView.length : categoryCountsInView[categoryFilter as PartnerCategory] ?? 0)
-                  : stageCountsInView[f.id as PartnerStage] || 0;
+              <span className="shrink-0 self-center text-amari-text-muted">Last contact:</span>
+              {RECENCY_FILTERS.map((f) => {
+                const active = recencyFilter === f.id;
                 return (
                   <button
                     key={f.id}
-                    onClick={() => setStageFilter(f.id)}
+                    onClick={() => setRecencyFilter(f.id)}
+                    className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
+                      active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Closed: sub-stage filter — Session booked / Partner / Revisit later / Dropped */}
+          {topStage === 'closed' && (
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
+              {CLOSED_SUB_FILTERS.map((f) => {
+                const active = closedSubStage === f.id;
+                const count = f.id === 'all'
+                  ? (categoryFilter === 'all' ? prospectsAfterVerification.length : categoryCountsInTab[categoryFilter as PartnerCategory] ?? 0)
+                  : closedSubCounts[f.id as Exclude<ClosedSubStage, 'all'>] || 0;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setClosedSubStage(f.id)}
                     className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
                       active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
                     }`}
@@ -955,27 +995,23 @@ export default function PartnersPage() {
             </div>
           ) : visibleProspects.length === 0 ? (
             <p className="text-sm text-amari-text-muted text-center py-12">
-              {view === 'ready' ? (
-                verifiedCount === 0 ? 'No verified partners yet. Switch to "Needs review" to verify contacts.' : 'No prospects match the current filters.'
-              ) : (
-                'All contacts have been reviewed.'
-              )}
+              No prospects match the current filters.
             </p>
           ) : (
             <div className="space-y-1.5">
               {visibleProspects.map((p) =>
-                view === 'ready' ? (
-                  <ReadyRow
-                    key={p.contactId}
-                    prospect={p}
-                    onTap={() => setOpenContactId(p.contactId)}
-                  />
-                ) : (
+                verificationFilter === 'review' && !isReady(p) ? (
                   <ReviewRow
                     key={p.contactId}
                     prospect={p}
                     onTap={() => setOpenContactId(p.contactId)}
                     onMarkVerified={() => handleMarkVerified(p.contactId)}
+                  />
+                ) : (
+                  <ReadyRow
+                    key={p.contactId}
+                    prospect={p}
+                    onTap={() => setOpenContactId(p.contactId)}
                   />
                 ),
               )}
