@@ -276,11 +276,11 @@ function ProspectModal({
       onClick={onClose}
     >
       <div
-        className="bg-amari-warm-sand w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
+        className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-amari-warm-sand z-10 flex items-center justify-between border-b border-amari-border px-4 py-3">
+        <div className="sticky top-0 bg-amari-bone-white z-10 flex items-center justify-between border-b border-amari-border px-4 py-3">
           <div>
             <h2 className="text-lg font-serif text-amari-charcoal">{prospect.fullName}</h2>
             <p className="text-xs text-amari-text-muted">
@@ -612,7 +612,7 @@ export default function PartnersPage() {
               key={f.id}
               onClick={() => setStageFilter(f.id)}
               className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
-                active ? 'bg-amari-pine-teal text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
               }`}
             >
               {f.label} <span className="opacity-70">({count})</span>
