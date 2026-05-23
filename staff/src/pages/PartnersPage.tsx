@@ -596,6 +596,14 @@ function FunnelPanel({
 
 type PartnerView = 'ready' | 'review';
 
+type SortMode = 'priority' | 'oldest-contact' | 'newest-contact';
+
+const SORT_LABEL: Record<SortMode, string> = {
+  'priority': 'Priority',
+  'oldest-contact': 'Oldest contact',
+  'newest-contact': 'Newest contact',
+};
+
 export default function PartnersPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -603,17 +611,13 @@ export default function PartnersPage() {
   const [view, setView] = useState<PartnerView>('ready');
   const [categoryFilter, setCategoryFilter] = useState<PartnerCategoryFilter>('all');
   const [stageFilter, setStageFilter] = useState<PartnerStageFilter>('all');
+  const [sortMode, setSortMode] = useState<SortMode>('priority');
   const [prospects, setProspects] = useState<PartnerProspect[]>([]);
-  const [countsByCategory, setCountsByCategory] = useState<Record<PartnerCategory, number>>({
-    golf: 0, tennis: 0, trainer: 0, unknown: 0,
-  });
-  const [countsByStage, setCountsByStage] = useState<Record<PartnerStage, number>>({
-    'no-outreach': 0, 'working': 0, 'session-booked': 0,
-    'partner': 0, 'future-potential': 0, 'dropped': 0,
-  });
+  // verified/unverified counts come from backend (universe-wide). Used only for the
+  // view toggle pills. Per-view chip counts are recomputed client-side from prospects
+  // so they always match the visible list.
   const [verifiedCount, setVerifiedCount] = useState(0);
   const [unverifiedCount, setUnverifiedCount] = useState(0);
-  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [openContactId, setOpenContactId] = useState<string | null>(null);
@@ -632,9 +636,6 @@ export default function PartnersPage() {
     try {
       const data = await getPartnerProspects();
       setProspects(data.prospects);
-      setCountsByCategory(data.countsByCategory);
-      setCountsByStage(data.countsByStage);
-      setTotal(data.total);
       setVerifiedCount(data.verifiedCount);
       setUnverifiedCount(data.unverifiedCount);
     } catch (err) {
@@ -677,18 +678,58 @@ export default function PartnersPage() {
 
   const isSearching = searchQuery.trim().length > 0;
 
+  const isReady = (p: PartnerProspect) => p.outreachVerified || p.inGarrettSheet;
+
+  // Prospects in the current Ready/Review view — used for chip counts so the
+  // numbers always match the visible list (previously chips showed
+  // universe-wide counts, which never added up to the view total).
+  const prospectsInView = useMemo(
+    () => prospects.filter((p) => (view === 'ready' ? isReady(p) : !isReady(p))),
+    [prospects, view],
+  );
+
+  // Category counts within the current view
+  const categoryCountsInView = useMemo(() => {
+    const counts: Record<PartnerCategory, number> = { golf: 0, tennis: 0, trainer: 0, unknown: 0 };
+    for (const p of prospectsInView) {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    }
+    return counts;
+  }, [prospectsInView]);
+
+  // Stage counts within the current view (after category filter applied — so the
+  // stage chips reflect what would actually be shown if you tapped them)
+  const stageCountsInView = useMemo(() => {
+    const counts: Record<PartnerStage, number> = {
+      'no-outreach': 0, 'working': 0, 'session-booked': 0,
+      'partner': 0, 'future-potential': 0, 'dropped': 0,
+    };
+    for (const p of prospectsInView) {
+      if (categoryFilter !== 'all' && p.category !== categoryFilter) continue;
+      const stage = (p.partnerStage || 'no-outreach') as PartnerStage;
+      counts[stage] = (counts[stage] || 0) + 1;
+    }
+    return counts;
+  }, [prospectsInView, categoryFilter]);
+
   const visibleProspects = useMemo(() => {
-    // Ready = explicit verified checkbox OR matched to Garrett's sheet.
-    // Sheet inclusion IS curation — the whole point of joining the sheet.
-    // Review = everything else (truly unconfirmed contacts that need data review).
-    const isReady = (p: PartnerProspect) => p.outreachVerified || p.inGarrettSheet;
-    let v = prospects.filter((p) => (view === 'ready' ? isReady(p) : !isReady(p)));
+    let v = prospectsInView;
     if (categoryFilter !== 'all') v = v.filter((p) => p.category === categoryFilter);
-    // Stage filter only applies in Ready view
     if (view === 'ready' && stageFilter !== 'all') {
       v = v.filter((p) => (p.partnerStage || 'no-outreach') === stageFilter);
     }
     return [...v].sort((a, b) => {
+      if (sortMode === 'oldest-contact' || sortMode === 'newest-contact') {
+        const da = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : null;
+        const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : null;
+        // Never-contacted = null → sort to BOTTOM in both directions, so
+        // "oldest" surfaces the actually-stalest real contacts, not the unknowns.
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return sortMode === 'oldest-contact' ? da - db : db - da;
+      }
+      // Priority (default): highest priority first; tiebreak by oldest activity
       const pa = priorityScore(a);
       const pb = priorityScore(b);
       if (pa !== pb) return pb - pa;
@@ -696,7 +737,7 @@ export default function PartnersPage() {
       const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
       return da - db;
     });
-  }, [prospects, view, categoryFilter, stageFilter]);
+  }, [prospectsInView, view, categoryFilter, stageFilter, sortMode]);
 
   const handleMarkVerified = async (contactId: string) => {
     // Optimistic: flip the local prospect immediately, then API persists.
@@ -723,8 +764,8 @@ export default function PartnersPage() {
   );
 
   const categoryCount = (f: PartnerCategoryFilter): number => {
-    if (f === 'all') return total;
-    return countsByCategory[f as PartnerCategory] ?? 0;
+    if (f === 'all') return prospectsInView.length;
+    return categoryCountsInView[f as PartnerCategory] ?? 0;
   };
 
   return (
@@ -827,9 +868,9 @@ export default function PartnersPage() {
             </p>
           )}
 
-          {view === 'ready' && showFunnel && <FunnelPanel countsByStage={countsByStage} total={verifiedCount} />}
+          {view === 'ready' && showFunnel && <FunnelPanel countsByStage={stageCountsInView} total={prospectsInView.length} />}
 
-          {/* Category filter chips */}
+          {/* Category filter chips — counts reflect the current Ready/Review view */}
           <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
             {CATEGORY_FILTERS.map((f) => {
               const active = categoryFilter === f.id;
@@ -847,12 +888,33 @@ export default function PartnersPage() {
             })}
           </div>
 
-          {/* Stage filter chips — only show in Ready view (stages are meaningless for unverified contacts) */}
+          {/* Sort toggle — answers "who do I call today?" */}
+          <div className="flex items-center gap-1.5 mb-2 text-[11px] text-amari-text-muted">
+            <span>Sort:</span>
+            {(['priority', 'oldest-contact', 'newest-contact'] as SortMode[]).map((m) => {
+              const active = sortMode === m;
+              return (
+                <button
+                  key={m}
+                  onClick={() => setSortMode(m)}
+                  className={`px-2 py-0.5 rounded transition-colors ${
+                    active ? 'bg-amari-charcoal text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                  }`}
+                >
+                  {SORT_LABEL[m]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Stage filter chips — only show in Ready view (stages meaningless for unverified) */}
           {view === 'ready' && (
             <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
               {STAGE_FILTERS.map((f) => {
                 const active = stageFilter === f.id;
-                const count = f.id === 'all' ? verifiedCount : countsByStage[f.id as PartnerStage] || 0;
+                const count = f.id === 'all'
+                  ? (categoryFilter === 'all' ? prospectsInView.length : categoryCountsInView[categoryFilter as PartnerCategory] ?? 0)
+                  : stageCountsInView[f.id as PartnerStage] || 0;
                 return (
                   <button
                     key={f.id}
