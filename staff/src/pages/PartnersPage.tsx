@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, X, Phone, MessageSquare,
-  Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2,
+  Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2, Search,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
-  toggleOutreachVerified, ApiError,
+  toggleOutreachVerified, searchContacts, ApiError,
 } from '../lib/api';
+import type { ContactListItem } from '../types/staff';
+import ClientRow from '../components/ClientRow';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
   PartnerStageFilter, PartnerLastSignal, PartnerActivityEvent,
@@ -591,6 +594,7 @@ type PartnerView = 'ready' | 'review';
 
 export default function PartnersPage() {
   const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const [view, setView] = useState<PartnerView>('ready');
   const [categoryFilter, setCategoryFilter] = useState<PartnerCategoryFilter>('all');
@@ -610,6 +614,13 @@ export default function PartnersPage() {
   const [error, setError] = useState('');
   const [openContactId, setOpenContactId] = useState<string | null>(null);
   const [showFunnel, setShowFunnel] = useState(false);
+
+  // Search across all GHL contacts (lives in this tab now — partners + general contacts)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ContactListItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchHasRun, setSearchHasRun] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -631,6 +642,36 @@ export default function PartnersPage() {
   }, [logout]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Debounced contact search
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      setSearchHasRun(false);
+      return;
+    }
+    searchDebounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await searchContacts(q);
+        setSearchResults(results);
+        setSearchHasRun(true);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) { logout(); return; }
+        setSearchResults([]);
+        setSearchHasRun(true);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery, logout]);
+
+  const isSearching = searchQuery.trim().length > 0;
 
   const visibleProspects = useMemo(() => {
     // Primary filter: view (Ready = verified only, Review = unverified only)
@@ -683,10 +724,10 @@ export default function PartnersPage() {
 
   return (
     <div className="px-3 pt-3 pb-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-lg font-serif text-amari-charcoal">Partners</h1>
+      <div className="flex items-center justify-between mb-3">
+        <h1 className="text-lg font-serif text-amari-charcoal">Outreach</h1>
         <div className="flex items-center gap-3">
-          {view === 'ready' && (
+          {!isSearching && view === 'ready' && (
             <button
               onClick={() => setShowFunnel((v) => !v)}
               className="text-xs text-amari-text-muted hover:text-amari-charcoal"
@@ -705,110 +746,162 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      {/* View toggle — Ready (verified, Garrett's workflow) vs Review (unverified, Eben's workflow) */}
-      <div className="flex gap-1 bg-amari-light-sand rounded-md p-1 mb-3">
-        <button
-          onClick={() => setView('ready')}
-          className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-            view === 'ready' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
-          }`}
-        >
-          ✓ Ready to call <span className="opacity-70 ml-1">({verifiedCount})</span>
-        </button>
-        <button
-          onClick={() => setView('review')}
-          className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-            view === 'review' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
-          }`}
-        >
-          ○ Needs review <span className="opacity-70 ml-1">({unverifiedCount})</span>
-        </button>
+      {/* Search bar — searches all GHL contacts (partners + general clients) */}
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amari-text-muted pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search by name, email, or phone..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="staff-input pl-10 pr-9"
+          autoComplete="off"
+          autoCapitalize="off"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-amari-light-sand"
+            aria-label="Clear search"
+          >
+            <X className="w-4 h-4 text-amari-text-muted" />
+          </button>
+        )}
       </div>
 
-      {view === 'review' && (
-        <p className="text-xs text-amari-text-muted mb-2 px-1">
-          These contacts have partner tags but haven't been verified as ready to call. Review the data, then mark verified to move them to the Ready list.
-        </p>
-      )}
-
-      {view === 'ready' && showFunnel && <FunnelPanel countsByStage={countsByStage} total={verifiedCount} />}
-
-      {/* Category filter chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
-        {CATEGORY_FILTERS.map((f) => {
-          const active = categoryFilter === f.id;
-          return (
+      {isSearching ? (
+        /* Search mode — show matching contacts across the whole GHL database */
+        searchLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 text-amari-charcoal animate-spin" />
+          </div>
+        ) : !searchHasRun ? (
+          <div className="text-center py-12">
+            <p className="text-amari-text-muted text-sm">Type to search contacts</p>
+          </div>
+        ) : searchResults.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-amari-text-muted text-sm">No contacts found</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {searchResults.map((contact) => (
+              <ClientRow
+                key={contact.id}
+                contact={contact}
+                onTap={() => navigate(`/client/${contact.id}`)}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <>
+          {/* View toggle — Ready (verified, Garrett's workflow) vs Review (unverified, Eben's workflow) */}
+          <div className="flex gap-1 bg-amari-light-sand rounded-md p-1 mb-3">
             <button
-              key={f.id}
-              onClick={() => setCategoryFilter(f.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                active ? 'bg-amari-charcoal text-white' : 'bg-amari-light-sand text-amari-charcoal hover:bg-amari-light-sand/70'
+              onClick={() => setView('ready')}
+              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                view === 'ready' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
               }`}
             >
-              {f.label}{!isLoading && <span className="ml-1.5 opacity-70">({categoryCount(f.id)})</span>}
+              ✓ Ready to call <span className="opacity-70 ml-1">({verifiedCount})</span>
             </button>
-          );
-        })}
-      </div>
+            <button
+              onClick={() => setView('review')}
+              className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                view === 'review' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
+              }`}
+            >
+              ○ Needs review <span className="opacity-70 ml-1">({unverifiedCount})</span>
+            </button>
+          </div>
 
-      {/* Stage filter chips — only show in Ready view (stages are meaningless for unverified contacts) */}
-      {view === 'ready' && (
-        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
-          {STAGE_FILTERS.map((f) => {
-            const active = stageFilter === f.id;
-            const count = f.id === 'all' ? verifiedCount : countsByStage[f.id as PartnerStage] || 0;
-            return (
-              <button
-                key={f.id}
-                onClick={() => setStageFilter(f.id)}
-                className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
-                  active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
-                }`}
-              >
-                {f.label} <span className="opacity-70">({count})</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+          {view === 'review' && (
+            <p className="text-xs text-amari-text-muted mb-2 px-1">
+              These contacts have partner tags but haven't been verified as ready to call. Review the data, then mark verified to move them to the Ready list.
+            </p>
+          )}
 
-      {error && (
-        <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-3">
-          {error}
-        </div>
-      )}
+          {view === 'ready' && showFunnel && <FunnelPanel countsByStage={countsByStage} total={verifiedCount} />}
 
-      {isLoading && prospects.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 text-amari-text-muted animate-spin" />
-        </div>
-      ) : visibleProspects.length === 0 ? (
-        <p className="text-sm text-amari-text-muted text-center py-12">
-          {view === 'ready' ? (
-            verifiedCount === 0 ? 'No verified partners yet. Switch to "Needs review" to verify contacts.' : 'No prospects match the current filters.'
+          {/* Category filter chips */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
+            {CATEGORY_FILTERS.map((f) => {
+              const active = categoryFilter === f.id;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setCategoryFilter(f.id)}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    active ? 'bg-amari-charcoal text-white' : 'bg-amari-light-sand text-amari-charcoal hover:bg-amari-light-sand/70'
+                  }`}
+                >
+                  {f.label}{!isLoading && <span className="ml-1.5 opacity-70">({categoryCount(f.id)})</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Stage filter chips — only show in Ready view (stages are meaningless for unverified contacts) */}
+          {view === 'ready' && (
+            <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
+              {STAGE_FILTERS.map((f) => {
+                const active = stageFilter === f.id;
+                const count = f.id === 'all' ? verifiedCount : countsByStage[f.id as PartnerStage] || 0;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setStageFilter(f.id)}
+                    className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
+                      active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                    }`}
+                  >
+                    {f.label} <span className="opacity-70">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {error && (
+            <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-3">
+              {error}
+            </div>
+          )}
+
+          {isLoading && prospects.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 text-amari-text-muted animate-spin" />
+            </div>
+          ) : visibleProspects.length === 0 ? (
+            <p className="text-sm text-amari-text-muted text-center py-12">
+              {view === 'ready' ? (
+                verifiedCount === 0 ? 'No verified partners yet. Switch to "Needs review" to verify contacts.' : 'No prospects match the current filters.'
+              ) : (
+                'All contacts have been reviewed.'
+              )}
+            </p>
           ) : (
-            'All contacts have been reviewed.'
+            <div className="space-y-1.5">
+              {visibleProspects.map((p) =>
+                view === 'ready' ? (
+                  <ReadyRow
+                    key={p.contactId}
+                    prospect={p}
+                    onTap={() => setOpenContactId(p.contactId)}
+                  />
+                ) : (
+                  <ReviewRow
+                    key={p.contactId}
+                    prospect={p}
+                    onTap={() => setOpenContactId(p.contactId)}
+                    onMarkVerified={() => handleMarkVerified(p.contactId)}
+                  />
+                ),
+              )}
+            </div>
           )}
-        </p>
-      ) : (
-        <div className="space-y-1.5">
-          {visibleProspects.map((p) =>
-            view === 'ready' ? (
-              <ReadyRow
-                key={p.contactId}
-                prospect={p}
-                onTap={() => setOpenContactId(p.contactId)}
-              />
-            ) : (
-              <ReviewRow
-                key={p.contactId}
-                prospect={p}
-                onTap={() => setOpenContactId(p.contactId)}
-                onMarkVerified={() => handleMarkVerified(p.contactId)}
-              />
-            ),
-          )}
-        </div>
+        </>
       )}
 
       {openProspect && (

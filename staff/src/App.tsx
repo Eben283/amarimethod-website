@@ -111,7 +111,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/partners"
+        path="/outreach"
         element={
           <ProtectedRoute>
             <LayoutWithNav>
@@ -120,6 +120,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Back-compat: old /partners URL still works */}
+      <Route path="/partners" element={<Navigate to="/outreach" replace />} />
       <Route
         path="/client/:id"
         element={

@@ -18,9 +18,9 @@ export default function StaffNav() {
           <MessageSquare className="w-5 h-5" />
           <span className="text-xs font-medium">Messages</span>
         </NavLink>
-        <NavLink to="/partners" className={linkClass}>
+        <NavLink to="/outreach" className={linkClass}>
           <Handshake className="w-5 h-5" />
-          <span className="text-xs font-medium">Partners</span>
+          <span className="text-xs font-medium">Outreach</span>
         </NavLink>
         <NavLink to="/balances" className={linkClass}>
           <Wallet className="w-5 h-5" />
