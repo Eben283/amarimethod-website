@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  getPartnerProspects, getPartnerActivity, recordPartnerOutcome, ApiError,
+  getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
+  toggleOutreachVerified, ApiError,
 } from '../lib/api';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
@@ -161,12 +162,11 @@ function priorityScore(p: PartnerProspect): number {
 // ─────────────────────────────────────────────────────────────────────────────
 // Compact row in the queue
 
-function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () => void }) {
+// Ready view: card leads with Garrett's real sheet data (Status, Notes).
+function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () => void }) {
   const stage = (prospect.partnerStage || 'no-outreach') as PartnerStage;
   const dSince = daysSince(prospect.lastActivityAt);
-  // Stale only means "outreach started but went cold." A never-contacted contact
-  // is not stale — it's untouched. Require a real signal or activity to qualify.
-  const hasRealContact = !!prospect.partnerLastSignal || !!prospect.lastActivityAt;
+  const hasRealContact = !!prospect.partnerLastSignal || !!prospect.lastActivityAt || !!prospect.sheetStatus;
   const isStale = stage === 'working' && hasRealContact && (dSince !== null && dSince >= STALE_DAYS_THRESHOLD);
 
   return (
@@ -187,12 +187,6 @@ function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () 
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-amari-light-sand text-amari-charcoal">
             {STAGE_LABEL[stage]}
           </span>
-          {prospect.outreachVerified && (
-            <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-700">
-              <CheckCircle2 className="w-3 h-3" />
-              verified
-            </span>
-          )}
           {isStale && (
             <span className="inline-flex items-center gap-0.5 text-[10px] text-red-700 font-medium">
               <AlertCircle className="w-3 h-3" />
@@ -201,18 +195,89 @@ function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () 
           )}
         </div>
       </div>
+      {prospect.phone && (
+        <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
+      )}
+      {/* Sheet Status and Notes — Garrett's real curated data, leads the card */}
+      {prospect.sheetStatus && (
+        <p className="text-xs text-amari-charcoal font-medium mt-1">
+          📋 {prospect.sheetStatus}
+        </p>
+      )}
+      {prospect.sheetNotes && (
+        <p className="text-xs text-amari-text-secondary italic mt-0.5 line-clamp-2">
+          "{prospect.sheetNotes}"
+        </p>
+      )}
+      <p className="text-[11px] text-amari-text-muted mt-1">
+        Last GHL activity: {relativeDays(prospect.lastActivityAt)}
+        {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
+      </p>
+    </button>
+  );
+}
+
+// Review view: card emphasizes the verification action and what's missing.
+function ReviewRow({
+  prospect,
+  onTap,
+  onMarkVerified,
+}: {
+  prospect: PartnerProspect;
+  onTap: () => void;
+  onMarkVerified: () => Promise<void>;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const stopProp = (e: React.MouseEvent) => e.stopPropagation();
+  const handleVerify = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSubmitting(true);
+    try {
+      await onMarkVerified();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const missing: string[] = [];
+  if (!prospect.phone) missing.push('phone');
+  if (!prospect.email) missing.push('email');
+  if (!prospect.partnerFacility) missing.push('facility');
+
+  return (
+    <button
+      onClick={onTap}
+      className="w-full text-left bg-white rounded-md border border-amari-border p-3 shadow-sm hover:bg-amari-light-sand/30 transition-colors"
+    >
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="text-sm font-medium text-amari-charcoal truncate">
+          {prospect.fullName}
+        </p>
+        <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${CATEGORY_BADGE[prospect.category]}`}>
+          {prospect.category === 'trainer' ? 'PT' : prospect.category}
+        </span>
+      </div>
       {prospect.phone ? (
         <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
       ) : (
-        <p className="text-xs text-amari-text-muted/60 italic mt-0.5">
-          no phone {prospect.email ? '· email only' : prospect.instagram ? '· IG only' : '· no contact info'}
+        <p className="text-xs text-amari-text-muted italic mt-0.5">
+          {prospect.email ? `email only: ${prospect.email}` : prospect.instagram ? `IG only: ${prospect.instagram}` : 'no contact info'}
         </p>
       )}
-      <p className="text-[11px] text-amari-text-muted mt-0.5">
-        Last contact: {relativeDays(prospect.lastActivityAt)}
-        {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
-        {prospect.partnerSource && ` · ${prospect.partnerSource}`}
-      </p>
+      {missing.length > 0 && (
+        <p className="text-[11px] text-amari-text-muted mt-0.5">
+          Missing: {missing.join(', ')}
+        </p>
+      )}
+      <div className="flex items-center gap-2 mt-2" onClick={stopProp}>
+        <button
+          onClick={handleVerify}
+          disabled={submitting}
+          className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+        >
+          {submitting ? '...' : '✓ Mark verified'}
+        </button>
+        <span className="text-[11px] text-amari-text-muted">— moves to Ready view</span>
+      </div>
     </button>
   );
 }
@@ -349,6 +414,25 @@ function ProspectModal({
               </p>
             )}
           </section>
+
+          {/* From Garrett's sheet — primary source of human-curated outreach data */}
+          {(prospect.sheetStatus || prospect.sheetNotes) && (
+            <section>
+              <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">
+                From Garrett's sheet
+              </h3>
+              {prospect.sheetStatus && (
+                <p className="text-sm text-amari-charcoal font-medium">
+                  Status: {prospect.sheetStatus}
+                </p>
+              )}
+              {prospect.sheetNotes && (
+                <p className="text-sm text-amari-text-secondary italic mt-1">
+                  "{prospect.sheetNotes}"
+                </p>
+              )}
+            </section>
+          )}
 
           {/* Follow-up date (if Future Potential) */}
           {stage === 'future-potential' && prospect.partnerFollowupAt && (
@@ -503,9 +587,12 @@ function FunnelPanel({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main page
 
+type PartnerView = 'ready' | 'review';
+
 export default function PartnersPage() {
   const { logout } = useAuth();
 
+  const [view, setView] = useState<PartnerView>('ready');
   const [categoryFilter, setCategoryFilter] = useState<PartnerCategoryFilter>('all');
   const [stageFilter, setStageFilter] = useState<PartnerStageFilter>('all');
   const [prospects, setProspects] = useState<PartnerProspect[]>([]);
@@ -516,6 +603,8 @@ export default function PartnersPage() {
     'no-outreach': 0, 'working': 0, 'session-booked': 0,
     'partner': 0, 'future-potential': 0, 'dropped': 0,
   });
+  const [verifiedCount, setVerifiedCount] = useState(0);
+  const [unverifiedCount, setUnverifiedCount] = useState(0);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -531,6 +620,8 @@ export default function PartnersPage() {
       setCountsByCategory(data.countsByCategory);
       setCountsByStage(data.countsByStage);
       setTotal(data.total);
+      setVerifiedCount(data.verifiedCount);
+      setUnverifiedCount(data.unverifiedCount);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load partners');
@@ -542,10 +633,15 @@ export default function PartnersPage() {
   useEffect(() => { load(); }, [load]);
 
   const visibleProspects = useMemo(() => {
-    let v = prospects;
+    // Primary filter: view (Ready = verified only, Review = unverified only)
+    let v = prospects.filter((p) =>
+      view === 'ready' ? p.outreachVerified : !p.outreachVerified,
+    );
     if (categoryFilter !== 'all') v = v.filter((p) => p.category === categoryFilter);
-    if (stageFilter !== 'all') v = v.filter((p) => (p.partnerStage || 'no-outreach') === stageFilter);
-    // Sort by priority desc, then by lastActivityAt asc (oldest first within same priority)
+    // Stage filter only applies in Ready view
+    if (view === 'ready' && stageFilter !== 'all') {
+      v = v.filter((p) => (p.partnerStage || 'no-outreach') === stageFilter);
+    }
     return [...v].sort((a, b) => {
       const pa = priorityScore(a);
       const pb = priorityScore(b);
@@ -554,7 +650,26 @@ export default function PartnersPage() {
       const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
       return da - db;
     });
-  }, [prospects, categoryFilter, stageFilter]);
+  }, [prospects, view, categoryFilter, stageFilter]);
+
+  const handleMarkVerified = async (contactId: string) => {
+    // Optimistic: flip the local prospect immediately, then API persists.
+    setProspects((prev) =>
+      prev.map((p) => p.contactId === contactId ? { ...p, outreachVerified: true } : p),
+    );
+    setVerifiedCount((c) => c + 1);
+    setUnverifiedCount((c) => Math.max(0, c - 1));
+    try {
+      await toggleOutreachVerified(contactId, true);
+    } catch {
+      // Roll back
+      setProspects((prev) =>
+        prev.map((p) => p.contactId === contactId ? { ...p, outreachVerified: false } : p),
+      );
+      setVerifiedCount((c) => Math.max(0, c - 1));
+      setUnverifiedCount((c) => c + 1);
+    }
+  };
 
   const openProspect = useMemo(
     () => openContactId ? prospects.find((p) => p.contactId === openContactId) || null : null,
@@ -571,12 +686,14 @@ export default function PartnersPage() {
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-lg font-serif text-amari-charcoal">Partners</h1>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowFunnel((v) => !v)}
-            className="text-xs text-amari-text-muted hover:text-amari-charcoal"
-          >
-            {showFunnel ? 'Hide funnel' : 'Show funnel'}
-          </button>
+          {view === 'ready' && (
+            <button
+              onClick={() => setShowFunnel((v) => !v)}
+              className="text-xs text-amari-text-muted hover:text-amari-charcoal"
+            >
+              {showFunnel ? 'Hide funnel' : 'Show funnel'}
+            </button>
+          )}
           <button
             onClick={() => load()}
             disabled={isLoading}
@@ -588,7 +705,33 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      {showFunnel && <FunnelPanel countsByStage={countsByStage} total={total} />}
+      {/* View toggle — Ready (verified, Garrett's workflow) vs Review (unverified, Eben's workflow) */}
+      <div className="flex gap-1 bg-amari-light-sand rounded-md p-1 mb-3">
+        <button
+          onClick={() => setView('ready')}
+          className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+            view === 'ready' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
+          }`}
+        >
+          ✓ Ready to call <span className="opacity-70 ml-1">({verifiedCount})</span>
+        </button>
+        <button
+          onClick={() => setView('review')}
+          className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+            view === 'review' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted hover:text-amari-charcoal'
+          }`}
+        >
+          ○ Needs review <span className="opacity-70 ml-1">({unverifiedCount})</span>
+        </button>
+      </div>
+
+      {view === 'review' && (
+        <p className="text-xs text-amari-text-muted mb-2 px-1">
+          These contacts have partner tags but haven't been verified as ready to call. Review the data, then mark verified to move them to the Ready list.
+        </p>
+      )}
+
+      {view === 'ready' && showFunnel && <FunnelPanel countsByStage={countsByStage} total={verifiedCount} />}
 
       {/* Category filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-2 mb-2 -mx-1 px-1">
@@ -608,24 +751,26 @@ export default function PartnersPage() {
         })}
       </div>
 
-      {/* Stage filter chips */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
-        {STAGE_FILTERS.map((f) => {
-          const active = stageFilter === f.id;
-          const count = f.id === 'all' ? total : countsByStage[f.id as PartnerStage] || 0;
-          return (
-            <button
-              key={f.id}
-              onClick={() => setStageFilter(f.id)}
-              className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
-                active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
-              }`}
-            >
-              {f.label} <span className="opacity-70">({count})</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Stage filter chips — only show in Ready view (stages are meaningless for unverified contacts) */}
+      {view === 'ready' && (
+        <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1 text-[11px]">
+          {STAGE_FILTERS.map((f) => {
+            const active = stageFilter === f.id;
+            const count = f.id === 'all' ? verifiedCount : countsByStage[f.id as PartnerStage] || 0;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setStageFilter(f.id)}
+                className={`shrink-0 px-2 py-1 rounded font-medium transition-colors ${
+                  active ? 'bg-amari-accent-warm text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
+                }`}
+              >
+                {f.label} <span className="opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {error && (
         <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded p-2 mb-3">
@@ -639,17 +784,30 @@ export default function PartnersPage() {
         </div>
       ) : visibleProspects.length === 0 ? (
         <p className="text-sm text-amari-text-muted text-center py-12">
-          No prospects match the current filters.
+          {view === 'ready' ? (
+            verifiedCount === 0 ? 'No verified partners yet. Switch to "Needs review" to verify contacts.' : 'No prospects match the current filters.'
+          ) : (
+            'All contacts have been reviewed.'
+          )}
         </p>
       ) : (
         <div className="space-y-1.5">
-          {visibleProspects.map((p) => (
-            <CompactRow
-              key={p.contactId}
-              prospect={p}
-              onTap={() => setOpenContactId(p.contactId)}
-            />
-          ))}
+          {visibleProspects.map((p) =>
+            view === 'ready' ? (
+              <ReadyRow
+                key={p.contactId}
+                prospect={p}
+                onTap={() => setOpenContactId(p.contactId)}
+              />
+            ) : (
+              <ReviewRow
+                key={p.contactId}
+                prospect={p}
+                onTap={() => setOpenContactId(p.contactId)}
+                onMarkVerified={() => handleMarkVerified(p.contactId)}
+              />
+            ),
+          )}
         </div>
       )}
 

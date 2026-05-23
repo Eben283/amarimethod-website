@@ -319,13 +319,21 @@ export interface PartnerProspect {
   partnerFacilityRole: PartnerFacilityRole | null;
   hasPtOnStaff: HasPtOnStaff | null;
   outreachVerified: boolean;
+  // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
+  sheetStatus: string | null;
+  sheetNotes: string | null;
+  sheetInstagram: string | null;
+  inGarrettSheet: boolean;
 }
 
 export type PartnerStageFilter = 'all' | PartnerStage;
 
 export interface PartnerProspectsResponse {
   generatedAt: string;
+  sheetCachedAt?: string;
   total: number;
+  verifiedCount: number;
+  unverifiedCount: number;
   countsByCategory: Record<PartnerCategory, number>;
   countsByStage: Record<PartnerStage, number>;
   prospects: PartnerProspect[];

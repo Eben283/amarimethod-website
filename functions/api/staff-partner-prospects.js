@@ -11,6 +11,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import sheetCache from "../lib/partner-sheet-cache.json";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -102,8 +103,26 @@ function isChecked(raw) {
   return ["true", "yes", "1"].includes(String(raw).toLowerCase());
 }
 
+function normalizePhone(s) {
+  if (!s) return null;
+  const d = String(s).replace(/\D/g, "");
+  if (d.length === 11 && d.startsWith("1")) return d.slice(1);
+  if (d.length === 10 && /^[2-9]/.test(d)) return d;
+  return null;
+}
+
+// Lookup Garrett's sheet row for a contact by phone or email match.
+function lookupSheetRow(contact) {
+  const phoneNorm = normalizePhone(contact.phone);
+  if (phoneNorm && sheetCache.byPhone[phoneNorm]) return sheetCache.byPhone[phoneNorm];
+  const emailNorm = contact.email ? contact.email.toLowerCase() : null;
+  if (emailNorm && sheetCache.byEmail[emailNorm]) return sheetCache.byEmail[emailNorm];
+  return null;
+}
+
 function toProspect(contact) {
   const tags = Array.isArray(contact.tags) ? contact.tags : [];
+  const sheetRow = lookupSheetRow(contact);
   return {
     contactId: contact.id,
     firstName: contact.firstName || "",
@@ -140,6 +159,11 @@ function toProspect(contact) {
     partnerFacilityRole:  getField(contact, FIELD_IDS.facility_role),
     hasPtOnStaff:         getField(contact, FIELD_IDS.has_pt_on_staff),
     outreachVerified:     isChecked(getField(contact, FIELD_IDS.outreach_verified)),
+    // Sheet data joined by phone/email match — primary source for verified contacts.
+    sheetStatus:          sheetRow?.status || null,
+    sheetNotes:           sheetRow?.notes || null,
+    sheetInstagram:       sheetRow?.instagram || null,
+    inGarrettSheet:       !!sheetRow,
   };
 }
 
@@ -231,16 +255,23 @@ export async function onRequestGet(context) {
     // Counts.
     const countsByCategory = { golf: 0, tennis: 0, trainer: 0, unknown: 0 };
     const countsByStage = Object.fromEntries(ALL_STAGES.map((s) => [s, 0]));
+    let verifiedCount = 0;
+    let unverifiedCount = 0;
     for (const p of prospects) {
       countsByCategory[p.category] = (countsByCategory[p.category] || 0) + 1;
-      const stage = p.partnerStage || "no-outreach";  // default if not migrated
+      const stage = p.partnerStage || "no-outreach";
       countsByStage[stage] = (countsByStage[stage] || 0) + 1;
+      if (p.outreachVerified) verifiedCount += 1;
+      else unverifiedCount += 1;
     }
 
     return new Response(
       JSON.stringify({
         generatedAt: new Date().toISOString(),
+        sheetCachedAt: sheetCache.generatedAt,
         total: prospects.length,
+        verifiedCount,
+        unverifiedCount,
         countsByCategory,
         countsByStage,
         prospects,
