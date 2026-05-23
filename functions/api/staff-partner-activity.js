@@ -31,13 +31,41 @@ function corsHeaders(origin) {
   };
 }
 
-// GHL message types per the research report. Map to our 4 channel types.
-function mapMessageType(typeStr) {
-  const t = String(typeStr || "").toUpperCase();
+// GHL message-type mapper.
+// GHL is inconsistent: /conversations/search returns string enums ("TYPE_CALL"),
+// while /conversations/{id}/messages returns NUMERIC codes (1, 2, 3, ...).
+// Accept both.
+//
+// Numeric enum (from GHL API v2 docs):
+//   1 CALL, 2 SMS, 3 EMAIL, 4 SMS_REVIEW_REQUEST, 5 WEBCHAT, 6 SMS_NO_SHOW_REQUEST,
+//   7 CAMPAIGN_SMS, 8 CAMPAIGN_CALL, 9 CAMPAIGN_EMAIL, 10 CAMPAIGN_VOICEMAIL,
+//   11 FACEBOOK, 12 CAMPAIGN_FACEBOOK, 13 CAMPAIGN_MANUAL_CALL,
+//   14 CAMPAIGN_MANUAL_SMS, 15 GMB, 16 CAMPAIGN_GMB, 17 REVIEW, 18 INSTAGRAM,
+//   19 WHATSAPP, 20 CUSTOM_SMS, 21 CUSTOM_EMAIL, 22 IVR_CALL,
+//   23-26 ACTIVITY_* (contact/invoice/payment/opportunity — system events, skip),
+//   27 LIVE_CHAT, 28 LIVE_CHAT_INFO_MESSAGE (system, skip),
+//   29 TIKTOK, 30 TIKTOK_DIRECT_MESSAGE
+const NUMERIC_TYPE_MAP = {
+  1: "call", 8: "call", 13: "call", 22: "call",
+  2: "sms", 7: "sms", 14: "sms", 20: "sms", 4: "sms", 6: "sms",
+  3: "email", 9: "email", 21: "email",
+};
+
+function mapMessageType(typeRaw) {
+  if (typeRaw === null || typeRaw === undefined) return null;
+  // Numeric: lookup in map
+  if (typeof typeRaw === "number") return NUMERIC_TYPE_MAP[typeRaw] || null;
+  // Numeric string ("1")
+  const asNum = Number(typeRaw);
+  if (Number.isFinite(asNum) && String(asNum) === String(typeRaw).trim()) {
+    return NUMERIC_TYPE_MAP[asNum] || null;
+  }
+  // String enum ("TYPE_CALL")
+  const t = String(typeRaw).toUpperCase();
   if (t.includes("CALL")) return "call";
   if (t.includes("EMAIL")) return "email";
   if (t.includes("SMS")) return "sms";
-  return null;  // skip unknown types
+  return null;
 }
 
 export async function onRequestOptions(context) {
