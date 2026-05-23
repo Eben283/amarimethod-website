@@ -207,10 +207,38 @@ export async function getOutreachCards(): Promise<import('../types/staff').Outre
   return fetchApi('/staff-outreach-cards');
 }
 
-export async function getPartnerProspects(
-  category: import('../types/staff').PartnerCategoryFilter = 'all',
-): Promise<import('../types/staff').PartnerProspectsResponse> {
-  return fetchApi(`/staff-partner-prospects?category=${encodeURIComponent(category)}`);
+export async function getPartnerProspects(): Promise<import('../types/staff').PartnerProspectsResponse> {
+  return fetchApi('/staff-partner-prospects');
+}
+
+export interface PartnerActivityResponse {
+  contactId: string;
+  generatedAt: string;
+  events: import('../types/staff').PartnerActivityEvent[];
+  totalFetched: number;
+  truncated: boolean;
+}
+
+export async function getPartnerActivity(contactId: string): Promise<PartnerActivityResponse> {
+  return fetchApi(`/staff-partner-activity?contactId=${encodeURIComponent(contactId)}`);
+}
+
+export interface PartnerOutcomeResult {
+  success: boolean;
+  contactId: string;
+  signal: import('../types/staff').PartnerLastSignal;
+  newStage: import('../types/staff').PartnerStage | null;
+  signalAt: string;
+  followupAt: string | null;
+}
+
+export async function recordPartnerOutcome(
+  payload: import('../types/staff').PartnerOutcomeRequest,
+): Promise<PartnerOutcomeResult> {
+  return fetchApi('/staff-partner-outcome', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export { ApiError };

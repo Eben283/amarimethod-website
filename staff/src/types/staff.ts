@@ -238,11 +238,49 @@ export interface BalancesResponse {
   rows: BalanceRow[];
 }
 
-// Partner outreach workspace (v0 — read-only)
+// Partner outreach workspace
+//
+// v1: Queue view + Modal detail. Reads from new GHL custom fields
+// (created 2026-05-23 — see ops/ref/partner-custom-fields-2026-05-22.json).
+// Pipeline-stage-based kanban (v0) was abandoned per design doc.
 
 export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'unknown';
 
 export type PartnerCategoryFilter = 'all' | PartnerCategory;
+
+export type PartnerStage =
+  | 'no-outreach'
+  | 'working'
+  | 'session-booked'
+  | 'partner'
+  | 'future-potential'
+  | 'dropped';
+
+export type PartnerSource =
+  | 'cold-call'
+  | 'walk-in'
+  | 'dm'
+  | 'referral'
+  | 'inbound'
+  | 'sheet';
+
+export type PartnerLastSignal =
+  | 'no-answer'
+  | 'voicemail'
+  | 'talked'
+  | 'link-sent'
+  | 'booked'
+  | 'deferred'
+  | 'not-interested';
+
+export type PartnerFacilityType =
+  | 'boutique'
+  | 'chain'
+  | 'private'
+  | 'gym'
+  | 'studio'
+  | 'country-club'
+  | 'university';
 
 export interface PartnerProspect {
   contactId: string;
@@ -253,20 +291,51 @@ export interface PartnerProspect {
   tags: string[];
   phone: string | null;
   email: string | null;
+  website: string | null;
+  instagram: string | null;
   /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
   lastActivityAt: string | null;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */
   isActivePartner: boolean;
-  /** Partnership Pipeline stage. null if contact has no opp in this pipeline yet (shows in "Unstaged" column). */
-  pipelineStageId: string | null;
-  pipelineStageName: string | null;
-  opportunityId: string | null;
+  // New Partner custom fields (may all be null until migration runs):
+  partnerStage: PartnerStage | null;
+  partnerSource: PartnerSource | null;
+  partnerLastSignal: PartnerLastSignal | null;
+  partnerLastSignalAt: string | null;
+  partnerFollowupAt: string | null;
+  partnerFacility: string | null;
+  partnerFacilityType: PartnerFacilityType | null;
+  partnerFacilityRole: string | null;
 }
 
-export interface PartnerPipelineStage {
-  id: string | null;  // null for the synthetic "Unstaged" pseudo-stage
-  name: string;
-  order: number;
+export type PartnerStageFilter = 'all' | PartnerStage;
+
+export interface PartnerProspectsResponse {
+  generatedAt: string;
+  total: number;
+  countsByCategory: Record<PartnerCategory, number>;
+  countsByStage: Record<PartnerStage, number>;
+  prospects: PartnerProspect[];
+}
+
+// Activity timeline event (returned by staff-partner-activity endpoint, lazy-loaded per contact)
+export interface PartnerActivityEvent {
+  date: string;          // ISO timestamp
+  type: 'call' | 'sms' | 'email' | 'signal' | 'note';
+  // For signal events:
+  signal?: PartnerLastSignal;
+  // For note events:
+  body?: string;
+  // For all:
+  direction?: 'inbound' | 'outbound';
+}
+
+// Outcome capture payload (POST to staff-partner-outcome)
+export interface PartnerOutcomeRequest {
+  contactId: string;
+  signal: PartnerLastSignal;
+  note?: string;
+  followupAt?: string;  // for `deferred` only — when to revisit
 }
 
 export interface PartnerProspectsResponse {
