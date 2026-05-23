@@ -241,4 +241,14 @@ export async function recordPartnerOutcome(
   });
 }
 
+export async function toggleOutreachVerified(
+  contactId: string,
+  verified: boolean,
+): Promise<{ success: boolean; contactId: string; verified: boolean }> {
+  return fetchApi('/staff-partner-toggle-verified', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, verified }),
+  });
+}
+
 export { ApiError };

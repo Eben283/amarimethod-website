@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  getPartnerProspects, getPartnerActivity, recordPartnerOutcome, ApiError,
+  getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
+  toggleOutreachVerified, ApiError,
 } from '../lib/api';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
@@ -209,6 +210,23 @@ function ProspectModal({
   const [outcomeError, setOutcomeError] = useState('');
   const [followupDate, setFollowupDate] = useState('');
   const [pendingDeferred, setPendingDeferred] = useState(false);
+  // Optimistic verified state — flips immediately on click, then API persists.
+  const [verified, setVerified] = useState(prospect.outreachVerified);
+  const [verifiedSubmitting, setVerifiedSubmitting] = useState(false);
+
+  const handleToggleVerified = async () => {
+    const next = !verified;
+    setVerified(next);
+    setVerifiedSubmitting(true);
+    try {
+      await toggleOutreachVerified(prospect.contactId, next);
+    } catch {
+      // Roll back on failure
+      setVerified(!next);
+    } finally {
+      setVerifiedSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -313,10 +331,19 @@ function ProspectModal({
               {prospect.hasPtOnStaff && prospect.hasPtOnStaff !== 'Unknown' && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
-              {prospect.outreachVerified && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Verified</dt><dd className="text-emerald-700">✓ contact info verified</dd></div>
-              )}
             </dl>
+            <button
+              onClick={handleToggleVerified}
+              disabled={verifiedSubmitting}
+              className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors disabled:opacity-50 ${
+                verified
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+                  : 'bg-white border-amari-border text-amari-text-muted hover:bg-amari-light-sand'
+              }`}
+              title={verified ? 'Click to unverify' : 'Mark contact info as verified'}
+            >
+              {verified ? '✓ Outreach verified' : '○ Mark outreach verified'}
+            </button>
           </section>
 
           {/* Follow-up date (if Future Potential) */}
