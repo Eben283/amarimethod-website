@@ -12,7 +12,7 @@ export default function StaffNav() {
       <div className="flex">
         <NavLink to="/" end className={linkClass}>
           <Calendar className="w-5 h-5" />
-          <span className="text-xs font-medium">Today</span>
+          <span className="text-xs font-medium">Schedule</span>
         </NavLink>
         <NavLink to="/messages" className={linkClass}>
           <MessageSquare className="w-5 h-5" />

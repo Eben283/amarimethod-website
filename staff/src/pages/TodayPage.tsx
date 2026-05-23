@@ -38,7 +38,7 @@ export default function TodayPage() {
   const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [view, setView] = useState<ViewMode>('day');
+  const [view, setView] = useState<ViewMode>('week');
   const [dayAppointments, setDayAppointments] = useState<TodayAppointment[]>([]);
   const [weekData, setWeekData] = useState<Record<string, TodayAppointment[]>>({});
   const [isLoading, setIsLoading] = useState(true);
