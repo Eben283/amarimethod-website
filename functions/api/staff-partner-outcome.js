@@ -36,6 +36,7 @@ const FIELD_IDS = {
   partner_last_signal:    "XyUoMtbxadTuZunQwX3Y",
   partner_last_signal_at: "J0lnfsvtt0vcFOdSbUSf",
   partner_followup_at:    "stVYzQB4Xpi29cuyUYnA",
+  partner_touch_count:    "qKtPT2XZP61emgUDK7fd",
 };
 
 const VALID_SIGNALS = new Set([
@@ -120,11 +121,34 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
     }
 
+    // Read current touch_count so we can increment it. One extra GET per outcome
+    // record — acceptable overhead for the simplicity of server-authoritative count.
+    let currentTouchCount = 0;
+    try {
+      const getRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
+        headers: ghlHeaders(ghlToken),
+      });
+      if (getRes.ok) {
+        const cdata = await getRes.json();
+        const contact = cdata.contact || cdata;
+        const fields = Array.isArray(contact.customFields) ? contact.customFields : [];
+        const tf = fields.find((f) => f.id === FIELD_IDS.partner_touch_count);
+        const raw = tf?.value ?? tf?.field_value;
+        const n = Number(raw);
+        if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
+      }
+    } catch (err) {
+      // Don't fail the outcome record over a touch_count read error — log and
+      // proceed with 0 (will under-count this contact by 1, fixable by re-backfill).
+      console.error("[staff-partner-outcome] touch_count read failed:", err instanceof Error ? err.message : String(err));
+    }
+
     // Build customFields update array
     const nowIso = new Date().toISOString();
     const customFields = [
       { id: FIELD_IDS.partner_last_signal, value: signal },
       { id: FIELD_IDS.partner_last_signal_at, value: nowIso },
+      { id: FIELD_IDS.partner_touch_count, value: currentTouchCount + 1 },
     ];
     const newStage = SIGNAL_TO_STAGE[signal];
     if (newStage) {
@@ -166,6 +190,7 @@ export async function onRequestPost(context) {
         newStage: newStage || null,
         signalAt: nowIso,
         followupAt: signal === "deferred" ? followupAt : null,
+        touchCount: currentTouchCount + 1,
       }),
       { status: 200, headers },
     );

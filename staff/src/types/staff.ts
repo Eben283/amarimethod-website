@@ -319,6 +319,9 @@ export interface PartnerProspect {
   partnerFacilityRole: PartnerFacilityRole | null;
   hasPtOnStaff: HasPtOnStaff | null;
   outreachVerified: boolean;
+  /** Number of outbound outreach actions for this contact (backfilled from /conversations,
+   *  incremented on every recorded outcome). 0 if never touched or backfill hasn't run. */
+  touchCount: number;
   // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
   sheetStatus: string | null;
   sheetNotes: string | null;

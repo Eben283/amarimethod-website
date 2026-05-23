@@ -213,8 +213,9 @@ function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () =>
         </p>
       )}
       <p className="text-[11px] text-amari-text-muted mt-1">
-        Last GHL activity: {relativeDays(prospect.lastActivityAt)}
+        Last activity: {relativeDays(prospect.lastActivityAt)}
         {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
+        {prospect.touchCount > 0 && ` · ${prospect.touchCount} ${prospect.touchCount === 1 ? 'touch' : 'touches'}`}
       </p>
     </button>
   );
@@ -409,6 +410,7 @@ function ProspectModal({
               {prospect.hasPtOnStaff && prospect.hasPtOnStaff !== 'Unknown' && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
+              <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Touches</dt><dd className="text-amari-charcoal">{prospect.touchCount} {prospect.touchCount === 1 ? 'outreach action' : 'outreach actions'}</dd></div>
             </dl>
             {(prospect.outreachVerified || prospect.inGarrettSheet) && (
               <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-700">
@@ -596,12 +598,14 @@ function FunnelPanel({
 
 type PartnerView = 'ready' | 'review';
 
-type SortMode = 'priority' | 'oldest-contact' | 'newest-contact';
+type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched';
 
 const SORT_LABEL: Record<SortMode, string> = {
   'priority': 'Priority',
   'oldest-contact': 'Oldest contact',
   'newest-contact': 'Newest contact',
+  'least-touched': 'Fewest touches',
+  'most-touched': 'Most touches',
 };
 
 export default function PartnersPage() {
@@ -728,6 +732,15 @@ export default function PartnersPage() {
         if (da === null) return 1;
         if (db === null) return -1;
         return sortMode === 'oldest-contact' ? da - db : db - da;
+      }
+      if (sortMode === 'least-touched' || sortMode === 'most-touched') {
+        const ta = a.touchCount ?? 0;
+        const tb = b.touchCount ?? 0;
+        if (ta !== tb) return sortMode === 'least-touched' ? ta - tb : tb - ta;
+        // Tiebreak by last activity (oldest first when fewest, newest first when most)
+        const da = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : 0;
+        const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
+        return sortMode === 'least-touched' ? da - db : db - da;
       }
       // Priority (default): highest priority first; tiebreak by oldest activity
       const pa = priorityScore(a);
@@ -889,15 +902,15 @@ export default function PartnersPage() {
           </div>
 
           {/* Sort toggle — answers "who do I call today?" */}
-          <div className="flex items-center gap-1.5 mb-2 text-[11px] text-amari-text-muted">
-            <span>Sort:</span>
-            {(['priority', 'oldest-contact', 'newest-contact'] as SortMode[]).map((m) => {
+          <div className="flex items-center gap-1.5 mb-2 text-[11px] text-amari-text-muted overflow-x-auto pb-1 -mx-1 px-1">
+            <span className="shrink-0">Sort:</span>
+            {(['priority', 'oldest-contact', 'newest-contact', 'least-touched', 'most-touched'] as SortMode[]).map((m) => {
               const active = sortMode === m;
               return (
                 <button
                   key={m}
                   onClick={() => setSortMode(m)}
-                  className={`px-2 py-0.5 rounded transition-colors ${
+                  className={`shrink-0 px-2 py-0.5 rounded transition-colors ${
                     active ? 'bg-amari-charcoal text-white' : 'bg-white border border-amari-border text-amari-charcoal hover:bg-amari-light-sand/30'
                   }`}
                 >

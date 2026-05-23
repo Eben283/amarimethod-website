@@ -36,6 +36,10 @@ const FIELD_IDS = {
   // GHL's contact.lastActivity is null for most contacts; this field caches
   // the most recent message date computed from /conversations/search.)
   partner_last_real_activity: "W7JoyJKPKhPI8hZ5EgUv",
+  // Touch count — number of outbound outreach actions for this contact.
+  // Backfilled from /conversations and incremented on every outcome recorded
+  // via /api/staff-partner-outcome. Used in the row card + sort.
+  partner_touch_count:        "qKtPT2XZP61emgUDK7fd",
   // Existing (facility context)
   trainer_facility:        "eYBj61zgMnIFMIesoDR5",
   facility_type:           "gIQEMkO1gV85SAYcYlNx",
@@ -159,6 +163,11 @@ function toProspect(contact) {
     partnerFacilityRole:  getField(contact, FIELD_IDS.facility_role),
     hasPtOnStaff:         getField(contact, FIELD_IDS.has_pt_on_staff),
     outreachVerified:     isChecked(getField(contact, FIELD_IDS.outreach_verified)),
+    touchCount:           (() => {
+      const raw = getField(contact, FIELD_IDS.partner_touch_count);
+      const n = Number(raw);
+      return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
+    })(),
     // Sheet data joined by phone/email match — primary source for verified contacts.
     sheetStatus:          sheetRow?.status || null,
     sheetNotes:           sheetRow?.notes || null,
