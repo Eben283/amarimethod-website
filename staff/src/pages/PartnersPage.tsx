@@ -675,7 +675,7 @@ function ProspectModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main page
 
-type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched';
+type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched' | 'just-touched';
 
 const SORT_LABEL: Record<SortMode, string> = {
   'priority': 'Priority',
@@ -683,6 +683,7 @@ const SORT_LABEL: Record<SortMode, string> = {
   'newest-contact': 'Newest contact',
   'least-touched': 'Fewest touches',
   'most-touched': 'Most touches',
+  'just-touched': 'Just touched',
 };
 
 export default function PartnersPage() {
@@ -725,6 +726,26 @@ export default function PartnersPage() {
   }, [logout]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Progress stats — how many outcomes recorded today / this week / this month.
+  // Based on partner_last_signal_at (only set when Garrett records an outcome
+  // via the modal). Doesn't count auto-tracked messages, only explicit actions.
+  const progressStats = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOf7d = now.getTime() - 7 * 86_400_000;
+    const startOf30d = now.getTime() - 30 * 86_400_000;
+    let today = 0, week = 0, month = 0;
+    for (const p of prospects) {
+      if (!p.partnerLastSignalAt) continue;
+      const t = new Date(p.partnerLastSignalAt).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (t >= startOfToday) today += 1;
+      if (t >= startOf7d) week += 1;
+      if (t >= startOf30d) month += 1;
+    }
+    return { today, week, month };
+  }, [prospects]);
 
   const isSearching = searchQuery.trim().length > 0;
 
@@ -837,6 +858,16 @@ export default function PartnersPage() {
         const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : 0;
         return sortMode === 'least-touched' ? da - db : db - da;
       }
+      if (sortMode === 'just-touched') {
+        // Most recently recorded outcome first. Contacts with no outcome yet
+        // sort to bottom (so the top of the list is always "what I just did").
+        const ta = a.partnerLastSignalAt ? new Date(a.partnerLastSignalAt).getTime() : null;
+        const tb = b.partnerLastSignalAt ? new Date(b.partnerLastSignalAt).getTime() : null;
+        if (ta === null && tb === null) return 0;
+        if (ta === null) return 1;
+        if (tb === null) return -1;
+        return tb - ta;
+      }
       const pa = priorityScore(a);
       const pb = priorityScore(b);
       if (pa !== pb) return pb - pa;
@@ -873,7 +904,7 @@ export default function PartnersPage() {
 
   return (
     <div className="px-3 pt-3 pb-8 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-lg font-serif text-amari-charcoal">Outreach</h1>
         <button
           onClick={() => load()}
@@ -883,6 +914,25 @@ export default function PartnersPage() {
           <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
+      </div>
+
+      {/* Progress — outcomes you've recorded recently. "Just touched" sort shows the names. */}
+      <div className="text-[11px] text-amari-text-muted mb-3 px-1">
+        <span>Your outreach: </span>
+        <strong className="text-amari-charcoal">{progressStats.today}</strong>
+        <span> today · </span>
+        <strong className="text-amari-charcoal">{progressStats.week}</strong>
+        <span> this week · </span>
+        <strong className="text-amari-charcoal">{progressStats.month}</strong>
+        <span> this month</span>
+        {progressStats.week > 0 && (
+          <button
+            onClick={() => setSortMode('just-touched')}
+            className="ml-2 text-amari-accent-warm hover:underline"
+          >
+            see who →
+          </button>
+        )}
       </div>
 
       {/* Search bar — searches all GHL contacts (partners + general clients) */}
