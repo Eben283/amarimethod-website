@@ -23,6 +23,19 @@ const OUTREACH_STAGES: PartnerStage[] = ['no-outreach', 'working'];
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility: friendly date format ("May 20th 2026", no time)
 
+// Display-only title-case for names. GHL stores most contact names as lowercase
+// (data quality from the import). We don't write back to GHL because names with
+// intentional casing (O'Brien, McDonald, deSouza, iPhone) would get mangled —
+// so we only auto-title-case when the value is entirely lowercase.
+function displayName(s: string | null | undefined): string {
+  if (!s) return '';
+  const trimmed = s.trim();
+  if (!trimmed) return '';
+  // If any uppercase letter exists, treat the casing as intentional.
+  if (/[A-Z]/.test(trimmed)) return trimmed;
+  return trimmed.replace(/\b([a-z])/g, (m) => m.toUpperCase());
+}
+
 function friendlyDate(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -219,7 +232,7 @@ function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () =>
     >
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm font-medium text-amari-charcoal truncate">
-          {prospect.fullName}
+          {displayName(prospect.fullName)}
         </p>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${CATEGORY_BADGE[prospect.category]}`}>
@@ -292,7 +305,7 @@ function ReviewRow({
     >
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm font-medium text-amari-charcoal truncate">
-          {prospect.fullName}
+          {displayName(prospect.fullName)}
         </p>
         <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${CATEGORY_BADGE[prospect.category]}`}>
           {prospect.category === 'trainer' ? 'PT' : prospect.category}
@@ -399,7 +412,7 @@ function ProspectModal({
         {/* Header */}
         <div className="sticky top-0 bg-amari-bone-white z-10 flex items-center justify-between border-b border-amari-border px-4 py-3">
           <div>
-            <h2 className="text-lg font-serif text-amari-charcoal">{prospect.fullName}</h2>
+            <h2 className="text-lg font-serif text-amari-charcoal">{displayName(prospect.fullName)}</h2>
             <p className="text-xs text-amari-text-muted">
               {prospect.category === 'trainer' ? 'Personal Trainer' : prospect.category} · {STAGE_LABEL[stage]}
               {prospect.partnerSource && ` · ${prospect.partnerSource}`}
@@ -653,14 +666,24 @@ export default function PartnersPage() {
   const normalizePhoneForMatch = (s: string | null | undefined) =>
     (s || '').replace(/\D/g, '');
 
-  // Client-side filter of prospects by name/email/phone. Instant — no debounce
-  // needed since it's just an array filter on data already in memory.
+  // Client-side filter of prospects by keyword. Instant — no debounce needed
+  // since it's just an array filter on data already in memory.
+  // Matches against: name, email, web/IG, facility name, facility type & role,
+  // sheet status + notes (Garrett's curated context), tags, and signal.
+  // Phone is matched separately (digits-only, 3+ digits required).
   const searchMatches = useMemo<PartnerProspect[]>(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
     const qDigits = q.replace(/\D/g, '');
     return prospects.filter((p) => {
-      const hay = `${p.fullName} ${p.firstName} ${p.lastName} ${p.email ?? ''}`.toLowerCase();
+      const hay = [
+        p.fullName, p.firstName, p.lastName,
+        p.email, p.website, p.instagram,
+        p.partnerFacility, p.partnerFacilityType, p.partnerFacilityRole,
+        p.sheetStatus, p.sheetNotes, p.sheetInstagram,
+        p.partnerSource, p.partnerLastSignal,
+        ...(p.tags ?? []),
+      ].filter(Boolean).join(' ').toLowerCase();
       if (hay.includes(q)) return true;
       if (qDigits.length >= 3 && normalizePhoneForMatch(p.phone).includes(qDigits)) return true;
       return false;
@@ -801,7 +824,7 @@ export default function PartnersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amari-text-muted pointer-events-none" />
         <input
           type="text"
-          placeholder="Search by name, email, or phone..."
+          placeholder="Search name, email, phone, gym, IG, notes..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="staff-input pl-10 pr-9"
