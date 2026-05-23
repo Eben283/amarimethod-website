@@ -127,20 +127,28 @@ function priorityScore(p: PartnerProspect): number {
   const stage = p.partnerStage || 'no-outreach';
   const dSince = daysSince(p.lastActivityAt);
   const dToFollowup = daysSince(p.partnerFollowupAt);
+  const hasPhone = !!p.phone;
+  const hasRealSignal = !!p.partnerLastSignal;
 
-  if (stage === 'dropped') return 0;
+  // Penalize hard if there's no phone — Garrett can't call them, so they drop
+  // to the bottom of the queue. They're still visible (so they can be moved
+  // forward when LinkedIn outreach is wired up), just not in his face.
+  const noPhonePenalty = hasPhone ? 0 : -50;
+
+  if (stage === 'dropped') return 0 + noPhonePenalty;
   if (stage === 'future-potential') {
-    if (dToFollowup !== null && dToFollowup >= -7) return 80;  // due soon (negative = future)
-    return 10;
+    if (dToFollowup !== null && dToFollowup >= -7) return 80 + noPhonePenalty;
+    return 10 + noPhonePenalty;
   }
-  if (stage === 'partner') return 20;
-  if (stage === 'session-booked') return 70;
+  if (stage === 'partner') return 20 + noPhonePenalty;
+  if (stage === 'session-booked') return 70 + noPhonePenalty;
   if (stage === 'working') {
-    if (dSince === null || dSince >= STALE_DAYS_THRESHOLD) return 100;  // stale
-    return 50;
+    // Stale only when there's been real outreach that went cold (not "never touched")
+    if (hasRealSignal && (dSince === null || dSince >= STALE_DAYS_THRESHOLD)) return 100 + noPhonePenalty;
+    return 50 + noPhonePenalty;
   }
-  if (stage === 'no-outreach') return 60;
-  return 30;
+  if (stage === 'no-outreach') return 60 + noPhonePenalty;
+  return 30 + noPhonePenalty;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,7 +157,10 @@ function priorityScore(p: PartnerProspect): number {
 function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () => void }) {
   const stage = (prospect.partnerStage || 'no-outreach') as PartnerStage;
   const dSince = daysSince(prospect.lastActivityAt);
-  const isStale = OUTREACH_STAGES.includes(stage) && (dSince === null || dSince >= STALE_DAYS_THRESHOLD) && stage === 'working';
+  // Stale only means "outreach started but went cold." A never-contacted contact
+  // is not stale — it's untouched. Require a real signal or activity to qualify.
+  const hasRealContact = !!prospect.partnerLastSignal || !!prospect.lastActivityAt;
+  const isStale = stage === 'working' && hasRealContact && (dSince !== null && dSince >= STALE_DAYS_THRESHOLD);
 
   return (
     <button
@@ -177,8 +188,12 @@ function CompactRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () 
           )}
         </div>
       </div>
-      {prospect.phone && (
-        <p className="text-xs text-amari-text-muted mt-0.5">{prospect.phone}</p>
+      {prospect.phone ? (
+        <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
+      ) : (
+        <p className="text-xs text-amari-text-muted/60 italic mt-0.5">
+          no phone {prospect.email ? '· email only' : prospect.instagram ? '· IG only' : '· no contact info'}
+        </p>
       )}
       <p className="text-[11px] text-amari-text-muted mt-0.5">
         Last contact: {relativeDays(prospect.lastActivityAt)}
