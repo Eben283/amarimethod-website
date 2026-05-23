@@ -1,16 +1,13 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, X, Phone, MessageSquare,
   Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2, Search,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
-  toggleOutreachVerified, searchContacts, ApiError,
+  toggleOutreachVerified, ApiError,
 } from '../lib/api';
-import type { ContactListItem } from '../types/staff';
-import ClientRow from '../components/ClientRow';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
   PartnerLastSignal, PartnerActivityEvent,
@@ -611,7 +608,6 @@ const SORT_LABEL: Record<SortMode, string> = {
 
 export default function PartnersPage() {
   const { logout } = useAuth();
-  const navigate = useNavigate();
 
   // New structure (2026-05-23 restructure per review feedback):
   //   topStage:           3 top-level tabs (No outreach / In progress / Closed)
@@ -629,12 +625,11 @@ export default function PartnersPage() {
   const [error, setError] = useState('');
   const [openContactId, setOpenContactId] = useState<string | null>(null);
 
-  // Search across all GHL contacts (lives in this tab now — partners + general contacts)
+  // Search WITHIN the loaded prospects (no API call — instant client-side filter).
+  // Overrides all tabs/filters: typing finds matching outreach contacts regardless of
+  // which tab they live in. Tap result → opens the prospect modal (stays in Outreach).
+  // For full-database client lookup, use the Clients tab.
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<ContactListItem[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchHasRun, setSearchHasRun] = useState(false);
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -652,35 +647,25 @@ export default function PartnersPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Debounced contact search
-  useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    const q = searchQuery.trim();
-    if (!q) {
-      setSearchResults([]);
-      setSearchHasRun(false);
-      return;
-    }
-    searchDebounceRef.current = setTimeout(async () => {
-      setSearchLoading(true);
-      try {
-        const results = await searchContacts(q);
-        setSearchResults(results);
-        setSearchHasRun(true);
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 401) { logout(); return; }
-        setSearchResults([]);
-        setSearchHasRun(true);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 400);
-    return () => {
-      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    };
-  }, [searchQuery, logout]);
-
   const isSearching = searchQuery.trim().length > 0;
+
+  // Phone digits-only match: typing "415" matches "+1 (415) 555-..." etc.
+  const normalizePhoneForMatch = (s: string | null | undefined) =>
+    (s || '').replace(/\D/g, '');
+
+  // Client-side filter of prospects by name/email/phone. Instant — no debounce
+  // needed since it's just an array filter on data already in memory.
+  const searchMatches = useMemo<PartnerProspect[]>(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    const qDigits = q.replace(/\D/g, '');
+    return prospects.filter((p) => {
+      const hay = `${p.fullName} ${p.firstName} ${p.lastName} ${p.email ?? ''}`.toLowerCase();
+      if (hay.includes(q)) return true;
+      if (qDigits.length >= 3 && normalizePhoneForMatch(p.phone).includes(qDigits)) return true;
+      return false;
+    });
+  }, [prospects, searchQuery]);
 
   const isReady = (p: PartnerProspect) => p.outreachVerified || p.inGarrettSheet;
   const prospectTopStage = (p: PartnerProspect): TopStage =>
@@ -835,30 +820,29 @@ export default function PartnersPage() {
       </div>
 
       {isSearching ? (
-        /* Search mode — show matching contacts across the whole GHL database */
-        searchLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 text-amari-charcoal animate-spin" />
-          </div>
-        ) : !searchHasRun ? (
-          <div className="text-center py-12">
-            <p className="text-amari-text-muted text-sm">Type to search contacts</p>
-          </div>
-        ) : searchResults.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-amari-text-muted text-sm">No contacts found</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {searchResults.map((contact) => (
-              <ClientRow
-                key={contact.id}
-                contact={contact}
-                onTap={() => navigate(`/client/${contact.id}`)}
-              />
-            ))}
-          </div>
-        )
+        /* Search mode — filter prospects (no API call). Overrides tabs + filters.
+         * Tap a result → opens the prospect modal (stays in Outreach).
+         * For full GHL contact lookup, use the Clients tab. */
+        <>
+          <p className="text-[11px] text-amari-text-muted mb-2 px-1">
+            Searching {prospects.length} outreach contacts. For all clients, use the Clients tab.
+          </p>
+          {searchMatches.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-amari-text-muted text-sm">No matching outreach contacts</p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {searchMatches.map((p) => (
+                <ReadyRow
+                  key={p.contactId}
+                  prospect={p}
+                  onTap={() => setOpenContactId(p.contactId)}
+                />
+              ))}
+            </div>
+          )}
+        </>
       ) : (
         <>
           {/* Top-level tabs: No outreach / In progress / Closed (the funnel itself) */}
