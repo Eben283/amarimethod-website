@@ -36,6 +36,18 @@ function displayName(s: string | null | undefined): string {
   return trimmed.replace(/\b([a-z])/g, (m) => m.toUpperCase());
 }
 
+// Extract a clean hostname from a URL for display ("www.f45training.com/marina"
+// → "f45training.com"). Falls back to the raw string if parsing fails.
+function hostnameOf(url: string | null | undefined): string {
+  if (!url) return '';
+  try {
+    const u = url.startsWith('http') ? url : `https://${url}`;
+    return new URL(u).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
 function friendlyDate(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -252,6 +264,20 @@ function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () =>
       {prospect.phone && (
         <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
       )}
+      {/* Business info — facility, role, has-PT, website (compact, muted) */}
+      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.website) && (
+        <p className="text-[11px] text-amari-text-muted mt-0.5">
+          {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
+          {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
+          {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole) && prospect.hasPtOnStaff === 'Yes' && ' · '}
+          {prospect.hasPtOnStaff === 'Yes' && (
+            <span className="text-emerald-700 font-medium">✓ PT on staff</span>
+          )}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes') && prospect.website && ' · '}
+          {prospect.website && <span>{hostnameOf(prospect.website)}</span>}
+        </p>
+      )}
       {/* Sheet Status and Notes — Garrett's real curated data, leads the card */}
       {prospect.sheetStatus && (
         <p className="text-xs text-amari-charcoal font-medium mt-1">
@@ -316,6 +342,20 @@ function ReviewRow({
       ) : (
         <p className="text-xs text-amari-text-muted italic mt-0.5">
           {prospect.email ? `email only: ${prospect.email}` : prospect.instagram ? `IG only: ${prospect.instagram}` : 'no contact info'}
+        </p>
+      )}
+      {/* Business info (helps decide whether to verify) */}
+      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.website) && (
+        <p className="text-[11px] text-amari-text-muted mt-0.5">
+          {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
+          {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
+          {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole) && prospect.hasPtOnStaff === 'Yes' && ' · '}
+          {prospect.hasPtOnStaff === 'Yes' && (
+            <span className="text-emerald-700 font-medium">✓ PT on staff</span>
+          )}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes') && prospect.website && ' · '}
+          {prospect.website && <span>{hostnameOf(prospect.website)}</span>}
         </p>
       )}
       {missing.length > 0 && (
@@ -450,7 +490,7 @@ function ProspectModal({
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">IG</dt><dd className="text-amari-charcoal">@{prospect.instagram.replace(/^@/, '')}</dd></div>
               )}
               {prospect.partnerFacility && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{prospect.partnerFacility}</dd></div>
+                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{displayName(prospect.partnerFacility)}</dd></div>
               )}
               {prospect.partnerFacilityType && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility type</dt><dd className="text-amari-charcoal">{prospect.partnerFacilityType}</dd></div>
