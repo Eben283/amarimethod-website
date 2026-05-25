@@ -63,6 +63,22 @@ function friendlyDate(iso: string | null | undefined): string {
   return `${month} ${day}${suffix} ${year}`;
 }
 
+// "When did I last touch this contact?" — combines two signals:
+//   1. lastActivityAt: last message in GHL /conversations (backfilled from outbound
+//      calls/SMS/emails — only updated when GHL itself logs the message).
+//   2. partnerLastSignalAt: when the user clicked an outcome button in the app
+//      (Voicemail / Talked / etc.) — not a GHL message, just our state record.
+// Garrett expects "Last activity" on the row to reflect the most recent of either.
+// Otherwise a contact he just dispositioned reads as "2 months ago" because that's
+// when the last conversation message was.
+function lastTouchAt(p: PartnerProspect): string | null {
+  const a = p.lastActivityAt ? new Date(p.lastActivityAt).getTime() : null;
+  const b = p.partnerLastSignalAt ? new Date(p.partnerLastSignalAt).getTime() : null;
+  if (a === null && b === null) return null;
+  const t = Math.max(a ?? 0, b ?? 0);
+  return new Date(t).toISOString();
+}
+
 function daysSince(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
@@ -196,7 +212,9 @@ const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string }[] = [
 
 function priorityScore(p: PartnerProspect): number {
   const stage = p.partnerStage || 'no-outreach';
-  const dSince = daysSince(p.lastActivityAt);
+  // Use lastTouchAt so contacts recently dispositioned via the app aren't
+  // mis-flagged as stale just because their /conversations history is older.
+  const dSince = daysSince(lastTouchAt(p));
   const dToFollowup = daysSince(p.partnerFollowupAt);
   const hasPhone = !!p.phone;
   const hasRealSignal = !!p.partnerLastSignal;
@@ -290,7 +308,7 @@ function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () =>
         </p>
       )}
       <p className="text-[11px] text-amari-text-muted mt-1">
-        Last activity: {relativeDays(prospect.lastActivityAt)}
+        Last touch: {relativeDays(lastTouchAt(prospect))}
         {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
         {prospect.touchCount > 0 && ` · ${prospect.touchCount} ${prospect.touchCount === 1 ? 'touch' : 'touches'}`}
       </p>
@@ -1124,8 +1142,12 @@ export default function PartnersPage() {
     }
     return [...v].sort((a, b) => {
       if (sortMode === 'oldest-contact' || sortMode === 'newest-contact') {
-        const da = a.lastActivityAt ? new Date(a.lastActivityAt).getTime() : null;
-        const db = b.lastActivityAt ? new Date(b.lastActivityAt).getTime() : null;
+        // Use lastTouchAt so a contact dispositioned via the app sorts as recent
+        // even if their /conversations-derived lastActivityAt is older.
+        const aIso = lastTouchAt(a);
+        const bIso = lastTouchAt(b);
+        const da = aIso ? new Date(aIso).getTime() : null;
+        const db = bIso ? new Date(bIso).getTime() : null;
         if (da === null && db === null) return 0;
         if (da === null) return 1;
         if (db === null) return -1;
