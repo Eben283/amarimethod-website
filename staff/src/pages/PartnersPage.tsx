@@ -163,7 +163,7 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'talked': 'Talked',
   'link-sent': 'Sent link',
   'booked': 'Booked',
-  'deferred': 'Circle back',
+  'deferred': 'Future potential',
   'not-interested': 'Not interested',
 };
 
@@ -177,7 +177,7 @@ const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string }[] = [
   { id: 'voicemail', label: 'Voicemail' },
   { id: 'talked', label: 'Talked' },
   { id: 'booked', label: 'Booked' },
-  { id: 'deferred', label: 'Circle back' },
+  { id: 'deferred', label: 'Future potential' },
   { id: 'not-interested', label: 'Not interested' },
 ];
 
@@ -892,49 +892,54 @@ function FocusView({
           <div className="flex-1 overflow-y-auto px-4 py-6">
             <div className="max-w-2xl mx-auto">
               {prospect && <FocusContactCard prospect={prospect} />}
-              {pendingDeferred && (
-                <div className="bg-amari-light-sand rounded p-3 mt-6">
-                  <label className="text-xs text-amari-charcoal block mb-1">When should we revisit?</label>
-                  <input
-                    type="date"
-                    value={followupDate}
-                    onChange={(e) => setFollowupDate(e.target.value)}
-                    className="text-xs border border-amari-border rounded px-2 py-1 mr-2"
-                  />
-                  <button
-                    onClick={() => handleOutcome('deferred')}
-                    disabled={!followupDate || outcomeSubmitting}
-                    className="text-xs px-2 py-1 rounded bg-amari-charcoal text-white disabled:opacity-50"
-                  >
-                    Confirm
-                  </button>
-                </div>
-              )}
-              <input
-                type="text"
-                placeholder="Note (optional)"
-                value={outcomeNote}
-                onChange={(e) => setOutcomeNote(e.target.value)}
-                className="w-full text-sm border border-amari-border rounded px-3 py-2 mt-6"
-              />
-              {outcomeError && (
-                <p className="text-xs text-red-700 mt-2">{outcomeError}</p>
-              )}
             </div>
           </div>
 
-          {/* Sticky outcome bar — auto-advances on tap */}
-          <div className="border-t border-amari-border bg-white px-3 py-3 flex gap-1.5 overflow-x-auto safe-area-bottom">
-            {OUTCOME_BUTTONS.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => handleOutcome(b.id)}
-                disabled={outcomeSubmitting}
-                className="shrink-0 px-3.5 py-2.5 rounded text-sm font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
-              >
-                {b.label}
-              </button>
-            ))}
+          {/* Outcome capture — note + buttons grouped together so the row doesn't read as orphaned */}
+          <div className="border-t border-amari-border bg-white px-3 py-3 safe-area-bottom max-w-2xl mx-auto w-full">
+            <p className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5 px-0.5">
+              What happened on this call?
+            </p>
+            <input
+              type="text"
+              placeholder="Note (optional)"
+              value={outcomeNote}
+              onChange={(e) => setOutcomeNote(e.target.value)}
+              className="w-full text-sm border border-amari-border rounded px-3 py-2 mb-2"
+            />
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {OUTCOME_BUTTONS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => handleOutcome(b.id)}
+                  disabled={outcomeSubmitting}
+                  className="shrink-0 px-3.5 py-2.5 rounded text-sm font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+            {pendingDeferred && (
+              <div className="bg-amari-light-sand rounded p-3 mt-2">
+                <label className="text-xs text-amari-charcoal block mb-1">When should we revisit?</label>
+                <input
+                  type="date"
+                  value={followupDate}
+                  onChange={(e) => setFollowupDate(e.target.value)}
+                  className="text-xs border border-amari-border rounded px-2 py-1 mr-2"
+                />
+                <button
+                  onClick={() => handleOutcome('deferred')}
+                  disabled={!followupDate || outcomeSubmitting}
+                  className="text-xs px-2 py-1 rounded bg-amari-charcoal text-white disabled:opacity-50"
+                >
+                  Confirm
+                </button>
+              </div>
+            )}
+            {outcomeError && (
+              <p className="text-xs text-red-700 mt-2">{outcomeError}</p>
+            )}
           </div>
         </>
       )}
