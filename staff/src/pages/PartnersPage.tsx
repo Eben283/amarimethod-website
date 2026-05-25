@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
-  toggleOutreachVerified, ApiError,
+  toggleOutreachVerified, triggerActivityRefresh, ApiError,
 } from '../lib/api';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
@@ -998,6 +998,12 @@ export default function PartnersPage() {
   const [error, setError] = useState('');
   const [openContactId, setOpenContactId] = useState<string | null>(null);
 
+  // Activity cache freshness — surfaces silent failure of the nightly refresh Worker
+  const [activityRefreshAt, setActivityRefreshAt] = useState<string | null>(null);
+  const [activityRefreshStatus, setActivityRefreshStatus] = useState<string | null>(null);
+  const [refreshTriggered, setRefreshTriggered] = useState(false);
+  const [refreshError, setRefreshError] = useState('');
+
   // Focus mode — single-contact queue. Snapshot of visibleProspects at start.
   const [focusQueue, setFocusQueue] = useState<PartnerProspect[] | null>(null);
 
@@ -1016,6 +1022,8 @@ export default function PartnersPage() {
     try {
       const data = await getPartnerProspects();
       setProspects(data.prospects);
+      setActivityRefreshAt(data.activityRefreshAt ?? null);
+      setActivityRefreshStatus(data.activityRefreshStatus ?? null);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load partners');
@@ -1023,6 +1031,18 @@ export default function PartnersPage() {
       setIsLoading(false);
     }
   }, [logout]);
+
+  const handleTriggerRefresh = async () => {
+    setRefreshError('');
+    setRefreshTriggered(false);
+    try {
+      await triggerActivityRefresh();
+      setRefreshTriggered(true);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) { logout(); return; }
+      setRefreshError(err instanceof Error ? err.message : 'Failed to trigger refresh');
+    }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -1247,6 +1267,43 @@ export default function PartnersPage() {
           </button>
         </div>
       </div>
+
+      {/* Activity-cache freshness — surfaces silent failure of the nightly refresh.
+          Color shifts amber/red as the cache ages. Always-on Refresh button. */}
+      {(() => {
+        const ageDays = activityRefreshAt
+          ? Math.floor((Date.now() - new Date(activityRefreshAt).getTime()) / 86_400_000)
+          : null;
+        const isError = activityRefreshStatus === 'error';
+        const isStale = ageDays !== null && ageDays > 7;
+        const isUnknown = ageDays === null;
+        const tone = isError || isStale ? 'text-red-700 bg-red-50 border-red-200'
+          : isUnknown ? 'text-amari-text-muted bg-amari-light-sand border-amari-border'
+          : ageDays >= 2 ? 'text-amber-800 bg-amber-50 border-amber-200'
+          : 'text-amari-text-muted bg-amari-bone-white border-amari-border';
+        return (
+          <div className={`flex items-center justify-between text-[11px] px-2.5 py-1.5 mb-2 rounded border ${tone}`}>
+            <span>
+              {isError ? '⚠ Activity refresh failed' :
+               isUnknown ? 'Activity data freshness unknown' :
+               ageDays === 0 ? 'Activity data: refreshed today' :
+               ageDays === 1 ? 'Activity data: refreshed 1 day ago' :
+               `Activity data: refreshed ${ageDays} days ago${isStale ? ' — stale' : ''}`}
+              {refreshTriggered && <span className="ml-2 text-emerald-700">✓ Triggered — reload in 10-15 min</span>}
+            </span>
+            <button
+              onClick={handleTriggerRefresh}
+              disabled={refreshTriggered}
+              className="text-amari-charcoal hover:underline disabled:opacity-50 disabled:no-underline"
+            >
+              {refreshTriggered ? 'Triggered' : 'Refresh now →'}
+            </button>
+          </div>
+        );
+      })()}
+      {refreshError && (
+        <p className="text-[11px] text-red-700 mb-2 px-1">{refreshError}</p>
+      )}
 
       {/* Search bar — searches all GHL contacts (partners + general clients) */}
       <div className="relative mb-3">

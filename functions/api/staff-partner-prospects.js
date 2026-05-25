@@ -249,6 +249,20 @@ export async function onRequestGet(context) {
       );
     }
 
+    // Read the partner-activity-refresh Worker's lastRun summary from KV.
+    // Used to surface a "cache age" indicator in the staff app so a silently-failed
+    // refresh job becomes visible within days rather than weeks.
+    let activityRefreshLastRun = null;
+    try {
+      if (context.env.PORTAL_KV) {
+        const raw = await context.env.PORTAL_KV.get("ops:activity-refresh:lastRun");
+        if (raw) activityRefreshLastRun = JSON.parse(raw);
+      }
+    } catch (err) {
+      // Non-fatal — if KV read fails the UI just shows "unknown freshness"
+      console.error("[staff-partner-prospects] KV read failed:", err);
+    }
+
     // Fetch contacts for every partner tag in parallel, then dedupe by id.
     const tagResults = await Promise.all(
       ALL_PARTNER_TAGS.map((tag) => fetchByTag(ghlToken, tag)),
@@ -284,6 +298,11 @@ export async function onRequestGet(context) {
       JSON.stringify({
         generatedAt: new Date().toISOString(),
         sheetCachedAt: sheetCache.generatedAt,
+        // Last time the partner-activity-refresh Worker ran successfully
+        // (writes partner_last_real_activity from /conversations). null if KV is
+        // empty (worker never run) or unreadable.
+        activityRefreshAt: activityRefreshLastRun?.finishedAt || null,
+        activityRefreshStatus: activityRefreshLastRun?.status || null,
         total: prospects.length,
         verifiedCount,
         unverifiedCount,

@@ -1,0 +1,6 @@
+{
+  "name": "partner-activity-refresh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker cron that refreshes the partner_last_real_activity custom field for all partner-tagged GHL contacts. Writes the last-run timestamp to KV so the staff app can show a freshness indicator."
+}

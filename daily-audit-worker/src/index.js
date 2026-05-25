@@ -91,6 +91,12 @@ async function runAudit(env) {
   const commIssues = await auditCommunications(ctx);
   const mismatchIssues = await auditStateMismatches(ctx);
 
+  // Watchdog: flag if the partner-activity-refresh sister Worker hasn't run
+  // recently. Silent-failure defense — surfaces in the /day briefing within
+  // ~24h of the refresh job dying so we notice before the Outreach data goes
+  // weeks stale.
+  const refreshWatchdogIssues = await checkPartnerActivityRefresh(env);
+
   const allIssues = [
     ...apptIssues,
     ...purchaseResult.issues,
@@ -98,6 +104,7 @@ async function runAudit(env) {
     ...seriesDropIssues,
     ...commIssues,
     ...mismatchIssues,
+    ...refreshWatchdogIssues,
   ];
 
   const result = {
@@ -130,4 +137,81 @@ async function runAudit(env) {
   );
 
   return result;
+}
+
+// Read the partner-activity-refresh Worker's lastRun summary from KV. Flag any of:
+//   - Never run (KV key absent)
+//   - Last run >36h ago (cron skipped, schedule may be broken)
+//   - Last run reported status="error" (worker errored)
+//   - Last run failed >5 contacts (transient GHL issues — info, not warning)
+async function checkPartnerActivityRefresh(env) {
+  const issues = [];
+  const KEY = "ops:activity-refresh:lastRun";
+  let raw;
+  try {
+    raw = await env.PORTAL_KV.get(KEY);
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "partner-activity-refresh-kv-unreadable",
+      message: `partner-activity-refresh KV read failed: ${err.message}`,
+    });
+    return issues;
+  }
+
+  if (!raw) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "partner-activity-refresh-never-ran",
+      message: "partner-activity-refresh Worker has never written a lastRun summary. Either it was deployed without running, or the KV namespace binding is wrong.",
+    });
+    return issues;
+  }
+
+  let summary;
+  try { summary = JSON.parse(raw); }
+  catch {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "partner-activity-refresh-corrupt",
+      message: `partner-activity-refresh lastRun KV value is not valid JSON.`,
+    });
+    return issues;
+  }
+
+  const finishedAt = summary.finishedAt ? new Date(summary.finishedAt).getTime() : null;
+  const ageH = finishedAt ? (Date.now() - finishedAt) / 3_600_000 : null;
+
+  if (ageH === null || ageH > 36) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "partner-activity-refresh-stale",
+      message: `partner-activity-refresh last ran ${ageH ? Math.round(ageH) + 'h ago' : 'unknown'}. Cron may be broken. Investigate at Cloudflare Dashboard → Workers → partner-activity-refresh.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  if (summary.status === "error") {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "partner-activity-refresh-errored",
+      message: `partner-activity-refresh last run errored: ${summary.error || 'unknown error'}. ${summary.processed || 0} contacts processed, ${summary.written || 0} written, ${summary.failed || 0} failed.`,
+      lastRun: summary.finishedAt,
+    });
+  } else if (summary.failed > 5) {
+    issues.push({
+      severity: "info",
+      area: "infra",
+      kind: "partner-activity-refresh-partial-failures",
+      message: `partner-activity-refresh had ${summary.failed} per-contact failures on its last run. Check the Worker logs.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  return issues;
 }

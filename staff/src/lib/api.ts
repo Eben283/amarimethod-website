@@ -251,4 +251,11 @@ export async function toggleOutreachVerified(
   });
 }
 
+// Triggers the partner-activity-refresh Worker on-demand.
+// Returns 202 immediately; the worker runs ~10-15 min in the background
+// and writes its result to KV (surfaced as activityRefreshAt next reload).
+export async function triggerActivityRefresh(): Promise<{ triggered: boolean; message: string }> {
+  return fetchApi('/staff-refresh-activity', { method: 'POST' });
+}
+
 export { ApiError };
