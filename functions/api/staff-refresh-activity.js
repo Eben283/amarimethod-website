@@ -8,7 +8,9 @@
 
 import { verifySessionToken } from "../lib/auth.js";
 
-const WORKER_URL = "https://partner-activity-refresh.amari-method.workers.dev/run";
+// Worker subdomain confirmed after first deploy 2026-05-25 — Eben's Cloudflare
+// account uses `eben-fa2` as the workers.dev subdomain, not `amari-method`.
+const WORKER_URL = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",

@@ -1,8 +1,15 @@
 // Partner Activity Refresh Worker
-// Runs nightly via cron + can be triggered on-demand via /run.
-// For every partner-tagged GHL contact: computes the most-recent message date
-// from /conversations and writes it to the partner_last_real_activity custom field.
-// Records the last-run summary at KV key `ops:activity-refresh:lastRun`.
+// Runs in chunks via cron + can be triggered on-demand via /run.
+//
+// SUBREQUEST LIMIT: CF Workers cap subrequests per invocation (50 free, 1000 paid).
+// With ~412 partner contacts × ~3-5 subrequests each, we can't process the full
+// set in one invocation. So this Worker processes a CHUNK each run, tracking
+// progress in KV. Cron fires multiple times per day to chip through the queue.
+//
+// State in KV:
+//   ops:activity-refresh:lastRun        — last run summary (for UI freshness)
+//   ops:activity-refresh:queue          — array of contactIds still to process
+//   ops:activity-refresh:queueGeneratedAt — when the queue was rebuilt
 
 import {
   fetchAllPartnerContacts,
@@ -11,8 +18,21 @@ import {
 } from "./ghl.js";
 
 const KV_LAST_RUN_KEY = "ops:activity-refresh:lastRun";
+const KV_QUEUE_KEY = "ops:activity-refresh:queue";
+const KV_QUEUE_GENERATED_KEY = "ops:activity-refresh:queueGeneratedAt";
+
 const SLEEP_MS = 100; // ~10 req/sec, comfortably under GHL's 100/10s limit
-const MAX_CONSECUTIVE_FAILURES = 10;
+const MAX_CONSECUTIVE_FAILURES = 5;
+
+// Subrequests per contact: 1 conversations search + ~1-2 messages fetch + 1 PUT = ~3-4.
+// Plus 1 KV read/write each. Plus fetchAllPartnerContacts (~7-10 subrequests for tag pages)
+// is amortized when the queue is fresh. Budget ~10 contacts per run on free, ~250 on paid.
+// 25 is safe across both — leaves headroom for the queue rebuild on first-of-day runs.
+const CHUNK_SIZE = 25;
+
+// Queue is considered stale (rebuild from GHL) when older than this. Means a full
+// refresh of all 412 contacts happens once per day, then idle until next day.
+const QUEUE_TTL_MS = 22 * 60 * 60 * 1000; // 22h
 
 export default {
   async scheduled(event, env, ctx) {
@@ -48,6 +68,26 @@ function jsonResponse(data, status = 200) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Get the contact-id queue, rebuilding from GHL if stale or absent.
+async function getOrBuildQueue(env) {
+  const generatedAt = await env.PORTAL_KV.get(KV_QUEUE_GENERATED_KEY);
+  const queue = await env.PORTAL_KV.get(KV_QUEUE_KEY, "json");
+  const age = generatedAt ? Date.now() - Number(generatedAt) : Infinity;
+
+  if (queue && Array.isArray(queue) && queue.length > 0 && age < QUEUE_TTL_MS) {
+    return { queue, rebuilt: false };
+  }
+
+  // Rebuild
+  console.log(`[partner-activity-refresh] rebuilding queue (was ${queue?.length || 0} items, age ${Math.round(age/60000)}m)`);
+  const contactsById = await fetchAllPartnerContacts(env);
+  const newQueue = Array.from(contactsById.keys());
+  await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(newQueue));
+  await env.PORTAL_KV.put(KV_QUEUE_GENERATED_KEY, String(Date.now()));
+  console.log(`[partner-activity-refresh] queue rebuilt with ${newQueue.length} contacts`);
+  return { queue: newQueue, rebuilt: true };
+}
+
 async function runRefresh(env, trigger) {
   const startedAt = new Date();
   const startMs = startedAt.getTime();
@@ -59,13 +99,17 @@ async function runRefresh(env, trigger) {
   let failed = 0;
   const failures = [];
   let consecutiveFailures = 0;
+  let queueRemaining = 0;
+  let queueTotal = 0;
 
   try {
-    const contactsById = await fetchAllPartnerContacts(env);
-    const total = contactsById.size;
-    console.log(`[partner-activity-refresh] found ${total} partner contacts`);
+    const { queue, rebuilt } = await getOrBuildQueue(env);
+    queueTotal = queue.length;
+    const chunk = queue.slice(0, CHUNK_SIZE);
+    const remainingAfter = queue.slice(chunk.length);
+    console.log(`[partner-activity-refresh] queue=${queue.length}, processing chunk of ${chunk.length}`);
 
-    for (const [id, contact] of contactsById) {
+    for (const id of chunk) {
       processed += 1;
       try {
         const date = await findMostRecentMessageDate(env, id);
@@ -81,19 +125,22 @@ async function runRefresh(env, trigger) {
         failed += 1;
         consecutiveFailures += 1;
         if (failures.length < 20) {
-          failures.push({
-            id,
-            name: contact.contactName || contact.firstName || "(no name)",
-            error: String(e.message || e).slice(0, 200),
-          });
+          failures.push({ id, error: String(e.message || e).slice(0, 200) });
         }
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-          throw new Error(`Aborted after ${consecutiveFailures} consecutive failures`);
+          // Stop early but keep the unprocessed tail in the queue
+          console.error(`[partner-activity-refresh] ${consecutiveFailures} consecutive failures — stopping chunk`);
+          break;
         }
       }
-      // Cron-safe pacing
       await sleep(SLEEP_MS);
     }
+
+    // Persist remaining queue (everything we didn't process this run)
+    const unprocessed = chunk.slice(processed);
+    const newQueue = [...unprocessed, ...remainingAfter];
+    await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(newQueue));
+    queueRemaining = newQueue.length;
 
     const finishedAt = new Date();
     const summary = {
@@ -102,16 +149,18 @@ async function runRefresh(env, trigger) {
       finishedAt: finishedAt.toISOString(),
       durationMs: finishedAt.getTime() - startMs,
       status: "ok",
-      total,
+      total: queueTotal,
       processed,
       written,
       skippedNoMessages,
       failed,
-      failures, // first 20
+      queueRemaining,
+      queueRebuilt: rebuilt,
+      failures,
     };
 
     await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));
-    console.log(`[partner-activity-refresh] done: written=${written} failed=${failed} duration=${summary.durationMs}ms`);
+    console.log(`[partner-activity-refresh] chunk done: written=${written} failed=${failed} remaining=${queueRemaining} duration=${summary.durationMs}ms`);
     return summary;
   } catch (e) {
     const finishedAt = new Date();
@@ -126,9 +175,9 @@ async function runRefresh(env, trigger) {
       written,
       skippedNoMessages,
       failed,
+      queueRemaining,
       failures,
     };
-    // Still write the error summary so the watchdog + UI can see it
     try {
       await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));
     } catch (kvErr) {

@@ -2,10 +2,12 @@ name = "partner-activity-refresh"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
-# 4:30 AM PDT = 11:30 UTC | 3:30 AM PST = 11:30 UTC
-# Runs ~30 min after daily-audit so they don't race on the GHL token refresh.
+# Worker processes contacts in chunks of ~25 due to CF subrequest limit.
+# With ~412 partner contacts that's ~17 chunks needed. Fire every 5 min in the
+# 4-5 AM PDT window (~12 invocations) — completes most of the queue per night,
+# stragglers picked up the next morning. Idle once queue is empty.
 [triggers]
-crons = ["30 11 * * *"]
+crons = ["*/5 11-12 * * *"]
 
 # Same KV namespace as Pages + daily-audit + ghl-token-refresh
 [[kv_namespaces]]
