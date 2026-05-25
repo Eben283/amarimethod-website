@@ -283,16 +283,19 @@ function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () =>
         <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
       )}
       {/* Business info — facility, role, has-PT, website (compact, muted) */}
-      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.website) && (
+      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No' || prospect.website) && (
         <p className="text-[11px] text-amari-text-muted mt-0.5">
           {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
           {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
           {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole) && prospect.hasPtOnStaff === 'Yes' && ' · '}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole) && (prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && ' · '}
           {prospect.hasPtOnStaff === 'Yes' && (
-            <span className="text-emerald-700 font-medium">✓ PT on staff</span>
+            <span className="text-amber-700 font-medium" title="Likely has in-house body worker already — harder partnership">⚠ PT on staff</span>
           )}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes') && prospect.website && ' · '}
+          {prospect.hasPtOnStaff === 'No' && (
+            <span className="text-emerald-700 font-medium" title="No in-house body worker — open lane for referrals">✓ No PT on staff</span>
+          )}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && prospect.website && ' · '}
           {prospect.website && <span>{hostnameOf(prospect.website)}</span>}
         </p>
       )}
@@ -363,16 +366,19 @@ function ReviewRow({
         </p>
       )}
       {/* Business info (helps decide whether to verify) */}
-      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.website) && (
+      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No' || prospect.website) && (
         <p className="text-[11px] text-amari-text-muted mt-0.5">
           {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
           {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
           {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole) && prospect.hasPtOnStaff === 'Yes' && ' · '}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole) && (prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && ' · '}
           {prospect.hasPtOnStaff === 'Yes' && (
-            <span className="text-emerald-700 font-medium">✓ PT on staff</span>
+            <span className="text-amber-700 font-medium" title="Likely has in-house body worker already — harder partnership">⚠ PT on staff</span>
           )}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes') && prospect.website && ' · '}
+          {prospect.hasPtOnStaff === 'No' && (
+            <span className="text-emerald-700 font-medium" title="No in-house body worker — open lane for referrals">✓ No PT on staff</span>
+          )}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && prospect.website && ' · '}
           {prospect.website && <span>{hostnameOf(prospect.website)}</span>}
         </p>
       )}
@@ -740,16 +746,19 @@ function FocusContactCard({ prospect }: { prospect: PartnerProspect }) {
       )}
 
       {/* Business info — facility, role, has-PT, website */}
-      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.website) && (
+      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No' || prospect.website) && (
         <p className="text-sm text-amari-charcoal">
           {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
           {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
           {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole) && prospect.hasPtOnStaff === 'Yes' && ' · '}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole) && (prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && ' · '}
           {prospect.hasPtOnStaff === 'Yes' && (
-            <span className="text-emerald-700 font-medium">✓ PT on staff</span>
+            <span className="text-amber-700 font-medium" title="Likely has in-house body worker already — harder partnership">⚠ PT on staff</span>
           )}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes') && prospect.website && ' · '}
+          {prospect.hasPtOnStaff === 'No' && (
+            <span className="text-emerald-700 font-medium" title="No in-house body worker — open lane for referrals">✓ No PT on staff</span>
+          )}
+          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && prospect.website && ' · '}
           {prospect.website && (
             <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
                target="_blank" rel="noopener noreferrer"
