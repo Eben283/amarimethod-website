@@ -309,7 +309,10 @@ export interface PartnerProspect {
   phone: string | null;
   email: string | null;
   website: string | null;
-  instagram: string | null;
+  /** Raw social profile string from Garrett's sheet — may be an IG handle
+   *  (@handle), an Instagram URL, a Facebook page URL, or escaped text.
+   *  Format with formatSocialProfile() before rendering. */
+  socialProfile: string | null;
   /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
   lastActivityAt: string | null;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */
@@ -332,7 +335,6 @@ export interface PartnerProspect {
   // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
   sheetStatus: string | null;
   sheetNotes: string | null;
-  sheetInstagram: string | null;
   inGarrettSheet: boolean;
 }
 

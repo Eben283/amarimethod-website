@@ -140,7 +140,10 @@ function toProspect(contact) {
     phone: contact.phone || null,
     email: contact.email || null,
     website: contact.website || null,
-    instagram: null,  // GHL has no native IG field; left blank until enrichment adds it
+    // Social profile — Garrett's sheet has it under the "instagram" column but
+    // the actual values are a mix of IG handles, IG URLs, Facebook URLs, and
+    // sometimes business-name text. Frontend formats with formatSocialProfile().
+    socialProfile: sheetRow?.instagram || null,
     // Prefer the cached real activity date (populated by backfill script from
     // /conversations messages). Falls back to GHL's contact.lastActivity (usually
     // null), and finally to null → "not recorded" in the UI.
@@ -171,7 +174,6 @@ function toProspect(contact) {
     // Sheet data joined by phone/email match — primary source for verified contacts.
     sheetStatus:          sheetRow?.status || null,
     sheetNotes:           sheetRow?.notes || null,
-    sheetInstagram:       sheetRow?.instagram || null,
     inGarrettSheet:       !!sheetRow,
   };
 }

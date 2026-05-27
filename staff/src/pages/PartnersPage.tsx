@@ -48,6 +48,49 @@ function hostnameOf(url: string | null | undefined): string {
   }
 }
 
+// Format the social profile string from Garrett's sheet (originally an
+// "Instagram" column but mixed: IG handles, IG URLs, FB URLs, escaped text).
+// Returns { platform, label, url } or null if value is empty/garbage.
+function formatSocialProfile(raw: string | null | undefined): {
+  platform: 'Instagram' | 'Facebook' | 'TikTok' | 'LinkedIn' | 'Web';
+  label: string;
+  url: string;
+} | null {
+  if (!raw) return null;
+  // Markdown export from the sheet escapes underscores and dots.
+  const cleaned = raw.replace(/\\([_.])/g, '$1').trim();
+  if (!cleaned) return null;
+
+  // Full URL — detect platform from hostname.
+  if (/^https?:\/\//i.test(cleaned)) {
+    try {
+      const u = new URL(cleaned);
+      const host = u.hostname.replace(/^www\./, '');
+      const path = u.pathname.replace(/^\/+|\/+$/g, '');
+      let platform: 'Instagram' | 'Facebook' | 'TikTok' | 'LinkedIn' | 'Web' = 'Web';
+      if (host.includes('instagram.')) platform = 'Instagram';
+      else if (host.includes('facebook.') || host.includes('fb.com')) platform = 'Facebook';
+      else if (host.includes('tiktok.')) platform = 'TikTok';
+      else if (host.includes('linkedin.')) platform = 'LinkedIn';
+      return { platform, label: path ? `@${path.split('/')[0]}` : host, url: cleaned };
+    } catch {
+      return { platform: 'Web', label: cleaned, url: cleaned };
+    }
+  }
+
+  // Bare value (no protocol). Strip @ if present.
+  const handle = cleaned.replace(/^@/, '');
+
+  // Reject obvious non-handles: business-name strings with spaces, or anything
+  // too long to be a handle. Show as plain text, no link.
+  if (/\s/.test(handle) || handle.length > 40) {
+    return { platform: 'Web', label: cleaned, url: '' };
+  }
+
+  // Default to Instagram (the source column was the IG column in the sheet).
+  return { platform: 'Instagram', label: `@${handle}`, url: `https://instagram.com/${handle}` };
+}
+
 function friendlyDate(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -377,7 +420,7 @@ function ReviewRow({
         <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
       ) : (
         <p className="text-xs text-amari-text-muted italic mt-0.5">
-          {prospect.email ? `email only: ${prospect.email}` : prospect.instagram ? `IG only: ${prospect.instagram}` : 'no contact info'}
+          {prospect.email ? `email only: ${prospect.email}` : prospect.socialProfile ? `social only: ${formatSocialProfile(prospect.socialProfile)?.label || prospect.socialProfile}` : 'no contact info'}
         </p>
       )}
       {/* Business info (helps decide whether to verify) */}
@@ -555,9 +598,29 @@ function ProspectModal({
                   </dd>
                 </div>
               )}
-              {prospect.instagram && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">IG</dt><dd className="text-amari-charcoal">@{prospect.instagram.replace(/^@/, '')}</dd></div>
-              )}
+              {(() => {
+                const s = formatSocialProfile(prospect.socialProfile);
+                if (!s) return null;
+                return (
+                  <div className="flex gap-2">
+                    <dt className="text-amari-text-muted w-24 shrink-0">{s.platform}</dt>
+                    <dd className="text-amari-charcoal break-all">
+                      {s.url ? (
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
+                        >
+                          {s.label} <ExternalLink className="w-3 h-3" />
+                        </a>
+                      ) : (
+                        s.label
+                      )}
+                    </dd>
+                  </div>
+                );
+              })()}
               {prospect.partnerFacility && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{displayName(prospect.partnerFacility)}</dd></div>
               )}
@@ -966,9 +1029,9 @@ export default function PartnersPage() {
     return prospects.filter((p) => {
       const hay = [
         p.fullName, p.firstName, p.lastName,
-        p.email, p.website, p.instagram,
+        p.email, p.website, p.socialProfile,
         p.partnerFacility, p.partnerFacilityType, p.partnerFacilityRole,
-        p.sheetStatus, p.sheetNotes, p.sheetInstagram,
+        p.sheetStatus, p.sheetNotes,
         p.partnerSource, p.partnerLastSignal,
         ...(p.tags ?? []),
       ].filter(Boolean).join(' ').toLowerCase();
