@@ -313,6 +313,8 @@ export interface PartnerProspect {
    *  (@handle), an Instagram URL, a Facebook page URL, or escaped text.
    *  Format with formatSocialProfile() before rendering. */
   socialProfile: string | null;
+  /** LinkedIn profile URL — populated by enrichment (notes harvest + Sales Nav). */
+  linkedinUrl: string | null;
   /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
   lastActivityAt: string | null;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */

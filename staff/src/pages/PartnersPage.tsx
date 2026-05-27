@@ -621,6 +621,31 @@ function ProspectModal({
                   </div>
                 );
               })()}
+              {prospect.linkedinUrl && (() => {
+                // Pull the handle out of the URL for a clean label.
+                let label = prospect.linkedinUrl;
+                try {
+                  const u = new URL(prospect.linkedinUrl);
+                  const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/');
+                  // /in/<handle> or /company/<handle>
+                  if (seg.length >= 2) label = `@${seg[1]}`;
+                } catch { /* leave label as raw URL */ }
+                return (
+                  <div className="flex gap-2">
+                    <dt className="text-amari-text-muted w-24 shrink-0">LinkedIn</dt>
+                    <dd className="text-amari-charcoal break-all">
+                      <a
+                        href={prospect.linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
+                      >
+                        {label} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </dd>
+                  </div>
+                );
+              })()}
               {prospect.partnerFacility && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{displayName(prospect.partnerFacility)}</dd></div>
               )}
@@ -1029,7 +1054,7 @@ export default function PartnersPage() {
     return prospects.filter((p) => {
       const hay = [
         p.fullName, p.firstName, p.lastName,
-        p.email, p.website, p.socialProfile,
+        p.email, p.website, p.socialProfile, p.linkedinUrl,
         p.partnerFacility, p.partnerFacilityType, p.partnerFacilityRole,
         p.sheetStatus, p.sheetNotes,
         p.partnerSource, p.partnerLastSignal,

@@ -40,6 +40,10 @@ const FIELD_IDS = {
   // Backfilled from /conversations and incremented on every outcome recorded
   // via /api/staff-partner-outcome. Used in the row card + sort.
   partner_touch_count:        "qKtPT2XZP61emgUDK7fd",
+  // LinkedIn profile URL — populated by enrichment scripts (one-off harvest
+  // 2026-05-27 + future Sales Nav MCP batches). Displayed as a clickable
+  // LinkedIn row in the prospect modal.
+  partner_linkedin_url:       "Zea1f8Z43bfkXvhYmcQj",
   // Existing (facility context)
   trainer_facility:        "eYBj61zgMnIFMIesoDR5",
   facility_type:           "gIQEMkO1gV85SAYcYlNx",
@@ -144,6 +148,9 @@ function toProspect(contact) {
     // the actual values are a mix of IG handles, IG URLs, Facebook URLs, and
     // sometimes business-name text. Frontend formats with formatSocialProfile().
     socialProfile: sheetRow?.instagram || null,
+    // LinkedIn URL — separate field because it's discovered via enrichment
+    // (notes scan + Sales Nav MCP) rather than the sheet.
+    linkedinUrl: getField(contact, FIELD_IDS.partner_linkedin_url),
     // Prefer the cached real activity date (populated by backfill script from
     // /conversations messages). Falls back to GHL's contact.lastActivity (usually
     // null), and finally to null → "not recorded" in the UI.
