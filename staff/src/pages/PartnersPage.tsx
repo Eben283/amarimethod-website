@@ -181,20 +181,35 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'booked': 'Booked',
   'deferred': 'Future potential',
   'not-interested': 'Not interested',
+  'linkedin-msg': 'LinkedIn DM',
+  'linkedin-req': 'LinkedIn connect',
+  'instagram-msg': 'Instagram DM',
+  'in-person': 'In-person',
 };
 
+// Outcome buttons — capture what GHL can't infer from raw call/SMS logs.
+// "Voicemail" stays even though GHL records the call: GHL doesn't know
+// whether Garrett left a message vs hung up.
+//
 // Note: 'link-sent' intentionally NOT a manual button — sending the partner
 // session link happens via GHL/staff-app send-link button, which already
-// records an outbound message. The enum value still exists (some migrated
-// contacts have it set from sheet status) but Garrett doesn't pick it
-// manually. Future: auto-detect link-sent by scanning outbound messages
-// for the partner-booking-link URL.
+// records an outbound message.
 const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string; tone: string }[] = [
   { id: 'voicemail',      label: 'Voicemail',        tone: 'bg-amber-100 text-amber-900 border-amber-400 hover:bg-amber-200' },
   { id: 'talked',         label: 'Talked',           tone: 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200' },
   { id: 'booked',         label: 'Booked',           tone: 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700' },
   { id: 'deferred',       label: 'Future potential', tone: 'bg-sky-100 text-sky-900 border-sky-400 hover:bg-sky-200' },
   { id: 'not-interested', label: 'Not interested',   tone: 'bg-slate-200 text-slate-700 border-slate-400 hover:bg-slate-300' },
+];
+
+// Touch buttons — off-platform actions GHL doesn't see at all. Bump touch
+// count + write a note prefixed "Touch:" so the GHL timeline records when
+// the outreach happened. Never change partner_stage on their own.
+const TOUCH_BUTTONS: { id: PartnerLastSignal; label: string; tone: string }[] = [
+  { id: 'linkedin-msg',  label: 'LinkedIn DM',      tone: 'bg-blue-100 text-blue-900 border-blue-400 hover:bg-blue-200' },
+  { id: 'linkedin-req',  label: 'LinkedIn connect', tone: 'bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100' },
+  { id: 'instagram-msg', label: 'Instagram DM',     tone: 'bg-pink-100 text-pink-900 border-pink-400 hover:bg-pink-200' },
+  { id: 'in-person',     label: 'In-person',        tone: 'bg-orange-100 text-orange-900 border-orange-400 hover:bg-orange-200' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -683,7 +698,7 @@ function ProspectModal({
               <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.3s', animationDuration: '0.9s' }}>🐻</span>
               <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.45s', animationDuration: '0.9s' }}>🐻</span>
             </p>
-            <div className="flex flex-wrap gap-2 mb-2">
+            <div className="flex flex-wrap gap-2 mb-3">
               {OUTCOME_BUTTONS.map((b) => (
                 <button
                   key={b.id}
@@ -695,6 +710,23 @@ function ProspectModal({
                 </button>
               ))}
             </div>
+
+            <p className="text-[11px] uppercase tracking-wide font-semibold text-amari-text-muted mb-1.5">
+              Log touch <span className="font-normal normal-case text-amari-text-muted">— GHL doesn't see these</span>
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {TOUCH_BUTTONS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() => handleOutcome(b.id)}
+                  disabled={outcomeSubmitting}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 ${b.tone}`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+
             {pendingDeferred && (
               <div className="bg-amari-light-sand rounded p-2 mb-2">
                 <label className="text-xs text-amari-charcoal block mb-1">

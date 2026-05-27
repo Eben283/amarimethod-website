@@ -40,6 +40,7 @@ const FIELD_IDS = {
 };
 
 const VALID_SIGNALS = new Set([
+  // Call/SMS outcomes (GHL tracks the call placement but not the outcome).
   "no-answer",
   "voicemail",
   "talked",
@@ -47,9 +48,15 @@ const VALID_SIGNALS = new Set([
   "booked",
   "deferred",
   "not-interested",
+  // Off-platform touches (GHL doesn't see these at all — we log them as notes).
+  "linkedin-msg",
+  "linkedin-req",
+  "instagram-msg",
+  "in-person",
 ]);
 
 // Map signal → stage transition (null means "don't change current stage").
+// Off-platform touches never auto-change stage — they're just touch records.
 const SIGNAL_TO_STAGE = {
   "no-answer":      null,
   "voicemail":      null,
@@ -58,6 +65,35 @@ const SIGNAL_TO_STAGE = {
   "booked":         "session-booked",
   "deferred":       "future-potential",
   "not-interested": "dropped",
+  "linkedin-msg":   null,
+  "linkedin-req":   null,
+  "instagram-msg":  null,
+  "in-person":      null,
+};
+
+// Signals that represent off-platform touches (notes prefix differently
+// so future queries can filter "all LinkedIn touches" vs "all call outcomes").
+const TOUCH_SIGNALS = new Set([
+  "linkedin-msg",
+  "linkedin-req",
+  "instagram-msg",
+  "in-person",
+]);
+
+// Human-readable signal labels for the note body (so the GHL timeline reads
+// "Touch: LinkedIn message" instead of "Touch: linkedin-msg").
+const SIGNAL_NOTE_LABEL = {
+  "no-answer":      "No answer",
+  "voicemail":      "Voicemail",
+  "talked":         "Talked",
+  "link-sent":      "Sent link",
+  "booked":         "Booked",
+  "deferred":       "Future potential",
+  "not-interested": "Not interested",
+  "linkedin-msg":   "LinkedIn message",
+  "linkedin-req":   "LinkedIn connection request",
+  "instagram-msg":  "Instagram message",
+  "in-person":      "In-person",
 };
 
 function corsHeaders(origin) {
@@ -169,8 +205,13 @@ export async function onRequestPost(context) {
       throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text.slice(0, 250)}`);
     }
 
-    // Add a GHL note documenting the outcome (always, with optional user text)
-    const noteBody = `Outcome: ${signal}${note && note.trim() ? ` — ${note.trim()}` : ""}`;
+    // Add a GHL note documenting the outcome (always, with optional user text).
+    // Prefix differs by kind so we can filter the timeline:
+    //   "Touch: …"   = off-platform action (LinkedIn, Instagram, in-person)
+    //   "Outcome: …" = result of a call/SMS attempt or stage change
+    const notePrefix = TOUCH_SIGNALS.has(signal) ? "Touch" : "Outcome";
+    const noteLabel = SIGNAL_NOTE_LABEL[signal] || signal;
+    const noteBody = `${notePrefix}: ${noteLabel}${note && note.trim() ? ` — ${note.trim()}` : ""}`;
     const noteRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/notes`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },

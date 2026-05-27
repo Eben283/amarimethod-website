@@ -271,7 +271,14 @@ export type PartnerLastSignal =
   | 'link-sent'
   | 'booked'
   | 'deferred'
-  | 'not-interested';
+  | 'not-interested'
+  // Off-platform touch signals — GHL doesn't track these natively.
+  // Treated as touches (bumps count + last_signal_at, writes note) but never
+  // change partner_stage on their own.
+  | 'linkedin-msg'
+  | 'linkedin-req'
+  | 'instagram-msg'
+  | 'in-person';
 
 // Matches the existing GHL "Facility Type" field options.
 export type PartnerFacilityType =
