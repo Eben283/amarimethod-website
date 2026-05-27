@@ -1055,9 +1055,12 @@ export default function PartnersPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Progress stats — how many outcomes recorded today / this week / this month.
-  // Based on partner_last_signal_at (only set when Garrett records an outcome
-  // via the modal). Doesn't count auto-tracked messages, only explicit actions.
+  // Progress stats — how many contacts touched today / this week / this month.
+  // Uses lastTouchAt (max of partner_last_real_activity and partner_last_signal_at),
+  // so the meter counts BOTH outcome-button captures AND real outreach activity
+  // pulled from GHL conversations (calls, SMS, email logged by GHL itself).
+  // Previously only counted outcome captures, which understated reality when
+  // Garrett called clients without going through focus-mode outcome capture.
   const progressStats = useMemo(() => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -1065,8 +1068,9 @@ export default function PartnersPage() {
     const startOf30d = now.getTime() - 30 * 86_400_000;
     let today = 0, week = 0, month = 0;
     for (const p of prospects) {
-      if (!p.partnerLastSignalAt) continue;
-      const t = new Date(p.partnerLastSignalAt).getTime();
+      const iso = lastTouchAt(p);
+      if (!iso) continue;
+      const t = new Date(iso).getTime();
       if (!Number.isFinite(t)) continue;
       if (t >= startOfToday) today += 1;
       if (t >= startOf7d) week += 1;
