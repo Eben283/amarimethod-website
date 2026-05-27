@@ -189,12 +189,12 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
 // contacts have it set from sheet status) but Garrett doesn't pick it
 // manually. Future: auto-detect link-sent by scanning outbound messages
 // for the partner-booking-link URL.
-const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string }[] = [
-  { id: 'voicemail', label: 'Voicemail' },
-  { id: 'talked', label: 'Talked' },
-  { id: 'booked', label: 'Booked' },
-  { id: 'deferred', label: 'Future potential' },
-  { id: 'not-interested', label: 'Not interested' },
+const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string; tone: string }[] = [
+  { id: 'voicemail',      label: 'Voicemail',        tone: 'bg-amber-100 text-amber-900 border-amber-400 hover:bg-amber-200' },
+  { id: 'talked',         label: 'Talked',           tone: 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200' },
+  { id: 'booked',         label: 'Booked',           tone: 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700' },
+  { id: 'deferred',       label: 'Future potential', tone: 'bg-sky-100 text-sky-900 border-sky-400 hover:bg-sky-200' },
+  { id: 'not-interested', label: 'Not interested',   tone: 'bg-slate-200 text-slate-700 border-slate-400 hover:bg-slate-300' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -646,14 +646,20 @@ function ProspectModal({
               Open in GHL <ExternalLink className="w-3.5 h-3.5" />
             </a>
 
-            <p className="text-[11px] uppercase tracking-wide text-amari-text-muted mt-2 mb-1.5">Record outcome</p>
-            <div className="flex flex-wrap gap-1.5 mb-2">
+            <p className="text-xs uppercase tracking-wide font-bold text-amari-charcoal mt-3 mb-2 flex items-center gap-1.5 select-none">
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.15s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="mx-1">RECORD OUTCOME</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.3s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.45s', animationDuration: '0.9s' }}>🐻</span>
+            </p>
+            <div className="flex flex-wrap gap-2 mb-2">
               {OUTCOME_BUTTONS.map((b) => (
                 <button
                   key={b.id}
                   onClick={() => handleOutcome(b.id)}
                   disabled={outcomeSubmitting}
-                  className="px-3 py-1.5 rounded text-xs font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
+                  className={`px-3.5 py-2 rounded-md text-sm font-semibold border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 ${b.tone}`}
                 >
                   {b.label}
                 </button>
