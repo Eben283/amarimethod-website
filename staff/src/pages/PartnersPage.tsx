@@ -408,10 +408,17 @@ function ProspectModal({
   prospect,
   onClose,
   onOutcomeRecorded,
+  focusContext,
 }: {
   prospect: PartnerProspect;
   onClose: () => void;
   onOutcomeRecorded: (signal: PartnerLastSignal) => void;
+  focusContext?: {
+    progress: string;
+    remaining: string;
+    onSkip: () => void;
+    onExit: () => void;
+  };
 }) {
   const [activity, setActivity] = useState<PartnerActivityEvent[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
@@ -467,7 +474,7 @@ function ProspectModal({
   return (
     <div
       className="fixed inset-0 bg-black/40 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
-      onClick={onClose}
+      onClick={focusContext ? undefined : onClose}
     >
       <div
         className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
@@ -481,10 +488,33 @@ function ProspectModal({
               {prospect.category === 'trainer' ? 'Personal Trainer' : prospect.category} · {STAGE_LABEL[stage]}
               {prospect.partnerSource && ` · ${prospect.partnerSource}`}
             </p>
+            {focusContext && (
+              <p className="text-[11px] text-amari-text-muted mt-0.5 font-medium">
+                {focusContext.progress} · {focusContext.remaining}
+              </p>
+            )}
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-amari-light-sand rounded">
-            <X className="w-5 h-5 text-amari-charcoal" />
-          </button>
+          {focusContext ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={focusContext.onSkip}
+                className="text-xs text-amari-text-muted hover:text-amari-charcoal px-2 py-1.5"
+              >
+                Skip →
+              </button>
+              <button
+                onClick={focusContext.onExit}
+                className="p-1 hover:bg-amari-light-sand rounded"
+                aria-label="Exit focus mode"
+              >
+                <X className="w-5 h-5 text-amari-charcoal" />
+              </button>
+            </div>
+          ) : (
+            <button onClick={onClose} className="p-1 hover:bg-amari-light-sand rounded">
+              <X className="w-5 h-5 text-amari-charcoal" />
+            </button>
+          )}
         </div>
 
         <div className="p-4 space-y-4">
@@ -707,112 +737,6 @@ function ProspectModal({
 // Pattern adapted from Apollo Tasks / HubSpot guided execution / Close Power Dialer
 // per research at /tmp/outreach-ux-research.md (2026-05-24).
 
-function FocusContactCard({ prospect }: { prospect: PartnerProspect }) {
-  const [enrichmentNote, setEnrichmentNote] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    setEnrichmentNote(null);
-    setLoading(true);
-    (async () => {
-      try {
-        const data = await getPartnerActivity(prospect.contactId);
-        if (cancelled) return;
-        const note = data.events.find(
-          (e) => e.type === 'note' && (e.body || '').trim().startsWith('Enrichment'),
-        );
-        if (note) setEnrichmentNote((note.body || '').replace(/^Enrichment[^:]*:\s*/, ''));
-      } catch {
-        // Enrichment is nice-to-have — silent failure is OK
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [prospect.contactId]);
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-serif text-amari-charcoal">{displayName(prospect.fullName)}</h2>
-        <p className="text-sm text-amari-text-muted mt-0.5">
-          {prospect.category === 'trainer' ? 'Personal Trainer' : prospect.category}
-          {prospect.partnerSource && ` · ${prospect.partnerSource}`}
-        </p>
-      </div>
-
-      {prospect.phone && (
-        <a
-          href={`tel:${prospect.phone}`}
-          className="block text-2xl font-medium text-amari-accent-warm hover:underline"
-        >
-          {prospect.phone}
-        </a>
-      )}
-
-      {/* Business info — facility, role, has-PT, website */}
-      {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No' || prospect.website) && (
-        <p className="text-sm text-amari-charcoal">
-          {prospect.partnerFacility && <span>🏢 {displayName(prospect.partnerFacility)}</span>}
-          {prospect.partnerFacility && prospect.partnerFacilityRole && ' · '}
-          {prospect.partnerFacilityRole && <span>{prospect.partnerFacilityRole}</span>}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole) && (prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && ' · '}
-          {prospect.hasPtOnStaff === 'Yes' && (
-            <span className="text-amber-700 font-medium" title="Likely has in-house body worker already — harder partnership">⚠ PT on staff</span>
-          )}
-          {prospect.hasPtOnStaff === 'No' && (
-            <span className="text-emerald-700 font-medium" title="No in-house body worker — open lane for referrals">✓ No PT on staff</span>
-          )}
-          {(prospect.partnerFacility || prospect.partnerFacilityRole || prospect.hasPtOnStaff === 'Yes' || prospect.hasPtOnStaff === 'No') && prospect.website && ' · '}
-          {prospect.website && (
-            <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
-               target="_blank" rel="noopener noreferrer"
-               className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
-              {hostnameOf(prospect.website)} <ExternalLink className="w-3 h-3" />
-            </a>
-          )}
-        </p>
-      )}
-
-      {/* Sheet data — Garrett's curated context */}
-      {(prospect.sheetStatus || prospect.sheetNotes) && (
-        <div>
-          {prospect.sheetStatus && (
-            <p className="text-sm text-amari-charcoal font-medium">📋 {prospect.sheetStatus}</p>
-          )}
-          {prospect.sheetNotes && (
-            <p className="text-sm italic text-amari-text-secondary mt-1">"{prospect.sheetNotes}"</p>
-          )}
-        </div>
-      )}
-
-      {/* Enrichment summary — THE pitch hook */}
-      <div className="bg-amari-light-sand rounded p-4">
-        <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-2">Pitch context</h3>
-        {loading ? (
-          <p className="text-sm text-amari-text-muted flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading enrichment...
-          </p>
-        ) : enrichmentNote ? (
-          <p className="text-sm text-amari-charcoal whitespace-pre-wrap leading-relaxed">{enrichmentNote}</p>
-        ) : (
-          <p className="text-sm text-amari-text-muted italic">No enrichment recorded. Wing it from the sheet data above.</p>
-        )}
-      </div>
-
-      {/* Touch history */}
-      <p className="text-xs text-amari-text-muted">
-        {prospect.touchCount > 0
-          ? `${prospect.touchCount} touch${prospect.touchCount === 1 ? '' : 'es'} so far`
-          : 'Never touched before'}
-        {prospect.partnerLastSignal && ` · last: ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
-        {prospect.lastActivityAt && ` · ${relativeDays(prospect.lastActivityAt)}`}
-      </p>
-    </div>
-  );
-}
-
 function FocusView({
   queue,
   onExit,
@@ -824,74 +748,17 @@ function FocusView({
 }) {
   const [index, setIndex] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
-  const [outcomeNote, setOutcomeNote] = useState('');
-  const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
-  const [outcomeError, setOutcomeError] = useState('');
-  const [followupDate, setFollowupDate] = useState('');
-  const [pendingDeferred, setPendingDeferred] = useState(false);
 
   const done = index >= queue.length;
   const prospect = done ? null : queue[index];
 
-  const advance = () => {
-    setIndex((i) => i + 1);
-    setOutcomeNote('');
-    setFollowupDate('');
-    setPendingDeferred(false);
-    setOutcomeError('');
-  };
+  const advance = () => setIndex((i) => i + 1);
 
-  const handleOutcome = async (signal: PartnerLastSignal) => {
-    if (!prospect) return;
-    if (signal === 'deferred' && !followupDate) {
-      setPendingDeferred(true);
-      return;
-    }
-    setOutcomeSubmitting(true);
-    setOutcomeError('');
-    try {
-      await recordPartnerOutcome({
-        contactId: prospect.contactId,
-        signal,
-        note: outcomeNote.trim() || undefined,
-        followupAt: signal === 'deferred' ? followupDate : undefined,
-      });
-      // Optimistic local update so the browse view reflects it after exit
-      onProspectUpdated(prospect.contactId, {
-        partnerLastSignal: signal,
-        partnerLastSignalAt: new Date().toISOString(),
-        touchCount: (prospect.touchCount ?? 0) + 1,
-      });
-      setCompletedCount((c) => c + 1);
-      advance();
-    } catch (err) {
-      setOutcomeError(err instanceof Error ? err.message : 'Failed to record outcome');
-    } finally {
-      setOutcomeSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-amari-bone-white z-[70] flex flex-col">
-      {/* Top bar — progress + skip + exit */}
-      <div className="border-b border-amari-border px-4 py-3 flex items-center justify-between bg-white">
-        <div>
-          <p className="text-sm font-medium text-amari-charcoal">
-            {done ? 'Done!' : `${index + 1} of ${queue.length}`}
-          </p>
-          <p className="text-[11px] text-amari-text-muted">
-            {completedCount} recorded · {Math.max(0, queue.length - index)} left
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          {!done && (
-            <button
-              onClick={advance}
-              className="text-xs text-amari-text-muted hover:text-amari-charcoal px-2 py-1.5"
-            >
-              Skip →
-            </button>
-          )}
+  if (done) {
+    return (
+      <div className="fixed inset-0 bg-amari-bone-white z-[70] flex flex-col">
+        <div className="border-b border-amari-border px-4 py-3 flex items-center justify-between bg-white">
+          <p className="text-sm font-medium text-amari-charcoal">Done!</p>
           <button
             onClick={onExit}
             className="p-1.5 text-amari-charcoal hover:bg-amari-light-sand rounded"
@@ -900,10 +767,6 @@ function FocusView({
             <X className="w-5 h-5" />
           </button>
         </div>
-      </div>
-
-      {done ? (
-        /* Celebration / done screen */
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="text-center max-w-md">
             <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
@@ -919,64 +782,32 @@ function FocusView({
             </button>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Scrollable contact area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            <div className="max-w-2xl mx-auto">
-              {prospect && <FocusContactCard prospect={prospect} />}
-            </div>
-          </div>
+      </div>
+    );
+  }
 
-          {/* Outcome capture — note + buttons grouped together so the row doesn't read as orphaned */}
-          <div className="border-t border-amari-border bg-white px-3 py-3 safe-area-bottom max-w-2xl mx-auto w-full">
-            <p className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5 px-0.5">
-              What happened on this call?
-            </p>
-            <input
-              type="text"
-              placeholder="Note (optional)"
-              value={outcomeNote}
-              onChange={(e) => setOutcomeNote(e.target.value)}
-              className="w-full text-sm border border-amari-border rounded px-3 py-2 mb-2"
-            />
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {OUTCOME_BUTTONS.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => handleOutcome(b.id)}
-                  disabled={outcomeSubmitting}
-                  className="shrink-0 px-3.5 py-2.5 rounded text-sm font-medium border border-amari-border text-amari-charcoal bg-white hover:bg-amari-light-sand disabled:opacity-50"
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
-            {pendingDeferred && (
-              <div className="bg-amari-light-sand rounded p-3 mt-2">
-                <label className="text-xs text-amari-charcoal block mb-1">When should we revisit?</label>
-                <input
-                  type="date"
-                  value={followupDate}
-                  onChange={(e) => setFollowupDate(e.target.value)}
-                  className="text-xs border border-amari-border rounded px-2 py-1 mr-2"
-                />
-                <button
-                  onClick={() => handleOutcome('deferred')}
-                  disabled={!followupDate || outcomeSubmitting}
-                  className="text-xs px-2 py-1 rounded bg-amari-charcoal text-white disabled:opacity-50"
-                >
-                  Confirm
-                </button>
-              </div>
-            )}
-            {outcomeError && (
-              <p className="text-xs text-red-700 mt-2">{outcomeError}</p>
-            )}
-          </div>
-        </>
-      )}
-    </div>
+  if (!prospect) return null;
+
+  return (
+    <ProspectModal
+      key={prospect.contactId}
+      prospect={prospect}
+      onClose={advance}
+      onOutcomeRecorded={(signal) => {
+        onProspectUpdated(prospect.contactId, {
+          partnerLastSignal: signal,
+          partnerLastSignalAt: new Date().toISOString(),
+          touchCount: (prospect.touchCount ?? 0) + 1,
+        });
+        setCompletedCount((c) => c + 1);
+      }}
+      focusContext={{
+        progress: `${index + 1} of ${queue.length}`,
+        remaining: `${completedCount} recorded · ${Math.max(0, queue.length - index)} left`,
+        onSkip: advance,
+        onExit,
+      }}
+    />
   );
 }
 
