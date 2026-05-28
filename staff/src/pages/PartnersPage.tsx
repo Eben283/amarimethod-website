@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, X, Phone, MessageSquare,
-  Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2, Search,
+  Mail, StickyNote, Calendar, CalendarCheck, CheckCircle2, Search, Pencil, Check,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getPartnerActivity, recordPartnerOutcome,
-  toggleOutreachVerified, triggerActivityRefresh, ApiError,
+  toggleOutreachVerified, triggerActivityRefresh, updateContactField, ApiError,
+  type EditableFieldKey,
 } from '../lib/api';
 import type {
   PartnerProspect, PartnerCategoryFilter, PartnerCategory, PartnerStage,
@@ -633,17 +634,146 @@ function ReviewRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// EditableField — inline edit for one field on a contact.
+//
+// Click → input + Save/Cancel. Optimistic UI: parent's local state updates
+// immediately on save; rolls back if the API call fails. Clearing a non-empty
+// field requires a confirm() prompt so a stray tab-out can't wipe data.
+//
+// `displayChildren` renders the read-state (e.g. a clickable link). When
+// undefined, falls back to plain text of the current value.
+
+function EditableField({
+  label,
+  value,
+  fieldKey,
+  contactId,
+  onSaved,
+  type = 'text',
+  placeholder,
+  displayChildren,
+}: {
+  label: string;
+  value: string | null;
+  fieldKey: EditableFieldKey;
+  contactId: string;
+  onSaved: (newValue: string) => void;
+  type?: 'text' | 'email' | 'tel' | 'url';
+  placeholder?: string;
+  displayChildren?: React.ReactNode;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  // Reset draft when the underlying value changes (e.g. after a reload).
+  useEffect(() => { setDraft(value || ''); }, [value]);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraft(value || '');
+    setError('');
+    setEditing(true);
+  };
+  const cancel = () => { setEditing(false); setError(''); setDraft(value || ''); };
+
+  const save = async () => {
+    const newVal = draft.trim();
+    if (newVal === (value || '')) { setEditing(false); return; }
+    if (!newVal && value) {
+      if (!confirm(`Clear ${label}? This removes "${value}" from the contact.`)) return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await updateContactField(contactId, fieldKey, newVal);
+      onSaved(newVal);
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex gap-2 items-start">
+        <dt className="text-amari-text-muted w-24 shrink-0 pt-1">{label}</dt>
+        <dd className="text-amari-charcoal flex-1 flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1">
+            <input
+              type={type}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={placeholder}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') save();
+                if (e.key === 'Escape') cancel();
+              }}
+              className="flex-1 text-sm border border-amari-border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-amari-pine-teal"
+              disabled={saving}
+            />
+            <button
+              onClick={save}
+              disabled={saving}
+              className="px-2 py-1 rounded bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 disabled:opacity-50"
+              title="Save (Enter)"
+            >
+              {saving ? '...' : <Check className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={cancel}
+              disabled={saving}
+              className="px-2 py-1 rounded bg-white text-amari-text-muted text-xs border border-amari-border hover:bg-amari-light-sand/50 disabled:opacity-50"
+              title="Cancel (Esc)"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {error && <p className="text-[11px] text-red-700">{error}</p>}
+        </dd>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex gap-2 group">
+      <dt className="text-amari-text-muted w-24 shrink-0">{label}</dt>
+      <dd className="text-amari-charcoal break-all flex-1 flex items-center gap-1">
+        <span className="flex-1">
+          {displayChildren ?? (value ? value : <span className="text-amari-text-muted italic">—</span>)}
+        </span>
+        <button
+          onClick={startEdit}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 text-amari-text-muted hover:text-amari-charcoal"
+          title={`Edit ${label}`}
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+      </dd>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Modal — full detail + actions
 
 function ProspectModal({
   prospect,
   onClose,
   onOutcomeRecorded,
+  onLocalPatch,
   focusContext,
 }: {
   prospect: PartnerProspect;
   onClose: () => void;
   onOutcomeRecorded: (signal: PartnerLastSignal) => void;
+  /** Optimistic local update from inline field edits. Lets the modal reflect
+   *  the edit instantly without waiting for a full reload. */
+  onLocalPatch?: (patch: Partial<PartnerProspect>) => void;
   focusContext?: {
     progress: string;
     remaining: string;
@@ -755,24 +885,43 @@ function ProspectModal({
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Contact</h3>
             <dl className="text-sm space-y-0.5">
-              {prospect.phone && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Phone</dt><dd className="text-amari-charcoal">{prospect.phone}</dd></div>
-              )}
-              {prospect.email && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Email</dt><dd className="text-amari-charcoal break-all">{prospect.email}</dd></div>
-              )}
-              {prospect.website && (
-                <div className="flex gap-2">
-                  <dt className="text-amari-text-muted w-24 shrink-0">Website</dt>
-                  <dd>
-                    <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
-                       target="_blank" rel="noopener noreferrer"
-                       className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
-                      {prospect.website} <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </dd>
-                </div>
-              )}
+              <EditableField
+                label="Phone"
+                value={prospect.phone}
+                fieldKey="phone"
+                contactId={prospect.contactId}
+                type="tel"
+                placeholder="+1..."
+                onSaved={(v) => onLocalPatch?.({ phone: v || null })}
+              />
+              <EditableField
+                label="Email"
+                value={prospect.email}
+                fieldKey="email"
+                contactId={prospect.contactId}
+                type="email"
+                placeholder="name@domain.com"
+                onSaved={(v) => onLocalPatch?.({ email: v || null })}
+              />
+              <EditableField
+                label="Website"
+                value={prospect.website}
+                fieldKey="website"
+                contactId={prospect.contactId}
+                type="url"
+                placeholder="example.com"
+                onSaved={(v) => onLocalPatch?.({ website: v || null })}
+                displayChildren={prospect.website && (
+                  <a href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
+                     target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                     className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
+                    {hostnameOf(prospect.website) || prospect.website} <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              />
+              {/* Garrett's sheet socialProfile — read-only, marked so it's clear
+                  it comes from the sheet, not directly editable here. To edit,
+                  use the dedicated Instagram field below or update the sheet. */}
               {(() => {
                 const s = formatSocialProfile(prospect.socialProfile);
                 if (!s) return null;
@@ -781,91 +930,67 @@ function ProspectModal({
                     <dt className="text-amari-text-muted w-24 shrink-0">{s.platform}</dt>
                     <dd className="text-amari-charcoal break-all">
                       {s.url ? (
-                        <a
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
-                        >
+                        <a href={s.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                           className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
                           {s.label} <ExternalLink className="w-3 h-3" />
                         </a>
-                      ) : (
-                        s.label
-                      )}
+                      ) : s.label}
+                      <span className="text-[10px] text-amari-text-muted ml-1 italic">(from sheet)</span>
                     </dd>
                   </div>
                 );
               })()}
-              {prospect.linkedinUrl && (() => {
-                // Pull the handle out of the URL for a clean label.
-                let label = prospect.linkedinUrl;
-                try {
-                  const u = new URL(prospect.linkedinUrl);
-                  const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/');
-                  // /in/<handle> or /company/<handle>
-                  if (seg.length >= 2) label = `@${seg[1]}`;
-                } catch { /* leave label as raw URL */ }
-                return (
-                  <div className="flex gap-2">
-                    <dt className="text-amari-text-muted w-24 shrink-0">LinkedIn</dt>
-                    <dd className="text-amari-charcoal break-all">
-                      <a
-                        href={prospect.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
-                      >
-                        {label} <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </dd>
-                  </div>
-                );
-              })()}
-              {prospect.instagram && (() => {
-                // Accept either "@handle", "handle", or "https://instagram.com/handle"
-                const raw = prospect.instagram.trim();
-                let handle = raw.replace(/^@/, '');
-                let href = raw;
-                if (raw.startsWith('http')) {
+              <EditableField
+                label="LinkedIn"
+                value={prospect.linkedinUrl}
+                fieldKey="partnerLinkedinUrl"
+                contactId={prospect.contactId}
+                type="url"
+                placeholder="https://linkedin.com/in/handle"
+                onSaved={(v) => onLocalPatch?.({ linkedinUrl: v || null })}
+                displayChildren={prospect.linkedinUrl && (() => {
+                  let label = prospect.linkedinUrl;
                   try {
-                    const u = new URL(raw);
+                    const u = new URL(prospect.linkedinUrl);
                     const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/');
-                    if (seg.length >= 1 && seg[0]) handle = seg[0];
-                  } catch { /* fall through */ }
-                } else {
-                  href = `https://instagram.com/${handle}`;
-                }
-                return (
-                  <div className="flex gap-2">
-                    <dt className="text-amari-text-muted w-24 shrink-0">Instagram</dt>
-                    <dd className="text-amari-charcoal break-all">
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
-                      >
-                        @{handle} <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </dd>
-                  </div>
-                );
-              })()}
-              {prospect.website && (
-                <div className="flex gap-2">
-                  <dt className="text-amari-text-muted w-24 shrink-0">Website</dt>
-                  <dd className="text-amari-charcoal break-all">
-                    <a
-                      href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
-                    >
-                      {hostnameOf(prospect.website) || prospect.website} <ExternalLink className="w-3 h-3" />
+                    if (seg.length >= 2) label = `@${seg[1]}`;
+                  } catch { /* raw */ }
+                  return (
+                    <a href={prospect.linkedinUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                       className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
+                      {label} <ExternalLink className="w-3 h-3" />
                     </a>
-                  </dd>
-                </div>
-              )}
+                  );
+                })()}
+              />
+              <EditableField
+                label="Instagram"
+                value={prospect.instagram}
+                fieldKey="partnerInstagram"
+                contactId={prospect.contactId}
+                placeholder="@handle"
+                onSaved={(v) => onLocalPatch?.({ instagram: v || null })}
+                displayChildren={prospect.instagram && (() => {
+                  const raw = prospect.instagram.trim();
+                  let handle = raw.replace(/^@/, '');
+                  let href = raw;
+                  if (raw.startsWith('http')) {
+                    try {
+                      const u = new URL(raw);
+                      const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/');
+                      if (seg.length >= 1 && seg[0]) handle = seg[0];
+                    } catch { /* fall through */ }
+                  } else {
+                    href = `https://instagram.com/${handle}`;
+                  }
+                  return (
+                    <a href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                       className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
+                      @{handle} <ExternalLink className="w-3 h-3" />
+                    </a>
+                  );
+                })()}
+              />
               {prospect.otherUrls && (() => {
                 const urls = prospect.otherUrls.split(/[;\n]/).map((u) => u.trim()).filter(Boolean);
                 if (urls.length === 0) return null;
@@ -877,13 +1002,8 @@ function ProspectModal({
                         const href = url.startsWith('http') ? url : `https://${url}`;
                         const label = hostnameOf(url) || url;
                         return (
-                          <a
-                            key={i}
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
-                          >
+                          <a key={i} href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}
+                             className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5">
                             {label} <ExternalLink className="w-3 h-3" />
                           </a>
                         );
@@ -892,33 +1012,56 @@ function ProspectModal({
                   </div>
                 );
               })()}
-              {prospect.companyName && prospect.companyName !== prospect.partnerFacility && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Business</dt><dd className="text-amari-charcoal">{displayName(prospect.companyName)}</dd></div>
-              )}
-              {prospect.partnerFacility && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{displayName(prospect.partnerFacility)}</dd></div>
-              )}
+              <EditableField
+                label="Business"
+                value={prospect.companyName}
+                fieldKey="companyName"
+                contactId={prospect.contactId}
+                onSaved={(v) => onLocalPatch?.({ companyName: v || null })}
+              />
+              <EditableField
+                label="Facility"
+                value={prospect.partnerFacility}
+                fieldKey="partnerFacility"
+                contactId={prospect.contactId}
+                onSaved={(v) => onLocalPatch?.({ partnerFacility: v || null })}
+                displayChildren={prospect.partnerFacility && displayName(prospect.partnerFacility)}
+              />
               {prospect.partnerFacilityType && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility type</dt><dd className="text-amari-charcoal">{prospect.partnerFacilityType}</dd></div>
               )}
-              {prospect.partnerFacilityRole && (
-                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Role</dt><dd className="text-amari-charcoal">{prospect.partnerFacilityRole}</dd></div>
-              )}
+              <EditableField
+                label="Role"
+                value={prospect.partnerFacilityRole}
+                fieldKey="partnerFacilityRole"
+                contactId={prospect.contactId}
+                onSaved={(v) => onLocalPatch?.({ partnerFacilityRole: (v as PartnerProspect['partnerFacilityRole']) || null })}
+              />
               {prospect.hasPtOnStaff && prospect.hasPtOnStaff !== 'Unknown' && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
-              {(prospect.address1 || prospect.city || prospect.state || prospect.postalCode) && (
-                <div className="flex gap-2">
-                  <dt className="text-amari-text-muted w-24 shrink-0">Location</dt>
-                  <dd className="text-amari-charcoal">
-                    {[
-                      prospect.address1,
-                      [prospect.city, prospect.state].filter(Boolean).join(', '),
-                      prospect.postalCode,
-                    ].filter(Boolean).join(' · ')}
-                  </dd>
-                </div>
-              )}
+              <EditableField
+                label="City"
+                value={prospect.city}
+                fieldKey="city"
+                contactId={prospect.contactId}
+                onSaved={(v) => onLocalPatch?.({ city: v || null })}
+              />
+              <EditableField
+                label="State"
+                value={prospect.state}
+                fieldKey="state"
+                contactId={prospect.contactId}
+                placeholder="CA"
+                onSaved={(v) => onLocalPatch?.({ state: v || null })}
+              />
+              <EditableField
+                label="Zip"
+                value={prospect.postalCode}
+                fieldKey="postalCode"
+                contactId={prospect.contactId}
+                onSaved={(v) => onLocalPatch?.({ postalCode: v || null })}
+              />
               <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Touches</dt><dd className="text-amari-charcoal">{prospect.touchCount} {prospect.touchCount === 1 ? 'outreach action' : 'outreach actions'}</dd></div>
             </dl>
             {prospect.rundown && (
@@ -1197,6 +1340,7 @@ function FocusView({
       key={prospect.contactId}
       prospect={prospect}
       onClose={advance}
+      onLocalPatch={(patch) => onProspectUpdated(prospect.contactId, patch)}
       onOutcomeRecorded={(signal) => {
         if (signal === 'skip') {
           // Skip is a disposition without outreach — only update partner_stage.
@@ -1835,6 +1979,7 @@ export default function PartnersPage() {
         <ProspectModal
           prospect={openProspect}
           onClose={() => setOpenContactId(null)}
+          onLocalPatch={(patch) => setProspects((prev) => prev.map((p) => p.contactId === openProspect.contactId ? { ...p, ...patch } : p))}
           onOutcomeRecorded={() => { load(); }}
         />
       )}

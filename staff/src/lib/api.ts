@@ -251,6 +251,24 @@ export async function toggleOutreachVerified(
   });
 }
 
+// Inline-edit a single field on a partner contact. Whitelisted server-side
+// (see functions/api/staff-partner-update-field.js EDITABLE_FIELDS for the list).
+export type EditableFieldKey =
+  | 'phone' | 'email' | 'website' | 'companyName' | 'address1' | 'city' | 'state' | 'postalCode'
+  | 'partnerInstagram' | 'partnerLinkedinUrl' | 'partnerFacility' | 'partnerFacilityRole'
+  | 'partnerOtherUrls' | 'partnerRundown';
+
+export async function updateContactField(
+  contactId: string,
+  field: EditableFieldKey,
+  value: string,
+): Promise<{ success: boolean; contactId: string; field: string; value: string; changed: boolean; previousValue?: string }> {
+  return fetchApi('/staff-partner-update-field', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, field, value }),
+  });
+}
+
 // Triggers the partner-activity-refresh Worker on-demand.
 // Returns 202 immediately; the worker runs ~10-15 min in the background
 // and writes its result to KV (surfaced as activityRefreshAt next reload).
