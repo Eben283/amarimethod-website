@@ -403,10 +403,20 @@ function ReviewRow({
   if (!prospect.email) missing.push('email');
   if (!prospect.partnerFacility) missing.push('facility');
 
+  // Visual feedback for "I just touched this." When partnerLastSignalAt is today,
+  // the card dims and shows the signal that was logged. Without this, after recording
+  // an outcome via the modal the card looks identical to untouched cards, so a batch
+  // of outreach can't be visually audited and contacts get missed.
+  const touchedDaysAgo = daysSince(prospect.partnerLastSignalAt);
+  const justTouchedToday = touchedDaysAgo === 0;
+  const containerClass = justTouchedToday
+    ? 'w-full text-left bg-emerald-50/60 rounded-md border border-emerald-300 border-l-4 border-l-emerald-500 p-3 shadow-sm hover:bg-emerald-50 transition-colors opacity-80'
+    : 'w-full text-left bg-white rounded-md border border-amari-border p-3 shadow-sm hover:bg-amari-light-sand/30 transition-colors';
+
   return (
     <button
       onClick={onTap}
-      className="w-full text-left bg-white rounded-md border border-amari-border p-3 shadow-sm hover:bg-amari-light-sand/30 transition-colors"
+      className={containerClass}
     >
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm font-medium text-amari-charcoal truncate">
@@ -416,6 +426,11 @@ function ReviewRow({
           {prospect.category === 'trainer' ? 'PT' : prospect.category}
         </span>
       </div>
+      {justTouchedToday && prospect.partnerLastSignal && (
+        <p className="text-[11px] text-emerald-800 font-medium mt-0.5">
+          ✓ Logged today: {SIGNAL_LABEL[prospect.partnerLastSignal]}
+        </p>
+      )}
       {prospect.phone ? (
         <p className="text-xs text-amari-charcoal mt-0.5">{prospect.phone}</p>
       ) : (
@@ -449,7 +464,11 @@ function ReviewRow({
         <button
           onClick={handleVerify}
           disabled={submitting}
-          className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+          className={
+            justTouchedToday
+              ? 'px-2.5 py-1 rounded text-xs font-medium bg-white text-emerald-700 border border-emerald-400 hover:bg-emerald-50 disabled:opacity-50'
+              : 'px-2.5 py-1 rounded text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50'
+          }
         >
           {submitting ? '...' : '✓ Mark verified'}
         </button>
