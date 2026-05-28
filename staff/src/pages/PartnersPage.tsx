@@ -230,6 +230,116 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'in-person': 'In-person',
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Geographic tier — how relevant is this contact for SF studio referrals?
+//
+// Primary signal: facility name (where they work = where their clients are).
+// Fallback: phone area code (typically a club main line — also a geo signal).
+//
+//   A: SF / Peninsula — primary market, easy comp-session travel
+//   B: East Bay / North Bay — feasible but real friction (45–60 min)
+//   C: South Bay — meaningful distance (60–90 min)
+//   skip: Out of region (LA, NYC, etc.)
+//   unknown: no facility, no phone, or facility unrecognized
+
+type GeoTier = 'A' | 'B' | 'C' | 'skip' | 'unknown';
+
+// Facility-name substrings → tier. Match is case-insensitive substring.
+// Extend as new clubs surface; missing matches fall through to phone area code.
+const FACILITY_TIER: ReadonlyArray<readonly [string, GeoTier]> = [
+  // A — SF + Peninsula
+  ['california golf club of san francisco', 'A'],
+  ['olympic club', 'A'],
+  ['san francisco golf club', 'A'],
+  ['presidio golf', 'A'],
+  ['harding park', 'A'],
+  ['tpc harding', 'A'],
+  ['lake merced', 'A'],
+  ['burlingame country', 'A'],
+  ['san bruno golf', 'A'],
+  ['crystal springs', 'A'],
+  ['peninsula golf', 'A'],
+  ['half moon bay golf', 'A'],
+  ['poplar creek', 'A'],
+  ['sharp park', 'A'],
+  ['gleneagles', 'A'],
+  ['stanford golf', 'A'],
+  ['palo alto', 'A'],
+  ['menlo country', 'A'],
+  ['mariners point', 'A'],
+  ['sequoia woods', 'A'],
+  // B — East Bay + North Bay
+  ['bridges golf', 'B'],
+  ['sequoyah', 'B'],
+  ['claremont country', 'B'],
+  ['mira vista', 'B'],
+  ['round hill country', 'B'],
+  ['blackhawk country', 'B'],
+  ['ruby hill', 'B'],
+  ['castlewood', 'B'],
+  ['orinda country', 'B'],
+  ['diablo country', 'B'],
+  ['marin country', 'B'],
+  ['meadow club', 'B'],
+  ['peacock gap', 'B'],
+  ['mcinnis', 'B'],
+  ['tilden park', 'B'],
+  ['lone tree', 'B'],
+  ['boundary oak', 'B'],
+  ['contra costa', 'B'],
+  // C — South Bay
+  ['cordevalle', 'C'],
+  ['santa teresa', 'C'],
+  ['san jose country', 'C'],
+  ['silver creek', 'C'],
+  ['summit pointe', 'C'],
+  ['cinnabar hills', 'C'],
+  ['the institute', 'C'],
+  // skip — out of region (catches known wrong-region facilities)
+  ['pebble beach', 'C'], // technically a destination resort — still long drive
+];
+
+const AREA_CODE_TIER: Record<string, GeoTier> = {
+  '415': 'A', '628': 'A', '650': 'A',
+  '510': 'B', '925': 'B', '707': 'B',
+  '408': 'C', '669': 'C',
+};
+
+function computeGeoTier(prospect: PartnerProspect): GeoTier {
+  const facility = (prospect.partnerFacility || '').toLowerCase();
+  if (facility) {
+    for (const [needle, tier] of FACILITY_TIER) {
+      if (facility.includes(needle)) return tier;
+    }
+  }
+  const digits = (prospect.phone || '').replace(/\D/g, '');
+  let areaCode: string | null = null;
+  if (digits.length === 10) areaCode = digits.slice(0, 3);
+  else if (digits.length === 11 && digits.startsWith('1')) areaCode = digits.slice(1, 4);
+  if (areaCode && AREA_CODE_TIER[areaCode]) return AREA_CODE_TIER[areaCode];
+  return 'unknown';
+}
+
+const GEO_TIER_BADGE_LABEL: Record<GeoTier, string> = {
+  'A': 'SF',
+  'B': 'East Bay',
+  'C': 'South Bay',
+  'skip': 'OOR',
+  'unknown': '?',
+};
+
+const GEO_TIER_BADGE_STYLE: Record<GeoTier, string> = {
+  'A': 'bg-emerald-100 text-emerald-900',
+  'B': 'bg-amber-100 text-amber-900',
+  'C': 'bg-slate-200 text-slate-700',
+  'skip': 'bg-red-100 text-red-900',
+  'unknown': 'bg-gray-100 text-gray-500',
+};
+
+const GEO_TIER_SORT_ORDER: Record<GeoTier, number> = {
+  'A': 1, 'B': 2, 'C': 3, 'unknown': 4, 'skip': 5,
+};
+
 // Outcome buttons — capture what GHL can't infer from raw call/SMS logs.
 // "Voicemail" stays even though GHL records the call: GHL doesn't know
 // whether Garrett left a message vs hung up.
@@ -422,9 +532,22 @@ function ReviewRow({
         <p className="text-sm font-medium text-amari-charcoal truncate">
           {displayName(prospect.fullName)}
         </p>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${CATEGORY_BADGE[prospect.category]}`}>
-          {prospect.category === 'trainer' ? 'PT' : prospect.category}
-        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {(() => {
+            const tier = computeGeoTier(prospect);
+            return (
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${GEO_TIER_BADGE_STYLE[tier]}`}
+                title={`Geo tier ${tier} — ${tier === 'A' ? 'SF / Peninsula' : tier === 'B' ? 'East Bay / North Bay' : tier === 'C' ? 'South Bay' : tier === 'skip' ? 'Out of region' : 'Location unknown — facility unrecognized + no phone area code match'}`}
+              >
+                {GEO_TIER_BADGE_LABEL[tier]}
+              </span>
+            );
+          })()}
+          <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase tracking-wide ${CATEGORY_BADGE[prospect.category]}`}>
+            {prospect.category === 'trainer' ? 'PT' : prospect.category}
+          </span>
+        </div>
       </div>
       {justTouchedToday && prospect.partnerLastSignal && (
         <p className="text-[11px] text-emerald-800 font-medium mt-0.5">
@@ -953,7 +1076,7 @@ function FocusView({
 // ─────────────────────────────────────────────────────────────────────────────
 // Main page
 
-type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched' | 'just-touched';
+type SortMode = 'priority' | 'oldest-contact' | 'newest-contact' | 'least-touched' | 'most-touched' | 'just-touched' | 'by-geo';
 
 const SORT_LABEL: Record<SortMode, string> = {
   'priority': 'Priority',
@@ -962,6 +1085,7 @@ const SORT_LABEL: Record<SortMode, string> = {
   'least-touched': 'Fewest touches',
   'most-touched': 'Most touches',
   'just-touched': 'Just touched',
+  'by-geo': 'Closest to SF',
 };
 
 export default function PartnersPage() {
@@ -1179,6 +1303,15 @@ export default function PartnersPage() {
         if (ta === null) return 1;
         if (tb === null) return -1;
         return tb - ta;
+      }
+      if (sortMode === 'by-geo') {
+        // A (SF/Peninsula) → B (East Bay) → C (South Bay) → unknown → skip.
+        // Within a tier, tiebreak by priority so high-leverage SF contacts
+        // still rise above low-leverage SF contacts.
+        const ga = GEO_TIER_SORT_ORDER[computeGeoTier(a)];
+        const gb = GEO_TIER_SORT_ORDER[computeGeoTier(b)];
+        if (ga !== gb) return ga - gb;
+        return priorityScore(b) - priorityScore(a);
       }
       const pa = priorityScore(a);
       const pb = priorityScore(b);
