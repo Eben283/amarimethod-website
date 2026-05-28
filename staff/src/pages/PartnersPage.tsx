@@ -834,8 +834,9 @@ function ProspectModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black/40 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-scroll"
       onClick={focusContext ? undefined : onClose}
+      style={{ scrollbarGutter: 'stable' }}
     >
       <div
         className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
@@ -884,7 +885,9 @@ function ProspectModal({
           {/* Contact */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Contact</h3>
-            <dl className="text-sm space-y-0.5">
+            {/* Two-column grid on sm+ so the modal doesn't get absurdly tall.
+                Items wrap naturally if either column overflows. */}
+            <dl className="text-sm grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
               <EditableField
                 label="Phone"
                 value={prospect.phone}
