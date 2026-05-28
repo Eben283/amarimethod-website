@@ -228,6 +228,10 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'linkedin-req': 'LinkedIn connect',
   'instagram-msg': 'Instagram DM',
   'in-person': 'In-person',
+  // 'skip' never persists as partner_last_signal — only sent to the outcome
+  // endpoint to trigger the partner_stage=dropped transition. Label exists
+  // only to satisfy the Record<PartnerLastSignal,…> type.
+  'skip': 'Skipped',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1035,6 +1039,23 @@ function ProspectModal({
               ))}
             </div>
 
+            {/* Skip — disposition without contact. Wrong fit / wrong geo /
+                wrong category. Different from Not Interested (they declined).
+                Sets stage=dropped, no signal, no touch, no meter pollution. */}
+            <p className="text-[11px] uppercase tracking-wide font-semibold text-amari-text-muted mb-1.5">
+              Skip <span className="font-normal normal-case text-amari-text-muted">— removes from queue without recording outreach</span>
+            </p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              <button
+                onClick={() => handleOutcome('skip')}
+                disabled={outcomeSubmitting}
+                className="px-3 py-1.5 rounded-md text-sm font-medium border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 bg-stone-100 text-stone-700 border-stone-400 hover:bg-stone-200"
+                title="Mark not-a-fit and drop from queue. No outreach recorded — different from Not Interested."
+              >
+                Skip — not a fit
+              </button>
+            </div>
+
             {pendingDeferred && (
               <div className="bg-amari-light-sand rounded p-2 mb-2">
                 <label className="text-xs text-amari-charcoal block mb-1">
@@ -1134,11 +1155,19 @@ function FocusView({
       prospect={prospect}
       onClose={advance}
       onOutcomeRecorded={(signal) => {
-        onProspectUpdated(prospect.contactId, {
-          partnerLastSignal: signal,
-          partnerLastSignalAt: new Date().toISOString(),
-          touchCount: (prospect.touchCount ?? 0) + 1,
-        });
+        if (signal === 'skip') {
+          // Skip is a disposition without outreach — only update partner_stage.
+          // Do NOT bump signal/signal_at/touch — matches backend behavior.
+          onProspectUpdated(prospect.contactId, {
+            partnerStage: 'dropped',
+          });
+        } else {
+          onProspectUpdated(prospect.contactId, {
+            partnerLastSignal: signal,
+            partnerLastSignalAt: new Date().toISOString(),
+            touchCount: (prospect.touchCount ?? 0) + 1,
+          });
+        }
         setCompletedCount((c) => c + 1);
       }}
       focusContext={{

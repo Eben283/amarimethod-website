@@ -53,6 +53,12 @@ const VALID_SIGNALS = new Set([
   "linkedin-req",
   "instagram-msg",
   "in-person",
+  // Disposition without contact: "we never reached out and we're not going to
+  // — wrong geography / wrong category / etc." Different from not-interested
+  // (which implies they declined). Sets partner_stage=dropped but does NOT
+  // set partner_last_signal, partner_last_signal_at, or increment touch_count
+  // — because no outreach actually happened.
+  "skip",
 ]);
 
 // Map signal → stage transition (null means "don't change current stage").
@@ -69,6 +75,7 @@ const SIGNAL_TO_STAGE = {
   "linkedin-req":   null,
   "instagram-msg":  null,
   "in-person":      null,
+  "skip":           "dropped",
 };
 
 // Signals that represent off-platform touches (notes prefix differently
@@ -94,6 +101,7 @@ const SIGNAL_NOTE_LABEL = {
   "linkedin-req":   "LinkedIn connection request",
   "instagram-msg":  "Instagram message",
   "in-person":      "In-person",
+  "skip":           "Skipped — not a fit",
 };
 
 function corsHeaders(origin) {
@@ -181,12 +189,16 @@ export async function onRequestPost(context) {
 
     // Build customFields update array
     const nowIso = new Date().toISOString();
-    const customFields = [
-      { id: FIELD_IDS.partner_last_signal, value: signal },
-      { id: FIELD_IDS.partner_last_signal_at, value: nowIso },
-      { id: FIELD_IDS.partner_touch_count, value: currentTouchCount + 1 },
-    ];
     const newStage = SIGNAL_TO_STAGE[signal];
+    const customFields = [];
+    // "skip" is a disposition without outreach — no signal, no touch, no meter
+    // pollution. Only the stage transition + a note. All other signals record
+    // signal / signal_at / touch_count as usual.
+    if (signal !== "skip") {
+      customFields.push({ id: FIELD_IDS.partner_last_signal, value: signal });
+      customFields.push({ id: FIELD_IDS.partner_last_signal_at, value: nowIso });
+      customFields.push({ id: FIELD_IDS.partner_touch_count, value: currentTouchCount + 1 });
+    }
     if (newStage) {
       customFields.push({ id: FIELD_IDS.partner_stage, value: newStage });
     }
@@ -208,8 +220,12 @@ export async function onRequestPost(context) {
     // Add a GHL note documenting the outcome (always, with optional user text).
     // Prefix differs by kind so we can filter the timeline:
     //   "Touch: …"   = off-platform action (LinkedIn, Instagram, in-person)
+    //   "Skip: …"    = decision not to pursue (no outreach happened)
     //   "Outcome: …" = result of a call/SMS attempt or stage change
-    const notePrefix = TOUCH_SIGNALS.has(signal) ? "Touch" : "Outcome";
+    const notePrefix =
+      signal === "skip" ? "Skip" :
+      TOUCH_SIGNALS.has(signal) ? "Touch" :
+      "Outcome";
     const noteLabel = SIGNAL_NOTE_LABEL[signal] || signal;
     const noteBody = `${notePrefix}: ${noteLabel}${note && note.trim() ? ` — ${note.trim()}` : ""}`;
     const noteRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/notes`, {
@@ -229,9 +245,11 @@ export async function onRequestPost(context) {
         contactId,
         signal,
         newStage: newStage || null,
-        signalAt: nowIso,
+        // 'skip' doesn't record signal/touch — return null so the client knows
+        // not to update its local state for these fields.
+        signalAt: signal === "skip" ? null : nowIso,
         followupAt: signal === "deferred" ? followupAt : null,
-        touchCount: currentTouchCount + 1,
+        touchCount: signal === "skip" ? currentTouchCount : currentTouchCount + 1,
       }),
       { status: 200, headers },
     );

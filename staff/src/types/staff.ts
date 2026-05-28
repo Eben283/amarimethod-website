@@ -278,7 +278,13 @@ export type PartnerLastSignal =
   | 'linkedin-msg'
   | 'linkedin-req'
   | 'instagram-msg'
-  | 'in-person';
+  | 'in-person'
+  // Disposition without outreach — "wrong fit / wrong geography, won't pursue."
+  // Different from 'not-interested' (they declined). Sets partner_stage=dropped
+  // but does NOT set partner_last_signal/partner_last_signal_at/touch_count —
+  // we never actually contacted them. Only used as the input to the outcome
+  // endpoint; never persisted as a partner_last_signal value.
+  | 'skip';
 
 // Matches the existing GHL "Facility Type" field options.
 export type PartnerFacilityType =
