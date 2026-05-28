@@ -603,6 +603,17 @@ function ReviewRow({
           Missing: {missing.join(', ')}
         </p>
       )}
+      {/* Touch summary — matches the OutreachRow format on the search/in-progress
+          views. Without this, you can't tell at a scan whether you've already
+          worked a contact (the just-touched-today emerald treatment only handles
+          today's touches, not historical). */}
+      {(prospect.touchCount > 0 || prospect.partnerLastSignal) && (
+        <p className="text-[11px] text-amari-text-muted mt-0.5">
+          Last touch: {relativeDays(lastTouchAt(prospect))}
+          {prospect.partnerLastSignal && ` · ${SIGNAL_LABEL[prospect.partnerLastSignal]}`}
+          {prospect.touchCount > 0 && ` · ${prospect.touchCount} ${prospect.touchCount === 1 ? 'touch' : 'touches'}`}
+        </p>
+      )}
       <div className="flex items-center gap-2 mt-2" onClick={stopProp}>
         <button
           onClick={handleVerify}
@@ -700,8 +711,10 @@ function ProspectModal({
         className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sticky top-0 bg-amari-bone-white z-10 flex items-center justify-between border-b border-amari-border px-4 py-3">
+        {/* Header — sticky inside the scrollable modal container. z-30 so it
+            sits above the scrolling content; explicit bg color + shadow so
+            scrolling content doesn't bleed through (was a glitch with z-10). */}
+        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-amari-border px-4 py-3 bg-amari-bone-white shadow-sm">
           <div>
             <h2 className="text-lg font-serif text-amari-charcoal">{displayName(prospect.fullName)}</h2>
             <p className="text-xs text-amari-text-muted">
