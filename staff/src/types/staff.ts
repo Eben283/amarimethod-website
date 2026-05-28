@@ -309,12 +309,24 @@ export interface PartnerProspect {
   phone: string | null;
   email: string | null;
   website: string | null;
+  /** Standard GHL contact fields populated from enrichment (May 2026) — were
+   *  empty for most prospects pre-enrichment. */
+  companyName: string | null;
+  address1: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
   /** Raw social profile string from Garrett's sheet — may be an IG handle
    *  (@handle), an Instagram URL, a Facebook page URL, or escaped text.
    *  Format with formatSocialProfile() before rendering. */
   socialProfile: string | null;
   /** LinkedIn profile URL — populated by enrichment (notes harvest + Sales Nav). */
   linkedinUrl: string | null;
+  /** Other URLs surfaced during web enrichment — semicolon-separated. UI splits
+   *  on `;` and renders each as a clickable link. */
+  otherUrls: string | null;
+  /** 1–3 sentence rundown of who this person is (from audit/enrichment pipeline). */
+  rundown: string | null;
   /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
   lastActivityAt: string | null;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */

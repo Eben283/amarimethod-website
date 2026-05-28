@@ -44,6 +44,13 @@ const FIELD_IDS = {
   // 2026-05-27 + future Sales Nav MCP batches). Displayed as a clickable
   // LinkedIn row in the prospect modal.
   partner_linkedin_url:       "Zea1f8Z43bfkXvhYmcQj",
+  // Additional URLs surfaced during web enrichment (PGA Coach bio, club
+  // page, IG, podcast, etc.). LARGE_TEXT with semicolon-separated values.
+  partner_other_urls:         "7KvhcBornVP0k0vT2h68",
+  // 1–3 sentence rundown of who this person is — populated by the audit/
+  // enrichment pipeline. LARGE_TEXT. Shown in the prospect modal so Garrett
+  // can read context without leaving the app.
+  partner_rundown:            "Yd3lsw6fAxl0HVCxr1cD",
   // Existing (facility context)
   trainer_facility:        "eYBj61zgMnIFMIesoDR5",
   facility_type:           "gIQEMkO1gV85SAYcYlNx",
@@ -144,6 +151,11 @@ function toProspect(contact) {
     phone: contact.phone || null,
     email: contact.email || null,
     website: contact.website || null,
+    companyName: contact.companyName || null,
+    address1: contact.address1 || null,
+    city: contact.city || null,
+    state: contact.state || null,
+    postalCode: contact.postalCode || null,
     // Social profile — Garrett's sheet has it under the "instagram" column but
     // the actual values are a mix of IG handles, IG URLs, Facebook URLs, and
     // sometimes business-name text. Frontend formats with formatSocialProfile().
@@ -151,6 +163,11 @@ function toProspect(contact) {
     // LinkedIn URL — separate field because it's discovered via enrichment
     // (notes scan + Sales Nav MCP) rather than the sheet.
     linkedinUrl: getField(contact, FIELD_IDS.partner_linkedin_url),
+    // Other URLs surfaced during web enrichment. Stored semicolon-separated
+    // in GHL; UI splits and renders each as a clickable link.
+    otherUrls: getField(contact, FIELD_IDS.partner_other_urls),
+    // Short rundown / description from the audit pipeline.
+    rundown: getField(contact, FIELD_IDS.partner_rundown),
     // Prefer the cached real activity date (populated by backfill script from
     // /conversations messages). Falls back to GHL's contact.lastActivity (usually
     // null), and finally to null → "not recorded" in the UI.

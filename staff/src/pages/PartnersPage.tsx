@@ -804,6 +804,50 @@ function ProspectModal({
                   </div>
                 );
               })()}
+              {prospect.website && (
+                <div className="flex gap-2">
+                  <dt className="text-amari-text-muted w-24 shrink-0">Website</dt>
+                  <dd className="text-amari-charcoal break-all">
+                    <a
+                      href={prospect.website.startsWith('http') ? prospect.website : `https://${prospect.website}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
+                    >
+                      {hostnameOf(prospect.website) || prospect.website} <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </dd>
+                </div>
+              )}
+              {prospect.otherUrls && (() => {
+                const urls = prospect.otherUrls.split(/[;\n]/).map((u) => u.trim()).filter(Boolean);
+                if (urls.length === 0) return null;
+                return (
+                  <div className="flex gap-2">
+                    <dt className="text-amari-text-muted w-24 shrink-0">Other URLs</dt>
+                    <dd className="text-amari-charcoal break-all flex flex-col gap-0.5">
+                      {urls.map((url, i) => {
+                        const href = url.startsWith('http') ? url : `https://${url}`;
+                        const label = hostnameOf(url) || url;
+                        return (
+                          <a
+                            key={i}
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
+                          >
+                            {label} <ExternalLink className="w-3 h-3" />
+                          </a>
+                        );
+                      })}
+                    </dd>
+                  </div>
+                );
+              })()}
+              {prospect.companyName && prospect.companyName !== prospect.partnerFacility && (
+                <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Business</dt><dd className="text-amari-charcoal">{displayName(prospect.companyName)}</dd></div>
+              )}
               {prospect.partnerFacility && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Facility</dt><dd className="text-amari-charcoal">{displayName(prospect.partnerFacility)}</dd></div>
               )}
@@ -816,8 +860,26 @@ function ProspectModal({
               {prospect.hasPtOnStaff && prospect.hasPtOnStaff !== 'Unknown' && (
                 <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">PT on staff</dt><dd className="text-amari-charcoal">{prospect.hasPtOnStaff}</dd></div>
               )}
+              {(prospect.address1 || prospect.city || prospect.state || prospect.postalCode) && (
+                <div className="flex gap-2">
+                  <dt className="text-amari-text-muted w-24 shrink-0">Location</dt>
+                  <dd className="text-amari-charcoal">
+                    {[
+                      prospect.address1,
+                      [prospect.city, prospect.state].filter(Boolean).join(', '),
+                      prospect.postalCode,
+                    ].filter(Boolean).join(' · ')}
+                  </dd>
+                </div>
+              )}
               <div className="flex gap-2"><dt className="text-amari-text-muted w-24 shrink-0">Touches</dt><dd className="text-amari-charcoal">{prospect.touchCount} {prospect.touchCount === 1 ? 'outreach action' : 'outreach actions'}</dd></div>
             </dl>
+            {prospect.rundown && (
+              <div className="mt-2 p-2 rounded bg-amari-light-sand/40 border border-amari-border/40">
+                <p className="text-[10px] uppercase tracking-wide text-amari-text-muted mb-0.5">Rundown</p>
+                <p className="text-xs text-amari-charcoal whitespace-pre-wrap">{prospect.rundown}</p>
+              </div>
+            )}
             {(prospect.outreachVerified || prospect.inGarrettSheet) && (
               <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-emerald-700">
                 <CheckCircle2 className="w-3 h-3" />
