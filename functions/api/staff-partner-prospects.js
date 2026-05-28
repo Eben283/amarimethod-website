@@ -44,6 +44,10 @@ const FIELD_IDS = {
   // 2026-05-27 + future Sales Nav MCP batches). Displayed as a clickable
   // LinkedIn row in the prospect modal.
   partner_linkedin_url:       "Zea1f8Z43bfkXvhYmcQj",
+  // Instagram — TEXT (handle OR full URL). For partners/prospects where we
+  // know the IG independent of Garrett's sheet (which only has socialProfile
+  // for sheet-tracked contacts). UI normalizes handle/URL → @handle + link.
+  partner_instagram:          "4Y2f2SnTMK28kl6kNbPR",
   // Additional URLs surfaced during web enrichment (PGA Coach bio, club
   // page, IG, podcast, etc.). LARGE_TEXT with semicolon-separated values.
   partner_other_urls:         "7KvhcBornVP0k0vT2h68",
@@ -163,6 +167,9 @@ function toProspect(contact) {
     // LinkedIn URL — separate field because it's discovered via enrichment
     // (notes scan + Sales Nav MCP) rather than the sheet.
     linkedinUrl: getField(contact, FIELD_IDS.partner_linkedin_url),
+    // Instagram (handle or URL). Independent of socialProfile (which only
+    // exists for sheet-tracked prospects). Use this for partners.
+    instagram: getField(contact, FIELD_IDS.partner_instagram),
     // Other URLs surfaced during web enrichment. Stored semicolon-separated
     // in GHL; UI splits and renders each as a clickable link.
     otherUrls: getField(contact, FIELD_IDS.partner_other_urls),

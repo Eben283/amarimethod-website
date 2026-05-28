@@ -328,6 +328,9 @@ export interface PartnerProspect {
   socialProfile: string | null;
   /** LinkedIn profile URL — populated by enrichment (notes harvest + Sales Nav). */
   linkedinUrl: string | null;
+  /** Instagram handle (`@name`) or full URL. Independent of socialProfile
+   *  (which only exists for sheet-tracked prospects — partners aren't in the sheet). */
+  instagram: string | null;
   /** Other URLs surfaced during web enrichment — semicolon-separated. UI splits
    *  on `;` and renders each as a clickable link. */
   otherUrls: string | null;

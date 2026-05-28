@@ -821,6 +821,36 @@ function ProspectModal({
                   </div>
                 );
               })()}
+              {prospect.instagram && (() => {
+                // Accept either "@handle", "handle", or "https://instagram.com/handle"
+                const raw = prospect.instagram.trim();
+                let handle = raw.replace(/^@/, '');
+                let href = raw;
+                if (raw.startsWith('http')) {
+                  try {
+                    const u = new URL(raw);
+                    const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/');
+                    if (seg.length >= 1 && seg[0]) handle = seg[0];
+                  } catch { /* fall through */ }
+                } else {
+                  href = `https://instagram.com/${handle}`;
+                }
+                return (
+                  <div className="flex gap-2">
+                    <dt className="text-amari-text-muted w-24 shrink-0">Instagram</dt>
+                    <dd className="text-amari-charcoal break-all">
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amari-accent-warm hover:underline inline-flex items-center gap-0.5"
+                      >
+                        @{handle} <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </dd>
+                  </div>
+                );
+              })()}
               {prospect.website && (
                 <div className="flex gap-2">
                   <dt className="text-amari-text-muted w-24 shrink-0">Website</dt>
