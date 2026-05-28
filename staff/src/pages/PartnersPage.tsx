@@ -295,6 +295,15 @@ const FACILITY_TIER: ReadonlyArray<readonly [string, GeoTier]> = [
   ['summit pointe', 'C'],
   ['cinnabar hills', 'C'],
   ['the institute', 'C'],
+  ['boulder ridge', 'C'],     // San Jose — Bay Club operates a club here
+  ['los altos golf', 'C'],
+  ['los altos country', 'C'],
+  ['saratoga country', 'C'],
+  ['la rinconada', 'C'],
+  ['almaden golf', 'C'],
+  ['coyote creek', 'C'],
+  ['eagle ridge', 'C'],
+  ['palm valley', 'C'],
   // skip — out of region (catches known wrong-region facilities)
   ['pebble beach', 'C'], // technically a destination resort — still long drive
 ];
@@ -306,12 +315,19 @@ const AREA_CODE_TIER: Record<string, GeoTier> = {
 };
 
 function computeGeoTier(prospect: PartnerProspect): GeoTier {
+  // Facility is the trusted signal — it's the working location, which is
+  // where the partnership pays off. If facility is present but unmatched,
+  // return 'unknown' rather than falling through to phone: phone area codes
+  // can lie (personal cells travel with people), and a silent mis-tier is
+  // worse than a visible "?" that prompts adding the club to the list.
   const facility = (prospect.partnerFacility || '').toLowerCase();
   if (facility) {
     for (const [needle, tier] of FACILITY_TIER) {
       if (facility.includes(needle)) return tier;
     }
+    return 'unknown';
   }
+  // No facility recorded — fall back to phone area code as best-available signal.
   const digits = (prospect.phone || '').replace(/\D/g, '');
   let areaCode: string | null = null;
   if (digits.length === 10) areaCode = digits.slice(0, 3);
