@@ -1,0 +1,7 @@
+{
+  "name": "series-reconcile-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker cron that catches orphan session-package purchases — orders that completed in GHL/Stripe but where the C-series workflow didn't fire to set sessions_remaining / series_type / portal_access / living_practice_access on the contact. Scans payments/orders hourly, idempotent via PURCHASE_KV, applies the same field set the C1/C2/C1b/C2b workflows would have applied. Catches POS, invoice, and any failure mode that bypasses the GHL 'Order Submitted' trigger."
+}

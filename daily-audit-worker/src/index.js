@@ -97,6 +97,11 @@ async function runAudit(env) {
   // weeks stale.
   const refreshWatchdogIssues = await checkPartnerActivityRefresh(env);
 
+  // Same pattern for series-reconcile sister Worker (hourly cron, catches
+  // orphan paid package purchases that bypass the C-series GHL workflow).
+  // Stale here means uncaught orphans accumulate silently.
+  const seriesReconcileWatchdogIssues = await checkSeriesReconcile(env);
+
   const allIssues = [
     ...apptIssues,
     ...purchaseResult.issues,
@@ -105,6 +110,7 @@ async function runAudit(env) {
     ...commIssues,
     ...mismatchIssues,
     ...refreshWatchdogIssues,
+    ...seriesReconcileWatchdogIssues,
   ];
 
   const result = {
@@ -209,6 +215,99 @@ async function checkPartnerActivityRefresh(env) {
       area: "infra",
       kind: "partner-activity-refresh-partial-failures",
       message: `partner-activity-refresh had ${summary.failed} per-contact failures on its last run. Check the Worker logs.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  return issues;
+}
+
+// Read the series-reconcile Worker's lastRun summary from KV. Flag any of:
+//   - Never run (KV key absent)
+//   - Last run >6h ago (Worker is hourly — even allowing for hiccups, >6h means broken)
+//   - Last run reported status="error" (worker errored fully)
+//   - Last run had >0 errored orders (per-order failures — paid clients not getting their packages applied)
+//   - Last run applied >0 orphans (info — surface so we can investigate why they fell through)
+async function checkSeriesReconcile(env) {
+  const issues = [];
+  const KEY = "ops:series-reconcile:lastRun";
+  let raw;
+  try {
+    raw = await env.PORTAL_KV.get(KEY);
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-kv-unreadable",
+      message: `series-reconcile KV read failed: ${err.message}`,
+    });
+    return issues;
+  }
+
+  if (!raw) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-never-ran",
+      message: "series-reconcile Worker has never written a lastRun summary. Either it was deployed without running, or the KV binding is wrong.",
+    });
+    return issues;
+  }
+
+  let summary;
+  try { summary = JSON.parse(raw); }
+  catch {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-corrupt",
+      message: "series-reconcile lastRun KV value is not valid JSON.",
+    });
+    return issues;
+  }
+
+  const finishedAt = summary.finishedAt ? new Date(summary.finishedAt).getTime() : null;
+  const ageH = finishedAt ? (Date.now() - finishedAt) / 3_600_000 : null;
+
+  if (ageH === null || ageH > 6) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-stale",
+      message: `series-reconcile last ran ${ageH ? Math.round(ageH) + 'h ago' : 'unknown'}. Hourly cron may be broken — orphan package purchases would accumulate. Investigate at Cloudflare Dashboard → Workers → series-reconcile.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  if (summary.status === "error") {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-errored",
+      message: `series-reconcile last run errored: ${summary.error || 'unknown error'}. ${summary.applied || 0} applied, ${summary.failed || 0} failed.`,
+      lastRun: summary.finishedAt,
+    });
+  } else if (summary.failed > 0) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-per-order-failures",
+      message: `series-reconcile had ${summary.failed} per-order failure(s) on its last run — paid clients may not have their packages applied. Check Worker logs.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  // Info-level surface: if we successfully reconciled orphans, that means the
+  // GHL "Order Submitted" trigger missed them — worth knowing in the briefing.
+  if (summary.applied > 0) {
+    const detail = (summary.appliedDetail || [])
+      .map((a) => `${a.contactName || a.contactId} (${a.package})`)
+      .join(", ");
+    issues.push({
+      severity: "info",
+      area: "infra",
+      kind: "series-reconcile-applied-orphans",
+      message: `series-reconcile auto-fixed ${summary.applied} orphan package purchase(s) on its last run: ${detail}. Workflow trigger silently missed these — confirm clients got expected onboarding.`,
       lastRun: summary.finishedAt,
     });
   }
