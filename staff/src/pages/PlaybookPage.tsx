@@ -412,14 +412,18 @@ function PartnerCallPlaybook() {
             Goal: disarm the "what does this guy want from me" reflex before saying who you are.
           </p>
           <p>
-            The prospect is in defensive mode the moment they pick up. Naming it ("you're probably going
-            to hate this call") and giving them autonomy to reject ("is now a bad time") removes the
-            defensiveness.
+            The prospect is in defensive mode the moment they pick up. Acknowledging the cold dynamic up
+            front ("calling out of the blue to ask for a favor") and giving them autonomy to reject ("is
+            now a bad time") removes the defensiveness — without sounding falsely apologetic.
           </p>
           <Quote>
-            "Hi [name], this is [your name] from Amari Method in SF. You're probably going to hate this
-            call because I'm a complete stranger interrupting your day. <strong>Is now a bad time to talk?</strong>"
+            "Hi [name], this is [your name] from Amari Method in SF. I know we haven't spoken before, and
+            it probably seems like I'm just calling out of the blue to ask for a favor.{' '}
+            <strong>Is now a bad time to talk?</strong>"
           </Quote>
+          <p className="text-amari-text-muted text-xs italic pt-1">
+            Pause after the audit. Don't fill the silence — let it sit. They'll respond.
+          </p>
           <p className="font-medium pt-2">Why "is now a bad time" beats "do you have a minute":</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>"Do you have a minute" pushes for a yes → they go defensive</li>
@@ -486,8 +490,8 @@ function PartnerCallPlaybook() {
           <Quote>
             "Here's why I'm calling. I normally charge $225 for a 60-minute session at my SF studio. I'm
             offering it free to a handful of [golf pros / trainers / tennis pros] right now because I want
-            to be someone you can refer clients to for the body stuff you can't fix as a coach. The only
-            way that makes sense to me is if you've felt the work yourself first.{' '}
+            to be someone you can refer clients to for pain — or anything physical you can't fix as a
+            coach. The only way that makes sense to me is if you've felt the work yourself first.{' '}
             <strong>Whether you decide to refer is up to you</strong> — but I'd want you to have actually
             felt it before deciding. Sound fair?"
           </Quote>
@@ -511,8 +515,8 @@ function PartnerCallPlaybook() {
             actually works.
           </p>
           <Quote>
-            "Here's how this works — it's really simple. <strong>One:</strong> when you spot a student who's
-            stuck on a body thing you can't drill out of them, you send them to me.{' '}
+            "Here's how this works — it's really simple. <strong>One:</strong> when you spot a student
+            dealing with pain — or anything physical you can't fix as a coach — you send them to me.{' '}
             <strong>Two:</strong> I do the bodywork to unlock whatever's keeping them from doing what you're
             coaching. <strong>Three:</strong> they come back to you physically able to break through — and
             you look like the coach who actually got them there. Instead of losing students because their
