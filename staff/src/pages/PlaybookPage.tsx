@@ -466,40 +466,38 @@ function PartnerCallPlaybook() {
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Partner Call</h1>
         <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
-          Cold call to a golf pro, tennis pro, or fitness trainer in the SF Bay Area.
+          Cold call to a golf pro, tennis pro, or fitness trainer in the SF Bay Area. Goal: book them for
+          a free 60-minute session at the studio, and seed the expectation that this comp is the front end
+          of a referral relationship — not a one-off gift.
         </p>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed">
-          The goal: book them for a free 60-minute session at the studio, AND seed the
-          expectation that this comp is the front end of a referral relationship — not a one-off gift.
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed italic">
+          Scaffolding, not script. Each beat names the goal, the topics to cover, and brand-aligned
+          framing — but the exact words come from you. Rehearsed phrasings read as scripted from a
+          prospect's ear.
         </p>
       </header>
 
-      <section className="staff-card mb-4">
-        <h3 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-          Pre-call (30 seconds)
-        </h3>
-        <p className="text-sm text-amari-charcoal/90 leading-relaxed mb-2">
-          Before dialing, glance at:
-        </p>
-        <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-5 list-disc">
-          <li>Their facility (so you can ask about a specific student type)</li>
-          <li>Their LinkedIn or website (recent post, student win, club they teach at)</li>
-          <li>Geo tier (A = SF/Peninsula = primary; B = East Bay = secondary)</li>
-        </ul>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed mt-2 italic">
-          If they're tier B or C and you don't have any shared context, don't call. Send a LinkedIn connect first.
-        </p>
-      </section>
-
       <div className="space-y-3">
+        <StepSection title="Pre-call (30 seconds)">
+          <p className="font-medium">Goal: have one specific thing to mention. Cold-feeling calls don't convert.</p>
+          <p className="font-medium pt-2">Glance at:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Their facility (so you can ask about a specific student type)</li>
+            <li>Their LinkedIn or website — recent post, student win, club they teach at</li>
+            <li>Geo tier — A = SF/Peninsula (primary), B = East Bay (secondary)</li>
+          </ul>
+          <p className="text-amari-text-muted text-xs italic pt-2">
+            If they're tier B/C and you don't have shared context, don't call. Send a LinkedIn connect first.
+          </p>
+        </StepSection>
+
         <StepSection title="1. Open (first 15 seconds)">
           <p className="font-medium">
             Goal: disarm the "what does this guy want from me" reflex before saying who you are.
           </p>
           <p>
-            The prospect is in defensive mode the moment they pick up. Acknowledging the cold dynamic up
-            front ("calling out of the blue to ask for a favor") and giving them autonomy to reject ("is
-            now a bad time") removes the defensiveness — without sounding falsely apologetic.
+            The move: acknowledge the cold dynamic up front, then give them autonomy to reject the call
+            ("is now a bad time"). Removes defensiveness without sounding falsely apologetic.
           </p>
           <Quote>
             "Hi [name], this is [your name] from Amari Method in SF. I know we haven't spoken before, and
@@ -507,17 +505,14 @@ function PartnerCallPlaybook() {
             <strong>Is now a bad time to talk?</strong>"
           </Quote>
           <p className="text-amari-text-muted text-xs italic pt-1">
-            Pause after the audit. Don't fill the silence — let it sit. They'll respond.
+            <strong>Why "is now a bad time" not "do you have a minute":</strong> pushing for a yes makes
+            them defensive. "Is now a bad time" gives them a clean answer either direction.
           </p>
-          <p className="font-medium pt-2">Why "is now a bad time" beats "do you have a minute":</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>"Do you have a minute" pushes for a yes → they go defensive</li>
-            <li>"Is now a bad time" lets them say "no, it's fine" (full attention) OR "yes, kind of" (clean reschedule, no awkward hang-up)</li>
-          </ul>
+          <p className="text-amari-text-muted text-xs italic pt-1">
+            <strong>Voice:</strong> slight smile, easygoing. Pause after the audit — don't fill the silence.
+          </p>
           <p className="pt-2">
-            <strong>Voice:</strong> slight smile, easygoing tone. Don't try this rushed or assertive — it'll
-            feel like a script. If they say "yes, it's a bad time" — jump to Beat 5 and book a callback.
-            Don't push.
+            If they say it IS a bad time → jump to Beat 5 to schedule a callback. Don't push.
           </p>
         </StepSection>
 
@@ -527,40 +522,33 @@ function PartnerCallPlaybook() {
           </p>
           <p>
             Use calibrated questions — open questions starting with "What" or "How" (never "Why" — sounds
-            accusatory). They have no defined answer, which forces the prospect to think and articulate,
-            while giving them the illusion of control.
+            accusatory). They have no defined answer, which forces the prospect to think and articulate.
           </p>
-          <p className="font-medium pt-2">Pick 2–3. Don't run all four.</p>
+          <p className="font-medium pt-2">Pick 2–3. Don't run all four:</p>
           <ol className="list-decimal pl-5 space-y-1">
             <li><em>"What do you see as the biggest physical challenge your students are dealing with right now?"</em></li>
             <li><em>"When a student plateaus, what's usually the core issue you can't address with coaching alone?"</em></li>
             <li><em>"What's the most difficult thing for them to get around — the one that keeps coming back?"</em></li>
-            <li><em>"What does it cost them — and you — when it doesn't get fixed?"</em></li>
+            <li><em>"What does it cost them — and you — when it doesn't get fixed?"</em> (loss-aversion bomb; optional, powerful)</li>
           </ol>
-          <p className="pt-2">The last one is the loss-aversion bomb. Optional but powerful.</p>
 
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Listening discipline
-            </h4>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Don't interrupt.</li>
-              <li>
-                After their answer, <strong>mirror</strong> the last 1-3 words back with an inquisitive upward
-                tone. They'll elaborate.{' '}
-                <em>("...so it's mostly their hips" / "Their hips?" / longer answer.)</em>
-              </li>
-              <li>
-                <strong>Label</strong> what you hear:{' '}
-                <em>"It sounds like you've been carrying these students for months without anywhere to send them."</em>{' '}
-                Validates and builds trust.
-              </li>
-            </ul>
-            <p className="pt-2">
-              This beat is NOT a setup for a pitch. It's reconnaissance + relationship. Most pros never get
-              asked these questions by someone genuinely listening. That alone earns goodwill.
-            </p>
-          </div>
+          <p className="font-medium pt-3">Listening discipline:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Don't interrupt</li>
+            <li>
+              After their answer, <strong>mirror</strong> the last 1-3 words back with an inquisitive upward
+              tone — they'll elaborate
+            </li>
+            <li>
+              <strong>Label</strong> what you hear (e.g.,{' '}
+              <em>"It sounds like you've been carrying these students without anywhere to send them"</em>) —
+              validates and builds trust
+            </li>
+          </ul>
+          <p className="pt-2">
+            This beat is NOT a setup for a pitch. It's reconnaissance + relationship. Most pros never get
+            asked these questions by someone genuinely listening.
+          </p>
         </StepSection>
 
         <StepSection title="3. Offer — the barter, not the gift">
@@ -568,9 +556,8 @@ function PartnerCallPlaybook() {
             Goal: frame the comp session as a trade, not a gift.
           </p>
           <p>
-            Free triggers suspicion. Barter doesn't. The fatal move is offering "a free session, hope you
-            like it" — the prospect spends the comp waiting for the pitch. Naming the trade upfront makes
-            the comp the path TO the ask, not bait FOR the ask.
+            Free triggers suspicion. Barter doesn't. Naming the trade upfront makes the comp the path TO
+            the ask, not bait FOR the ask.
           </p>
           <Quote>
             "Here's why I'm calling. I normally charge $225 for a 60-minute session at my SF studio. I'm
@@ -580,13 +567,33 @@ function PartnerCallPlaybook() {
             <strong>Whether you decide to refer is up to you</strong> — but I'd want you to have actually
             felt it before deciding. Sound fair?"
           </Quote>
-          <p className="font-medium pt-2">The 4 critical elements:</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li><strong>Named price</strong> ($225) — anchors the value</li>
-            <li><strong>Named ask</strong> ("I want to be someone you can refer clients to") — kills the "what's the catch" reflex</li>
-            <li><strong>Why it makes sense</strong> ("only way is if you've felt it") — explains the trade honestly</li>
-            <li><strong>Autonomy clause</strong> ("whether you decide to refer is up to you") — kills reactance, increases compliance</li>
-          </ol>
+          <p className="font-medium pt-3">The 4 elements that have to be in there:</p>
+          <table className="w-full text-sm border-collapse mt-2">
+            <thead>
+              <tr className="border-b border-amari-border">
+                <th className="text-left py-1.5 pr-3 font-semibold text-amari-charcoal">Element</th>
+                <th className="text-left py-1.5 font-semibold text-amari-charcoal">What it does</th>
+              </tr>
+            </thead>
+            <tbody className="align-top">
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">Named price ($225)</td>
+                <td className="py-2">Anchors value</td>
+              </tr>
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">Named ask</td>
+                <td className="py-2">"I want to be someone you can refer clients to" — kills the "what's the catch" reflex</td>
+              </tr>
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">Why it makes sense</td>
+                <td className="py-2">"Only way is if you've felt it" — explains the trade honestly</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-3 font-medium">Autonomy clause</td>
+                <td className="py-2">"Whether you decide to refer is up to you" — kills reactance, increases compliance</td>
+              </tr>
+            </tbody>
+          </table>
         </StepSection>
 
         <StepSection title="4. Frame what they get — 3-step plan, not modality">
@@ -594,24 +601,31 @@ function PartnerCallPlaybook() {
             Goal: don't explain Amari. Give them a 3-step plan where THEY are the hero.
           </p>
           <p>
-            Most cold callers explain their modality, credentials, philosophy. The prospect tunes out because
-            they're hearing about YOU, not about THEM. The fix: frame yourself as the guide who helps the
-            coach solve the coach's frustration. The 3-step plan removes ambiguity about how the partnership
-            actually works.
+            The prospect tunes out when they hear about YOU. They lean in when they hear a plan for THEM.
           </p>
-          <Quote>
-            "Here's how this works — it's really simple. <strong>One:</strong> when you spot a student
-            dealing with pain — or anything physical you can't fix as a coach — you send them to me.{' '}
-            <strong>Two:</strong> I do the bodywork to unlock whatever's keeping them from doing what you're
-            coaching. <strong>Three:</strong> they come back to you physically able to break through — and
-            you look like the coach who actually got them there. Instead of losing students because their
-            body wouldn't cooperate, you become the one who solves it for them."
-          </Quote>
-          <p className="font-medium pt-2">Avoid:</p>
-          <p className="pl-3 text-amari-text-muted text-xs">
-            "Network Spinal," "rebalancing," "somatic," "25 years of practice," any credentialing intro.
-            None of that lands. The plan does.
-          </p>
+          <p className="font-medium pt-2">The 3 steps to land (in your words):</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>
+              <strong>You spot a student</strong> dealing with pain — or anything physical you can't fix as
+              a coach
+            </li>
+            <li>
+              <strong>You send them to me.</strong> I do the bodywork to unlock whatever's keeping their
+              body from doing what you're coaching
+            </li>
+            <li>
+              <strong>They come back to you</strong> physically able to break through — and you look like
+              the coach who got them there
+            </li>
+          </ol>
+          <p className="font-medium pt-3">Avoid:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>"Network Spinal," "rebalancing," "somatic" — modality lineage</li>
+            <li>"25 years of practice" — any credentialing intro</li>
+            <li>The word "fix"</li>
+            <li>Explaining how the work works mechanically</li>
+          </ul>
+          <p className="text-amari-text-muted text-xs italic pt-2">The plan lands. Modality doesn't.</p>
         </StepSection>
 
         <StepSection title="5. Book — calendar commitment on this call">
@@ -619,52 +633,47 @@ function PartnerCallPlaybook() {
             Goal: lock in the calendar now, not "I'll get back to you."
           </p>
           <p>
-            If they leave without a time set, most won't follow up. The rule: book a meeting from a meeting.
+            Most who say "I'll check my calendar" don't follow up. The rule: book a meeting from a meeting.
           </p>
+          <p className="font-medium pt-2">The sequence:</p>
           <Quote>
             "Awesome. Let's get you on the calendar now so we don't lose momentum. Do mornings or afternoons
             work better?"
           </Quote>
-          <p>Wait for answer. Then:</p>
+          <p className="text-amari-text-muted text-xs italic">(Wait for answer.)</p>
           <Quote>
             "Perfect — I have [Tuesday at 9am] or [Thursday at 10:30am]. Which works better?"
           </Quote>
-          <p className="font-medium pt-2">Why A/B beats open-ended:</p>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>"When are you free?" → they scan their whole calendar → friction → "let me get back to you"</li>
-            <li>"Tuesday 9 or Thursday 10:30?" → 1-second decision, no calendar scan</li>
-          </ul>
+          <p className="text-amari-text-muted text-xs italic pt-1">
+            A/B beats open-ended because "when are you free?" makes them scan their whole calendar
+            (friction → punt).
+          </p>
 
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Logistics ONLY after time is locked
-            </h4>
-            <Quote>
-              "Tuesday at 9am it is. I'll send you the calendar invite now. The studio's at [address] —
-              just wear something you can move in, you don't need to bring anything. We'll spend the first
-              10 minutes talking about what your body's been doing, then we get on the table and do the
-              work. You'll feel different walking out."
-            </Quote>
-            <p className="text-amari-text-muted pl-3 text-xs pt-2">
-              Confirming logistics before the time is set overwhelms them and gives them a reason to stall.
-            </p>
-          </div>
+          <p className="font-medium pt-3">Once time is locked — then logistics:</p>
+          <Quote>
+            "Tuesday at 9am it is. I'll send you the calendar invite now. The studio's at [address] — wear
+            something you can move in, you don't need to bring anything. We'll spend the first 10 minutes
+            talking about what your body's been doing, then get on the table. You'll feel different walking
+            out."
+          </Quote>
+          <p className="text-amari-text-muted text-xs italic pt-1">
+            Don't explain logistics before the time is set — it gives them a reason to stall.
+          </p>
         </StepSection>
 
         <StepSection title="6. Close the call">
-          <Quote>
-            "Great. Looking forward to [day/time]. Anything I should know before then?"
-          </Quote>
+          <Quote>"Great. Looking forward to [day/time]. Anything I should know before then?"</Quote>
           <p className="pt-2">
-            That's it. Don't re-pitch. Don't over-thank. Don't say "feel free to call me if anything changes"
-            (that's an out). Confirm, then hang up.
+            Confirm. Hang up. Don't re-pitch, don't over-thank, don't add "feel free to call me if anything
+            changes" (that's an out).
           </p>
         </StepSection>
 
         <StepSection title="Objection cheat sheet">
           <p>
-            Don't argue. Don't logic. Mirror → label → calibrated question → no-oriented close. Slow, warm
-            voice on all of these — fast or assertive delivery makes them feel manipulated.
+            Don't argue. Don't logic. Pattern is always: <strong>mirror → label → calibrated question →
+            no-oriented close.</strong> Slow, warm voice — fast or assertive delivery makes the techniques
+            feel manipulative.
           </p>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
@@ -672,13 +681,13 @@ function PartnerCallPlaybook() {
               "I'll think about it."
             </h4>
             <p className="text-amari-text-muted text-xs">
-              Translation: they feel pressured, don't see the value yet, or are trying to escape politely.
+              Translation: they feel pressured, don't see the value yet, or are trying to politely escape.
             </p>
             <ol className="list-decimal pl-5 space-y-1 pt-1">
-              <li><strong>Mirror:</strong> <em>"Think about it?"</em> (silence, wait for them to elaborate)</li>
+              <li><strong>Mirror:</strong> <em>"Think about it?"</em> (silence, wait)</li>
               <li><strong>Label:</strong> <em>"It sounds like there's a specific piece of this that doesn't quite sit right with you."</em></li>
               <li><strong>Calibrated:</strong> <em>"What's the biggest thing you'd be weighing?"</em></li>
-              <li><strong>No-oriented close:</strong> <em>"Would it be a bad idea to put a tentative time on the calendar for next [day]? Gives you time to think — you can cancel if it's a no."</em></li>
+              <li><strong>Close:</strong> <em>"Would it be a bad idea to put a tentative time on the calendar? Gives you time to think — you can cancel if it's a no."</em></li>
             </ol>
           </div>
 
@@ -693,7 +702,7 @@ function PartnerCallPlaybook() {
               <li><strong>Mirror:</strong> <em>"Send some info?"</em> (silence)</li>
               <li><strong>Label:</strong> <em>"It sounds like you're slammed today and just want to get back to your day."</em></li>
               <li><strong>Calibrated:</strong> <em>"What would I need to include for it not to be just generic marketing material?"</em></li>
-              <li><strong>No-oriented close:</strong> <em>"Are you against just dropping a 10-minute placeholder on the calendar so we can see if what I send actually aligns?"</em></li>
+              <li><strong>Close:</strong> <em>"Are you against dropping a 10-minute placeholder on the calendar so we can see if what I send actually aligns?"</em></li>
             </ol>
           </div>
 
@@ -702,23 +711,29 @@ function PartnerCallPlaybook() {
               "We already have someone we refer to."
             </h4>
             <p className="text-amari-text-muted text-xs">
-              Translation: change is scary — current provider is the safe choice. Don't attack the incumbent;
-              praise their loyalty.
+              Translation: change is scary — current provider is the safe choice. Don't attack the
+              incumbent; praise the loyalty.
             </p>
             <ol className="list-decimal pl-5 space-y-1 pt-1">
               <li><strong>Mirror:</strong> <em>"Someone you already refer to?"</em></li>
               <li><strong>Label:</strong> <em>"It sounds like you're loyal to the relationships you've built — that's how good practices run."</em></li>
-              <li><strong>Calibrated:</strong> <em>"How are you handling the cases where your current person isn't quite the right fit?"</em> OR <em>"What's the biggest body thing they haven't been able to solve for you?"</em></li>
-              <li><strong>No-oriented close:</strong> <em>"Would it be ridiculous to do a brief session anyway, just so you know what I do for cases when your current person is booked or it's not their lane?"</em></li>
+              <li><strong>Calibrated:</strong> <em>"How are you handling the cases where your current person isn't quite the right fit?"</em></li>
+              <li><strong>Close:</strong> <em>"Would it be ridiculous to do a brief session anyway, just so you know what I do for cases when your current person is booked or it's not their lane?"</em></li>
             </ol>
           </div>
         </StepSection>
 
         <StepSection title="Post-call">
-          <p>Within 2 minutes of hanging up:</p>
+          <p>Within 2 minutes:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li>Log the outcome in <code>/staff/outreach</code> — <strong>Talked</strong> (and tick session-booked if applicable)</li>
-            <li>Add a note with any specific student type or pain point they mentioned (so you can reference it when they walk in for the session)</li>
+            <li>
+              Log the outcome in <code>/staff/outreach</code> — <strong>Talked</strong> (and tick
+              session-booked if applicable)
+            </li>
+            <li>
+              Add a note with any specific student type or pain point they mentioned (so you can reference
+              it when they walk in)
+            </li>
             <li>Calendar invite goes out automatically from GHL</li>
           </ol>
         </StepSection>
