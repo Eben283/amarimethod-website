@@ -3,6 +3,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { deriveLedger } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -96,8 +97,18 @@ export async function onRequestGet(context) {
 
     const contactId = tokenPayload.contactId;
 
-    // Fetch contact details, appointments, and custom field definitions in parallel
-    const [contactResponse, appointmentsResponse, fieldDefsResponse] = await Promise.all([
+    // Fetch contact, appointments, custom field defs, orders, and invoices in
+    // parallel. The ledger needs orders+invoices in addition to contact+appts;
+    // batching them all here avoids a second round-trip. Orders+invoices are
+    // optional — if either fails the ledger downgrades confidence but the
+    // page still renders.
+    const [
+      contactResponse,
+      appointmentsResponse,
+      fieldDefsResponse,
+      ordersResponse,
+      invoicesResponse,
+    ] = await Promise.all([
       fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         headers: ghlHeaders(GHL_API_KEY),
       }),
@@ -107,6 +118,15 @@ export async function onRequestGet(context) {
       fetch(`${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`, {
         headers: ghlHeaders(GHL_API_KEY),
       }),
+      fetch(
+        `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`,
+        { headers: ghlHeaders(GHL_API_KEY) },
+      ),
+      // GHL /invoices/ requires offset as a non-empty string or it 422s
+      fetch(
+        `${GHL_API_BASE}/invoices/?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`,
+        { headers: ghlHeaders(GHL_API_KEY) },
+      ),
     ]);
 
     // Build a map of short field key → field ID (e.g. "sessions_completed" → "TE0udwVH1Km5RsKaN5H0")
@@ -139,22 +159,58 @@ export async function onRequestGet(context) {
       allAppointments = apptData.appointments || apptData.events || [];
     }
 
-    // Parse custom fields for series tracking
-    const seriesType = getCustomField(contact, "series_type", fieldDefs) || "none";
-    const fieldSessionsCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
-    const sessionsRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
+    // Parse orders + invoices for the ledger derivation. Both are optional —
+    // if either fails the ledger downgrades confidence but the page still
+    // renders.
+    let orders = [];
+    if (ordersResponse.ok) {
+      const ordersData = await ordersResponse.json();
+      orders = ordersData.data || ordersData.orders || [];
+    }
+    let invoices = [];
+    if (invoicesResponse.ok) {
+      const invoicesData = await invoicesResponse.json();
+      invoices = invoicesData.invoices || [];
+    }
 
-    // Count actual completed appointments as a fallback for sessions_completed
-    const completedAppointmentCount = allAppointments.filter(
-      (a) => {
-        const s = (a.appointmentStatus || a.status || "").toLowerCase();
-        return s === "completed" || s === "showed";
-      }
-    ).length;
-    // sessions_completed in GHL is cumulative (never reset between series — the attendance
-    // workflow adds 1 each time). Don't clamp it — the frontend uses it as a lifetime counter.
-    // The progress bar uses (totalSessions - sessionsRemaining) instead, which is always accurate.
-    const sessionsCompleted = Math.max(fieldSessionsCompleted, completedAppointmentCount);
+    // Derive the prepaid balance from orders + invoices + appointments. This
+    // is the same logic the staff app uses (functions/lib/session-ledger.js);
+    // by sharing it, the portal stops depending on the drift-prone GHL
+    // custom fields and instead reflects the actual prepaid balance.
+    //
+    // See projects/amarimethod-website/portal/PORTAL-REDESIGN-RESEARCH.md
+    // for full context.
+    const ledger = deriveLedger({
+      contact,
+      orders,
+      invoices,
+      appointments: allAppointments,
+      fieldDefs,
+    });
+
+    // Series type now comes from the ledger (derived from actual purchases),
+    // not the custom field. The custom field can lag or be wrong; the
+    // ledger reflects what was bought.
+    const seriesType = ledger.seriesType;
+
+    // Two distinct counters per UX decision 2026-05-29:
+    //   sessionsRemaining — prepaid package balance ("when do I need to act?")
+    //   sessionsCompleted — lifetime journey ("how far have I come?")
+    // These are independent. They don't sum to a package size.
+    const sessionsRemaining = ledger.remaining;
+    const lifetimeCompletedCount = allAppointments.filter((a) => {
+      const s = (a.appointmentStatus || a.status || "").toLowerCase();
+      // Past 'confirmed' appointments effectively ran — Garrett doesn't
+      // always flip them to 'completed' or 'showed' after a session.
+      return s === "completed" || s === "showed" || s === "confirmed";
+    }).length;
+    const sessionsCompleted = lifetimeCompletedCount;
+
+    // Extra ledger-derived fields for the new two-counter UI:
+    const packageSize = ledger.purchased; // total sessions purchased (e.g., 8 for 8-pack, 12 for 4+8)
+    const attendedAgainstPackage = ledger.attended; // sessions consumed from the package
+    const ledgerConfidence = ledger.confidence; // 'high' | 'low'
+    const ledgerSource = ledger.source; // 'orders+invoices+appointments' | 'empty'
 
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
@@ -222,6 +278,11 @@ export async function onRequestGet(context) {
           seriesType,
           sessionsCompleted,
           sessionsRemaining,
+          // ── New ledger-derived fields (2026-05-29 portal redesign) ──
+          packageSize,
+          attendedAgainstPackage,
+          ledgerConfidence,
+          ledgerSource,
           hasLivingPractice,
           portalAccess,
           isPartner,

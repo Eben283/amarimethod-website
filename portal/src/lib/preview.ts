@@ -2,14 +2,27 @@
 // Triggered by ?preview=<state> on the URL.
 import type { PortalDataResponse, Appointment } from '../types/portal';
 
-export type PreviewState = 'empty' | 'active' | 'series' | 'completed' | 'loading' | 'error';
+export type PreviewState =
+  | 'empty'        // brand new, no purchases
+  | 'active'       // pay-as-you-go (no series, has past sessions)
+  | 'series'       // mid 8-pack (4 done, 4 left)
+  | 'last-left'    // 1 session left, soft re-up prompt
+  | 'completed'    // 0 left, time to re-up
+  | 'reup'         // mid second package, lifetime > package size
+  | 'low-confidence' // ledger ambiguity flagged
+  | 'loading'
+  | 'error';
+
+const VALID_STATES: PreviewState[] = [
+  'empty', 'active', 'series', 'last-left', 'completed', 'reup', 'low-confidence', 'loading', 'error',
+];
 
 export function getPreviewState(): PreviewState | null {
   if (typeof window === 'undefined') return null;
   const params = new URLSearchParams(window.location.search);
   const p = params.get('preview');
   if (!p) return null;
-  if (['empty', 'active', 'series', 'completed', 'loading', 'error'].includes(p)) {
+  if ((VALID_STATES as string[]).includes(p)) {
     return p as PreviewState;
   }
   return null;
@@ -40,6 +53,10 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
         seriesType: 'none',
         sessionsCompleted: 0,
         sessionsRemaining: 0,
+        packageSize: 0,
+        attendedAgainstPackage: 0,
+        ledgerConfidence: 'high',
+        ledgerSource: 'empty',
         hasLivingPractice: false,
         portalAccess: true,
         isPartner: false,
@@ -80,6 +97,10 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
         seriesType: 'none',
         sessionsCompleted: 2,
         sessionsRemaining: 0,
+        packageSize: 0,
+        attendedAgainstPackage: 0,
+        ledgerConfidence: 'high',
+        ledgerSource: 'empty',
         hasLivingPractice: false,
         portalAccess: true,
         isPartner: false,
@@ -119,12 +140,107 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
         seriesType: '8-session',
         sessionsCompleted: 4,
         sessionsRemaining: 4,
+        packageSize: 8,
+        attendedAgainstPackage: 4,
+        ledgerConfidence: 'high',
+        ledgerSource: 'orders+invoices+appointments',
         hasLivingPractice: true,
         portalAccess: true,
         isPartner: false,
       },
       appointments: past,
       upcomingAppointments: [next, ...more],
+    };
+  }
+
+  if (state === 'last-left') {
+    // 7 done, 1 left in 8-pack. Soft re-up prompt should show.
+    const past: Appointment[] = Array.from({ length: 7 }).map((_, i) => ({
+      id: `ll-${i}`,
+      title: 'Follow-up session',
+      startTime: subDays(now, (7 - i) * 7, 10, 0),
+      endTime: subDays(now, (7 - i) * 7, 10, 50),
+      status: 'completed',
+      appointmentType: 'Follow-up In-Person',
+    }));
+    return {
+      client: {
+        contactId: 'preview-last-left',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: '8-session',
+        sessionsCompleted: 7,
+        sessionsRemaining: 1,
+        packageSize: 8,
+        attendedAgainstPackage: 7,
+        ledgerConfidence: 'high',
+        ledgerSource: 'orders+invoices+appointments',
+        hasLivingPractice: true,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: past,
+      upcomingAppointments: [],
+    };
+  }
+
+  if (state === 'reup') {
+    // Mid second package: 12 lifetime done, 8 attended against current package,
+    // 0 left of current — JUST FINISHED, would re-up. Use lifetime > packageSize
+    // to test the journey display growing past the pack size.
+    const past: Appointment[] = Array.from({ length: 12 }).map((_, i) => ({
+      id: `ru-${i}`,
+      title: 'Follow-up session',
+      startTime: subDays(now, (12 - i) * 7, 10, 0),
+      endTime: subDays(now, (12 - i) * 7, 10, 50),
+      status: 'completed',
+      appointmentType: 'Follow-up In-Person',
+    }));
+    return {
+      client: {
+        contactId: 'preview-reup',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: '8-session',
+        sessionsCompleted: 12,
+        sessionsRemaining: 4,
+        packageSize: 16, // 8 + 8 re-up
+        attendedAgainstPackage: 12,
+        ledgerConfidence: 'high',
+        ledgerSource: 'orders+invoices+appointments',
+        hasLivingPractice: true,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: past,
+      upcomingAppointments: [],
+    };
+  }
+
+  if (state === 'low-confidence') {
+    // Ledger flagged an ambiguity (e.g. custom field disagrees). Surface
+    // "contact Garrett" gentle prompt.
+    return {
+      client: {
+        contactId: 'preview-low-confidence',
+        firstName: 'Eben',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: '8-session',
+        sessionsCompleted: 5,
+        sessionsRemaining: 2, // derived, but flagged as low-confidence
+        packageSize: 8,
+        attendedAgainstPackage: 5,
+        ledgerConfidence: 'low',
+        ledgerSource: 'orders+invoices+appointments',
+        hasLivingPractice: true,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: [],
+      upcomingAppointments: [],
     };
   }
 
@@ -146,6 +262,10 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
       seriesType: '8-session',
       sessionsCompleted: 8,
       sessionsRemaining: 0,
+      packageSize: 8,
+      attendedAgainstPackage: 8,
+      ledgerConfidence: 'high',
+      ledgerSource: 'orders+invoices+appointments',
       hasLivingPractice: true,
       portalAccess: true,
       isPartner: false,

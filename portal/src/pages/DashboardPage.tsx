@@ -110,7 +110,11 @@ export default function DashboardPage() {
         upcomingAppointments={upcomingAppointments}
         allAppointments={appointments}
         onRefetch={refetch}
-        onBookSession={hasActiveSeries && hasHadInitial ? () => setShowBookingModal(true) : undefined}
+        // Always pass the booking opener — the new dashboard card decides per
+        // state whether to surface a "Book a session" CTA (brand new, pay-as-
+        // you-go, mid-package, low-confidence). Zero-left uses direct package
+        // purchase links instead.
+        onBookSession={() => setShowBookingModal(true)}
       />
 
       <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />

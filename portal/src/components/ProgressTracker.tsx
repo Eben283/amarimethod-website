@@ -11,7 +11,33 @@ interface ProgressTrackerProps {
   onBookSession?: () => void;
 }
 
-const JOURNEY_STEP_COUNT = 8;
+// Cap on dot rendering — when packageSize > MAX_DOTS we still show MAX_DOTS
+// with a label "X of Y used". Keeps the visual proportional in re-up cases.
+const MAX_DOTS = 12;
+const PACK_LABEL: Record<string, string> = {
+  '4-session': '4-pack',
+  '8-session': '8-pack',
+  Single: 'sessions',
+  none: '',
+};
+
+type DashboardState =
+  | 'brand-new'        // never purchased anything, no past sessions
+  | 'pay-as-you-go'    // has past sessions, no package
+  | 'mid-package'      // has remaining > 1 on a package
+  | 'last-left'        // exactly 1 remaining on a package
+  | 'zero-left'        // package exhausted, time to re-up
+  | 'low-confidence';  // ledger flagged ambiguity — surface gentle prompt
+
+function getDashboardState(client: ClientData, lifetimeCount: number): DashboardState {
+  if (client.ledgerConfidence === 'low' && client.packageSize > 0) return 'low-confidence';
+  const hasPackage = client.packageSize > 0;
+  if (!hasPackage && lifetimeCount === 0) return 'brand-new';
+  if (!hasPackage) return 'pay-as-you-go';
+  if (client.sessionsRemaining === 0) return 'zero-left';
+  if (client.sessionsRemaining === 1) return 'last-left';
+  return 'mid-package';
+}
 
 function isWithin24Hours(startTime: string): boolean {
   const apptDate = new Date(startTime);
@@ -90,34 +116,34 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const [confirmMode, setConfirmMode] = useState<'cancel' | 'reschedule'>('cancel');
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  const isOnSeries = client.seriesType !== 'none';
-  const totalSessions = client.seriesType === '8-session' ? 8
-    : client.seriesType === '4-session' ? 4
-    : 0;
-  const currentSeriesCompleted = isOnSeries
-    ? Math.max(0, totalSessions - client.sessionsRemaining)
-    : 0;
-  // allAppointments is past-only per the API contract. Past 'confirmed'
-  // appointments effectively ran — Garrett doesn't always manually flip
-  // 'confirmed' → 'completed' after a session.
+  // Lifetime journey counter — total past appointments that effectively ran.
+  // Past 'confirmed' counts because Garrett doesn't always flip them to
+  // 'completed' or 'showed'.
   const lifetimeCompleted = allAppointments.filter(a =>
     a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
   ).length;
-  const isReturningClient = isOnSeries && lifetimeCompleted > currentSeriesCompleted;
+  // Fall back to the server-derived sessionsCompleted if the past-appointments
+  // count is somehow lower (e.g. the API filtered some out for the client).
+  const lifetimeCount = Math.max(lifetimeCompleted, client.sessionsCompleted);
 
-  // Journey rail step: 1..8 = which step you're on. >8 = completed.
-  // For series clients, anchored to series progress. For others, lifetime.
-  const journeyStep = (() => {
-    const base = isOnSeries ? currentSeriesCompleted : lifetimeCompleted;
-    const onStep = base + (upcomingAppointments.length > 0 ? 1 : 0);
-    return Math.min(onStep, JOURNEY_STEP_COUNT + 1);
-  })();
-  const journeyPct = Math.min(100, Math.round((journeyStep / JOURNEY_STEP_COUNT) * 100));
+  // Earliest past appointment — used for the "since X" lifetime tagline.
+  const earliestPast = allAppointments
+    .filter(a => a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed')
+    .slice() // copy before sort
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
+  const sinceLabel = earliestPast
+    ? new Date(earliestPast.startTime).toLocaleString('en-US', { month: 'long', year: 'numeric' })
+    : null;
 
-  const seriesInProgress = isOnSeries && client.sessionsRemaining > 0;
-  const seriesFinished = isOnSeries && client.sessionsRemaining === 0;
-  const payAsYouGo = !isOnSeries && lifetimeCompleted > 0;
-  const brandNew = !isOnSeries && lifetimeCompleted === 0;
+  const dashboardState = getDashboardState(client, lifetimeCount);
+  const packLabel = PACK_LABEL[client.seriesType] || 'pack';
+  // Dot rendering: show packageSize dots up to MAX_DOTS. Filled = used,
+  // empty = remaining. If packageSize > MAX_DOTS we proportionally scale.
+  const totalDots = Math.min(client.packageSize, MAX_DOTS);
+  const usedRatio = client.packageSize > 0
+    ? client.attendedAgainstPackage / client.packageSize
+    : 0;
+  const filledDots = Math.round(usedRatio * totalDots);
 
   async function handleCancel(appointmentId: string, title: string) {
     setCancellingId(appointmentId);
@@ -166,66 +192,132 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
   return (
     <>
-      {/* ── Journey rail card ── */}
+      {/* ── Dashboard card — two-counter layout ──
+          Hero: prepaid balance (when do I need to act?)
+          Footer: lifetime journey (how far have I come?)
+          See projects/amarimethod-website/portal/PORTAL-REDESIGN-RESEARCH.md
+      */}
       <section className="cp-journey">
-        <div className="cp-journey-head">
-          <div>
+        {dashboardState === 'brand-new' && (
+          <div className="cp-dash-hero cp-dash-hero-new">
+            <span className="cp-mono">Welcome</span>
+            <h2 className="cp-journey-title">
+              {upcomingAppointments.length > 0
+                ? <>Your first session is on <em>the books.</em></>
+                : <>Book your <em>first session</em> to begin.</>}
+            </h2>
+            {!upcomingAppointments.length && onBookSession && (
+              <div className="cp-dash-cta">
+                <button type="button" onClick={onBookSession} className="cp-btn cp-btn-primary">
+                  <span>Book a session</span><span className="cp-arrow">→</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {dashboardState === 'pay-as-you-go' && (
+          <div className="cp-dash-hero">
             <span className="cp-mono">Your journey</span>
             <h2 className="cp-journey-title">
-              {brandNew
-                ? <>The eight-step <em>method.</em></>
-                : journeyStep > JOURNEY_STEP_COUNT
-                  ? <>You've completed <em>the method.</em></>
-                  : <>Step <em>{journeyStep}</em> of {JOURNEY_STEP_COUNT}</>}
+              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
+              {sinceLabel && <span className="cp-journey-since"> · since {sinceLabel}</span>}
             </h2>
+            {onBookSession && (
+              <div className="cp-dash-cta">
+                <button type="button" onClick={onBookSession} className="cp-btn cp-btn-primary">
+                  <span>Book your next session</span><span className="cp-arrow">→</span>
+                </button>
+              </div>
+            )}
           </div>
-          <div className="cp-journey-pct">
-            <span className="cp-journey-pct-n">{journeyPct}<small>%</small></span>
-            <span className="cp-mono">Complete</span>
+        )}
+
+        {(dashboardState === 'mid-package' || dashboardState === 'last-left') && (
+          <>
+            <div className="cp-journey-head">
+              <div>
+                <span className="cp-mono">Your {packLabel}</span>
+                <h2 className="cp-journey-title">
+                  <em>{client.sessionsRemaining}</em> session{client.sessionsRemaining === 1 ? '' : 's'} left
+                </h2>
+              </div>
+              <div className="cp-journey-pct">
+                <span className="cp-journey-pct-n">{client.attendedAgainstPackage}<small>/{client.packageSize}</small></span>
+                <span className="cp-mono">Used</span>
+              </div>
+            </div>
+
+            {totalDots > 0 && (
+              <ol className="cp-rail cp-rail-numbers-only" style={{ gridTemplateColumns: `repeat(${totalDots}, 1fr)` }}>
+                {Array.from({ length: totalDots }).map((_, i) => {
+                  const isUsed = i < filledDots;
+                  const isCurrent = i === filledDots - 1; // most-recently-used
+                  return (
+                    <li key={i} className={'cp-rail-step' + (isUsed ? ' is-done' : '') + (isCurrent ? ' is-current' : '')}>
+                      <span className="cp-rail-mark">
+                        <span className="cp-rail-dot"></span>
+                        {i < totalDots - 1 && <span className="cp-rail-line"></span>}
+                      </span>
+                      <span className="cp-rail-label">
+                        <span className="cp-rail-n">{pad2(i + 1)}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
+            {dashboardState === 'last-left' && (
+              <p className="cp-journey-next cp-journey-soft-reup">
+                Last session in your {packLabel}. <em>Ready for what's next?</em> Re-up anytime.
+              </p>
+            )}
+            {dashboardState === 'mid-package' && lifetimeCount > 0 && (
+              <p className="cp-journey-next">
+                <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
+                {sinceLabel && <> · since {sinceLabel}</>}
+              </p>
+            )}
+          </>
+        )}
+
+        {dashboardState === 'zero-left' && (
+          <div className="cp-dash-hero cp-dash-hero-reup">
+            <span className="cp-mono">Your {packLabel} is complete</span>
+            <h2 className="cp-journey-title">
+              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
+            </h2>
+            <p className="cp-journey-next">Keep the momentum going — pick a package to continue.</p>
+            <div className="cp-dash-cta cp-dash-cta-stack">
+              <a href="/book/8-session-series" className="cp-btn cp-btn-primary">
+                <span>Continue with 8 more sessions</span><span className="cp-arrow">→</span>
+              </a>
+              <a href="/book/4-session-series" className="cp-btn cp-btn-ghost">
+                <span>Or try a 4-session pack</span>
+              </a>
+            </div>
           </div>
-        </div>
+        )}
 
-        <ol className="cp-rail cp-rail-numbers-only">
-          {Array.from({ length: JOURNEY_STEP_COUNT }).map((_, i) => {
-            const idx = i + 1;
-            const done = idx < journeyStep;
-            const current = idx === journeyStep;
-            return (
-              <li key={idx} className={'cp-rail-step' + (done ? ' is-done' : '') + (current ? ' is-current' : '')}>
-                <span className="cp-rail-mark">
-                  <span className="cp-rail-dot"></span>
-                  {i < JOURNEY_STEP_COUNT - 1 && <span className="cp-rail-line"></span>}
-                </span>
-                <span className="cp-rail-label">
-                  <span className="cp-rail-n">{pad2(idx)}</span>
-                </span>
-              </li>
-            );
-          })}
-        </ol>
-
-        {seriesInProgress && (
-          <p className="cp-journey-next">
-            <b>{client.seriesType}</b> · <span>{client.sessionsRemaining} session{client.sessionsRemaining === 1 ? '' : 's'} left</span>
-            {isReturningClient && <> · <em>{lifetimeCompleted}</em> with the Amari Method overall</>}
-          </p>
-        )}
-        {seriesFinished && (
-          <p className="cp-journey-next">
-            Series complete — <em>{lifetimeCompleted}</em> session{lifetimeCompleted === 1 ? '' : 's'} with the Amari Method. Ready to keep the momentum going?
-          </p>
-        )}
-        {payAsYouGo && (
-          <p className="cp-journey-next">
-            <em>{lifetimeCompleted}</em> session{lifetimeCompleted === 1 ? '' : 's'} with the Amari Method.
-          </p>
-        )}
-        {brandNew && (
-          <p className="cp-journey-next">
-            {upcomingAppointments.length > 0
-              ? 'Your first session is on the books.'
-              : 'Book your first session to begin.'}
-          </p>
+        {dashboardState === 'low-confidence' && (
+          <div className="cp-dash-hero cp-dash-hero-warn">
+            <span className="cp-mono">Your sessions</span>
+            <h2 className="cp-journey-title">
+              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
+            </h2>
+            <p className="cp-journey-next">
+              Your remaining session count is being reviewed. Drop us a note and we'll confirm.{' '}
+              <a href="mailto:hello@amarimethod.com?subject=Session%20balance%20question">hello@amarimethod.com</a>
+            </p>
+            {onBookSession && (
+              <div className="cp-dash-cta">
+                <button type="button" onClick={onBookSession} className="cp-btn cp-btn-primary">
+                  <span>Book your next session</span><span className="cp-arrow">→</span>
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </section>
 
