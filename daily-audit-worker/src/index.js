@@ -312,5 +312,30 @@ async function checkSeriesReconcile(env) {
     });
   }
 
+  // Surface the "needs-review" queue — contacts whose session-field drift
+  // was too large (>2 on either field) for the worker to auto-correct.
+  // Read directly from KV by prefix.
+  try {
+    const list = await env.PORTAL_KV.list({ prefix: "field-sync:needsReview:" });
+    if (list.keys.length > 0) {
+      const items = await Promise.all(
+        list.keys.slice(0, 10).map(async (k) => env.PORTAL_KV.get(k.name, "json"))
+      );
+      const names = items
+        .filter(Boolean)
+        .map((i) => `${i.contactName || i.contactId} (Δr=${i.delta?.sessions_remaining}, Δc=${i.delta?.sessions_completed})`)
+        .join("; ");
+      issues.push({
+        severity: "warning",
+        area: "data",
+        kind: "session-fields-needs-review",
+        message: `${list.keys.length} contact(s) have session-field drift too large to auto-correct — needs human review: ${names}`,
+      });
+    }
+  } catch (err) {
+    // Don't fail the watchdog if the KV scan errors.
+    console.warn("[daily-audit] needs-review scan failed:", err.message);
+  }
+
   return issues;
 }

@@ -392,8 +392,21 @@ export async function onRequestGet(context) {
 
     const capitalize = (s) => s ? s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : "";
 
-    // Sessions completed = derived from appointment history (excludes entrainments etc.)
-    const derivedSessionsCompleted = ledger.attended;
+    // Sessions completed = LIFETIME journey count per 2026-05-29 session-
+    // fields contract (was: ledger.attended which was package-only and
+    // excluded entrainments). Matches portal-data.js + staff-data.js.
+    // The portal-derived ledger.attended is still useful — exposed as
+    // attendedAgainstPackage below.
+    const NON_JOURNEY_LIFETIME = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+    const nowMsLifetime = Date.now();
+    const derivedSessionsCompleted = rawAppointments.filter((a) => {
+      const status = (a.appointmentStatus || a.status || "").toLowerCase();
+      if (!["completed", "showed", "confirmed"].includes(status)) return false;
+      const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+      if (!Number.isFinite(startMs) || startMs >= nowMsLifetime) return false;
+      const title = (a.title || "") + " " + (a.calendarName || "");
+      return !NON_JOURNEY_LIFETIME.test(title);
+    }).length;
 
     // Client progress — from custom fields in "Session Progress" folder
     const MODULE_KEYS = [

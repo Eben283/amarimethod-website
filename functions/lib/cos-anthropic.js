@@ -4,6 +4,7 @@
 // - SSE streaming with text-delta forwarding + tool execution
 
 import { ghlFetch } from "./ghl.js";
+import { deriveLedger } from "./session-ledger.js";
 import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
 import {
   recordPark,
@@ -30,7 +31,7 @@ const FIELD_SERIES_TYPE = "3i93lTkmuAV49s9nh0q8";
 export const TOOLS = [
   {
     name: "search_contacts",
-    description: "Search GHL contacts by name, email, phone, or tag. Returns matching contacts with custom fields (sessions_remaining, sessions_completed, series_type), tags, and dates. Use 'name' for substring search, 'tag' to filter by an exact tag like 'affiliate-partner' or 'affiliate-referral'. You can combine name + tag.",
+    description: "Search GHL contacts by name, email, phone, or tag. Returns matching contacts with raw GHL custom fields (sessions_remaining, sessions_completed, series_type), tags, and dates. NOTE: search results use raw GHL field values which may have transient drift (auto-corrects hourly via series-reconcile worker). For authoritative session counts, call get_contact on a specific contactId — that returns ledger-derived values from real orders + invoices + appointments. Use 'name' for substring search, 'tag' to filter by an exact tag like 'affiliate-partner' or 'affiliate-referral'. You can combine name + tag.",
     input_schema: {
       type: "object",
       properties: {
@@ -214,23 +215,58 @@ export async function executeTool(context, toolName, input, user = "Eben") {
     }
 
     if (toolName === "get_contact") {
-      const url = `https://services.leadconnectorhq.com/contacts/${encodeURIComponent(input.contact_id)}`;
-      const resp = await ghlFetch(context, url);
+      const contactId = encodeURIComponent(input.contact_id);
+      const locationId = "7pIO7FHVAyBT1jKGhfQM";
+      // Fetch contact + orders + invoices + appointments in parallel so we
+      // can compute ledger-derived counts (the canonical source per the
+      // 2026-05-29 session-fields contract). Raw fields still returned for
+      // diagnostic comparison.
+      const [resp, ordersResp, invoicesResp, apptResp] = await Promise.all([
+        ghlFetch(context, `https://services.leadconnectorhq.com/contacts/${contactId}`),
+        ghlFetch(context, `https://services.leadconnectorhq.com/payments/orders?altId=${locationId}&altType=location&contactId=${contactId}&limit=100`),
+        ghlFetch(context, `https://services.leadconnectorhq.com/invoices/?altId=${locationId}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+        ghlFetch(context, `https://services.leadconnectorhq.com/contacts/${contactId}/appointments`),
+      ]);
       if (!resp.ok) {
         const errBody = await resp.text().catch(() => "");
-        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
+        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=/contacts/${contactId} body=${errBody.slice(0, 300)}`);
         return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
       }
       const data = await resp.json();
       const c = data.contact || data;
       const fields = {};
       for (const f of (c.customFields || c.customField || [])) fields[f.id] = f.value;
+
+      let orders = [];
+      if (ordersResp.ok) { const d = await ordersResp.json(); orders = d.data || d.orders || []; }
+      let invoices = [];
+      if (invoicesResp.ok) { const d = await invoicesResp.json(); invoices = d.invoices || []; }
+      let appointments = [];
+      if (apptResp.ok) { const d = await apptResp.json(); appointments = d.events || d.appointments || []; }
+      const ledger = deriveLedger({ contact: c, orders, invoices, appointments, fieldDefs: {} });
+
       return JSON.stringify({
         id: c.id,
         name: `${c.firstName || ""} ${c.lastName || ""}`.trim(),
         email: c.email,
         phone: c.phone,
         tags: c.tags || [],
+        // Ledger-derived values are the source of truth for answering
+        // "how many sessions does X have left?" — these reflect real money +
+        // real attendance, and stay accurate even when the GHL custom fields
+        // are mid-drift.
+        ledger: {
+          series_type: ledger.seriesType,
+          sessions_remaining: ledger.remaining,
+          sessions_attended: ledger.attended,
+          sessions_purchased: ledger.purchased,
+          confidence: ledger.confidence,
+          ambiguities: ledger.ambiguities,
+          last_session_date: ledger.lastSessionDate,
+        },
+        // Raw GHL field values — useful for diagnosing "field says X, ledger
+        // says Y" drift cases. Auto-corrects within ~1 hour via
+        // series-reconcile-worker for small deltas.
         custom_fields_named: {
           sessions_remaining: fields[FIELD_SESSIONS_REMAINING] ?? null,
           sessions_completed: fields[FIELD_SESSIONS_COMPLETED] ?? null,

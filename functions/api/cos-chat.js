@@ -4,6 +4,7 @@
 import { verifySessionToken } from "../lib/auth.js";
 import { getTodayCalendar, getRecentEmails, createCalendarReminder, deleteCalendarEvent, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
+import { deriveLedger } from "../lib/session-ledger.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
@@ -487,16 +488,39 @@ async function lookupContact(context, name) {
   const contact = contacts[0]; // Best match
   const contactId = contact.id;
 
-  // Fetch appointments for this contact
-  const apptResp = await ghlFetch(context,
-    `https://services.leadconnectorhq.com/contacts/${contactId}/appointments`
-  );
+  // Fetch appointments + orders + invoices in parallel — the ledger needs
+  // all three to compute the real prepaid balance + lifetime count. Per the
+  // 2026-05-29 session-fields contract, the COS chat should surface
+  // ledger-derived values (not raw GHL fields) so its answers stay accurate
+  // even when the fields temporarily drift.
+  const locationIdForLedger = "7pIO7FHVAyBT1jKGhfQM";
+  const [apptResp, ordersResp, invoicesResp] = await Promise.all([
+    ghlFetch(context, `https://services.leadconnectorhq.com/contacts/${contactId}/appointments`),
+    ghlFetch(context, `https://services.leadconnectorhq.com/payments/orders?altId=${locationIdForLedger}&altType=location&contactId=${contactId}&limit=100`),
+    ghlFetch(context, `https://services.leadconnectorhq.com/invoices/?altId=${locationIdForLedger}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+  ]);
 
   let appointments = [];
   if (apptResp.ok) {
     const apptData = await apptResp.json();
     appointments = apptData.events || apptData.appointments || [];
   }
+  let orders = [];
+  if (ordersResp.ok) {
+    const oData = await ordersResp.json();
+    orders = oData.data || oData.orders || [];
+  }
+  let invoices = [];
+  if (invoicesResp.ok) {
+    const iData = await invoicesResp.json();
+    invoices = iData.invoices || [];
+  }
+  // NB: orders LIST endpoint returns summary records; we'd need per-order
+  // detail fetches for POS-source classification. For COS chat, this is
+  // acceptable — payment_link orders (the bulk) classify fine by sourceName.
+  // POS-source clients show as "low confidence" in the ledger, which is
+  // honest signaling for chat answers.
+  const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: {} });
 
   // Parse custom fields
   const customFields = contact.customFields || contact.customField || [];
@@ -505,10 +529,15 @@ async function lookupContact(context, name) {
     fieldMap[f.id] = f.value;
   }
 
-  // Known field IDs
-  const sessionsRemaining = fieldMap["wrQSkx6BhXwDGIn1d0V4"] || contact.sessionsRemaining || "unknown";
-  const sessionsCompleted = fieldMap["TE0udwVH1Km5RsKaN5H0"] || contact.sessionsCompleted || "unknown";
-  const seriesType = fieldMap["3i93lTkmuAV49s9nh0q8"] || contact.seriesType || "none";
+  // Known field IDs (kept for diagnostic display only — see below)
+  const fieldSessionsRemaining = fieldMap["wrQSkx6BhXwDGIn1d0V4"] || contact.sessionsRemaining || null;
+  const fieldSessionsCompleted = fieldMap["TE0udwVH1Km5RsKaN5H0"] || contact.sessionsCompleted || null;
+  // Use ledger-derived values as the source of truth. Field values shown
+  // only as a side note when they disagree (so chat answers are accurate
+  // even if the field is mid-drift).
+  const sessionsRemaining = ledger.confidence === "high" ? ledger.remaining : (fieldSessionsRemaining ?? "unknown");
+  const sessionsCompleted = fieldSessionsCompleted ?? ledger.attended; // GHL field is currently the lifetime counter; the worker syncs it
+  const seriesType = ledger.seriesType !== "none" ? ledger.seriesType : (fieldMap["3i93lTkmuAV49s9nh0q8"] || "none");
 
   // Categorize appointments
   const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|pain assessment/i;
@@ -540,12 +569,16 @@ async function lookupContact(context, name) {
   const isPrepaid = seriesType !== "none" && parseInt(sessionsRemaining) > 0;
 
   // Build readable summary
+  const fieldDriftNote = ledger.confidence === "high" && fieldSessionsRemaining !== null && parseInt(fieldSessionsRemaining) !== ledger.remaining
+    ? ` (GHL field disagrees: ${fieldSessionsRemaining} — will auto-correct on next worker run)`
+    : "";
   const lines = [
     `**${contact.firstName || ""} ${contact.lastName || ""}** (${contact.email || "no email"})`,
     `Series: ${seriesType === "none" ? "No series (single sessions)" : `${seriesType} series`}`,
     `Sessions completed: ${confirmedSessions} showed/completed (GHL field: ${sessionsCompleted})`,
-    `Sessions remaining: ${sessionsRemaining}`,
+    `Sessions remaining (ledger): ${sessionsRemaining}${fieldDriftNote}`,
     `Prepaid: ${isPrepaid ? `Yes (${sessionsRemaining} remaining on ${seriesType})` : "No active series"}`,
+    `Ledger confidence: ${ledger.confidence}${ledger.ambiguities.length ? ` — ${ledger.ambiguities.join("; ")}` : ""}`,
     `Tags: ${(contact.tags || []).join(", ") || "none"}`,
   ];
 
