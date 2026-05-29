@@ -39,206 +39,220 @@ function DiscoveryCallPlaybook() {
     <>
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Discovery Call</h1>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed">
-          15-minute call. Recommend a session or series and book it.
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
+          15-minute call with a prospective client. Recommend the right tier and book it on the call.
+        </p>
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed italic">
+          Scaffolding, not script. Each beat names the goal, the topics to cover, and the brand-aligned
+          framing — but the exact words come from you. Rehearsed phrasings read as scripted from the
+          prospect's chair.
         </p>
       </header>
 
-      <section className="staff-card mb-4">
-        <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-1">
-          <li><strong>Listen</strong> → they trust a recommendation only after they feel heard</li>
-          <li><strong>Reflect</strong> → proves you understood, earns the right to diagnose</li>
-          <li><strong>Diagnose + reframe</strong> → distinguishes the work from what they've tried, justifies the price</li>
-          <li><strong>Recommend + book</strong> → the close</li>
-        </ul>
-      </section>
-
       <div className="space-y-3">
         <StepSection title="0. Frame the call (~60 sec)">
-          <Quote>"Tell me what's going on. I'll listen, then tell you what I think and what I'd recommend."</Quote>
+          <p className="font-medium">Goal: set expectations so they don't spend the call waiting for a pitch.</p>
+          <p>
+            State that you'll listen first, then tell them what you think, then make a recommendation. Sets
+            the order, removes anxiety about being sold.
+          </p>
+          <Quote>"Tell me what's going on. I'll listen, then I'll tell you what I think and what I'd recommend."</Quote>
+          <p className="text-amari-text-muted text-xs italic pt-1">
+            That single line is enough. Don't pad with small talk — you have 15 minutes.
+          </p>
         </StepSection>
 
         <StepSection title="1. Listen (1–6 min)">
-          <p>Don't interrupt. Take notes on:</p>
+          <p className="font-medium">
+            Goal: hear them fully. Trust comes from feeling heard before it comes from anything else.
+          </p>
+          <p className="font-medium pt-2">What to listen for (take notes):</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Body parts ("right knee," "between the shoulder blades")</li>
-            <li>Duration ("6 months," "since my kid was born")</li>
+            <li>Body parts — specific ("right knee," "between the shoulder blades")</li>
+            <li>Duration — how long, when it started, what triggered it</li>
             <li>What they've tried + why it stopped helping</li>
-            <li>Functional impact ("can't sit through meetings," "can't sleep on my side")</li>
-            <li>Emotional words ("scared," "fed up," "hopeless")</li>
+            <li>Functional impact — what they can't do anymore that matters to them ("can't sit through meetings," "can't sleep on my side," "can't pick up my kid")</li>
+            <li>Emotional words — <em>"scared," "fed up," "hopeless," "at the end of my rope"</em></li>
           </ul>
-          <p>
-            Permissible interjections: <em>"Keep going."</em> <em>"Tell me more about that."</em>{' '}
-            <em>"And then what happened?"</em>
+          <p className="pt-2">
+            Don't interrupt. Use minimal interjections only: <em>"Tell me more about that."</em>{' '}
+            <em>"Keep going."</em> <em>"And then what happened?"</em>
           </p>
           <p className="font-medium pt-2">After they finish, up to 3 clarifiers:</p>
           <ol className="list-decimal pl-5 space-y-1">
-            <li><strong>Timing.</strong> "Morning, after activity, end of day, or constant?"</li>
-            <li><strong>What's been tried.</strong> "What have you tried — what shifted, what didn't?"</li>
-            <li><strong>Why now.</strong> "Why now, instead of six months ago?"</li>
+            <li><strong>Timing.</strong> <em>"Morning, after activity, end of day, or constant?"</em></li>
+            <li><strong>What's been tried.</strong> <em>"What have you tried — what shifted, what didn't?"</em></li>
+            <li><strong>Why now.</strong> <em>"Why now, instead of six months ago?"</em></li>
           </ol>
-          <p className="text-amari-text-muted">Stop at 3. More feels like an intake form.</p>
+          <p className="text-amari-text-muted text-xs italic">Stop at 3. More feels like an intake form.</p>
+
+          <p className="font-medium pt-2">Don't:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Interrupt to clarify (save it)</li>
+            <li>Start diagnosing in your head while they're still talking</li>
+            <li>Skip ahead to recommending</li>
+          </ul>
         </StepSection>
 
         <StepSection title="2. Reflect (8–10 min)">
-          <p>Mirror their specifics back.</p>
-          <p className="font-medium">Format:</p>
+          <p className="font-medium">
+            Goal: prove you heard them. This earns the right to diagnose.
+          </p>
+          <p>
+            Mirror back the specifics they used — body part, duration, what they tried, functional impact,
+            why now. End with <em>"is that about right?"</em> — gives them control to correct anything.
+          </p>
+          <p className="font-medium pt-2">Format:</p>
           <Quote>
             "OK so what I'm hearing is — [body part / duration] → [what they've tried + why it failed] →
             [functional impact] → [why now]. Is that about right?"
           </Quote>
-          <p className="font-medium">Example.</p>
-          <p>
-            They said <em>"my lower back's been killing me for 8 months, PT helped briefly then failed, GP
-            wants an MRI, can't pick up my kid":</em>
+          <p className="pt-2">
+            If they correct you, listen and re-mirror. The correction itself is the trust signal.
           </p>
-          <Quote>
-            "8 months of lower back pain, PT helped briefly but didn't hold, MRI on the table, and it's
-            affecting things you care about like picking up your kid. Is that about right?"
-          </Quote>
-          <p className="font-medium pt-2">
-            Don't: summarize abstractly. Interpret yet. Say "I hear you." Skip ahead to "here's what Amari is."
-          </p>
+          <p className="font-medium pt-2">Don't:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Summarize abstractly</li>
+            <li>Interpret yet ("sounds like an SI joint thing") — too early, you'll be wrong</li>
+            <li>Say "I hear you" (reads as therapist-language; mirror with specifics instead)</li>
+            <li>Skip ahead to "here's what Amari is"</li>
+          </ul>
         </StepSection>
 
         <StepSection title="3. Diagnose + reframe (10–12 min)">
-          <p className="font-medium">Ask permission first:</p>
+          <p className="font-medium">
+            Goal: earn trust as someone who recognizes their pattern, then briefly reframe what they've tried
+            so they understand why this work is different.
+          </p>
+          <p className="font-medium pt-2">Permission first:</p>
           <Quote>"OK so given all that — want to hear what I think?"</Quote>
-          <p>Wait for yes. Tie everything that follows to what <em>they</em> said.</p>
+          <p>Wait for yes. Everything that follows ties back to what <em>they</em> said.</p>
 
-          <p className="font-medium">Lead with pattern recognition:</p>
-          <Quote>"Honestly — I've seen this 6, 12, 15, 25 times before. It moves. It doesn't stay where it is."</Quote>
-          <p>Adjust the number to whatever's true.</p>
+          <p className="font-medium pt-3">Lead with pattern recognition.</p>
+          <p>
+            Label the felt-sense of their situation first (e.g.,{' '}
+            <em>"It sounds like you've been doing all the right things and none of it has held."</em>).
+            Then signal you've seen this pattern many times. The move is confident reassurance from pattern
+            recognition, in your voice.
+          </p>
 
-          <p className="font-medium">Underlying frame:</p>
-          <Quote>
-            "Your body is a suspension bridge. Every part is designed to hold the load equally. When one part
-            is doing too much and another isn't doing enough, the overworked part is where pain shows up. The
-            body isn't asking for surgery or stretching — it's asking for balance."
-          </Quote>
-          <p className="font-medium">Format:</p>
-          <Quote>
-            "Here's what I think is going on. [Where they're out of balance — what's overworking, what isn't
-            doing its share]. The reason [what they tried] didn't hold is [explanation]. You're not broken —
-            [reframe]."
-          </Quote>
-          <p className="font-medium pt-1">Reframes by what they've been told:</p>
+          <p className="font-medium pt-3">Name what's actually going on — without a rehearsed metaphor.</p>
+          <p>The concept to land:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Their body has gone out of balance — one area is overworking, another isn't pulling its share</li>
+            <li>The painful area is rarely the cause; it's where the overload shows up</li>
+            <li>What they've tried treated the symptom, not the pattern</li>
+          </ul>
+          <p className="pt-2">
+            Describe this in your own working language. If a metaphor comes naturally, use it. If it doesn't,
+            don't force one — rehearsed metaphors read as scripted.
+          </p>
 
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-1">
-                "You need surgery."
-              </p>
-              <Quote>
-                "Surgery is for true emergencies — arm-falling-off, car accident. Most surgery treats an
-                out-of-balance body biomechanically — like putting a plastic bag where the window should be.
-                Worth trying balance before something irreversible."
-              </Quote>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-1">
-                "PT helped, then stopped."
-              </p>
-              <Quote>
-                "PT is muscular-based — it loads the area that hurts. It doesn't look at how the whole body
-                shares the load. Strengthening a part that's already overworking just trains the imbalance
-                harder. That's why it didn't hold."
-              </Quote>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-1">
-                "Just stretch / do core work."
-              </p>
-              <Quote>
-                "Stretching is half the story. The tight part is overworking because something else isn't
-                doing its share. Stretch the tight part and you've ignored the other half. We find what isn't
-                engaged, bring it online — the tight part lets go on its own."
-              </Quote>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-1">
-                "Chiro didn't hold."
-              </p>
-              <Quote>
-                "Chiro is done <em>to</em> you — you lay passively while someone forces the structure. Gives
-                relief, but your body didn't learn anything. The minute you leave, your imbalance pulls you
-                back. You do the work here, so your body learns the new balance."
-              </Quote>
-            </div>
-          </div>
+          <p className="font-medium pt-3">Reframe what they've tried.</p>
+          <p>For each modality they mentioned, the concept to land (in your words):</p>
+          <table className="w-full text-sm border-collapse mt-2">
+            <thead>
+              <tr className="border-b border-amari-border">
+                <th className="text-left py-1.5 pr-3 font-semibold text-amari-charcoal">What they tried</th>
+                <th className="text-left py-1.5 font-semibold text-amari-charcoal">Concept to land</th>
+              </tr>
+            </thead>
+            <tbody className="align-top">
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">PT</td>
+                <td className="py-2">Loads the area that hurts — doesn't address the pattern overloading it</td>
+              </tr>
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">Chiro</td>
+                <td className="py-2">Done <em>to</em> them — body doesn't learn the new balance, imbalance pulls them back</td>
+              </tr>
+              <tr className="border-b border-amari-border/40">
+                <td className="py-2 pr-3 font-medium">Stretching / yoga</td>
+                <td className="py-2">Stretching a compensating muscle gives more slack to something that actually needs to hold tension</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-3 font-medium">Surgery</td>
+                <td className="py-2">Surgery treats structure — what's driving structural failure is usually a pattern. Worth testing the pattern first when it's not an emergency</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-amari-text-muted text-xs italic pt-2">
+            Pick only the modalities they brought up. Don't run through the whole list.
+          </p>
 
-          <p className="font-medium pt-2">Then, 30 seconds on Amari:</p>
-          <Quote>
-            "I teach a small set of protocols — 8 in total, most people only need 3 or 4 for what their body
-            needs. They bring you back into balance, every part sharing the load. Most clients feel a shift in
-            the first session. We refine it over a series so it holds."
-          </Quote>
+          <p className="font-medium pt-3">~30 seconds on what Amari is.</p>
+          <p>The positioning, per brand rules:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>A small set of <strong>protocols</strong> (not "exercises") that they learn and do at home</li>
+            <li>Brings the body back into <strong>balance</strong> (not "fix")</li>
+            <li>Most clients feel a shift in the first session</li>
+            <li>A series is how the new balance actually holds</li>
+          </ul>
+          <p className="pt-2">
+            Use your own working version. Don't lift marketing copy — it reads as a pitch.
+          </p>
 
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Timeline language
-            </h4>
-            <p>
-              <strong>Don't say:</strong> <em>"It takes months to learn anything."</em>
-            </p>
-            <p className="font-medium mt-3">Say:</p>
-            <Quote>
-              "You'll feel shifts in your first session. The real work is over the next few months — your body
-              learning to hold the new balance without me. That's why I work in series, not one-offs."
-            </Quote>
-            <Quote>
-              "Short term, you feel shifts. Long term, balance — and balance takes a few months to actually
-              hold."
-            </Quote>
-          </div>
+          <p className="font-medium pt-3">Don't:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Use rehearsed metaphors (suspension bridge, etc.) — they sound scripted</li>
+            <li>Mention Network Spinal, chiropractic, or modality lineage</li>
+            <li>Use the word "fix"</li>
+            <li>Lead with credentials or years — earned position, doesn't need re-asserting</li>
+          </ul>
         </StepSection>
 
         <StepSection title="4. Recommend + book (12–14 min)">
+          <p className="font-medium">
+            Goal: make the recommendation FOR them, then book it on the call.
+          </p>
           <p>
-            Make the recommendation <em>for</em> them — don't ask{' '}
-            <em>"Do you want to book your first session?"</em>
+            Don't ask <em>"Do you want to book your first session?"</em> — that puts the work back on them.
+            Make a clear recommendation tied to what they told you.
           </p>
 
-          <div className="pt-2">
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Stakes (~30 sec)
+              Stakes (~30 sec) — before the recommendation
             </h4>
-            <p>Before the tier — negative and positive, both from specifics they actually said.</p>
-            <Quote>
-              "The thing is — this kind of pattern doesn't resolve on its own. 6 months from now you're still
-              working around it; couple years the MRI conversation gets heavier, not lighter. What I see for
-              you on the other side — [picking up your kid without thinking, sleeping on your side, sitting
-              through a meeting and forgetting you have a back]."
-            </Quote>
+            <p>Two halves, both pulled from specifics they actually said:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>What happens if they keep doing what they're doing</strong> — name the trajectory
+                (6 months / a year / two years out). Use specifics they mentioned — not generic.
+              </li>
+              <li>
+                <strong>What they get back</strong> — name the functional moments they said matter to them.
+                Specifics again.
+              </li>
+            </ul>
+            <p className="pt-2">
+              Optional third beat: name the people their condition is affecting (spouse, kids, team). Use
+              ONLY what they mentioned — don't extrapolate.
+            </p>
+            <p className="text-amari-text-muted text-xs italic pt-1">
+              The stakes paragraph isn't fear-mongering — it's holding up a mirror to the trajectory they
+              already described.
+            </p>
           </div>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Recommend + real capacity
+              Recommend
             </h4>
             <Quote>
-              "Based on what you've told me — [one-sentence reflection] — what I'd recommend is{' '}
-              <strong>[tier]</strong>. For context, I take about 6 new series clients a month and
-              Tuesday/Thursday afternoons fill 2-3 weeks out. I've got [day at time] or [day at time] open.
-              Which works?"
+              "Based on what you've told me — [one-sentence reflection of what they said] — what I'd
+              recommend is <strong>[tier]</strong>."
             </Quote>
-            <p>Use real numbers.</p>
-          </div>
-
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Example (full flow)
-            </h4>
+            <p className="pt-2">Pick the tier from the table below. Then book it with an A/B time choice:</p>
+            <Quote>"I've got [day at time] or [day at time] open. Which works?"</Quote>
+            <p className="text-amari-text-muted text-xs italic pt-1">
+              Why A/B beats open-ended: scanning their whole calendar = friction = "let me get back to you."
+              A/B is a 1-second decision.
+            </p>
+            <p className="font-medium pt-2">Optional capacity context (use only if true):</p>
             <Quote>
-              "This kind of pattern doesn't resolve on its own. 6 months from now you're still working around
-              it; couple years the MRI conversation gets heavier. What I see for you on the other side —
-              picking up your kid without thinking, sleeping on your side again, sitting through a meeting
-              and forgetting you have a back.
-              <br /><br />
-              Based on what you've told me — 8 months in, PT didn't hold, getting in the way of stuff you
-              care about — what I'd recommend is the 8-session series. For context, I take about 6 new
-              series clients a month and afternoons fill 2-3 weeks out. I've got Tuesday at 2 or Thursday
-              at 11 open this week. Which works?"
+              "For context, I take about 6 new series clients a month and Tuesday/Thursday afternoons fill
+              2-3 weeks out."
             </Quote>
           </div>
 
@@ -276,7 +290,7 @@ function DiscoveryCallPlaybook() {
                 </tr>
               </tbody>
             </table>
-            <p className="text-amari-text-muted mt-2">Pick one tier.</p>
+            <p className="text-amari-text-muted text-xs italic pt-2">Pick one tier. Don't offer two.</p>
           </div>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
@@ -284,12 +298,14 @@ function DiscoveryCallPlaybook() {
               How to book it
             </h4>
             <ol className="list-decimal pl-5 space-y-1">
-              <li>Book the appointment in GHL during the call.</li>
-              <li>From the client's page in the staff app, tap the pay-link button for the recommended tier (Initial / 4-pack / 8-pack).</li>
-              <li>Stay on the line. Walk them through paying — script below.</li>
-              <li>Confirm payment came through. Confirm the slot back to them.</li>
+              <li>Book the appointment in GHL during the call</li>
+              <li>From the client's page in the staff app, tap the pay-link button for the recommended tier</li>
+              <li>Stay on the line. Walk them through paying — script below</li>
+              <li>Confirm payment came through. Confirm the slot back to them</li>
             </ol>
-            <p className="text-amari-text-muted">Don't tell them about the iPad / policies. They'll sign when they arrive.</p>
+            <p className="text-amari-text-muted text-xs italic pt-1">
+              Don't tell them about the iPad / policies. They'll sign when they arrive.
+            </p>
           </div>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
@@ -301,13 +317,11 @@ function DiscoveryCallPlaybook() {
               "Great — let's lock you in. Texting you the link now. Should take about a minute — you can
               Apple Pay it. Stay on with me."
             </Quote>
-            <p className="font-medium">Tap the button.</p>
-            <p className="font-medium">Narrate while they tap:</p>
+            <p className="font-medium pt-2">Tap the button.</p>
+            <p className="font-medium pt-2">Narrate while they tap:</p>
             <Quote>"Got the text? Tap that — Stripe, totally secure..."</Quote>
-            <p className="font-medium">When it confirms:</p>
-            <Quote>
-              "Got it on my end. You're in for Tuesday at 2. Looking forward to working with you."
-            </Quote>
+            <p className="font-medium pt-2">When it confirms:</p>
+            <Quote>"Got it on my end. You're in for [day at time]. Looking forward to working with you."</Quote>
             <p className="font-medium pt-2">Rules:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>No link until you've heard a clear verbal yes</li>
@@ -318,55 +332,126 @@ function DiscoveryCallPlaybook() {
           </div>
         </StepSection>
 
-        <StepSection title="Handling push-back + objections (anytime)">
+        <StepSection title="Objection cheat sheet">
           <div>
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Push-back on the close
+              "Can we just start with one?"
             </h4>
-            <p className="font-medium">"Can we just start with one?"</p>
+            <p>
+              The concept: yes, and let them know the $225 applies as credit if they convert. Removes the
+              financial penalty for trying a single session.
+            </p>
             <Quote>
               "Yes, absolutely. Most people in your situation end up wanting the series after the first — so
               know the $225 applies as credit toward a series if you convert."
             </Quote>
-            <p className="font-medium pt-2">"Let me think about it."</p>
-            <Quote>
-              "Of course. Honestly — Tuesday at 2 is the next opening I have until [next available slot]. If
-              you want it I'll hold it through tomorrow evening; after that I have to open it back up. Take
-              your time either way."
-            </Quote>
-            <p className="text-amari-text-muted">Only say it if it's true.</p>
           </div>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Top objections
+              "Let me think about it."
             </h4>
-            <p className="font-medium">"I've tried everything, why would this be different?"</p>
-            <Quote>
-              "Everything you've tried treated the area that hurts. We work on what's pulling the area into
-              pain. If no one's worked on the pattern instead of the symptom, that variable hasn't been
-              tested."
-            </Quote>
-            <p className="font-medium pt-2">"How do I know it'll work for me?"</p>
+            <p className="text-amari-text-muted text-xs">
+              On a discovery call (warm — they booked the call themselves), this usually means hidden
+              constraint, fear of change, or a decision-maker not on the call. NOT a real "no." Treat as a
+              signal to surface the actual obstacle.
+            </p>
+            <ol className="list-decimal pl-5 space-y-1 pt-2">
+              <li>
+                <strong>Label:</strong>{' '}
+                <em>"It seems like there's something here that's not quite landing for you."</em>{' '}
+                (pause, let them respond)
+              </li>
+              <li>
+                <strong>Probe the real obstacle:</strong>{' '}
+                <em>"What's the biggest thing you'd be weighing?"</em> OR — if it might be a decision-maker —{' '}
+                <em>"How on board is [partner / household / boss] with this?"</em>
+              </li>
+              <li>
+                <strong>Loss aversion:</strong> <em>"What happens if you do nothing?"</em>{' '}
+                (back to what they already told you about their trajectory)
+              </li>
+              <li>
+                <strong>Give them control:</strong> <em>"How would you like me to proceed?"</em>
+              </li>
+            </ol>
+            <p className="text-amari-text-muted text-xs italic pt-2">
+              Way more honest than scarcity ("Tuesday at 2 is the only slot...") and surfaces real
+              objections instead of polite escape.
+            </p>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "I've tried everything, why would this be different?"
+            </h4>
+            <p>
+              Concept: everything they've tried treated the area that hurts. We work on the pattern pulling
+              the area into pain. That variable hasn't been tested.
+            </p>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "How do I know it'll work for me?"
+            </h4>
+            <p>Honest answer. Don't guarantee. Don't oversell.</p>
             <Quote>
               "I don't guarantee. Most clients feel a real shift in the first session. If you don't, we talk
               about whether to keep going. I'm not selling you something that isn't working for your body."
             </Quote>
-            <p className="font-medium pt-2">"It's a lot of money."</p>
-            <Quote>"It is. Real quick — on a scale of 1 to 10, how ready are you to actually be out of pain?"</Quote>
-            <p className="pl-3 mt-1">
-              If <strong>8 or above:</strong> <em>"OK. Let's figure out what works for you. We can split it — half now, half at session 3 — if that helps."</em>
-            </p>
-            <p className="pl-3 mt-1">
-              If <strong>7 or below:</strong> <em>"Got it. Then this might not be the right moment. Better to wait until you're actually ready than push through it now. Let me know when that shifts."</em>
-            </p>
-            <p className="font-medium pt-2">"My doctor said I need surgery."</p>
-            <Quote>
-              "Take that seriously. Surgery treats the structure. What's driving the structure to fail is
-              usually a pattern. Work on the pattern for a few sessions — if it improves, you've avoided
-              something irreversible. If not, surgery is still there."
-            </Quote>
           </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "It's a lot of money."
+            </h4>
+            <p className="font-medium">The 1-to-10 scale move:</p>
+            <Quote>
+              "It is. Real quick — on a scale of 1 to 10, how ready are you to actually be out of pain?"
+            </Quote>
+            <p className="pl-3 mt-1">
+              If <strong>8 or above:</strong>{' '}
+              <em>
+                "OK. Let's figure out what works for you. We can split it — half now, half at session 3 — if
+                that helps."
+              </em>
+            </p>
+            <p className="pl-3 mt-1">
+              If <strong>7 or below:</strong>{' '}
+              <em>
+                "Got it. Then this might not be the right moment. Better to wait until you're actually ready
+                than push through it now. Let me know when that shifts."
+              </em>
+            </p>
+            <p className="text-amari-text-muted text-xs italic pt-2">
+              The 7-or-below response is the honest move — preserves the relationship for when they're
+              actually ready, instead of forcing a half-committed yes that won't stick.
+            </p>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "My doctor said I need surgery."
+            </h4>
+            <p>
+              Concept: take that seriously. Surgery treats structure. What's driving the structural failure
+              is usually a pattern. Test the pattern for a few sessions — if it improves, you've avoided
+              something irreversible. If not, surgery is still there.
+            </p>
+          </div>
+        </StepSection>
+
+        <StepSection title="Post-call">
+          <p>Within 5 minutes:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>If booked: confirm the appointment is in GHL, payment is logged, slot is on the calendar</li>
+            <li>If not booked: note the reason and the followup date in the contact record</li>
+            <li>
+              If they declined for a real reason (timing, money, partner not on board): no follow-up
+              sequence — just one personal note in 3-4 weeks
+            </li>
+          </ol>
         </StepSection>
       </div>
     </>
