@@ -26,6 +26,12 @@
 
 import { listRecentCompletedOrders, getOrderDetail } from "./ghl.js";
 import { reconcileOrder } from "./reconcile.js";
+import { syncContacts, syncFieldsForContact, uniqueContactIdsFromOrders } from "./sync.js";
+
+// Per-invocation sync cap. With ~5 subrequests per contact (4 fetches + 1 PUT),
+// 15 contacts = ~75 subrequests. Hourly runs chip through the candidate set
+// within an hour. Lower this if we start hitting Workers subrequest limits.
+const SYNC_CAP_PER_RUN = 15;
 
 const KV_LAST_RUN_KEY = "ops:series-reconcile:lastRun";
 const DEFAULT_LOOKBACK_HOURS = 24;
@@ -57,9 +63,29 @@ export default {
       return jsonResponse(result);
     }
 
+    // Field sync for one specific contact. Useful for testing + ad-hoc fixes.
+    // GET /sync?contactId=sipSPSq3CIOOfzyJxVJ3
+    if (url.pathname === "/sync") {
+      const contactId = url.searchParams.get("contactId");
+      if (!contactId) return jsonResponse({ error: "contactId param required" }, 400);
+      const result = await syncFieldsForContact(env, contactId, {});
+      return jsonResponse(result);
+    }
+
+    // List contacts whose drift is too large to auto-correct (delta > 2 on
+    // either field). The /day briefing's qa-audit can surface these as a
+    // "needs Garrett review" section.
+    if (url.pathname === "/needs-review") {
+      const list = await env.PORTAL_KV.list({ prefix: "field-sync:needsReview:" });
+      const items = await Promise.all(
+        list.keys.map(async (k) => env.PORTAL_KV.get(k.name, "json"))
+      );
+      return jsonResponse({ count: items.length, items: items.filter(Boolean) });
+    }
+
     return jsonResponse({
       worker: "series-reconcile",
-      endpoints: ["/status", "/run?hours=N", "/backfill?days=N"],
+      endpoints: ["/status", "/run?hours=N", "/backfill?days=N", "/sync?contactId=X", "/needs-review"],
     });
   },
 };
@@ -131,6 +157,30 @@ async function runReconcile(env, trigger, lookbackHours) {
       await sleep(SLEEP_MS);
     }
 
+    // ── Continuous field sync pass ──
+    // After reconciling new orphan orders, also walk through the unique
+    // contactIds we saw in this window and pull each one's GHL session
+    // fields toward the ledger-derived values. Guards in sync.js prevent
+    // clobbering recent manual edits and never decrement sessions_completed.
+    //
+    // Per SESSION-FIELDS-AUDIT.md (2026-05-29 plan): this is the structural
+    // fix for drift cause #4. Even if a workflow misfires or a manual edit
+    // gets the wrong value, the field self-heals on the next hourly run.
+    const contactIdsToSync = uniqueContactIdsFromOrders(orders);
+    let syncSummary = null;
+    if (contactIdsToSync.length > 0) {
+      try {
+        syncSummary = await syncContacts(env, contactIdsToSync, {}, { maxPerRun: SYNC_CAP_PER_RUN });
+        const synced = syncSummary.results.filter((r) => r.status === "synced");
+        console.log(
+          `[series-reconcile] field-sync: ${syncSummary.contactsScanned} contacts processed, ${synced.length} fields written, ${syncSummary.contactsRemaining} deferred to next run`
+        );
+      } catch (syncErr) {
+        console.error("[series-reconcile] field-sync failed:", syncErr);
+        syncSummary = { error: String(syncErr.message || syncErr).slice(0, 300) };
+      }
+    }
+
     const finishedAt = new Date();
     const summary = {
       trigger,
@@ -145,6 +195,7 @@ async function runReconcile(env, trigger, lookbackHours) {
       skipped: results.skipped,
       errored: results.errored,
       failed: results.errored.length,
+      fieldSync: syncSummary,
     };
 
     await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));

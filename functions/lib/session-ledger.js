@@ -59,8 +59,14 @@ const ATTENDED_STATUSES = new Set(["showed", "completed"]);
 export function classifyOrder(order) {
   const status = (order.status || "").toLowerCase();
   const amount = Number(order.amount || 0);
-  const name = (order.sourceName || "").toLowerCase();
-  const sourceType = (order.sourceType || "").toLowerCase();
+  const sourceName = (order.sourceName || "").toLowerCase();
+  const sourceType = (order.sourceType || order.source?.type || "").toLowerCase();
+  // POS (mobile_app) orders carry product info in items[0] but a blank/odd
+  // sourceName — must fall through to productId-based classification below.
+  const firstItem = (order.items || [])[0] || {};
+  const itemProductId = firstItem.product?._id || firstItem.productId || null;
+  const itemName = (firstItem.product?.name || firstItem.name || "").toLowerCase();
+  const name = sourceName || itemName;
 
   if (status !== "completed" || amount <= 0) {
     return { type: "ignored", sessions: 0, name, amount };
@@ -74,11 +80,22 @@ export function classifyOrder(order) {
   // Counting them as new purchases double-counts the series: each follow-up
   // booking would inflate `purchased` by 1 while the appointment also decrements
   // via `attended`, so `remaining` never drops.
-  // Real purchases go through sourceType="payment_link".
+  // Real purchases go through sourceType="payment_link" or sourceType="point_of_sale".
   if (sourceType === "calendar") {
     return { type: "placeholder", sessions: 0, name, amount };
   }
 
+  // Primary classifier: productId lookup against ACTIVE_PRODUCTS (same as
+  // classifyInvoice). Real purchases always carry a productId — sourceName
+  // is often blank for POS/mobile_app orders so name-pattern matching alone
+  // misses Justin/Jenn-style in-studio sales (the 2026-05-29 bug fix).
+  if (itemProductId && ACTIVE_PRODUCTS[itemProductId]) {
+    const entry = ACTIVE_PRODUCTS[itemProductId];
+    return { type: entry.type, sessions: entry.sessions, name, amount };
+  }
+
+  // Fallback: name-pattern matching (payment_link orders where sourceName
+  // carries the package title and no productId lookup hit).
   // Check upgrade BEFORE series — "Upgrade to 4-Session" must not match 4-series.
   if (/upgrade/i.test(name)) {
     // $1,070 = upgrade to 8-session (adds 7 to existing 1 initial)

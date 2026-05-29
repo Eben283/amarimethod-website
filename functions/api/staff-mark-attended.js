@@ -15,8 +15,24 @@ const FIELD_IDS = {
   session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
 };
 
-// Appointment types that are NOT paid sessions — skip session counting
-const NON_SESSION_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
+// Two distinct predicates per the 2026-05-29 session-fields contract
+// (see SESSION-FIELDS-AUDIT.md):
+//
+//   sessions_completed = lifetime journey ("how much real bodywork has the
+//     client done with the Amari Method?")
+//     Excludes pre-session phone chats only — discovery, consultation,
+//     15-min, pain assessment (intake quiz).
+//     Includes entrainments AND partner-initials — both are real bodywork,
+//     just billed differently (entrainment = $90 separate, partner-init = comp).
+//
+//   sessions_remaining = prepaid package balance ("when do I need to act?")
+//     Excludes everything above PLUS entrainments (billed separately) AND
+//     partner-initials (comp perk) — neither draws from a prepaid package.
+const NON_JOURNEY_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_PACKAGE_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
+// Back-compat alias — older code refs may exist; keep the name pointing at
+// the package predicate (the historical meaning).
+const NON_SESSION_PATTERNS = NON_PACKAGE_PATTERNS;
 
 // Garrett's protocol pairs a follow-up with an immediately-adjacent entrainment.
 // When a follow-up is marked showed, the entrainment within ±90 min is auto-flipped.
@@ -160,8 +176,14 @@ export async function onRequestPost(context) {
     }
 
     // Pair-mark: when a follow-up is marked showed, auto-flip a paired entrainment
-    // appointment within ±90 min. Entrainment is excluded from session counting by
-    // NON_SESSION_PATTERNS, so this can never double-decrement sessions_remaining.
+    // appointment within ±90 min. The pair-mark flips the appointment status only —
+    // it does NOT trigger a separate sessions_completed/sessions_remaining update
+    // for the entrainment (no second POST). The entrainment will count toward
+    // lifetime sessions_completed if/when its own "mark attended" runs (or via
+    // the series-reconcile-worker continuous sync).
+    // sessions_remaining is never decremented for entrainments — they're billed
+    // separately at $90 and don't draw from the prepaid package per the
+    // NON_PACKAGE_PATTERNS predicate.
     let pairedEntrainmentId = null;
     if (thisAppt && thisAppt.calendarId && FOLLOWUP_CALENDAR_IDS.has(thisAppt.calendarId)) {
       const thisStartRaw = thisAppt.startTime || thisAppt.start_time;
@@ -195,23 +217,34 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Check if this is a paid session (not a discovery call / pain assessment)
+    // Apply the two predicates per session-fields contract (see
+    // SESSION-FIELDS-AUDIT.md). countsTowardLifetime can be true while
+    // drawsFromPackage is false — that's exactly the entrainment case.
     const appointmentTitle = body.appointmentTitle || "";
     const calendarName = body.calendarName || "";
-    const isSession = !NON_SESSION_PATTERNS.test(appointmentTitle) && !NON_SESSION_PATTERNS.test(calendarName);
+    const titleAndCal = `${appointmentTitle} ${calendarName}`;
+    const countsTowardLifetime = !NON_JOURNEY_PATTERNS.test(titleAndCal);
+    const drawsFromPackage = !NON_PACKAGE_PATTERNS.test(titleAndCal);
+    // Back-compat: existing API contract returns `isSession`. Keep it tied to
+    // the package predicate (the historical meaning of "this is a paid
+    // session that counts against the prepaid balance").
+    const isSession = drawsFromPackage;
 
     let newCompleted = currentCompleted;
     let newRemaining = currentRemaining;
 
-    if (isSession) {
-      newCompleted = currentCompleted + 1;
-      newRemaining = currentRemaining > 0 ? currentRemaining - 1 : 0;
+    if (countsTowardLifetime || drawsFromPackage) {
+      if (countsTowardLifetime) newCompleted = currentCompleted + 1;
+      if (drawsFromPackage) newRemaining = currentRemaining > 0 ? currentRemaining - 1 : 0;
 
-      // Build custom field updates — always update session counts
-      const customFields = [
-        { id: FIELD_IDS.sessions_completed, field_value: String(newCompleted) },
-        { id: FIELD_IDS.sessions_remaining, field_value: String(newRemaining) },
-      ];
+      // Build custom field updates — write whichever fields changed.
+      const customFields = [];
+      if (countsTowardLifetime) {
+        customFields.push({ id: FIELD_IDS.sessions_completed, field_value: String(newCompleted) });
+      }
+      if (drawsFromPackage) {
+        customFields.push({ id: FIELD_IDS.sessions_remaining, field_value: String(newRemaining) });
+      }
 
       // Clear the single-session prepaid flag if this was a non-series session
       if (newRemaining === 0) {
