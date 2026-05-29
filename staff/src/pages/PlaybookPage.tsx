@@ -381,223 +381,372 @@ function PartnerCallPlaybook() {
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Partner Call</h1>
         <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
-          15-minute call. Get them to book a free partner session.
+          Cold call to a golf pro, tennis pro, or fitness trainer in the SF Bay Area.
         </p>
         <p className="text-sm text-amari-charcoal/80 leading-relaxed">
-          The free session is "give before you get." They experience the work, they refer. The call is
-          logistics; the session is the pitch. Don't pitch the partner program on the call. Don't explain
-          commission. Don't show them the partner page.
+          The goal: book them for a free 60-minute session at the studio, AND seed the
+          expectation that this comp is the front end of a referral relationship — not a one-off gift.
         </p>
       </header>
 
       <section className="staff-card mb-4">
-        <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-1">
-          <li><strong>Open</strong> → peer compliment + reason for calling</li>
-          <li><strong>Listen</strong> → their body first, then their stuck client</li>
-          <li><strong>Reflect</strong> → name the unserved slice in their book</li>
-          <li><strong>Frame Amari as the second guide</strong> → not replacement, the stage their work doesn't cover</li>
-          <li><strong>Invite + book</strong> → free session as give-before-you-get</li>
+        <h3 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+          Pre-call (30 seconds)
+        </h3>
+        <p className="text-sm text-amari-charcoal/90 leading-relaxed mb-2">
+          Before dialing, glance at:
+        </p>
+        <ul className="text-sm text-amari-charcoal/90 leading-relaxed space-y-1 pl-5 list-disc">
+          <li>Their facility (so you can ask about a specific student type)</li>
+          <li>Their LinkedIn or website (recent post, student win, club they teach at)</li>
+          <li>Geo tier (A = SF/Peninsula = primary; B = East Bay = secondary)</li>
         </ul>
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed mt-2 italic">
+          If they're tier B or C and you don't have any shared context, don't call. Send a LinkedIn connect first.
+        </p>
       </section>
 
       <div className="space-y-3">
-        <StepSection title="1. Open (0–1 min)">
-          <p>Specific compliment + reason for calling. Don't pre-negotiate the exit ramps.</p>
+        <StepSection title="1. Open (first 15 seconds)">
+          <p className="font-medium">
+            Goal: disarm the "what does this guy want from me" reflex before saying who you are.
+          </p>
+          <p>
+            The prospect is in defensive mode the moment they pick up. Naming it ("you're probably going
+            to hate this call") and giving them autonomy to reject ("is now a bad time") removes the
+            defensiveness.
+          </p>
           <Quote>
-            "Hey [name], it's Garrett. I came across [specific — their gym, their content, a mutual client].
-            Most [trainers / golf pros / etc.] don't do that. The reason I'm calling — we serve similar
-            people. Wanted to see if our work overlaps. You got 15 min?"
+            "Hi [name], this is [your name] from Amari Method in SF. You're probably going to hate this
+            call because I'm a complete stranger interrupting your day. <strong>Is now a bad time to talk?</strong>"
           </Quote>
-          <p className="font-medium pt-2">Variant — when there's a mutual client (much warmer than cold):</p>
-          <Quote>
-            "Hey [name], it's Garrett. I'm working with [mutual client]. They mentioned you're their trainer.
-            Wanted to coordinate care."
-          </Quote>
+          <p className="font-medium pt-2">Why "is now a bad time" beats "do you have a minute":</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>"Do you have a minute" pushes for a yes → they go defensive</li>
+            <li>"Is now a bad time" lets them say "no, it's fine" (full attention) OR "yes, kind of" (clean reschedule, no awkward hang-up)</li>
+          </ul>
+          <p className="pt-2">
+            <strong>Voice:</strong> slight smile, easygoing tone. Don't try this rushed or assertive — it'll
+            feel like a script. If they say "yes, it's a bad time" — jump to Beat 5 and book a callback.
+            Don't push.
+          </p>
         </StepSection>
 
-        <StepSection title="2. Listen — their body first, then their stuck client (1–8 min)">
-          <p>
-            Lead with their body. Trainers, golf pros, Pilates teachers — they're all carrying something.
-            Overuse, compensation, things they "train around." Get curious about it first.
-          </p>
-          <p className="font-medium">Open with body:</p>
-          <Quote>"Before we talk about your clients — how's your own body holding up after all these years?"</Quote>
-          <p>or:</p>
-          <Quote>"You've been [coaching / training / teaching] how long? What's your body like at this point?"</Quote>
-          <p>
-            Listen the same way you would with any chronic-pain client. Permissible interjections:{' '}
-            <em>"Tell me more."</em> <em>"What does that feel like?"</em> <em>"What have you tried?"</em>
+        <StepSection title="2. Ask about them (2–3 minutes)">
+          <p className="font-medium">
+            Goal: get them to articulate the problem you solve — without pitching anything.
           </p>
           <p>
-            Their body is the entry point. They're going to feel something shift in the free session — that's
-            what converts them.
+            Use calibrated questions — open questions starting with "What" or "How" (never "Why" — sounds
+            accusatory). They have no defined answer, which forces the prospect to think and articulate,
+            while giving them the illusion of control.
           </p>
+          <p className="font-medium pt-2">Pick 2–3. Don't run all four.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li><em>"What do you see as the biggest physical challenge your students are dealing with right now?"</em></li>
+            <li><em>"When a student plateaus, what's usually the core issue you can't address with coaching alone?"</em></li>
+            <li><em>"What's the most difficult thing for them to get around — the one that keeps coming back?"</em></li>
+            <li><em>"What does it cost them — and you — when it doesn't get fixed?"</em></li>
+          </ol>
+          <p className="pt-2">The last one is the loss-aversion bomb. Optional but powerful.</p>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Then — their stuck client (around min 5)
+              Listening discipline
             </h4>
-            <p>Once you've heard about their body, pivot to their work:</p>
-            <Quote>"And which clients do you find yourself wishing you had a better answer for?"</Quote>
-            <p className="font-medium">Follow-ups:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><em>"What have they tried?"</em></li>
-              <li><em>"What does the plateau look like?"</em></li>
-              <li><em>"Who do you refer when that comes up — and how often does it hold?"</em></li>
+              <li>Don't interrupt.</li>
+              <li>
+                After their answer, <strong>mirror</strong> the last 1-3 words back with an inquisitive upward
+                tone. They'll elaborate.{' '}
+                <em>("...so it's mostly their hips" / "Their hips?" / longer answer.)</em>
+              </li>
+              <li>
+                <strong>Label</strong> what you hear:{' '}
+                <em>"It sounds like you've been carrying these students for months without anywhere to send them."</em>{' '}
+                Validates and builds trust.
+              </li>
             </ul>
-            <p>
-              You're locating the overlap: their body (what they'll feel shift in the session) + the stuck-client
-              pattern (who Amari serves once they've felt it).
+            <p className="pt-2">
+              This beat is NOT a setup for a pitch. It's reconnaissance + relationship. Most pros never get
+              asked these questions by someone genuinely listening. That alone earns goodwill.
             </p>
           </div>
         </StepSection>
 
-        <StepSection title="3. Reflect (8–10 min)">
-          <p>Mirror back their body first, then their stuck-client pattern.</p>
+        <StepSection title="3. Offer — the barter, not the gift">
+          <p className="font-medium">
+            Goal: frame the comp session as a trade, not a gift.
+          </p>
+          <p>
+            Free triggers suspicion. Barter doesn't. The fatal move is offering "a free session, hope you
+            like it" — the prospect spends the comp waiting for the pitch. Naming the trade upfront makes
+            the comp the path TO the ask, not bait FOR the ask.
+          </p>
           <Quote>
-            "OK so what I'm hearing is — you've got [body part / how long it's been there], comes with the
-            territory after [years coaching / training]. The clients you wish you had a better answer for are
-            [pattern], and you refer to [where] but it doesn't always hold. Is that about right?"
+            "Here's why I'm calling. I normally charge $225 for a 60-minute session at my SF studio. I'm
+            offering it free to a handful of [golf pros / trainers / tennis pros] right now because I want
+            to be someone you can refer clients to for the body stuff you can't fix as a coach. The only
+            way that makes sense to me is if you've felt the work yourself first.{' '}
+            <strong>Whether you decide to refer is up to you</strong> — but I'd want you to have actually
+            felt it before deciding. Sound fair?"
           </Quote>
-          <p className="font-medium pt-2">
-            Don't: summarize abstractly. Skip ahead to telling them about Amari.
+          <p className="font-medium pt-2">The 4 critical elements:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li><strong>Named price</strong> ($225) — anchors the value</li>
+            <li><strong>Named ask</strong> ("I want to be someone you can refer clients to") — kills the "what's the catch" reflex</li>
+            <li><strong>Why it makes sense</strong> ("only way is if you've felt it") — explains the trade honestly</li>
+            <li><strong>Autonomy clause</strong> ("whether you decide to refer is up to you") — kills reactance, increases compliance</li>
+          </ol>
+        </StepSection>
+
+        <StepSection title="4. Frame what they get — 3-step plan, not modality">
+          <p className="font-medium">
+            Goal: don't explain Amari. Give them a 3-step plan where THEY are the hero.
+          </p>
+          <p>
+            Most cold callers explain their modality, credentials, philosophy. The prospect tunes out because
+            they're hearing about YOU, not about THEM. The fix: frame yourself as the guide who helps the
+            coach solve the coach's frustration. The 3-step plan removes ambiguity about how the partnership
+            actually works.
+          </p>
+          <Quote>
+            "Here's how this works — it's really simple. <strong>One:</strong> when you spot a student who's
+            stuck on a body thing you can't drill out of them, you send them to me.{' '}
+            <strong>Two:</strong> I do the bodywork to unlock whatever's keeping them from doing what you're
+            coaching. <strong>Three:</strong> they come back to you physically able to break through — and
+            you look like the coach who actually got them there. Instead of losing students because their
+            body wouldn't cooperate, you become the one who solves it for them."
+          </Quote>
+          <p className="font-medium pt-2">Avoid:</p>
+          <p className="pl-3 text-amari-text-muted text-xs">
+            "Network Spinal," "rebalancing," "somatic," "25 years of practice," any credentialing intro.
+            None of that lands. The plan does.
           </p>
         </StepSection>
 
-        <StepSection title="4. Frame Amari as the second guide (10–12 min)">
-          <p>Don't dump everything. Pick the angles that match what they told you.</p>
-
-          <p className="font-medium">Position Amari as their second guide — not replacement, the stage their work doesn't cover:</p>
+        <StepSection title="5. Book — calendar commitment on this call">
+          <p className="font-medium">
+            Goal: lock in the calendar now, not "I'll get back to you."
+          </p>
+          <p>
+            If they leave without a time set, most won't follow up. The rule: book a meeting from a meeting.
+          </p>
           <Quote>
-            "Most of your stuck clients are caught in patterns their body learned years ago. You can program
-            around it, strengthen around it — the pattern keeps pulling them back. That's the stage we work
-            at. We teach them to feel where they're out of balance and bring it back themselves — every day,
-            at home, for life."
+            "Awesome. Let's get you on the calendar now so we don't lose momentum. Do mornings or afternoons
+            work better?"
           </Quote>
-
-          <p className="font-medium">Different work (trainer / fitness pro):</p>
+          <p>Wait for answer. Then:</p>
           <Quote>
-            "We do different things. You're getting them stronger, more capable, looking like they want to
-            look. We're working on what's underneath — the body being out of balance. When someone's out of
-            balance, your work doesn't stick — they plateau or get hurt. Once they're back in balance, your
-            work starts landing again."
+            "Perfect — I have [Tuesday at 9am] or [Thursday at 10:30am]. Which works better?"
           </Quote>
-
-          <p className="font-medium">Feeling over doing (trainer-language hook):</p>
-          <Quote>
-            "It's not about crushing reps. It's about whether the right thing is firing. Your clients are
-            trying to muscle through with things that have been shut down for years — no wonder it doesn't
-            hold."
-          </Quote>
-
-          <p className="font-medium">The trainer story (use when there's a pause):</p>
-          <Quote>
-            "A very fit guy in his sixties came in with no complaints — just heard the tools were good. After
-            one session he said, 'I didn't realize how heavy I was in my body. I didn't know I needed this.'"
-          </Quote>
-        </StepSection>
-
-        <StepSection title="5. Invite + book (12–15 min)">
-          <p className="font-medium">Ask permission first:</p>
-          <Quote>"OK so given all that — want to come feel what this is for yourself?"</Quote>
-          <p>Wait for yes. Then the give-before-you-get ask:</p>
-          <Quote>
-            "Honestly, reading about it won't tell you what this is. Twenty minutes of doing it will. You're
-            going to feel something shift in your [body part they named] — you'll do the work, I'll guide
-            you through it. Let me give you the full session — about an hour, totally free. The only ask:
-            1) try it, 2) tell me what you noticed, 3) if you have stuck clients who'd be a fit, send them
-            my way. Fair?"
-          </Quote>
+          <p className="font-medium pt-2">Why A/B beats open-ended:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>"When are you free?" → they scan their whole calendar → friction → "let me get back to you"</li>
+            <li>"Tuesday 9 or Thursday 10:30?" → 1-second decision, no calendar scan</li>
+          </ul>
 
           <div className="pt-3 mt-3 border-t border-amari-border/60">
             <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Book it
+              Logistics ONLY after time is locked
             </h4>
-            <ol className="list-decimal pl-5 space-y-1">
-              <li>Open GHL → contact → book on <strong>Partner Session</strong> calendar</li>
-              <li>Add tags: <code>partner-prospect</code> + their category (<code>trainer</code>, <code>golf-instructor</code>, <code>pilates-teacher</code>, etc.)</li>
-              <li>Confirm: <em>"Tuesday at 2. I'll text you a confirmation."</em></li>
-              <li>Set expectations: <em>"You'll come in for an hour. We do an assessment, you experience the protocols, we talk about what you noticed. No prep needed."</em></li>
+            <Quote>
+              "Tuesday at 9am it is. I'll send you the calendar invite now. The studio's at [address] —
+              just wear something you can move in, you don't need to bring anything. We'll spend the first
+              10 minutes talking about what your body's been doing, then we get on the table and do the
+              work. You'll feel different walking out."
+            </Quote>
+            <p className="text-amari-text-muted pl-3 text-xs pt-2">
+              Confirming logistics before the time is set overwhelms them and gives them a reason to stall.
+            </p>
+          </div>
+        </StepSection>
+
+        <StepSection title="6. Close the call">
+          <Quote>
+            "Great. Looking forward to [day/time]. Anything I should know before then?"
+          </Quote>
+          <p className="pt-2">
+            That's it. Don't re-pitch. Don't over-thank. Don't say "feel free to call me if anything changes"
+            (that's an out). Confirm, then hang up.
+          </p>
+        </StepSection>
+
+        <StepSection title="Objection cheat sheet">
+          <p>
+            Don't argue. Don't logic. Mirror → label → calibrated question → no-oriented close. Slow, warm
+            voice on all of these — fast or assertive delivery makes them feel manipulated.
+          </p>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "I'll think about it."
+            </h4>
+            <p className="text-amari-text-muted text-xs">
+              Translation: they feel pressured, don't see the value yet, or are trying to escape politely.
+            </p>
+            <ol className="list-decimal pl-5 space-y-1 pt-1">
+              <li><strong>Mirror:</strong> <em>"Think about it?"</em> (silence, wait for them to elaborate)</li>
+              <li><strong>Label:</strong> <em>"It sounds like there's a specific piece of this that doesn't quite sit right with you."</em></li>
+              <li><strong>Calibrated:</strong> <em>"What's the biggest thing you'd be weighing?"</em></li>
+              <li><strong>No-oriented close:</strong> <em>"Would it be a bad idea to put a tentative time on the calendar for next [day]? Gives you time to think — you can cancel if it's a no."</em></li>
+            </ol>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "Send me some info / email me details."
+            </h4>
+            <p className="text-amari-text-muted text-xs">
+              Translation: counterfeit yes — they want off the phone without confrontation.
+            </p>
+            <ol className="list-decimal pl-5 space-y-1 pt-1">
+              <li><strong>Mirror:</strong> <em>"Send some info?"</em> (silence)</li>
+              <li><strong>Label:</strong> <em>"It sounds like you're slammed today and just want to get back to your day."</em></li>
+              <li><strong>Calibrated:</strong> <em>"What would I need to include for it not to be just generic marketing material?"</em></li>
+              <li><strong>No-oriented close:</strong> <em>"Are you against just dropping a 10-minute placeholder on the calendar so we can see if what I send actually aligns?"</em></li>
+            </ol>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-amari-border/60">
+            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
+              "We already have someone we refer to."
+            </h4>
+            <p className="text-amari-text-muted text-xs">
+              Translation: change is scary — current provider is the safe choice. Don't attack the incumbent;
+              praise their loyalty.
+            </p>
+            <ol className="list-decimal pl-5 space-y-1 pt-1">
+              <li><strong>Mirror:</strong> <em>"Someone you already refer to?"</em></li>
+              <li><strong>Label:</strong> <em>"It sounds like you're loyal to the relationships you've built — that's how good practices run."</em></li>
+              <li><strong>Calibrated:</strong> <em>"How are you handling the cases where your current person isn't quite the right fit?"</em> OR <em>"What's the biggest body thing they haven't been able to solve for you?"</em></li>
+              <li><strong>No-oriented close:</strong> <em>"Would it be ridiculous to do a brief session anyway, just so you know what I do for cases when your current person is booked or it's not their lane?"</em></li>
             </ol>
           </div>
         </StepSection>
 
-        <StepSection title="Handling push-back + objections (anytime)">
-          <div>
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Push-back on the invite
-            </h4>
-            <p className="font-medium">"I'd need to experience it before I refer anyone."</p>
-            <Quote>"Exactly — that's why I'm inviting you in. The only way to really get it is to feel it."</Quote>
-            <p className="font-medium pt-2">"My schedule's packed."</p>
-            <Quote>
-              "Is this a this-month thing or a this-quarter thing? I'd rather find the actual right moment
-              than chase you."
-            </Quote>
-            <p className="font-medium pt-2">"Send me some info first."</p>
-            <Quote>
-              "Happy to — the info is really just a primer for the experience. Let me put a tentative session
-              date down. Cancel if the materials don't land."
-            </Quote>
-          </div>
+        <StepSection title="Post-call">
+          <p>Within 2 minutes of hanging up:</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Log the outcome in <code>/staff/outreach</code> — <strong>Talked</strong> (and tick session-booked if applicable)</li>
+            <li>Add a note with any specific student type or pain point they mentioned (so you can reference it when they walk in for the session)</li>
+            <li>Calendar invite goes out automatically from GHL</li>
+          </ol>
+        </StepSection>
+      </div>
+    </>
+  );
+}
 
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Top objections
-            </h4>
-            <p className="font-medium">"So it's like physical therapy?"</p>
-            <Quote>
-              "PT is good at restoring function by prescribing movement. Amari isn't a prescription — it's a
-              scaffolding for discovering how to move so the overworked parts release and function comes back
-              on its own."
-            </Quote>
-            <p className="text-amari-text-muted pl-3 text-xs">(Or your own line: <em>"I guarantee you I don't do what you think I do."</em>)</p>
+// ── LinkedIn Connect ──
 
-            <p className="font-medium pt-2">"My clients already stretch / do yoga / foam roll."</p>
-            <Quote>
-              "Great for maintenance. This is different — it's figuring out why one side is doing all the
-              work in the first place. Stretching a muscle that's compensating just gives it more slack when
-              it actually needs to hold tension."
-            </Quote>
+function LinkedInConnectPlaybook() {
+  return (
+    <>
+      <header className="mb-4">
+        <h1 className="text-2xl font-serif text-amari-charcoal mb-2">LinkedIn First Message</h1>
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed">
+          Cold/cool outreach to a golf pro, tennis pro, or fitness trainer where the offer is a comped
+          60-minute session at the SF studio. Works as a LinkedIn DM, SMS, or email body. Use after they
+          accept your connection request.
+        </p>
+      </header>
 
-            <p className="font-medium pt-2">"Is there science behind it?"</p>
-            <Quote>
-              "Doctor with 25 years in clinical practice. The protocols work with how the body distributes
-              load — every part holds the weight equally, like a suspension bridge. When that breaks down,
-              you get pain in the part that's overworking."
-            </Quote>
-
-            <p className="font-medium pt-2">"We already refer to a PT / chiro."</p>
-            <Quote>
-              "Great. We're not the same lane. We work with the clients they've already discharged, or the
-              ones who never fit those modalities to begin with."
-            </Quote>
-
-            <p className="font-medium pt-2">"What's in it for me?"</p>
-            <Quote>
-              "Mostly status — you become the trainer known as the one who solved the un-fixable for their
-              clients. We can talk about a referral structure after the session if it makes sense."
-            </Quote>
-          </div>
-
-          <div className="pt-3 mt-3 border-t border-amari-border/60">
-            <h4 className="text-xs font-semibold text-amari-text-muted uppercase tracking-wider mb-2">
-              Direct "no"
-            </h4>
-            <Quote>
-              "No problem at all. If you know anyone else who might be looking to expand their referral
-              network, let me know. Anyway — what's new with your practice?"
-            </Quote>
-          </div>
+      <div className="space-y-3">
+        <StepSection title="The template" defaultOpen>
+          <Quote>
+            Hey [first name], [your name] from Amari Method here in SF. Wanted to comp you a 60-minute
+            session at our studio. I want to be someone you can refer clients to for the body issues you
+            see but can't fix as a coach — hip rotation, low-back tightness, whatever's tight. The only way
+            that makes sense to me is if you've felt the work yourself first.
+            <br /><br />
+            Most pros end up finding a few things in their own body too. Whether you decide to refer is up
+            to you. Want me to send the booking link?
+          </Quote>
         </StepSection>
 
-        <StepSection title="After the session — where the partnership actually starts">
-          <p>The call gets them in the door. The session converts them. The follow-up is what compounds.</p>
-          <ol className="list-decimal pl-5 space-y-1">
-            <li><strong>Handwritten thank-you within 48 hours.</strong> Chiro literature reports 3-4x referral lift from this single move vs. no follow-up.</li>
-            <li><strong>GHL tag:</strong> <code>partner-active</code> + date of session.</li>
-            <li><strong>Monthly touch</strong> for the next 6 months — one-paragraph update on a co-managed client when there is one.</li>
-          </ol>
+        <StepSection title="Why each line lands">
+          <ul className="list-disc pl-5 space-y-2">
+            <li>
+              <strong>"Hey [first name], [your name] from Amari Method here in SF"</strong> — natural DM
+              opener, the way a person would actually start a message to a stranger.
+            </li>
+            <li>
+              <strong>"Wanted to comp you a 60-minute session at our studio"</strong> — concrete offer with
+              specific duration (no vague "full session" that leaves them wondering about commitment).
+            </li>
+            <li>
+              <strong>"I want to be someone you can refer clients to..."</strong> — names the ask plainly.
+              The whole point of the comp IS to earn a referral relationship; saying so directly is the
+              respect move. Hiding the ask triggers the "what's the catch" reflex.
+            </li>
+            <li>
+              <strong>Body-issue list</strong> — <em>"hip rotation, low-back tightness, whatever's tight"</em>{' '}
+              — concrete, ends loose with "whatever's tight" which is how a real person trails off
+              (not a copywriter).
+            </li>
+            <li>
+              <strong>"The only way that makes sense to me is if you've felt the work yourself first"</strong>{' '}
+              — explains the comp as the path to the ask. Quiet conviction.
+            </li>
+            <li>
+              <strong>"Most pros end up finding a few things in their own body too"</strong> — personal-breakthrough
+              seed. Kept understated.
+            </li>
+            <li>
+              <strong>"Whether you decide to refer is up to you"</strong> — autonomy clause. Honest autonomy
+              because the ask was named explicitly, not hedged "no expectation" framing.
+            </li>
+            <li>
+              <strong>"Want me to send the booking link?"</strong> — plain question. Not a hard close, not
+              a hedged ask.
+            </li>
+          </ul>
+        </StepSection>
+
+        <StepSection title="What to vary per recipient">
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>[first name]</strong> — always personalize.</li>
+            <li>
+              <strong>Body-issue list</strong> — swap to match what their clients struggle with:
+              <ul className="list-disc pl-5 mt-1 space-y-1">
+                <li>Golf: <em>"hip rotation and shoulder mobility, whatever's tight"</em></li>
+                <li>Tennis: <em>"low-back tightness and rotation, whatever's stuck"</em></li>
+                <li>General fitness: <em>"thoracic stiffness and ankle mobility"</em></li>
+              </ul>
+            </li>
+            <li>Keep to two specific items + a loose trailing phrase.</li>
+          </ul>
+        </StepSection>
+
+        <StepSection title="What NOT to change">
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>The order:</strong> opener → offer → ask + niche → why-comp-makes-sense → personal seed → autonomy → CTA</li>
+            <li><strong>The named ask</strong> (<em>"I want to be someone you can refer clients to"</em>) — don't revert to hedged "no expectation" framing</li>
+            <li><strong>The autonomy clause</strong> (<em>"Whether you decide to refer is up to you"</em>) — this is what makes the named ask non-pressuring</li>
+          </ul>
+        </StepSection>
+
+        <StepSection title="Connection request note (300 char max)">
+          <p>
+            LinkedIn caps connection-request notes at 300 characters. The full template above is ~575
+            characters and won't fit. If they're a 3rd-degree connection, send this connection note first;
+            once they accept, send the full DM above as message 1.
+          </p>
+          <Quote>
+            Hi [first name] — [your name] here in SF. I run a somatic bodywork practice; most of my
+            chronic-pain clients turn out to be golfers and tennis players. Would be good to be on each
+            other's radar.
+          </Quote>
+          <p className="text-amari-text-muted text-xs pl-3 pt-1">(186 characters — fits comfortably.)</p>
+        </StepSection>
+
+        <StepSection title="When NOT to use this template">
+          <ul className="list-disc pl-5 space-y-1">
+            <li>If the prospect is themselves a chronic-pain sufferer or already a known referrer → skip the for-your-clients framing, go straight to the offer.</li>
+            <li>If sending via voicemail → use the Partner Call script instead, not this written adaptation.</li>
+            <li>If audience is a peer practitioner (DPT, chiropractor, massage therapist) → wrong category. Skip; they're not a referral partner, they're competitive overlap.</li>
+          </ul>
         </StepSection>
       </div>
     </>
@@ -606,7 +755,7 @@ function PartnerCallPlaybook() {
 
 // ── Tabbed shell ──
 
-type Tab = 'discovery' | 'partner';
+type Tab = 'discovery' | 'partner' | 'linkedin';
 
 export default function PlaybookPage() {
   const [tab, setTab] = useState<Tab>('discovery');
@@ -628,10 +777,15 @@ export default function PlaybookPage() {
           <button onClick={() => setTab('partner')} className={tabClass(tab === 'partner')}>
             Partner Call
           </button>
+          <button onClick={() => setTab('linkedin')} className={tabClass(tab === 'linkedin')}>
+            LinkedIn DM
+          </button>
         </div>
       </div>
 
-      {tab === 'discovery' ? <DiscoveryCallPlaybook /> : <PartnerCallPlaybook />}
+      {tab === 'discovery' && <DiscoveryCallPlaybook />}
+      {tab === 'partner' && <PartnerCallPlaybook />}
+      {tab === 'linkedin' && <LinkedInConnectPlaybook />}
     </div>
   );
 }
