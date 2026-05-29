@@ -24,9 +24,13 @@ function StepSection({ title, defaultOpen = false, children }: StepSectionProps)
   );
 }
 
+// Quote = the line Garrett actually says on the call. Designed to jump out
+// from the surrounding scaffolding so it's instantly scannable mid-call:
+// bigger text, white card lift, full-opacity charcoal, no italic (italic is
+// harder to read fast). Notes around it stay text-sm/90 and recede by contrast.
 function Quote({ children }: { children: React.ReactNode }) {
   return (
-    <blockquote className="border-l-2 border-amari-accent-warm pl-3 italic text-amari-charcoal/80 my-2">
+    <blockquote className="my-3 p-3.5 bg-white border-l-4 border-amari-accent-warm rounded-r shadow-sm text-amari-charcoal text-base leading-relaxed font-medium">
       {children}
     </blockquote>
   );
