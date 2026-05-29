@@ -39,13 +39,8 @@ function DiscoveryCallPlaybook() {
     <>
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Discovery Call</h1>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed">
           15-minute call with a prospective client. Recommend the right tier and book it on the call.
-        </p>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed italic">
-          Scaffolding, not script. Each beat names the goal, the topics to cover, and the brand-aligned
-          framing — but the exact words come from you. Rehearsed phrasings read as scripted from the
-          prospect's chair.
         </p>
       </header>
 
@@ -465,15 +460,10 @@ function PartnerCallPlaybook() {
     <>
       <header className="mb-4">
         <h1 className="text-2xl font-serif text-amari-charcoal mb-2">Partner Call</h1>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed mb-2">
+        <p className="text-sm text-amari-charcoal/80 leading-relaxed">
           Cold call to a golf pro, tennis pro, or fitness trainer in the SF Bay Area. Goal: book them for
           a free 60-minute session at the studio, and seed the expectation that this comp is the front end
           of a referral relationship — not a one-off gift.
-        </p>
-        <p className="text-sm text-amari-charcoal/80 leading-relaxed italic">
-          Scaffolding, not script. Each beat names the goal, the topics to cover, and brand-aligned
-          framing — but the exact words come from you. Rehearsed phrasings read as scripted from a
-          prospect's ear.
         </p>
       </header>
 
