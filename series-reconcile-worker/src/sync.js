@@ -21,6 +21,14 @@ const FIELD_IDS = {
   series_type: "3i93lTkmuAV49s9nh0q8",
   sessions_completed: "TE0udwVH1Km5RsKaN5H0",
   sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+  // Manual override lock. When checked, the worker skips this contact —
+  // neither sessions_remaining nor sessions_completed get auto-corrected.
+  // Used for one-off cases where derivation disagrees with intent (e.g.
+  // Garrett comped a session, custom credit, etc.). staff-mark-attended.js
+  // still decrements on real attendance — the lock only blocks automated
+  // sync, not user-initiated events. Field created 2026-05-29 (Albert Yang
+  // case). See SESSION-FIELDS-AUDIT.md.
+  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
 };
 
 // Lifetime journey patterns. Mirrors NON_JOURNEY_PATTERNS in
@@ -114,6 +122,25 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
         }
       })
     );
+
+    // Hard lock: skip the worker entirely if `sessions_remaining_locked` is
+    // true. Used for cases where Garrett's intent disagrees with the ledger
+    // derivation (one-off comps, manual credits, etc.). staff-mark-attended.js
+    // still decrements on real attendance — the lock only blocks automated
+    // drift correction, not user-initiated events. See SESSION-FIELDS-AUDIT.md.
+    const lockedRaw = readField(contact, FIELD_IDS.sessions_remaining_locked);
+    const isLocked = Array.isArray(lockedRaw) ? lockedRaw.includes("true") : (lockedRaw === "true" || lockedRaw === true);
+    if (isLocked) {
+      return {
+        status: "skipped-locked",
+        contactId,
+        contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+        currentFields: {
+          sessions_remaining: readFieldInt(contact, FIELD_IDS.sessions_remaining),
+          sessions_completed: readFieldInt(contact, FIELD_IDS.sessions_completed),
+        },
+      };
+    }
 
     // Manual-edit debounce: if the contact was updated recently, skip — a
     // human might have just typed the value in, and we don't want to clobber

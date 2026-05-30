@@ -303,6 +303,16 @@ export function deriveLedger({
   const prepaidOverride =
     (getCustomField(contact, "session_prepaid", fieldDefs) || "").toLowerCase() === "yes";
 
+  // Manual lock — when true, session counts are intentionally human-managed
+  // and the series-reconcile-worker won't auto-sync them. Surface here so
+  // any consumer of the ledger can show "locked" status (e.g. staff app
+  // could render a small lock icon next to the count, portal could note
+  // "your count is being manually managed").
+  const lockedRaw = getCustomField(contact, "sessions_remaining_locked", fieldDefs);
+  const manualLock = Array.isArray(lockedRaw)
+    ? lockedRaw.includes("true")
+    : (lockedRaw === "true" || lockedRaw === true);
+
   const customFieldRemaining = getCustomFieldInt(contact, "sessions_remaining", fieldDefs);
   if (
     customFieldRemaining !== null &&
@@ -329,6 +339,7 @@ export function deriveLedger({
     seriesType,
     purchased,
     attended,
+    manualLock,
     remaining,
     lastSessionDate,
     prepaidOverride,
