@@ -414,7 +414,19 @@ function priorityScore(p: PartnerProspect): number {
   const noPhonePenalty = hasPhone ? 0 : -50;
   // Boost verified / sheet-matched contacts — they have clean data, more actionable.
   const verifiedBoost = (p.outreachVerified || p.inGarrettSheet) ? 15 : 0;
-  const adjust = noPhonePenalty + verifiedBoost;
+  // Recent-touch cool-off: if Garrett (or Eben) already reached out in the
+  // last few days, don't surface them as top priority. They're "in motion" —
+  // waiting on the other side to respond. Without this, a verified contact
+  // who got a LinkedIn connect 2 days ago scores identically to a truly
+  // cold contact, which is wrong. Linear decay over 7 days.
+  // Eben flagged this 2026-05-29: Will Manning / Arron / Matt all showed
+  // top-of-list despite recent LinkedIn connects.
+  let recentTouchPenalty = 0;
+  if (dSince !== null && dSince >= 0 && dSince < 7) {
+    // -42 at 0 days, -36 at 1, -30 at 2, ... -0 at 7.
+    recentTouchPenalty = -Math.round((7 - dSince) * 6);
+  }
+  const adjust = noPhonePenalty + verifiedBoost + recentTouchPenalty;
 
   if (stage === 'dropped') return 0 + adjust;
   if (stage === 'future-potential') {
