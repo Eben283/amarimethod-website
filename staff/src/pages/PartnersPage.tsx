@@ -834,18 +834,20 @@ function ProspectModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4 overflow-y-scroll"
+      className="fixed inset-0 bg-black/40 z-[60] flex items-start sm:items-center justify-center p-0 sm:p-4"
       onClick={focusContext ? undefined : onClose}
-      style={{ scrollbarGutter: 'stable' }}
     >
+      {/* Card is fixed-height (max 100vh on mobile, 90vh on desktop) and uses
+          flex-col so the header stays put while the body scrolls inside it.
+          Earlier version had the outer container scrolling, which made the
+          "sticky" header scroll out of view when content was tall — Eben
+          flagged this 2026-05-29 (Pure Performance Private Fitness modal). */}
       <div
-        className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl my-0 sm:my-8"
+        className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl flex flex-col max-h-[100vh] sm:max-h-[90vh] my-0 sm:my-8"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header — sticky inside the scrollable modal container. z-30 so it
-            sits above the scrolling content; explicit bg color + shadow so
-            scrolling content doesn't bleed through (was a glitch with z-10). */}
-        <div className="sticky top-0 z-30 flex items-center justify-between border-b border-amari-border px-4 py-3 bg-amari-bone-white shadow-sm">
+        {/* Header — shrink-0 so it stays visible while body scrolls. */}
+        <div className="shrink-0 flex items-center justify-between border-b border-amari-border px-4 py-3 bg-amari-bone-white shadow-sm">
           <div>
             <h2 className="text-lg font-serif text-amari-charcoal">{displayName(prospect.fullName)}</h2>
             <p className="text-xs text-amari-text-muted">
@@ -881,7 +883,9 @@ function ProspectModal({
           )}
         </div>
 
-        <div className="p-4 space-y-4">
+        {/* Body — flex-1 + overflow-y-auto so it absorbs remaining height and
+            scrolls inside the card. Header above stays pinned. */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Contact */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Contact</h3>
