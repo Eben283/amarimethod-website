@@ -84,6 +84,97 @@ function computeLifetimeCount(appointments) {
   }).length;
 }
 
+// Package size lookup. Keep in sync with the values written by
+// reconcile.js when an order is detected. "none" means no series → 0.
+const PACKAGE_SIZE = { "8-session": 8, "4-session": 4, "none": 0 };
+
+/**
+ * Read-only contact-counts lookup. Returns ledger-derived session truth
+ * without any writes. Used by /day morning briefing to get authoritative
+ * counts per contact in one call (instead of pulling raw GHL fields and
+ * trying to interpret them).
+ *
+ * Returns:
+ *   {
+ *     status: "ok" | "low-confidence" | "errored",
+ *     contactId, contactName,
+ *     seriesType: "8-session" | "4-session" | "none",
+ *     packageSize: 8 | 4 | 0,
+ *     sessionsRemaining: int,        // ledger truth — package balance
+ *     sessionsCompleted: int,        // lifetime visits (per 5/29 contract)
+ *     pkgCompleted: int,             // packageSize - sessionsRemaining (0 if no pack)
+ *     locked: bool,                  // sessions_remaining_locked = true
+ *     ledgerConfidence: string,      // "high" | "low" | etc.
+ *     ambiguities: string[],         // present when confidence < high
+ *     rawFields: { sessions_remaining, sessions_completed },  // for sanity
+ *   }
+ */
+export async function getContactCounts(env, contactId, fieldDefs = {}) {
+  try {
+    const [contactRes, ordersRes, invoicesRes, apptRes] = await Promise.all([
+      ghlGet(env, `/contacts/${contactId}`),
+      ghlGet(env, `/payments/orders?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`),
+      ghlGet(env, `/invoices/?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+      ghlGet(env, `/contacts/${contactId}/appointments`),
+    ]);
+
+    const contact = contactRes.contact || {};
+    const ordersList = ordersRes.data || ordersRes.orders || [];
+    const invoices = invoicesRes.invoices || [];
+    const appointments = apptRes.appointments || apptRes.events || [];
+
+    // Hydrate items[] for POS/mobile_app orders (same trick syncFieldsForContact uses).
+    const orders = await Promise.all(
+      ordersList.map(async (o) => {
+        try { return await getOrderDetail(env, o._id); } catch { return o; }
+      })
+    );
+
+    const lockedRaw = readField(contact, FIELD_IDS.sessions_remaining_locked);
+    const isLocked = Array.isArray(lockedRaw) ? lockedRaw.includes("true") : (lockedRaw === "true" || lockedRaw === true);
+
+    const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
+    const lifetimeCount = computeLifetimeCount(appointments);
+
+    const seriesRaw = readField(contact, FIELD_IDS.series_type);
+    const seriesType = (seriesRaw && (seriesRaw === "8-session" || seriesRaw === "4-session")) ? seriesRaw : "none";
+    const packageSize = PACKAGE_SIZE[seriesType] || 0;
+
+    // sessionsRemaining: if locked, prefer the manually-pinned GHL field
+    // value (worker would skip overwriting it). Otherwise use ledger truth.
+    const fieldRemaining = readFieldInt(contact, FIELD_IDS.sessions_remaining);
+    const sessionsRemaining = isLocked
+      ? (fieldRemaining ?? 0)
+      : (ledger.confidence === "high" ? ledger.remaining : (fieldRemaining ?? 0));
+
+    const pkgCompleted = packageSize > 0 ? Math.max(0, packageSize - sessionsRemaining) : 0;
+
+    return {
+      status: ledger.confidence === "high" || isLocked ? "ok" : "low-confidence",
+      contactId,
+      contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+      seriesType,
+      packageSize,
+      sessionsRemaining,
+      sessionsCompleted: lifetimeCount,
+      pkgCompleted,
+      locked: isLocked,
+      ledgerConfidence: ledger.confidence,
+      ambiguities: ledger.ambiguities || [],
+      rawFields: {
+        sessions_remaining: fieldRemaining,
+        sessions_completed: readFieldInt(contact, FIELD_IDS.sessions_completed),
+      },
+    };
+  } catch (err) {
+    return {
+      status: "errored",
+      contactId,
+      error: String(err.message || err).slice(0, 300),
+    };
+  }
+}
+
 /**
  * Sync one contact's session fields to ledger-derived values.
  * Returns { status, ...details }:

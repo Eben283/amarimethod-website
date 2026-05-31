@@ -26,7 +26,7 @@
 
 import { listRecentCompletedOrders, getOrderDetail } from "./ghl.js";
 import { reconcileOrder } from "./reconcile.js";
-import { syncContacts, syncFieldsForContact, uniqueContactIdsFromOrders } from "./sync.js";
+import { getContactCounts, syncContacts, syncFieldsForContact, uniqueContactIdsFromOrders } from "./sync.js";
 
 // Per-invocation sync cap. With ~5 subrequests per contact (4 fetches + 1 PUT),
 // 15 contacts = ~75 subrequests. Hourly runs chip through the candidate set
@@ -72,6 +72,21 @@ export default {
       return jsonResponse(result);
     }
 
+    // Read-only ledger-derived counts for one or more contacts. Used by
+    // /day morning briefing to get authoritative session counts in one
+    // hop, so the skill doesn't have to interpret raw GHL fields.
+    // GET  /contact-counts?contactId=X            — single contact
+    // GET  /contact-counts?contactIds=A,B,C       — batch (comma-separated)
+    if (url.pathname === "/contact-counts") {
+      const single = url.searchParams.get("contactId");
+      const batch = url.searchParams.get("contactIds");
+      const ids = single ? [single] : (batch ? batch.split(",").map((s) => s.trim()).filter(Boolean) : []);
+      if (ids.length === 0) return jsonResponse({ error: "contactId or contactIds param required" }, 400);
+      if (ids.length > 20) return jsonResponse({ error: "max 20 contacts per request" }, 400);
+      const results = await Promise.all(ids.map((id) => getContactCounts(env, id, {})));
+      return jsonResponse(single ? results[0] : { count: results.length, results });
+    }
+
     // List contacts whose drift is too large to auto-correct (delta > 2 on
     // either field). The /day briefing's qa-audit can surface these as a
     // "needs Garrett review" section.
@@ -85,7 +100,7 @@ export default {
 
     return jsonResponse({
       worker: "series-reconcile",
-      endpoints: ["/status", "/run?hours=N", "/backfill?days=N", "/sync?contactId=X", "/needs-review"],
+      endpoints: ["/status", "/run?hours=N", "/backfill?days=N", "/sync?contactId=X", "/contact-counts?contactId=X|contactIds=A,B,C", "/needs-review"],
     });
   },
 };

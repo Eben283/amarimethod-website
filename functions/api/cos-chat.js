@@ -323,12 +323,14 @@ Partnership Pipeline: New Lead → Messaged → Meeting Booked
 - Living Practice standalone: $347
 - Discovery Call: Free (15 min)
 
-### Session Tracking
-- sessions_remaining: decrements per attended session
-- sessions_completed: increments per attended session
+### Session Tracking (2026-05-29 contract)
+Two separate counters, do not confuse them:
+- **sessions_remaining** = prepaid package balance. Decrements only when a real follow-up against the 4-pack or 8-pack runs (calendar IDs in SERIES_CALENDAR_IDS). Entrainments and partner-initials do NOT decrement. Synced hourly by series-reconcile-worker; manually overridable via sessions_remaining_locked.
+- **sessions_completed** (renamed in GHL UI to "Sessions Lifetime") = total bodywork visits ever (initial + follow-ups + entrainments + partner-initials). Excludes discovery calls and intakes. Monotonically increasing. NOT the package-done count.
+- **Package-done count** = packageSize − sessions_remaining. Compute this when asked "how far through the pack is X?"; never use sessions_completed for that.
 - series_type: none / 4-session / 8-session
 - Attendance tracked via staff dashboard "Mark Attended" button + SMS trigger link
-- Double-count risk exists (idempotency guard needed on SMS workflow)
+- For authoritative counts on a single contact, use the ledger via get_contact (it returns the worker-derived values, not raw fields).
 
 ### Key Workflows
 - Booking confirmations/reminders for all calendar types
