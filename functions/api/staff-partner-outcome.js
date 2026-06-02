@@ -165,9 +165,12 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
     }
 
-    // Read current touch_count so we can increment it. One extra GET per outcome
-    // record — acceptable overhead for the simplicity of server-authoritative count.
+    // Read current touch_count + current partner_stage from the same GET. The
+    // touch_count is incremented; the stage is used to decide whether the
+    // current outcome should promote a no-outreach contact to working (the
+    // promote-on-first-contact behavior described in the header comment).
     let currentTouchCount = 0;
+    let currentStage = null;
     try {
       const getRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         headers: ghlHeaders(ghlToken),
@@ -180,16 +183,28 @@ export async function onRequestPost(context) {
         const raw = tf?.value ?? tf?.field_value;
         const n = Number(raw);
         if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
+        const sf = fields.find((f) => f.id === FIELD_IDS.partner_stage);
+        const rawStage = sf?.value ?? sf?.field_value;
+        if (typeof rawStage === "string" && rawStage.length > 0) currentStage = rawStage;
       }
     } catch (err) {
-      // Don't fail the outcome record over a touch_count read error — log and
-      // proceed with 0 (will under-count this contact by 1, fixable by re-backfill).
-      console.error("[staff-partner-outcome] touch_count read failed:", err instanceof Error ? err.message : String(err));
+      // Don't fail the outcome record over a contact read error — log and
+      // proceed with defaults (touch under-count by 1, stage stays as-is on
+      // server side; both fixable by re-backfill).
+      console.error("[staff-partner-outcome] contact read failed:", err instanceof Error ? err.message : String(err));
     }
 
     // Build customFields update array
     const nowIso = new Date().toISOString();
-    const newStage = SIGNAL_TO_STAGE[signal];
+    let newStage = SIGNAL_TO_STAGE[signal];
+    // Promote-on-first-contact: any non-skip outcome on a contact currently at
+    // no-outreach (or with no stage set) should move them into "working" so
+    // they appear in the In Progress tab. Closing outcomes (booked / deferred /
+    // not-interested) already have their own stage in SIGNAL_TO_STAGE and win;
+    // skip is a deliberate "don't pursue" disposition and stays as dropped.
+    if (!newStage && signal !== "skip" && (!currentStage || currentStage === "no-outreach")) {
+      newStage = "working";
+    }
     const customFields = [];
     // "skip" is a disposition without outreach — no signal, no touch, no meter
     // pollution. Only the stage transition + a note. All other signals record
