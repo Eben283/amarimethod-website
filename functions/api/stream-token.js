@@ -126,16 +126,35 @@ export async function onRequestGet(context) {
       );
     }
 
-    // HOTFIX 2026-06-02: Cloudflare Stream signing API was failing in prod with
-    // a customer outage ("Could not generate playback URL"). Until the cause is
-    // diagnosed (token rotation, account-level setting change, or requireSignedURLs
-    // misconfig), bypass the signing step and serve the unsigned playback URL.
-    // The auth gate above still verifies the requesting user is logged in AND
-    // has living_practice_access, so this is "auth-gated" rather than "signed-
-    // URL gated" — a step down in security but the videos play. Restore the
-    // signing flow once the Stream-side issue is fixed.
+    // Mint a Stream signed token. Token is bound to this single video UID.
     const exp = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;
-    const hlsUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${streamUid}/manifest/video.m3u8`;
+    const tokenRes = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${streamUid}/token`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${CF_STREAM_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ exp, downloadable: false }),
+      }
+    );
+
+    const tokenJson = await tokenRes.json().catch(() => null);
+    if (!tokenRes.ok || !tokenJson?.success) {
+      console.error(`[stream-token] Stream API error for uid=${streamUid}: ${JSON.stringify(tokenJson?.errors)}`);
+      // Use 422, not 502 — Cloudflare Pages intercepts 502/503 and replaces the body
+      return new Response(
+        JSON.stringify({ error: "Could not generate playback URL. Try again." }),
+        { status: 422, headers }
+      );
+    }
+
+    const signedToken = tokenJson.result.token;
+
+    // Build the HLS manifest URL. Format:
+    //   https://customer-{code}.cloudflarestream.com/{signed_token}/manifest/video.m3u8
+    const hlsUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${signedToken}/manifest/video.m3u8`;
 
     return new Response(
       JSON.stringify({ hlsUrl, expiresAt: exp * 1000 }),
