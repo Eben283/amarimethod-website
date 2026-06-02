@@ -1,16 +1,23 @@
 ---
 title: Partner Call Playbook
-status: rebuilt-v2-2026-06-02
+status: v2.1-2026-06-02
 last_updated: 2026-06-02
 voice_source: amari/transcripts/ — Questions 1-10/11-16/12-26 (Garrett on the work, his voice); Recording 2474 (Garrett with Cloud, partner/personal-trainer); Recording 2490 (gym-owner pitch)
 gaps: no actual partner cold-call recording yet — Eben enabled call recording 2026-06-02; next 2–3 real calls swap in for the ⚠️ sections
 ---
 
-# Partner Call Playbook (v2)
+# Partner Call Playbook (v2.1)
 
-Cold call to a golf pro, tennis pro, or fitness trainer in the Bay Area. Goal: book them for a free 60-min session at the SF studio.
+Call with a golf pro, tennis pro, or fitness trainer in the Bay Area. Goal: book them for a free 60-min session at the SF studio.
 
-**About v2.** Outline held up — Garrett's read after the 6/1 partner disco. Prose rebuilt from the transcript corpus. *Italics with a recording citation* = verbatim Garrett. ⚠️ = still inferred, replace once we have a real partner cold call recorded.
+Two starting points — pick the one that matches the call:
+
+- **A. Warm-booked** — they got a DM (Instagram, LinkedIn) or intro, and they booked the call themselves. The default these days. Start at A1.
+- **B. Cold** — you're calling out of the blue, no prior contact. Start at B1.
+
+The middle and end of the call (offer, book, close) are the same either way.
+
+**About v2.1.** Outline held up; opener split into warm/cold after Garrett's 2026-06-02 call where the cold opener felt fake — the prospect had already DM'd him and booked. Prose rebuilt from the transcript corpus. *Italics with a recording citation* = verbatim Garrett. ⚠️ = still inferred, replace once we have a real call recorded.
 
 ---
 
@@ -22,15 +29,35 @@ Geo: A = SF/Peninsula (primary), B = East Bay (secondary). Tier B with no shared
 
 ---
 
-## 1. Open
+## A1. Open — Warm-booked
 
-⚠️ *No recording of Garrett opening a cold partner call yet. Working version below — swap after we have one.*
+They DM'd you back, you sent the booking link, they grabbed a time. They expect this call.
 
-Job of the open: name yourself, name the studio, give them a clean out so they don't feel cornered.
+**Do NOT use the cold disarm here.** "I know we haven't spoken before" or "is now a bad time" reads as fake — they spoke with you, and they picked the time. Garrett tried this 2026-06-02 and it landed wrong.
+
+The opener's job: confirm you're in the right conversation, then hand the floor over.
+
+> "Hey [name] — thanks for booking. Saw your reply on [Instagram / LinkedIn]. What made you want to grab time?"
+
+That last question is the move. They booked the call — they had a reason. Let them tell you. Their answer often skips you straight to beat 3 (the offer) without needing the question pass in beat 2.
+
+⚠️ *Working version — first refinement after Garrett's 6/2 debrief. Tighten with verbatim once a recorded warm-booked call comes in.*
+
+→ Skip to **beat 2** if they want to chat first, or jump to **beat 3** if they've already named what they're hoping for.
+
+---
+
+## B1. Open — Cold
+
+⚠️ *Still extrapolated — no recording of Garrett doing a true cold partner call.*
+
+Job of the open: disarm the "what does this person want from me" reflex. Name yourself, name the studio, give them a clean out.
 
 > "Hey [name], it's Garrett from Amari Method in SF. We haven't talked before — is this an OK minute, or should I catch you later?"
 
 One line, normal voice, then wait. If they say bad time → ask when's better, hang up. Don't push.
+
+→ Continue to **beat 2**.
 
 ---
 

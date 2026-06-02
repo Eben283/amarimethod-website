@@ -20,7 +20,7 @@ function parsePlaybook(md: string): { intro: string; sections: Section[] } {
   const parts = stripped.split(/^## /m);
   const intro = parts[0]
     .replace(/\n---\s*\n/g, '\n')
-    .split(/\n\*\*About v2\.\*\*/)[0]
+    .split(/\n\*\*About v[\d.]+\.\*\*/)[0]
     .trim();
   const sections: Section[] = parts.slice(1).map((part) => {
     const newlineIdx = part.indexOf('\n');
