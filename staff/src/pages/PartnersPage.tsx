@@ -158,6 +158,44 @@ function linkedinJumpUrl(p: PartnerProspect): string | null {
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(name)}`;
 }
 
+// Compare URLs by hostname + first path segment, lowercased. Lets us detect
+// that "https://www.marcibowman.com/" and "marcibowman.com" represent the
+// same place even when one is a bare host and the other a full URL with a
+// trailing slash. Used to suppress duplicate URLs across rows (e.g. an
+// "Other URLs" entry that just repeats the Website).
+function urlFingerprint(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const cleaned = raw.trim().replace(/\\([_.])/g, '$1');
+  if (!cleaned) return '';
+  try {
+    const u = new URL(cleaned.match(/^https?:\/\//i) ? cleaned : `https://${cleaned}`);
+    const host = u.hostname.replace(/^www\./, '').toLowerCase();
+    const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/')[0] || '';
+    return seg ? `${host}/${seg.toLowerCase()}` : host;
+  } catch {
+    return cleaned.toLowerCase();
+  }
+}
+
+// Normalize an Instagram-shaped value (handle, @handle, or full URL) into
+// just the lowercased handle. Used to dedupe the legacy socialProfile field
+// against the newer partner_instagram field.
+function normalizeInstagramHandle(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const cleaned = raw.trim().replace(/\\([_.])/g, '$1');
+  if (!cleaned) return '';
+  if (/^https?:\/\//i.test(cleaned)) {
+    try {
+      const u = new URL(cleaned);
+      const seg = u.pathname.replace(/^\/+|\/+$/g, '').split('/')[0] || '';
+      return seg.toLowerCase();
+    } catch {
+      return '';
+    }
+  }
+  return cleaned.replace(/^@/, '').toLowerCase();
+}
+
 function relativeDays(iso: string | null | undefined): string {
   const d = daysSince(iso);
   if (d === null) return 'not recorded';
@@ -981,11 +1019,23 @@ function ProspectModal({
                 )}
               />
               {/* Garrett's sheet socialProfile — read-only, marked so it's clear
-                  it comes from the sheet, not directly editable here. To edit,
-                  use the dedicated Instagram field below or update the sheet. */}
+                  it comes from the sheet. Suppressed when it duplicates a value
+                  already shown in one of the editable rows below (most commonly
+                  the same Instagram handle in both socialProfile and the newer
+                  partner_instagram field). */}
               {(() => {
                 const s = formatSocialProfile(prospect.socialProfile);
                 if (!s) return null;
+                // Suppress if it's the same Instagram handle as partner_instagram
+                const sheetHandle = normalizeInstagramHandle(prospect.socialProfile);
+                const igHandle = normalizeInstagramHandle(prospect.instagram);
+                if (s.platform === 'Instagram' && sheetHandle && igHandle && sheetHandle === igHandle) return null;
+                // Suppress if same LinkedIn as partner_linkedin_url
+                if (s.platform === 'LinkedIn' && prospect.linkedinUrl
+                    && urlFingerprint(s.url) === urlFingerprint(prospect.linkedinUrl)) return null;
+                // Suppress if same as Website
+                if (s.platform === 'Web' && prospect.website
+                    && urlFingerprint(s.url || s.label) === urlFingerprint(prospect.website)) return null;
                 return (
                   <div className="flex gap-2">
                     <dt className="text-amari-text-muted w-24 shrink-0">{s.platform}</dt>
@@ -1069,14 +1119,35 @@ function ProspectModal({
                   );
                 })()}
               />
-              {prospect.otherUrls && (() => {
-                const urls = prospect.otherUrls.split(/[;\n]/).map((u) => u.trim()).filter(Boolean);
-                if (urls.length === 0) return null;
-                return (
-                  <div className="flex gap-2">
-                    <dt className="text-amari-text-muted w-24 shrink-0">Other URLs</dt>
-                    <dd className="text-amari-charcoal break-all flex flex-col gap-0.5">
-                      {urls.map((url, i) => {
+              <EditableField
+                label="Other URLs"
+                value={prospect.otherUrls}
+                fieldKey="partnerOtherUrls"
+                contactId={prospect.contactId}
+                type="text"
+                placeholder="url1; url2; url3"
+                onSaved={(v) => onLocalPatch?.({ otherUrls: v || null })}
+                displayChildren={(() => {
+                  if (!prospect.otherUrls) return null;
+                  const urls = prospect.otherUrls.split(/[;\n]/).map((u) => u.trim()).filter(Boolean);
+                  // Suppress URLs that duplicate something already rendered above
+                  // (Website, LinkedIn, Instagram, or the from-sheet socialProfile).
+                  const alreadyShown = new Set<string>();
+                  if (prospect.website) alreadyShown.add(urlFingerprint(prospect.website));
+                  if (prospect.linkedinUrl) alreadyShown.add(urlFingerprint(prospect.linkedinUrl));
+                  if (prospect.instagram) {
+                    const ig = normalizeInstagramHandle(prospect.instagram);
+                    if (ig) alreadyShown.add(`instagram.com/${ig}`);
+                  }
+                  if (prospect.socialProfile) {
+                    const sp = formatSocialProfile(prospect.socialProfile);
+                    if (sp?.url) alreadyShown.add(urlFingerprint(sp.url));
+                  }
+                  const filtered = urls.filter((url) => !alreadyShown.has(urlFingerprint(url)));
+                  if (filtered.length === 0) return null;
+                  return (
+                    <div className="flex flex-col gap-0.5">
+                      {filtered.map((url, i) => {
                         const href = url.startsWith('http') ? url : `https://${url}`;
                         const label = hostnameOf(url) || url;
                         return (
@@ -1086,10 +1157,10 @@ function ProspectModal({
                           </a>
                         );
                       })}
-                    </dd>
-                  </div>
-                );
-              })()}
+                    </div>
+                  );
+                })()}
+              />
               <EditableField
                 label="Business"
                 value={prospect.companyName}
