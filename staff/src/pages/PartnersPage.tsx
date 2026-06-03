@@ -1345,6 +1345,14 @@ function ProspectModal({
               Open in GHL <ExternalLink className="w-3.5 h-3.5" />
             </a>
 
+            <p className="text-xs uppercase tracking-wide font-bold text-amari-charcoal mt-3 mb-2 flex items-center gap-1.5 select-none">
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.15s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="mx-1">RECORD OUTCOME</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.3s', animationDuration: '0.9s' }}>🐻</span>
+              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.45s', animationDuration: '0.9s' }}>🐻</span>
+            </p>
+
             {/* Optional note — placed ABOVE the outcome buttons so it's typed
                 BEFORE a button click submits and (in focus mode) auto-advances.
                 Previously sat below the buttons and was almost never captured. */}
@@ -1362,13 +1370,6 @@ function ProspectModal({
               className="w-full text-base bg-white text-amari-charcoal border border-amari-border rounded px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent"
             />
 
-            <p className="text-xs uppercase tracking-wide font-bold text-amari-charcoal mt-3 mb-2 flex items-center gap-1.5 select-none">
-              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0s', animationDuration: '0.9s' }}>🐻</span>
-              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.15s', animationDuration: '0.9s' }}>🐻</span>
-              <span className="mx-1">RECORD OUTCOME</span>
-              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.3s', animationDuration: '0.9s' }}>🐻</span>
-              <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.45s', animationDuration: '0.9s' }}>🐻</span>
-            </p>
             <div className="flex flex-wrap gap-2 mb-3">
               {OUTCOME_BUTTONS.map((b) => (
                 <button
