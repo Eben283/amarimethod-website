@@ -1,8 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock ghlFetch so computeSessionLedger tests can route requests by URL
+// without hitting the network. Pure-function tests (deriveLedger,
+// classifyOrder, classifyInvoice) don't touch ghlFetch so the mock is inert
+// for them.
+const ghlResponses = new Map();
+vi.mock('./ghl.js', () => ({
+  ghlFetch: vi.fn(async (_ctx, url) => {
+    for (const [pattern, response] of ghlResponses.entries()) {
+      if (url.includes(pattern)) return response;
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  }),
+}));
+
 import {
   deriveLedger,
   classifyOrder,
   classifyInvoice,
+  computeSessionLedger,
   SERIES_CALENDAR_IDS,
   ACTIVE_PRODUCTS,
 } from './session-ledger.js';
@@ -144,6 +160,35 @@ describe('classifyOrder', () => {
         order({ sourceName: '4 Session Series Link', amount: 720, sourceType: 'payment_link' }),
       ),
     ).toMatchObject({ type: '4-series', sessions: 4 });
+  });
+
+  it('classifies POS / mobile_app orders by items[0].product._id', () => {
+    // POS orders carry productId via the detail endpoint's items array.
+    // sourceName is empty for these; productId is the only signal.
+    // Regression test for 2026-06-03 Jenn Kadri incident.
+    const posOrder = {
+      sourceName: '',
+      sourceType: 'point_of_sale',
+      status: 'completed',
+      amount: 1295,
+      items: [{ product: { _id: PID.eightSeries, name: '8-Session Series' } }],
+    };
+    expect(classifyOrder(posOrder)).toMatchObject({ type: '8-series', sessions: 8 });
+  });
+
+  it('POS order WITHOUT hydrated items falls through to "other"', () => {
+    // Documents the failure mode that motivated the order-detail hydration
+    // step in computeSessionLedger. If a caller passes a summary-only order
+    // (LIST endpoint shape), classification cannot succeed — caller must
+    // hydrate via /payments/orders/{id} first.
+    const summaryOnly = {
+      sourceName: '',
+      sourceType: 'point_of_sale',
+      status: 'completed',
+      amount: 1295,
+      // No items array — this is what the LIST endpoint returns.
+    };
+    expect(classifyOrder(summaryOnly)).toMatchObject({ type: 'other', sessions: 0 });
   });
 });
 
@@ -912,6 +957,150 @@ describe('deriveLedger — upgrade orders', () => {
     expect(result.attended).toBe(5);
     expect(result.remaining).toBe(6);
     expect(result.seriesType).toBe('8-session');
+  });
+});
+
+// ── computeSessionLedger — order hydration ─────────────────────────────────
+// Integration test: when /payments/orders LIST returns POS orders WITHOUT
+// items[], computeSessionLedger must fetch /payments/orders/{id} DETAIL to
+// recover the productId before deriving. Regression test for 2026-06-03
+// Jenn Kadri incident.
+
+describe('computeSessionLedger — POS order hydration', () => {
+  const CONTACT_ID = 'jenn-test';
+  const ORDER_ID = 'pos-order-1';
+
+  beforeEach(() => {
+    ghlResponses.clear();
+  });
+
+  function setResponses({ listOrder, detailOrder, appointments = [] }) {
+    ghlResponses.set(`/contacts/${CONTACT_ID}/appointments`, {
+      ok: true,
+      json: async () => ({ appointments }),
+    });
+    ghlResponses.set(`/contacts/${CONTACT_ID}`, {
+      ok: true,
+      json: async () => ({ contact: { id: CONTACT_ID, customFields: [] } }),
+    });
+    ghlResponses.set('/payments/orders?', {
+      ok: true,
+      json: async () => ({ data: [listOrder] }),
+    });
+    ghlResponses.set(`/payments/orders/${ORDER_ID}`, {
+      ok: true,
+      json: async () => detailOrder,
+    });
+    ghlResponses.set('/invoices/', {
+      ok: true,
+      json: async () => ({ invoices: [] }),
+    });
+  }
+
+  it('hydrates POS list orders via /payments/orders/{id} before classifying', async () => {
+    setResponses({
+      // LIST shape: no items[] (the real GHL bug)
+      listOrder: {
+        _id: ORDER_ID,
+        amount: 1295,
+        status: 'completed',
+        paymentStatus: 'paid',
+        sourceType: 'point_of_sale',
+        createdAt: '2026-05-08T02:09:51.992Z',
+      },
+      // DETAIL shape: items[] with product._id (what we need)
+      detailOrder: {
+        _id: ORDER_ID,
+        amount: 1295,
+        status: 'completed',
+        paymentStatus: 'paid',
+        sourceType: 'point_of_sale',
+        createdAt: '2026-05-08T02:09:51.992Z',
+        items: [{ product: { _id: PID.eightSeries, name: '8-Session Series' } }],
+      },
+      appointments: [
+        appt({ calendarId: CAL.followup, startTime: '2026-05-14T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-05-18T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-05-28T18:00:00Z' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-06-02T19:00:00Z' }),
+      ],
+    });
+
+    const result = await computeSessionLedger(
+      { env: {} },
+      CONTACT_ID,
+      { fieldDefs: FIELD_DEFS },
+    );
+
+    expect(result.seriesType).toBe('8-session');
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(4);
+    expect(result.remaining).toBe(4);
+    expect(result.ambiguities).toEqual([]);
+  });
+
+  it('skips hydration when LIST already returns items[] (payment_link orders)', async () => {
+    const fullOrder = {
+      _id: ORDER_ID,
+      amount: 720,
+      status: 'completed',
+      paymentStatus: 'paid',
+      sourceType: 'payment_link',
+      sourceName: '4-Session Series',
+      createdAt: '2026-05-08T00:00:00Z',
+      items: [{ product: { _id: PID.fourSeries, name: '4-Session Series' } }],
+    };
+    setResponses({
+      listOrder: fullOrder,
+      // If hydration fires here it'd be a bug — return a wrong product to
+      // ensure the test fails if hydration is called when it shouldn't be.
+      detailOrder: {
+        _id: ORDER_ID,
+        items: [{ product: { _id: PID.eightSeries, name: 'WRONG' } }],
+      },
+      appointments: [],
+    });
+
+    const result = await computeSessionLedger(
+      { env: {} },
+      CONTACT_ID,
+      { fieldDefs: FIELD_DEFS },
+    );
+
+    expect(result.seriesType).toBe('4-session');
+    expect(result.purchased).toBe(4);
+  });
+
+  it('falls back gracefully when detail fetch fails', async () => {
+    setResponses({
+      listOrder: {
+        _id: ORDER_ID,
+        amount: 1295,
+        status: 'completed',
+        sourceType: 'point_of_sale',
+        createdAt: '2026-05-08T00:00:00Z',
+      },
+      // Detail endpoint returns 500 — same as a network glitch
+      detailOrder: undefined,
+      appointments: [],
+    });
+    // Override the detail response to be a failure
+    ghlResponses.set(`/payments/orders/${ORDER_ID}`, {
+      ok: false,
+      status: 500,
+      json: async () => ({}),
+    });
+
+    const result = await computeSessionLedger(
+      { env: {} },
+      CONTACT_ID,
+      { fieldDefs: FIELD_DEFS },
+    );
+
+    // Without items[] and no recoverable detail, classifyOrder returns
+    // type="other" / sessions=0. seriesType=none, but no crash.
+    expect(result.seriesType).toBe('none');
+    expect(result.purchased).toBe(0);
   });
 });
 

@@ -421,7 +421,34 @@ export async function computeSessionLedger(context, contactId, options = {}) {
     let orders = [];
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
-      orders = ordersData.data || ordersData.orders || [];
+      const ordersList = ordersData.data || ordersData.orders || [];
+      // GHL's /payments/orders LIST endpoint omits items[] for POS / mobile_app
+      // orders — only `totalProducts` and `onetimeProducts` come back. The
+      // DETAIL endpoint /payments/orders/{id} returns full items[] with
+      // product._id. classifyOrder needs that id to recognize POS purchases
+      // (their sourceName is empty so the name-pattern fallback also misses).
+      // Same fix series-reconcile-worker/src/sync.js:207-215 applies on the
+      // writer side. Without this, POS package purchases silently classify
+      // as type="other" / sessions=0 and the derived ledger overwrites
+      // correct field values with zeros (2026-06-03 Jenn Kadri incident).
+      orders = await Promise.all(
+        ordersList.map(async (o) => {
+          if (Array.isArray(o.items) && o.items.length > 0) return o;
+          try {
+            const detailRes = await ghlFetch(
+              context,
+              `${GHL_API_BASE}/payments/orders/${o._id}?altId=${GHL_LOCATION_ID}&altType=location`,
+            );
+            if (detailRes.ok) {
+              const detail = await detailRes.json();
+              return { ...o, ...detail };
+            }
+          } catch {
+            // fall through — classifyOrder may still match by sourceName
+          }
+          return o;
+        }),
+      );
     }
 
     let invoices = [];
