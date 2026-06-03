@@ -2,8 +2,14 @@ name = "daily-audit"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
-# 4 AM PDT = 11:00 UTC | 3 AM PST = 11:00 UTC
+# Main audit: 4 AM PDT = 11:00 UTC | 3 AM PST = 11:00 UTC
 # During PST this runs at 3 AM instead of 4 AM — still well before 5 AM throttle window.
+# NOTE: only ONE cron here. The session-ledger drift scan needs its own subrequest
+# budget but we CAN'T add a second cron — the account is at Cloudflare's free-tier
+# limit of 5 cron triggers (daily-audit, ecosystem-scanner, ghl-token-refresh,
+# partner-activity-refresh, series-reconcile). Instead, scheduled() self-fetches
+# the /run-drift route, which runs the scan in a separate invocation with a fresh
+# budget. See src/index.js runScheduledAudit().
 [triggers]
 crons = ["0 11 * * *"]
 
@@ -11,6 +17,13 @@ crons = ["0 11 * * *"]
 [[kv_namespaces]]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
+
+# Service binding to THIS worker — lets runScheduledAudit() dispatch /run-drift
+# as a fresh invocation (its own subrequest budget) without a second cron and
+# without a public self-fetch (which 404s). See src/index.js runScheduledAudit().
+[[services]]
+binding = "SELF"
+service = "daily-audit"
 
 # Secrets (set via `npx wrangler secret put <KEY>`):
 #   GHL_CLIENT_ID     — same as ghl-token-refresh
