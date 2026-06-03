@@ -104,6 +104,11 @@ async function runAudit(env) {
   // Stale here means uncaught orphans accumulate silently.
   const seriesReconcileWatchdogIssues = await checkSeriesReconcile(env);
 
+  // Same pattern for ghl-token-refresh sister Worker (12h cron, refreshes
+  // GHL OAuth tokens). Silent death = cascade 401s across every handler
+  // that talks to GHL. No other watchdog covers this.
+  const tokenRefreshWatchdogIssues = await checkTokenRefresh(env);
+
   // Walk every contact with an active series and run the same derivation
   // the read endpoints use. Surface anyone whose displayed value diverges
   // from the derived value (low-confidence-fallback or active manual lock)
@@ -111,6 +116,12 @@ async function runAudit(env) {
   // the Jenn Kadri 2026-06-03 silent bug sat invisible for weeks because
   // nothing surfaced the ambiguity array a human could read.
   const ledgerDriftIssues = await checkSessionLedgerDrift(env);
+
+  // Liveness probe for Cloudflare Stream signing. Hits the production
+  // /api/stream-health endpoint (which exercises the real CF_STREAM_TOKEN Pages
+  // env var). Catches a stale signing token within ~24h instead of via a
+  // customer "the videos won't play" complaint — the 2026-06-02 outage.
+  const streamHealthIssues = await checkStreamSigningHealth(env);
 
   const allIssues = [
     ...apptIssues,
@@ -121,7 +132,9 @@ async function runAudit(env) {
     ...mismatchIssues,
     ...refreshWatchdogIssues,
     ...seriesReconcileWatchdogIssues,
+    ...tokenRefreshWatchdogIssues,
     ...ledgerDriftIssues,
+    ...streamHealthIssues,
   ];
 
   const result = {
@@ -154,6 +167,60 @@ async function runAudit(env) {
   );
 
   return result;
+}
+
+// Probe Cloudflare Stream signing via the production /api/stream-health
+// endpoint, which mints a token using the real CF_STREAM_TOKEN Pages env var.
+// token-invalid → CRITICAL (Living Practice videos are down). test-video-missing
+// → info (the probe's UID needs updating, not the token). Unreachable/odd
+// response → warning. See functions/api/stream-health.js + memory
+// reference-cloudflare-stream-token.
+async function checkStreamSigningHealth(env) {
+  const issues = [];
+  const URL = "https://www.amarimethod.com/api/stream-health";
+  let res, json;
+  try {
+    res = await fetch(URL, { headers: { "Cache-Control": "no-store" } });
+    json = await res.json().catch(() => null);
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "stream-health-unreachable",
+      message: `Stream signing health probe could not reach ${URL}: ${err.message}`,
+    });
+    return issues;
+  }
+
+  if (!json || typeof json.healthy !== "boolean") {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "stream-health-bad-response",
+      message: `Stream signing health probe returned an unexpected response (HTTP ${res.status}).`,
+    });
+    return issues;
+  }
+
+  if (!json.healthy) {
+    if (json.reason === "test-video-missing") {
+      issues.push({
+        severity: "info",
+        area: "infra",
+        kind: "stream-health-test-video-missing",
+        message: `Stream signing probe's test video (${json.testUid}) no longer exists. Update TEST_UID in functions/api/stream-health.js — the token itself is fine.`,
+      });
+    } else {
+      issues.push({
+        severity: "critical",
+        area: "infra",
+        kind: `stream-signing-${json.reason || "fail"}`,
+        message: `Living Practice video signing is FAILING (reason=${json.reason}, HTTP ${json.status}${json.detail ? `: ${json.detail}` : ""}). CF_STREAM_TOKEN is likely stale/revoked — videos will not play. Roll the Stream token + update the Pages env var + retrigger deploy (memory: reference-cloudflare-stream-token).`,
+      });
+    }
+  }
+
+  return issues;
 }
 
 // Read the partner-activity-refresh Worker's lastRun summary from KV. Flag any of:
@@ -346,6 +413,107 @@ async function checkSeriesReconcile(env) {
   } catch (err) {
     // Don't fail the watchdog if the KV scan errors.
     console.warn("[daily-audit] needs-review scan failed:", err.message);
+  }
+
+  return issues;
+}
+
+// ghl-token-refresh sister Worker (12h cron, refreshes GHL OAuth tokens
+// into KV). Without this watchdog, a silent worker death would only
+// surface when every other handler that talks to GHL started returning
+// 401 simultaneously — i.e. a customer-facing incident. With the
+// watchdog, we hear about it in the morning briefing instead.
+//
+// Adopts the same shape as checkPartnerActivityRefresh + checkSeriesReconcile.
+// The token worker writes ops:ghl-token-refresh:lastRun on every run
+// (success or fail) so we can distinguish "never ran" from "ran and failed."
+async function checkTokenRefresh(env) {
+  const issues = [];
+  const KEY = "ops:ghl-token-refresh:lastRun";
+  let raw;
+  try {
+    raw = await env.PORTAL_KV.get(KEY);
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ghl-token-refresh-kv-unreadable",
+      message: `ghl-token-refresh KV read failed: ${err.message}`,
+    });
+    return issues;
+  }
+
+  // ghl_token_expiry is independent — read it too so we can warn if the
+  // current token is close to expiring even if the refresh worker hasn't
+  // crashed (e.g. it's running fine but GHL keeps rejecting the refresh).
+  let tokenExpiryMs = null;
+  try {
+    const expStr = await env.PORTAL_KV.get("ghl_token_expiry");
+    if (expStr) tokenExpiryMs = parseInt(expStr, 10);
+  } catch {
+    // Non-fatal — fall through.
+  }
+
+  if (!raw) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ghl-token-refresh-never-ran",
+      message: "ghl-token-refresh Worker has never written a lastRun summary. Either it was deployed without running, or PORTAL_KV binding is wrong.",
+    });
+    return issues;
+  }
+
+  let summary;
+  try { summary = JSON.parse(raw); }
+  catch {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ghl-token-refresh-corrupt",
+      message: "ghl-token-refresh lastRun KV value is not valid JSON.",
+    });
+    return issues;
+  }
+
+  const finishedAt = summary.finishedAt ? new Date(summary.finishedAt).getTime() : null;
+  const ageH = finishedAt ? (Date.now() - finishedAt) / 3_600_000 : null;
+
+  // Cron runs every 12h. >18h stale = cron skipped at least once.
+  if (ageH === null || ageH > 18) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ghl-token-refresh-stale",
+      message: `ghl-token-refresh last ran ${ageH ? Math.round(ageH) + 'h ago' : 'unknown'}. 12h cron may be broken — GHL handlers will start returning 401 within 24h if token isn't refreshed. Investigate at Cloudflare Dashboard → Workers → ghl-token-refresh.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  if (summary.status === "error") {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ghl-token-refresh-errored",
+      message: `ghl-token-refresh last run errored: ${summary.error || 'unknown error'}.`,
+      lastRun: summary.finishedAt,
+    });
+  }
+
+  // Warn if the token itself is close to expiring (separate signal from
+  // worker health — the worker might be running fine but the refresh
+  // itself failing repeatedly).
+  if (tokenExpiryMs !== null) {
+    const hoursUntilExpiry = (tokenExpiryMs - Date.now()) / 3_600_000;
+    if (hoursUntilExpiry < 4) {
+      issues.push({
+        severity: "warning",
+        area: "infra",
+        kind: "ghl-token-near-expiry",
+        message: `GHL access token expires in ${hoursUntilExpiry.toFixed(1)}h. Next refresh cron may not run in time — manual refresh recommended via Cloudflare Dashboard → Workers → ghl-token-refresh → trigger.`,
+        tokenExpiry: new Date(tokenExpiryMs).toISOString(),
+      });
+    }
   }
 
   return issues;

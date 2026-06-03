@@ -116,7 +116,12 @@ export async function onRequestPost(context) {
     if (!contactRes.ok) {
       const errText = await contactRes.text();
       console.error(`[staff-mark-attended] Contact fetch error: ${contactRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status: 422, headers });
+      // 404 when the underlying GHL fetch returned 404 (contact doesn't
+      // exist or was deleted) — matches the convention in
+      // ghl-purchase-webhook.js + ghl-invoice-webhook.js. 422 for other
+      // upstream failures (rate limit, server error, etc.).
+      const status = contactRes.status === 404 ? 404 : 422;
+      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status, headers });
     }
 
     const contactData = await contactRes.json();

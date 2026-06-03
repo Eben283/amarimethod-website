@@ -6,24 +6,57 @@ const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
 const KV_ACCESS_TOKEN = "ghl_access_token";
 const KV_REFRESH_TOKEN = "ghl_refresh_token";
 const KV_TOKEN_EXPIRY = "ghl_token_expiry";
+const KV_LAST_RUN_KEY = "ops:ghl-token-refresh:lastRun";
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(refreshTokens(env));
+    ctx.waitUntil(refreshTokensAndRecord(env));
   },
 
   // Allow manual trigger via HTTP for testing: curl http://localhost:8787
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/__scheduled" || url.pathname === "/") {
-      const result = await refreshTokens(env);
+      const result = await refreshTokensAndRecord(env);
       return new Response(JSON.stringify(result, null, 2), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.pathname === "/status") {
+      const raw = await env.PORTAL_KV?.get(KV_LAST_RUN_KEY);
+      return new Response(raw || JSON.stringify({ error: "no lastRun recorded" }), {
         headers: { "Content-Type": "application/json" },
       });
     }
     return new Response("Not found", { status: 404 });
   },
 };
+
+// Wrapper that always writes a lastRun summary to KV — even when refresh
+// fails. Without this, the daily-audit watchdog couldn't tell "worker
+// never ran" from "worker ran and failed." See checkTokenRefresh() in
+// daily-audit-worker/src/index.js.
+async function refreshTokensAndRecord(env) {
+  let result;
+  try {
+    result = await refreshTokens(env);
+  } catch (err) {
+    result = { success: false, error: `unhandled: ${err.message}` };
+  }
+  try {
+    const summary = {
+      ...result,
+      finishedAt: new Date().toISOString(),
+      status: result.success ? "ok" : "error",
+    };
+    if (env.PORTAL_KV) {
+      await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));
+    }
+  } catch (err) {
+    console.error(`[token-refresh] Failed to write lastRun: ${err.message}`);
+  }
+  return result;
+}
 
 async function refreshTokens(env) {
   const { PORTAL_KV: kv, GHL_CLIENT_ID: clientId, GHL_CLIENT_SECRET: clientSecret } = env;

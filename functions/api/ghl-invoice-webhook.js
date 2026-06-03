@@ -99,6 +99,20 @@ function getCustomFieldValue(contact, fieldId) {
 export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
   if (!Array.isArray(invoices) || invoices.length === 0) return null;
 
+  // Scan all line items of an invoice for a package product — not just
+  // items[0]. Pre-this-fix: only items[0] was checked, so a multi-product
+  // invoice with the package at index 1+ would silently classify as
+  // non-package and skip. 2026-06-03 audit finding.
+  const findPackageInInvoice = (inv) => {
+    const items = inv.invoiceItems || [];
+    for (const item of items) {
+      const pid = item?.productId || null;
+      const pkg = classifyInvoiceProduct(pid);
+      if (pkg) return pkg;
+    }
+    return null;
+  };
+
   if (preferredInvoiceId) {
     const match = invoices.find((inv) => {
       return (
@@ -109,9 +123,7 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
       );
     });
     if (match) {
-      const items = match.invoiceItems || [];
-      const pid = items[0]?.productId || null;
-      const pkg = classifyInvoiceProduct(pid);
+      const pkg = findPackageInInvoice(match);
       if (pkg) return { invoice: match, pkg };
     }
   }
@@ -127,9 +139,7 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
     });
 
   for (const inv of paid) {
-    const items = inv.invoiceItems || [];
-    const pid = items[0]?.productId || null;
-    const pkg = classifyInvoiceProduct(pid);
+    const pkg = findPackageInInvoice(inv);
     if (pkg) return { invoice: inv, pkg };
   }
 

@@ -152,6 +152,39 @@ export async function onRequestPost(context) {
 
     const sanitizedContactId = contactId.trim().slice(0, 50);
 
+    // ── KV idempotency lock ──
+    // Pre-this-fix: the handler used `referred_by_client_id` being cleared
+    // as its idempotency marker. But the clear happened at line ~199 —
+    // BEFORE the count increment and reward-code work. A 500 between
+    // "clear referred_by" and "increment count" would: (a) leave the field
+    // cleared, (b) make retry short-circuit at line 188 (no referrerId),
+    // (c) permanently lose that referral credit. The KV lock fixes this
+    // by short-circuiting retry BEFORE the clear, so a retry that fires
+    // after partial failure is a no-op instead of silently losing data.
+    //
+    // The cost: if work fails mid-flow after the KV write, an operator
+    // must manually complete (rather than waiting for retry). That's
+    // acceptable — manual recovery beats silent data loss. The KV TTL is
+    // 90 days so the lock eventually clears if anything truly went wrong.
+    const kv = context.env.PURCHASE_KV;
+    const idempotencyKey = `referral:${sanitizedContactId}`;
+    if (kv) {
+      try {
+        const existing = await kv.get(idempotencyKey);
+        if (existing) {
+          console.log(`[referral-complete] Already processed (KV lock): ${sanitizedContactId}`);
+          return new Response(
+            JSON.stringify({ success: true, alreadyProcessed: true }),
+            { status: 200, headers }
+          );
+        }
+      } catch (err) {
+        console.error(`[referral-complete] KV read failed (continuing without lock): ${err.message}`);
+      }
+    } else {
+      console.warn("[referral-complete] PURCHASE_KV not bound — no retry protection");
+    }
+
     // ── Fetch field defs and referred contact in parallel ──
     const [fieldDefs, contactRes] = await Promise.all([
       fetchFieldDefs(GHL_API_KEY),
@@ -192,6 +225,26 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[referral-complete] Processing referral: referred=${sanitizedContactId}, referrer=${referrerId}`);
+
+    // ── Write KV idempotency BEFORE any GHL writes ──
+    // Once this key exists, retry is a no-op. So a 500 mid-flow won't
+    // re-run the destructive clear or re-increment the count. Trade-off
+    // documented at the read-side check above.
+    if (kv) {
+      try {
+        await kv.put(idempotencyKey, JSON.stringify({
+          referredContactId: sanitizedContactId,
+          referrerId,
+          processedAt: new Date().toISOString(),
+        }), { expirationTtl: 90 * 24 * 60 * 60 });
+      } catch (err) {
+        console.error(`[referral-complete] KV write failed: ${err.message}`);
+        return new Response(
+          JSON.stringify({ error: "Idempotency lock failed — refusing to risk double-credit" }),
+          { status: 500, headers }
+        );
+      }
+    }
 
     // ── Clear referred_by_client_id on the referred contact ──
     // This prevents double-counting if the referred person makes additional purchases.

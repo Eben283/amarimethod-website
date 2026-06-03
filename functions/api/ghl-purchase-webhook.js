@@ -407,11 +407,27 @@ export async function onRequestPost(context) {
       "line_items.0.product_id",
     ]);
 
-    const orderId = extractField(body, [
-      "order_id", "orderId", "id",
-      "data.order_id", "data.orderId", "data.id",
+    // Note: top-level `id` is NOT in this list — see 2026-06-03 audit.
+    // contactId also tries top-level `id` as a fallback; if both extractors
+    // grabbed it, the KV idempotency key would become `order:<contactId>`
+    // and could collide across contacts (silently). Better to fail to
+    // resolve orderId and proceed without idempotency (logged) than to
+    // silently corrupt the lock.
+    let orderId = extractField(body, [
+      "order_id", "orderId",
+      "data.order_id", "data.orderId",
       "transaction_id", "transactionId",
     ]);
+    // Last-resort: top-level `id` IS valid for orderId in some payloads,
+    // but only if it isn't ALSO what contactId resolved to.
+    if (!orderId) {
+      const topLevelId = extractField(body, ["id", "data.id"]);
+      if (topLevelId && topLevelId !== contactId) {
+        orderId = topLevelId;
+      } else if (topLevelId && topLevelId === contactId) {
+        console.warn("[ghl-purchase-webhook] top-level `id` matches contactId — refusing to use as orderId (collision risk). Idempotency check skipped.");
+      }
+    }
 
     if (!contactId) {
       console.error("[ghl-purchase-webhook] No contactId found in payload");

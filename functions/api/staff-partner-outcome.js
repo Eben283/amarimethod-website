@@ -218,7 +218,16 @@ export async function onRequestPost(context) {
       customFields.push({ id: FIELD_IDS.partner_stage, value: newStage });
     }
     if (signal === "deferred" && followupAt) {
-      customFields.push({ id: FIELD_IDS.partner_followup_at, value: followupAt });
+      // Normalize date-only ISO strings (e.g. "2026-07-01") to the
+      // Pacific local end-of-day so "followups due today" queries don't
+      // mis-bucket the entry. Pre-this-fix: a date-only ISO was stored
+      // as midnight UTC = 5pm previous day in PDT, off-by-one for any
+      // PT-anchored watchdog.
+      const dateOnlyMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(followupAt);
+      const normalizedFollowupAt = dateOnlyMatch
+        ? `${followupAt}T16:00:00-08:00` // 4pm Pacific (PST/PDT-tolerant)
+        : followupAt;
+      customFields.push({ id: FIELD_IDS.partner_followup_at, value: normalizedFollowupAt });
     }
 
     // PUT /contacts/{id} updates custom fields
