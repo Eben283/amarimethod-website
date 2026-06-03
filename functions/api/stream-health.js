@@ -35,7 +35,9 @@ export async function onRequestOptions() {
 
 export async function onRequestGet(context) {
   const headers = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const CF_ACCOUNT_ID = context.env.CF_ACCOUNT_ID;
+  // Same env var names production /api/stream-token uses (CF_STREAM_ACCOUNT_ID,
+  // not CF_ACCOUNT_ID — they differ).
+  const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
 
   if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN) {

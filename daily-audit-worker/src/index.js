@@ -48,6 +48,14 @@ async function runAudit(env) {
 
   console.log(`[daily-audit] Starting audit for ${today} (${AUDIT_HOURS}h lookback)`);
 
+  // Run the Stream-signing liveness probe FIRST — it's one cheap, independent
+  // subrequest, and running it before the appointment/contact/ledger fetches
+  // guarantees it isn't starved by Cloudflare's per-invocation subrequest cap.
+  // Hits the production /api/stream-health (which exercises the real
+  // CF_STREAM_TOKEN Pages env var). Catches a stale signing token within ~24h
+  // instead of via a customer "the videos won't play" complaint (2026-06-02).
+  const streamHealthIssues = await checkStreamSigningHealth(env);
+
   // Determine dates to scan
   const dates = new Set();
   for (
@@ -116,12 +124,6 @@ async function runAudit(env) {
   // the Jenn Kadri 2026-06-03 silent bug sat invisible for weeks because
   // nothing surfaced the ambiguity array a human could read.
   const ledgerDriftIssues = await checkSessionLedgerDrift(env);
-
-  // Liveness probe for Cloudflare Stream signing. Hits the production
-  // /api/stream-health endpoint (which exercises the real CF_STREAM_TOKEN Pages
-  // env var). Catches a stale signing token within ~24h instead of via a
-  // customer "the videos won't play" complaint — the 2026-06-02 outage.
-  const streamHealthIssues = await checkStreamSigningHealth(env);
 
   const allIssues = [
     ...apptIssues,
