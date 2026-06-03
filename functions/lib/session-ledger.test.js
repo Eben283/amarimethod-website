@@ -558,6 +558,86 @@ describe('deriveLedger — overrides and edge cases', () => {
     expect(result.source).toBe('orders+invoices+appointments');
   });
 
+  describe('display values', () => {
+    const FIELDS = {
+      remaining: { id: FIELD_DEFS.sessions_remaining, value: '2' },
+      series: { id: FIELD_DEFS.series_type, value: '4-session' },
+      locked: { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+    };
+    const FIELD_DEFS_FULL = { ...FIELD_DEFS, sessions_remaining_locked: 'oDyLqIeq3yTkyhgXhAmk' };
+
+    it('uses derived values when no lock and high confidence', () => {
+      const result = deriveLedger({
+        contact: contact({ customFields: [] }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.confidence).toBe('high');
+      expect(result.display.remaining).toBe(3);
+      expect(result.display.seriesType).toBe('4-session');
+      expect(result.display.source).toBe('derived');
+    });
+
+    it('falls back to field when manualLock=true (Albert Yang case)', () => {
+      const result = deriveLedger({
+        contact: contact({ customFields: [FIELDS.remaining, FIELDS.series, FIELDS.locked] }),
+        // 4-pack purchased, derivation says attended=1 / remaining=3
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      // derived stays as-is
+      expect(result.remaining).toBe(3);
+      // display falls back to field
+      expect(result.display.remaining).toBe(2);
+      expect(result.display.seriesType).toBe('4-session');
+      expect(result.display.source).toBe('manual-lock');
+    });
+
+    it('falls back to field when confidence=low (no lock)', () => {
+      // Ambiguity triggered by attended > purchased — confidence drops.
+      const result = deriveLedger({
+        contact: contact({ customFields: [FIELDS.remaining, FIELDS.series] }),
+        orders: [],
+        appointments: [
+          appt({ calendarId: CAL.followup }),
+          appt({ calendarId: CAL.followup, startTime: '2026-03-20T18:00:00Z' }),
+        ],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.confidence).toBe('low');
+      expect(result.display.remaining).toBe(2); // from field
+      expect(result.display.source).toBe('low-confidence-fallback');
+    });
+
+    it('falls back to derived when field is missing despite lock', () => {
+      // Lock=true but no sessions_remaining field value → can't trust empty.
+      const result = deriveLedger({
+        contact: contact({ customFields: [FIELDS.locked] }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      // Falls back to derived rather than returning NaN
+      expect(result.display.remaining).toBe(4);
+      expect(Number.isFinite(result.display.remaining)).toBe(true);
+    });
+
+    it('display.remaining is never NaN regardless of field state', () => {
+      // Empty-string field, low confidence — historically produced NaN.
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [{ id: FIELD_DEFS.sessions_remaining, value: '' }],
+        }),
+        orders: [],
+        appointments: [appt({ calendarId: CAL.followup })], // attended without purchased
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(Number.isFinite(result.display.remaining)).toBe(true);
+    });
+  });
+
   it('flags failed-hydration orders as an ambiguity and drops confidence', () => {
     // Regression test for the post-fix review finding: when hydrateOrders
     // can't reach /payments/orders/{id}, the order arrives at deriveLedger

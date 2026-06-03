@@ -365,18 +365,11 @@ export async function onRequestGet(context) {
       appointments: rawAppointments,
       fieldDefs,
     });
-    // Respect the manual-lock checkbox: when set, the GHL field values are
-    // intentionally human-managed (covers cases the derivation can't capture
-    // — pre-purchase sessions credited to a pack, comps, mid-series upgrades,
-    // etc.). The series-reconcile-worker honors the lock on the write side;
-    // read endpoints must honor it too, or the derived value still overrides
-    // Garrett's manual correction in the UI.
-    const seriesType = ledger.manualLock
-      ? (getCustomField(contact, "series_type", fieldDefs) || ledger.seriesType)
-      : ledger.seriesType;
-    const sessionsRemaining = ledger.manualLock
-      ? parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? ledger.remaining, 10)
-      : ledger.remaining;
+    // Use the display values from deriveLedger — falls back to the GHL
+    // field when manualLock=true OR confidence="low". See session-ledger.js
+    // → display block for the full rationale.
+    const seriesType = ledger.display.seriesType;
+    const sessionsRemaining = ledger.display.remaining;
     const sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;
 
     // Parse quiz results from custom fields (set by /api/send-to-ghl)

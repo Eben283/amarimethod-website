@@ -535,18 +535,11 @@ async function lookupContact(context, name) {
   // Known field IDs (kept for diagnostic display only — see below)
   const fieldSessionsRemaining = fieldMap["wrQSkx6BhXwDGIn1d0V4"] || contact.sessionsRemaining || null;
   const fieldSessionsCompleted = fieldMap["TE0udwVH1Km5RsKaN5H0"] || contact.sessionsCompleted || null;
-  // Use ledger-derived values as the source of truth. Field values shown
-  // only as a side note when they disagree (so chat answers are accurate
-  // even if the field is mid-drift).
-  // Exception: sessions_remaining_locked overrides the derivation entirely
-  // (see staff-contact.js comment for full rationale).
-  const sessionsRemaining = ledger.manualLock
-    ? (fieldSessionsRemaining ?? ledger.remaining)
-    : (ledger.confidence === "high" ? ledger.remaining : (fieldSessionsRemaining ?? "unknown"));
+  // Display values from deriveLedger — falls back to GHL field on lock
+  // or low confidence. See session-ledger.js display block.
+  const sessionsRemaining = ledger.display?.remaining ?? (fieldSessionsRemaining ?? "unknown");
   const sessionsCompleted = fieldSessionsCompleted ?? ledger.attended; // GHL field is currently the lifetime counter; the worker syncs it
-  const seriesType = ledger.manualLock
-    ? (fieldMap["3i93lTkmuAV49s9nh0q8"] || ledger.seriesType)
-    : (ledger.seriesType !== "none" ? ledger.seriesType : (fieldMap["3i93lTkmuAV49s9nh0q8"] || "none"));
+  const seriesType = ledger.display?.seriesType ?? "none";
 
   // Categorize appointments
   const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|pain assessment/i;

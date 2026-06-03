@@ -191,10 +191,9 @@ export async function onRequestGet(context) {
               fieldDefs,
             });
 
-            // Honor sessions_remaining_locked — see staff-contact.js comment.
-            sessionsRemaining = ledger.manualLock
-              ? parseInt(getCustomField(contact || { customFields: [] }, "sessions_remaining", fieldDefs) ?? ledger.remaining, 10)
-              : ledger.remaining;
+            // Use display values from deriveLedger — falls back to field
+            // when locked or low confidence. See session-ledger.js display block.
+            sessionsRemaining = ledger.display.remaining;
             // sessionsCompleted = LIFETIME journey count per 2026-05-29
             // session-fields contract (was: ledger.attended which is
             // package-only). Matches portal-data.js semantic so the staff
@@ -209,9 +208,7 @@ export async function onRequestGet(context) {
               const title = (a.title || "") + " " + (a.calendarName || "");
               return !NON_JOURNEY.test(title);
             }).length;
-            seriesType = ledger.manualLock
-              ? (getCustomField(contact || { customFields: [] }, "series_type", fieldDefs) || ledger.seriesType)
-              : ledger.seriesType;
+            seriesType = ledger.display.seriesType;
             sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;
           } catch (err) {
             console.error(`[staff-data] Contact enrich error for ${contactId}:`, err.message);

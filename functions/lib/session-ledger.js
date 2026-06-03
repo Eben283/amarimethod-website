@@ -386,6 +386,50 @@ export function deriveLedger({
   const hasSources = orders.length > 0 || invoices.length > 0;
   const source = hasSources ? "orders+invoices+appointments" : "empty";
 
+  // ── display values ────────────────────────────────────────────────────────
+  //
+  // What every read endpoint should render. The derived values (seriesType,
+  // remaining) are what the math says; the display values are what the user
+  // should see. They diverge in two cases:
+  //
+  //   1. manualLock=true — the human set sessions_remaining_locked because
+  //      the derivation can't capture their intent (pre-purchase session
+  //      credited to a pack, mid-series comp, etc.). The custom field is
+  //      the answer. (Albert Yang case, 2026-05-29.)
+  //
+  //   2. confidence="low" — the derivation surfaced an ambiguity (e.g.
+  //      attended > purchased, hydration failure, field disagrees by N).
+  //      Trusting a low-confidence derived value silently overrides
+  //      whatever the writers (workflows + reconcile-worker) wrote, and
+  //      those writers are usually right (the field disagreed because
+  //      they wrote a hard-to-derive correct value). Fall back to the
+  //      field, same as the lock case.
+  //
+  // Both cases prefer the field. Implementations were previously
+  // open-coded in 5 endpoints with 3 different behaviors — that's the bug
+  // class deriveLedger was supposed to eliminate. One place now.
+  //
+  // When the field itself is missing/empty AND we're using it, fall back
+  // to the derived value as last resort — never return NaN.
+  const fieldRemaining = getCustomFieldInt(contact, "sessions_remaining", fieldDefs);
+  const fieldSeriesTypeRaw = getCustomField(contact, "series_type", fieldDefs);
+  const fieldSeriesType =
+    typeof fieldSeriesTypeRaw === "string" && fieldSeriesTypeRaw.length > 0
+      ? fieldSeriesTypeRaw
+      : null;
+  const useField = manualLock || confidence === "low";
+  const display = {
+    seriesType: useField && fieldSeriesType ? fieldSeriesType : seriesType,
+    remaining: useField && fieldRemaining !== null ? fieldRemaining : remaining,
+    // Why the displayed remaining differs from derived (for UI tooltips /
+    // logging / drift detector).
+    source: useField
+      ? manualLock
+        ? "manual-lock"
+        : "low-confidence-fallback"
+      : "derived",
+  };
+
   return {
     seriesType,
     purchased,
@@ -397,6 +441,7 @@ export function deriveLedger({
     source,
     confidence,
     ambiguities,
+    display,
   };
 }
 

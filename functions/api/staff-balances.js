@@ -179,11 +179,12 @@ export async function onRequestGet(context) {
             }
           }
 
-          // Honor sessions_remaining_locked — when set, the GHL field
-          // values are intentionally human-managed and override the
-          // derivation. See staff-contact.js comment for full rationale.
-          const displaySeriesType = ledger.manualLock ? fallbackSeriesType : ledger.seriesType;
-          const displayRemaining = ledger.manualLock ? fallbackRemaining : ledger.remaining;
+          // Display values from deriveLedger — falls back to field on
+          // lock or low confidence. See session-ledger.js display block.
+          // Fallback chain if .display is missing (e.g. session-ledger
+          // import failed and fallback ledger above is in play).
+          const displaySeriesType = ledger.display?.seriesType ?? fallbackSeriesType;
+          const displayRemaining = ledger.display?.remaining ?? fallbackRemaining;
 
           return {
             id: c.id,
@@ -197,6 +198,7 @@ export async function onRequestGet(context) {
             lastSessionDate: ledger.lastSessionDate,
             prepaidOverride: ledger.prepaidOverride,
             source: ledger.source,
+            displaySource: ledger.display?.source,
             confidence: ledger.confidence,
             ambiguities: ledger.ambiguities,
             manualLock: ledger.manualLock,
