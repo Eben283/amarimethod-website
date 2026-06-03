@@ -119,16 +119,29 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   // Lifetime journey counter — total past appointments that effectively ran.
   // Past 'confirmed' counts because Garrett doesn't always flip them to
   // 'completed' or 'showed'.
+  // Phone-style appointments (discovery, consultation, 15-min, pain
+  // assessment) do NOT count per Eben's 2026-06-03 rule. Mirrors the
+  // NON_JOURNEY regex in functions/api/portal-data.js + staff-mark-attended.js.
+  // appointmentType is calendarName server-side (portal-data.js:265).
+  const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+  const isJourneyAppt = (a: { title?: string; appointmentType?: string }) =>
+    !NON_JOURNEY.test(`${a.title || ''} ${a.appointmentType || ''}`);
   const lifetimeCompleted = allAppointments.filter(a =>
-    a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
+    (a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed') &&
+    isJourneyAppt(a)
   ).length;
   // Fall back to the server-derived sessionsCompleted if the past-appointments
   // count is somehow lower (e.g. the API filtered some out for the client).
   const lifetimeCount = Math.max(lifetimeCompleted, client.sessionsCompleted);
 
   // Earliest past appointment — used for the "since X" lifetime tagline.
+  // Filter phone-style appts here too so a one-off discovery call doesn't
+  // anchor the "since X" date to before any real bodywork happened.
   const earliestPast = allAppointments
-    .filter(a => a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed')
+    .filter(a =>
+      (a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed') &&
+      isJourneyAppt(a)
+    )
     .slice() // copy before sort
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
   const sinceLabel = earliestPast

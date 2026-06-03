@@ -65,8 +65,15 @@ export default function DashboardPage() {
   // Trust appointment data over the sessions_completed custom field — Garrett
   // doesn't always mark sessions complete in GHL, and past 'confirmed'
   // appointments effectively ran. The custom field is a fallback.
+  // Phone-style appointments (discovery, consultation) don't count toward
+  // "had an initial session" — they're pre-session phone chats. Mirrors
+  // NON_JOURNEY in portal-data.js + ProgressTracker.tsx.
+  const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+  const isJourneyAppt = (a: { title?: string; appointmentType?: string }) =>
+    !NON_JOURNEY.test(`${a.title || ''} ${a.appointmentType || ''}`);
   const completedAppointments = appointments.filter(a =>
-    a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed'
+    (a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed') &&
+    isJourneyAppt(a)
   ).length;
   const hasHadInitial = completedAppointments > 0 || client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
@@ -79,7 +86,9 @@ export default function DashboardPage() {
         ? 'Welcome back.'
         : "Book your next session whenever you're ready.";
 
-  const pastCompleted = appointments.filter(a => a.status === 'completed' || a.status === 'showed');
+  const pastCompleted = appointments.filter(a =>
+    (a.status === 'completed' || a.status === 'showed') && isJourneyAppt(a),
+  );
   const lastVisit = pastCompleted.length > 0
     ? new Date(pastCompleted[0].startTime).toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : undefined;

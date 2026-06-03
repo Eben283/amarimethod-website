@@ -202,11 +202,22 @@ export async function onRequestGet(context) {
     //   sessionsCompleted — lifetime journey ("how far have I come?")
     // These are independent. They don't sum to a package size.
     const sessionsRemaining = ledger.display.remaining;
+    // Lifetime journey count. Per Eben's 2026-06-03 clarification:
+    //   - Entrainments count as total sessions
+    //   - Phone-style appointments (discovery, consultation, 15-min, pain
+    //     assessment) do NOT count
+    //   - Neither counts against the package balance (sessions_remaining)
+    // Backend regex mirrors NON_JOURNEY_PATTERNS in staff-mark-attended.js
+    // and series-reconcile-worker/src/sync.js computeLifetimeCount —
+    // keeps all three "lifetime" surfaces consistent.
+    const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     const lifetimeCompletedCount = allAppointments.filter((a) => {
       const s = (a.appointmentStatus || a.status || "").toLowerCase();
       // Past 'confirmed' appointments effectively ran — Garrett doesn't
       // always flip them to 'completed' or 'showed' after a session.
-      return s === "completed" || s === "showed" || s === "confirmed";
+      if (!(s === "completed" || s === "showed" || s === "confirmed")) return false;
+      const title = `${a.title || ""} ${a.calendarName || ""}`;
+      return !NON_JOURNEY.test(title);
     }).length;
     const sessionsCompleted = lifetimeCompletedCount;
 
