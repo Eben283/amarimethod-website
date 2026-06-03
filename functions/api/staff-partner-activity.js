@@ -160,7 +160,6 @@ export async function onRequestGet(context) {
       /^Migrated from /i,
       /^Migration noise cleanup/i,
       /^Late migration /i,
-      /^Outcome: \w+/,  // outcome capture auto-notes get rendered as signals already
     ];
     const notesRes = await fetch(
       `${GHL_API_BASE}/contacts/${contactId}/notes`,
@@ -170,7 +169,14 @@ export async function onRequestGet(context) {
       const notesData = await notesRes.json();
       for (const n of notesData.notes || []) {
         const body = typeof n.body === "string" ? n.body : "";
-        const isNoise = NOISE_PATTERNS.some((pat) => pat.test(body.trim()));
+        const trimmed = body.trim();
+        // Bare "Outcome: <label>" auto-notes are already rendered as signal
+        // chips, so suppress them. But KEEP outcome notes that carry custom
+        // staff text (appended after " — ") — otherwise the note the user
+        // typed in the modal silently vanishes from the timeline on reopen,
+        // which reads as "notes aren't saving" even though they're in GHL.
+        const isBareOutcome = /^Outcome: /.test(trimmed) && !trimmed.includes(" — ");
+        const isNoise = isBareOutcome || NOISE_PATTERNS.some((pat) => pat.test(trimmed));
         if (isNoise) continue;
         events.push({
           date: n.dateAdded || n.createdAt,

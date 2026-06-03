@@ -935,7 +935,7 @@ function ProspectModal({
           "sticky" header scroll out of view when content was tall — Eben
           flagged this 2026-05-29 (Pure Performance Private Fitness modal). */}
       <div
-        className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl flex flex-col max-h-[100vh] sm:max-h-[90vh] my-0 sm:my-8"
+        className="bg-amari-bone-white w-full sm:max-w-2xl sm:rounded-lg shadow-xl flex flex-col max-h-[100dvh] sm:max-h-[90vh] my-0 sm:my-8"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header — shrink-0 so it stays visible while body scrolls. */}
@@ -976,8 +976,13 @@ function ProspectModal({
         </div>
 
         {/* Body — flex-1 + overflow-y-auto so it absorbs remaining height and
-            scrolls inside the card. Header above stays pinned. */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            scrolls inside the card. Header above stays pinned.
+            min-h-0 is REQUIRED: a flex child defaults to min-height:auto, which
+            refuses to shrink below its content, so overflow-y-auto never engages
+            and the scrollbar appears but won't move (iOS Chrome, Garrett
+            2026-06-03). overscroll-contain stops the scroll from chaining to the
+            page behind the modal. */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-4">
           {/* Contact */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wide text-amari-text-muted mb-1.5">Contact</h3>
@@ -1338,6 +1343,23 @@ function ProspectModal({
               Open in GHL <ExternalLink className="w-3.5 h-3.5" />
             </a>
 
+            {/* Optional note — placed ABOVE the outcome buttons so it's typed
+                BEFORE a button click submits and (in focus mode) auto-advances.
+                Previously sat below the buttons and was almost never captured. */}
+            <label className="block text-[11px] uppercase tracking-wide font-semibold text-amari-text-muted mb-1.5">
+              Note <span className="font-normal normal-case">— saved with the outcome you record below</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Optional note about this contact..."
+              value={outcomeNote}
+              onChange={(e) => setOutcomeNote(e.target.value)}
+              /* text-base = 16px: iOS auto-zooms on focus for any input under
+                 16px, which inside a fixed modal shoves the field off-screen so
+                 you can't see what you type. 16px stops the zoom. */
+              className="w-full text-base bg-white text-amari-charcoal border border-amari-border rounded px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent"
+            />
+
             <p className="text-xs uppercase tracking-wide font-bold text-amari-charcoal mt-3 mb-2 flex items-center gap-1.5 select-none">
               <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0s', animationDuration: '0.9s' }}>🐻</span>
               <span className="inline-block animate-bounce text-base" style={{ animationDelay: '0.15s', animationDuration: '0.9s' }}>🐻</span>
@@ -1411,13 +1433,6 @@ function ProspectModal({
                 </button>
               </div>
             )}
-            <input
-              type="text"
-              placeholder="Optional note about this outcome..."
-              value={outcomeNote}
-              onChange={(e) => setOutcomeNote(e.target.value)}
-              className="w-full text-xs border border-amari-border rounded px-2 py-1.5"
-            />
             {outcomeError && (
               <p className="text-xs text-red-700 mt-1.5">{outcomeError}</p>
             )}
