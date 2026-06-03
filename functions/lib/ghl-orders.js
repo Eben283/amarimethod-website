@@ -7,7 +7,14 @@
 // already imports session-ledger.js from this same directory, so the import
 // path stays consistent.
 
-const DEFAULT_CONCURRENCY = 5;
+// Lowered from 5 → 3 after the 2026-06-03 staff-balances incident hit
+// Cloudflare's per-Worker connection limit when 5 contacts ran in parallel
+// each fanning out 5 hydration calls (5 × 5 = 25 concurrent outbound).
+// 3 keeps a single contact's worst case at ~3 simultaneous outbound,
+// which combined with staff-balances' CONCURRENCY=2 stays safely under
+// the ~6-connection cap. Per-contact wall time only goes up by ~30% for
+// contacts with >5 POS orders (rare).
+const DEFAULT_CONCURRENCY = 3;
 
 /**
  * Hydrate a list of GHL order summary records with their full `items[]` from

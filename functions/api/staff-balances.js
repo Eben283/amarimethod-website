@@ -134,10 +134,15 @@ export async function onRequestGet(context) {
     });
 
     // Enrich each candidate with ledger data.
-    // Process in chunks of 5 to avoid GHL rate limits (~100 req/10s)
-    // and Cloudflare subrequest caps. Each candidate triggers ~4 GHL
-    // fetches inside computeSessionLedger.
-    const CONCURRENCY = 5;
+    // Concurrency 2 (was 5) — each candidate triggers 4 base GHL fetches
+    // PLUS hydrateOrders fan-out (~5 more per contact for POS orders).
+    // At 5 contacts × 9 calls = 45 concurrent outbound to GHL, which
+    // exceeds Cloudflare's per-Worker connection limit (~6) and produced
+    // "Response closed due to connection limit" / "Too many subrequests"
+    // errors that cached for the full 5-min TTL. 2026-06-03 incident.
+    // Wall time tradeoff: ~30s for 7 contacts vs the previous ~10s, but
+    // cached for 5 min so users only feel it on cache miss.
+    const CONCURRENCY = 2;
     const rows = [];
 
     for (let i = 0; i < candidates.length; i += CONCURRENCY) {
