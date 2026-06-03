@@ -4,7 +4,7 @@
 import { verifySessionToken } from "../lib/auth.js";
 import { getTodayCalendar, getRecentEmails, createCalendarReminder, deleteCalendarEvent, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
-import { deriveLedger } from "../lib/session-ledger.js";
+import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
@@ -510,16 +510,17 @@ async function lookupContact(context, name) {
   let orders = [];
   if (ordersResp.ok) {
     const oData = await ordersResp.json();
-    orders = oData.data || oData.orders || [];
+    const ordersList = oData.data || oData.orders || [];
+    // POS / mobile_app orders come back from LIST without items[];
+    // hydrate via /payments/orders/{id} so classifyOrder can read
+    // product._id. See session-ledger.js → hydrateOrders for details.
+    orders = await hydrateOrders(context, ordersList);
   }
   let invoices = [];
   if (invoicesResp.ok) {
     const iData = await invoicesResp.json();
     invoices = iData.invoices || [];
   }
-  // NB: orders LIST endpoint returns summary records; we'd need per-order
-  // detail fetches for POS-source classification. For COS chat, this is
-  // acceptable — payment_link orders (the bulk) classify fine by sourceName.
   // POS-source clients show as "low confidence" in the ledger, which is
   // honest signaling for chat answers.
   const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: {} });

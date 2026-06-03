@@ -20,6 +20,48 @@ import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
+/**
+ * hydrateOrders — fill in items[] for orders that came back from the LIST
+ * endpoint missing them. Required for POS / mobile_app orders because
+ * GHL's /payments/orders LIST endpoint strips items[] (only `totalProducts`
+ * and `onetimeProducts` come back). The DETAIL endpoint
+ * /payments/orders/{id} returns the full items[] with product._id, which
+ * classifyOrder needs to recognize POS purchases (sourceName is empty for
+ * those, so the name-pattern fallback also misses).
+ *
+ * Same fix series-reconcile-worker/src/sync.js:207-215 applies on the
+ * writer side. Every read endpoint that calls deriveLedger MUST run its
+ * orders through this helper first, or POS package purchases silently
+ * classify as type="other" / sessions=0 and the derived ledger overwrites
+ * correct field values with zeros (2026-06-03 Jenn Kadri incident).
+ *
+ * Cost: one extra GHL subrequest per POS order (typically 0–5 per contact).
+ * Skips the round-trip when items[] is already populated (payment_link
+ * orders carry items[] on the LIST endpoint).
+ */
+export async function hydrateOrders(context, ordersList) {
+  if (!Array.isArray(ordersList) || ordersList.length === 0) return [];
+  return Promise.all(
+    ordersList.map(async (o) => {
+      if (Array.isArray(o.items) && o.items.length > 0) return o;
+      if (!o._id) return o;
+      try {
+        const detailRes = await ghlFetch(
+          context,
+          `${GHL_API_BASE}/payments/orders/${o._id}?altId=${GHL_LOCATION_ID}&altType=location`,
+        );
+        if (detailRes.ok) {
+          const detail = await detailRes.json();
+          return { ...o, ...detail };
+        }
+      } catch {
+        // fall through — classifyOrder may still match by sourceName
+      }
+      return o;
+    }),
+  );
+}
+
 // Re-export as ACTIVE_PRODUCTS for backward compatibility with tests.
 // Source of truth is ghl-products.js → GHL_PRODUCTS. To add a new product,
 // edit that file only — both the ledger and the invoice webhook pick it up.
@@ -422,33 +464,7 @@ export async function computeSessionLedger(context, contactId, options = {}) {
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       const ordersList = ordersData.data || ordersData.orders || [];
-      // GHL's /payments/orders LIST endpoint omits items[] for POS / mobile_app
-      // orders — only `totalProducts` and `onetimeProducts` come back. The
-      // DETAIL endpoint /payments/orders/{id} returns full items[] with
-      // product._id. classifyOrder needs that id to recognize POS purchases
-      // (their sourceName is empty so the name-pattern fallback also misses).
-      // Same fix series-reconcile-worker/src/sync.js:207-215 applies on the
-      // writer side. Without this, POS package purchases silently classify
-      // as type="other" / sessions=0 and the derived ledger overwrites
-      // correct field values with zeros (2026-06-03 Jenn Kadri incident).
-      orders = await Promise.all(
-        ordersList.map(async (o) => {
-          if (Array.isArray(o.items) && o.items.length > 0) return o;
-          try {
-            const detailRes = await ghlFetch(
-              context,
-              `${GHL_API_BASE}/payments/orders/${o._id}?altId=${GHL_LOCATION_ID}&altType=location`,
-            );
-            if (detailRes.ok) {
-              const detail = await detailRes.json();
-              return { ...o, ...detail };
-            }
-          } catch {
-            // fall through — classifyOrder may still match by sourceName
-          }
-          return o;
-        }),
-      );
+      orders = await hydrateOrders(context, ordersList);
     }
 
     let invoices = [];

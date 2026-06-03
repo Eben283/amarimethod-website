@@ -4,7 +4,7 @@
 import { ghlHeaders, getGhlToken, ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
-import { deriveLedger } from "../lib/session-ledger.js";
+import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -171,7 +171,11 @@ export async function onRequestGet(context) {
               tags = contact.tags || [];
             }
 
-            const orders = ordersRes.ok ? ((await ordersRes.json()).data || []) : [];
+            const ordersList = ordersRes.ok ? ((await ordersRes.json()).data || []) : [];
+            // POS orders need /payments/orders/{id} hydration — see
+            // session-ledger.js → hydrateOrders. Without it POS package
+            // purchases derive as 0 sessions.
+            const orders = await hydrateOrders(context, ordersList);
             const invoices = invoicesRes.ok ? ((await invoicesRes.json()).invoices || []) : [];
             let appointments = [];
             if (apptRes.ok) {

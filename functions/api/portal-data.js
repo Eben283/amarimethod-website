@@ -3,7 +3,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { deriveLedger } from "../lib/session-ledger.js";
+import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -165,7 +165,11 @@ export async function onRequestGet(context) {
     let orders = [];
     if (ordersResponse.ok) {
       const ordersData = await ordersResponse.json();
-      orders = ordersData.data || ordersData.orders || [];
+      const ordersList = ordersData.data || ordersData.orders || [];
+      // POS / mobile_app orders come back from LIST without items[];
+      // hydrate via /payments/orders/{id} so classifyOrder can read
+      // product._id. See session-ledger.js → hydrateOrders for details.
+      orders = await hydrateOrders(context, ordersList);
     }
     let invoices = [];
     if (invoicesResponse.ok) {
