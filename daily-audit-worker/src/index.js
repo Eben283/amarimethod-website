@@ -2,8 +2,10 @@
 // Executes all 5 QA audit rule sets against GHL data and caches results in KV.
 // Results are read by /api/daily-audit Pages Function → consumed by /day skill.
 
-import { ghlFetch, fetchAppointmentsForDate, todayPacific, LOCATION_ID, ContactCache } from "./ghl.js";
+import { ghlFetch, fetchAppointmentsForDate, todayPacific, LOCATION_ID, FIELD_IDS, ContactCache, getAccessToken } from "./ghl.js";
 import { auditAppointments, auditPurchases, auditTagConsistency, auditSeriesTypeDrops, auditCommunications, auditStateMismatches } from "./rules.js";
+import { deriveLedger } from "../../functions/lib/session-ledger.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
@@ -102,6 +104,14 @@ async function runAudit(env) {
   // Stale here means uncaught orphans accumulate silently.
   const seriesReconcileWatchdogIssues = await checkSeriesReconcile(env);
 
+  // Walk every contact with an active series and run the same derivation
+  // the read endpoints use. Surface anyone whose displayed value diverges
+  // from the derived value (low-confidence-fallback or active manual lock)
+  // or whose derivation has ambiguities. This is the visibility piece —
+  // the Jenn Kadri 2026-06-03 silent bug sat invisible for weeks because
+  // nothing surfaced the ambiguity array a human could read.
+  const ledgerDriftIssues = await checkSessionLedgerDrift(env);
+
   const allIssues = [
     ...apptIssues,
     ...purchaseResult.issues,
@@ -111,6 +121,7 @@ async function runAudit(env) {
     ...mismatchIssues,
     ...refreshWatchdogIssues,
     ...seriesReconcileWatchdogIssues,
+    ...ledgerDriftIssues,
   ];
 
   const result = {
@@ -338,4 +349,145 @@ async function checkSeriesReconcile(env) {
   }
 
   return issues;
+}
+
+// Drift detector — runs the same deriveLedger every read endpoint uses
+// against every contact with an active series, and surfaces:
+//
+//   - WARNING: derivation has ambiguities (confidence="low"). Worker skips
+//     writes here, lock-or-fallback displays the field value instead of
+//     derived. Garrett sees the right number in the app — but the
+//     underlying disagreement should be investigated and either fixed
+//     (correct the field, set the lock, adjust the cutoff logic) or
+//     accepted (set lock if intentional).
+//
+//   - INFO: display.source !== "derived" — i.e. the contact is on a
+//     manual lock or low-confidence fallback. Not necessarily wrong, but
+//     worth knowing about so locks don't silently accumulate.
+//
+// Cost: one /contacts/search pass + per-contact (contact + orders +
+// invoices + appointments + hydration). At ~10 active package contacts
+// in steady state, ~50 GHL calls / run. Well under the 1000-subrequest
+// paid cap.
+async function checkSessionLedgerDrift(env) {
+  const issues = [];
+
+  // Find candidate contacts via /contacts/search. Has to be paginated.
+  const candidates = [];
+  try {
+    for (let page = 1; page <= 10; page++) {
+      const token = await getAccessToken(env);
+      const res = await fetch(`https://services.leadconnectorhq.com/contacts/search`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Version: "2021-07-28",
+        },
+        body: JSON.stringify({ locationId: LOCATION_ID, pageLimit: 100, page }),
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      const contacts = data.contacts || [];
+      if (contacts.length === 0) break;
+      for (const c of contacts) {
+        const cf = c.customFields || [];
+        const seriesType = cf.find((f) => f.id === FIELD_IDS.series_type)?.value || "none";
+        const remaining = parseInt(cf.find((f) => f.id === FIELD_IDS.sessions_remaining)?.value ?? "0", 10) || 0;
+        if (seriesType !== "none" || remaining > 0) {
+          candidates.push(c.id);
+        }
+      }
+      if (contacts.length < 100) break;
+    }
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-candidate-scan-failed",
+      message: `Could not enumerate contacts for ledger drift check: ${err.message}`,
+    });
+    return issues;
+  }
+
+  // Build a field-defs map once.
+  let fieldDefs = {};
+  try {
+    const data = await ghlFetch(env, `/locations/${LOCATION_ID}/customFields`);
+    for (const f of data.customFields || []) {
+      const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
+      if (shortKey) fieldDefs[shortKey] = f.id;
+    }
+  } catch {
+    // fieldDefs stays empty; deriveLedger falls back to id-based matching
+  }
+
+  // Process candidates in chunks of 3 — each one does 4-5 GHL calls.
+  // 3 × 5 = 15 concurrent; well under the 1000-subrequest cap.
+  const CHUNK = 3;
+  const detailedIssues = [];
+  const lockedContacts = [];
+  for (let i = 0; i < candidates.length; i += CHUNK) {
+    const chunk = candidates.slice(i, i + CHUNK);
+    await Promise.all(chunk.map(async (contactId) => {
+      try {
+        const [contactRes, ordersRes, invoicesRes, apptRes] = await Promise.all([
+          ghlFetch(env, `/contacts/${contactId}`),
+          ghlFetch(env, `/payments/orders?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`),
+          ghlFetch(env, `/invoices/?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+          ghlFetch(env, `/contacts/${contactId}/appointments`),
+        ]);
+
+        const contact = contactRes.contact || {};
+        const ordersList = ordersRes.data || ordersRes.orders || [];
+        const invoices = invoicesRes.invoices || [];
+        const appointments = apptRes.appointments || apptRes.events || [];
+
+        // Same hydration the read endpoints use.
+        const orders = await hydrateOrders(async (orderId) => {
+          return ghlFetch(env, `/payments/orders/${orderId}?altId=${LOCATION_ID}&altType=location`);
+        }, ordersList);
+
+        const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
+        const name = `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || contact.email || contactId;
+
+        if (ledger.confidence === "low" && ledger.ambiguities.length > 0) {
+          detailedIssues.push({
+            severity: "warning",
+            area: "session-fields",
+            kind: "ledger-ambiguity",
+            contactId,
+            contactName: name,
+            message: `${name}: ledger ambiguity — ${ledger.ambiguities.join("; ")}`,
+            displaying: ledger.display.remaining,
+            derived: ledger.remaining,
+            displaySource: ledger.display.source,
+          });
+        } else if (ledger.manualLock) {
+          lockedContacts.push({ contactId, name, derived: ledger.remaining, field: ledger.display.remaining });
+        }
+      } catch (err) {
+        // Per-contact failure doesn't block the rest of the audit.
+        console.warn(`[daily-audit] ledger drift check failed for ${contactId}: ${err.message}`);
+      }
+    }));
+  }
+
+  // Roll up locked contacts into a single info-level issue. Locks aren't
+  // bugs — just worth seeing in the briefing so they don't accumulate
+  // invisibly (someone might want to re-derive Albert's count after a
+  // few more sessions and clear the lock).
+  if (lockedContacts.length > 0) {
+    const summary = lockedContacts
+      .map((l) => `${l.name} (showing ${l.field}, derived ${l.derived})`)
+      .join("; ");
+    issues.push({
+      severity: "info",
+      area: "session-fields",
+      kind: "ledger-locked-contacts",
+      message: `${lockedContacts.length} contact(s) on sessions_remaining_locked: ${summary}`,
+    });
+  }
+
+  return [...issues, ...detailedIssues];
 }
