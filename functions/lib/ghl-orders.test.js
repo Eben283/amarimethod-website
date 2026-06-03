@@ -29,12 +29,41 @@ describe('hydrateOrders', () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it('skips fetch when order has no _id', async () => {
+  it('marks as __hydration_failed when order has no id of any shape', async () => {
+    // Without _id, id, or orderId there's nothing to hydrate with — but
+    // we must NOT pass it through as a confident "other" classification
+    // (would let the worker write a destructive zero). Mark failed so
+    // deriveLedger drops confidence.
     const fetcher = vi.fn();
-    const o = { amount: 100, status: 'completed' }; // no _id
-    const result = await hydrateOrders(fetcher, [o]);
-    expect(result).toEqual([o]);
+    const o = { amount: 100, status: 'completed' }; // no id of any kind
+    const [hydrated] = await hydrateOrders(fetcher, [o]);
+    expect(hydrated.__hydration_failed).toBe(true);
+    expect(hydrated.__hydration_reason).toBe('no-order-id');
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it('falls back to o.id when o._id is missing (GHL endpoint variance)', async () => {
+    // ghl-purchase-webhook.js:332 already uses the `_id || id || orderId`
+    // fallback chain — proves GHL ships orders with `id` from at least one
+    // endpoint. Hydration must accept the same shapes or it skips orders
+    // that should be classifiable.
+    const fetcher = vi.fn(async (id) => ({
+      items: [{ product: { _id: 'pid-via-id' } }],
+    }));
+    const o = { id: 'order-id-only', amount: 1295, status: 'completed' };
+    const [hydrated] = await hydrateOrders(fetcher, [o]);
+    expect(fetcher).toHaveBeenCalledWith('order-id-only');
+    expect(hydrated.items[0].product._id).toBe('pid-via-id');
+  });
+
+  it('falls back to o.orderId when both _id and id are missing', async () => {
+    const fetcher = vi.fn(async () => ({
+      items: [{ product: { _id: 'pid' } }],
+    }));
+    const o = { orderId: 'fallback-order-id', amount: 720, status: 'completed' };
+    const [hydrated] = await hydrateOrders(fetcher, [o]);
+    expect(fetcher).toHaveBeenCalledWith('fallback-order-id');
+    expect(hydrated.items[0].product._id).toBe('pid');
   });
 
   it('hydrates orders missing items[] by calling fetcher with their _id', async () => {

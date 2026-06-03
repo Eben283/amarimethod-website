@@ -56,15 +56,29 @@ export async function hydrateOrders(fetchOrderDetail, ordersList, options = {}) 
 
   // Bucket orders that need hydration vs ones that don't. Preserve original
   // order by writing into a positionally-indexed array.
+  // Resolve the order id once per order — GHL is inconsistent across endpoints
+  // and `ghl-purchase-webhook.js:332` already established the
+  // `_id || id || orderId` fallback. If a callsite for hydrateOrders ever
+  // hits an `id`-only shape and we only check `_id`, the order silently
+  // skips hydration AND skips the __hydration_failed flag — meaning
+  // classifyOrder returns confident "other"/0 sessions and the worker
+  // could write a destructive zero. Match the webhook's fallback to keep
+  // the safety net intact.
   const result = new Array(ordersList.length);
   const needsHydration = [];
+  const resolvedIds = new Array(ordersList.length);
   for (let i = 0; i < ordersList.length; i++) {
     const o = ordersList[i];
     if (Array.isArray(o?.items) && o.items.length > 0) {
       result[i] = o;
-    } else if (!o?._id) {
-      // Can't hydrate without an id — pass through unchanged.
-      result[i] = o;
+      continue;
+    }
+    const orderId = o?._id || o?.id || o?.orderId || null;
+    resolvedIds[i] = orderId;
+    if (!orderId) {
+      // Can't hydrate without an id — mark failed so deriveLedger drops
+      // confidence rather than confidently classifying as "other".
+      result[i] = { ...o, __hydration_failed: true, __hydration_reason: "no-order-id" };
     } else {
       needsHydration.push(i);
     }
@@ -77,7 +91,7 @@ export async function hydrateOrders(fetchOrderDetail, ordersList, options = {}) 
       chunkIndices.map(async (i) => {
         const o = ordersList[i];
         try {
-          const detail = await fetchOrderDetail(o._id);
+          const detail = await fetchOrderDetail(resolvedIds[i]);
           // Pluck items[] only — leave status/amount/sourceType from LIST
           // intact. If detail has no items either, mark failed.
           if (Array.isArray(detail?.items) && detail.items.length > 0) {

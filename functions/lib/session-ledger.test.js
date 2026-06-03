@@ -624,6 +624,65 @@ describe('deriveLedger — overrides and edge cases', () => {
       expect(Number.isFinite(result.display.remaining)).toBe(true);
     });
 
+    it('display.source = "derived-matches-field" when locked but value matches derived', () => {
+      // Cosmetic but load-bearing: the drift watchdog reports display.source
+      // to humans. If we always say "manual-lock" even when no actual
+      // fallback happened, the briefing misleads.
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [
+            { id: FIELD_DEFS.sessions_remaining, value: '3' }, // matches derived
+            { id: FIELD_DEFS.series_type, value: '4-session' },
+            { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+          ],
+        }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.manualLock).toBe(true);
+      expect(result.remaining).toBe(3);
+      expect(result.display.remaining).toBe(3);
+      expect(result.display.source).toBe('derived-matches-field');
+    });
+
+    it('display.source = "manual-lock" only when field actually diverges', () => {
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [
+            { id: FIELD_DEFS.sessions_remaining, value: '2' }, // diverges from derived (3)
+            { id: FIELD_DEFS.series_type, value: '4-session' },
+            { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+          ],
+        }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.display.source).toBe('manual-lock');
+    });
+
+    it('handles field="0" + lock correctly (not NaN, not silent zero)', () => {
+      // R1 flagged this combination: empty-string would NaN, but "0" should
+      // be a valid locked value of zero. Worth a regression test.
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [
+            { id: FIELD_DEFS.sessions_remaining, value: '0' },
+            { id: FIELD_DEFS.series_type, value: '4-session' },
+            { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+          ],
+        }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.manualLock).toBe(true);
+      expect(result.display.remaining).toBe(0);
+      expect(Number.isFinite(result.display.remaining)).toBe(true);
+      expect(result.display.source).toBe('manual-lock'); // 0 diverges from derived 4
+    });
+
     it('display.remaining is never NaN regardless of field state', () => {
       // Empty-string field, low confidence — historically produced NaN.
       const result = deriveLedger({
@@ -1222,10 +1281,23 @@ describe('computeSessionLedger — POS order hydration', () => {
       { fieldDefs: FIELD_DEFS },
     );
 
-    // Without items[] and no recoverable detail, classifyOrder returns
-    // type="other" / sessions=0. seriesType=none, but no crash.
-    expect(result.seriesType).toBe('none');
+    // Without items[] and no recoverable detail, hydration marks
+    // __hydration_failed → ambiguity → confidence drops → display
+    // falls back to field (which is null here, so derived).
     expect(result.purchased).toBe(0);
+    expect(result.confidence).toBe('low');
+    expect(result.ambiguities.some((a) => /hydration failed/.test(a))).toBe(true);
+  });
+
+  it('returns a display block on the no-contactId early-return', async () => {
+    // Regression test: any consumer doing ledger.display.X without
+    // optional chaining would throw if early-returns omit display.
+    const result = await computeSessionLedger({ env: {} }, "", { fieldDefs: FIELD_DEFS });
+    expect(result.display).toBeDefined();
+    expect(result.display.seriesType).toBe('none');
+    expect(result.display.remaining).toBe(0);
+    expect(result.display.source).toBe('empty');
+    expect(result.manualLock).toBe(false);
   });
 });
 

@@ -372,11 +372,32 @@ async function checkSeriesReconcile(env) {
 async function checkSessionLedgerDrift(env) {
   const issues = [];
 
-  // Find candidate contacts via /contacts/search. Has to be paginated.
-  const candidates = [];
+  // Pre-fetch the existing field-sync needs-review queue. The
+  // series-reconcile-worker writes to `field-sync:needsReview:${contactId}`
+  // when a contact's drift is too large to auto-apply (delta > MAX_AUTO_DELTA).
+  // The `checkSeriesReconcile` watchdog above already surfaces those. Skip
+  // any contact already in that queue so the briefing doesn't double-flag.
+  const alreadyFlaggedForReview = new Set();
   try {
-    for (let page = 1; page <= 10; page++) {
-      const token = await getAccessToken(env);
+    const list = await env.PORTAL_KV.list({ prefix: "field-sync:needsReview:" });
+    for (const k of list.keys) {
+      alreadyFlaggedForReview.add(k.name.replace("field-sync:needsReview:", ""));
+    }
+  } catch {
+    // Non-fatal — proceed without dedup.
+  }
+
+  // Find candidate contacts via /contacts/search. Has to be paginated.
+  // Pagination cap is 1000 (10 pages × 100); surface a warning if we hit it
+  // so we know to widen the scan when the contact base grows past that.
+  const candidates = [];
+  const PAGE_CAP = 10;
+  let hitPageCap = false;
+  let lastPageHadFullBatch = false;
+  let token;
+  try {
+    token = await getAccessToken(env);
+    for (let page = 1; page <= PAGE_CAP; page++) {
       const res = await fetch(`https://services.leadconnectorhq.com/contacts/search`, {
         method: "POST",
         headers: {
@@ -394,11 +415,19 @@ async function checkSessionLedgerDrift(env) {
         const cf = c.customFields || [];
         const seriesType = cf.find((f) => f.id === FIELD_IDS.series_type)?.value || "none";
         const remaining = parseInt(cf.find((f) => f.id === FIELD_IDS.sessions_remaining)?.value ?? "0", 10) || 0;
-        if (seriesType !== "none" || remaining > 0) {
+        // Include session_prepaid="yes" contacts — deriveLedger flags
+        // prepaidOverride-without-orders as an ambiguity, and that's
+        // exactly the kind of drift this watchdog exists to surface.
+        // Filter previously missed these (staff-balances.js:128-134 has
+        // the inclusive filter; copy that pattern here for consistency).
+        const sessionPrepaid = (cf.find((f) => f.id === "sgQ5EbJWhvTfGVhStaOO")?.value || "").toString().toLowerCase() === "yes";
+        if (seriesType !== "none" || remaining > 0 || sessionPrepaid) {
           candidates.push(c.id);
         }
       }
+      lastPageHadFullBatch = contacts.length === 100;
       if (contacts.length < 100) break;
+      if (page === PAGE_CAP && lastPageHadFullBatch) hitPageCap = true;
     }
   } catch (err) {
     issues.push({
@@ -408,6 +437,15 @@ async function checkSessionLedgerDrift(env) {
       message: `Could not enumerate contacts for ledger drift check: ${err.message}`,
     });
     return issues;
+  }
+
+  if (hitPageCap) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-pagination-cap-hit",
+      message: `Drift check hit the ${PAGE_CAP * 100}-contact pagination cap. Contacts past that are silently uninspected — raise PAGE_CAP in daily-audit-worker/src/index.js checkSessionLedgerDrift.`,
+    });
   }
 
   // Build a field-defs map once.
@@ -430,6 +468,10 @@ async function checkSessionLedgerDrift(env) {
   for (let i = 0; i < candidates.length; i += CHUNK) {
     const chunk = candidates.slice(i, i + CHUNK);
     await Promise.all(chunk.map(async (contactId) => {
+      // Already in the field-sync needs-review queue → checkSeriesReconcile
+      // above surfaces it. Skip so the briefing doesn't double-flag.
+      if (alreadyFlaggedForReview.has(contactId)) return;
+
       try {
         const [contactRes, ordersRes, invoicesRes, apptRes] = await Promise.all([
           ghlFetch(env, `/contacts/${contactId}`),
@@ -473,20 +515,47 @@ async function checkSessionLedgerDrift(env) {
     }));
   }
 
-  // Roll up locked contacts into a single info-level issue. Locks aren't
-  // bugs — just worth seeing in the briefing so they don't accumulate
-  // invisibly (someone might want to re-derive Albert's count after a
-  // few more sessions and clear the lock).
-  if (lockedContacts.length > 0) {
-    const summary = lockedContacts
-      .map((l) => `${l.name} (showing ${l.field}, derived ${l.derived})`)
-      .join("; ");
-    issues.push({
-      severity: "info",
-      area: "session-fields",
-      kind: "ledger-locked-contacts",
-      message: `${lockedContacts.length} contact(s) on sessions_remaining_locked: ${summary}`,
-    });
+  // Locked-rollup INFO — emit only when the locked count CHANGED since the
+  // last run. Without this guard, Albert's permanent lock would generate
+  // a daily INFO entry that just inflates the briefing (per Eben's
+  // 2026-05-26 todo-discipline rule — no cosmetic noise). The previous
+  // count lives in KV so we have something to compare against.
+  const LOCKED_COUNT_KEY = "ops:ledger-drift:lastLockedCount";
+  try {
+    const prevRaw = await env.PORTAL_KV.get(LOCKED_COUNT_KEY);
+    const prevCount = prevRaw === null ? null : parseInt(prevRaw, 10);
+    const currentCount = lockedContacts.length;
+
+    if (prevCount === null && currentCount > 0) {
+      // First-ever run with locked contacts — emit once so the baseline is
+      // visible.
+      const summary = lockedContacts
+        .map((l) => `${l.name} (showing ${l.field}, derived ${l.derived})`)
+        .join("; ");
+      issues.push({
+        severity: "info",
+        area: "session-fields",
+        kind: "ledger-locked-baseline",
+        message: `Baseline: ${currentCount} contact(s) on sessions_remaining_locked: ${summary}. (Future runs will report only when count changes.)`,
+      });
+    } else if (prevCount !== null && currentCount !== prevCount) {
+      const direction = currentCount > prevCount ? "increased" : "decreased";
+      const summary = lockedContacts
+        .map((l) => `${l.name} (showing ${l.field}, derived ${l.derived})`)
+        .join("; ");
+      issues.push({
+        severity: "info",
+        area: "session-fields",
+        kind: "ledger-locked-count-changed",
+        message: `Locked-contact count ${direction} from ${prevCount} to ${currentCount}. Now: ${summary || "none"}`,
+      });
+    }
+    // Persist for next run regardless.
+    await env.PORTAL_KV.put(LOCKED_COUNT_KEY, String(currentCount));
+  } catch (err) {
+    // KV failure shouldn't kill the watchdog — fall back to emitting nothing
+    // for the locked rollup (rather than the noisy unconditional path).
+    console.warn(`[daily-audit] locked-count compare failed: ${err.message}`);
   }
 
   return [...issues, ...detailedIssues];

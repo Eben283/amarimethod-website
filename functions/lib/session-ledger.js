@@ -411,23 +411,37 @@ export function deriveLedger({
   //
   // When the field itself is missing/empty AND we're using it, fall back
   // to the derived value as last resort — never return NaN.
-  const fieldRemaining = getCustomFieldInt(contact, "sessions_remaining", fieldDefs);
+  // customFieldRemaining was already read above for the ambiguity check —
+  // reuse it instead of re-reading.
+  const fieldRemaining = customFieldRemaining;
   const fieldSeriesTypeRaw = getCustomField(contact, "series_type", fieldDefs);
   const fieldSeriesType =
     typeof fieldSeriesTypeRaw === "string" && fieldSeriesTypeRaw.length > 0
       ? fieldSeriesTypeRaw
       : null;
   const useField = manualLock || confidence === "low";
+  const displaySeriesType = useField && fieldSeriesType ? fieldSeriesType : seriesType;
+  const displayRemaining = useField && fieldRemaining !== null ? fieldRemaining : remaining;
+  // Label the source so the briefing + drift watchdog can show WHY the
+  // displayed value diverges from derived. When `useField` is true but the
+  // field happens to equal the derived value, no actual fallback occurred —
+  // labelling it "manual-lock" would mislead the briefing reader into
+  // thinking Garrett's manual count differs from the math. Only label
+  // "manual-lock" / "low-confidence-fallback" when there's a real divergence.
+  let displaySource;
+  if (!useField) {
+    displaySource = "derived";
+  } else if (displayRemaining === remaining && displaySeriesType === seriesType) {
+    displaySource = "derived-matches-field";
+  } else if (manualLock) {
+    displaySource = "manual-lock";
+  } else {
+    displaySource = "low-confidence-fallback";
+  }
   const display = {
-    seriesType: useField && fieldSeriesType ? fieldSeriesType : seriesType,
-    remaining: useField && fieldRemaining !== null ? fieldRemaining : remaining,
-    // Why the displayed remaining differs from derived (for UI tooltips /
-    // logging / drift detector).
-    source: useField
-      ? manualLock
-        ? "manual-lock"
-        : "low-confidence-fallback"
-      : "derived",
+    seriesType: displaySeriesType,
+    remaining: displayRemaining,
+    source: displaySource,
   };
 
   return {
@@ -448,6 +462,33 @@ export function deriveLedger({
 // ── I/O wrapper ─────────────────────────────────────────────────────────────
 
 /**
+ * emptyLedger — return shape for every error / early-exit path. Must mirror
+ * the deriveLedger return shape exactly (including the `display` block) so
+ * consumers can read `ledger.display.X` without optional chaining and never
+ * get NaN/undefined. Without this, the early-return paths would have
+ * silently broken any consumer that switched to `ledger.display`.
+ */
+function emptyLedger(reason) {
+  return {
+    seriesType: "none",
+    purchased: 0,
+    attended: 0,
+    manualLock: false,
+    remaining: 0,
+    lastSessionDate: null,
+    prepaidOverride: false,
+    source: "empty",
+    confidence: "low",
+    ambiguities: [reason],
+    display: {
+      seriesType: "none",
+      remaining: 0,
+      source: "empty",
+    },
+  };
+}
+
+/**
  * computeSessionLedger — fetches GHL data for a single contact and derives
  * the ledger. Used by staff-balances.js (which auto-imports this module).
  *
@@ -458,17 +499,7 @@ export function deriveLedger({
  */
 export async function computeSessionLedger(context, contactId, options = {}) {
   if (!contactId) {
-    return {
-      seriesType: "none",
-      purchased: 0,
-      attended: 0,
-      remaining: 0,
-      lastSessionDate: null,
-      prepaidOverride: false,
-      source: "empty",
-      confidence: "low",
-      ambiguities: ["no contactId provided"],
-    };
+    return emptyLedger("no contactId provided");
   }
 
   let fieldDefs = options.fieldDefs || {};
@@ -498,17 +529,7 @@ export async function computeSessionLedger(context, contactId, options = {}) {
       await Promise.all(fetches);
 
     if (!contactRes.ok) {
-      return {
-        seriesType: "none",
-        purchased: 0,
-        attended: 0,
-        remaining: 0,
-        lastSessionDate: null,
-        prepaidOverride: false,
-        source: "empty",
-        confidence: "low",
-        ambiguities: [`failed to fetch contact (${contactRes.status})`],
-      };
+      return emptyLedger(`failed to fetch contact (${contactRes.status})`);
     }
 
     const contactData = await contactRes.json();
@@ -545,16 +566,6 @@ export async function computeSessionLedger(context, contactId, options = {}) {
 
     return deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
   } catch (err) {
-    return {
-      seriesType: "none",
-      purchased: 0,
-      attended: 0,
-      remaining: 0,
-      lastSessionDate: null,
-      prepaidOverride: false,
-      source: "empty",
-      confidence: "low",
-      ambiguities: [`ledger error: ${err.message}`],
-    };
+    return emptyLedger(`ledger error: ${err.message}`);
   }
 }
