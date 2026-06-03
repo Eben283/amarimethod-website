@@ -450,10 +450,14 @@ const GEO_TIER_SORT_ORDER: Record<GeoTier, number> = {
 // Note: 'link-sent' intentionally NOT a manual button — sending the partner
 // session link happens via GHL/staff-app send-link button, which already
 // records an outbound message.
+//
+// 'booked' removed 2026-06-03 — booked status is now derived from GHL's
+// `partner-session-booked` tag (set automatically by the "Partner Session
+// Booked — Add Tag" workflow when a partner books the partner calendar). The
+// manual button drifted from reality, so the tag is the single source of truth.
 const OUTCOME_BUTTONS: { id: PartnerLastSignal; label: string; tone: string }[] = [
   { id: 'voicemail',      label: 'Voicemail',        tone: 'bg-amber-100 text-amber-900 border-amber-400 hover:bg-amber-200' },
   { id: 'talked',         label: 'Talked',           tone: 'bg-emerald-100 text-emerald-900 border-emerald-400 hover:bg-emerald-200' },
-  { id: 'booked',         label: 'Booked',           tone: 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700' },
   { id: 'deferred',       label: 'Future potential', tone: 'bg-sky-100 text-sky-900 border-sky-400 hover:bg-sky-200' },
   { id: 'not-interested', label: 'Not interested',   tone: 'bg-slate-200 text-slate-700 border-slate-400 hover:bg-slate-300' },
 ];
@@ -467,6 +471,33 @@ const TOUCH_BUTTONS: { id: PartnerLastSignal; label: string; tone: string }[] = 
   { id: 'instagram-msg', label: 'Instagram DM',     tone: 'bg-pink-100 text-pink-900 border-pink-400 hover:bg-pink-200' },
   { id: 'in-person',     label: 'In-person',        tone: 'bg-orange-100 text-orange-900 border-orange-400 hover:bg-orange-200' },
 ];
+
+// Shared rendering for outcome / touch / skip buttons so a tap visibly
+// registers: the clicked button shows a spinner while saving, then a ✓
+// "Recorded" flash before the modal closes (focus mode then auto-advances).
+// Every other button dims while one submission is in flight.
+function outcomeBtnClass(
+  tone: string,
+  size: string,
+  isSubmitting: boolean,
+  isRecorded: boolean,
+  busy: boolean,
+): string {
+  const base = `${size} rounded-md border-2 transition-all active:scale-95 disabled:hover:scale-100`;
+  if (isRecorded) return `${base} ${tone} ring-2 ring-emerald-500 scale-105`;
+  if (isSubmitting) return `${base} ${tone} ring-2 ring-amari-charcoal scale-95`;
+  return `${base} ${tone} hover:scale-105 ${busy ? 'opacity-40' : ''}`;
+}
+
+function outcomeBtnContent(label: string, isSubmitting: boolean, isRecorded: boolean) {
+  if (isRecorded) {
+    return <span className="inline-flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Recorded</span>;
+  }
+  if (isSubmitting) {
+    return <span className="inline-flex items-center gap-1"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving…</span>;
+  }
+  return label;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Priority sort for the queue (higher score = closer to top)
@@ -879,10 +910,14 @@ function ProspectModal({
   const [activityLoading, setActivityLoading] = useState(true);
   const [activityError, setActivityError] = useState('');
   const [outcomeNote, setOutcomeNote] = useState('');
-  const [outcomeSubmitting, setOutcomeSubmitting] = useState(false);
+  // Per-button feedback: which signal is mid-submit (spinner) and which just
+  // succeeded (✓ flash before the modal closes / focus mode advances).
+  const [submittingSignal, setSubmittingSignal] = useState<PartnerLastSignal | null>(null);
+  const [recordedSignal, setRecordedSignal] = useState<PartnerLastSignal | null>(null);
   const [outcomeError, setOutcomeError] = useState('');
   const [followupDate, setFollowupDate] = useState('');
   const [pendingDeferred, setPendingDeferred] = useState(false);
+  const busy = submittingSignal !== null || recordedSignal !== null;
 
   useEffect(() => {
     let cancelled = false;
@@ -906,7 +941,7 @@ function ProspectModal({
       setPendingDeferred(true);
       return;
     }
-    setOutcomeSubmitting(true);
+    setSubmittingSignal(signal);
     setOutcomeError('');
     try {
       await recordPartnerOutcome({
@@ -915,12 +950,17 @@ function ProspectModal({
         note: outcomeNote.trim() || undefined,
         followupAt: signal === 'deferred' ? followupDate : undefined,
       });
-      onOutcomeRecorded(signal);
-      onClose();
+      // Success → flip the clicked button to a confirmed state for a beat so the
+      // tap visibly registers, then close (focus mode auto-advances).
+      setSubmittingSignal(null);
+      setRecordedSignal(signal);
+      setTimeout(() => {
+        onOutcomeRecorded(signal);
+        onClose();
+      }, 600);
     } catch (err) {
+      setSubmittingSignal(null);
       setOutcomeError(err instanceof Error ? err.message : 'Failed to record outcome');
-    } finally {
-      setOutcomeSubmitting(false);
     }
   };
 
@@ -1375,10 +1415,10 @@ function ProspectModal({
                 <button
                   key={b.id}
                   onClick={() => handleOutcome(b.id)}
-                  disabled={outcomeSubmitting}
-                  className={`px-3.5 py-2 rounded-md text-sm font-semibold border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 ${b.tone}`}
+                  disabled={busy}
+                  className={outcomeBtnClass(b.tone, 'px-3.5 py-2 text-sm font-semibold', submittingSignal === b.id, recordedSignal === b.id, busy)}
                 >
-                  {b.label}
+                  {outcomeBtnContent(b.label, submittingSignal === b.id, recordedSignal === b.id)}
                 </button>
               ))}
             </div>
@@ -1391,10 +1431,10 @@ function ProspectModal({
                 <button
                   key={b.id}
                   onClick={() => handleOutcome(b.id)}
-                  disabled={outcomeSubmitting}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 ${b.tone}`}
+                  disabled={busy}
+                  className={outcomeBtnClass(b.tone, 'px-3 py-1.5 text-sm font-medium', submittingSignal === b.id, recordedSignal === b.id, busy)}
                 >
-                  {b.label}
+                  {outcomeBtnContent(b.label, submittingSignal === b.id, recordedSignal === b.id)}
                 </button>
               ))}
             </div>
@@ -1408,11 +1448,11 @@ function ProspectModal({
             <div className="flex flex-wrap gap-2 mb-3">
               <button
                 onClick={() => handleOutcome('skip')}
-                disabled={outcomeSubmitting}
-                className="px-3 py-1.5 rounded-md text-sm font-medium border-2 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 bg-stone-100 text-stone-700 border-stone-400 hover:bg-stone-200"
+                disabled={busy}
+                className={outcomeBtnClass('bg-stone-100 text-stone-700 border-stone-400 hover:bg-stone-200', 'px-3 py-1.5 text-sm font-medium', submittingSignal === 'skip', recordedSignal === 'skip', busy)}
                 title="Mark not-a-fit and drop from queue. No outreach recorded — different from Not Interested."
               >
-                Skip — not a fit
+                {outcomeBtnContent('Skip — not a fit', submittingSignal === 'skip', recordedSignal === 'skip')}
               </button>
             </div>
 
@@ -1429,10 +1469,14 @@ function ProspectModal({
                 />
                 <button
                   onClick={() => handleOutcome('deferred')}
-                  disabled={!followupDate || outcomeSubmitting}
-                  className="text-xs px-2 py-1 rounded bg-amari-charcoal text-white disabled:opacity-50"
+                  disabled={!followupDate || busy}
+                  className="text-xs px-2 py-1 rounded bg-amari-charcoal text-white disabled:opacity-50 inline-flex items-center gap-1"
                 >
-                  Confirm
+                  {submittingSignal === 'deferred' ? (
+                    <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>
+                  ) : recordedSignal === 'deferred' ? (
+                    <><Check className="w-3 h-3" /> Saved</>
+                  ) : 'Confirm'}
                 </button>
               </div>
             )}

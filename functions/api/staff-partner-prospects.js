@@ -189,7 +189,15 @@ function toProspect(contact) {
       null,
     isActivePartner: tags.includes("affiliate-partner"),
     // New partner custom fields — null if not yet migrated.
-    partnerStage:         getField(contact, FIELD_IDS.partner_stage),
+    // Booked is driven off GHL's real signal: the "Partner Session Booked — Add
+    // Tag" workflow adds `partner-session-booked` whenever a partner books on the
+    // partner calendar (it also creates the appointment). The manual "Booked"
+    // outcome button was removed 2026-06-03 because the custom field it set
+    // drifted from reality (e.g. Blair was marked booked with no appointment).
+    // The tag wins; otherwise fall back to the stored partner_stage.
+    partnerStage:         tags.includes("partner-session-booked")
+                            ? "session-booked"
+                            : getField(contact, FIELD_IDS.partner_stage),
     partnerSource:        getField(contact, FIELD_IDS.partner_source),
     partnerLastSignal:    getField(contact, FIELD_IDS.partner_last_signal),
     partnerLastSignalAt:  getField(contact, FIELD_IDS.partner_last_signal_at),
