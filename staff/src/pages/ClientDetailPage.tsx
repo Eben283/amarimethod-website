@@ -71,6 +71,7 @@ export default function ClientDetailPage() {
   const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
   const [payLinkStatus, setPayLinkStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [payOpen, setPayOpen] = useState(false);
+  const [toolkitOpen, setToolkitOpen] = useState(false);
   const [showMorePayLinks, setShowMorePayLinks] = useState(false);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
@@ -474,20 +475,36 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {/* partner toolkit + not-a-fit */}
+        {/* partner toolkit + not-a-fit — toolkit mirrors the pay-link pattern:
+            tap to reveal a confirm, then tap to actually send (it fires a real
+            message to the client, so no single-press accidental sends). */}
         {showPartnerActions && (
           <>
-            <button
-              className={`sa-qbtn is-warm${toolkitStatus === 'sent' ? ' is-sent' : ''}`}
-              onClick={handleSendToolkit}
-              disabled={sendingToolkit || toolkitStatus === 'sent' || notFitStatus === 'done'}
-            >
-              <span className="ic">{sendingToolkit ? <Loader2 size={18} className="sa-spin" /> : toolkitStatus === 'sent' ? <CheckCircle2 size={18} /> : <Send size={18} />}</span>
-              <span className="tx">
-                <b>{toolkitStatus === 'sent' ? 'Toolkit sent' : toolkitStatus === 'error' ? 'Failed — tap to retry' : 'Send partner toolkit'}</b>
-                <span>Referral assets & pay links</span>
-              </span>
-            </button>
+            <div>
+              <button
+                className={`sa-paytrigger${toolkitOpen ? ' open' : ''}`}
+                onClick={() => toolkitStatus === 'sent' ? undefined : setToolkitOpen((v) => !v)}
+              >
+                <span className="ic">{toolkitStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}</span>
+                <span className="tx">
+                  <b>{toolkitStatus === 'sent' ? 'Toolkit sent' : 'Send partner toolkit'}</b>
+                  <span>Referral assets &amp; pay links</span>
+                </span>
+                {toolkitStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
+              </button>
+              <div className={`sa-collapse${toolkitOpen && toolkitStatus !== 'sent' ? ' open' : ''}`}>
+                <div className="sa-collapse-in">
+                  <button
+                    className={`sa-pay-row${toolkitStatus === 'error' ? ' is-error' : ''}`}
+                    onClick={handleSendToolkit}
+                    disabled={sendingToolkit}
+                  >
+                    <span className="ic">{sendingToolkit ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
+                    <span className="nm">{sendingToolkit ? 'Sending…' : toolkitStatus === 'error' ? 'Failed — tap to retry' : 'Confirm — send toolkit now'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
             {!isPartner && toolkitStatus !== 'sent' && (
               <button className="sa-qbtn is-ghost" onClick={handleNotAFit} disabled={markingNotFit || notFitStatus === 'done'}>
                 <span className="ic">{markingNotFit ? <Loader2 size={16} className="sa-spin" /> : notFitStatus === 'done' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}</span>
