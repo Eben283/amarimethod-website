@@ -11,6 +11,7 @@ import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
+import LedgerWarning from '../components/LedgerWarning';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
@@ -522,7 +523,23 @@ export default function ClientDetailPage() {
 
         {/* session progress */}
         <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Session progress</span>{isPartner && <span className="sa-chip">Partner</span>}</div>
+          <div className="sa-card-h">
+            <span className="t">Session progress</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <LedgerWarning
+                size="full"
+                confidence={client.ledgerConfidence}
+                ambiguities={client.ledgerAmbiguities}
+                manualLock={client.ledgerManualLock}
+                displaySource={client.ledgerDisplaySource}
+                derivedRemaining={client.ledgerDerivedRemaining}
+                displayedRemaining={client.sessionsRemaining}
+                purchased={client.ledgerPurchased ?? undefined}
+                attended={client.ledgerAttended}
+              />
+              {isPartner && <span className="sa-chip">Partner</span>}
+            </span>
+          </div>
           <div className="sa-prog">
             <div className="cell"><span className="v">{currentSeriesCompleted}</span><span className="lbl k">This series</span></div>
             <div className="cell"><span className="v">{client.sessionsRemaining}</span><span className="lbl k">Remaining</span></div>

@@ -50,6 +50,16 @@ export interface ContactDetail {
     yogaBlockSize: '3' | '4' | null;
     bodyGraph: Record<string, 'active' | 'passive' | null>;
   } | null;
+  // Ledger diagnostics — drive the warning icon + hover tooltip in the
+  // client detail Session Progress card. Surfaces low-confidence
+  // derivations, manual locks, and the displayed-vs-derived divergence.
+  ledgerConfidence?: 'high' | 'low';
+  ledgerAmbiguities?: string[];
+  ledgerManualLock?: boolean;
+  ledgerDisplaySource?: 'derived' | 'derived-matches-field' | 'manual-lock' | 'low-confidence-fallback' | 'empty';
+  ledgerDerivedRemaining?: number;
+  ledgerPurchased?: number | null;
+  ledgerAttended?: number;
 }
 
 export interface ContactAppointment {
@@ -228,6 +238,8 @@ export interface BalanceRow {
   source: string;
   confidence: 'high' | 'low';
   ambiguities: string[];
+  manualLock?: boolean;
+  displaySource?: 'derived' | 'derived-matches-field' | 'manual-lock' | 'low-confidence-fallback' | 'empty';
 }
 
 export interface BalancesResponse {

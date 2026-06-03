@@ -4,6 +4,7 @@ import { RefreshCw, Loader2, ChevronRight, AlertTriangle, Search } from 'lucide-
 import { useAuth } from '../contexts/AuthContext';
 import { getBalances, ApiError } from '../lib/api';
 import type { BalanceRow } from '../types/staff';
+import LedgerWarning from '../components/LedgerWarning';
 
 type SortKey = 'remaining' | 'recent' | 'name';
 
@@ -213,9 +214,18 @@ function BalanceRowCard({ row, onTap }: { row: BalanceRow; onTap: () => void }) 
               manual
             </span>
           )}
-          {row.confidence === 'low' && (
-            <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-          )}
+          <LedgerWarning
+            confidence={row.confidence}
+            ambiguities={row.ambiguities}
+            manualLock={row.manualLock}
+            displaySource={row.displaySource}
+            displayedRemaining={row.remaining}
+            purchased={row.purchased ?? undefined}
+            attended={row.attended}
+          />
+          {/* derivedRemaining is not exposed in the BalancesPage row shape
+              because the API returns the display values directly. The
+              hover still shows the displayed value + package math. */}
         </div>
         <div className="flex items-center gap-2 mt-0.5 text-[11px] text-amari-text-muted">
           <span>{seriesLabel(row.seriesType)}</span>

@@ -462,6 +462,18 @@ export async function onRequestGet(context) {
       messages,
       quizResults,
       clientProgress,
+      // Ledger diagnostics — drive the warning icon + hover tooltip
+      // on the client detail page (mirrors the BalancesPage warning).
+      // Surfaces low-confidence derivations (attended > purchased,
+      // hydration failure, field disagrees) and manual locks so the
+      // staff member knows when the count needs human review.
+      ledgerConfidence: ledger.confidence,
+      ledgerAmbiguities: ledger.ambiguities,
+      ledgerManualLock: ledger.manualLock,
+      ledgerDisplaySource: ledger.display?.source,
+      ledgerDerivedRemaining: ledger.remaining,
+      ledgerPurchased: ledger.purchased,
+      ledgerAttended: ledger.attended,
       ...(debugInfo && { _debug: debugInfo }),
     };
 
