@@ -49,7 +49,7 @@ export async function auditAppointments({ cache, appointments }) {
       continue;
     }
 
-    const { name, tags } = cached;
+    const { name, tags, fields } = cached;
     const apptEnd = new Date(appt.endTime);
 
     // Status still "confirmed" after appointment ended
@@ -64,23 +64,34 @@ export async function auditAppointments({ cache, appointments }) {
     }
 
     // Status "showed" — verify post-session message
+    // Scope: only flag for FIRST-EVER sessions (sessions_completed <= 1, where
+    // 1 = the just-completed initial). For returning clients no per-session
+    // workflow exists by design (E3/E4/E5 nurture flows handle ongoing touches
+    // via sessions_remaining triggers, not per-attendance), so flagging every
+    // follow-up generates false positives — see audit-triage 2026-05-31 +
+    // GHL-WORKFLOWS-MASTER.md I3/H2 sections. If a generic post-session
+    // workflow gets built later, widen this scope back out.
     if (appt.appointmentStatus === "showed") {
-      const conv = await cache.getConversations(appt.contactId);
-      if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
-        const allMsgs = conv.flatMap((t) => t.messages || []);
-        const twoHoursAfter = new Date(apptEnd.getTime() + 2 * 60 * 60 * 1000);
-        const postSession = allMsgs.filter(
-          (m) => m.direction === "outbound" && new Date(m.date) >= apptEnd && new Date(m.date) <= twoHoursAfter
-        );
+      const sessionsCompleted = parseInt(fields?.sessions_completed ?? "0", 10);
+      const isFirstSession = !Number.isFinite(sessionsCompleted) || sessionsCompleted <= 1;
+      if (isFirstSession) {
+        const conv = await cache.getConversations(appt.contactId);
+        if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
+          const allMsgs = conv.flatMap((t) => t.messages || []);
+          const twoHoursAfter = new Date(apptEnd.getTime() + 2 * 60 * 60 * 1000);
+          const postSession = allMsgs.filter(
+            (m) => m.direction === "outbound" && new Date(m.date) >= apptEnd && new Date(m.date) <= twoHoursAfter
+          );
 
-        if (postSession.length === 0) {
-          issues.push(issue(
-            "warning", "appointment", appt.contactId, name,
-            "no_post_session_message",
-            "Post-session email/SMS should send within 2h of appointment end",
-            "No outbound message found in that window",
-            "Check if post-session workflow fired"
-          ));
+          if (postSession.length === 0) {
+            issues.push(issue(
+              "warning", "appointment", appt.contactId, name,
+              "no_post_session_message",
+              "Post-session email/SMS should send within 2h of FIRST-EVER session end (Initial intake → G2 equipment-list step)",
+              "No outbound message found in that window",
+              "Check if G2 'Initial Session Welcome' workflow fired"
+            ));
+          }
         }
       }
 

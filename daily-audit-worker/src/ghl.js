@@ -176,13 +176,21 @@ export async function fetchConversationHistory(env, contactId) {
     const threads = await Promise.all(
       conversations.slice(0, 3).map(async (conv) => {
         try {
+          // Pull 50, keep 50. The audit's pre-session-reminder and post-session
+          // checks scan a multi-hour window, so they need enough history that a
+          // burst of other messages (toolkit sends, video links, day-of
+          // coordination) doesn't bury the actual reminder. At limit=20/slice=10
+          // a chatty contact (Jenn Kadri, 2026-06-03) pushed her real day-before
+          // + 1-hour reminders out of view → false "no_pre_session_reminder".
+          // 50 covers several days at this practice's volume; raise further or
+          // switch to a windowed fetch if message volume ever grows past that.
           const msgData = await ghlFetch(
             env,
-            `/conversations/${conv.id}/messages?limit=20`
+            `/conversations/${conv.id}/messages?limit=50`
           );
           const messages = (msgData.messages?.messages || [])
             .sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded))
-            .slice(0, 10)
+            .slice(0, 50)
             .map((m) => ({
               direction:
                 m.direction === 0 || m.direction === "outbound"
