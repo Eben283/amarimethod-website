@@ -56,6 +56,39 @@ describe('hydrateOrders', () => {
     expect(hydrated.items[0].product._id).toBe('pid-via-id');
   });
 
+  it('skips hydration for calendar-source orders (placeholder pattern)', async () => {
+    // GHL auto-creates a calendar-source order per appointment booking.
+    // classifyOrder returns type="placeholder" for these immediately based
+    // on sourceType — never reads items[]. Hydrating them is pure waste
+    // and caused the 2026-06-03 subrequest-cap incident.
+    const fetcher = vi.fn();
+    const orders = [
+      { _id: 'cal-1', sourceType: 'calendar', amount: 190, status: 'completed' },
+      { _id: 'cal-2', sourceType: 'calendar', amount: 190, status: 'completed' },
+      { _id: 'pos-1', sourceType: 'point_of_sale', amount: 1295, status: 'completed' },
+    ];
+    const result = await hydrateOrders(async () => ({
+      items: [{ product: { _id: 'pid' } }],
+    }), orders);
+    // fetcher should only have been called for the non-calendar order
+    // (we use the wrapping fn signature here, can't easily count — but
+    // assert calendar orders came through unchanged and POS was hydrated)
+    expect(result[0]).toEqual(orders[0]); // calendar unchanged
+    expect(result[1]).toEqual(orders[1]); // calendar unchanged
+    expect(result[2].items).toBeDefined(); // POS hydrated
+  });
+
+  it('calendar-source order without items is NOT marked as failed', async () => {
+    // Regression: previously, calendar orders without items[] would
+    // either get hydrated (waste) or marked __hydration_failed (wrong).
+    // They should pass through silently — classifyOrder handles them.
+    const fetcher = vi.fn();
+    const o = { _id: 'cal-x', sourceType: 'calendar', amount: 190, status: 'completed' };
+    const [hydrated] = await hydrateOrders(fetcher, [o]);
+    expect(hydrated.__hydration_failed).toBeUndefined();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it('falls back to o.orderId when both _id and id are missing', async () => {
     const fetcher = vi.fn(async () => ({
       items: [{ product: { _id: 'pid' } }],
@@ -158,7 +191,7 @@ describe('hydrateOrders', () => {
     expect(fetcher).toHaveBeenCalledTimes(12);
   });
 
-  it('defaults concurrency to 5 when not specified', async () => {
+  it('defaults concurrency to 3 (per 2026-06-03 subrequest-cap incident)', async () => {
     let inFlight = 0;
     let maxInFlight = 0;
     const fetcher = vi.fn(async () => {
@@ -170,6 +203,6 @@ describe('hydrateOrders', () => {
     });
     const orders = Array.from({ length: 8 }, (_, i) => makeListOrder('o' + i));
     await hydrateOrders(fetcher, orders);
-    expect(maxInFlight).toBe(5);
+    expect(maxInFlight).toBe(3);
   });
 });

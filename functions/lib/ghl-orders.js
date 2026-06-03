@@ -80,6 +80,19 @@ export async function hydrateOrders(fetchOrderDetail, ordersList, options = {}) 
       result[i] = o;
       continue;
     }
+    // Skip hydration for calendar-source orders. GHL auto-creates one of
+    // these for every appointment booking on a calendar with Accept Payments
+    // enabled. classifyOrder returns type="placeholder" for them
+    // immediately based on sourceType — without ever reading items[]. So
+    // fetching detail for these orders is pure subrequest waste. Danny
+    // Blumrich has 14 of these; Zach Taylor ~12. The 2026-06-03 incident
+    // was caused by these wasted hydration calls pushing the staff-balances
+    // Worker over Cloudflare's per-invocation subrequest cap.
+    const sourceType = (o?.sourceType || o?.source?.type || "").toLowerCase();
+    if (sourceType === "calendar") {
+      result[i] = o;
+      continue;
+    }
     const orderId = o?._id || o?.id || o?.orderId || null;
     resolvedIds[i] = orderId;
     if (!orderId) {
