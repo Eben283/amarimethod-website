@@ -223,7 +223,13 @@ export async function onRequestGet(context) {
 
     // Extra ledger-derived fields for the new two-counter UI:
     const packageSize = ledger.purchased; // total sessions purchased (e.g., 8 for 8-pack, 12 for 4+8)
-    const attendedAgainstPackage = ledger.attended; // sessions consumed from the package
+    // attendedAgainstPackage MUST stay consistent with sessionsRemaining so
+    // the portal progress bar (which renders attended/packageSize) doesn't
+    // visually disagree with the "N sessions left" text. ledger.display
+    // back-computes attended when the lock or low-confidence fallback
+    // overrides remaining; use display.attended so the triplet sums to
+    // packageSize regardless of which path drove the displayed remaining.
+    const attendedAgainstPackage = ledger.display.attended;
     const ledgerConfidence = ledger.confidence; // 'high' | 'low'
     const ledgerSource = ledger.source; // 'orders+invoices+appointments' | 'empty'
 

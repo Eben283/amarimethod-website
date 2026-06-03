@@ -438,9 +438,20 @@ export function deriveLedger({
   } else {
     displaySource = "low-confidence-fallback";
   }
+  // display.attended — when we override remaining with the field value, we
+  // must also back-compute attended so the triplet stays self-consistent:
+  // attended + remaining == purchased. Otherwise the portal progress bar
+  // (which uses attendedAgainstPackage / packageSize) silently disagrees
+  // with the "N sessions left" text (which uses display.remaining). Albert
+  // would render 1/4 bar with "2 sessions left" — incoherent. Floor at 0
+  // in case the field value exceeds purchased (manual over-credit case).
+  const displayAttended = useField && purchased > 0
+    ? Math.max(0, purchased - displayRemaining)
+    : attended;
   const display = {
     seriesType: displaySeriesType,
     remaining: displayRemaining,
+    attended: displayAttended,
     source: displaySource,
   };
 
@@ -483,6 +494,7 @@ function emptyLedger(reason) {
     display: {
       seriesType: "none",
       remaining: 0,
+      attended: 0,
       source: "empty",
     },
   };

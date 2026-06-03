@@ -185,6 +185,12 @@ export async function onRequestGet(context) {
           // import failed and fallback ledger above is in play).
           const displaySeriesType = ledger.display?.seriesType ?? fallbackSeriesType;
           const displayRemaining = ledger.display?.remaining ?? fallbackRemaining;
+          // attended is the back-computed display value so the
+          // BalancesPage "N/X" text stays consistent with the
+          // "remaining" column (the same display.attended portal-data.js
+          // exposes for the progress bar). Falls back to derived when
+          // display is unavailable.
+          const displayAttended = ledger.display?.attended ?? ledger.attended;
 
           return {
             id: c.id,
@@ -193,7 +199,7 @@ export async function onRequestGet(context) {
             phone: c.phone || "",
             seriesType: displaySeriesType,
             purchased: ledger.purchased,
-            attended: ledger.attended,
+            attended: displayAttended,
             remaining: displayRemaining,
             lastSessionDate: ledger.lastSessionDate,
             prepaidOverride: ledger.prepaidOverride,

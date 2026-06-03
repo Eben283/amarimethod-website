@@ -662,6 +662,60 @@ describe('deriveLedger — overrides and edge cases', () => {
       expect(result.display.source).toBe('manual-lock');
     });
 
+    it('display.attended is consistent with display.remaining (Albert case)', () => {
+      // Regression for the "1/4 progress bar + 2 sessions left" inconsistency.
+      // When lock overrides remaining, attended must back-compute so
+      // attended + remaining == purchased — otherwise the progress bar
+      // visually disagrees with the count.
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [
+            { id: FIELD_DEFS.sessions_remaining, value: '2' },
+            { id: FIELD_DEFS.series_type, value: '4-session' },
+            { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+          ],
+        }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.attended).toBe(1); // derived: 1 attended session
+      expect(result.display.remaining).toBe(2); // field-locked
+      expect(result.display.attended).toBe(2); // back-computed: 4 - 2
+      expect(result.display.attended + result.display.remaining).toBe(result.purchased);
+    });
+
+    it('display.attended caps at 0 when field over-credits beyond purchased', () => {
+      // If Garrett locks remaining to a value higher than purchased,
+      // back-computed attended would go negative — floor at 0.
+      const result = deriveLedger({
+        contact: contact({
+          customFields: [
+            { id: FIELD_DEFS.sessions_remaining, value: '6' }, // > 4 purchased
+            { id: FIELD_DEFS.series_type, value: '4-session' },
+            { id: 'oDyLqIeq3yTkyhgXhAmk', value: ['true'] },
+          ],
+        }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.display.remaining).toBe(6);
+      expect(result.display.attended).toBe(0); // floored
+    });
+
+    it('display.attended falls back to derived when not overriding', () => {
+      const result = deriveLedger({
+        contact: contact({ customFields: [] }),
+        orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+        appointments: [appt({ calendarId: CAL.followup })],
+        fieldDefs: FIELD_DEFS_FULL,
+      });
+      expect(result.confidence).toBe('high');
+      expect(result.display.source).toBe('derived');
+      expect(result.display.attended).toBe(1); // matches derived
+    });
+
     it('handles field="0" + lock correctly (not NaN, not silent zero)', () => {
       // R1 flagged this combination: empty-string would NaN, but "0" should
       // be a valid locked value of zero. Worth a regression test.
