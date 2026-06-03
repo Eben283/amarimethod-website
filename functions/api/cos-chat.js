@@ -538,9 +538,15 @@ async function lookupContact(context, name) {
   // Use ledger-derived values as the source of truth. Field values shown
   // only as a side note when they disagree (so chat answers are accurate
   // even if the field is mid-drift).
-  const sessionsRemaining = ledger.confidence === "high" ? ledger.remaining : (fieldSessionsRemaining ?? "unknown");
+  // Exception: sessions_remaining_locked overrides the derivation entirely
+  // (see staff-contact.js comment for full rationale).
+  const sessionsRemaining = ledger.manualLock
+    ? (fieldSessionsRemaining ?? ledger.remaining)
+    : (ledger.confidence === "high" ? ledger.remaining : (fieldSessionsRemaining ?? "unknown"));
   const sessionsCompleted = fieldSessionsCompleted ?? ledger.attended; // GHL field is currently the lifetime counter; the worker syncs it
-  const seriesType = ledger.seriesType !== "none" ? ledger.seriesType : (fieldMap["3i93lTkmuAV49s9nh0q8"] || "none");
+  const seriesType = ledger.manualLock
+    ? (fieldMap["3i93lTkmuAV49s9nh0q8"] || ledger.seriesType)
+    : (ledger.seriesType !== "none" ? ledger.seriesType : (fieldMap["3i93lTkmuAV49s9nh0q8"] || "none"));
 
   // Categorize appointments
   const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|pain assessment/i;

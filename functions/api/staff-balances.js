@@ -179,20 +179,27 @@ export async function onRequestGet(context) {
             }
           }
 
+          // Honor sessions_remaining_locked — when set, the GHL field
+          // values are intentionally human-managed and override the
+          // derivation. See staff-contact.js comment for full rationale.
+          const displaySeriesType = ledger.manualLock ? fallbackSeriesType : ledger.seriesType;
+          const displayRemaining = ledger.manualLock ? fallbackRemaining : ledger.remaining;
+
           return {
             id: c.id,
             name,
             email: c.email || "",
             phone: c.phone || "",
-            seriesType: ledger.seriesType,
+            seriesType: displaySeriesType,
             purchased: ledger.purchased,
             attended: ledger.attended,
-            remaining: ledger.remaining,
+            remaining: displayRemaining,
             lastSessionDate: ledger.lastSessionDate,
             prepaidOverride: ledger.prepaidOverride,
             source: ledger.source,
             confidence: ledger.confidence,
             ambiguities: ledger.ambiguities,
+            manualLock: ledger.manualLock,
           };
         })
       );

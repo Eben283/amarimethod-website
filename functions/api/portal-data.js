@@ -195,13 +195,21 @@ export async function onRequestGet(context) {
     // Series type now comes from the ledger (derived from actual purchases),
     // not the custom field. The custom field can lag or be wrong; the
     // ledger reflects what was bought.
-    const seriesType = ledger.seriesType;
+    // Exception: when sessions_remaining_locked is set, the GHL field
+    // values are intentionally human-managed and override the derivation
+    // (see staff-contact.js comment). The client should see Garrett's
+    // manual count, not the derivation that ignores his override.
+    const seriesType = ledger.manualLock
+      ? (getCustomField(contact, "series_type", fieldDefs) || ledger.seriesType)
+      : ledger.seriesType;
 
     // Two distinct counters per UX decision 2026-05-29:
     //   sessionsRemaining — prepaid package balance ("when do I need to act?")
     //   sessionsCompleted — lifetime journey ("how far have I come?")
     // These are independent. They don't sum to a package size.
-    const sessionsRemaining = ledger.remaining;
+    const sessionsRemaining = ledger.manualLock
+      ? parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? ledger.remaining, 10)
+      : ledger.remaining;
     const lifetimeCompletedCount = allAppointments.filter((a) => {
       const s = (a.appointmentStatus || a.status || "").toLowerCase();
       // Past 'confirmed' appointments effectively ran — Garrett doesn't
