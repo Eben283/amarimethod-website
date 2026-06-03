@@ -8,6 +8,8 @@
 //   - others (no-answer / voicemail / talked / link-sent)
 //                     → partner_stage stays as-is (still working) or promotes from
 //                       no-outreach → working on first contact
+//   - note            → writes a GHL note only. No stage/signal/touch change —
+//                       a standalone note isn't outreach.
 //
 // Request body:
 //   {
@@ -59,6 +61,11 @@ const VALID_SIGNALS = new Set([
   // set partner_last_signal, partner_last_signal_at, or increment touch_count
   // — because no outreach actually happened.
   "skip",
+  // Note-only: the user typed a note but did NOT record an outcome. Writes a
+  // GHL note ("Note: …") and nothing else — no stage change, no signal, no
+  // touch_count, no last_signal_at (a note isn't outreach, so it must not
+  // pollute the "touched this week" meter). Requires non-empty note text.
+  "note",
 ]);
 
 // Map signal → stage transition (null means "don't change current stage").
@@ -76,6 +83,7 @@ const SIGNAL_TO_STAGE = {
   "instagram-msg":  null,
   "in-person":      null,
   "skip":           "dropped",
+  "note":           null,
 };
 
 // Signals that represent off-platform touches (notes prefix differently
@@ -102,6 +110,7 @@ const SIGNAL_NOTE_LABEL = {
   "instagram-msg":  "Instagram message",
   "in-person":      "In-person",
   "skip":           "Skipped — not a fit",
+  "note":           "Note",
 };
 
 function corsHeaders(origin) {
@@ -159,6 +168,9 @@ export async function onRequestPost(context) {
     if (signal === "deferred" && !followupAt) {
       return new Response(JSON.stringify({ error: "followupAt required when signal === 'deferred'" }), { status: 400, headers });
     }
+    if (signal === "note" && (!note || !String(note).trim())) {
+      return new Response(JSON.stringify({ error: "note text required when signal === 'note'" }), { status: 400, headers });
+    }
 
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
@@ -202,14 +214,15 @@ export async function onRequestPost(context) {
     // they appear in the In Progress tab. Closing outcomes (booked / deferred /
     // not-interested) already have their own stage in SIGNAL_TO_STAGE and win;
     // skip is a deliberate "don't pursue" disposition and stays as dropped.
-    if (!newStage && signal !== "skip" && (!currentStage || currentStage === "no-outreach")) {
+    if (!newStage && signal !== "skip" && signal !== "note" && (!currentStage || currentStage === "no-outreach")) {
       newStage = "working";
     }
     const customFields = [];
-    // "skip" is a disposition without outreach — no signal, no touch, no meter
-    // pollution. Only the stage transition + a note. All other signals record
-    // signal / signal_at / touch_count as usual.
-    if (signal !== "skip") {
+    // "skip" and "note" are dispositions without outreach — no signal, no touch,
+    // no meter pollution. "skip" still gets a stage transition (dropped); "note"
+    // changes nothing at all (just records a GHL note below). All other signals
+    // record signal / signal_at / touch_count as usual.
+    if (signal !== "skip" && signal !== "note") {
       customFields.push({ id: FIELD_IDS.partner_last_signal, value: signal });
       customFields.push({ id: FIELD_IDS.partner_last_signal_at, value: nowIso });
       customFields.push({ id: FIELD_IDS.partner_touch_count, value: currentTouchCount + 1 });
@@ -230,28 +243,38 @@ export async function onRequestPost(context) {
       customFields.push({ id: FIELD_IDS.partner_followup_at, value: normalizedFollowupAt });
     }
 
-    // PUT /contacts/{id} updates custom fields
-    const updateRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
-      method: "PUT",
-      headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
-      body: JSON.stringify({ customFields }),
-    });
-    if (!updateRes.ok) {
-      const text = await updateRes.text().catch(() => "");
-      throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text.slice(0, 250)}`);
+    // PUT /contacts/{id} updates custom fields. A note-only save touches no
+    // fields (customFields is empty), so skip the PUT entirely and go straight
+    // to writing the note below.
+    if (customFields.length > 0) {
+      const updateRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
+        method: "PUT",
+        headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
+        body: JSON.stringify({ customFields }),
+      });
+      if (!updateRes.ok) {
+        const text = await updateRes.text().catch(() => "");
+        throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text.slice(0, 250)}`);
+      }
     }
 
     // Add a GHL note documenting the outcome (always, with optional user text).
     // Prefix differs by kind so we can filter the timeline:
+    //   "Note: …"    = standalone note, no outreach recorded
     //   "Touch: …"   = off-platform action (LinkedIn, Instagram, in-person)
     //   "Skip: …"    = decision not to pursue (no outreach happened)
     //   "Outcome: …" = result of a call/SMS attempt or stage change
+    // A note-only save is just the user's text under a "Note:" prefix — there's
+    // no signal label to prepend.
     const notePrefix =
+      signal === "note" ? "Note" :
       signal === "skip" ? "Skip" :
       TOUCH_SIGNALS.has(signal) ? "Touch" :
       "Outcome";
     const noteLabel = SIGNAL_NOTE_LABEL[signal] || signal;
-    const noteBody = `${notePrefix}: ${noteLabel}${note && note.trim() ? ` — ${note.trim()}` : ""}`;
+    const noteBody = signal === "note"
+      ? `Note: ${String(note).trim()}`
+      : `${notePrefix}: ${noteLabel}${note && note.trim() ? ` — ${note.trim()}` : ""}`;
     const noteRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}/notes`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
@@ -269,11 +292,11 @@ export async function onRequestPost(context) {
         contactId,
         signal,
         newStage: newStage || null,
-        // 'skip' doesn't record signal/touch — return null so the client knows
-        // not to update its local state for these fields.
-        signalAt: signal === "skip" ? null : nowIso,
+        // 'skip' and 'note' don't record signal/touch — return null so the
+        // client knows not to update its local state for these fields.
+        signalAt: (signal === "skip" || signal === "note") ? null : nowIso,
         followupAt: signal === "deferred" ? followupAt : null,
-        touchCount: signal === "skip" ? currentTouchCount : currentTouchCount + 1,
+        touchCount: (signal === "skip" || signal === "note") ? currentTouchCount : currentTouchCount + 1,
       }),
       { status: 200, headers },
     );

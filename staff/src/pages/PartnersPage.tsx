@@ -917,7 +917,11 @@ function ProspectModal({
   const [outcomeError, setOutcomeError] = useState('');
   const [followupDate, setFollowupDate] = useState('');
   const [pendingDeferred, setPendingDeferred] = useState(false);
-  const busy = submittingSignal !== null || recordedSignal !== null;
+  // Note-only save (the "Save note" button) gets its own in-flight + confirmed
+  // state so it doesn't drive the outcome buttons' spinner/✓ visuals.
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const busy = submittingSignal !== null || recordedSignal !== null || savingNote;
 
   useEffect(() => {
     let cancelled = false;
@@ -961,6 +965,37 @@ function ProspectModal({
     } catch (err) {
       setSubmittingSignal(null);
       setOutcomeError(err instanceof Error ? err.message : 'Failed to record outcome');
+    }
+  };
+
+  // Save a standalone note WITHOUT recording an outcome. Writes a GHL "Note: …"
+  // entry only — no stage/signal/touch change, no meter pollution, and (unlike
+  // an outcome) it does NOT advance focus mode or close the modal. The user can
+  // keep working the contact and still record an outcome afterward.
+  const handleSaveNote = async () => {
+    const text = outcomeNote.trim();
+    if (!text || busy) return;
+    setSavingNote(true);
+    setNoteSaved(false);
+    setOutcomeError('');
+    try {
+      await recordPartnerOutcome({
+        contactId: prospect.contactId,
+        signal: 'note',
+        note: text,
+      });
+      // Optimistically surface the new note at the top of the visible timeline.
+      setActivity((prev) => [
+        { date: new Date().toISOString(), type: 'note', body: `Note: ${text}` },
+        ...prev,
+      ]);
+      setSavingNote(false);
+      setNoteSaved(true);
+      setOutcomeNote('');
+      setTimeout(() => setNoteSaved(false), 1500);
+    } catch (err) {
+      setSavingNote(false);
+      setOutcomeError(err instanceof Error ? err.message : 'Failed to save note');
     }
   };
 
@@ -1397,18 +1432,38 @@ function ProspectModal({
                 BEFORE a button click submits and (in focus mode) auto-advances.
                 Previously sat below the buttons and was almost never captured. */}
             <label className="block text-[11px] uppercase tracking-wide font-semibold text-amari-text-muted mb-1.5">
-              Note <span className="font-normal normal-case">— saved with the outcome you record below</span>
+              Note <span className="font-normal normal-case">— save on its own, or it rides along with the outcome you record below</span>
             </label>
-            <input
-              type="text"
-              placeholder="Optional note about this contact..."
-              value={outcomeNote}
-              onChange={(e) => setOutcomeNote(e.target.value)}
-              /* text-base = 16px: iOS auto-zooms on focus for any input under
-                 16px, which inside a fixed modal shoves the field off-screen so
-                 you can't see what you type. 16px stops the zoom. */
-              className="w-full text-base bg-white text-amari-charcoal border border-amari-border rounded px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent"
-            />
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                placeholder="Optional note about this contact..."
+                value={outcomeNote}
+                onChange={(e) => setOutcomeNote(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveNote(); }}
+                /* text-base = 16px: iOS auto-zooms on focus for any input under
+                   16px, which inside a fixed modal shoves the field off-screen so
+                   you can't see what you type. 16px stops the zoom. */
+                className="flex-1 min-w-0 text-base bg-white text-amari-charcoal border border-amari-border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent"
+              />
+              {/* Save note on its own — for when there's no outcome to record but
+                  you still want the note on the contact's timeline. */}
+              <button
+                type="button"
+                onClick={handleSaveNote}
+                disabled={busy || !outcomeNote.trim()}
+                title="Save this note without recording an outcome"
+                className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded border border-amari-border bg-white text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {savingNote ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                ) : noteSaved ? (
+                  <><Check className="w-4 h-4" /> Saved</>
+                ) : (
+                  'Save note'
+                )}
+              </button>
+            </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
               {OUTCOME_BUTTONS.map((b) => (
