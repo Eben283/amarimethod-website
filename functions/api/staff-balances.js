@@ -170,8 +170,23 @@ export async function onRequestGet(context) {
           if (computeLedger) {
             try {
               const computed = await computeLedger(context, c.id, { fieldDefs });
-              if (computed) {
+              // Only adopt the computed ledger when it actually has source
+              // data behind it. computeSessionLedger's error paths return
+              // emptyLedger() which has source="empty" — spreading that
+              // over the field-based fallback would destroy correct values
+              // (2026-06-03 incident: transient GHL hiccup at 13:17 UTC
+              // produced empty results for every contact, which then
+              // overwrote correct field values and cached zeros for 30+
+              // minutes). When computed.source==="empty", keep the
+              // field-based fallback and surface the error as ambiguity
+              // so the briefing can flag it.
+              if (computed && computed.source !== "empty") {
                 ledger = { ...ledger, ...computed };
+              } else if (computed && computed.source === "empty") {
+                ledger.ambiguities = [
+                  ...ledger.ambiguities,
+                  ...(computed.ambiguities || ["ledger compute returned empty"]),
+                ];
               }
             } catch (err) {
               console.error(`[staff-balances] ledger error for ${c.id}: ${err.message}`);
