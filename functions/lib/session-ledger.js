@@ -16,50 +16,30 @@
 import { ghlFetch } from "./ghl.js";
 import { getCustomField } from "../api/portal-data.js";
 import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
+import { hydrateOrders as hydrateOrdersShared } from "./ghl-orders.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 /**
- * hydrateOrders — fill in items[] for orders that came back from the LIST
- * endpoint missing them. Required for POS / mobile_app orders because
- * GHL's /payments/orders LIST endpoint strips items[] (only `totalProducts`
- * and `onetimeProducts` come back). The DETAIL endpoint
- * /payments/orders/{id} returns the full items[] with product._id, which
- * classifyOrder needs to recognize POS purchases (sourceName is empty for
- * those, so the name-pattern fallback also misses).
+ * hydrateOrders — Pages-side wrapper around the transport-agnostic
+ * `hydrateOrders` in ghl-orders.js. Binds a context-aware order-detail
+ * fetcher (via ghlFetch) so callers in functions/api/* can just pass
+ * (context, ordersList).
  *
- * Same fix series-reconcile-worker/src/sync.js:207-215 applies on the
- * writer side. Every read endpoint that calls deriveLedger MUST run its
- * orders through this helper first, or POS package purchases silently
- * classify as type="other" / sessions=0 and the derived ledger overwrites
- * correct field values with zeros (2026-06-03 Jenn Kadri incident).
- *
- * Cost: one extra GHL subrequest per POS order (typically 0–5 per contact).
- * Skips the round-trip when items[] is already populated (payment_link
- * orders carry items[] on the LIST endpoint).
+ * The hydration LOGIC (skip when items present, concurrency limit, mark
+ * failures) lives in the shared helper so the series-reconcile-worker
+ * can use the exact same behavior. See ghl-orders.js for full rationale.
  */
 export async function hydrateOrders(context, ordersList) {
-  if (!Array.isArray(ordersList) || ordersList.length === 0) return [];
-  return Promise.all(
-    ordersList.map(async (o) => {
-      if (Array.isArray(o.items) && o.items.length > 0) return o;
-      if (!o._id) return o;
-      try {
-        const detailRes = await ghlFetch(
-          context,
-          `${GHL_API_BASE}/payments/orders/${o._id}?altId=${GHL_LOCATION_ID}&altType=location`,
-        );
-        if (detailRes.ok) {
-          const detail = await detailRes.json();
-          return { ...o, ...detail };
-        }
-      } catch {
-        // fall through — classifyOrder may still match by sourceName
-      }
-      return o;
-    }),
-  );
+  return hydrateOrdersShared(async (orderId) => {
+    const res = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/payments/orders/${orderId}?altId=${GHL_LOCATION_ID}&altType=location`,
+    );
+    if (!res.ok) throw new Error(`GHL detail status ${res.status}`);
+    return res.json();
+  }, ordersList);
 }
 
 // Re-export as ACTIVE_PRODUCTS for backward compatibility with tests.
@@ -109,6 +89,7 @@ export function classifyOrder(order) {
   const itemProductId = firstItem.product?._id || firstItem.productId || null;
   const itemName = (firstItem.product?.name || firstItem.name || "").toLowerCase();
   const name = sourceName || itemName;
+  const hydrationFailed = order.__hydration_failed === true;
 
   if (status !== "completed" || amount <= 0) {
     return { type: "ignored", sessions: 0, name, amount };
@@ -160,7 +141,19 @@ export function classifyOrder(order) {
   if (/follow.?up/i.test(name)) {
     return { type: "followup", sessions: 1, name, amount };
   }
-  return { type: "other", sessions: 0, name, amount };
+  // Fell through every classifier with no match. If the order was supposed
+  // to be hydrated but the detail fetch failed, surface that — otherwise
+  // deriveLedger would treat this as a confident "other" and the worker
+  // might write a derived zero over a correct field. The flag travels in
+  // the classification so deriveLedger can fold it into ambiguities.
+  return {
+    type: "other",
+    sessions: 0,
+    name,
+    amount,
+    hydrationFailed,
+    hydrationReason: hydrationFailed ? order.__hydration_reason : undefined,
+  };
 }
 
 /**
@@ -262,6 +255,22 @@ export function deriveLedger({
   }));
   const invoiceClassifications = invoices.map(classifyInvoice);
   const classifications = [...orderClassifications, ...invoiceClassifications];
+
+  // Surface hydration failures as ambiguities. classifyOrder returns
+  // hydrationFailed=true when an order had no items[] and the caller
+  // (hydrateOrders) couldn't fetch detail to fill it in. That means the
+  // classifier had to guess — and a confident "other" / 0 sessions on a
+  // package-sized completed order would silently zero out a correct
+  // sessions_remaining field. By pushing an ambiguity here, confidence
+  // drops to "low" and the worker's existing low-confidence-skip guard
+  // (sync.js:258) prevents the destructive write.
+  for (const c of orderClassifications) {
+    if (c.hydrationFailed) {
+      ambiguities.push(
+        `order hydration failed (${c.hydrationReason || "unknown"}); classification may be incomplete`,
+      );
+    }
+  }
 
   const purchasedFromClassifications = classifications.reduce(
     (sum, c) => sum + c.sessions,

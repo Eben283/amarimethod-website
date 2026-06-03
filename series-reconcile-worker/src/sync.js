@@ -15,6 +15,7 @@
 // single source of truth. Wrangler bundles transitively.
 
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { ghlGet, ghlPut, getOrderDetail, LOCATION_ID } from "./ghl.js";
 
 const FIELD_IDS = {
@@ -123,11 +124,11 @@ export async function getContactCounts(env, contactId, fieldDefs = {}) {
     const invoices = invoicesRes.invoices || [];
     const appointments = apptRes.appointments || apptRes.events || [];
 
-    // Hydrate items[] for POS/mobile_app orders (same trick syncFieldsForContact uses).
-    const orders = await Promise.all(
-      ordersList.map(async (o) => {
-        try { return await getOrderDetail(env, o._id); } catch { return o; }
-      })
+    // Hydrate items[] for POS/mobile_app orders via the shared helper —
+    // same call shape syncFieldsForContact uses. See ghl-orders.js.
+    const orders = await hydrateOrders(
+      (orderId) => getOrderDetail(env, orderId),
+      ordersList,
     );
 
     const lockedRaw = readField(contact, FIELD_IDS.sessions_remaining_locked);
@@ -199,19 +200,18 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     const invoices = invoicesRes.invoices || [];
     const appointments = apptRes.appointments || apptRes.events || [];
 
-    // GHL's /payments/orders LIST endpoint returns summary records WITHOUT
-    // items[] — productId is only on the detail endpoint. classifyOrder needs
-    // items[0].product._id to recognize POS/mobile_app purchases (where
-    // sourceName is empty). Fetch detail for each order. Cost: N extra
-    // subrequests per contact, where N = order count (typically 1-5).
-    const orders = await Promise.all(
-      ordersList.map(async (o) => {
-        try {
-          return await getOrderDetail(env, o._id);
-        } catch {
-          return o; // fall back to summary record — classifyOrder may still match by name
-        }
-      })
+    // Hydrate orders via the shared helper. Same logic the Pages-side
+    // read endpoints use — skips when items[] is already present,
+    // chunks parallel fetches, and marks per-order failures so
+    // deriveLedger pushes an ambiguity (which drops confidence to "low"
+    // → the worker's confidence-guard below skips the write). Before
+    // this consolidation the worker called getOrderDetail unconditionally
+    // and silently fell back to the unhydrated LIST record on any error,
+    // which could produce a destructively-low derived remaining that
+    // the worker would write back to GHL (2026-06-03 review finding).
+    const orders = await hydrateOrders(
+      (orderId) => getOrderDetail(env, orderId),
+      ordersList,
     );
 
     // Hard lock: skip the worker entirely if `sessions_remaining_locked` is

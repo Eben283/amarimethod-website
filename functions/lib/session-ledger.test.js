@@ -190,6 +190,26 @@ describe('classifyOrder', () => {
     };
     expect(classifyOrder(summaryOnly)).toMatchObject({ type: 'other', sessions: 0 });
   });
+
+  it('flags hydration failure on the classification', () => {
+    // When hydrateOrders can't fetch detail (404, 5xx, network), it stamps
+    // __hydration_failed on the order. classifyOrder propagates this flag
+    // so deriveLedger can push an ambiguity → confidence drops → worker
+    // skips the write. Without this, a transient GHL failure would let
+    // the worker silently zero a correct sessions_remaining field.
+    const failedHydration = {
+      sourceName: '',
+      sourceType: 'point_of_sale',
+      status: 'completed',
+      amount: 1295,
+      __hydration_failed: true,
+      __hydration_reason: 'GHL detail status 429',
+    };
+    const result = classifyOrder(failedHydration);
+    expect(result.type).toBe('other');
+    expect(result.hydrationFailed).toBe(true);
+    expect(result.hydrationReason).toBe('GHL detail status 429');
+  });
 });
 
 // ── classifyInvoice ─────────────────────────────────────────────────────────
@@ -536,6 +556,31 @@ describe('deriveLedger — overrides and edge cases', () => {
       fieldDefs: FIELD_DEFS,
     });
     expect(result.source).toBe('orders+invoices+appointments');
+  });
+
+  it('flags failed-hydration orders as an ambiguity and drops confidence', () => {
+    // Regression test for the post-fix review finding: when hydrateOrders
+    // can't reach /payments/orders/{id}, the order arrives at deriveLedger
+    // with __hydration_failed=true. The derivation should surface that as
+    // an ambiguity so the worker's confidence-guard blocks the write.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        {
+          sourceName: '',
+          sourceType: 'point_of_sale',
+          status: 'completed',
+          amount: 1295,
+          createdAt: '2026-05-08T00:00:00Z',
+          __hydration_failed: true,
+          __hydration_reason: 'GHL detail status 429',
+        },
+      ],
+      appointments: [],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.confidence).toBe('low');
+    expect(result.ambiguities.some((a) => /hydration failed/.test(a))).toBe(true);
   });
 });
 
