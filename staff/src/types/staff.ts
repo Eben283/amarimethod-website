@@ -244,7 +244,7 @@ export interface BalancesResponse {
 // (created 2026-05-23 — see ops/ref/partner-custom-fields-2026-05-22.json).
 // Pipeline-stage-based kanban (v0) was abandoned per design doc.
 
-export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'unknown';
+export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'business' | 'unknown';
 
 export type PartnerCategoryFilter = 'all' | PartnerCategory;
 
