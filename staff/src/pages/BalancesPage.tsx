@@ -141,7 +141,7 @@ export default function BalancesPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="staff-pagehead flex items-center justify-between">
         <h1 className="text-xl font-serif text-amari-charcoal">Balances</h1>
         <button
           onClick={() => load(true)}
@@ -156,11 +156,11 @@ export default function BalancesPage() {
       {/* Summary card */}
       <div className="staff-card mb-4 flex items-center justify-between">
         <div>
-          <p className="text-[11px] text-amari-text-muted uppercase tracking-wide">Prepaid clients</p>
+          <p className="staff-mlabel">Prepaid clients</p>
           <p className="text-2xl font-serif text-amari-charcoal">{rows.length}</p>
         </div>
         <div className="text-right">
-          <p className="text-[11px] text-amari-text-muted uppercase tracking-wide">Sessions owed</p>
+          <p className="staff-mlabel">Sessions owed</p>
           <p className="text-2xl font-serif text-amari-accent-warm">{totalRemaining}</p>
         </div>
       </div>
@@ -287,7 +287,7 @@ function BalanceRowCard({ row, onTap }: { row: BalanceRow; onTap: () => void }) 
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-amari-charcoal truncate">{row.name}</p>
           {row.prepaidOverride && (
-            <span className="text-[10px] uppercase tracking-wide text-amari-text-muted bg-amari-light-sand px-1.5 py-px rounded">
+            <span className="staff-mlabel bg-amari-light-sand px-1.5 py-px rounded">
               manual
             </span>
           )}
@@ -320,7 +320,7 @@ function BalanceRowCard({ row, onTap }: { row: BalanceRow; onTap: () => void }) 
       </div>
       <div className="text-right flex-shrink-0">
         <p className="text-lg font-serif text-amari-charcoal leading-none">{row.remaining}</p>
-        <p className="text-[10px] text-amari-text-muted uppercase tracking-wide">left</p>
+        <p className="staff-mlabel">left</p>
       </div>
       <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
     </button>

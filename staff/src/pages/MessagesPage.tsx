@@ -85,7 +85,7 @@ export default function MessagesPage() {
   return (
     <div className="px-4 pt-6 pb-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="staff-pagehead flex items-center justify-between">
         <h1 className="text-xl font-serif text-amari-charcoal">Messages</h1>
         <button
           onClick={() => load(filter)}
