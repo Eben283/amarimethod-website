@@ -83,4 +83,15 @@
   .staff-label {
     @apply block text-sm font-medium text-amari-text-secondary mb-1.5;
   }
+
+  /* Sticky, frosted page header — mirrors the client view's sa-head. Pages put
+     their <h1> row in this; the negative margins let it span the page padding. */
+  .staff-pagehead {
+    @apply sticky top-0 z-10 -mx-4 px-4 py-3 mb-3 bg-amari-bone-white/85 backdrop-blur-md border-b border-amari-border;
+  }
+
+  /* Mono uppercase micro-label — the client view's IBM Plex Mono small-caps. */
+  .staff-mlabel {
+    @apply font-mono text-[10px] uppercase tracking-[0.13em] text-amari-text-muted;
+  }
 }

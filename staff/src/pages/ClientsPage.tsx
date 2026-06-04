@@ -53,7 +53,7 @@ export default function ClientsPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <h1 className="text-xl font-serif text-amari-charcoal mb-4">Clients</h1>
+      <h1 className="staff-pagehead text-xl font-serif text-amari-charcoal">Clients</h1>
 
       {/* Search across the full GHL contact database (clients, leads, anyone). */}
       <div className="relative mb-4">
