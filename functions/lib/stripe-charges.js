@@ -74,9 +74,12 @@ function keepCharge(c) {
 // Resolve all Stripe charges attributable to a contact. `stripe` is any object
 // implementing searchCharges/listChargesByCustomer/listCustomersByEmail (see
 // makeStripeClient) — injectable for testing.
-export async function resolveContactCharges(stripe, { contactId, email } = {}) {
+export async function resolveContactCharges(stripe, { contactId, email, customerId } = {}) {
   const byId = new Map();
   const customerIds = new Set();
+  // Seed with a known Stripe customer id (stored from a prior resolve) — the
+  // cheap, exact path that also catches POS-only clients with no contactId charge.
+  if (customerId) customerIds.add(customerId);
   const add = (charges) => {
     for (const c of (charges || [])) {
       if (!keepCharge(c)) continue;
@@ -108,6 +111,23 @@ export async function resolveContactCharges(stripe, { contactId, email } = {}) {
   }
 
   return [...byId.values()];
+}
+
+// The Stripe customer id worth remembering for this contact: the customer behind
+// the most resolved charges (ties → first). Storing it lets a later resolve hit
+// listChargesByCustomer directly — exact + cheap, even for POS-only clients.
+export function pickCustomerId(charges) {
+  const counts = new Map();
+  for (const c of (charges || [])) {
+    if (!c.customer) continue;
+    counts.set(c.customer, (counts.get(c.customer) || 0) + 1);
+  }
+  let best = null;
+  let n = 0;
+  for (const [id, ct] of counts) {
+    if (ct > n) { best = id; n = ct; }
+  }
+  return best;
 }
 
 // Fetch-based Stripe REST wrapper. Uses Bearer auth (matches cos-lookups.js) so

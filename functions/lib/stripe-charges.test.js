@@ -4,6 +4,7 @@ import {
   classifyCharge,
   summarizeCharges,
   resolveContactCharges,
+  pickCustomerId,
 } from './stripe-charges.js';
 
 const charge = (o = {}) => ({
@@ -88,6 +89,31 @@ describe('resolveContactCharges', () => {
     expect(stripe.calls.listByEmail).toEqual(['x@y.com']);
   });
 
+  it('uses a seeded customerId to find charges even with no contactId match (POS-only case)', async () => {
+    const posCharge = charge({ id: 'pos1', amount: 9000, customer: 'cus_X', metadata: { invoiceId: 'i1' } });
+    const stripe = mockStripe({ search: [], byCustomer: { cus_X: [posCharge] } });
+    const out = await resolveContactCharges(stripe, { contactId: 'C1', customerId: 'cus_X' });
+    expect(out.map((c) => c.id)).toEqual(['pos1']);
+    expect(stripe.calls.listByCustomer).toContain('cus_X');
+  });
+});
+
+describe('pickCustomerId', () => {
+  it('returns the customer behind the most charges', () => {
+    const out = pickCustomerId([
+      charge({ id: 'a', customer: 'cus_A' }),
+      charge({ id: 'b', customer: 'cus_A' }),
+      charge({ id: 'c', customer: 'cus_B' }),
+    ]);
+    expect(out).toBe('cus_A');
+  });
+  it('returns null when no charge has a customer', () => {
+    expect(pickCustomerId([charge({ customer: null })])).toBeNull();
+    expect(pickCustomerId([])).toBeNull();
+  });
+});
+
+describe('resolveContactCharges (more)', () => {
   it('does NOT use the email fallback when contactId charges exist', async () => {
     const direct = charge({ id: 'link1', customer: 'cus_A', metadata: { contactId: 'C1' } });
     const stripe = mockStripe({ search: [direct], byCustomer: { cus_A: [direct] }, byEmail: { 'x@y.com': [{ id: 'cus_Z' }] } });
