@@ -28,6 +28,13 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+// "2026-05-22" → "May 22, 2026" (noon avoids any timezone off-by-one).
+function fmtPurchaseDate(d: string | null): string {
+  if (!d) return '—';
+  const dt = new Date(`${d}T12:00:00`);
+  return isNaN(dt.getTime()) ? d : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // Per-session payment pill styling. `unknown` renders no pill (honest blank —
 // the session just hasn't had its payment recorded yet).
 const PAYMENT_PILL: Record<PaymentStatus, { label: string; bg: string; fg: string } | null> = {
@@ -460,7 +467,7 @@ export default function ClientDetailPage() {
             <div className="sa-kv">
               {owed.purchases.map((p, i) => (
                 <div className="row" key={i}>
-                  <span className="k">{p.date ?? '—'} · {p.label}</span>
+                  <span className="k">{fmtPurchaseDate(p.date)} · {p.label}</span>
                   <span className="v">${p.amount}</span>
                 </div>
               ))}

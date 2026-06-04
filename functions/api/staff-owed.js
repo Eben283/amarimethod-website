@@ -10,7 +10,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { resolveContactCharges, summarizeCharges, classifyCharge, makeStripeClient } from "../lib/stripe-charges.js";
+import { resolveContactCharges, summarizeCharges, classifyCharge, pickCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -84,9 +84,25 @@ export async function onRequestGet(context) {
       appointments = a.appointments || a.events || [];
     }
 
+    // The stored Stripe customer id (our contact↔customer key) — lets the
+    // resolve hit listChargesByCustomer directly, exact + cheap.
+    const KV = context.env.PURCHASE_KV;
+    const CUST_KEY = `stripe-cust:${contactId}`;
+    let storedCustomerId = null;
+    if (KV) { try { storedCustomerId = await KV.get(CUST_KEY); } catch { /* fail-soft */ } }
+
     const stripe = makeStripeClient(stripeKey);
-    const charges = await resolveContactCharges(stripe, { contactId, email });
+    const charges = await resolveContactCharges(stripe, { contactId, email, customerId: storedCustomerId || undefined });
     const summary = summarizeCharges(charges);
+
+    // Self-populate the contact↔customer key: if we discovered one and it's not
+    // stored yet, remember it. Non-blocking — never affects the response.
+    if (KV) {
+      try {
+        const discovered = pickCustomerId(charges);
+        if (discovered && discovered !== storedCustomerId) await KV.put(CUST_KEY, discovered);
+      } catch { /* fail-soft */ }
+    }
 
     // Clean purchase history for the client page — each charge as date / label /
     // amount, newest first. Reuses the charges we already resolved (no extra call).
