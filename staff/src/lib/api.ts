@@ -205,13 +205,6 @@ export async function getStaffAttestation(contactId: string): Promise<StaffAttes
   return fetchApi(`/staff-attestation?contactId=${encodeURIComponent(contactId)}`);
 }
 
-export async function markNotAFit(contactId: string): Promise<{ success: boolean; stage: string }> {
-  return fetchApi('/staff-not-a-fit', {
-    method: 'POST',
-    body: JSON.stringify({ contactId }),
-  });
-}
-
 export async function togglePrepaid(
   contactId: string,
   prepaid: boolean,
