@@ -5,8 +5,8 @@ import {
   ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct } from '../lib/api';
-import type { ContactDetail, ContactAppointment } from '../types/staff';
+import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct, type PaymentCapture } from '../lib/api';
+import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
@@ -27,6 +27,17 @@ function fmtDate(iso: string): string {
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
+
+// Per-session payment pill styling. `unknown` renders no pill (honest blank —
+// the session just hasn't had its payment recorded yet).
+const PAYMENT_PILL: Record<PaymentStatus, { label: string; bg: string; fg: string } | null> = {
+  paid: { label: 'Paid', bg: '#dcfce7', fg: '#15803d' },
+  comped: { label: 'Comped', bg: '#ede9fe', fg: '#6d28d9' },
+  'on-package': { label: 'On package', bg: '#e0f2fe', fg: '#0369a1' },
+  'pay-next-visit': { label: 'Pay next visit', bg: '#fef9c3', fg: '#a16207' },
+  owed: { label: 'Owed', bg: '#fee2e2', fg: '#b91c1c' },
+  unknown: null,
+};
 
 // Derive a short "kind" chip from a note body's leading label.
 function noteKind(body: string): string {
@@ -56,6 +67,10 @@ export default function ClientDetailPage() {
   const [showAddNote, setShowAddNote] = useState(false);
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
+  // Per-session payment capture: which appointment's "how was this paid?"
+  // chooser is open, and the comp-note draft for it.
+  const [payingApptId, setPayingApptId] = useState<string | null>(null);
+  const [compNoteDraft, setCompNoteDraft] = useState('');
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [togglingPrepaid, setTogglingPrepaid] = useState(false);
@@ -87,19 +102,25 @@ export default function ClientDetailPage() {
     }, 800);
   }
 
-  async function handleMarkAttended(appt: ContactAppointment) {
+  async function handleMarkAttended(appt: ContactAppointment, payment?: PaymentCapture) {
     if (!client || markingAttended) return;
     setMarkingAttended(appt.id);
     setAttendedError('');
     try {
-      const result = await markAttended(appt.id, client.id, appt.title, appt.calendarName);
+      const result = await markAttended(appt.id, client.id, appt.title, appt.calendarName, payment);
       setClient({
         ...client,
         sessionsCompleted: result.sessionsCompleted,
         sessionsRemaining: result.sessionsRemaining,
-        appointments: client.appointments.map((a) =>
-          a.id === appt.id ? { ...a, status: 'showed' } : a
-        ),
+        appointments: client.appointments.map((a) => {
+          if (a.id !== appt.id) return a;
+          // Optimistic per-session status: explicit choice wins; otherwise the
+          // backend only auto-records "on-package" (when an active pack covered it).
+          let paymentStatus = a.paymentStatus;
+          if (payment?.paymentStatus) paymentStatus = payment.paymentStatus as PaymentStatus;
+          else if (result.paymentRecorded) paymentStatus = 'on-package';
+          return { ...a, status: 'showed', paymentStatus, paymentNote: payment?.compNote ?? a.paymentNote };
+        }),
       });
       if (result.alreadyAttended) {
         setAttendedError('Already marked as attended (SMS or workflow handled it)');
@@ -113,6 +134,8 @@ export default function ClientDetailPage() {
       setAttendedError(err instanceof Error ? err.message : 'Failed to mark attended');
     } finally {
       setMarkingAttended(null);
+      setPayingApptId(null);
+      setCompNoteDraft('');
     }
   }
 
@@ -544,22 +567,64 @@ export default function ClientDetailPage() {
                 const isAttended = appt.status === 'showed' || appt.status === 'completed';
                 const canMark = isPast && !isAttended && appt.status !== 'cancelled';
                 const isMarking = markingAttended === appt.id;
+                const pill = appt.paymentStatus ? PAYMENT_PILL[appt.paymentStatus] : null;
+                const packageCovers = client.sessionsRemaining > 0 && client.seriesType !== 'none';
+                const choosing = payingApptId === appt.id;
                 return (
-                  <div key={appt.id} className={`sa-appt-row${isPast && !canMark && !isAttended ? ' is-dim' : ''}`}>
-                    <div className="info">
-                      <div className="nm">{appt.title}</div>
-                      <div className="mt">{fmtDate(appt.startTime)} · {fmtTime(appt.startTime)}{appt.calendarName && ` · ${appt.calendarName}`}</div>
+                  <div key={appt.id}>
+                    <div className={`sa-appt-row${isPast && !canMark && !isAttended ? ' is-dim' : ''}`}>
+                      <div className="info">
+                        <div className="nm">{appt.title}</div>
+                        <div className="mt">{fmtDate(appt.startTime)} · {fmtTime(appt.startTime)}{appt.calendarName && ` · ${appt.calendarName}`}</div>
+                        {pill && (
+                          <span
+                            title={appt.paymentNote || undefined}
+                            style={{ display: 'inline-block', marginTop: 4, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: pill.bg, color: pill.fg }}
+                          >
+                            {pill.label}{appt.paymentStatus === 'comped' && appt.paymentNote ? ` · ${appt.paymentNote}` : ''}
+                          </span>
+                        )}
+                      </div>
+                      {isAttended ? (
+                        <button className="sa-att is-on" disabled><span>Attended</span><span className="sw" /></button>
+                      ) : canMark ? (
+                        <button
+                          className="sa-att"
+                          onClick={() => {
+                            // Package-covered → mark straight away (backend auto-records on-package).
+                            // Otherwise ask how it was paid before marking.
+                            if (packageCovers) handleMarkAttended(appt);
+                            else { setPayingApptId(appt.id); setCompNoteDraft(''); }
+                          }}
+                          disabled={isMarking}
+                        >
+                          <span>{isMarking ? 'Marking…' : 'Mark'}</span><span className="sw" />
+                        </button>
+                      ) : appt.status === 'cancelled' ? (
+                        <span className="sa-status-pill is-cancel">Cancelled</span>
+                      ) : (
+                        <span className="sa-conf">{appt.status === 'confirmed' || !isPast ? 'Confirmed' : appt.status}</span>
+                      )}
                     </div>
-                    {isAttended ? (
-                      <button className="sa-att is-on" disabled><span>Attended</span><span className="sw" /></button>
-                    ) : canMark ? (
-                      <button className="sa-att" onClick={() => handleMarkAttended(appt)} disabled={isMarking}>
-                        <span>{isMarking ? 'Marking…' : 'Mark'}</span><span className="sw" />
-                      </button>
-                    ) : appt.status === 'cancelled' ? (
-                      <span className="sa-status-pill is-cancel">Cancelled</span>
-                    ) : (
-                      <span className="sa-conf">{appt.status === 'confirmed' || !isPast ? 'Confirmed' : appt.status}</span>
+                    {choosing && (
+                      <div style={{ margin: '6px 0 12px', padding: 10, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#334155' }}>How was this paid?</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'stripe' })}><span>Paid</span></button>
+                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'cash' })}><span>Cash</span></button>
+                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'pay-next-visit' })}><span>Pay next visit</span></button>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <input
+                            value={compNoteDraft}
+                            onChange={(e) => setCompNoteDraft(e.target.value)}
+                            placeholder="Comp reason (optional)"
+                            style={{ flex: 1, fontSize: 13, padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                          />
+                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || null })}><span>Comp</span></button>
+                          <button className="sa-att" disabled={isMarking} onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}><span>Cancel</span></button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 );

@@ -8,6 +8,15 @@ interface Props {
 
 const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
 
+// Per-session payment pill (Today view). Mirrors ClientDetailPage's PAYMENT_PILL.
+const PAYMENT_PILL_TW: Record<string, { label: string; cls: string }> = {
+  paid: { label: 'Paid', cls: 'bg-green-50 text-green-700' },
+  comped: { label: 'Comped', cls: 'bg-violet-50 text-violet-700' },
+  'on-package': { label: 'On package', cls: 'bg-sky-50 text-sky-700' },
+  'pay-next-visit': { label: 'Next visit', cls: 'bg-yellow-50 text-yellow-700' },
+  owed: { label: 'Owed', cls: 'bg-red-50 text-red-700' },
+};
+
 function isFreeSession(appointment: TodayAppointment): boolean {
   return FREE_SESSION_PATTERN.test(appointment.title) || FREE_SESSION_PATTERN.test(appointment.calendarName);
 }
@@ -79,15 +88,20 @@ export default function AppointmentCard({ appointment, onTap }: Props) {
               Now
             </span>
           )}
-          {!isFree && (
-            <span className={`text-xs px-1.5 py-0.5 rounded ${
-              appointment.sessionPrepaid
-                ? 'bg-green-50 text-green-700'
-                : 'bg-amber-50 text-amber-700'
-            }`}>
-              {appointment.sessionPrepaid ? 'Paid' : 'Unpaid'}
-            </span>
-          )}
+          {!isFree && (() => {
+            // Prefer the per-session payment status; fall back to the legacy
+            // contact-level prepaid flag until this session has a record.
+            const ps = appointment.paymentStatus;
+            const meta = ps && ps !== 'unknown' ? PAYMENT_PILL_TW[ps] : null;
+            if (meta) {
+              return <span className={`text-xs px-1.5 py-0.5 rounded ${meta.cls}`}>{meta.label}</span>;
+            }
+            return (
+              <span className={`text-xs px-1.5 py-0.5 rounded ${appointment.sessionPrepaid ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+                {appointment.sessionPrepaid ? 'Paid' : 'Unpaid'}
+              </span>
+            );
+          })()}
         </div>
       </div>
 

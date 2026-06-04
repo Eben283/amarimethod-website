@@ -5,6 +5,7 @@ import { ghlHeaders, getGhlToken, ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
+import { readPaymentRecord } from "../lib/session-payment.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -149,6 +150,9 @@ export async function onRequestGet(context) {
         let seriesType = "none";
         let tags = [];
         let sessionPrepaid = false;
+        let paymentStatus = "unknown";
+        let paymentMethod = null;
+        let paymentNote = null;
 
         if (contactId) {
           try {
@@ -210,6 +214,15 @@ export async function onRequestGet(context) {
             }).length;
             seriesType = ledger.display.seriesType;
             sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;
+
+            // Per-session payment status for THIS appointment (event.id), keyed
+            // in PURCHASE_KV. Fail-soft → stays "unknown". See session-payment.js.
+            const payRec = await readPaymentRecord(context.env.PURCHASE_KV, contactId, event.id);
+            if (payRec) {
+              paymentStatus = payRec.status;
+              paymentMethod = payRec.method;
+              paymentNote = payRec.note;
+            }
           } catch (err) {
             console.error(`[staff-data] Contact enrich error for ${contactId}:`, err.message);
           }
@@ -228,6 +241,9 @@ export async function onRequestGet(context) {
           seriesType,
           tags,
           sessionPrepaid,
+          paymentStatus,
+          paymentMethod,
+          paymentNote,
         };
       })
     );

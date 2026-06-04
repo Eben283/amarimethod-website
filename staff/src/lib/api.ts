@@ -97,6 +97,13 @@ export interface MarkAttendedResult {
   isSession: boolean;
   sessionsCompleted: number;
   sessionsRemaining: number;
+  paymentRecorded?: boolean;
+}
+
+export interface PaymentCapture {
+  paymentStatus?: string;
+  paymentMethod?: string | null;
+  compNote?: string | null;
 }
 
 export async function markAttended(
@@ -104,10 +111,19 @@ export async function markAttended(
   contactId: string,
   appointmentTitle: string,
   calendarName?: string,
+  payment?: PaymentCapture,
 ): Promise<MarkAttendedResult> {
   return fetchApi('/staff-mark-attended', {
     method: 'POST',
-    body: JSON.stringify({ appointmentId, contactId, appointmentTitle, calendarName: calendarName || '' }),
+    body: JSON.stringify({
+      appointmentId,
+      contactId,
+      appointmentTitle,
+      calendarName: calendarName || '',
+      ...(payment?.paymentStatus ? { paymentStatus: payment.paymentStatus } : {}),
+      ...(payment?.paymentMethod ? { paymentMethod: payment.paymentMethod } : {}),
+      ...(payment?.compNote ? { compNote: payment.compNote } : {}),
+    }),
   });
 }
 
