@@ -3,6 +3,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { isContactRevoked } from "../lib/session-guard.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -71,6 +72,25 @@ export async function onRequestGet(context) {
 
     const contactId = tokenPayload.contactId;
 
+    // HIGH-2: assert the token came from the partner flow (audience), not just
+    // that it's validly signed. Partner session tokens carry type:"partner"
+    // (partner-verify.js); a client/staff token must not reach partner data.
+    if (tokenPayload.type !== "partner") {
+      return new Response(
+        JSON.stringify({ error: "This area is for partners." }),
+        { status: 403, headers }
+      );
+    }
+
+    // HIGH-2: per-contact kill switch — lets us revoke one partner's live
+    // sessions without rotating JWT_SECRET (which logs out everyone).
+    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
+      return new Response(
+        JSON.stringify({ error: "Session expired. Please log in again." }),
+        { status: 401, headers }
+      );
+    }
+
     // Fetch partner's own contact details from GHL
     const contactResponse = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
       headers: ghlHeaders(GHL_API_KEY),
@@ -86,6 +106,18 @@ export async function onRequestGet(context) {
 
     const contactData = await contactResponse.json();
     const contact = contactData.contact;
+
+    // HIGH-2: re-verify partner eligibility on EVERY read, not just at login.
+    // The contact is already fetched, so this is free. Stripping the
+    // affiliate-partner tag now revokes access on the next request (was: the
+    // tag was checked only at partner-auth, so a revoked partner kept access
+    // for up to the 30-day session).
+    if (!(contact.tags || []).includes("affiliate-partner")) {
+      return new Response(
+        JSON.stringify({ error: "Your partner access is no longer active." }),
+        { status: 403, headers }
+      );
+    }
 
     const capitalize = (s) =>
       s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";
