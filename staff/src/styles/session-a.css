@@ -12,7 +12,7 @@
   --accent:#1E7C8C; --accent-ink:#0E5563; --accent-tint:#E4F0F2;
   --good:#2C8466; --good-tint:#E5F1EB;
   --warn:#9A6B16; --warn-bg:#FBF4E3; --warn-line:#EBD9AE;
-  --passive:#C0743A;
+  --passive:#E8806A;
   --sans:'IBM Plex Sans', system-ui, sans-serif;
   --mono:'IBM Plex Mono', ui-monospace, monospace;
   background:var(--paper); color:var(--ink); font-family:var(--sans);

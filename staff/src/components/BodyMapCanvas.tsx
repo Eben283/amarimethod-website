@@ -21,7 +21,7 @@ const CXL = 0.311;
 const CXR = 0.676;
 
 // state → fill colour. Matches the .sa legend swatches (--line2 / --good / --passive).
-const FILL: Record<'0' | '1' | '2', string> = { '0': '#E7ECEF', '1': '#2C8466', '2': '#C0743A' };
+const FILL: Record<'0' | '1' | '2', string> = { '0': '#E7ECEF', '1': '#2C8466', '2': '#E8806A' };
 const stateNum = (s: BodyRegionState): '0' | '1' | '2' => (s === 'active' ? '1' : s === 'passive' ? '2' : '0');
 const stateLabel = (s: BodyRegionState): string => (s === 'active' ? 'Active' : s === 'passive' ? 'Passive' : 'Unmarked');
 
