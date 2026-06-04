@@ -5,7 +5,7 @@ import {
   ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, togglePrepaid, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
@@ -75,7 +75,6 @@ export default function ClientDetailPage() {
   const [owed, setOwed] = useState<OwedStatus | null>(null);
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
-  const [togglingPrepaid, setTogglingPrepaid] = useState(false);
   const [payLinkStatus, setPayLinkStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
@@ -136,23 +135,6 @@ export default function ClientDetailPage() {
       setMarkingAttended(null);
       setPayingApptId(null);
       setCompNoteDraft('');
-    }
-  }
-
-  async function handleTogglePrepaid() {
-    if (!client || togglingPrepaid) return;
-    setTogglingPrepaid(true);
-    try {
-      const newValue = !client.sessionPrepaid;
-      await togglePrepaid(client.id, newValue);
-      setClient({ ...client, sessionPrepaid: newValue });
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        logout();
-        return;
-      }
-    } finally {
-      setTogglingPrepaid(false);
     }
   }
 
@@ -402,9 +384,6 @@ export default function ClientDetailPage() {
               <span className="ic">{client.sessionPrepaid ? <Check size={18} strokeWidth={2.2} /> : <DollarSign size={18} />}</span>
               {client.sessionPrepaid ? 'Active package' : 'No active package'}
             </span>
-            <button onClick={handleTogglePrepaid} disabled={togglingPrepaid}>
-              {togglingPrepaid ? '…' : client.sessionPrepaid ? 'Undo' : 'Mark prepaid'}
-            </button>
           </div>
         )}
 

@@ -129,6 +129,7 @@ export async function markAttended(
 
 export interface OwedStatus {
   status: 'owed' | 'square' | 'paid-legacy' | 'unavailable';
+  name?: string | null;
   shortBy?: number | null;
   confidence?: 'high' | 'medium';
   reason?: string;

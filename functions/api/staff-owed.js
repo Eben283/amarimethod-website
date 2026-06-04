@@ -70,9 +70,13 @@ export async function onRequestGet(context) {
     ]);
 
     let email = null;
+    let name = null;
     if (contactRes.ok) {
       const c = await contactRes.json();
       email = c.contact?.email || null;
+      const fn = (c.contact?.firstName || "").trim();
+      const ln = (c.contact?.lastName || "").trim();
+      name = [fn, ln].filter(Boolean).join(" ") || c.contact?.name || null;
     }
     let appointments = [];
     if (apptRes.ok) {
@@ -92,6 +96,7 @@ export async function onRequestGet(context) {
 
     return new Response(JSON.stringify({
       ...owed,
+      name,
       totalPaid: summary.totalPaid,
       sessionsPurchased: summary.sessionsPurchased,
       attendedBillable,
