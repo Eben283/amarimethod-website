@@ -10,16 +10,48 @@ import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
 
+// The session-ledger drift scan needs its OWN Cloudflare per-invocation
+// subrequest budget — sharing the main audit's invocation blew the free-tier
+// 50-subrequest cap (the drift walk ≈ 7 active-package contacts × ~5 GHL calls
+// + paginated enumeration ≈ 50 subrequests tipped the cumulative count over and
+// threw, emitting ZERO session-fields issues every run — verified 2026-06-03).
+// We can't give it a second cron (account is at the 5-cron free-tier limit), so
+// scheduled() self-fetches /run-drift to run it in a separate invocation.
+// runLedgerDriftScan writes its findings to this key; checkSessionLedgerDrift
+// (called inline by the main audit) just reads it — one cheap KV read instead
+// of ~50 GHL subrequests.
+const LEDGER_DRIFT_FINDINGS_KEY = "ops:ledger-drift:findings";
+// Stale-findings guard: if the drift cron hasn't refreshed within this window,
+// the main audit emits a watchdog warning (silent-failure defense, same shape
+// as checkSeriesReconcile / checkPartnerActivityRefresh).
+const LEDGER_DRIFT_STALE_MS = 26 * 60 * 60 * 1000;
+
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runAudit(env));
+    ctx.waitUntil(runScheduledAudit(env));
   },
 
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/__scheduled" || url.pathname === "/run") {
+    // /run = main audit only (reads existing drift findings from KV).
+    // /__scheduled = the full cron path (refresh drift findings, then audit),
+    // so the production trigger can be exercised end-to-end.
+    if (url.pathname === "/run") {
       const result = await runAudit(env);
+      return jsonResponse(result);
+    }
+    if (url.pathname === "/__scheduled") {
+      const result = await runScheduledAudit(env);
+      return jsonResponse(result);
+    }
+
+    // Run the ledger-drift scan: enumerate active-series contacts, derive each,
+    // and persist findings to KV for the main audit to read. Invoked by
+    // runScheduledAudit via the SELF service binding (fresh subrequest budget);
+    // also hit manually to re-check after a contact's fields are fixed.
+    if (url.pathname === "/run-drift") {
+      const result = await runLedgerDriftScan(env);
       return jsonResponse(result);
     }
 
@@ -39,6 +71,28 @@ function jsonResponse(data, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+// Cron entrypoint. Refresh the session-ledger drift findings FIRST — in a
+// separate invocation with its own subrequest budget — via the SELF service
+// binding (the heavy contact-walk blows the main audit's 50-cap inline; we can't
+// add a second cron at the 5-cron free-tier limit; and a plain self-fetch of the
+// worker's own URL 404s). The service binding dispatches /run-drift as a fresh
+// invocation. We await it so findings are current before runAudit reads them; on
+// failure runAudit's reader emits a stale/missing watchdog — never silent.
+async function runScheduledAudit(env) {
+  try {
+    if (env.SELF) {
+      const res = await env.SELF.fetch("https://daily-audit.internal/run-drift");
+      await res.text();
+      console.log(`[daily-audit] drift refresh (SELF binding) → ${res.status}`);
+    } else {
+      console.warn("[daily-audit] SELF binding missing — skipping drift refresh");
+    }
+  } catch (err) {
+    console.warn(`[daily-audit] drift refresh failed: ${err.message}`);
+  }
+  return runAudit(env);
 }
 
 async function runAudit(env) {
@@ -117,12 +171,13 @@ async function runAudit(env) {
   // that talks to GHL. No other watchdog covers this.
   const tokenRefreshWatchdogIssues = await checkTokenRefresh(env);
 
-  // Walk every contact with an active series and run the same derivation
-  // the read endpoints use. Surface anyone whose displayed value diverges
-  // from the derived value (low-confidence-fallback or active manual lock)
-  // or whose derivation has ambiguities. This is the visibility piece —
-  // the Jenn Kadri 2026-06-03 silent bug sat invisible for weeks because
-  // nothing surfaced the ambiguity array a human could read.
+  // Read the session-ledger drift findings produced by the separate drift cron
+  // (runLedgerDriftScan, fired ~10 min earlier in its own invocation so the
+  // heavy contact-walk doesn't compete for this invocation's subrequest cap).
+  // One cheap KV read. Emits a watchdog warning if the findings are stale/missing.
+  // This is the visibility piece — the Jenn Kadri 2026-06-03 silent bug sat
+  // invisible for weeks because nothing surfaced the ambiguity array a human
+  // could read.
   const ledgerDriftIssues = await checkSessionLedgerDrift(env);
 
   const allIssues = [
@@ -539,13 +594,74 @@ async function checkTokenRefresh(env) {
 // invoices + appointments + hydration). At ~10 active package contacts
 // in steady state, ~50 GHL calls / run. Well under the 1000-subrequest
 // paid cap.
+// Inline reader called by runAudit. The heavy contact-walk now happens in the
+// separate drift cron (runLedgerDriftScan) so it gets its own subrequest budget.
+// Here we just read the findings it persisted — one cheap KV read — and surface
+// a watchdog warning if those findings are missing or stale (same silent-failure
+// defense as checkSeriesReconcile / checkPartnerActivityRefresh).
 async function checkSessionLedgerDrift(env) {
+  let findings;
+  try {
+    findings = await env.PORTAL_KV.get(LEDGER_DRIFT_FINDINGS_KEY, "json");
+  } catch (err) {
+    return [{
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-findings-read-failed",
+      message: `Could not read ledger-drift findings from KV (${LEDGER_DRIFT_FINDINGS_KEY}): ${err.message}`,
+    }];
+  }
+
+  if (!findings || !findings.generatedAt) {
+    return [{
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-findings-missing",
+      message: `No ledger-drift findings in KV. The drift scan (self-fetched /run-drift from runScheduledAudit) may not have run yet or is failing — check the daily-audit worker logs.`,
+    }];
+  }
+
+  const ageMs = Date.now() - new Date(findings.generatedAt).getTime();
+  if (ageMs > LEDGER_DRIFT_STALE_MS) {
+    const hours = Math.round(ageMs / 3.6e6);
+    return [{
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-findings-stale",
+      message: `Ledger-drift findings are ${hours}h old (last run ${findings.generatedAt}). The drift scan (self-fetched /run-drift from runScheduledAudit) likely stopped running or is erroring.`,
+    }];
+  }
+
+  return findings.issues || [];
+}
+
+// The heavy walk: enumerate every active-series contact, run deriveLedger, and
+// persist drift findings to KV. Reached via the /run-drift route (self-fetched
+// by runScheduledAudit, or hit manually), so the ~50-subrequest scan runs in its
+// own invocation and never competes with the main audit's budget.
+async function runLedgerDriftScan(env) {
   const issues = [];
+
+  // Always persist a findings doc (success OR failure) so the main audit's
+  // reader always sees a fresh signal rather than going silent.
+  const persist = async (candidateCount) => {
+    const doc = {
+      generatedAt: new Date().toISOString(),
+      candidateCount,
+      issues,
+    };
+    try {
+      await env.PORTAL_KV.put(LEDGER_DRIFT_FINDINGS_KEY, JSON.stringify(doc));
+    } catch (err) {
+      console.warn(`[ledger-drift] failed to persist findings: ${err.message}`);
+    }
+    return doc;
+  };
 
   // Pre-fetch the existing field-sync needs-review queue. The
   // series-reconcile-worker writes to `field-sync:needsReview:${contactId}`
   // when a contact's drift is too large to auto-apply (delta > MAX_AUTO_DELTA).
-  // The `checkSeriesReconcile` watchdog above already surfaces those. Skip
+  // The `checkSeriesReconcile` watchdog already surfaces those. Skip
   // any contact already in that queue so the briefing doesn't double-flag.
   const alreadyFlaggedForReview = new Set();
   try {
@@ -606,7 +722,7 @@ async function checkSessionLedgerDrift(env) {
       kind: "ledger-drift-candidate-scan-failed",
       message: `Could not enumerate contacts for ledger drift check: ${err.message}`,
     });
-    return issues;
+    return persist(0);
   }
 
   if (hitPageCap) {
@@ -618,16 +734,43 @@ async function checkSessionLedgerDrift(env) {
     });
   }
 
-  // Build a field-defs map once.
+  // Build a field-defs map once. IMPORTANT: use a raw fetch, NOT ghlFetch —
+  // ghlFetch injects `?locationId=` into the path, and the customFields endpoint
+  // (which already has the location in its path) rejects that with a 422. A failed
+  // build leaves fieldDefs empty, and with empty fieldDefs deriveLedger can't read
+  // the custom-field VALUES (sessions_remaining, sessions_remaining_locked, ...),
+  // so it never detects field-vs-derived drift and reports everyone "clean" — a
+  // silent false-negative that defeats the entire watchdog (the 2026-06-03 bug).
   let fieldDefs = {};
   try {
-    const data = await ghlFetch(env, `/locations/${LOCATION_ID}/customFields`);
+    const fdRes = await fetch(`https://services.leadconnectorhq.com/locations/${LOCATION_ID}/customFields`, {
+      headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28", "Content-Type": "application/json" },
+    });
+    if (!fdRes.ok) throw new Error(`customFields ${fdRes.status}`);
+    const data = await fdRes.json();
     for (const f of data.customFields || []) {
       const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
       if (shortKey) fieldDefs[shortKey] = f.id;
     }
-  } catch {
-    // fieldDefs stays empty; deriveLedger falls back to id-based matching
+  } catch (err) {
+    // Don't silently proceed with empty fieldDefs — that produces false "clean"
+    // results. Surface it and abort the scan so the briefing shows a real problem.
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-fielddefs-failed",
+      message: `Could not build custom-field map for ledger drift check (${err.message}); skipping per-contact derivation to avoid false-negatives.`,
+    });
+    return persist(candidates.length);
+  }
+  if (Object.keys(fieldDefs).length === 0) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "ledger-drift-fielddefs-empty",
+      message: `Custom-field map came back empty for ledger drift check; skipping per-contact derivation to avoid false-negatives.`,
+    });
+    return persist(candidates.length);
   }
 
   // Process candidates in chunks of 3 — each one does 4-5 GHL calls.
@@ -663,7 +806,15 @@ async function checkSessionLedgerDrift(env) {
         const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
         const name = `${contact.firstName || ""} ${contact.lastName || ""}`.trim() || contact.email || contactId;
 
-        if (ledger.confidence === "low" && ledger.ambiguities.length > 0) {
+        // Check manualLock FIRST. A locked contact's field-vs-derived divergence
+        // is INTENTIONAL (that's what the lock is for), so it belongs in the
+        // once-only locked rollup, not the daily ambiguity warning — otherwise an
+        // intentional lock nags in every briefing. Only NON-locked low-confidence
+        // contacts are real drift that needs a human (e.g. Danny: field 6 vs
+        // derived 5, no lock = genuine unexplained mismatch).
+        if (ledger.manualLock) {
+          lockedContacts.push({ contactId, name, derived: ledger.remaining, field: ledger.display.remaining });
+        } else if (ledger.confidence === "low" && ledger.ambiguities.length > 0) {
           detailedIssues.push({
             severity: "warning",
             area: "session-fields",
@@ -675,12 +826,20 @@ async function checkSessionLedgerDrift(env) {
             derived: ledger.remaining,
             displaySource: ledger.display.source,
           });
-        } else if (ledger.manualLock) {
-          lockedContacts.push({ contactId, name, derived: ledger.remaining, field: ledger.display.remaining });
         }
       } catch (err) {
-        // Per-contact failure doesn't block the rest of the audit.
-        console.warn(`[daily-audit] ledger drift check failed for ${contactId}: ${err.message}`);
+        // Per-contact failure doesn't block the rest of the scan — but DON'T
+        // swallow it silently. A swallowed error (e.g. subrequest-cap hit
+        // mid-loop) reads as "clean" when it's actually "uninspected", which is
+        // exactly the false-negative the watchdog must never produce. Surface it.
+        console.warn(`[ledger-drift] check failed for ${contactId}: ${err.message}`);
+        detailedIssues.push({
+          severity: "warning",
+          area: "infra",
+          kind: "ledger-drift-contact-check-failed",
+          contactId,
+          message: `Ledger drift check could not evaluate ${contactId}: ${err.message}`,
+        });
       }
     }));
   }
@@ -725,8 +884,10 @@ async function checkSessionLedgerDrift(env) {
   } catch (err) {
     // KV failure shouldn't kill the watchdog — fall back to emitting nothing
     // for the locked rollup (rather than the noisy unconditional path).
-    console.warn(`[daily-audit] locked-count compare failed: ${err.message}`);
+    console.warn(`[ledger-drift] locked-count compare failed: ${err.message}`);
   }
 
-  return [...issues, ...detailedIssues];
+  // Fold the per-contact findings into the issue list and persist everything.
+  issues.push(...detailedIssues);
+  return persist(candidates.length);
 }
