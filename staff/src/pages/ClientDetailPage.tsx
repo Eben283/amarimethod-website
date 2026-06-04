@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send,
+  ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -332,8 +332,8 @@ export default function ClientDetailPage() {
             </div>
           </div>
           <div className="sa-contact">
-            {client.phone && <a href={`tel:${client.phone}`}><Phone size={15} /><span>{client.phone}</span></a>}
-            {client.email && <a href={`mailto:${client.email}`}><Mail size={15} /><span>Email</span></a>}
+            {/* All client communication happens in GHL — one button straight to the contact there. */}
+            <a href={`https://app.gohighlevel.com/v2/location/7pIO7FHVAyBT1jKGhfQM/contacts/detail/${client.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /><span>Open in GHL</span></a>
           </div>
         </div>
       </header>
@@ -461,9 +461,9 @@ export default function ClientDetailPage() {
             </span>
           </div>
           <div className="sa-prog">
-            <div className="cell"><span className="v">{currentSeriesCompleted}</span><span className="lbl k">This series</span></div>
-            <div className="cell"><span className="v">{client.sessionsRemaining}</span><span className="lbl k">Remaining</span></div>
-            <div className="cell"><span className="v">{packageLabel}</span><span className="lbl k">Package</span></div>
+            <div className="cell"><span className="v">{currentSeriesCompleted}</span><span className="lbl k">Done this series</span></div>
+            <div className="cell"><span className="v">{client.sessionsRemaining}</span><span className="lbl k">Sessions left</span></div>
+            <div className="cell"><span className="v">{packageLabel}</span><span className="lbl k">Package size</span></div>
           </div>
           {totalSessions > 0 && <div className="sa-prog-bar"><i style={{ width: progressPct + '%' }} /></div>}
           {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
@@ -505,8 +505,9 @@ export default function ClientDetailPage() {
         {/* ============ IN SESSION (cont.) ============ */}
         <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">Modules, body map &amp; appointments</span><span className="gl" /></div>
 
-        {/* modules taught */}
-        <section className="sa-card">
+        {/* modules taught + body map — side by side on wider screens, stacked on narrow */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
+        <section className="sa-card" style={{ flex: '1 1 320px', minWidth: 0 }}>
           <div className="sa-card-h"><span className="t">Modules taught</span><span className="sa-mod-count">{taughtCount}/{MODULES.length}</span></div>
           <div className="sa-mod-bar"><i style={{ width: modPct + '%' }} /></div>
           <div className="sa-mod-grid one">
@@ -542,7 +543,10 @@ export default function ClientDetailPage() {
         </section>
 
         {/* body map — realistic figure */}
-        <BodyMapCanvas data={progress} onUpdate={handleProgressUpdate} />
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+          <BodyMapCanvas data={progress} onUpdate={handleProgressUpdate} />
+        </div>
+        </div>
 
         {/* appointments */}
         <section className="sa-card">
