@@ -91,7 +91,9 @@ export default function BalancesPage() {
           (roster || []).map(async (r) => {
             try {
               const o = await getOwedStatus(r.contactId);
-              return { ...r, ...o } as OwedRow;
+              // Prefer the contact's real GHL name from the resolve over the
+              // roster's title-parsed name (which can fall back to a contactId).
+              return { ...r, ...o, name: o.name || r.name } as OwedRow;
             } catch {
               return { ...r, status: 'unavailable' } as OwedRow;
             }
