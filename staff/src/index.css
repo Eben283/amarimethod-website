@@ -32,10 +32,23 @@
     --ring: 199 33% 13%;
 
     --radius: 0.75rem;
+
+    /* Fixed bottom nav height incl. the iOS home-indicator inset. Pages that
+       fill the viewport (the COS chat) subtract this so their input pins
+       exactly above the nav instead of being hidden behind it. 65px = py-3
+       (24) + icon (20) + gap-1 (4) + text-xs label (16) + border-t (1). */
+    --staff-nav-h: calc(65px + env(safe-area-inset-bottom, 0px));
   }
 
   * {
     @apply border-border;
+  }
+
+  /* Pads a fixed bottom bar past the iOS home indicator. Referenced by
+     StaffNav; was previously undefined (no-op), so on notched phones the bar
+     sat under the home indicator. */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body {

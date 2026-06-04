@@ -49,9 +49,12 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function LayoutWithNav({ children }: { children: React.ReactNode }) {
+function LayoutWithNav({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
+  // Most pages scroll under a fixed nav, so they need bottom padding (pb-20).
+  // Full-bleed pages (the COS chat) manage their own viewport-height layout and
+  // must NOT carry that padding or they'd overflow past the nav.
   return (
-    <div className="min-h-screen pb-20">
+    <div className={fullBleed ? '' : 'min-h-screen pb-20'}>
       {children}
       <StaffNav />
     </div>
@@ -135,7 +138,7 @@ function AppRoutes() {
         path="/cos"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <LayoutWithNav fullBleed>
               <CosPage />
             </LayoutWithNav>
           </ProtectedRoute>

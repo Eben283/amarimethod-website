@@ -760,6 +760,22 @@ export async function onRequestPost(context) {
 
   // Parse request
   const body = await context.request.json();
+
+  // "New chat" — wipe today's conversation bucket so the next message starts
+  // fresh. History is keyed per user per day, so clearing the client UI alone
+  // would leave the old thread in KV for the next turn to reload.
+  if (body.reset === true) {
+    const kv = context.env.PORTAL_KV;
+    if (kv) {
+      try {
+        await kv.delete(`cos:conv:${cosUser}:${todayKey()}`);
+      } catch (err) {
+        console.error("[cos-chat] reset failed:", err.message);
+      }
+    }
+    return jsonResponse({ ok: true, reset: true }, 200, origin);
+  }
+
   const userMessage = (body.message || "").trim();
   const userImage = body.image || null; // base64 data URI
   if (!userMessage && !userImage) {

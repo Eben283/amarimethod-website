@@ -17,7 +17,7 @@
 // Classification types that represent a series package purchase. The invoice
 // webhook only runs its field-setting automation for these; the ledger uses
 // them to compute the "earliest active package purchase date" cutoff.
-export const PACKAGE_TYPES = new Set(["4-series", "8-series", "4-upgrade", "8-upgrade"]);
+export const PACKAGE_TYPES = new Set(["4-series", "8-series", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
 
 export const GHL_PRODUCTS = {
   // ── Series purchases (full package up-front) ──

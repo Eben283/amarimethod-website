@@ -36,7 +36,9 @@ export const AMOUNT_TO_SESSIONS = Object.freeze({
 // kind:'unknown' when neither matches — it NEVER guesses (unknowns are surfaced
 // for review, the same discipline the GHL-order classifier should have had).
 export function classifyCharge(charge) {
-  const amount = (charge.amount || 0) / 100;
+  // Net of refunds — a partially-refunded charge shouldn't count at its full
+  // amount (Stripe's `refunded` flag is only true for FULL refunds).
+  const amount = ((charge.amount || 0) - (charge.amount_refunded || 0)) / 100;
   const desc = charge.description || '';
   const byDesc =
     /8-session/i.test(desc) ? { sessions: 8, label: '8-Session Series' } :
@@ -59,16 +61,20 @@ export function summarizeCharges(charges) {
   let sessionsPurchased = 0;
   const unknown = [];
   for (const c of charges) {
-    totalPaid += (c.amount || 0) / 100;
     const cl = classifyCharge(c);
+    totalPaid += cl.amount; // cl.amount is net-of-refund
     if (cl.sessions === null) unknown.push({ id: c.id, amount: cl.amount, description: c.description || null });
     else sessionsPurchased += cl.sessions;
   }
-  return { totalPaid, sessionsPurchased, unknownCount: unknown.length, unknown };
+  const unknownMax = unknown.reduce((m, u) => Math.max(m, u.amount || 0), 0);
+  return { totalPaid, sessionsPurchased, unknownCount: unknown.length, unknownMax, unknown };
 }
 
 function keepCharge(c) {
-  return c && c.id && c.paid && c.status === 'succeeded' && !c.refunded;
+  if (!(c && c.id && c.paid && c.status === 'succeeded' && !c.refunded)) return false;
+  // Drop charges fully refunded via amount_refunded (refunded flag not always set).
+  const net = (c.amount || 0) - (c.amount_refunded || 0);
+  return net > 0;
 }
 
 // Resolve all Stripe charges attributable to a contact. `stripe` is any object
@@ -94,11 +100,17 @@ export async function resolveContactCharges(stripe, { contactId, email, customer
     if (r && !r.error) add(r.data);
   }
 
+  // A shared Stripe customer (spouse, same card) can carry charges tagged with a
+  // DIFFERENT contactId. Never count those against this contact — that would
+  // hide their real debt. Charges with no contactId (invoices/entrainments) or a
+  // matching contactId are kept. The contactId search above is always authoritative.
+  const notForeign = (c) => !(contactId && c.metadata?.contactId && c.metadata.contactId !== contactId);
+
   // 2. Everything else under the same Stripe customer(s) — invoice + entrainment
   //    charges that lack contactId metadata but share the customer.
   for (const cust of [...customerIds]) {
     const r = await stripe.listChargesByCustomer(cust);
-    if (r && !r.error) add(r.data);
+    if (r && !r.error) add((r.data || []).filter(notForeign));
   }
 
   // 3. Email fallback — only when nothing was found via the contactId path.
@@ -106,7 +118,7 @@ export async function resolveContactCharges(stripe, { contactId, email, customer
     const cu = await stripe.listCustomersByEmail(email);
     for (const c of (cu?.data || [])) {
       const r = await stripe.listChargesByCustomer(c.id);
-      if (r && !r.error) add(r.data);
+      if (r && !r.error) add((r.data || []).filter(notForeign));
     }
   }
 
@@ -128,6 +140,17 @@ export function pickCustomerId(charges) {
     if (ct > n) { best = id; n = ct; }
   }
   return best;
+}
+
+// The Stripe customer id PROVEN to belong to this contact — the customer behind a
+// charge whose metadata.contactId matches exactly. Only this is safe to PERSIST as
+// the contact's stored key (an email-matched or shared customer isn't authoritative).
+export function authoritativeCustomerId(charges, contactId) {
+  if (!contactId) return null;
+  for (const c of (charges || [])) {
+    if (c.customer && c.metadata && c.metadata.contactId === contactId) return c.customer;
+  }
+  return null;
 }
 
 // Fetch-based Stripe REST wrapper. Uses Bearer auth (matches cos-lookups.js) so

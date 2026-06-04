@@ -5,6 +5,7 @@ import {
   summarizeCharges,
   resolveContactCharges,
   pickCustomerId,
+  authoritativeCustomerId,
 } from './stripe-charges.js';
 
 const charge = (o = {}) => ({
@@ -13,6 +14,7 @@ const charge = (o = {}) => ({
   paid: o.paid ?? true,
   status: o.status ?? 'succeeded',
   refunded: o.refunded ?? false,
+  amount_refunded: o.amount_refunded ?? 0,
   description: o.description ?? null,
   customer: o.customer ?? null,
   metadata: o.metadata ?? {},

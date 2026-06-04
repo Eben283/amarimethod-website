@@ -32,17 +32,23 @@ export function countBillableSessionsAttended(appointments, nowMs = Date.now()) 
   return n;
 }
 
+// Smallest unrecognized charge we'll treat as a legacy session/package payment.
+// A sizeable unknown (e.g. Mary Jane's old $475 pack) is very likely real
+// payment at an old price; a small stray (a $50 tip/product/miskey) is not and
+// must NOT excuse genuine unpaid sessions.
+const LEGACY_MIN = 150;
+
 // Decide owed status. Pure.
-//   unknownCount > 0  → 'paid-legacy' (real charge at an old price = paid; never owed)
 //   purchased >= attended → 'square'
-//   else → 'owed' (shortBy = attended - purchased; high confidence when nothing paid)
-export function computeOwedStatus({ sessionsPurchased, unknownCount, attendedBillable }) {
-  if (unknownCount > 0) {
-    return { status: 'paid-legacy', shortBy: null, reason: 'paid at a legacy price (amount not in current map)' };
-  }
+//   shortBy>0 + a sizeable unknown charge → 'paid-legacy' (paid at an old price)
+//   shortBy>0 otherwise → 'owed'
+export function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, attendedBillable }) {
   const shortBy = attendedBillable - sessionsPurchased;
   if (shortBy <= 0) {
     return { status: 'square', shortBy: 0 };
+  }
+  if (unknownCount > 0 && unknownMax >= LEGACY_MIN) {
+    return { status: 'paid-legacy', shortBy: null, reason: 'paid at a legacy price (unrecognized amount)' };
   }
   return { status: 'owed', shortBy, confidence: sessionsPurchased === 0 ? 'high' : 'medium' };
 }

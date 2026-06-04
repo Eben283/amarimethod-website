@@ -10,7 +10,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { resolveContactCharges, summarizeCharges, classifyCharge, pickCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
+import { resolveContactCharges, summarizeCharges, classifyCharge, authoritativeCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -99,7 +99,9 @@ export async function onRequestGet(context) {
     // stored yet, remember it. Non-blocking — never affects the response.
     if (KV) {
       try {
-        const discovered = pickCustomerId(charges);
+        // Only persist a customer PROVEN to belong to this contact (a charge
+        // tagged with this contactId) — never an email-matched or shared one.
+        const discovered = authoritativeCustomerId(charges, contactId);
         if (discovered && discovered !== storedCustomerId) await KV.put(CUST_KEY, discovered);
       } catch { /* fail-soft */ }
     }
@@ -109,7 +111,10 @@ export async function onRequestGet(context) {
     const purchases = charges
       .map((c) => ({
         date: c.created ? new Date(c.created * 1000).toISOString().slice(0, 10) : null,
-        amount: (c.amount || 0) / 100,
+        // Net of refunds — parity with totalPaid/owed math (which all use net).
+        // A fully-refunded charge is already dropped by keepCharge; a partial
+        // refund shows what the client actually kept paying.
+        amount: ((c.amount || 0) - (c.amount_refunded || 0)) / 100,
         label: classifyCharge(c).label || c.description || "Payment",
       }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
@@ -117,6 +122,7 @@ export async function onRequestGet(context) {
     const owed = computeOwedStatus({
       sessionsPurchased: summary.sessionsPurchased,
       unknownCount: summary.unknownCount,
+      unknownMax: summary.unknownMax,
       attendedBillable,
     });
 

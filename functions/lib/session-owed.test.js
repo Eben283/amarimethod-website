@@ -37,10 +37,15 @@ describe('countBillableSessionsAttended', () => {
 });
 
 describe('computeOwedStatus', () => {
-  it('paid-legacy when any charge is an unrecognized (old-price) amount — they paid, never owed', () => {
-    const r = computeOwedStatus({ sessionsPurchased: 0, unknownCount: 1, attendedBillable: 3 });
+  it('paid-legacy when a SIZEABLE unrecognized (old-price) charge covers attended sessions', () => {
+    const r = computeOwedStatus({ sessionsPurchased: 0, unknownCount: 1, unknownMax: 475, attendedBillable: 3 });
     expect(r.status).toBe('paid-legacy');
     expect(r.shortBy).toBeNull();
+  });
+  it('still OWED when the only unknown is a small stray charge (does not excuse real debt)', () => {
+    const r = computeOwedStatus({ sessionsPurchased: 0, unknownCount: 1, unknownMax: 50, attendedBillable: 3 });
+    expect(r.status).toBe('owed');
+    expect(r.shortBy).toBe(3);
   });
   it('square when paid sessions cover attended', () => {
     expect(computeOwedStatus({ sessionsPurchased: 8, unknownCount: 0, attendedBillable: 4 }).status).toBe('square');
