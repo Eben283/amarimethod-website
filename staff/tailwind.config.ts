@@ -41,15 +41,18 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Remapped 2026-06-04 to the client-detail "Chart" palette (session-a.css)
+        // so every staff page matches that calm, cool/teal look. Token NAMES are
+        // kept (used across all pages); only the values changed warm→cool, coral→teal.
         amari: {
-          "bone-white": "#FFFCF5",
-          "light-sand": "#F6F3E9",
-          "charcoal": "#252525",
-          "text-secondary": "#484742",
-          "text-muted": "#666666",
-          "border": "#F0EADC",
-          "accent-warm": "#EBA584",
-          "accent-warm-light": "#F5D4C3",
+          "bone-white": "#FAFBFC",        // --paper (app background)
+          "light-sand": "#EFF5F7",        // --tint (hovers, soft fills)
+          "charcoal": "#16242B",          // --ink (text + headings)
+          "text-secondary": "#33454E",    // --ink2
+          "text-muted": "#5E7079",        // --muted
+          "border": "#E7EDF0",            // --line
+          "accent-warm": "#1E7C8C",       // --accent (teal) — name kept; value now teal
+          "accent-warm-light": "#E4F0F2", // --accent-tint
         },
       },
       borderRadius: {

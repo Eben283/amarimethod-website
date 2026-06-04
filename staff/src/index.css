@@ -4,30 +4,32 @@
 
 @layer base {
   :root {
-    --background: 40 100% 98%;
-    --foreground: 0 0% 15%;
+    /* Remapped 2026-06-04 to the client-detail "Chart" palette (cool paper +
+       teal accent) so the whole staff app matches the client view. */
+    --background: 210 20% 99%;
+    --foreground: 199 33% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card-foreground: 199 33% 13%;
 
-    --popover: 40 100% 98%;
-    --popover-foreground: 0 0% 15%;
+    --popover: 210 20% 99%;
+    --popover-foreground: 199 33% 13%;
 
-    --primary: 0 0% 15%;
-    --primary-foreground: 40 100% 98%;
+    --primary: 199 33% 13%;
+    --primary-foreground: 210 20% 99%;
 
-    --secondary: 39 40% 93%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 195 33% 96%;
+    --secondary-foreground: 199 33% 13%;
 
-    --muted: 39 40% 93%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 195 33% 96%;
+    --muted-foreground: 199 13% 42%;
 
-    --accent: 19 78% 72%;
-    --accent-foreground: 0 0% 15%;
+    --accent: 189 64% 33%;
+    --accent-foreground: 0 0% 100%;
 
-    --border: 39 30% 88%;
-    --input: 39 30% 88%;
-    --ring: 0 0% 15%;
+    --border: 204 22% 92%;
+    --input: 204 22% 92%;
+    --ring: 199 33% 13%;
 
     --radius: 0.75rem;
   }
