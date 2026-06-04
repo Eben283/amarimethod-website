@@ -50,8 +50,10 @@
 }
 
 @layer components {
+  /* Matches the client view's sa-card: flat (no shadow), hairline cool border,
+     14px radius, airier padding. */
   .staff-card {
-    @apply bg-white rounded-xl border border-amari-border p-4 shadow-card transition-all duration-200;
+    @apply bg-white rounded-[14px] border border-amari-border p-5 transition-all duration-200;
   }
 
   .staff-card-tap {
@@ -71,7 +73,7 @@
   }
 
   .staff-btn-accent {
-    @apply staff-btn bg-amari-accent-warm text-white hover:bg-[#e0926f] active:bg-[#d4825f];
+    @apply staff-btn bg-amari-accent-warm text-white hover:bg-[#196a78] active:bg-[#155865];
   }
 
   .staff-input {
