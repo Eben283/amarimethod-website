@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronRight, AlertTriangle, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getBalances, ApiError } from '../lib/api';
+import { getBalances, getOwedList, getOwedStatus, ApiError, type OwedRow } from '../lib/api';
 import type { BalanceRow } from '../types/staff';
 import LedgerWarning from '../components/LedgerWarning';
 
@@ -47,6 +47,10 @@ export default function BalancesPage() {
   const [error, setError] = useState('');
   const [sort, setSort] = useState<SortKey>('remaining');
   const [query, setQuery] = useState('');
+  // Stripe-grounded "who owes for sessions taken" — loads independently so a
+  // Stripe hiccup never blocks the balances list.
+  const [owedRows, setOwedRows] = useState<OwedRow[]>([]);
+  const [owedLoading, setOwedLoading] = useState(true);
 
   const load = useCallback(
     async (refresh = false) => {
@@ -73,6 +77,36 @@ export default function BalancesPage() {
   useEffect(() => {
     load(false);
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { roster } = await getOwedList();
+        // Resolve each client's owed status via the accurate (email-grounded)
+        // per-client endpoint — each is its own request, so no single request
+        // blows the subrequest budget.
+        const resolved = await Promise.all(
+          (roster || []).map(async (r) => {
+            try {
+              const o = await getOwedStatus(r.contactId);
+              return { ...r, ...o } as OwedRow;
+            } catch {
+              return { ...r, status: 'unavailable' } as OwedRow;
+            }
+          }),
+        );
+        if (!cancelled) setOwedRows(resolved);
+      } catch {
+        /* non-blocking — owed section just stays empty */
+      } finally {
+        if (!cancelled) setOwedLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const owing = useMemo(() => owedRows.filter((r) => r.status === 'owed'), [owedRows]);
 
   const visibleRows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -126,6 +160,42 @@ export default function BalancesPage() {
           <p className="text-[11px] text-amari-text-muted uppercase tracking-wide">Sessions owed</p>
           <p className="text-2xl font-serif text-amari-accent-warm">{totalRemaining}</p>
         </div>
+      </div>
+
+      {/* Owed for sessions taken — Stripe-grounded */}
+      <div className="staff-card mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-amari-charcoal">Owed for sessions taken</p>
+          {owedLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-amari-text-muted" />
+          ) : (
+            <span className="text-[11px] text-amari-text-muted">{owing.length} owe · {owedRows.length} active</span>
+          )}
+        </div>
+        {owedLoading ? (
+          <p className="text-xs text-amari-text-muted">Checking Stripe…</p>
+        ) : owing.length === 0 ? (
+          <p className="text-xs text-amari-text-muted">No one currently owes for a session.</p>
+        ) : (
+          <div className="space-y-1">
+            {owing.map((r) => (
+              <button
+                key={r.contactId}
+                onClick={() => navigate(`/client/${r.contactId}`)}
+                className="w-full text-left flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-amari-light-sand"
+              >
+                <span className="text-sm text-amari-charcoal truncate">{r.name}</span>
+                <span className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs font-semibold text-red-600">
+                    Owes {r.shortBy}{r.confidence === 'medium' ? '?' : ''}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-amari-text-muted" />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        <p className="text-[10px] text-amari-text-muted mt-2">Stripe-grounded overview · “?” = paid for some, verify · tap for the full breakdown</p>
       </div>
 
       {ledgerSource === 'custom-field-fallback' && lowConfidenceCount > 0 && (
