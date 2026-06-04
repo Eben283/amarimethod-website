@@ -13,13 +13,16 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+  // LOW-2: echo the origin only when allow-listed; omit ACAO otherwise.
+  const headers = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 
 // Simple JWT-like token using HMAC-SHA256
@@ -114,10 +117,19 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
+    // LOW-4: reject oversized bodies before parsing — endpoint only needs {email}.
+    const contentLength = parseInt(context.request.headers.get("content-length") || "0", 10);
+    if (contentLength > 2048) {
+      return new Response(
+        JSON.stringify({ error: "Request too large." }),
+        { status: 413, headers }
+      );
+    }
+
     const body = await context.request.json();
     const email = (body.email || "").trim().toLowerCase();
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
         { status: 400, headers }
@@ -166,7 +178,6 @@ export async function onRequestPost(context) {
     // ── Partner gate: must have affiliate-partner tag ──
     const tags = contact.tags || [];
     if (!tags.includes("affiliate-partner")) {
-      console.log(`[partner-auth] Contact ${contact.id} is not a partner`);
       return new Response(
         JSON.stringify({
           error: "This portal is for approved partners. Contact hello@amarimethod.com if you think this is an error.",
@@ -242,7 +253,7 @@ export async function onRequestPost(context) {
       console.error(`[partner-auth] Tag update error: ${tagErr.message}`);
     }
 
-    console.log(`[partner-auth] Magic link generated for partner: ${contact.id}`);
+    console.log(`[partner-auth] Magic link generated`);
 
     // Set cooldown so the same address can't trigger another email for 60 seconds
     if (context.env.PORTAL_KV) {

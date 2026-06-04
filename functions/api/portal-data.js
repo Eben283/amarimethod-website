@@ -14,13 +14,16 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+  // LOW-2: echo the origin only when allow-listed; omit ACAO otherwise.
+  const headers = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 
 // Extract custom field value from GHL contact

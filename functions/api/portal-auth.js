@@ -13,13 +13,17 @@ const ALLOWED_ORIGINS = [
 ];
 
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
+  // LOW-2: echo the origin only when allow-listed; omit ACAO otherwise instead
+  // of returning a constant origin that reads like an allowlist but isn't.
+  const headers = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 
 // Simple JWT-like token using HMAC-SHA256
@@ -47,15 +51,13 @@ async function findContactByEmail(email, apiKey) {
   // Strategy 1: GET /contacts/search/duplicate — designed for email lookup
   try {
     const dupeUrl = `${GHL_API_BASE}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&email=${encodeURIComponent(email)}`;
-    console.log(`[portal-auth] Trying duplicate search: ${dupeUrl}`);
+    // LOW-3: do not log the URL — it carries the email (PII).
     const dupeResponse = await fetch(dupeUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey),
     });
-    console.log(`[portal-auth] Duplicate search status: ${dupeResponse.status}`);
     if (dupeResponse.ok) {
       const dupeData = await dupeResponse.json();
-      console.log(`[portal-auth] Duplicate search response keys: ${Object.keys(dupeData).join(", ")}`);
       // Response may have { contact: {...} } or { contacts: [...] }
       if (dupeData.contact && dupeData.contact.id) {
         return dupeData.contact;
@@ -71,15 +73,13 @@ async function findContactByEmail(email, apiKey) {
   // Strategy 2: GET /contacts/ with query parameter — list contacts filtered by email
   try {
     const listUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(email)}&limit=1`;
-    console.log(`[portal-auth] Trying contacts list: ${listUrl}`);
+    // LOW-3: do not log the URL — it carries the email (PII).
     const listResponse = await fetch(listUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey),
     });
-    console.log(`[portal-auth] Contacts list status: ${listResponse.status}`);
     if (listResponse.ok) {
       const listData = await listResponse.json();
-      console.log(`[portal-auth] Contacts list response keys: ${Object.keys(listData).join(", ")}`);
       const contacts = listData.contacts || [];
       // Find exact email match
       const match = contacts.find(
@@ -141,10 +141,19 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
+    // LOW-4: reject oversized bodies before parsing — endpoint only needs {email}.
+    const contentLength = parseInt(context.request.headers.get("content-length") || "0", 10);
+    if (contentLength > 2048) {
+      return new Response(
+        JSON.stringify({ error: "Request too large." }),
+        { status: 413, headers }
+      );
+    }
+
     const body = await context.request.json();
     const email = (body.email || "").trim().toLowerCase();
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
         { status: 400, headers }
@@ -181,12 +190,10 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Look up contact in GHL
-    console.log(`[portal-auth] Looking up contact: ${email}`);
+    // Look up contact in GHL (LOW-3: don't log the email)
     const contact = await findContactByEmail(email, GHL_API_KEY);
 
     if (!contact || !contact.id) {
-      console.log(`[portal-auth] Contact not found for: ${email}`);
       return new Response(
         JSON.stringify({
           error: "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com.",
@@ -194,8 +201,6 @@ export async function onRequestPost(context) {
         { status: 404, headers }
       );
     }
-
-    console.log(`[portal-auth] Contact found: ${contact.id}`);
 
     // Generate magic link token (24-hour expiry)
     const nonce = crypto.randomUUID();
@@ -269,7 +274,7 @@ export async function onRequestPost(context) {
       console.error(`[portal-auth] Tag update error: ${tagErr.message}`);
     }
 
-    console.log(`[portal-auth] Magic link generated for contact: ${contact.id}`);
+    console.log(`[portal-auth] Magic link generated`);
 
     // Set cooldown so the same address can't trigger another email for 60 seconds
     if (context.env.PORTAL_KV) {
