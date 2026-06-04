@@ -450,6 +450,24 @@ export default function ClientDetailPage() {
           {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
         </section>
 
+        {/* purchase history — from Stripe (lazy-loaded with owed status) */}
+        {owed?.purchases && owed.purchases.length > 0 && (
+          <section className="sa-card">
+            <div className="sa-card-h">
+              <span className="t">Purchase history</span>
+              <span className="sa-mod-count">${Math.round(owed.totalPaid ?? 0)} total</span>
+            </div>
+            <div className="sa-kv">
+              {owed.purchases.map((p, i) => (
+                <div className="row" key={i}>
+                  <span className="k">{p.date ?? '—'} · {p.label}</span>
+                  <span className="v">${p.amount}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* quiz results */}
         {quiz && (
           <section className="sa-card">
