@@ -5,7 +5,7 @@ import {
   ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct, type PaymentCapture } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, togglePrepaid, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
@@ -71,11 +71,11 @@ export default function ClientDetailPage() {
   // chooser is open, and the comp-note draft for it.
   const [payingApptId, setPayingApptId] = useState<string | null>(null);
   const [compNoteDraft, setCompNoteDraft] = useState('');
+  // Owed status (Stripe-grounded) — lazy-loaded after the page renders.
+  const [owed, setOwed] = useState<OwedStatus | null>(null);
   const [sendingToolkit, setSendingToolkit] = useState(false);
   const [toolkitStatus, setToolkitStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [togglingPrepaid, setTogglingPrepaid] = useState(false);
-  const [markingNotFit, setMarkingNotFit] = useState(false);
-  const [notFitStatus, setNotFitStatus] = useState<'idle' | 'done' | 'error'>('idle');
   const [payLinkStatus, setPayLinkStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
@@ -190,24 +190,6 @@ export default function ClientDetailPage() {
     }
   }
 
-  async function handleNotAFit() {
-    if (!client || markingNotFit) return;
-    setMarkingNotFit(true);
-    setNotFitStatus('idle');
-    try {
-      await markNotAFit(client.id);
-      setNotFitStatus('done');
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        logout();
-        return;
-      }
-      setNotFitStatus('error');
-    } finally {
-      setMarkingNotFit(false);
-    }
-  }
-
   function renderPayRow(product: PayLinkProduct, label: string, price: string) {
     const status = payLinkStatus[product] || 'idle';
     const isSending = status === 'sending';
@@ -250,6 +232,18 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     loadClient();
+  }, [id]);
+
+  // Lazy-load Stripe-grounded owed status (separate, non-blocking — a Stripe
+  // hiccup must never stop the page from rendering).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setOwed(null);
+    getOwedStatus(id)
+      .then((r) => { if (!cancelled) setOwed(r); })
+      .catch(() => { if (!cancelled) setOwed(null); });
+    return () => { cancelled = true; };
   }, [id]);
 
   // Refetch when the tab regains focus.
@@ -436,14 +430,6 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {/* not a fit — non-partner clients only */}
-        {!isPartner && toolkitStatus !== 'sent' && (
-          <button className="sa-qbtn is-ghost" onClick={handleNotAFit} disabled={markingNotFit || notFitStatus === 'done'}>
-            <span className="ic">{markingNotFit ? <Loader2 size={16} className="sa-spin" /> : notFitStatus === 'done' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}</span>
-            <span className="tx"><b>{notFitStatus === 'done' ? 'Marked — future potential' : 'Not a fit'}</b></span>
-          </button>
-        )}
-
         {/* session brief */}
         <section className="sa-brief">
           <span className="lbl">Session brief</span>
@@ -555,7 +541,22 @@ export default function ClientDetailPage() {
 
         {/* appointments */}
         <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Appointments</span><span className="sa-mod-count">{client.appointments.length} total</span></div>
+          <div className="sa-card-h">
+            <span className="t">Appointments</span>
+            {owed && owed.status === 'owed' && (
+              <span title={`Attended ${owed.attendedBillable}, paid for ${owed.sessionsPurchased}${owed.confidence === 'medium' ? ' — verify' : ''}`}
+                style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#fee2e2', color: '#b91c1c' }}>
+                Owed {owed.shortBy} session{owed.shortBy === 1 ? '' : 's'}{owed.confidence === 'medium' ? '?' : ''}
+              </span>
+            )}
+            {owed && owed.status === 'square' && (
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#dcfce7', color: '#15803d' }}>Paid up</span>
+            )}
+            {owed && owed.status === 'paid-legacy' && (
+              <span title="Paid at a legacy price (amount not in current map)" style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#f1f5f9', color: '#475569' }}>Paid (legacy)</span>
+            )}
+            <span className="sa-mod-count">{client.appointments.length} total</span>
+          </div>
           {attendedError && <div className="sa-errbar" style={{ marginBottom: 10 }}>{attendedError}</div>}
           {client.appointments.length === 0 ? (
             <p className="sa-empty">No appointments</p>

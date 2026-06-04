@@ -127,6 +127,22 @@ export async function markAttended(
   });
 }
 
+export interface OwedStatus {
+  status: 'owed' | 'square' | 'paid-legacy' | 'unavailable';
+  shortBy?: number | null;
+  confidence?: 'high' | 'medium';
+  reason?: string;
+  totalPaid?: number;
+  sessionsPurchased?: number;
+  attendedBillable?: number;
+  unknownCount?: number;
+  chargeCount?: number;
+}
+
+export async function getOwedStatus(contactId: string): Promise<OwedStatus> {
+  return fetchApi(`/staff-owed?contactId=${encodeURIComponent(contactId)}`);
+}
+
 export async function saveProgress(
   contactId: string,
   progress: { modules: Record<string, boolean>; yogaBlockSize: string | null; bodyGraph: Record<string, string | null> },
