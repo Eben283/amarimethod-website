@@ -4,6 +4,7 @@
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
+import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -274,6 +275,52 @@ export async function onRequestPost(context) {
       }
     }
 
+    // ── Per-session payment capture (NON-BLOCKING) ──
+    // Record whether THIS specific session was paid / comped / on-package,
+    // keyed by appointmentId in PURCHASE_KV. This must NEVER affect the
+    // attendance result — any failure is logged and swallowed. The decision is
+    // a pure function (functions/lib/session-payment.js); here we just persist.
+    //   - body.paymentStatus / paymentMethod / compNote = Garrett's answer to
+    //     "how was this paid?" (UI prompts only for non-package sessions).
+    //   - no answer + package covers it → auto "on-package".
+    //   - no answer + not covered → nothing recorded (feeds the owed pool).
+    let paymentRecorded = false;
+    try {
+      const capture = resolveSessionPayment({
+        contactId,
+        appointmentId,
+        explicitStatus: (body.paymentStatus || "").trim() || null,
+        method: (body.paymentMethod || "").trim() || null,
+        note: (body.compNote || "").trim() || null,
+        drawsFromPackage,
+        currentRemaining,
+        recordedBy: tokenPayload.email || tokenPayload.sub || "staff",
+        at: new Date().toISOString(),
+      });
+      if (capture && context.env.PURCHASE_KV) {
+        const record = buildPaymentRecord(capture);
+        await writePaymentRecord(context.env.PURCHASE_KV, record);
+        paymentRecorded = true;
+        // Backup GHL note for comps / anything carrying a human note, so the
+        // reason (e.g. "rare 2nd comp") lands in the contact timeline and
+        // survives KV. Routine "on-package"/stripe records skip the note to
+        // keep the timeline clean.
+        if (record.status === "comped" || record.note) {
+          const noteBody = `Payment: ${record.status}${record.method ? ` (${record.method})` : ""}${record.note ? ` — ${record.note}` : ""} [appt ${appointmentId}]`;
+          try {
+            await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`, {
+              method: "POST",
+              body: JSON.stringify({ body: noteBody }),
+            });
+          } catch (noteErr) {
+            console.error("[staff-mark-attended] payment note write failed (non-blocking):", noteErr);
+          }
+        }
+      }
+    } catch (payErr) {
+      console.error("[staff-mark-attended] payment capture failed (non-blocking):", payErr);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       alreadyAttended: false,
@@ -283,6 +330,7 @@ export async function onRequestPost(context) {
       sessionsCompleted: newCompleted,
       sessionsRemaining: newRemaining,
       pairedEntrainmentId,
+      paymentRecorded,
     }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-mark-attended] Unexpected error:", err);

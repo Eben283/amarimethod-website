@@ -5,6 +5,7 @@ import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
+import { listPaymentRecordsForContact } from "../lib/session-payment.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -105,6 +106,11 @@ export async function onRequestGet(context) {
       }
     }
 
+    // Per-session payment records (paid / comped / on-package / …), keyed by
+    // appointmentId. Fail-soft: returns {} if KV is unbound or errors, so an
+    // appointment with no record renders as "unknown". See session-payment.js.
+    const paymentRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId);
+
     // Parse appointments — keep raw GHL fields for the ledger, build display shape separately
     let rawAppointments = [];
     let appointments = [];
@@ -112,14 +118,20 @@ export async function onRequestGet(context) {
       const apptData = await appointmentsRes.json();
       rawAppointments = apptData.appointments || apptData.events || [];
       appointments = rawAppointments
-        .map((a) => ({
-          id: a.id,
-          title: a.title || a.calendarName || "Session",
-          calendarName: calendarMap[a.calendarId] || a.calendarName || "",
-          startTime: a.startTime || a.start_time,
-          endTime: a.endTime || a.end_time,
-          status: (a.appointmentStatus || a.status || "confirmed").toLowerCase(),
-        }))
+        .map((a) => {
+          const pay = paymentRecords[a.id] || null;
+          return {
+            id: a.id,
+            title: a.title || a.calendarName || "Session",
+            calendarName: calendarMap[a.calendarId] || a.calendarName || "",
+            startTime: a.startTime || a.start_time,
+            endTime: a.endTime || a.end_time,
+            status: (a.appointmentStatus || a.status || "confirmed").toLowerCase(),
+            paymentStatus: pay?.status || "unknown",
+            paymentMethod: pay?.method || null,
+            paymentNote: pay?.note || null,
+          };
+        })
         .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
     }
 

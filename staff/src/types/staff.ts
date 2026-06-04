@@ -3,6 +3,15 @@ export interface StaffAuthState {
   isLoading: boolean;
 }
 
+// Per-session payment status, keyed per appointment (see functions/lib/session-payment.js).
+export type PaymentStatus =
+  | 'paid'
+  | 'comped'
+  | 'on-package'
+  | 'pay-next-visit'
+  | 'owed'
+  | 'unknown';
+
 export interface TodayAppointment {
   id: string;
   contactId: string;
@@ -16,6 +25,9 @@ export interface TodayAppointment {
   seriesType: string;
   tags: string[];
   sessionPrepaid: boolean;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: string | null;
+  paymentNote?: string | null;
 }
 
 export interface ContactListItem {
@@ -69,6 +81,9 @@ export interface ContactAppointment {
   startTime: string;
   endTime: string;
   status: string;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: string | null;
+  paymentNote?: string | null;
 }
 
 export interface ContactNote {
