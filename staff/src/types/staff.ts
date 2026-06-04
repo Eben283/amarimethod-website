@@ -50,6 +50,7 @@ export interface ContactDetail {
   sessionsCompleted: number;
   sessionsRemaining: number;
   sessionPrepaid: boolean;
+  agreementSigned?: boolean;
   tags: string[];
   dateAdded: string;
   lastAppointment: string | null;
