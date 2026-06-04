@@ -302,8 +302,13 @@ export default function ClientDetailPage() {
   );
   const showPaymentBanner = !(hasActiveSeries || !hasUpcomingAppt);
 
-  const signedTag = 'policies-signed-practice-member-v2026-04-17';
-  const alreadySigned = client.tags.includes(signedTag);
+  // A client has agreed to the practice-member agreement via EITHER flow:
+  //   - in-app staff check-in  → tag policies-signed-practice-member-v2026-04-17
+  //   - website booking flow    → tag agreed-pma-v2026-04-17 (create-checkout.js)
+  // Both are the same v2026-04-17 agreement; check either so booking-flow clients
+  // (the majority) aren't wrongly told to sign again.
+  const SIGNED_TAGS = ['policies-signed-practice-member-v2026-04-17', 'agreed-pma-v2026-04-17'];
+  const alreadySigned = SIGNED_TAGS.some((t) => client.tags.includes(t));
   const quiz = client.quizResults;
 
   return (
