@@ -51,6 +51,7 @@ export default function BalancesPage() {
   // Stripe hiccup never blocks the balances list.
   const [owedRows, setOwedRows] = useState<OwedRow[]>([]);
   const [owedLoading, setOwedLoading] = useState(true);
+  const [owedError, setOwedError] = useState(false);
 
   const load = useCallback(
     async (refresh = false) => {
@@ -98,7 +99,7 @@ export default function BalancesPage() {
         );
         if (!cancelled) setOwedRows(resolved);
       } catch {
-        /* non-blocking — owed section just stays empty */
+        if (!cancelled) setOwedError(true);
       } finally {
         if (!cancelled) setOwedLoading(false);
       }
@@ -162,20 +163,24 @@ export default function BalancesPage() {
         </div>
       </div>
 
-      {/* Owed for sessions taken — Stripe-grounded */}
+      {/* Clients who owe for sessions they've taken — Stripe-grounded */}
       <div className="staff-card mb-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium text-amari-charcoal">Owed for sessions taken</p>
+          <p className="text-sm font-medium text-amari-charcoal">Hasn't paid for a session</p>
           {owedLoading ? (
             <Loader2 className="w-4 h-4 animate-spin text-amari-text-muted" />
-          ) : (
-            <span className="text-[11px] text-amari-text-muted">{owing.length} owe · {owedRows.length} active</span>
-          )}
+          ) : !owedError && owedRows.length > 0 ? (
+            <span className="text-[11px] text-amari-text-muted">{owing.length} of {owedRows.length} clients</span>
+          ) : null}
         </div>
         {owedLoading ? (
-          <p className="text-xs text-amari-text-muted">Checking Stripe…</p>
+          <p className="text-xs text-amari-text-muted">Checking payments…</p>
+        ) : owedError ? (
+          <p className="text-xs text-amber-700">Couldn't check payments right now — try refreshing.</p>
+        ) : owedRows.length === 0 ? (
+          <p className="text-xs text-amari-text-muted">No recent clients to check.</p>
         ) : owing.length === 0 ? (
-          <p className="text-xs text-amari-text-muted">No one currently owes for a session.</p>
+          <p className="text-xs text-amari-text-muted">All {owedRows.length} recent clients are paid up.</p>
         ) : (
           <div className="space-y-1">
             {owing.map((r) => (
@@ -187,7 +192,7 @@ export default function BalancesPage() {
                 <span className="text-sm text-amari-charcoal truncate">{r.name}</span>
                 <span className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-xs font-semibold text-red-600">
-                    Owes {r.shortBy}{r.confidence === 'medium' ? '?' : ''}
+                    {r.shortBy} unpaid{r.confidence === 'medium' ? '?' : ''}
                   </span>
                   <ChevronRight className="w-4 h-4 text-amari-text-muted" />
                 </span>
@@ -195,7 +200,7 @@ export default function BalancesPage() {
             ))}
           </div>
         )}
-        <p className="text-[10px] text-amari-text-muted mt-2">Stripe-grounded overview · “?” = paid for some, verify · tap for the full breakdown</p>
+        <p className="text-[10px] text-amari-text-muted mt-2">From Stripe · “?” = paid for some, double-check · tap a name for the breakdown</p>
       </div>
 
       {ledgerSource === 'custom-field-fallback' && lowConfidenceCount > 0 && (
