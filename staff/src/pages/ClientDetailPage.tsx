@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send, XCircle,
-  ExternalLink, ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
+  ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, markNotAFit, saveProgress, togglePrepaid, sendPayLink, ApiError, type PayLinkProduct } from '../lib/api';
@@ -42,19 +42,10 @@ function noteKind(body: string): string {
   return 'Note';
 }
 
-function msgChannel(type: string): string {
-  const t = (type || '').toUpperCase().replace('TYPE_', '');
-  if (t.includes('SMS')) return 'SMS';
-  if (t.includes('EMAIL')) return 'Email';
-  if (t.includes('CALL')) return 'Call';
-  return t || 'Msg';
-}
-
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');
-  const focus = searchParams.get('focus');
   const debugMode = searchParams.get('debug') === '1';
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -251,13 +242,6 @@ export default function ClientDetailPage() {
     };
   }, [id]);
 
-  // Scroll to the messages section when arriving from the Messages tab
-  useEffect(() => {
-    if (!client || focus !== 'messages') return;
-    const el = document.getElementById('messages-section');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [client, focus]);
-
   if (isLoading && !client) {
     return (
       <div className="sa">
@@ -281,7 +265,6 @@ export default function ClientDetailPage() {
 
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ') || 'Unknown';
   const isPartner = client.tags.includes('affiliate-partner');
-  const showPartnerActions = isPartner || client.tags.includes('partner-session-booked');
   const roleWord = isPartner ? 'Referral partner' : client.seriesType !== 'none' ? `${client.seriesType.replace('-session', '')}-session client` : 'Client';
 
   // session progress numbers (same math as SessionStats)
@@ -337,22 +320,176 @@ export default function ClientDetailPage() {
         {/* ============ IN SESSION ============ */}
         <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">What you do with the client today</span><span className="gl" /></div>
 
-        {/* check in */}
-        <button
-          className={`sa-qbtn is-accent${alreadySigned ? ' is-sent' : ''}`}
-          onClick={() => navigate(`/check-in/${client.id}`)}
-        >
-          <span className="ic">{alreadySigned ? <CheckCircle2 size={20} /> : <ClipboardCheck size={20} />}</span>
-          <span className="tx">
-            <b>{alreadySigned ? 'Policies signed' : 'Check in'}</b>
-            <span>{alreadySigned ? 'Tap to review or re-sign' : 'Sign policies & start the session'}</span>
-          </span>
-        </button>
+        {/* policy agreement — one-time signature, only shown until signed */}
+        {!alreadySigned && (
+          <button
+            className="sa-qbtn is-accent"
+            onClick={() => navigate(`/check-in/${client.id}`)}
+          >
+            <span className="ic"><ClipboardCheck size={20} /></span>
+            <span className="tx">
+              <b>Still needs to sign agreement</b>
+              <span>Tap to sign the practice member agreement</span>
+            </span>
+          </button>
+        )}
 
         {/* checklist (only when navigated from Today) */}
         {appointmentId && (
           <div className="sa-card"><Checklist appointmentId={appointmentId} client={client} /></div>
         )}
+
+        {/* partner toolkit — pinned near the top; mirrors the pay-link pattern:
+            tap to reveal a confirm, then tap to actually send (it fires a real
+            message to the client, so no single-press accidental sends). */}
+        <div>
+          <button
+            className={`sa-paytrigger${toolkitOpen ? ' open' : ''}`}
+            onClick={() => toolkitStatus === 'sent' ? undefined : setToolkitOpen((v) => !v)}
+          >
+            <span className="ic">{toolkitStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}</span>
+            <span className="tx">
+              <b>{toolkitStatus === 'sent' ? 'Toolkit sent' : 'Send partner toolkit'}</b>
+              <span>Referral assets &amp; pay links</span>
+            </span>
+            {toolkitStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
+          </button>
+          <div className={`sa-collapse${toolkitOpen && toolkitStatus !== 'sent' ? ' open' : ''}`}>
+            <div className="sa-collapse-in">
+              <button
+                className={`sa-pay-row${toolkitStatus === 'error' ? ' is-error' : ''}`}
+                onClick={handleSendToolkit}
+                disabled={sendingToolkit}
+              >
+                <span className="ic">{sendingToolkit ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
+                <span className="nm">{sendingToolkit ? 'Sending…' : toolkitStatus === 'error' ? 'Failed — tap to retry' : 'Confirm — send toolkit now'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ============ ADMIN & CHECKOUT ============ */}
+        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Payment, products, records</span><span className="gl" /></div>
+
+        {/* pay status banner */}
+        {showPaymentBanner && (
+          <div className={`sa-paystat${client.sessionPrepaid ? ' is-paid' : ''}`}>
+            <span className="l">
+              <span className="ic">{client.sessionPrepaid ? <Check size={18} strokeWidth={2.2} /> : <DollarSign size={18} />}</span>
+              {client.sessionPrepaid ? 'Prepaid' : 'Pay at visit'}
+            </span>
+            <button onClick={handleTogglePrepaid} disabled={togglingPrepaid}>
+              {togglingPrepaid ? '…' : client.sessionPrepaid ? 'Undo' : 'Mark prepaid'}
+            </button>
+          </div>
+        )}
+
+        {/* collapsible pay link */}
+        {client.phone && (
+          <div>
+            <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
+              <span className="ic"><Send size={17} /></span>
+              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
+              <span className="cv"><ChevronRight size={18} /></span>
+            </button>
+            <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
+              <div className="sa-collapse-in">
+                {renderPayRow('8-session-series', '8-Pack', '$1,295')}
+                {renderPayRow('4-session-series', '4-Pack', '$720')}
+                {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                {showMorePayLinks && (
+                  <>
+                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
+                    {renderPayRow('follow-up', 'Follow-up', '$190')}
+                    {renderPayRow('living-practice', 'Living Practice', '$347')}
+                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
+                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
+                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+                  </>
+                )}
+                <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* not a fit — non-partner clients only */}
+        {!isPartner && toolkitStatus !== 'sent' && (
+          <button className="sa-qbtn is-ghost" onClick={handleNotAFit} disabled={markingNotFit || notFitStatus === 'done'}>
+            <span className="ic">{markingNotFit ? <Loader2 size={16} className="sa-spin" /> : notFitStatus === 'done' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}</span>
+            <span className="tx"><b>{notFitStatus === 'done' ? 'Marked — future potential' : 'Not a fit'}</b></span>
+          </button>
+        )}
+
+        {/* session brief */}
+        <section className="sa-brief">
+          <span className="lbl">Session brief</span>
+          <p>{buildSessionBrief(client)}</p>
+        </section>
+
+        {/* session progress */}
+        <section className="sa-card">
+          <div className="sa-card-h">
+            <span className="t">Session progress</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <LedgerWarning
+                size="full"
+                confidence={client.ledgerConfidence}
+                ambiguities={client.ledgerAmbiguities}
+                manualLock={client.ledgerManualLock}
+                displaySource={client.ledgerDisplaySource}
+                derivedRemaining={client.ledgerDerivedRemaining}
+                displayedRemaining={client.sessionsRemaining}
+                purchased={client.ledgerPurchased ?? undefined}
+                attended={client.ledgerAttended}
+              />
+              {isPartner && <span className="sa-chip">Partner</span>}
+            </span>
+          </div>
+          <div className="sa-prog">
+            <div className="cell"><span className="v">{currentSeriesCompleted}</span><span className="lbl k">This series</span></div>
+            <div className="cell"><span className="v">{client.sessionsRemaining}</span><span className="lbl k">Remaining</span></div>
+            <div className="cell"><span className="v">{packageLabel}</span><span className="lbl k">Package</span></div>
+          </div>
+          {totalSessions > 0 && <div className="sa-prog-bar"><i style={{ width: progressPct + '%' }} /></div>}
+          {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
+        </section>
+
+        {/* quiz results */}
+        {quiz && (
+          <section className="sa-card">
+            <div className="sa-card-h"><span className="t">Quiz results</span></div>
+            <div className="sa-kv">
+              {quiz.primaryPainLocation && <div className="row"><span className="k">Primary issue</span><span className="v">{quiz.primaryPainLocation}</span></div>}
+              {quiz.painDuration && <div className="row"><span className="k">Duration</span><span className="v">{quiz.painDuration}</span></div>}
+              {quiz.painIntensity && <div className="row"><span className="k">Intensity</span><span className="v">{quiz.painIntensity}</span></div>}
+              {quiz.painTrigger && <div className="row"><span className="k">Trigger</span><span className="v">{quiz.painTrigger}</span></div>}
+              {quiz.additionalPainAreas && <div className="row"><span className="k">Also affects</span><span className="v">{quiz.additionalPainAreas}</span></div>}
+              {quiz.treatmentsTried && <div className="row"><span className="k">Tried</span><span className="v">{quiz.treatmentsTried}{quiz.treatmentResults ? ` — ${quiz.treatmentResults}` : ''}</span></div>}
+              {quiz.dailyImpact && <div className="row"><span className="k">Daily impact</span><span className="v">{quiz.dailyImpact}</span></div>}
+            </div>
+          </section>
+        )}
+
+        {/* notes */}
+        <section className="sa-card">
+          <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
+          {client.notes.length === 0 ? (
+            <p className="sa-empty">No notes yet</p>
+          ) : (
+            <div className="sa-notes">
+              {client.notes.map((n) => (
+                <div key={n.id} className="sa-note">
+                  <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
+                  <p>{n.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ============ IN SESSION (cont.) ============ */}
+        <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">Modules, body map &amp; appointments</span><span className="gl" /></div>
 
         {/* modules taught */}
         <section className="sa-card">
@@ -427,181 +564,6 @@ export default function ClientDetailPage() {
                   </div>
                 );
               })}
-            </div>
-          )}
-        </section>
-
-        {/* ============ ADMIN & CHECKOUT ============ */}
-        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Payment, products, records</span><span className="gl" /></div>
-
-        {/* pay status banner */}
-        {showPaymentBanner && (
-          <div className={`sa-paystat${client.sessionPrepaid ? ' is-paid' : ''}`}>
-            <span className="l">
-              <span className="ic">{client.sessionPrepaid ? <Check size={18} strokeWidth={2.2} /> : <DollarSign size={18} />}</span>
-              {client.sessionPrepaid ? 'Prepaid' : 'Pay at visit'}
-            </span>
-            <button onClick={handleTogglePrepaid} disabled={togglingPrepaid}>
-              {togglingPrepaid ? '…' : client.sessionPrepaid ? 'Undo' : 'Mark prepaid'}
-            </button>
-          </div>
-        )}
-
-        {/* collapsible pay link */}
-        {client.phone && (
-          <div>
-            <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
-              <span className="ic"><Send size={17} /></span>
-              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
-              <span className="cv"><ChevronRight size={18} /></span>
-            </button>
-            <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
-              <div className="sa-collapse-in">
-                {renderPayRow('8-session-series', '8-Pack', '$1,295')}
-                {renderPayRow('4-session-series', '4-Pack', '$720')}
-                {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
-                {showMorePayLinks && (
-                  <>
-                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
-                    {renderPayRow('follow-up', 'Follow-up', '$190')}
-                    {renderPayRow('living-practice', 'Living Practice', '$347')}
-                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
-                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
-                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
-                  </>
-                )}
-                <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* partner toolkit + not-a-fit — toolkit mirrors the pay-link pattern:
-            tap to reveal a confirm, then tap to actually send (it fires a real
-            message to the client, so no single-press accidental sends). */}
-        {showPartnerActions && (
-          <>
-            <div>
-              <button
-                className={`sa-paytrigger${toolkitOpen ? ' open' : ''}`}
-                onClick={() => toolkitStatus === 'sent' ? undefined : setToolkitOpen((v) => !v)}
-              >
-                <span className="ic">{toolkitStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}</span>
-                <span className="tx">
-                  <b>{toolkitStatus === 'sent' ? 'Toolkit sent' : 'Send partner toolkit'}</b>
-                  <span>Referral assets &amp; pay links</span>
-                </span>
-                {toolkitStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
-              </button>
-              <div className={`sa-collapse${toolkitOpen && toolkitStatus !== 'sent' ? ' open' : ''}`}>
-                <div className="sa-collapse-in">
-                  <button
-                    className={`sa-pay-row${toolkitStatus === 'error' ? ' is-error' : ''}`}
-                    onClick={handleSendToolkit}
-                    disabled={sendingToolkit}
-                  >
-                    <span className="ic">{sendingToolkit ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
-                    <span className="nm">{sendingToolkit ? 'Sending…' : toolkitStatus === 'error' ? 'Failed — tap to retry' : 'Confirm — send toolkit now'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            {!isPartner && toolkitStatus !== 'sent' && (
-              <button className="sa-qbtn is-ghost" onClick={handleNotAFit} disabled={markingNotFit || notFitStatus === 'done'}>
-                <span className="ic">{markingNotFit ? <Loader2 size={16} className="sa-spin" /> : notFitStatus === 'done' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}</span>
-                <span className="tx"><b>{notFitStatus === 'done' ? 'Marked — future potential' : 'Not a fit'}</b></span>
-              </button>
-            )}
-          </>
-        )}
-
-        {/* session brief */}
-        <section className="sa-brief">
-          <span className="lbl">Session brief</span>
-          <p>{buildSessionBrief(client)}</p>
-        </section>
-
-        {/* session progress */}
-        <section className="sa-card">
-          <div className="sa-card-h">
-            <span className="t">Session progress</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <LedgerWarning
-                size="full"
-                confidence={client.ledgerConfidence}
-                ambiguities={client.ledgerAmbiguities}
-                manualLock={client.ledgerManualLock}
-                displaySource={client.ledgerDisplaySource}
-                derivedRemaining={client.ledgerDerivedRemaining}
-                displayedRemaining={client.sessionsRemaining}
-                purchased={client.ledgerPurchased ?? undefined}
-                attended={client.ledgerAttended}
-              />
-              {isPartner && <span className="sa-chip">Partner</span>}
-            </span>
-          </div>
-          <div className="sa-prog">
-            <div className="cell"><span className="v">{currentSeriesCompleted}</span><span className="lbl k">This series</span></div>
-            <div className="cell"><span className="v">{client.sessionsRemaining}</span><span className="lbl k">Remaining</span></div>
-            <div className="cell"><span className="v">{packageLabel}</span><span className="lbl k">Package</span></div>
-          </div>
-          {totalSessions > 0 && <div className="sa-prog-bar"><i style={{ width: progressPct + '%' }} /></div>}
-          {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
-        </section>
-
-        {/* quiz results */}
-        {quiz && (
-          <section className="sa-card">
-            <div className="sa-card-h"><span className="t">Quiz results</span></div>
-            <div className="sa-kv">
-              {quiz.primaryPainLocation && <div className="row"><span className="k">Primary issue</span><span className="v">{quiz.primaryPainLocation}</span></div>}
-              {quiz.painDuration && <div className="row"><span className="k">Duration</span><span className="v">{quiz.painDuration}</span></div>}
-              {quiz.painIntensity && <div className="row"><span className="k">Intensity</span><span className="v">{quiz.painIntensity}</span></div>}
-              {quiz.painTrigger && <div className="row"><span className="k">Trigger</span><span className="v">{quiz.painTrigger}</span></div>}
-              {quiz.additionalPainAreas && <div className="row"><span className="k">Also affects</span><span className="v">{quiz.additionalPainAreas}</span></div>}
-              {quiz.treatmentsTried && <div className="row"><span className="k">Tried</span><span className="v">{quiz.treatmentsTried}{quiz.treatmentResults ? ` — ${quiz.treatmentResults}` : ''}</span></div>}
-              {quiz.dailyImpact && <div className="row"><span className="k">Daily impact</span><span className="v">{quiz.dailyImpact}</span></div>}
-            </div>
-          </section>
-        )}
-
-        {/* notes */}
-        <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
-          {client.notes.length === 0 ? (
-            <p className="sa-empty">No notes yet</p>
-          ) : (
-            <div className="sa-notes">
-              {client.notes.map((n) => (
-                <div key={n.id} className="sa-note">
-                  <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
-                  <p>{n.body}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* messages */}
-        <section className="sa-card" id="messages-section" style={{ scrollMarginTop: 16 }}>
-          <div className="sa-card-h">
-            <span className="t">Recent messages</span>
-            <a className="sa-ghl" href={`https://app.gohighlevel.com/v2/location/7pIO7FHVAyBT1jKGhfQM/contacts/detail/${client.id}`} target="_blank" rel="noopener noreferrer">Reply in GHL <ExternalLink size={13} /></a>
-          </div>
-          {client.messages.length === 0 ? (
-            <p className="sa-empty">No messages</p>
-          ) : (
-            <div className="sa-msgs">
-              {client.messages.map((m) => (
-                <div key={m.id} className={`sa-msg${m.body && m.body.trim().length <= 3 ? ' is-emoji' : ''}`}>
-                  <div className="sa-msg-top">
-                    <span className="sa-msg-dir">{m.direction === 'outbound' ? 'Sent' : 'Received'}</span>
-                    <span className="sa-msg-ch">{msgChannel(m.type)}</span>
-                    <span className="sa-msg-date">{fmtDate(m.dateAdded)}</span>
-                  </div>
-                  <p>{m.body}</p>
-                </div>
-              ))}
             </div>
           )}
         </section>
