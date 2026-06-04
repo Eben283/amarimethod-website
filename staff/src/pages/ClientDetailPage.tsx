@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send, XCircle,
+  ArrowLeft, Loader2, RefreshCw, Phone, Mail, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
