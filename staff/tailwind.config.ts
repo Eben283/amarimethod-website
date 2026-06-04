@@ -61,8 +61,12 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        'serif': ['Bona Nova', 'Georgia', 'serif'],
-        'sans': ['DM Sans', 'system-ui', 'sans-serif'],
+        // Match the client-view "Chart" type — IBM Plex (already loaded in
+        // index.html). The client view has no serif, so 'serif' (used by
+        // headings) now also maps to IBM Plex Sans so they match.
+        'serif': ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+        'sans': ['IBM Plex Sans', 'system-ui', 'sans-serif'],
+        'mono': ['IBM Plex Mono', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         'card': '0 2px 8px rgba(0, 0, 0, 0.04)',
