@@ -143,6 +143,28 @@ export async function getOwedStatus(contactId: string): Promise<OwedStatus> {
   return fetchApi(`/staff-owed?contactId=${encodeURIComponent(contactId)}`);
 }
 
+export interface OwedRosterRow {
+  contactId: string;
+  name: string;
+  attendedBillable: number;
+  lastSessionMs?: number;
+}
+
+export interface OwedListResponse {
+  roster: OwedRosterRow[];
+  rosterSize?: number;
+  windowDays?: number;
+}
+
+// Lightweight active-client roster (no Stripe). The page resolves each one's
+// owed status via getOwedStatus separately (see staff-owed-list.js rationale).
+export async function getOwedList(): Promise<OwedListResponse> {
+  return fetchApi('/staff-owed-list');
+}
+
+// A roster row enriched with its resolved owed status.
+export type OwedRow = OwedRosterRow & OwedStatus;
+
 export async function saveProgress(
   contactId: string,
   progress: { modules: Record<string, boolean>; yogaBlockSize: string | null; bodyGraph: Record<string, string | null> },
