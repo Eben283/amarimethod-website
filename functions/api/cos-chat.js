@@ -747,10 +747,13 @@ export async function onRequestPost(context) {
   let cosUser = "Eben";
   try {
     const payload = await verifySessionToken(token, context.env.JWT_SECRET);
-    if (payload.role !== "cos") {
+    // Accept the dedicated COS token AND a staff token — the COS chat is now
+    // also embedded natively in the staff app (for in-session questions), where
+    // Garrett/Eben are already authenticated as staff.
+    if (payload.role !== "cos" && payload.role !== "staff") {
       return jsonResponse({ error: "Unauthorized" }, 403, origin);
     }
-    cosUser = payload.user || "Eben";
+    cosUser = payload.user || (payload.role === "staff" ? "Staff" : "Eben");
   } catch {
     return jsonResponse({ error: "Invalid or expired token" }, 401, origin);
   }

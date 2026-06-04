@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Calendar, Users, MessageSquare, Wallet, BookOpen, Handshake } from 'lucide-react';
+import { Calendar, Users, MessageSquare, Wallet, BookOpen, Handshake, Sparkles } from 'lucide-react';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `flex-1 flex flex-col items-center gap-1 py-3 min-h-[44px] transition-colors ${
@@ -13,6 +13,10 @@ export default function StaffNav() {
         <NavLink to="/" end className={linkClass}>
           <Calendar className="w-5 h-5" />
           <span className="text-xs font-medium">Schedule</span>
+        </NavLink>
+        <NavLink to="/cos" className={linkClass}>
+          <Sparkles className="w-5 h-5" />
+          <span className="text-xs font-medium">Ask</span>
         </NavLink>
         <NavLink to="/messages" className={linkClass}>
           <MessageSquare className="w-5 h-5" />

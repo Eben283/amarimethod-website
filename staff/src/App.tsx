@@ -9,6 +9,7 @@ import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
 import PartnersPage from './pages/PartnersPage';
 import CheckInPage from './pages/CheckInPage';
+import CosPage from './pages/CosPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -127,6 +128,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ClientDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cos"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <CosPage />
+            </LayoutWithNav>
           </ProtectedRoute>
         }
       />
