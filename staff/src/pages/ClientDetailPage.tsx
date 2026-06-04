@@ -352,8 +352,8 @@ export default function ClientDetailPage() {
           >
             <span className="ic"><ClipboardCheck size={20} /></span>
             <span className="tx">
-              <b>Still needs to sign agreement</b>
-              <span>Tap to sign the practice member agreement</span>
+              <b>Sign the practice agreement</b>
+              <span>No signed copy on file yet — tap to sign</span>
             </span>
           </button>
         )}
@@ -400,7 +400,7 @@ export default function ClientDetailPage() {
           <div className={`sa-paystat${client.sessionPrepaid ? ' is-paid' : ''}`}>
             <span className="l">
               <span className="ic">{client.sessionPrepaid ? <Check size={18} strokeWidth={2.2} /> : <DollarSign size={18} />}</span>
-              {client.sessionPrepaid ? 'Prepaid' : 'Pay at visit'}
+              {client.sessionPrepaid ? 'Active package' : 'No active package'}
             </span>
             <button onClick={handleTogglePrepaid} disabled={togglingPrepaid}>
               {togglingPrepaid ? '…' : client.sessionPrepaid ? 'Undo' : 'Mark prepaid'}
