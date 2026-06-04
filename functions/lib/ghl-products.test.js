@@ -7,8 +7,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 12 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(12);
+  it('contains 13 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(13);
   });
 
   it('every entry has required shape', () => {
@@ -32,21 +32,19 @@ describe('GHL_PRODUCTS catalog', () => {
     }
   });
 
-  it('has exactly 4 package-purchase entries (2 series + 2 upgrades)', () => {
+  it('has exactly 5 package-purchase entries (2 series + 3 upgrades)', () => {
     const packages = Object.values(GHL_PRODUCTS).filter((p) => p.isPackagePurchase);
-    expect(packages.length).toBe(4);
+    expect(packages.length).toBe(5);
     const classifications = packages.map((p) => p.classification).sort();
-    expect(classifications).toEqual(['4-series', '4-upgrade', '8-series', '8-upgrade']);
+    expect(classifications).toEqual(['4-series', '4-to-8-upgrade', '4-upgrade', '8-series', '8-upgrade']);
   });
 
-  it('8-series and 8-upgrade grant livingPractice access, 4-series and 4-upgrade do not', () => {
+  it('Living Practice access tracks the resulting series: every 8-session package grants it, 4-session ones do not', () => {
     for (const p of Object.values(GHL_PRODUCTS)) {
       if (!p.isPackagePurchase) continue;
-      if (p.classification === '8-series' || p.classification === '8-upgrade') {
-        expect(p.livingPractice).toBe(true);
-      } else {
-        expect(p.livingPractice).toBe(false);
-      }
+      // The real rule is seriesType, not classification name — the 4→8 upgrade
+      // lands a client on the 8-session series, so it unlocks Living Practice.
+      expect(p.livingPractice).toBe(p.seriesType === '8-session');
     }
   });
 
@@ -79,7 +77,7 @@ describe('LEDGER_PRODUCT_MAP (session-ledger consumer)', () => {
 
 describe('WEBHOOK_PURCHASE_MAP (invoice webhook consumer)', () => {
   it('only contains package-purchase entries', () => {
-    expect(Object.keys(WEBHOOK_PURCHASE_MAP).length).toBe(4);
+    expect(Object.keys(WEBHOOK_PURCHASE_MAP).length).toBe(5);
   });
 
   it('exposes name, sessionsRemaining, seriesType, livingPractice', () => {

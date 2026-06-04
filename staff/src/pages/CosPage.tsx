@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { RotateCcw, Loader2 } from 'lucide-react';
-import { sendCosMessage } from '../lib/cosApi';
+import { sendCosMessage, resetCosConversation } from '../lib/cosApi';
 import MessageBubble from '../components/cos/MessageBubble';
 import ChatInput from '../components/cos/ChatInput';
 import ActionCard from '../components/cos/ActionCard';
@@ -62,12 +62,15 @@ export default function CosPage() {
     if (isStreaming) return;
     setMessages([]);
     setStreamingContent('');
+    // Also wipe the server-side daily conversation bucket — otherwise the next
+    // message re-loads today's full history and the model keeps the old thread.
+    void resetCosConversation();
   }, [isStreaming]);
 
   return (
-    // Fill the viewport minus the fixed bottom nav (~64px) so the input pins
-    // above the nav and the message list scrolls between.
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - 64px)' }}>
+    // Fill the viewport minus the fixed bottom nav (incl. iOS safe area) so the
+    // input pins exactly above the nav and the message list scrolls between.
+    <div className="flex flex-col" style={{ height: 'calc(100dvh - var(--staff-nav-h))' }}>
       <header className="flex items-center justify-between px-4 py-3 border-b border-amari-border">
         <h1 className="text-base font-semibold text-amari-charcoal">Chief of Staff</h1>
         <button

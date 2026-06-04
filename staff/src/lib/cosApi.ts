@@ -53,27 +53,50 @@ export async function sendCosMessage(
 
     const decoder = new TextDecoder();
     let buffer = '';
+
+    const handleLine = (line: string) => {
+      if (!line.startsWith('data: ')) return;
+      const data = line.slice(6);
+      if (data === '[DONE]') return;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.type === 'chunk') onChunk(parsed.text);
+        else if (parsed.type === 'done') onDone(parsed.actions || []);
+        else if (parsed.type === 'error') onError(parsed.message);
+      } catch {
+        // non-JSON line, ignore
+      }
+    };
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const data = line.slice(6);
-        if (data === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(data);
-          if (parsed.type === 'chunk') onChunk(parsed.text);
-          else if (parsed.type === 'done') onDone(parsed.actions || []);
-          else if (parsed.type === 'error') onError(parsed.message);
-        } catch {
-          // non-JSON line, ignore
-        }
-      }
+      for (const line of lines) handleLine(line);
     }
+    // Flush any trailing event left in the buffer (a stream that ends without a
+    // final newline would otherwise drop its last event — often the "done").
+    if (buffer.trim()) handleLine(buffer.trim());
   } catch (err) {
     onError(err instanceof Error ? err.message : 'Something went wrong');
+  }
+}
+
+// Wipe today's server-side conversation bucket so "New chat" actually starts
+// fresh (the backend keys history per user per day; clearing the UI alone
+// leaves the old thread in KV for the next message to reload).
+export async function resetCosConversation(): Promise<void> {
+  const token = staffToken();
+  if (!token) return;
+  try {
+    await fetch(`${API_BASE}/cos-chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ reset: true }),
+    });
+  } catch {
+    // Best-effort — a failed reset just means the next message keeps context.
   }
 }
