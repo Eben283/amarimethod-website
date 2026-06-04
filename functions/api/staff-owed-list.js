@@ -15,6 +15,7 @@ import { SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
 import { clientNameFromTitle } from "../lib/owed-list.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const ROSTER_WINDOW_DAYS = 540; // ~18 months
 const ATTENDED = new Set(["showed", "completed"]);
 
@@ -61,7 +62,15 @@ export async function onRequestGet(context) {
 
     const byContact = new Map(); // contactId -> { name, attended, lastMs }
     for (const calId of SERIES_CALENDAR_IDS) {
-      const res = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?calendarId=${calId}&startTime=${since}&endTime=${now}`);
+      // GHL v2 /calendars/events REQUIRES locationId (matches staff-data.js) —
+      // without it the request fails and the roster comes back empty.
+      const params = new URLSearchParams({
+        locationId: GHL_LOCATION_ID,
+        calendarId: calId,
+        startTime: String(since),
+        endTime: String(now),
+      });
+      const res = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
       if (!res.ok) continue;
       const data = await res.json();
       const events = data.events || data.appointments || [];
