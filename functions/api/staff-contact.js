@@ -384,6 +384,18 @@ export async function onRequestGet(context) {
     const sessionsRemaining = ledger.display.remaining;
     const sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;
 
+    // Has the client signed the practice-member agreement, via ANY path:
+    //   - in-app staff check-in tag (policies-signed-practice-member-v2026-04-17)
+    //   - website booking-flow tag (agreed-pma-v2026-04-17)
+    //   - a signed-document on file (the GHL signature field) — covers older/
+    //     migrated/form signers like Tae-woo who carry neither tag.
+    const SIGNED_TAGS = ["policies-signed-practice-member-v2026-04-17", "agreed-pma-v2026-04-17"];
+    const SIGNATURE_FIELD_ID = "S7GiXsCxYG6OWO4aL0go";
+    const signatureOnFile = (contact.customFields || []).some(
+      (f) => f.id === SIGNATURE_FIELD_ID && f.value && (typeof f.value !== "object" || f.value.url || f.value.documentId),
+    );
+    const agreementSigned = (contact.tags || []).some((t) => SIGNED_TAGS.includes(t)) || signatureOnFile;
+
     // Parse quiz results from custom fields (set by /api/send-to-ghl)
     // Use short keys where available, fall back to raw field IDs for quiz fields
     // that don't have short keys registered in fieldDefs yet.
@@ -466,6 +478,7 @@ export async function onRequestGet(context) {
       sessionsCompleted: derivedSessionsCompleted,
       sessionsRemaining,
       sessionPrepaid,
+      agreementSigned,
       tags: contact.tags || [],
       dateAdded: contact.dateAdded || "",
       lastAppointment: lastCompleted ? lastCompleted.startTime : null,

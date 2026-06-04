@@ -307,8 +307,10 @@ export default function ClientDetailPage() {
   //   - website booking flow    → tag agreed-pma-v2026-04-17 (create-checkout.js)
   // Both are the same v2026-04-17 agreement; check either so booking-flow clients
   // (the majority) aren't wrongly told to sign again.
+  // Prefer the server's agreementSigned (covers tags AND a signature-on-file
+  // for older/migrated/form signers); fall back to the tag check if absent.
   const SIGNED_TAGS = ['policies-signed-practice-member-v2026-04-17', 'agreed-pma-v2026-04-17'];
-  const alreadySigned = SIGNED_TAGS.some((t) => client.tags.includes(t));
+  const alreadySigned = client.agreementSigned ?? SIGNED_TAGS.some((t) => client.tags.includes(t));
   const quiz = client.quizResults;
 
   return (
