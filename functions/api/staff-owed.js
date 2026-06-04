@@ -10,7 +10,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { resolveContactCharges, summarizeCharges, makeStripeClient } from "../lib/stripe-charges.js";
+import { resolveContactCharges, summarizeCharges, classifyCharge, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -87,6 +87,16 @@ export async function onRequestGet(context) {
     const stripe = makeStripeClient(stripeKey);
     const charges = await resolveContactCharges(stripe, { contactId, email });
     const summary = summarizeCharges(charges);
+
+    // Clean purchase history for the client page — each charge as date / label /
+    // amount, newest first. Reuses the charges we already resolved (no extra call).
+    const purchases = charges
+      .map((c) => ({
+        date: c.created ? new Date(c.created * 1000).toISOString().slice(0, 10) : null,
+        amount: (c.amount || 0) / 100,
+        label: classifyCharge(c).label || c.description || "Payment",
+      }))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const attendedBillable = countBillableSessionsAttended(appointments);
     const owed = computeOwedStatus({
       sessionsPurchased: summary.sessionsPurchased,
@@ -97,6 +107,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       ...owed,
       name,
+      purchases,
       totalPaid: summary.totalPaid,
       sessionsPurchased: summary.sessionsPurchased,
       attendedBillable,

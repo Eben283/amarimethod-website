@@ -127,9 +127,16 @@ export async function markAttended(
   });
 }
 
+export interface PurchaseEntry {
+  date: string | null;
+  amount: number;
+  label: string;
+}
+
 export interface OwedStatus {
   status: 'owed' | 'square' | 'paid-legacy' | 'unavailable';
   name?: string | null;
+  purchases?: PurchaseEntry[];
   shortBy?: number | null;
   confidence?: 'high' | 'medium';
   reason?: string;
