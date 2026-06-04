@@ -47,10 +47,14 @@ export async function onRequestPost(context) {
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
     }
+    let tokenPayload;
     try {
-      await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
     } catch (err) {
       return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers });
+    }
+    if (tokenPayload.role !== "staff") {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
     }
 
     // The worker takes ~10-15 minutes to run all ~412 contacts. The user-facing
