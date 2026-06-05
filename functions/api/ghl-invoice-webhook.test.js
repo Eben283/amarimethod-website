@@ -90,8 +90,10 @@ describe('classifyInvoiceProduct', () => {
 });
 
 describe('INVOICE_PURCHASE_PRODUCTS map', () => {
-  it('has exactly 4 entries (2 series + 2 upgrades)', () => {
-    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(4);
+  it('has exactly 5 entries (2 series + 3 upgrades)', () => {
+    // 4→8 upgrade ($575) added to ghl-products.js 2026-05-10; assertion was
+    // never bumped from 4 and sat red unnoticed (no CI gate). Same fix as PR #22.
+    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(5);
   });
 
   it('does NOT include single-session products, entrainment, or living practice', () => {
