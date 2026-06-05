@@ -3,6 +3,7 @@
 // generates a magic link token, and triggers email via GHL
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { reserveAuthSlot } from "../lib/rate-limit.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -160,20 +161,15 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Cooldown: prevent repeated login email requests for the same address
-    if (context.env.PORTAL_KV) {
-      try {
-        const cooldown = await context.env.PORTAL_KV.get(`cooldown:portal:${email}`);
-        if (cooldown) {
-          return new Response(
-            JSON.stringify({ error: "Please wait a minute before requesting another login link." }),
-            { status: 429, headers }
-          );
-        }
-      } catch (kvErr) {
-        console.error(`[portal-auth] Cooldown check error: ${kvErr.message}`);
-        // Continue — don't block legitimate users if KV is unavailable
-      }
+    // Abuse protection (HIGH-1 + MEDIUM-2): per-email cooldown + per-IP window +
+    // global daily ceiling, RESERVED here BEFORE any GHL work so a flood for one
+    // address can't trigger a flood of login emails. Fails open (logged) on a KV
+    // outage so a blip doesn't lock everyone out.
+    const ip = context.request.headers.get("CF-Connecting-IP") || "";
+    const dateKey = new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email, scope: "portal", dateKey });
+    if (!slot.ok) {
+      return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers });
     }
 
     const GHL_API_KEY = await getGhlToken(context);
@@ -275,17 +271,7 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[portal-auth] Magic link generated`);
-
-    // Set cooldown so the same address can't trigger another email for 60 seconds
-    if (context.env.PORTAL_KV) {
-      try {
-        await context.env.PORTAL_KV.put(`cooldown:portal:${email}`, "1", {
-          expirationTtl: 60,
-        });
-      } catch (kvErr) {
-        console.error(`[portal-auth] Cooldown set error: ${kvErr.message}`);
-      }
-    }
+    // Cooldown + counters were already reserved up front (see reserveAuthSlot).
 
     return new Response(
       JSON.stringify({
