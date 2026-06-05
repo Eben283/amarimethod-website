@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: POST /api/cos-auth
 // PIN auth for Chief of Staff app — same pattern as staff-auth.js
 
+import { checkPinAttempts, recordFailedPinAttempt, clearPinAttempts } from "../lib/rate-limit.js";
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -65,6 +67,13 @@ export async function onRequestPost(context) {
       );
     }
 
+    // Brute-force guard: cap wrong PINs per IP before checking the PIN.
+    const ip = context.request.headers.get("CF-Connecting-IP") || "";
+    const gate = await checkPinAttempts(context.env.PORTAL_KV, { ip, scope: "cos" });
+    if (!gate.ok) {
+      return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers });
+    }
+
     // Check PIN against each user's env var
     const cosUsers = [
       { envKey: "COS_PIN_EBEN", name: "Eben" },
@@ -92,11 +101,15 @@ export async function onRequestPost(context) {
     }
 
     if (!matchedUser) {
+      await recordFailedPinAttempt(context.env.PORTAL_KV, { ip, scope: "cos", count: gate.count });
       return new Response(
         JSON.stringify({ error: "Incorrect PIN." }),
         { status: 401, headers }
       );
     }
+
+    // Correct PIN — clear the per-IP failure counter.
+    await clearPinAttempts(context.env.PORTAL_KV, { ip, scope: "cos" });
 
     const token = await createToken(
       {

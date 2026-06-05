@@ -77,15 +77,26 @@ function isCheckedCheckbox(value) {
   return value === true || value === "true";
 }
 
+// Find the package product on an order's line items. Returns { productId, pkg }
+// or null if no line item maps to a package product.
+export function selectPackageProduct(items) {
+  for (const item of items || []) {
+    const productId = item?.product?._id;
+    const pkg = productId ? PACKAGE_PRODUCTS[productId] : null;
+    if (pkg) return { productId, pkg };
+  }
+  return null;
+}
+
 // Returns one of: "skip-not-package", "skip-already-processed", "skip-not-paid",
 // "skip-already-applied", "applied", "errored". Plus a details object.
 export async function reconcileOrder(env, orderDetail) {
   const orderId = orderDetail._id;
   const contactId = orderDetail.contactId;
   const paymentStatus = orderDetail.paymentStatus;
-  const item = (orderDetail.items || [])[0];
-  const productId = item?.product?._id;
-  const pkg = productId ? PACKAGE_PRODUCTS[productId] : null;
+  const match = selectPackageProduct(orderDetail.items);
+  const productId = match?.productId ?? (orderDetail.items || [])[0]?.product?._id;
+  const pkg = match?.pkg ?? null;
 
   if (!pkg) {
     return { status: "skip-not-package", orderId, productId, contactId };
