@@ -4,6 +4,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
+import { isContactRevoked } from "../lib/session-guard.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -96,6 +97,16 @@ export async function onRequestGet(context) {
     }
 
     const contactId = tokenPayload.contactId;
+
+    // HIGH-2: per-contact kill switch — revoke one client's live sessions
+    // without rotating JWT_SECRET. (No tag/portalAccess gate here: portal-data
+    // is scoped to the caller's own contactId, so it's their own data.)
+    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
+      return new Response(
+        JSON.stringify({ error: "Session expired. Please log in again." }),
+        { status: 401, headers }
+      );
+    }
 
     // Fetch contact, appointments, custom field defs, orders, and invoices in
     // parallel. The ledger needs orders+invoices in addition to contact+appts;
