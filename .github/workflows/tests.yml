@@ -24,6 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-      - run: npm ci
+      # package-lock.json is gitignored in this repo, so npm ci / npm cache
+      # (which require a committed lockfile) can't be used here.
+      - run: npm install
       - run: npm test
