@@ -24,16 +24,22 @@
 //   /run       — on-demand run with default 24h window
 //   /backfill?days=N — wider lookback (manual recovery of historical orphans)
 
-import { listRecentCompletedOrders, getOrderDetail } from "./ghl.js";
+import { listRecentCompletedOrders, getOrderDetail, fetchActiveSeriesContactIds } from "./ghl.js";
 import { reconcileOrder } from "./reconcile.js";
-import { getContactCounts, syncContacts, syncFieldsForContact, uniqueContactIdsFromOrders } from "./sync.js";
+import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
+import { nextChunk, isQueueStale, remainderAfterProcessing } from "./queue.js";
 
-// Per-invocation sync cap. With ~5 subrequests per contact (4 fetches + 1 PUT),
-// 15 contacts = ~75 subrequests. Hourly runs chip through the candidate set
-// within an hour. Lower this if we start hitting Workers subrequest limits.
-const SYNC_CAP_PER_RUN = 15;
+// Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
+// Kept small to stay under the 50-subrequest free-tier cap alongside the order
+// pass: 8 × 5 = 40 + orders ~5-10. Over-budget contacts just error and are
+// re-swept next cycle (each syncFieldsForContact has its own try/catch).
+const SYNC_SWEEP_CHUNK = 8;
 
 const KV_LAST_RUN_KEY = "ops:series-reconcile:lastRun";
+// Active-series field-sync sweep queue (the mid-package drift fix). Rebuilt ~daily.
+const KV_QUEUE_KEY = "field-sync:queue";
+const KV_QUEUE_GENERATED_KEY = "field-sync:queueGeneratedAt";
+const QUEUE_TTL_MS = 22 * 60 * 60 * 1000;
 const DEFAULT_LOOKBACK_HOURS = 24;
 const SLEEP_MS = 100;
 
@@ -120,6 +126,20 @@ function clampInt(raw, min, max, def) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Get the active-series sweep queue, rebuilding from GHL when stale/empty.
+async function getOrBuildSyncQueue(env) {
+  const generatedAt = await env.PORTAL_KV.get(KV_QUEUE_GENERATED_KEY);
+  const queue = await env.PORTAL_KV.get(KV_QUEUE_KEY, "json");
+  if (!isQueueStale(queue, generatedAt, Date.now(), QUEUE_TTL_MS)) {
+    return { queue, rebuilt: false };
+  }
+  const ids = await fetchActiveSeriesContactIds(env);
+  await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(ids));
+  await env.PORTAL_KV.put(KV_QUEUE_GENERATED_KEY, String(Date.now()));
+  console.log(`[series-reconcile] sync queue rebuilt: ${ids.length} active-series contacts`);
+  return { queue: ids, rebuilt: true };
+}
+
 async function runReconcile(env, trigger, lookbackHours) {
   const startedAt = new Date();
   const startMs = startedAt.getTime();
@@ -172,28 +192,37 @@ async function runReconcile(env, trigger, lookbackHours) {
       await sleep(SLEEP_MS);
     }
 
-    // ── Continuous field sync pass ──
-    // After reconciling new orphan orders, also walk through the unique
-    // contactIds we saw in this window and pull each one's GHL session
-    // fields toward the ledger-derived values. Guards in sync.js prevent
-    // clobbering recent manual edits and never decrement sessions_completed.
-    //
-    // Per SESSION-FIELDS-AUDIT.md (2026-05-29 plan): this is the structural
-    // fix for drift cause #4. Even if a workflow misfires or a manual edit
-    // gets the wrong value, the field self-heals on the next hourly run.
-    const contactIdsToSync = uniqueContactIdsFromOrders(orders);
+    // ── Active-series field-sync sweep (mid-package drift fix) ──
+    // The OLD sync only touched contacts who placed an order in the lookback
+    // window, so a mid-package client who buys once and draws down over weeks
+    // (no new orders) was never re-synced and drifted permanently — Danny's
+    // case. Instead, keep a KV queue of EVERY active-series contact and sync a
+    // chunk each run, cycling through all of them and rebuilding ~daily.
+    // Mirrors the partner-activity-refresh chunk-queue pattern. Per-contact
+    // guards in sync.js still apply (high-confidence only, manual-lock,
+    // MAX_AUTO_DELTA → needs-review, never decrement lifetime).
     let syncSummary = null;
-    if (contactIdsToSync.length > 0) {
-      try {
-        syncSummary = await syncContacts(env, contactIdsToSync, {}, { maxPerRun: SYNC_CAP_PER_RUN });
-        const synced = syncSummary.results.filter((r) => r.status === "synced");
+    try {
+      const { queue, rebuilt } = await getOrBuildSyncQueue(env);
+      if (rebuilt) {
+        // The rebuild spent the enumeration subrequest budget this run; start
+        // syncing chunks next run to stay under the free-tier cap.
+        syncSummary = { queueRebuilt: true, queueRemaining: queue.length, contactsScanned: 0 };
+        console.log(`[series-reconcile] field-sync: queue rebuilt (${queue.length}), sync resumes next run`);
+      } else {
+        const { chunk, remaining } = nextChunk(queue, SYNC_SWEEP_CHUNK);
+        const r = await syncContacts(env, chunk, {}, { maxPerRun: SYNC_SWEEP_CHUNK });
+        const newQueue = remainderAfterProcessing(chunk, chunk.length, remaining);
+        await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(newQueue));
+        const synced = r.results.filter((x) => x.status === "synced");
+        syncSummary = { ...r, queueRemaining: newQueue.length, queueRebuilt: false };
         console.log(
-          `[series-reconcile] field-sync: ${syncSummary.contactsScanned} contacts processed, ${synced.length} fields written, ${syncSummary.contactsRemaining} deferred to next run`
+          `[series-reconcile] field-sync sweep: chunk of ${chunk.length} (${synced.length} written), ${newQueue.length} left in queue`
         );
-      } catch (syncErr) {
-        console.error("[series-reconcile] field-sync failed:", syncErr);
-        syncSummary = { error: String(syncErr.message || syncErr).slice(0, 300) };
       }
+    } catch (syncErr) {
+      console.error("[series-reconcile] field-sync sweep failed:", syncErr);
+      syncSummary = { error: String(syncErr.message || syncErr).slice(0, 300) };
     }
 
     const finishedAt = new Date();

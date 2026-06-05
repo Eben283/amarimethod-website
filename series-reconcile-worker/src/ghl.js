@@ -135,3 +135,39 @@ export async function patchContact(env, contactId, customFields, tags) {
 export async function addContactNote(env, contactId, body) {
   return ghlPost(env, `/contacts/${contactId}/notes`, { body });
 }
+
+// Field IDs used to identify a contact who could hold a session balance.
+const SWEEP_FIELD = {
+  series_type: "3i93lTkmuAV49s9nh0q8",
+  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+};
+
+// Enumerate every contact who could hold a session balance — active series,
+// sessions_remaining > 0, or session_prepaid = "yes". Paginates /contacts/search
+// and filters in code, mirroring daily-audit-worker's proven drift-scan query
+// (daily-audit-worker/src/index.js ~676). These are the field-sync sweep
+// candidates — the set the old orders-window sync missed for mid-package clients.
+// Cost: up to PAGE_CAP page fetches; only paid on a queue rebuild (~once/22h).
+export async function fetchActiveSeriesContactIds(env) {
+  const ids = [];
+  const PAGE_CAP = 10; // 1000 contacts (matches daily-audit)
+  for (let page = 1; page <= PAGE_CAP; page++) {
+    const data = await ghlPost(env, "/contacts/search", {
+      locationId: LOCATION_ID,
+      pageLimit: 100,
+      page,
+    });
+    const contacts = data.contacts || [];
+    if (contacts.length === 0) break;
+    for (const c of contacts) {
+      const cf = c.customFields || [];
+      const seriesType = cf.find((f) => f.id === SWEEP_FIELD.series_type)?.value || "none";
+      const remaining = parseInt(cf.find((f) => f.id === SWEEP_FIELD.sessions_remaining)?.value ?? "0", 10) || 0;
+      const prepaid = (cf.find((f) => f.id === SWEEP_FIELD.session_prepaid)?.value || "").toString().toLowerCase() === "yes";
+      if (seriesType !== "none" || remaining > 0 || prepaid) ids.push(c.id);
+    }
+    if (contacts.length < 100) break;
+  }
+  return ids;
+}
