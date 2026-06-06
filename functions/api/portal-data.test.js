@@ -1,5 +1,34 @@
 import { describe, it, expect } from 'vitest';
-import { getCustomField, isChecked, computeHasLivingPractice } from './portal-data.js';
+import { getCustomField, isChecked, computeHasLivingPractice, countLifetimeCompleted } from './portal-data.js';
+
+describe('countLifetimeCompleted', () => {
+  const NOW = Date.parse('2026-06-06T12:00:00Z');
+  const appt = (status, startISO, title = 'Follow-up Session') =>
+    ({ appointmentStatus: status, startTime: startISO, title });
+
+  it('counts past completed / showed / confirmed bodywork', () => {
+    expect(countLifetimeCompleted([
+      appt('completed', '2026-05-01T10:00:00Z'),
+      appt('showed', '2026-05-08T10:00:00Z'),
+      appt('confirmed', '2026-05-15T10:00:00Z'), // past confirmed Garrett didn't flip
+    ], NOW)).toBe(3);
+  });
+
+  // THE FIX: a FUTURE confirmed (pre-booked) session hasn't happened — must NOT count.
+  it('does NOT count a future confirmed (pre-booked) session', () => {
+    expect(countLifetimeCompleted([
+      appt('completed', '2026-05-01T10:00:00Z'),
+      appt('confirmed', '2026-06-20T10:00:00Z'), // upcoming
+    ], NOW)).toBe(1);
+  });
+
+  it('excludes non-journey types (discovery / consultation / 15-min)', () => {
+    expect(countLifetimeCompleted([
+      appt('completed', '2026-05-01T10:00:00Z', 'Discovery Call'),
+      appt('showed', '2026-05-02T10:00:00Z', 'Follow-up Session'),
+    ], NOW)).toBe(1);
+  });
+});
 
 // ── getCustomField ──────────────────────────────────────────────────────────
 

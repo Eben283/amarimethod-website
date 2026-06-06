@@ -21,7 +21,25 @@ import {
   computeSessionLedger,
   SERIES_CALENDAR_IDS,
   ACTIVE_PRODUCTS,
+  determineSeriesType,
 } from './session-ledger.js';
+
+describe('determineSeriesType', () => {
+  it('a 4-pack + 4→8 upgrade resolves to 8-session (not 4-session)', () => {
+    // Regression: the consolidation surfaced the "4-to-8-upgrade" type but this
+    // function only checked 8-series/8-upgrade, so 4→8 upgraders showed the
+    // wrong plan tier in the portal. (session-tracking re-audit 2026-06-06)
+    expect(determineSeriesType([{ type: '4-series' }, { type: '4-to-8-upgrade' }])).toBe('8-session');
+    expect(determineSeriesType([{ type: '4-to-8-upgrade' }])).toBe('8-session');
+  });
+  it('plain 4-series stays 4-session', () => {
+    expect(determineSeriesType([{ type: '4-series' }])).toBe('4-session');
+  });
+  it('8-series and 8-upgrade are 8-session', () => {
+    expect(determineSeriesType([{ type: '8-series' }])).toBe('8-session');
+    expect(determineSeriesType([{ type: '8-upgrade' }])).toBe('8-session');
+  });
+});
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 
