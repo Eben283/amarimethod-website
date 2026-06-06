@@ -278,3 +278,33 @@
   word-break:break-word; overflow:auto; max-height:360px;}
 /* loading / error full-screen */
 .sa-screen{min-height:100vh; display:grid; place-items:center; background:var(--paper); color:var(--muted);}
+
+/* ===== mobile responsiveness (this layout was authored desktop-first) =====
+   Root cause of the overflow on phones: the 3-up session-progress grid's cell
+   labels carry .lbl (white-space:nowrap). With raw `repeat(3,1fr)` (= minmax
+   auto,1fr) the tracks can't shrink below those nowrap labels, so on a ~375px
+   screen the labels ("Done this series" etc.) forced the card — and the whole
+   page — wider than the viewport. Fix: let the tracks shrink AND let these
+   descriptive labels wrap. Safe at all widths. */
+.sa-prog{grid-template-columns:repeat(3,minmax(0,1fr));}
+.sa-prog .cell .k{white-space:normal; line-height:1.25;}
+
+@media (max-width:480px){
+  /* Reclaim the desktop 28/22px side padding so content isn't cramped or
+     clipped at the screen edges. */
+  .sa-head{padding:14px 16px;}
+  .sa-body{padding:20px 16px 56px; gap:18px;}
+  .sa-card{padding:18px 16px;}
+  .sa-brief{padding:16px 16px;}
+  .sa-id-name{font-size:22px;}
+  /* Progress numbers a touch smaller so three cells sit comfortably. */
+  .sa-prog{gap:10px;}
+  .sa-prog .cell .v{font-size:27px;}
+  /* Pay-status banner: let the action button wrap below the message. */
+  .sa-paystat{flex-wrap:wrap; padding:14px 16px;}
+  /* Quick-action / module tiles keep 2-up but tighten the inner padding. */
+  .sa-quick{gap:10px;}
+  .sa-qbtn{padding:14px 14px;}
+  /* Quiz key column was a hard 130px basis — let it shrink on a phone. */
+  .sa-kv .row .k{flex:0 0 92px;}
+}
