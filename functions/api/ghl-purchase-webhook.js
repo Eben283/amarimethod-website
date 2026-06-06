@@ -21,85 +21,29 @@
 //      Header: X-Webhook-Secret: <same value as GHL_WEBHOOK_SECRET>
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { PURCHASE_CREDIT_MAP } from "../lib/ghl-products.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // ── Product-to-package mapping ──
-// GHL product IDs → session increment + field values
-export const PRODUCT_MAP = {
-  // 4-Session Series ($720)
-  "69986faa724ecd2343ebaa6e": {
-    name: "4-Session Series",
-    sessionsToAdd: 4,
-    seriesType: "4-session",
-    livingPractice: false,
-  },
-  // 8-Session Series ($1,295)
-  "69987357c839790426996114": {
-    name: "8-Session Series",
-    sessionsToAdd: 8,
-    seriesType: "8-session",
-    livingPractice: true,
-  },
-  // Upgrade: Initial → 4-Session ($495)
-  "6998739230cc6054f9bba62d": {
-    name: "Upgrade to 4-Session",
-    sessionsToAdd: 3,
-    seriesType: "4-session",
-    livingPractice: false,
-  },
-  // Upgrade: Initial → 8-Session ($1,070)
-  "699873d6990b71ebc1fa26b4": {
-    name: "Upgrade to 8-Session",
-    sessionsToAdd: 7,
-    seriesType: "8-session",
-    livingPractice: true,
-  },
-  // Upgrade: 4-Session → 8-Session ($575) — rebuilt 2026-05-10
-  "6a010952e41b442c862d3c01": {
-    name: "Upgrade: 4-Session → 8-Session",
-    sessionsToAdd: 4,
-    seriesType: "8-session",
-    livingPractice: true,
-  },
-  // Single Follow-up ($190) — RETIRED product, kept for legacy orders
-  "67f57171b6b1019c7b0233cc": {
-    name: "Single Follow-up",
-    sessionsToAdd: 1,
-    seriesType: null, // Don't change series_type if client already has one
-    livingPractice: false,
-  },
-  // Single Follow-up Session ($190) — current à-la-carte follow-up product
-  // (replaces the retired one above). NOTE: the other follow-up productIds in
-  // the catalog — 69aee204 (In Person), 69aee3eb (Virtual), 67b1299f (Pre
-  // Purchased) — are DRAW-DOWNS that ride on a booking against an existing
-  // package. They are deliberately NOT here: crediting them would inflate
-  // sessions_remaining on every booking. (Confirmed with Eben 2026-06-05.)
-  "6998ace59dfde469ecb2aab6": {
-    name: "Single Follow-up Session",
-    sessionsToAdd: 1,
-    seriesType: null,
-    livingPractice: false,
-  },
-  // Initial Session — In Person ($225) — sold via native booking flow
+// Crediting now DERIVES from the single source of truth (functions/lib/
+// ghl-products.js → PURCHASE_CREDIT_MAP). This file only overlays the two
+// webhook-specific things the catalog doesn't carry:
+//   1. booking metadata for the native-booking Initials (calendar, title, tag)
+//   2. the RETIRED legacy follow-up (67f57171), kept so old orders still credit.
+// Draw-down follow-ups (69aee204 / 69aee3eb / 67b1299f) are excluded by the
+// catalog itself (DRAW_DOWN_PRODUCT_IDS) — crediting them would inflate balances.
+
+const INITIAL_BOOKING_META = {
   "688a1cd770362828afbf08a2": {
-    name: "Initial Session — In Person",
-    sessionsToAdd: 1,
-    seriesType: null, // Don't auto-set series — client hasn't committed to a pack
-    livingPractice: false,
     isInitialBooking: true,
     calendarId: "G7OAnnJuFbMF6nQSlZVQ",
     durationMinutes: 60,
     sessionTitle: "Amari Method Initial Session — In Person",
     sessionTag: "booked-initial-in-person",
   },
-  // Initial Session — Virtual ($225) — sold via native booking flow (phase 2)
   "690b6b4d333ffa59d40c1823": {
-    name: "Initial Session — Virtual",
-    sessionsToAdd: 1,
-    seriesType: null,
-    livingPractice: false,
     isInitialBooking: true,
     calendarId: "ySmht5hx4uZGEpgZrlCw",
     durationMinutes: 60,
@@ -107,6 +51,20 @@ export const PRODUCT_MAP = {
     sessionTag: "booked-initial-virtual",
   },
 };
+
+const LEGACY_CREDITS = {
+  // Retired "Amari Method: Follow-Up Sessions" — no longer sold; kept so any
+  // historical order still credits +1. Not in the catalog (it classifies retired).
+  "67f57171b6b1019c7b0233cc": { name: "Single Follow-up", sessionsToAdd: 1, seriesType: null, livingPractice: false },
+};
+
+export const PRODUCT_MAP = (() => {
+  const m = { ...LEGACY_CREDITS };
+  for (const [id, entry] of Object.entries(PURCHASE_CREDIT_MAP)) {
+    m[id] = INITIAL_BOOKING_META[id] ? { ...entry, ...INITIAL_BOOKING_META[id] } : { ...entry };
+  }
+  return m;
+})();
 
 // Field keys for the slot-request fields written by create-checkout.js
 // (Settings → Custom Fields → Session Tracking folder)

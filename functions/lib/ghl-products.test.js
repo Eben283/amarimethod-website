@@ -4,6 +4,11 @@ import {
   LEDGER_PRODUCT_MAP,
   WEBHOOK_PURCHASE_MAP,
   PACKAGE_TYPES,
+  productIdForAnyId,
+  productForAnyId,
+  PURCHASE_CREDIT_MAP,
+  PACKAGE_MAP,
+  AUDIT_INCREMENT_MAP,
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
@@ -91,5 +96,92 @@ describe('WEBHOOK_PURCHASE_MAP (invoice webhook consumer)', () => {
     expect(WEBHOOK_PURCHASE_MAP['69aee204e80b62d627d8e922']).toBeUndefined();
     // And entrainment
     expect(WEBHOOK_PURCHASE_MAP['69c5d29c4019ce8e80e2513b']).toBeUndefined();
+  });
+});
+
+// Real ids for the derived-map tests.
+const ID = {
+  eightSeries: '69987357c839790426996114',
+  eightSeriesPrice: '69987357c83979a1f0996119',
+  eightSeriesPriceOld: '699873074d5b8cc0bc0e3b5a',
+  fourSeries: '69986faa724ecd2343ebaa6e',
+  fourSeriesPriceOld: '699872e130cc6054f9bba617',
+  upInit8: '699873d6990b71ebc1fa26b4',
+  upInit4: '6998739230cc6054f9bba62d',
+  up4to8: '6a010952e41b442c862d3c01',
+  initialIP: '688a1cd770362828afbf08a2',
+  initialVirt: '690b6b4d333ffa59d40c1823',
+  singleFU: '6998ace59dfde469ecb2aab6',
+  fuIP: '69aee204e80b62d627d8e922', // draw-down
+  fuVirt: '69aee3ebcf9cf8ed9f6c928d', // draw-down
+  prePurchased: '67b1299f080422451447bdd0', // draw-down
+  entrainment: '69c5d29c4019ce8e80e2513b',
+  livingPractice: '6998d7f2606fa79c54fa3ff5',
+};
+
+describe('any-id resolver (productId + priceId)', () => {
+  it('resolves a productId to itself', () => {
+    expect(productIdForAnyId(ID.eightSeries)).toBe(ID.eightSeries);
+  });
+  it('resolves a current priceId to its product', () => {
+    expect(productIdForAnyId(ID.eightSeriesPrice)).toBe(ID.eightSeries);
+    expect(productForAnyId(ID.eightSeriesPrice).name).toBe('8-Session Series');
+  });
+  it('resolves a HISTORICAL priceId too (the stale-id case the audit hit)', () => {
+    expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
+    expect(productIdForAnyId(ID.fourSeriesPriceOld)).toBe(ID.fourSeries);
+  });
+  it('returns null for an unknown id', () => {
+    expect(productIdForAnyId('nope')).toBe(null);
+    expect(productForAnyId('nope')).toBe(null);
+  });
+});
+
+describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
+  it('credits packages with the right SET amounts + seriesType', () => {
+    expect(PURCHASE_CREDIT_MAP[ID.eightSeries]).toMatchObject({ sessionsToAdd: 8, seriesType: '8-session', livingPractice: true });
+    expect(PURCHASE_CREDIT_MAP[ID.fourSeries]).toMatchObject({ sessionsToAdd: 4, seriesType: '4-session', livingPractice: false });
+    expect(PURCHASE_CREDIT_MAP[ID.upInit8]).toMatchObject({ sessionsToAdd: 7, seriesType: '8-session' });
+    expect(PURCHASE_CREDIT_MAP[ID.upInit4]).toMatchObject({ sessionsToAdd: 3, seriesType: '4-session' });
+    expect(PURCHASE_CREDIT_MAP[ID.up4to8]).toMatchObject({ sessionsToAdd: 4, seriesType: '8-session', livingPractice: true });
+  });
+  it('credits à-la-carte singles +1 with no series change', () => {
+    expect(PURCHASE_CREDIT_MAP[ID.singleFU]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
+    expect(PURCHASE_CREDIT_MAP[ID.initialIP]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
+    expect(PURCHASE_CREDIT_MAP[ID.initialVirt]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
+  });
+  it('NEVER credits draw-downs, entrainment, or living practice', () => {
+    expect(PURCHASE_CREDIT_MAP[ID.fuIP]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.fuVirt]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.prePurchased]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.entrainment]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.livingPractice]).toBeUndefined();
+  });
+});
+
+describe('PACKAGE_MAP (reconcile worker consumer)', () => {
+  it('has the 5 packages with sessionsToSet', () => {
+    expect(Object.keys(PACKAGE_MAP).length).toBe(5);
+    expect(PACKAGE_MAP[ID.eightSeries]).toMatchObject({ sessionsToSet: 8, seriesType: '8-session', livingPractice: true });
+    expect(PACKAGE_MAP[ID.up4to8]).toMatchObject({ sessionsToSet: 4, seriesType: '8-session' });
+  });
+  it('excludes singles + draw-downs', () => {
+    expect(PACKAGE_MAP[ID.singleFU]).toBeUndefined();
+    expect(PACKAGE_MAP[ID.fuIP]).toBeUndefined();
+  });
+});
+
+describe('AUDIT_INCREMENT_MAP (daily-audit consumer)', () => {
+  it('is keyed by BOTH product and price ids (current + historical)', () => {
+    expect(AUDIT_INCREMENT_MAP[ID.eightSeries]).toMatchObject({ increment: 8 });
+    expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPrice]).toMatchObject({ increment: 8 });
+    expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPriceOld]).toMatchObject({ increment: 8 });
+  });
+  it('now covers the 4→8 upgrade (the prior blind spot)', () => {
+    expect(AUDIT_INCREMENT_MAP[ID.up4to8]).toMatchObject({ increment: 4, seriesType: '8-session' });
+  });
+  it('covers the single follow-up but not draw-downs', () => {
+    expect(AUDIT_INCREMENT_MAP[ID.singleFU]).toMatchObject({ increment: 1 });
+    expect(AUDIT_INCREMENT_MAP[ID.fuIP]).toBeUndefined();
   });
 });
