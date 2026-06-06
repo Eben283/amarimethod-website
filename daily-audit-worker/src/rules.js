@@ -13,6 +13,27 @@ import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
 // should be >= increment".
 const PRODUCT_MAP = AUDIT_INCREMENT_MAP;
 
+// How many sessions a client can plausibly draw down within the audit window
+// (AUDIT_HOURS = 48). The session right before a package purchase is draw #1 of
+// that pack (the documented package-session-counting rule — Garrett runs the
+// session, then sells/charges the pack right after), so a freshly-purchased
+// package legitimately reads 1-2 below its increment within the window. Without
+// this, every sold-then-attended-same-day purchase fired a false CRITICAL,
+// training the operator to ignore the alert that matters.
+const REMAINING_WINDOW_TOLERANCE = 2;
+
+// Pure: does post-purchase sessions_remaining indicate a GENUINE under-credit,
+// after allowing for sessions plausibly drawn within the audit window? A missing
+// or unparseable field after a recognized purchase is a real failure (true). For
+// an à-la-carte single (increment 1) the tolerance makes buy-then-attend-to-0 a
+// non-event, which is correct — a +1 ADD can't be re-verified from the snapshot
+// once it has been drawn. Exported for unit tests.
+export function remainingIndicatesUndercredit(rawRemaining, increment, windowTolerance = REMAINING_WINDOW_TOLERANCE) {
+  const remaining = parseInt(rawRemaining, 10);
+  if (isNaN(remaining)) return true;
+  return remaining < increment - windowTolerance;
+}
+
 const UPSELL_PATTERNS = [
   { seriesType: "8-session", keywords: ["upgrade", "8-session", "8 session", "8-pack", "eight session"] },
   { seriesType: "4-session", keywords: ["4-session", "4 session", "4-pack", "four session"] },
@@ -168,12 +189,11 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
 
     const { name, tags, fields } = cached;
 
-    const remaining = parseInt(fields.sessions_remaining, 10);
-    if (isNaN(remaining) || remaining < productConfig.increment) {
+    if (remainingIndicatesUndercredit(fields.sessions_remaining, productConfig.increment)) {
       issues.push(issue(
         "critical", "purchase", contactId, name,
         "sessions_remaining_not_incremented",
-        `sessions_remaining should be >= ${productConfig.increment} after ${productConfig.name}`,
+        `sessions_remaining should be ~${productConfig.increment} after ${productConfig.name} (allowing up to ${REMAINING_WINDOW_TOLERANCE} same-window draw-downs)`,
         `sessions_remaining is ${fields.sessions_remaining}`,
         "Check ghl-purchase-webhook.js and PURCHASE_KV idempotency key"
       ));
