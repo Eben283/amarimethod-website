@@ -4,51 +4,23 @@
 // workflow set of actions changes in GHL, update this file.
 
 import { getContact, patchContact, addContactNote } from "./ghl.js";
+import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
 
-// Series + upgrade products only. Single Follow-up + Initial Session bookings
-// have different workflows (D-series + booking flow) and are out of scope here.
-export const PACKAGE_PRODUCTS = {
-  // 4-Session Series ($720)
-  "69986faa724ecd2343ebaa6e": {
-    name: "4-Session Series",
-    sessionsToSet: 4,
-    seriesType: "4-session",
-    livingPractice: false,
-    workflowCode: "C1",
-  },
-  // 8-Session Series ($1,295)
-  "69987357c839790426996114": {
-    name: "8-Session Series",
-    sessionsToSet: 8,
-    seriesType: "8-session",
-    livingPractice: true,
-    workflowCode: "C2",
-  },
-  // Upgrade: Initial → 4-Session ($495)
-  "6998739230cc6054f9bba62d": {
-    name: "Upgrade: Initial → 4-Session",
-    sessionsToSet: 3,
-    seriesType: "4-session",
-    livingPractice: false,
-    workflowCode: "C1b",
-  },
-  // Upgrade: Initial → 8-Session ($1,070)
-  "699873d6990b71ebc1fa26b4": {
-    name: "Upgrade: Initial → 8-Session",
-    sessionsToSet: 7,
-    seriesType: "8-session",
-    livingPractice: true,
-    workflowCode: "C2b",
-  },
-  // Upgrade: 4-Session → 8-Session ($575)
-  "6a010952e41b442c862d3c01": {
-    name: "Upgrade: 4-Session → 8-Session",
-    sessionsToSet: 4,
-    seriesType: "8-session",
-    livingPractice: true,
-    workflowCode: "C2c",
-  },
+// Series + upgrade products. Derived from the single source of truth
+// (functions/lib/ghl-products.js → PACKAGE_MAP) plus the per-package GHL
+// workflow code (note-text only). Single Follow-up + Initial bookings aren't
+// packages, so PACKAGE_MAP excludes them — out of scope here.
+const WORKFLOW_CODES = {
+  "69986faa724ecd2343ebaa6e": "C1",  // 4-Session Series
+  "69987357c839790426996114": "C2",  // 8-Session Series
+  "6998739230cc6054f9bba62d": "C1b", // Upgrade: Initial → 4
+  "699873d6990b71ebc1fa26b4": "C2b", // Upgrade: Initial → 8
+  "6a010952e41b442c862d3c01": "C2c", // Upgrade: 4 → 8
 };
+
+export const PACKAGE_PRODUCTS = Object.fromEntries(
+  Object.entries(PACKAGE_MAP).map(([id, p]) => [id, { ...p, workflowCode: WORKFLOW_CODES[id] }]),
+);
 
 export const FIELD_IDS = {
   series_type: "3i93lTkmuAV49s9nh0q8",

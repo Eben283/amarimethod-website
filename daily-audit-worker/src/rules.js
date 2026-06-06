@@ -2,22 +2,16 @@
 // Each function takes { env, cache, appointments, auditStart, auditEnd } and returns issues[].
 
 import { ghlFetch, fetchAppointmentsForDate, LOCATION_ID } from "./ghl.js";
+import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
 
-// ── Product mapping (includes both price IDs and product IDs) ──
-
-const PRODUCT_MAP = {
-  // Price IDs (from orders API)
-  "699872e130cc6054f9bba617": { name: "4-Session Series", increment: 4, seriesType: "4-session" },
-  "699873074d5b8cc0bc0e3b5a": { name: "8-Session Series", increment: 8, seriesType: "8-session" },
-  "6998ad0288a3f09db4845d26": { name: "Single Follow-up", increment: 1, seriesType: null },
-  // Product IDs (from webhook payloads)
-  "69986faa724ecd2343ebaa6e": { name: "4-Session Series", increment: 4, seriesType: "4-session" },
-  "69987357c839790426996114": { name: "8-Session Series", increment: 8, seriesType: "8-session" },
-  "67f57171b6b1019c7b0233cc": { name: "Single Follow-up", increment: 1, seriesType: null },
-  // Shared IDs
-  "6998739230cc6054f9bba62d": { name: "Upgrade: Initial → 4", increment: 3, seriesType: "4-session" },
-  "699873d6990b71ebc1fa26b4": { name: "Upgrade: Initial → 8", increment: 7, seriesType: "8-session" },
-};
+// ── Product mapping ──
+// Derived from the single source of truth (functions/lib/ghl-products.js →
+// AUDIT_INCREMENT_MAP), keyed by BOTH productIds and priceIds (current AND
+// historical). Replaces a hand-typed map that carried STALE price IDs and was
+// missing the 4→8 upgrade — both of which left this watchdog blind to real
+// purchases. Semantics unchanged: "after this purchase, sessions_remaining
+// should be >= increment".
+const PRODUCT_MAP = AUDIT_INCREMENT_MAP;
 
 const UPSELL_PATTERNS = [
   { seriesType: "8-session", keywords: ["upgrade", "8-session", "8 session", "8-pack", "eight session"] },
