@@ -27,7 +27,7 @@ const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // ── Product-to-package mapping ──
 // GHL product IDs → session increment + field values
-const PRODUCT_MAP = {
+export const PRODUCT_MAP = {
   // 4-Session Series ($720)
   "69986faa724ecd2343ebaa6e": {
     name: "4-Session Series",
@@ -63,11 +63,23 @@ const PRODUCT_MAP = {
     seriesType: "8-session",
     livingPractice: true,
   },
-  // Single Follow-up ($190)
+  // Single Follow-up ($190) — RETIRED product, kept for legacy orders
   "67f57171b6b1019c7b0233cc": {
     name: "Single Follow-up",
     sessionsToAdd: 1,
     seriesType: null, // Don't change series_type if client already has one
+    livingPractice: false,
+  },
+  // Single Follow-up Session ($190) — current à-la-carte follow-up product
+  // (replaces the retired one above). NOTE: the other follow-up productIds in
+  // the catalog — 69aee204 (In Person), 69aee3eb (Virtual), 67b1299f (Pre
+  // Purchased) — are DRAW-DOWNS that ride on a booking against an existing
+  // package. They are deliberately NOT here: crediting them would inflate
+  // sessions_remaining on every booking. (Confirmed with Eben 2026-06-05.)
+  "6998ace59dfde469ecb2aab6": {
+    name: "Single Follow-up Session",
+    sessionsToAdd: 1,
+    seriesType: null,
     livingPractice: false,
   },
   // Initial Session — In Person ($225) — sold via native booking flow

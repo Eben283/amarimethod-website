@@ -1,0 +1,30 @@
+name: tests
+
+# Runs the serverless + worker unit suites on any PR that touches them, and on
+# pushes to main. Closes audit HIGH #7 — before this, the full suite was never
+# run automatically, so a stale red test (e.g. ghl-invoice-webhook 4→5) could
+# sit unnoticed.
+
+on:
+  pull_request:
+    paths:
+      - 'functions/**'
+      - 'series-reconcile-worker/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/tests.yml'
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # package-lock.json is gitignored in this repo, so npm ci / npm cache
+      # (which require a committed lockfile) can't be used here.
+      - run: npm install
+      - run: npm test

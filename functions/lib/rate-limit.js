@@ -77,3 +77,63 @@ export async function reserveAuthSlot(kv, { ip, email, scope, dateKey }) {
     return { ok: true, degraded: true };
   }
 }
+
+// ── PIN brute-force guard (staff-auth, cos-auth) ──
+//
+// Threat (codebase-audit-scorecard.md risk #1): the staff/cos login takes a
+// 4-8 digit PIN with NO throttle. 10,000 combinations + a 30-day full-admin
+// token on success = trivially brute-forceable. reserveAuthSlot doesn't fit
+// here — its tight gate is a per-EMAIL cooldown, and these endpoints have no
+// email. The relevant control is a per-IP cap on FAILED attempts.
+//
+// We count failures (not every request) and clear on success, so a legit user
+// who fumbles a digit isn't punished, while an attacker — who only ever fails —
+// climbs to lockout. Same KV caveats as above: no compare-and-set, so a burst
+// can slip a few extra attempts past the cap; fail OPEN on a KV outage.
+export const PIN_RATE_LIMITS = Object.freeze({
+  IP_WINDOW_SEC: 15 * 60, // rolling lockout window
+  IP_MAX_ATTEMPTS: 10,    // wrong PINs per IP per window before lockout
+});
+
+const pinAttemptKey = (scope, ip) => `rl:pin:${scope}:${(ip || "unknown").slice(0, 64)}`;
+
+// Call BEFORE checking the PIN. Returns { ok:false, status:429 } when the IP is
+// locked out, else { ok:true, key, count } so the caller can record a failure.
+export async function checkPinAttempts(kv, { ip, scope }) {
+  if (!kv) {
+    console.error(`[rate-limit] ${scope}: PORTAL_KV unavailable — proceeding without PIN attempt limit`);
+    return { ok: true, degraded: true };
+  }
+  try {
+    const count = parseInt((await kv.get(pinAttemptKey(scope, ip))) || "0", 10) || 0;
+    if (count >= PIN_RATE_LIMITS.IP_MAX_ATTEMPTS) {
+      return { ok: false, status: 429, error: "Too many attempts. Please try again in a few minutes." };
+    }
+    return { ok: true, count };
+  } catch (err) {
+    console.error(`[rate-limit] ${scope}: KV error, failing open — ${err.message}`);
+    return { ok: true, degraded: true };
+  }
+}
+
+// Call AFTER a wrong PIN. Increments the per-IP counter (resets the TTL window).
+export async function recordFailedPinAttempt(kv, { ip, scope, count }) {
+  if (!kv) return;
+  try {
+    await kv.put(pinAttemptKey(scope, ip), String((count || 0) + 1), {
+      expirationTtl: PIN_RATE_LIMITS.IP_WINDOW_SEC,
+    });
+  } catch (err) {
+    console.error(`[rate-limit] ${scope}: failed to record PIN attempt — ${err.message}`);
+  }
+}
+
+// Call AFTER a successful PIN. Clears the per-IP counter.
+export async function clearPinAttempts(kv, { ip, scope }) {
+  if (!kv) return;
+  try {
+    await kv.delete(pinAttemptKey(scope, ip));
+  } catch (err) {
+    console.error(`[rate-limit] ${scope}: failed to clear PIN attempts — ${err.message}`);
+  }
+}
