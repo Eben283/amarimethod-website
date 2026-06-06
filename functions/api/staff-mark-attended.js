@@ -46,6 +46,19 @@ const FOLLOWUP_CALENDAR_IDS = new Set([
 ]);
 const PAIR_WINDOW_MS = 90 * 60 * 1000;
 
+// Idempotency decision for mark-attended. "Already processed" = the appointment
+// is marked AND (it needs no count change, OR the count was already debited).
+// The debit flag (per-appointment, in PURCHASE_KV) decouples the count update
+// from the appointment status — so a partial failure that left the appt "showed"
+// but the count un-applied still gets corrected on a retry instead of being
+// permanently stuck. (session-tracking-audit-2026-06-06, risk #2.)
+export function isAlreadyProcessed(apptStatus, needsFields, alreadyDebited) {
+  const marked = apptStatus === "showed" || apptStatus === "completed";
+  if (!marked) return false;          // not marked yet → process
+  if (!needsFields) return true;      // marked + nothing to debit → done
+  return !!alreadyDebited;            // marked + needs count → done only if debited
+}
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -155,30 +168,55 @@ export async function onRequestPost(context) {
     const currentCompleted = parseInt(getCustomField(contact, "sessions_completed", fieldDefs) ?? "0", 10);
     const currentRemaining = parseInt(getCustomField(contact, "sessions_remaining", fieldDefs) ?? "0", 10);
 
-    // IDEMPOTENCY: If appointment is already "showed" or "completed", return current state without changing anything.
-    // This prevents double-counting if both the dashboard button and the SMS trigger link are used.
-    if (currentApptStatus === "showed" || currentApptStatus === "completed") {
+    // Which fields this appointment touches (session-fields contract). Computed
+    // up front because idempotency now depends on whether the COUNT was applied,
+    // not just whether the appointment is marked.
+    const appointmentTitle = body.appointmentTitle || "";
+    const calendarName = body.calendarName || "";
+    const titleAndCal = `${appointmentTitle} ${calendarName}`;
+    const countsTowardLifetime = !NON_JOURNEY_PATTERNS.test(titleAndCal);
+    const drawsFromPackage = !NON_PACKAGE_PATTERNS.test(titleAndCal);
+    const isSession = drawsFromPackage; // back-compat API field
+    const needsFields = countsTowardLifetime || drawsFromPackage;
+
+    // Per-appointment debit flag (PURCHASE_KV). Set once the count is applied, so
+    // a re-trigger (dashboard + SMS) or a retry after a partial failure can't
+    // double-apply — and a "showed but never debited" appt re-applies instead of
+    // being permanently stuck.
+    const debitKey = `attended-debited:${appointmentId}`;
+    let alreadyDebited = false;
+    if (needsFields && context.env.PURCHASE_KV) {
+      try { alreadyDebited = !!(await context.env.PURCHASE_KV.get(debitKey)); }
+      catch (e) { console.error(`[staff-mark-attended] debit-flag read failed: ${e.message}`); }
+    }
+
+    // IDEMPOTENCY: already fully processed → return without changing anything.
+    if (isAlreadyProcessed(currentApptStatus, needsFields, alreadyDebited)) {
       return new Response(JSON.stringify({
         success: true,
         alreadyAttended: true,
         appointmentUpdated: false,
         sessionCountUpdated: false,
-        isSession: true,
+        isSession,
         sessionsCompleted: currentCompleted,
         sessionsRemaining: currentRemaining,
       }), { status: 200, headers });
     }
 
-    // Update appointment status to "showed"
-    const apptRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments/${appointmentId}`, {
-      method: "PUT",
-      body: JSON.stringify({ appointmentStatus: "showed" }),
-    });
+    // Mark the appointment "showed" — skip if it already is (this can be a retry
+    // after a prior run marked it but failed to apply the count).
+    const alreadyShowed = currentApptStatus === "showed" || currentApptStatus === "completed";
+    if (!alreadyShowed) {
+      const apptRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments/${appointmentId}`, {
+        method: "PUT",
+        body: JSON.stringify({ appointmentStatus: "showed" }),
+      });
 
-    if (!apptRes.ok) {
-      const errText = await apptRes.text();
-      console.error(`[staff-mark-attended] Appointment update error: ${apptRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to update appointment" }), { status: 422, headers });
+      if (!apptRes.ok) {
+        const errText = await apptRes.text();
+        console.error(`[staff-mark-attended] Appointment update error: ${apptRes.status} ${errText}`);
+        return new Response(JSON.stringify({ error: "Failed to update appointment" }), { status: 422, headers });
+      }
     }
 
     // Pair-mark: when a follow-up is marked showed, auto-flip a paired entrainment
@@ -223,18 +261,8 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Apply the two predicates per session-fields contract (see
-    // SESSION-FIELDS-AUDIT.md). countsTowardLifetime can be true while
-    // drawsFromPackage is false — that's exactly the entrainment case.
-    const appointmentTitle = body.appointmentTitle || "";
-    const calendarName = body.calendarName || "";
-    const titleAndCal = `${appointmentTitle} ${calendarName}`;
-    const countsTowardLifetime = !NON_JOURNEY_PATTERNS.test(titleAndCal);
-    const drawsFromPackage = !NON_PACKAGE_PATTERNS.test(titleAndCal);
-    // Back-compat: existing API contract returns `isSession`. Keep it tied to
-    // the package predicate (the historical meaning of "this is a paid
-    // session that counts against the prepaid balance").
-    const isSession = drawsFromPackage;
+    // Predicates (countsTowardLifetime / drawsFromPackage / isSession) + the
+    // debit flag were computed up front — see the idempotency block above.
 
     let newCompleted = currentCompleted;
     let newRemaining = currentRemaining;
@@ -272,6 +300,20 @@ export async function onRequestPost(context) {
           sessionsCompleted: currentCompleted,
           sessionsRemaining: currentRemaining,
         }), { status: 422, headers });
+      }
+
+      // Count applied — record the per-appointment debit flag so retries /
+      // re-triggers don't double-apply (and this appt now counts as fully done).
+      if (context.env.PURCHASE_KV) {
+        try {
+          await context.env.PURCHASE_KV.put(
+            debitKey,
+            JSON.stringify({ at: new Date().toISOString(), completed: newCompleted, remaining: newRemaining }),
+            { expirationTtl: 90 * 86400 },
+          );
+        } catch (e) {
+          console.error(`[staff-mark-attended] debit-flag write failed: ${e.message}`);
+        }
       }
     }
 
