@@ -201,9 +201,10 @@ export function classifyInvoice(invoice) {
   return { type: "retired", sessions: 0, name, amount: amountPaid, date };
 }
 
-function determineSeriesType(classifications) {
-  // Most authoritative: explicit series purchases.
-  const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade");
+export function determineSeriesType(classifications) {
+  // Most authoritative: explicit series purchases. The 4→8 upgrade lands the
+  // client on the 8-session series, so it must count toward has8 (not has4).
+  const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade" || c.type === "4-to-8-upgrade");
   if (has8) return "8-session";
   const has4 = classifications.some((c) => c.type === "4-series" || c.type === "4-upgrade");
   if (has4) return "4-session";

@@ -56,6 +56,23 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
     seriesType === "8-session";
 }
 
+// Lifetime "completed" count: appointments that effectively ran, minus
+// non-journey types. Extracted from the handler so it's testable; nowMs is
+// passed in for the past-only guard. Mirrors series-reconcile sync.js
+// computeLifetimeCount so the portal, staff app, and worker all agree.
+export function countLifetimeCompleted(appointments, nowMs) {
+  return (appointments || []).filter((a) => {
+    const s = (a.appointmentStatus || a.status || "").toLowerCase();
+    if (!(s === "completed" || s === "showed" || s === "confirmed")) return false;
+    // Past-only: a future 'confirmed' booking hasn't happened yet, so it must
+    // not count toward "how far have I come?". Mirrors sync.js computeLifetimeCount.
+    const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+    if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
+    const title = `${a.title || ""} ${a.calendarName || ""}`;
+    return !/pain assessment|discovery call|15-minute|15 minute|consultation/i.test(title);
+  }).length;
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -221,19 +238,9 @@ export async function onRequestGet(context) {
     //   - Phone-style appointments (discovery, consultation, 15-min, pain
     //     assessment) do NOT count
     //   - Neither counts against the package balance (sessions_remaining)
-    // Backend regex mirrors NON_JOURNEY_PATTERNS in staff-mark-attended.js
-    // and series-reconcile-worker/src/sync.js computeLifetimeCount —
-    // keeps all three "lifetime" surfaces consistent.
-    const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
-    const lifetimeCompletedCount = allAppointments.filter((a) => {
-      const s = (a.appointmentStatus || a.status || "").toLowerCase();
-      // Past 'confirmed' appointments effectively ran — Garrett doesn't
-      // always flip them to 'completed' or 'showed' after a session.
-      if (!(s === "completed" || s === "showed" || s === "confirmed")) return false;
-      const title = `${a.title || ""} ${a.calendarName || ""}`;
-      return !NON_JOURNEY.test(title);
-    }).length;
-    const sessionsCompleted = lifetimeCompletedCount;
+    // Lifetime "completed" count — past-only (a pre-booked upcoming session
+    // doesn't inflate it). See countLifetimeCompleted above.
+    const sessionsCompleted = countLifetimeCompleted(allAppointments, Date.now());
 
     // Extra ledger-derived fields for the new two-counter UI:
     const packageSize = ledger.purchased; // total sessions purchased (e.g., 8 for 8-pack, 12 for 4+8)
