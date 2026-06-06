@@ -296,7 +296,10 @@ const FIELD_IDS = {
   livingPracticeAccess: "1EnVtI70jC5MTshZjWvw",
 };
 
-const KV_TTL_SECONDS = 86400; // 24 hours
+// 90 days — must outlive GHL's webhook retry window so a late re-delivery can't
+// double-credit a single follow-up (ADD path). Matches the reconcile worker's
+// window; the invoice webhook uses 30d. (session-tracking-audit-2026-06-06 #1)
+export const KV_TTL_SECONDS = 90 * 86400;
 
 // Read a custom field value from a GHL contact object.
 function getCustomFieldValue(contact, fieldId) {

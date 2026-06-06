@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_MAP } from './ghl-purchase-webhook.js';
+import { PRODUCT_MAP, KV_TTL_SECONDS } from './ghl-purchase-webhook.js';
 
 const PID = {
   // package purchases (SET sessions_remaining)
@@ -36,5 +36,16 @@ describe('PRODUCT_MAP — purchase crediting', () => {
     expect(PRODUCT_MAP[PID.followupInPerson]).toBeUndefined();
     expect(PRODUCT_MAP[PID.followupVirtual]).toBeUndefined();
     expect(PRODUCT_MAP[PID.prePurchasedSession]).toBeUndefined();
+  });
+});
+
+describe('KV idempotency TTL', () => {
+  // The idempotency record must outlive GHL's webhook retry window. If it
+  // expires first, a late re-delivery of a single follow-up (ADD semantics)
+  // re-reads the already-incremented balance and adds again → a free ~$190
+  // session. Invoice webhook uses 30d, reconcile 90d — this must not be the
+  // short outlier. (session-tracking-audit-2026-06-06, risk #1)
+  it('outlives the GHL retry window (>= 30 days)', () => {
+    expect(KV_TTL_SECONDS).toBeGreaterThanOrEqual(30 * 86400);
   });
 });
