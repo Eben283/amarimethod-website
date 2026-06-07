@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { selectPackageProduct } from './reconcile.js';
+import { selectPackageProduct, isReconcileAlreadyApplied, remainingWasWritten } from './reconcile.js';
 
 // Real productIds (kept in sync with PACKAGE_PRODUCTS in reconcile.js).
 const PID = {
@@ -42,5 +42,66 @@ describe('selectPackageProduct', () => {
     expect(selectPackageProduct([])).toBe(null);
     expect(selectPackageProduct(null)).toBe(null);
     expect(selectPackageProduct(undefined)).toBe(null);
+  });
+});
+
+describe('remainingWasWritten', () => {
+  it('false for never-written field (null/undefined/empty)', () => {
+    expect(remainingWasWritten(null)).toBe(false);
+    expect(remainingWasWritten(undefined)).toBe(false);
+    expect(remainingWasWritten('')).toBe(false);
+    expect(remainingWasWritten('   ')).toBe(false);
+  });
+  it('true for a written value — INCLUDING a drawn-down "0"', () => {
+    expect(remainingWasWritten('0')).toBe(true);
+    expect(remainingWasWritten(0)).toBe(true);
+    expect(remainingWasWritten('3')).toBe(true);
+    expect(remainingWasWritten(8)).toBe(true);
+  });
+});
+
+describe('isReconcileAlreadyApplied (#3 — partial-failure detection, over-credit-safe)', () => {
+  const eightPack = { seriesType: '8-session', livingPractice: true };
+  const fourPack = { seriesType: '4-session', livingPractice: false };
+  const base = { currentSeriesType: '8-session', currentPortal: true, currentLP: true, currentRemaining: '8', pkg: eightPack };
+
+  it('already-applied when series + portal + LP + remaining are all set', () => {
+    expect(isReconcileAlreadyApplied(base)).toBe(true);
+  });
+
+  // THE #3 BUG: series/portal/LP set but sessions_remaining never written →
+  // pre-fix this was skipped forever, stranding a paid client at 0.
+  it('NOT already-applied when sessions_remaining was never written (the bug)', () => {
+    expect(isReconcileAlreadyApplied({ ...base, currentRemaining: null })).toBe(false);
+    expect(isReconcileAlreadyApplied({ ...base, currentRemaining: '' })).toBe(false);
+  });
+
+  // THE OVER-CREDIT GUARD: a drawn-down "0" is a written value → still
+  // already-applied, so reconcile never resets a mid-package balance to full.
+  it('already-applied when remaining is a drawn-down "0" or mid-pack number (no reset)', () => {
+    expect(isReconcileAlreadyApplied({ ...base, currentRemaining: '0' })).toBe(true);
+    expect(isReconcileAlreadyApplied({ ...base, currentRemaining: '3' })).toBe(true);
+  });
+
+  it('NOT already-applied when series_type does not match', () => {
+    expect(isReconcileAlreadyApplied({ ...base, currentSeriesType: 'none' })).toBe(false);
+  });
+
+  it('NOT already-applied when portal_access is missing', () => {
+    expect(isReconcileAlreadyApplied({ ...base, currentPortal: false })).toBe(false);
+  });
+
+  it('NOT already-applied when an 8-pack needs LP but LP is unset', () => {
+    expect(isReconcileAlreadyApplied({ ...base, currentLP: false })).toBe(false);
+  });
+
+  it('LP check is skipped for a 4-pack (livingPractice:false)', () => {
+    expect(isReconcileAlreadyApplied({ currentSeriesType: '4-session', currentPortal: true, currentLP: false, currentRemaining: '4', pkg: fourPack })).toBe(true);
+  });
+
+  // seriesIsAdvanced escape hatch: a 4-pack order on a contact already upgraded
+  // to 8-session is "applied" regardless of remaining (a later upgrade overwrote it).
+  it('already-applied via seriesIsAdvanced (4-pack order, contact on 8-session) even with remaining unwritten', () => {
+    expect(isReconcileAlreadyApplied({ currentSeriesType: '8-session', currentPortal: false, currentLP: false, currentRemaining: null, pkg: fourPack })).toBe(true);
   });
 });

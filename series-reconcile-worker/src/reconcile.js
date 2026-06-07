@@ -60,6 +60,41 @@ export function selectPackageProduct(items) {
   return null;
 }
 
+// Was sessions_remaining ever actually written? A never-written GHL field reads
+// null/undefined/"" via readField; a drawn-down balance reads the STRING "0".
+// That asymmetry is load-bearing for isReconcileAlreadyApplied below.
+export function remainingWasWritten(currentRemaining) {
+  return (
+    currentRemaining !== null &&
+    currentRemaining !== undefined &&
+    String(currentRemaining).trim() !== ""
+  );
+}
+
+// Pure: should this orphan package purchase be treated as ALREADY applied (and
+// skipped)? (#3 fix, 2026-06-07.) The pre-fix check matched series_type +
+// portal_access + living_practice but NOT sessions_remaining — so a partial
+// failure that set those three and died before writing sessions_remaining was
+// skipped on every run, leaving a PAID client stuck at 0 with no alert.
+//
+// We now ALSO require sessions_remaining to have been written. CRITICAL: we only
+// fall through to re-apply when remaining was NEVER written (null/empty) — never
+// when it holds a real number, INCLUDING a drawn-down "0". The apply path SETS
+// remaining to the full pack size, so re-applying on a written value would reset
+// a mid-package client's balance to full — a worse over-credit bug than the one
+// we're fixing. `seriesIsAdvanced` (a later upgrade overwrote this order's
+// package) is its own escape hatch and doesn't need the remaining check.
+export function isReconcileAlreadyApplied({ currentSeriesType, currentPortal, currentLP, currentRemaining, pkg }) {
+  const seriesMatches = currentSeriesType === pkg.seriesType;
+  const lpOk = !pkg.livingPractice || currentLP;
+  const seriesIsAdvanced =
+    pkg.seriesType === "4-session" && currentSeriesType === "8-session";
+  return (
+    seriesIsAdvanced ||
+    (seriesMatches && currentPortal && lpOk && remainingWasWritten(currentRemaining))
+  );
+}
+
 // Returns one of: "skip-not-package", "skip-already-processed", "skip-not-paid",
 // "skip-already-applied", "applied", "errored". Plus a details object.
 export async function reconcileOrder(env, orderDetail) {
@@ -99,19 +134,20 @@ export async function reconcileOrder(env, orderDetail) {
   const currentSeriesType = readField(contact, FIELD_IDS.series_type);
   const currentPortal = isCheckedCheckbox(readField(contact, FIELD_IDS.portal_access));
   const currentLP = isCheckedCheckbox(readField(contact, FIELD_IDS.living_practice_access));
+  const currentRemaining = readField(contact, FIELD_IDS.sessions_remaining);
 
-  const seriesMatches = currentSeriesType === pkg.seriesType;
-  const portalOk = currentPortal;
-  const lpOk = !pkg.livingPractice || currentLP;
-
-  // SPECIAL CASE: if the contact's series_type is already a HIGHER package
-  // than this order would set (e.g. order is for 4-pack but contact is on
-  // 8-pack from a later upgrade), assume the order was correctly processed
-  // and overwritten by the later purchase. Mark idempotent + skip.
+  // SPECIAL CASE (for the idempotency note below): the contact's series_type is
+  // already a HIGHER package than this order would set (e.g. order is a 4-pack
+  // but the contact is on an 8-pack from a later upgrade) → the order was
+  // processed then overwritten.
   const seriesIsAdvanced =
     pkg.seriesType === "4-session" && currentSeriesType === "8-session";
 
-  if ((seriesMatches && portalOk && lpOk) || seriesIsAdvanced) {
+  // #3 (2026-06-07): the already-applied check now ALSO requires
+  // sessions_remaining to have been written — a partial failure that set
+  // series/portal/LP but never wrote remaining was previously skipped forever,
+  // stranding a paid client at 0. See isReconcileAlreadyApplied (over-credit-safe).
+  if (isReconcileAlreadyApplied({ currentSeriesType, currentPortal, currentLP, currentRemaining, pkg })) {
     // Workflow already fired (or was overwritten by a later upgrade). Record
     // idempotency so we don't re-evaluate every hour.
     const note = seriesIsAdvanced
