@@ -12,6 +12,7 @@ import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { resolveContactCharges, summarizeCharges, classifyCharge, authoritativeCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
+import { isSettled, settledReason } from "../lib/owed-settled.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -119,12 +120,17 @@ export async function onRequestGet(context) {
       }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
     const attendedBillable = countBillableSessionsAttended(appointments);
-    const owed = computeOwedStatus({
-      sessionsPurchased: summary.sessionsPurchased,
-      unknownCount: summary.unknownCount,
-      unknownMax: summary.unknownMax,
-      attendedBillable,
-    });
+    // Comps and off-platform payments leave no Stripe trace, so the owed math
+    // can't see them and would false-flag these hand-verified clients. A pinned
+    // settled override forces 'square' — see lib/owed-settled.js.
+    const owed = isSettled(contactId)
+      ? { status: "square", shortBy: 0, settled: true, settledReason: settledReason(contactId) }
+      : computeOwedStatus({
+          sessionsPurchased: summary.sessionsPurchased,
+          unknownCount: summary.unknownCount,
+          unknownMax: summary.unknownMax,
+          attendedBillable,
+        });
 
     return new Response(JSON.stringify({
       ...owed,
