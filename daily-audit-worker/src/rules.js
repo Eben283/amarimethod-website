@@ -33,6 +33,25 @@ export function findAuditedProduct(order) {
   return null;
 }
 
+// Threshold for the unmapped-purchase alert. Set just below the cheapest package
+// (the $495 Initial→4 upgrade / $720 4-pack) but above every à-la-carte item
+// (initial $225, follow-up $190, entrainment $90, Living Practice $347) — so a
+// PAID order at/above this that maps to NO known product is almost certainly a
+// package product added in GHL but missing from the catalog (the Jenn POS
+// failure class), not a benign single-session no-op.
+const UNMAPPED_ALERT_MIN_AMOUNT = 400;
+
+// Pure: a paid order this size that resolves to no audited product is worth a
+// human look — it likely means a paid client was silently NOT credited because a
+// product is missing from functions/lib/ghl-products.js. Only PAID orders count;
+// pending/failed ones are ignored.
+export function isUnmappedHighValueOrder(order) {
+  const amount = Number(order?.amount ?? order?.total ?? 0);
+  if (!Number.isFinite(amount) || amount < UNMAPPED_ALERT_MIN_AMOUNT) return false;
+  const status = String(order?.status ?? order?.paymentStatus ?? "").toLowerCase();
+  return status === "paid" || status === "completed" || status === "succeeded";
+}
+
 // How many sessions a client can plausibly draw down within the audit window
 // (AUDIT_HOURS = 48). The session right before a package purchase is draw #1 of
 // that pack (the documented package-session-counting rule — Garrett runs the
@@ -199,7 +218,24 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
     if (!contactId) continue;
 
     const productConfig = findAuditedProduct(order);
-    if (!productConfig) continue;
+    if (!productConfig) {
+      // A paid order ≥ $400 that maps to no known product = likely a package
+      // product added in GHL but missing from the catalog → a paid client
+      // silently not credited (Jenn POS class). Surface it; otherwise skip the
+      // benign à-la-carte / draw-down no-ops.
+      if (isUnmappedHighValueOrder(order)) {
+        const cached = await cache.getContact(contactId);
+        const amt = Number(order.amount ?? order.total ?? 0);
+        issues.push(issue(
+          "warning", "purchase", contactId, cached?.name || "Unknown",
+          "unmapped_high_value_purchase",
+          `A paid order ≥ $${UNMAPPED_ALERT_MIN_AMOUNT} should map to a known product`,
+          `Paid $${amt} order (${order._id || order.id || "?"}) has no recognized product`,
+          "Likely a package product added in GHL but missing from functions/lib/ghl-products.js — add it so it credits + audits"
+        ));
+      }
+      continue;
+    }
 
     purchasesChecked++;
     const cached = await cache.getContact(contactId);

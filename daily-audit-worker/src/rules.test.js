@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { remainingIndicatesUndercredit, findAuditedProduct } from './rules.js';
+import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder } from './rules.js';
 import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 
 // Real GHL ids (kept in sync with ghl-products.js).
@@ -82,5 +82,28 @@ describe('remainingIndicatesUndercredit', () => {
   it('FLAGS a missing / unparseable field after a recognized purchase', () => {
     expect(remainingIndicatesUndercredit('', 8)).toBe(true);
     expect(remainingIndicatesUndercredit(undefined, 8)).toBe(true);
+  });
+});
+
+describe('isUnmappedHighValueOrder (alert — paid order ≥ $400 with no known product)', () => {
+  it('flags a paid order at/above the $400 threshold', () => {
+    expect(isUnmappedHighValueOrder({ amount: 1295, status: 'paid' })).toBe(true);
+    expect(isUnmappedHighValueOrder({ amount: 400, paymentStatus: 'completed' })).toBe(true);
+    expect(isUnmappedHighValueOrder({ total: 720, status: 'succeeded' })).toBe(true);
+  });
+  it('does NOT flag à-la-carte amounts below $400 (LP $347 / initial $225 / follow-up $190)', () => {
+    expect(isUnmappedHighValueOrder({ amount: 347, status: 'paid' })).toBe(false);
+    expect(isUnmappedHighValueOrder({ amount: 225, status: 'paid' })).toBe(false);
+    expect(isUnmappedHighValueOrder({ amount: 190, status: 'completed' })).toBe(false);
+  });
+  it('does NOT flag unpaid / pending / failed orders (even high-value)', () => {
+    expect(isUnmappedHighValueOrder({ amount: 1295, status: 'pending' })).toBe(false);
+    expect(isUnmappedHighValueOrder({ amount: 1295, paymentStatus: 'failed' })).toBe(false);
+    expect(isUnmappedHighValueOrder({ amount: 1295 })).toBe(false); // no status
+  });
+  it('handles missing / unparseable amount safely', () => {
+    expect(isUnmappedHighValueOrder({ status: 'paid' })).toBe(false);
+    expect(isUnmappedHighValueOrder({ amount: 'abc', status: 'paid' })).toBe(false);
+    expect(isUnmappedHighValueOrder(null)).toBe(false);
   });
 });
