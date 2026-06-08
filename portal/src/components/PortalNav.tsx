@@ -27,10 +27,19 @@ export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings
         {onOpenSettings && (
           <button
             type="button"
-            className="cp-account-out"
             onClick={onOpenSettings}
             aria-label="Settings"
             title="Settings"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '22px',
+              lineHeight: 1,
+              padding: '4px 6px',
+              color: 'inherit',
+              opacity: 0.6,
+            }}
           >
             ⚙
           </button>
