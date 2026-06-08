@@ -21,7 +21,7 @@
 //      Header: X-Webhook-Secret: <same value as GHL_WEBHOOK_SECRET>
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { PURCHASE_CREDIT_MAP } from "../lib/ghl-products.js";
+import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -65,6 +65,27 @@ export const PRODUCT_MAP = (() => {
   }
   return m;
 })();
+
+// Pure: the productId of a credited product on an order, or null. (R4 fix,
+// 2026-06-08.) Reads the NESTED ids GHL actually sends — `item.product._id`
+// (= productId) and `item.price._id` (= priceId) — plus legacy flat fallbacks,
+// and normalizes ANY id → productId via productIdForAnyId so a priceId resolves
+// against the productId-keyed PRODUCT_MAP. The prior `fetchRecentOrder`
+// extraction never read `item.product._id` and treated `item._id` (the LINE-ITEM
+// id) as a product, so on a real order the Orders-API backup couldn't resolve a
+// product and silently skipped crediting. PRODUCT_MAP excludes draw-downs, so an
+// order that's only a draw-down correctly returns null.
+export function resolveOrderProductId(order) {
+  const items = order?.items || order?.lineItems || order?.line_items || [];
+  for (const item of items) {
+    const rawId =
+      item?.product?._id || item?.price?._id ||
+      item?.product_id || item?.productId || item?.priceId;
+    const productId = productIdForAnyId(rawId);
+    if (productId && PRODUCT_MAP[productId]) return productId;
+  }
+  return null;
+}
 
 // Field keys for the slot-request fields written by create-checkout.js
 // (Settings → Custom Fields → Session Tracking folder)
@@ -288,23 +309,16 @@ async function fetchRecentOrder(context, contactId) {
       return null;
     }
 
-    // Walk through orders (most recent first) looking for a recognized product
+    // Walk orders (most recent first) for a recognized product. Reads the nested
+    // ids real GHL orders carry + normalizes priceId→productId (see
+    // resolveOrderProductId).
     for (const order of orders) {
-      const items = order.items || order.lineItems || order.line_items || [];
-      for (const item of items) {
-        // GHL may nest the product ID under different keys
-        const pid =
-          item.product_id ||
-          item.productId ||
-          item._id ||
-          item.priceId ||
-          (item.price && item.price._id);
-        if (pid && PRODUCT_MAP[pid]) {
-          return {
-            productId: pid,
-            orderId: order._id || order.id || order.orderId,
-          };
-        }
+      const productId = resolveOrderProductId(order);
+      if (productId) {
+        return {
+          productId,
+          orderId: order._id || order.id || order.orderId,
+        };
       }
     }
 
