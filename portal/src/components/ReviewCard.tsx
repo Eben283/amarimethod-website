@@ -12,10 +12,10 @@ export default function ReviewCard() {
         background: 'rgba(235,165,132,0.07)',
       }}
     >
-      <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600 }}>Enjoying your sessions?</h3>
+      <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600 }}>Help us grow</h3>
       <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8, maxWidth: 520 }}>
-        If the work has helped you, a quick Google review helps other people find Dr. Garrett. It
-        takes a minute, and it means a lot.
+        A quick Google review is the best way to help the practice grow and bring Dr. Garrett's work
+        to more people. It takes a minute, and it means a lot.
       </p>
       <a
         href={REVIEW_URL}
