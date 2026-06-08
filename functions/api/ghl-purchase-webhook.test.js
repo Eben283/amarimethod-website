@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_MAP, KV_TTL_SECONDS } from './ghl-purchase-webhook.js';
+import { PRODUCT_MAP, KV_TTL_SECONDS, resolveOrderProductId } from './ghl-purchase-webhook.js';
 
 const PID = {
   // package purchases (SET sessions_remaining)
@@ -47,5 +47,42 @@ describe('KV idempotency TTL', () => {
   // short outlier. (session-tracking-audit-2026-06-06, risk #1)
   it('outlives the GHL retry window (>= 30 days)', () => {
     expect(KV_TTL_SECONDS).toBeGreaterThanOrEqual(30 * 86400);
+  });
+});
+
+describe('resolveOrderProductId (R4 — fetchRecentOrder backup reads NESTED ids)', () => {
+  // Real GHL orders carry the product id at item.product._id (productId) and
+  // item.price._id (priceId). The old extraction never read item.product._id
+  // and treated item._id (the line-item id) as a product, so the Orders-API
+  // backup couldn't resolve a real order and silently skipped crediting.
+  const UPGRADE_4TO8_PRICE = '6a010952e41b44dab12d3c06'; // priceId → normalizes to productId below
+  const UPGRADE_4TO8_PRODUCT = '6a010952e41b442c862d3c01';
+  const li = (id) => ({ product: { _id: id } });
+
+  it('resolves a credited package from the nested item.product._id', () => {
+    expect(resolveOrderProductId({ items: [li(PID.eightSeries)] })).toBe(PID.eightSeries);
+  });
+
+  it('normalizes a nested item.price._id (priceId) to its productId', () => {
+    expect(resolveOrderProductId({ items: [{ price: { _id: UPGRADE_4TO8_PRICE } }] })).toBe(UPGRADE_4TO8_PRODUCT);
+  });
+
+  it('finds the package even when it is not the first line item', () => {
+    expect(resolveOrderProductId({ items: [li(PID.followupInPerson), li(PID.eightSeries)] })).toBe(PID.eightSeries);
+  });
+
+  it('does NOT treat item._id (the line-item id) as a product', () => {
+    expect(resolveOrderProductId({ items: [{ _id: PID.eightSeries }] })).toBe(null);
+  });
+
+  it('returns null for a draw-down-only order (correctly NOT credited)', () => {
+    expect(resolveOrderProductId({ items: [li(PID.followupInPerson)] })).toBe(null);
+  });
+
+  it('supports lineItems alias + empty/missing', () => {
+    expect(resolveOrderProductId({ lineItems: [li(PID.fourSeries)] })).toBe(PID.fourSeries);
+    expect(resolveOrderProductId({ items: [] })).toBe(null);
+    expect(resolveOrderProductId({})).toBe(null);
+    expect(resolveOrderProductId(null)).toBe(null);
   });
 });
