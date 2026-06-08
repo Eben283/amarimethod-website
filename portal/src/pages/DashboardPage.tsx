@@ -3,6 +3,7 @@ import PortalNav from '../components/PortalNav';
 import QuickActions from '../components/QuickActions';
 import BillingDocuments from '../components/BillingDocuments';
 import SettingsModal from '../components/SettingsModal';
+import ReviewCard from '../components/ReviewCard';
 import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
@@ -156,6 +157,12 @@ export default function DashboardPage() {
       )}
 
       <SessionHistory appointments={appointments} />
+
+      {hasHadInitial && (
+        <div style={{ margin: '22px 20px 0' }}>
+          <ReviewCard />
+        </div>
+      )}
 
       <footer className="cp-foot">
         <span>amarimethod.com</span>
