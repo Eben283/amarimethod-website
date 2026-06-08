@@ -13,6 +13,26 @@ import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
 // should be >= increment".
 const PRODUCT_MAP = AUDIT_INCREMENT_MAP;
 
+// Resolve the audited package/product for an order. (R3 fix, 2026-06-08.)
+// GHL line items carry the product id NESTED at `item.product._id` (= productId)
+// and `item.price._id` (= priceId). The flat `item.productId` / `item.priceId`
+// fields are ABSENT on real orders — so the prior
+// `items[0]?.priceId || items[0]?.productId || order.productId` read came back
+// undefined and the audit `continue`d past EVERY order, silently blind to all
+// package purchases (it could report "clean" on a genuinely broken purchase).
+// This scans ALL line items (not just items[0], so a package at index 1+ isn't
+// missed) and reads the nested ids. PRODUCT_MAP is keyed by BOTH productId and
+// priceId, so either resolves.
+export function findAuditedProduct(order) {
+  const items = order?.items || order?.lineItems || [];
+  for (const item of items) {
+    const id = item?.product?._id || item?.price?._id;
+    const config = id ? PRODUCT_MAP[id] : null;
+    if (config) return config;
+  }
+  return null;
+}
+
 // How many sessions a client can plausibly draw down within the audit window
 // (AUDIT_HOURS = 48). The session right before a package purchase is draw #1 of
 // that pack (the documented package-session-counting rule — Garrett runs the
@@ -178,9 +198,7 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
     const contactId = order.contactId || order.contact?.id;
     if (!contactId) continue;
 
-    const items = order.items || order.lineItems || [];
-    const productId = items[0]?.priceId || items[0]?.productId || order.productId;
-    const productConfig = productId ? PRODUCT_MAP[productId] : null;
+    const productConfig = findAuditedProduct(order);
     if (!productConfig) continue;
 
     purchasesChecked++;
@@ -332,9 +350,7 @@ export async function auditSeriesTypeDrops({ env, cache }) {
   for (const order of orders) {
     const contactId = order.contactId || order.contact?.id;
     if (!contactId) continue;
-    const items = order.items || order.lineItems || [];
-    const productId = items[0]?.priceId || items[0]?.productId || order.productId;
-    const productConfig = productId ? PRODUCT_MAP[productId] : null;
+    const productConfig = findAuditedProduct(order);
     if (!productConfig || !productConfig.seriesType) continue;
     packBuyers.set(contactId, {
       expected: productConfig.seriesType,
