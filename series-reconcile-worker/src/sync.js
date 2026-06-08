@@ -67,6 +67,21 @@ function readFieldInt(contact, fieldId) {
   return Number.isFinite(n) ? n : null;
 }
 
+// Delta used by the auto-apply guard. A NEVER-WRITTEN field (null/undefined) is
+// a FILL, not a disagreement with a human-set value — there's no intent to
+// protect — so its guard-delta is 0 (always safe to auto-write the derived
+// value; the ledger is already gated to high-confidence + unlocked + not
+// recently edited before we reach the guard). Only a real WRITTEN value that
+// differs by more than MAX_AUTO_DELTA is held back for human review.
+//
+// (#4 fix, 2026-06-08: the prior `derived - (current ?? 0)` coerced a blank
+// field to 0, producing a spurious large delta that parked fresh-but-unwritten
+// contacts in the needs-review queue forever instead of just filling the blank.)
+export function guardDelta(currentValue, derivedValue) {
+  if (currentValue === null || currentValue === undefined) return 0;
+  return Math.abs(derivedValue - currentValue);
+}
+
 // Lifetime count = past appointments that effectively ran (showed/completed/
 // or PAST confirmed), minus the non-journey types. Mirrors the portal's
 // ProgressTracker logic and the new staff-mark-attended.js contract.
@@ -292,11 +307,11 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     // means the ledger derivation is missing context OR the human bumped
     // for a reason we don't see (e.g. comp session, manual reconciliation,
     // historical data the orders endpoint can't reach).
-    const remainingDelta = !remainingMatches ? Math.abs(ledger.remaining - (currentRemaining ?? 0)) : 0;
+    const remainingDelta = !remainingMatches ? guardDelta(currentRemaining, ledger.remaining) : 0;
     const newCompletedTarget = currentCompleted !== null
       ? Math.max(currentCompleted, lifetimeCount)
       : lifetimeCount;
-    const completedDelta = !completedMatches ? Math.abs(newCompletedTarget - (currentCompleted ?? 0)) : 0;
+    const completedDelta = !completedMatches ? guardDelta(currentCompleted, newCompletedTarget) : 0;
 
     if (remainingDelta > MAX_AUTO_DELTA || completedDelta > MAX_AUTO_DELTA) {
       // Don't write — flag for human review.
