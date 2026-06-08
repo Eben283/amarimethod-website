@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import PortalNav from '../components/PortalNav';
 import QuickActions from '../components/QuickActions';
+import BillingDocuments from '../components/BillingDocuments';
+import SettingsModal from '../components/SettingsModal';
 import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
@@ -12,6 +14,7 @@ export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
 
@@ -95,10 +98,22 @@ export default function DashboardPage() {
 
   return (
     <div className="cp-screen">
-      <PortalNav firstName={client.firstName || client.lastName} hasLivingPractice={client.hasLivingPractice} />
+      <PortalNav
+        firstName={client.firstName || client.lastName}
+        hasLivingPractice={client.hasLivingPractice}
+        onOpenSettings={() => setShowSettings(true)}
+      />
 
       {showBookingModal && (
         <BookingModal onClose={() => setShowBookingModal(false)} />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          current={client.reminderPreference || 'all'}
+          onClose={() => setShowSettings(false)}
+          onSaved={refetch}
+        />
       )}
 
       <section className="cp-greet">
@@ -127,6 +142,8 @@ export default function DashboardPage() {
       />
 
       <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+
+      {hasHadInitial && <BillingDocuments />}
 
       {!client.isPartner && (
         <div style={{ margin: '22px 20px 0' }}>

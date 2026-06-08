@@ -264,6 +264,12 @@ export async function onRequestGet(context) {
     const referralCount = Math.max(0, parseInt(referralCountRaw ?? "0", 10) || 0);
     const rewardCode = getCustomField(contact, "referral_reward_code", fieldDefs) || null;
 
+    // Reminder preference (all | some | none). Defaults to "all" — current
+    // behavior — until the client chooses otherwise in the settings drawer.
+    const reminderPreference = String(
+      getCustomField(contact, "reminder_preference", fieldDefs) || "all",
+    ).toLowerCase();
+
     // Sort appointments by date
     const nowMs = Date.now();
     // Pull the meeting URL out of whatever GHL field carries it for this
@@ -330,6 +336,7 @@ export async function onRequestGet(context) {
           isPartner,
           referralCount,
           rewardCode,
+          reminderPreference,
         },
         appointments: pastAppointments,
         upcomingAppointments,

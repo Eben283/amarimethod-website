@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface PortalNavProps {
   firstName?: string;
   hasLivingPractice?: boolean;
+  onOpenSettings?: () => void;
 }
 
-export default function PortalNav({ firstName, hasLivingPractice }: PortalNavProps) {
+export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings }: PortalNavProps) {
   const { email, logout } = useAuth();
   const displayName = firstName || email?.split('@')[0] || '';
 
@@ -23,6 +24,17 @@ export default function PortalNav({ firstName, hasLivingPractice }: PortalNavPro
       </nav>
       <div className="cp-account">
         {displayName && <span className="cp-account-name">{displayName}</span>}
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="cp-account-out"
+            onClick={onOpenSettings}
+            aria-label="Settings"
+            title="Settings"
+          >
+            ⚙
+          </button>
+        )}
         <button type="button" className="cp-account-out" onClick={logout}>Sign out</button>
       </div>
     </header>

@@ -51,6 +51,8 @@ export interface ClientData {
   isPartner: boolean;
   referralCount?: number;
   rewardCode?: string | null;
+  /** Reminder cadence the client chose: all | some | none. Defaults to 'all'. */
+  reminderPreference?: 'all' | 'some' | 'none';
 }
 
 export interface Appointment {

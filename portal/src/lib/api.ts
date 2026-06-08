@@ -116,4 +116,32 @@ export async function bookAppointment(payload: BookAppointmentPayload): Promise<
   });
 }
 
+// The reimbursement-packet endpoint returns an HTML document (not JSON), so it
+// can't go through fetchApi. Fetch the HTML text with the auth header; on a
+// non-OK response the body is JSON ({ error }), which we surface as an ApiError.
+export async function getReimbursementPacketHtml(from?: string, to?: string): Promise<string> {
+  const token = localStorage.getItem('portal_token');
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const qs = params.toString();
+  const res = await fetch(`${API_BASE}/portal-reimbursement-packet${qs ? `?${qs}` : ''}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Could not generate your packet.' }));
+    throw new ApiError(data.error || 'Could not generate your packet.', res.status);
+  }
+  return res.text();
+}
+
+export async function updateReminderPreference(
+  preference: 'all' | 'some' | 'none',
+): Promise<{ success: boolean; preference: string }> {
+  return fetchApi('/portal-update-preference', {
+    method: 'POST',
+    body: JSON.stringify({ preference }),
+  });
+}
+
 export { ApiError };
