@@ -11,6 +11,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { computeHasLivingPractice, getCustomField } from "../lib/portal-helpers.js";
+import { computeSessionLedger } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -119,7 +120,29 @@ export async function onRequestGet(context) {
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const tags = contact.tags || [];
 
-    if (!computeHasLivingPractice(lpRaw, tags, seriesType)) {
+    // Fast path: raw fields say they have access → grant immediately (no extra calls).
+    let hasAccess = computeHasLivingPractice(lpRaw, tags, seriesType);
+
+    // Deny-path safety net: the raw `series_type` field has NO continuous
+    // self-healer (series-reconcile-worker/sync.js only reconciles
+    // sessions_remaining/completed), so a missed/dropped write can leave a
+    // PAID 8-session client reading series_type="none" here — silently locking
+    // them out of the Living Practice videos they bought, while portal-data.js
+    // (which gates on the DERIVED series type) still shows them the tile.
+    // Before denying paid content, re-check against the same derived signal the
+    // portal uses. Only runs on the rare deny path, so the happy path stays fast.
+    // Conservative by construction: this can only GRANT access we'd have wrongly
+    // denied — the derived 8-session is a real purchase signal — never the reverse.
+    if (!hasAccess) {
+      try {
+        const ledger = await computeSessionLedger(context, contactId, { fieldDefs });
+        hasAccess = computeHasLivingPractice(lpRaw, tags, ledger.display.seriesType);
+      } catch (e) {
+        console.error("[stream-token] derived LP-access fallback failed:", e);
+      }
+    }
+
+    if (!hasAccess) {
       return new Response(
         JSON.stringify({ error: "No Living Practice access on this account." }),
         { status: 403, headers }
