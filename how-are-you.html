@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Utility/transactional page — keep out of search -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>How was your session? | Amari Method</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <link rel="stylesheet" href="css/style-v5.css?v=37">
+
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+  </script>
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ');
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary, #F7F2E8);
+      color: var(--color-text, #2a2520);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 32px 24px;
+    }
+    .gate {
+      width: 100%;
+      max-width: 540px;
+      text-align: center;
+    }
+    .gate .logo {
+      height: 44px;
+      width: auto;
+      margin-bottom: 48px;
+    }
+    .gate h1 {
+      font-family: var(--font-serif-primary, 'Bona Nova', serif);
+      font-weight: 400;
+      font-size: clamp(30px, 5vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0 0 16px;
+    }
+    .gate .sub {
+      font-size: 16px;
+      color: var(--color-text-secondary, #6b6359);
+      margin: 0 0 48px;
+      line-height: 1.5;
+    }
+    .gate .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .gate .choice {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 22px 28px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: transform .2s, box-shadow .2s, background .2s;
+      cursor: pointer;
+    }
+    .gate .choice .emoji { font-size: 24px; line-height: 1; }
+    .gate .yes {
+      background: var(--color-accent-warm, #C56B4E);
+      color: #fff;
+    }
+    .gate .yes:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(197,107,78,.28); }
+    .gate .no {
+      background: transparent;
+      color: var(--color-text, #2a2520);
+      border: 1px solid var(--color-border, #ddd6c9);
+    }
+    .gate .no:hover { transform: translateY(-2px); background: var(--bg-secondary, #efe9dc); }
+    .gate .footer {
+      margin-top: 48px;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted, #a89f92);
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+    ============================================================
+    TWO LINKS TO REPLACE BEFORE THIS GOES LIVE:
+    1. The 😊 "It helped" button  -> your Google review link
+       (GBP dashboard > Ask for reviews > copy link)
+    2. The 😕 "Not quite there" button -> your feedback form link
+       (GHL form that notifies Garrett)
+    Find them below as href="REPLACE_WITH_GOOGLE_REVIEW_LINK"
+    and href="REPLACE_WITH_FEEDBACK_FORM_LINK"
+    ============================================================
+  -->
+
+  <main class="gate">
+    <img class="logo" src="images/AmariLogo.avif" alt="Amari Method" width="200" height="44">
+
+    <h1>How has your experience with the Amari Method been?</h1>
+    <p class="sub">Dr. Garrett reads every response.</p>
+
+    <div class="choices">
+      <a class="choice yes"
+         href="REPLACE_WITH_GOOGLE_REVIEW_LINK"
+         onclick="gtag('event','review_gate_positive');">
+        <span class="emoji">😊</span><span>It helped</span>
+      </a>
+      <a class="choice no"
+         href="REPLACE_WITH_FEEDBACK_FORM_LINK"
+         onclick="gtag('event','review_gate_feedback');">
+        <span class="emoji">😕</span><span>Not quite there</span>
+      </a>
+    </div>
+
+    <div class="footer">Amari Method · San Francisco</div>
+  </main>
+
+</body>
+</html>
