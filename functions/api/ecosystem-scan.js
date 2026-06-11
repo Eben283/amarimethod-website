@@ -5,6 +5,8 @@
 // Query params:
 //   ?date=YYYY-MM-DD  (optional, defaults to today Pacific Time)
 
+import { requireOpsReadKey } from "../lib/ops-auth.js";
+
 const PT = "America/Los_Angeles";
 const SCAN_KV_PREFIX = "ops:ecosystem-scan:";
 
@@ -13,9 +15,13 @@ function todayPacific() {
 }
 
 export async function onRequestGet(context) {
+  // Gated for parity with /api/daily-audit (shares the ops read key). Only consumer
+  // is the /day skill (server-to-server), so no CORS header is needed.
+  const denied = requireOpsReadKey(context.request, context.env);
+  if (denied) return denied;
+
   const headers = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
   };
 
   const kv = context.env.PORTAL_KV;
