@@ -28,6 +28,7 @@ import { listRecentCompletedOrders, getOrderDetail, fetchActiveSeriesContactIds 
 import { reconcileOrder } from "./reconcile.js";
 import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
 import { nextChunk, isQueueStale, remainderAfterProcessing } from "./queue.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 // Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
 // Kept small to stay under the 50-subrequest free-tier cap alongside the order
@@ -49,6 +50,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/status") {
@@ -64,7 +68,15 @@ export default {
     }
 
     if (url.pathname === "/backfill") {
-      const days = clampInt(url.searchParams.get("days"), 1, 180, 30);
+      // Cap at 90 days: the PURCHASE_KV idempotency record TTL is 90 * 86400
+      // (reconcile.js). Backfilling past that window means KV no longer
+      // remembers an order was processed, so the only thing stopping a re-apply
+      // is the field-state check (isReconcileAlreadyApplied) — which fails if
+      // any field was legitimately changed since (package finished, portal
+      // revoked), resetting sessions_remaining to full + re-granting access.
+      // Keeping days <= TTL means KV idempotency always covers the backfill
+      // window (CRIT-C, 2026-06-11 review).
+      const days = clampInt(url.searchParams.get("days"), 1, 90, 30);
       const result = await runReconcile(env, "backfill", days * 24);
       return jsonResponse(result);
     }
@@ -148,7 +160,7 @@ async function runReconcile(env, trigger, lookbackHours) {
 
   const results = {
     applied: [],
-    skipped: { alreadyProcessed: 0, alreadyApplied: 0, notPackage: 0, notPaid: 0, noContact: 0 },
+    skipped: { alreadyProcessed: 0, alreadyApplied: 0, notPackage: 0, notPaid: 0, noContact: 0, locked: 0 },
     errored: [],
   };
 
@@ -179,6 +191,10 @@ async function runReconcile(env, trigger, lookbackHours) {
             break;
           case "skip-no-contact":
             results.skipped.noContact += 1;
+            break;
+          case "skip-locked":
+            results.skipped.locked += 1;
+            console.log(`[series-reconcile] SKIP-LOCKED ${r.package} for ${r.contactName} (${r.contactId}) — sessions_remaining_locked, order=${r.orderId}`);
             break;
           case "errored":
             results.errored.push(r);

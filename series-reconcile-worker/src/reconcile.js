@@ -27,6 +27,7 @@ export const FIELD_IDS = {
   sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
   portal_access: "O0xmwyRqeNK2EA1GGGye",
   living_practice_access: "1EnVtI70jC5MTshZjWvw",
+  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
 };
 
 // Tags the C-series workflows remove (idempotent — safe to "remove" tags the
@@ -131,6 +132,24 @@ export async function reconcileOrder(env, orderDetail) {
   if (!contact) {
     return { status: "errored", orderId, contactId, error: "contact not found" };
   }
+
+  // Hard lock: if `sessions_remaining_locked` is checked, Garrett's intent
+  // overrides any automated derivation (one-off comps, manual credits). The
+  // sync-sweep path (sync.js) already honors this; this order path must too,
+  // or a locked contact who makes a package purchase gets their pinned balance
+  // overwritten by the orphan-apply below (CRIT-B, 2026-06-11 review). Skip
+  // before any read/write — and do NOT write an idempotency record, so the
+  // order stays re-checkable if the lock is later lifted.
+  if (isCheckedCheckbox(readField(contact, FIELD_IDS.sessions_remaining_locked))) {
+    return {
+      status: "skip-locked",
+      orderId,
+      package: pkg.name,
+      contactId,
+      contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+    };
+  }
+
   const currentSeriesType = readField(contact, FIELD_IDS.series_type);
   const currentPortal = isCheckedCheckbox(readField(contact, FIELD_IDS.portal_access));
   const currentLP = isCheckedCheckbox(readField(contact, FIELD_IDS.living_practice_access));

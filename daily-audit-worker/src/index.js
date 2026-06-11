@@ -6,6 +6,7 @@ import { ghlFetch, fetchAppointmentsForDate, todayPacific, LOCATION_ID, FIELD_ID
 import { auditAppointments, auditPurchases, auditTagConsistency, auditSeriesTypeDrops, auditCommunications, auditStateMismatches } from "./rules.js";
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
@@ -32,6 +33,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     // /run = main audit only (reads existing drift findings from KV).
@@ -83,7 +87,14 @@ function jsonResponse(data, status = 200) {
 async function runScheduledAudit(env) {
   try {
     if (env.SELF) {
-      const res = await env.SELF.fetch("https://daily-audit.internal/run-drift");
+      // The /run-drift route is auth-gated (requireWorkerAuth). This self-call
+      // must present the same secret, or the drift refresh 401s once the gate
+      // is active. env.WORKER_AUTH_SECRET is undefined until the secret is set,
+      // in which case the gate is a no-op and the empty header is fine.
+      const headers = env.WORKER_AUTH_SECRET
+        ? { Authorization: `Bearer ${env.WORKER_AUTH_SECRET}` }
+        : undefined;
+      const res = await env.SELF.fetch("https://daily-audit.internal/run-drift", { headers });
       await res.text();
       console.log(`[daily-audit] drift refresh (SELF binding) → ${res.status}`);
     } else {
