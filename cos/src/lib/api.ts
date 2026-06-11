@@ -80,6 +80,27 @@ export async function sendMessage(
 
     const decoder = new TextDecoder();
     let buffer = '';
+    let sawTerminal = false;
+
+    const handleLine = (line: string) => {
+      if (!line.startsWith('data: ')) return;
+      const data = line.slice(6);
+      if (data === '[DONE]') return;
+      try {
+        const parsed = JSON.parse(data);
+        if (parsed.type === 'chunk') {
+          onChunk(parsed.text);
+        } else if (parsed.type === 'done') {
+          sawTerminal = true;
+          onDone(parsed.actions || []);
+        } else if (parsed.type === 'error') {
+          sawTerminal = true;
+          onError(parsed.message);
+        }
+      } catch {
+        // Non-JSON line, ignore
+      }
+    };
 
     while (true) {
       const { done, value } = await reader.read();
@@ -89,27 +110,15 @@ export async function sendMessage(
       const lines = buffer.split('\n');
       buffer = lines.pop() || '';
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data === '[DONE]') {
-            continue;
-          }
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.type === 'chunk') {
-              onChunk(parsed.text);
-            } else if (parsed.type === 'done') {
-              onDone(parsed.actions || []);
-            } else if (parsed.type === 'error') {
-              onError(parsed.message);
-            }
-          } catch {
-            // Non-JSON line, ignore
-          }
-        }
-      }
+      for (const line of lines) handleLine(line);
     }
+    // Flush any trailing event left in the buffer (a stream that ends without a
+    // final newline would otherwise drop its last event — often the "done").
+    if (buffer.trim()) handleLine(buffer.trim());
+    // If the stream ended without a terminal `done`/`error` event (CF cut the
+    // connection, network drop), neither callback fired and the chat would stay
+    // stuck in the streaming state forever. Surface it so the caller resets.
+    if (!sawTerminal) onError('The connection dropped before the reply finished. Please try again.');
   } catch (err) {
     if (err instanceof ApiError) {
       onError(err.message);
