@@ -5,6 +5,7 @@ import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
+import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -179,15 +180,28 @@ export async function onRequestPost(context) {
     const isSession = drawsFromPackage; // back-compat API field
     const needsFields = countsTowardLifetime || drawsFromPackage;
 
-    // Per-appointment debit flag (PURCHASE_KV). Set once the count is applied, so
-    // a re-trigger (dashboard + SMS) or a retry after a partial failure can't
-    // double-apply — and a "showed but never debited" appt re-applies instead of
-    // being permanently stuck.
+    // Per-appointment debit gate. Set once the count is applied, so a re-trigger
+    // (dashboard + SMS) or a retry after a partial failure can't double-apply — and a
+    // "showed but never debited" appt re-applies instead of being permanently stuck.
+    //
+    // Prefer D1 (ATTEND_DB): strongly consistent + an atomic claim at the decrement
+    // below, so two concurrent calls can't both decrement. Falls back to the legacy
+    // KV flag when the D1 binding isn't set yet (rollout-safe — deploying is a no-op
+    // until the binding is added). NOTE: the KV path remains best-effort (eventually
+    // consistent), so the race is only fully closed once ATTEND_DB is bound.
+    const debitDb = context.env.ATTEND_DB || null;
     const debitKey = `attended-debited:${appointmentId}`;
     let alreadyDebited = false;
-    if (needsFields && context.env.PURCHASE_KV) {
-      try { alreadyDebited = !!(await context.env.PURCHASE_KV.get(debitKey)); }
-      catch (e) { console.error(`[staff-mark-attended] debit-flag read failed: ${e.message}`); }
+    if (needsFields) {
+      try {
+        if (debitDb) {
+          alreadyDebited = await isDebited(debitDb, appointmentId);
+        } else if (context.env.PURCHASE_KV) {
+          alreadyDebited = !!(await context.env.PURCHASE_KV.get(debitKey));
+        }
+      } catch (e) {
+        console.error(`[staff-mark-attended] debit-flag read failed: ${e.message}`);
+      }
     }
 
     // IDEMPOTENCY: already fully processed → return without changing anything.
@@ -268,6 +282,35 @@ export async function onRequestPost(context) {
     let newRemaining = currentRemaining;
 
     if (countsTowardLifetime || drawsFromPackage) {
+      // ── Atomic claim (concurrency gate) ──
+      // Before applying the count, atomically claim this appointment. With D1 two
+      // concurrent requests race here: exactly one wins the claim and decrements; the
+      // loser returns without touching the count — so a dashboard tap + SMS re-trigger
+      // (or a double-tap) can't double-decrement a client's prepaid balance.
+      if (debitDb) {
+        let claimed = true;
+        try {
+          claimed = await claimDebit(debitDb, appointmentId, contactId);
+        } catch (e) {
+          // A D1 error is an outage, not a concurrency signal → degrade to the pre-fix
+          // behavior (apply the count) rather than silently drop a real attendance.
+          console.error(`[staff-mark-attended] debit claim failed, applying anyway: ${e.message}`);
+          claimed = true;
+        }
+        if (!claimed) {
+          // Another concurrent request already won the claim and is applying the count.
+          return new Response(JSON.stringify({
+            success: true,
+            alreadyAttended: true,
+            appointmentUpdated: !alreadyShowed,
+            sessionCountUpdated: false,
+            isSession,
+            sessionsCompleted: currentCompleted,
+            sessionsRemaining: currentRemaining,
+          }), { status: 200, headers });
+        }
+      }
+
       if (countsTowardLifetime) newCompleted = currentCompleted + 1;
       if (drawsFromPackage) newRemaining = currentRemaining > 0 ? currentRemaining - 1 : 0;
 
@@ -291,6 +334,13 @@ export async function onRequestPost(context) {
       });
 
       if (!updateRes.ok) {
+        // Release the claim so a retry can re-apply — otherwise the appointment is
+        // marked "showed" but the count never applied, and the claim would block the
+        // retry forever (permanently-stuck class this gate is meant to avoid).
+        if (debitDb) {
+          try { await releaseDebit(debitDb, appointmentId); }
+          catch (e) { console.error(`[staff-mark-attended] debit release failed: ${e.message}`); }
+        }
         const errText = await updateRes.text();
         console.error(`[staff-mark-attended] Contact update error: ${updateRes.status} ${errText}`);
         return new Response(JSON.stringify({
@@ -302,9 +352,13 @@ export async function onRequestPost(context) {
         }), { status: 422, headers });
       }
 
-      // Count applied — record the per-appointment debit flag so retries /
-      // re-triggers don't double-apply (and this appt now counts as fully done).
-      if (context.env.PURCHASE_KV) {
+      // Count applied — record the debit so retries / re-triggers don't double-apply.
+      // D1: stamp the result onto the claim row we already hold. KV fallback: write
+      // the legacy flag.
+      if (debitDb) {
+        try { await finalizeDebit(debitDb, appointmentId, newCompleted, newRemaining); }
+        catch (e) { console.error(`[staff-mark-attended] debit finalize failed: ${e.message}`); }
+      } else if (context.env.PURCHASE_KV) {
         try {
           await context.env.PURCHASE_KV.put(
             debitKey,
