@@ -3,6 +3,7 @@ import {
   classifyInvoiceProduct,
   selectSeriesInvoice,
   INVOICE_PURCHASE_PRODUCTS,
+  KV_TTL_SECONDS,
 } from './ghl-invoice-webhook.js';
 
 // Real productIds kept in sync with ACTIVE_PRODUCTS in session-ledger.js
@@ -104,6 +105,16 @@ describe('INVOICE_PURCHASE_PRODUCTS map', () => {
   });
 });
 
+describe('KV idempotency TTL (H2 — must cover the replay window)', () => {
+  // The idempotency record must outlive the window in which a re-delivery or a
+  // later non-package invoice could re-trigger crediting. 30d was the short
+  // outlier (reconcile uses 90d); a package whose record expired at 30d got
+  // re-applied. Match 90d.
+  it('is at least 90 days', () => {
+    expect(KV_TTL_SECONDS).toBeGreaterThanOrEqual(90 * 86400);
+  });
+});
+
 describe('selectSeriesInvoice', () => {
   it('returns null on empty list', () => {
     expect(selectSeriesInvoice([])).toBe(null);
@@ -131,6 +142,36 @@ describe('selectSeriesInvoice', () => {
     );
     expect(result.invoice._id).toBe('old');
     expect(result.pkg.name).toBe('4-Session Series');
+  });
+
+  // H2 (2026-06-11 review): when the triggering invoice matched preferredInvoiceId
+  // but ISN'T a package, the code fell through to the "scan all paid, most recent
+  // first" block and re-matched an OLD package invoice — and because the old
+  // package's KV idempotency record had expired (30d TTL), it RE-APPLIED, resetting
+  // sessions_remaining to full. The webhook is about THIS invoice; a non-package
+  // invoice must credit nothing.
+  it('returns null when the preferred invoice matches but is NOT a package — no fall-through to an old package (H2)', () => {
+    // Client bought an 8-pack in January; in March pays a $90 Entrainment invoice.
+    // The webhook fires for the Entrainment invoice — it must NOT re-credit the 8-pack.
+    const result = selectSeriesInvoice(
+      [
+        invoice({ id: 'jan-8pack', productId: PID.eightSeries, issueDate: '2026-01-01T00:00:00Z' }),
+        invoice({ id: 'mar-entrainment', productId: PID.entrainment, amountPaid: 90, issueDate: '2026-03-01T00:00:00Z' }),
+      ],
+      'mar-entrainment',
+    );
+    expect(result).toBe(null);
+  });
+
+  // Still falls through to history when the preferred id can't be found at all
+  // (id-format mismatch / pagination) — that resilience is intentional and must
+  // not regress.
+  it('falls through to the most recent paid package when preferredInvoiceId is not found', () => {
+    const result = selectSeriesInvoice(
+      [invoice({ id: 'real-8pack', productId: PID.eightSeries })],
+      'some-unknown-id',
+    );
+    expect(result?.pkg.name).toBe('8-Session Series');
   });
 
   it('matches preferredInvoiceId against invoiceNumber (GHL merge tag format)', () => {

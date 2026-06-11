@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_MAP, KV_TTL_SECONDS, resolveOrderProductId } from './ghl-purchase-webhook.js';
+import { PRODUCT_MAP, KV_TTL_SECONDS, resolveOrderProductId, isCreditableOrder } from './ghl-purchase-webhook.js';
 
 const PID = {
   // package purchases (SET sessions_remaining)
@@ -84,5 +84,43 @@ describe('resolveOrderProductId (R4 — fetchRecentOrder backup reads NESTED ids
     expect(resolveOrderProductId({ items: [] })).toBe(null);
     expect(resolveOrderProductId({})).toBe(null);
     expect(resolveOrderProductId(null)).toBe(null);
+  });
+});
+
+// H3 (2026-06-11 review): the Orders-API fallback (fetchRecentOrder) walked a
+// contact's recent orders and credited the first with a recognized product
+// WITHOUT the status / amount / sourceType guards that session-ledger's
+// classifyOrder enforces. Two real over-credit paths: (1) a sourceType=calendar
+// placeholder order (GHL auto-creates one per booking) re-credits a session
+// under a different orderId; (2) a $0 fully-couponed order still credits the
+// full pack. isCreditableOrder mirrors classifyOrder's guards.
+describe('isCreditableOrder (H3 — gate the Orders-API fallback)', () => {
+  const ok = { status: 'completed', amount: 720, sourceType: 'point_of_sale' };
+
+  it('TRUE for a completed, paid, non-calendar order', () => {
+    expect(isCreditableOrder(ok)).toBe(true);
+    expect(isCreditableOrder({ ...ok, sourceType: 'payment_link' })).toBe(true);
+  });
+
+  it('FALSE for a non-completed order (pending/refunded/etc.)', () => {
+    expect(isCreditableOrder({ ...ok, status: 'pending' })).toBe(false);
+    expect(isCreditableOrder({ ...ok, status: 'refunded' })).toBe(false);
+    expect(isCreditableOrder({ ...ok, status: '' })).toBe(false);
+  });
+
+  it('FALSE for a $0 order (the fully-couponed-referral path)', () => {
+    expect(isCreditableOrder({ ...ok, amount: 0 })).toBe(false);
+    expect(isCreditableOrder({ ...ok, amount: undefined })).toBe(false);
+  });
+
+  it('FALSE for a calendar-source placeholder order (the double-credit path)', () => {
+    expect(isCreditableOrder({ ...ok, sourceType: 'calendar' })).toBe(false);
+    // sourceType can also arrive nested as source.type
+    expect(isCreditableOrder({ status: 'completed', amount: 190, source: { type: 'calendar' } })).toBe(false);
+  });
+
+  it('is case-insensitive on status and sourceType', () => {
+    expect(isCreditableOrder({ status: 'COMPLETED', amount: 720, sourceType: 'POINT_OF_SALE' })).toBe(true);
+    expect(isCreditableOrder({ status: 'Completed', amount: 190, sourceType: 'Calendar' })).toBe(false);
   });
 });

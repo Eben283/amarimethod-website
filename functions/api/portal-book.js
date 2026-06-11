@@ -12,8 +12,39 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { getCustomField } from "../lib/portal-helpers.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
+
+// B2 (2026-06-11 review): the ONLY calendars a portal client may book through
+// this endpoint are the two package follow-up calendars. The server derives the
+// calendar from sessionType and never trusts a client-supplied calendarId — so
+// the $225 Initial Session calendar, partner, and entrainment calendars are
+// unreachable here. (IDs mirror portal/src/components/BookingModal.tsx.)
+export const PORTAL_FOLLOWUP_CALENDARS = {
+  'in-person': 'ZO1jlGfy01rsxVqicoSB',
+  'virtual':   'bJFkhVP35Ecwh4tLnSmy',
+};
+
+export function resolvePortalCalendar(sessionType) {
+  return PORTAL_FOLLOWUP_CALENDARS[sessionType] || null;
+}
+
+const SESSIONS_REMAINING_FIELD_ID = 'wrQSkx6BhXwDGIn1d0V4';
+
+// Block a follow-up booking when the package balance is clearly exhausted
+// (sessions_remaining <= 0). Fails OPEN when the field is missing/unparseable —
+// the calendar allowlist is the primary guard, and we don't want to block a
+// legitimate client over a field we can't read.
+export function portalBalanceExhausted(contact) {
+  const raw = getCustomField(contact, 'sessions_remaining', {
+    sessions_remaining: SESSIONS_REMAINING_FIELD_ID,
+  });
+  if (raw === null || raw === undefined || String(raw).trim() === '') return false;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return false;
+  return n <= 0;
+}
 
 function cors(requestOrigin) {
   const origin = requestOrigin === allowedOrigin ? allowedOrigin : '';
@@ -62,13 +93,21 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400, origin);
   }
 
-  const { calendarId, startTime, timezone, sessionType } = body;
+  const { startTime, timezone, sessionType } = body;
 
-  if (!calendarId || !startTime || !timezone || !sessionType) {
-    return json({ error: 'calendarId, startTime, timezone, and sessionType are required' }, 400, origin);
+  if (!startTime || !timezone || !sessionType) {
+    return json({ error: 'startTime, timezone, and sessionType are required' }, 400, origin);
   }
 
-  // Fetch contact details from GHL to get name/phone
+  // B2: derive the calendar server-side from sessionType — never trust a
+  // client-supplied calendarId. Anything but the two portal follow-up types
+  // is rejected.
+  const calendarId = resolvePortalCalendar(sessionType);
+  if (!calendarId) {
+    return json({ error: 'Invalid sessionType' }, 400, origin);
+  }
+
+  // Fetch contact details from GHL to get name/phone (and the session balance).
   let contact;
   try {
     const contactRes = await fetch(
@@ -83,6 +122,15 @@ export async function onRequestPost(context) {
   } catch (err) {
     console.error('Failed to fetch contact:', err);
     return json({ error: 'Failed to retrieve contact information' }, 422, origin);
+  }
+
+  // B2: don't let a client with an exhausted package book a free follow-up.
+  if (portalBalanceExhausted(contact)) {
+    return json(
+      { error: 'No sessions remaining in your package. Please purchase a new series to book another session.' },
+      403,
+      origin,
+    );
   }
 
   // Create the appointment title
