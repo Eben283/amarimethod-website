@@ -2,9 +2,11 @@
 // Triggers the partner-activity-refresh Worker on-demand.
 // Returns the worker's run summary so the staff app can show what happened.
 //
-// Auth: JWT bearer (same pattern as other staff endpoints).
-// The Worker itself doesn't require auth (it's invoked locally via fetch from
-// this Pages Function — we proxy the auth check at this layer instead).
+// Auth: JWT bearer (same pattern as other staff endpoints) at THIS layer, plus
+// the partner-activity worker's own HTTP gate (requireWorkerAuth). We forward
+// WORKER_AUTH_SECRET as a Bearer token on the kickoff fetch; until that secret
+// is set in both the Pages env and the worker env, the worker gate is a no-op
+// and the missing header is harmless (CRIT-A rollout, 2026-06-11).
 
 import { verifySessionToken } from "../lib/auth.js";
 
@@ -65,8 +67,12 @@ export async function onRequestPost(context) {
     // We use fetch() with a low-timeout AbortController so the kick-off doesn't
     // block the response. CF Workers run independently once spawned.
     const ac = new AbortController();
+    const workerHeaders = context.env.WORKER_AUTH_SECRET
+      ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` }
+      : undefined;
     const kickoff = fetch(WORKER_URL, {
       method: "GET",
+      headers: workerHeaders,
       signal: ac.signal,
     }).catch((err) => {
       console.error("[staff-refresh-activity] worker kickoff fetch error (expected on abort):", err.message);

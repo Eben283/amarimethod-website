@@ -28,6 +28,7 @@ import { listRecentCompletedOrders, getOrderDetail, fetchActiveSeriesContactIds 
 import { reconcileOrder } from "./reconcile.js";
 import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
 import { nextChunk, isQueueStale, remainderAfterProcessing } from "./queue.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 // Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
 // Kept small to stay under the 50-subrequest free-tier cap alongside the order
@@ -49,6 +50,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/status") {

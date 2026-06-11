@@ -1,6 +1,8 @@
 // GHL Token Auto-Refresh Worker
 // Runs every 12 hours via cron trigger to keep OAuth tokens fresh in KV.
 
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+
 const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
 
 const KV_ACCESS_TOKEN = "ghl_access_token";
@@ -15,6 +17,9 @@ export default {
 
   // Allow manual trigger via HTTP for testing: curl http://localhost:8787
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
     if (url.pathname === "/__scheduled" || url.pathname === "/") {
       const result = await refreshTokensAndRecord(env);

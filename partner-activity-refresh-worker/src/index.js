@@ -16,6 +16,7 @@ import {
   findMostRecentMessageDate,
   writeLastActivity,
 } from "./ghl.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 const KV_LAST_RUN_KEY = "ops:activity-refresh:lastRun";
 const KV_QUEUE_KEY = "ops:activity-refresh:queue";
@@ -40,6 +41,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/run" || url.pathname === "/__scheduled") {
