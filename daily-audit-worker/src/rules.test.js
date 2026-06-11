@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder } from './rules.js';
+import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder, classifyInvoiceItems } from './rules.js';
 import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 
 // Real GHL ids (kept in sync with ghl-products.js).
@@ -50,6 +50,36 @@ describe('findAuditedProduct (R3 — read NESTED item.product._id, scan all item
     expect(findAuditedProduct({ items: [] })).toBe(null);
     expect(findAuditedProduct({})).toBe(null);
     expect(findAuditedProduct(null)).toBe(null);
+  });
+});
+
+// Invoice items carry the ids FLAT (item.productId / item.priceId) — the exact shape
+// findAuditedProduct ignores (test above). classifyInvoiceItems adapts flat → nested so
+// invoice-billed packages (Betsy's $1,295 8-pack lives only in /invoices/, never in orders)
+// are classifiable by the audit.
+describe('classifyInvoiceItems (invoice shape — flat productId/priceId)', () => {
+  it('classifies an 8-pack from a real invoice item (flat productId) — the exact Betsy shape', () => {
+    const cfg = classifyInvoiceItems([{ productId: EIGHT_SERIES_PRODUCT_ID, priceId: 'x', name: '8-Session Series' }]);
+    expect(cfg?.seriesType).toBe('8-session');
+  });
+
+  it('resolves via the flat priceId too (map keyed by both)', () => {
+    expect(classifyInvoiceItems([{ priceId: UPGRADE_4TO8_PRICE_ID }])).toBeTruthy();
+  });
+
+  it('finds the package even when it is not the first invoice line item', () => {
+    const cfg = classifyInvoiceItems([{ productId: FOLLOWUP_PRODUCT_ID }, { productId: EIGHT_SERIES_PRODUCT_ID }]);
+    expect(cfg?.seriesType).toBe('8-session');
+  });
+
+  it('returns null for an unmapped / à-la-carte invoice (→ caller flags as catalog gap)', () => {
+    expect(classifyInvoiceItems([{ productId: 'unknown-product', priceId: 'unknown-price' }])).toBe(null);
+    expect(classifyInvoiceItems([{ productId: FOLLOWUP_PRODUCT_ID }])).toBe(null); // single follow-up = not a package
+  });
+
+  it('returns null for empty / missing items', () => {
+    expect(classifyInvoiceItems([])).toBe(null);
+    expect(classifyInvoiceItems(undefined)).toBe(null);
   });
 });
 
