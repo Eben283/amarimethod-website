@@ -13,6 +13,34 @@ import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
 // should be >= increment".
 const PRODUCT_MAP = AUDIT_INCREMENT_MAP;
 
+// ── Paginated order fetch ──
+// GHL's /payments/orders caps at limit=100 per page. The location-wide scans below
+// pull the full order list and then filter it to a time window, so a single 100-row
+// page silently drops in-window orders once the practice has >100 total orders — a
+// false "clean" in the very safety net meant to catch missed credits. Walk offset
+// pages until a short (final) page or a hard cap, and report whether the cap was hit
+// so the caller surfaces a warning instead of going quietly blind. Steady state
+// (<100 total orders) still costs exactly one request.
+const ORDER_PAGE_LIMIT = 100;
+const ORDER_PAGE_CAP = 10; // 1000 orders — well under the worker's 1000-subrequest budget
+
+async function fetchAllOrders(env) {
+  const orders = [];
+  for (let page = 0; page < ORDER_PAGE_CAP; page++) {
+    const offset = page * ORDER_PAGE_LIMIT;
+    const data = await ghlFetch(
+      env,
+      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=${ORDER_PAGE_LIMIT}&offset=${offset}`
+    );
+    const batch = data.orders || data.data || [];
+    orders.push(...batch);
+    if (batch.length < ORDER_PAGE_LIMIT) return { orders, hitCap: false };
+  }
+  return { orders, hitCap: true }; // a full final page → more orders may exist beyond the cap
+}
+
+const ORDER_CAP_MSG = `Hit the ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}-order pagination cap — orders beyond it were not inspected`;
+
 // Resolve the audited package/product for an order. (R3 fix, 2026-06-08.)
 // GHL line items carry the product id NESTED at `item.product._id` (= productId)
 // and `item.price._id` (= priceId). The flat `item.productId` / `item.priceId`
@@ -194,14 +222,20 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
 
   let orders = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
-    orders = (data.orders || data.data || []).filter((o) => {
+    const { orders: all, hitCap } = await fetchAllOrders(env);
+    orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(auditStart) && d <= new Date(auditEnd);
     });
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "purchase", "", "",
+        "orders_pagination_cap_hit",
+        `Should scan all orders, not just the first ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}`,
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch (err) {
     issues.push(issue(
       "warning", "purchase", "", "",
@@ -358,18 +392,23 @@ export async function auditSeriesTypeDrops({ env, cache }) {
   const issues = [];
 
   // Fetch a wider window of orders to catch pack purchases made months ago.
-  // limit=100 is the API cap; if more are needed later, add pagination.
   let orders = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
+    const { orders: all, hitCap } = await fetchAllOrders(env);
     const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
-    orders = (data.orders || data.data || []).filter((o) => {
+    orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d.getTime() >= cutoff;
     });
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "consistency", "", "",
+        "series_type_drop_orders_cap_hit",
+        "Should scan all orders for historical pack purchases",
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch (err) {
     issues.push(issue(
       "warning", "consistency", "", "",
@@ -495,17 +534,23 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
   // Fetch recent purchasers (30-day window for catching stale workflows)
   let recentPurchaserIds = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
-    const orders = (data.orders || data.data || []).filter((o) => {
+    const { orders: all, hitCap } = await fetchAllOrders(env);
+    const orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     });
     recentPurchaserIds = orders
       .map((o) => o.contactId || o.contact?.id)
       .filter(Boolean);
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "state_mismatch", "", "",
+        "state_mismatch_orders_cap_hit",
+        "Should scan all recent orders for stale-workflow detection",
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch {
     // Continue without purchase data
   }

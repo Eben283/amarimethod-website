@@ -80,6 +80,17 @@ function buildGoogleCalendarUrl(apt: Appointment): string {
 
 // .ics file for Apple Calendar / Outlook / Yahoo / any non-Google calendar.
 // On iOS/macOS, tapping a text/calendar link opens Apple Calendar directly.
+// Escape a value for an RFC 5545 TEXT field: backslashes, semicolons, commas, and
+// newlines all carry meaning in iCalendar and must be escaped, or a title/location
+// containing a comma (e.g. "Initial Session, In Person") truncates or corrupts the event.
+function icsText(value: string): string {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
 function buildIcsUrl(apt: Appointment): string {
   const format = detectFormat(apt);
   const meet = apt.meetingUrl || '';
@@ -89,7 +100,7 @@ function buildIcsUrl(apt: Appointment): string {
         : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
     : 'In-person session with Dr. Garrett at Amari Method.';
   const locationLine = meet
-    ? `LOCATION:${meet}`
+    ? `LOCATION:${icsText(meet)}`
     : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
   const lines = [
     'BEGIN:VCALENDAR',
@@ -100,8 +111,8 @@ function buildIcsUrl(apt: Appointment): string {
     `DTSTAMP:${toGcalDate(new Date().toISOString())}`,
     `DTSTART:${toGcalDate(apt.startTime)}`,
     `DTEND:${toGcalDate(apt.endTime)}`,
-    `SUMMARY:${apt.title || 'Amari Method session'}`,
-    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    `SUMMARY:${icsText(apt.title || 'Amari Method session')}`,
+    `DESCRIPTION:${icsText(description)}`,
     ...(locationLine ? [locationLine] : []),
     'END:VEVENT',
     'END:VCALENDAR',

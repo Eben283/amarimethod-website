@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,21 +44,30 @@ export default function TodayPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
+  // toggling fires overlapping requests; only the latest one is allowed to commit
+  // state, so an older response landing late can't overwrite the current view.
+  const reqIdRef = useRef(0);
+
   const loadDay = useCallback(async (date: Date) => {
+    const reqId = ++reqIdRef.current;
     setIsLoading(true);
     setError('');
     try {
       const data = await getDayData(toDateStr(date));
+      if (reqId !== reqIdRef.current) return; // superseded by a newer request
       setDayAppointments(data);
     } catch (err) {
+      if (reqId !== reqIdRef.current) return;
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
-      setIsLoading(false);
+      if (reqId === reqIdRef.current) setIsLoading(false);
     }
   }, [logout]);
 
   const loadWeek = useCallback(async (date: Date) => {
+    const reqId = ++reqIdRef.current;
     setIsLoading(true);
     setError('');
     try {
@@ -67,6 +76,7 @@ export default function TodayPage() {
       const endStr = toDateStr(dates[6]);
       // Single API call for the full week range
       const allAppts = await getDayData(startStr, endStr);
+      if (reqId !== reqIdRef.current) return; // superseded by a newer request
       // Group by date
       const map: Record<string, TodayAppointment[]> = {};
       for (const d of dates) map[toDateStr(d)] = [];
@@ -80,10 +90,11 @@ export default function TodayPage() {
       }
       setWeekData(map);
     } catch (err) {
+      if (reqId !== reqIdRef.current) return;
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
-      setIsLoading(false);
+      if (reqId === reqIdRef.current) setIsLoading(false);
     }
   }, [logout]);
 

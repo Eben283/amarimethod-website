@@ -41,6 +41,7 @@
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
+import { timingSafeEqual } from "../lib/safe-equal.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -189,7 +190,7 @@ export async function onRequestPost(context) {
       );
     }
     const providedSecret = context.request.headers.get("X-Webhook-Secret");
-    if (providedSecret !== expectedSecret) {
+    if (!timingSafeEqual(providedSecret || "", expectedSecret)) {
       console.warn("[ghl-invoice-webhook] Invalid webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
