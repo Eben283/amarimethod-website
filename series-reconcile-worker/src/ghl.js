@@ -87,15 +87,27 @@ export const ghlPut = (env, path, body) => ghlRequest(env, "PUT", path, body);
 
 // ── Domain helpers ──
 
-// List completed orders, optionally limited to those updated after `sinceMs`.
-// GHL's /payments/orders endpoint doesn't accept a date filter directly — we
-// page through and stop when we cross the cutoff (orders come back sorted
-// most-recent-first per `updatedAt`).
+// List completed orders updated since `sinceMs`. GHL's /payments/orders endpoint
+// accepts no date filter, so we page and select in code.
+//
+// SORT ORDER (verified empirically 2026-06-11 against live data): GHL returns these
+// sorted by `createdAt` DESCENDING — NOT `updatedAt`, which the prior version assumed
+// when it early-broke on the first order older than the cutoff. That assumption is
+// unsound: because `updatedAt >= createdAt` always, a late-paid order (old createdAt,
+// recent updatedAt) sits DEEP in a createdAt-desc list, PAST the point where the scan
+// would already have broken — so it was silently skipped, the exact orphan class this
+// worker exists to catch. We therefore do NOT date-break on the non-sort key. Instead
+// we scan all completed orders up to MAX_PAGES and select any updated in window. This
+// stays cheap: the caller's per-order getOrderDetail work is gated to the selected
+// (in-window) orders, so only the list pages grow, and they terminate naturally at the
+// last (short) page — ceil(totalOrders/PAGE) fetches in steady state (~3 today). If the
+// order history ever exceeds the cap we warn rather than silently truncate.
 export async function listRecentCompletedOrders(env, sinceMs) {
   const orders = [];
   let offset = 0;
   const PAGE = 50;
-  const MAX_PAGES = 6; // 300 orders ceiling — typical activity << this
+  const MAX_PAGES = 6; // 300-order scan ceiling
+  let hitCap = false;
   for (let p = 0; p < MAX_PAGES; p++) {
     const data = await ghlGet(
       env,
@@ -103,15 +115,19 @@ export async function listRecentCompletedOrders(env, sinceMs) {
     );
     const batch = data.data || [];
     if (batch.length === 0) break;
-    let crossed = false;
     for (const o of batch) {
       const t = new Date(o.updatedAt || o.createdAt).getTime();
-      if (!Number.isFinite(t)) continue;
-      if (t < sinceMs) { crossed = true; continue; }
-      orders.push(o);
+      if (Number.isFinite(t) && t >= sinceMs) orders.push(o);
     }
-    if (crossed || batch.length < PAGE) break;
+    if (batch.length < PAGE) break; // reached the end of the order history
     offset += PAGE;
+    if (p === MAX_PAGES - 1) hitCap = true; // full page at the cap → more orders remain unscanned
+  }
+  if (hitCap) {
+    console.warn(
+      `[series-reconcile] listRecentCompletedOrders hit the ${MAX_PAGES * PAGE}-order scan cap; ` +
+      `older completed orders are unscanned this run. Raise MAX_PAGES in ghl.js.`
+    );
   }
   return orders;
 }
