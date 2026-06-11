@@ -61,6 +61,18 @@ export function findAuditedProduct(order) {
   return null;
 }
 
+// Classify a GHL INVOICE's line items into an audited package, reusing findAuditedProduct.
+// Asymmetry (verified 2026-06-11): order items nest the ids (`item.product._id`) while
+// invoice items carry them FLAT (`item.productId` / `item.priceId`) — so we adapt the
+// shape. PRODUCT_MAP is keyed by both productId and priceId, so either resolves. Returns
+// the same config findAuditedProduct does, or null. Pure + exported for tests. Why it
+// exists: invoice-billed packages (e.g. Betsy's $1,295 8-pack) are ABSENT from
+// /payments/orders, so order-only scans can't see them — this lets the audit classify them.
+export function classifyInvoiceItems(items = []) {
+  const adapted = (items || []).map((i) => ({ product: { _id: i.productId }, price: { _id: i.priceId } }));
+  return findAuditedProduct({ items: adapted });
+}
+
 // Threshold for the unmapped-purchase alert. Set just below the cheapest package
 // (the $495 Initial→4 upgrade / $720 4-pack) but above every à-la-carte item
 // (initial $225, follow-up $190, entrainment $90, Living Practice $347) — so a
@@ -376,6 +388,52 @@ export async function auditTagConsistency({ cache }) {
   return issues;
 }
 
+// Fetch succeeded, package-sized INVOICE-billed sales. These live ONLY in
+// /payments/transactions (entityType:invoice) + /invoices/ — never in /payments/orders —
+// so the order-only scans miss them entirely (Betsy's $1,295 8-pack invoice was invisible
+// to the audit, which then mis-flagged her against her smaller 4-pack ORDER). Returns:
+//   recognized: [{contactId, seriesType, productName}]  — maps to a known package
+//   unmapped:   [{contactId, amount, invoice}]          — paid invoice ≥ threshold, no known product
+// Hydration failures are SKIPPED (not flagged) so a transient API error can't masquerade
+// as a catalog gap.
+async function fetchInvoicePackages(env) {
+  const recognized = [];
+  const unmapped = [];
+  const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
+  for (let page = 0; page < ORDER_PAGE_CAP; page++) {
+    const offset = page * ORDER_PAGE_LIMIT;
+    const data = await ghlFetch(
+      env,
+      `/payments/transactions?altId=${LOCATION_ID}&altType=location&limit=${ORDER_PAGE_LIMIT}&offset=${offset}`
+    );
+    const batch = data.data || data.transactions || [];
+    if (batch.length === 0) break;
+    for (const t of batch) {
+      if (t.entityType !== "invoice") continue;
+      if (t.status !== "succeeded") continue;
+      if (Number(t.amount) < UNMAPPED_ALERT_MIN_AMOUNT) continue; // package-sized only
+      const created = new Date(t.createdAt || t.updatedAt).getTime();
+      if (Number.isFinite(created) && created < cutoff) continue;
+      const contactId = t.contactId || t.contactSnapshot?.id;
+      if (!contactId || !t.entityId) continue;
+      let inv;
+      try {
+        inv = await ghlFetch(env, `/invoices/${t.entityId}?altId=${LOCATION_ID}&altType=location`);
+      } catch {
+        continue; // hydration failed — skip rather than mis-flag as a catalog gap
+      }
+      const cfg = classifyInvoiceItems(inv?.invoiceItems || inv?.items || []);
+      if (cfg && cfg.seriesType) {
+        recognized.push({ contactId, seriesType: cfg.seriesType, productName: cfg.name });
+      } else {
+        unmapped.push({ contactId, amount: Number(t.amount), invoice: inv?.invoiceNumber || t.entitySourceName || t.entityId });
+      }
+    }
+    if (batch.length < ORDER_PAGE_LIMIT) break;
+  }
+  return { recognized, unmapped };
+}
+
 // ── Rule Set 3b: Historical series_type drop detection ──
 //
 // Flags contacts with sessions_completed > 0 but series_type null/empty ONLY IF
@@ -420,17 +478,47 @@ export async function auditSeriesTypeDrops({ env, cache }) {
     return issues;
   }
 
-  // Build: contactId → expected seriesType from most recent pack order
+  // Build: contactId → expected seriesType from their pack purchases. 8-session is
+  // authoritative over 4-session when a contact has both (the upgrade/larger pack wins).
   const packBuyers = new Map();
+  const setPackBuyer = (contactId, expected, productName) => {
+    if (!contactId || !expected) return;
+    const existing = packBuyers.get(contactId);
+    if (existing && existing.expected === "8-session" && expected !== "8-session") return; // don't downgrade
+    packBuyers.set(contactId, { expected, productName });
+  };
   for (const order of orders) {
     const contactId = order.contactId || order.contact?.id;
-    if (!contactId) continue;
     const productConfig = findAuditedProduct(order);
-    if (!productConfig || !productConfig.seriesType) continue;
-    packBuyers.set(contactId, {
-      expected: productConfig.seriesType,
-      productName: productConfig.name,
-    });
+    if (productConfig?.seriesType) setPackBuyer(contactId, productConfig.seriesType, productConfig.name);
+  }
+
+  // Merge in INVOICE-billed packages — absent from /payments/orders, so an invoice-pack
+  // buyer whose series_type got dropped is otherwise never caught here. Also surface any
+  // unmapped high-value invoice (a package product missing from the catalog — invisible
+  // to orders, the ledger's classifyInvoice, AND the funnel).
+  let invoicePkgs = { recognized: [], unmapped: [] };
+  try {
+    invoicePkgs = await fetchInvoicePackages(env);
+  } catch (err) {
+    issues.push(issue(
+      "warning", "consistency", "", "",
+      "invoice_package_scan_failed",
+      "Should be able to scan invoice-billed packages (payments/transactions + invoices)",
+      `Invoice scan error: ${err.message}`,
+      "Check payments/transactions + invoices read scope"
+    ));
+  }
+  for (const pkg of invoicePkgs.recognized) setPackBuyer(pkg.contactId, pkg.seriesType, pkg.productName);
+  for (const u of invoicePkgs.unmapped) {
+    const cached = await cache.getContact(u.contactId);
+    issues.push(issue(
+      "warning", "purchase", u.contactId, cached?.name || "Unknown",
+      "unmapped_high_value_invoice",
+      `A paid invoice ≥ $${UNMAPPED_ALERT_MIN_AMOUNT} should map to a known product`,
+      `Paid $${u.amount} invoice (${u.invoice}) maps to no recognized product`,
+      "Likely a package product missing from functions/lib/ghl-products.js — add it so it credits + audits"
+    ));
   }
 
   for (const [, cached] of cache.contacts) {
