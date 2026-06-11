@@ -44,7 +44,10 @@ import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-const KV_TTL_SECONDS = 30 * 86400; // 30 days
+// 90 days — must cover the replay window. Was 30d (the short outlier vs the
+// reconcile worker's 90d); a package whose idempotency record expired at 30d
+// could be re-credited by a later non-package invoice event (H2, 2026-06-11).
+export const KV_TTL_SECONDS = 90 * 86400;
 
 // Product allowlist — only series/upgrade purchases trigger the post-purchase
 // automation. Shape: { [productId]: { name, sessionsRemaining, seriesType, livingPractice } }
@@ -125,7 +128,14 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
     if (match) {
       const pkg = findPackageInInvoice(match);
       if (pkg) return { invoice: match, pkg };
+      // H2 (2026-06-11 review): the webhook is about THIS invoice and it isn't a
+      // package (e.g. a $90 Entrainment). Do NOT fall through to the history
+      // scan — that re-credits an old package whose idempotency record has
+      // expired, resetting sessions_remaining to full. Credit nothing.
+      return null;
     }
+    // preferredInvoiceId was given but not found in the list (id-format mismatch
+    // / pagination) — fall through to the history scan as a resilience path.
   }
 
   // Otherwise scan all paid invoices most-recent-first looking for a series/upgrade.
