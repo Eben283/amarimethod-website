@@ -331,4 +331,34 @@ export async function triggerActivityRefresh(): Promise<{ triggered: boolean; me
   return fetchApi('/staff-refresh-activity', { method: 'POST' });
 }
 
+// ── Funnel (cohort sales funnel) ──────────────────────────────────────────
+// Snapshot is computed out-of-band by ~/.claude/ghl-mcp/funnel.mjs and cached
+// in KV; /staff-funnel just serves it. See functions/api/staff-funnel.js.
+export interface FunnelCohort {
+  cohort: string;
+  calls: number;
+  dropped: number;
+  voicemail: number;
+  conversation: number;
+  giftedBooked: number;
+  giftedShowed: number;
+  eightPack: number;
+}
+
+export interface FunnelData {
+  generatedAt: string | null;
+  empty?: boolean;
+  windowDays?: number;
+  dailyPulse?: { date: string; calls: number }[];
+  cohorts?: FunnelCohort[];
+  totals?: Omit<FunnelCohort, 'cohort'>;
+  rates?: { callToConvo: number; bookedToShowed: number; showedToEightPack: number };
+  repurchasers?: number;
+  targetMonthly?: [number, number];
+}
+
+export async function getFunnel(): Promise<FunnelData> {
+  return fetchApi('/staff-funnel');
+}
+
 export { ApiError };
