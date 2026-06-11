@@ -126,6 +126,34 @@ describe('reconcileOrder — write orchestration', () => {
     expect(patchContact).not.toHaveBeenCalled();
   });
 
+  // CRIT-B (2026-06-11 review): the `sessions_remaining_locked` hard lock was
+  // honored only by the sync-sweep path (sync.js), NOT by this order path —
+  // so a locked contact (e.g. Albert Yang, Garrett-comped) who made any package
+  // POS purchase would have their pinned balance overwritten by the orphan-apply
+  // below. The lock must skip this writer entirely, before any patchContact.
+  const LOCK_FIELD = 'oDyLqIeq3yTkyhgXhAmk'; // sessions_remaining_locked
+
+  it('skips a LOCKED contact without writing — even when the package fields are unset (would otherwise apply)', async () => {
+    const env = makeEnv();
+    // Fresh contact (no package fields) BUT locked → must not apply.
+    getContact.mockResolvedValue(contact({ [LOCK_FIELD]: ['true'] }));
+
+    const res = await reconcileOrder(env, order());
+
+    expect(res.status).toBe('skip-locked');
+    expect(patchContact).not.toHaveBeenCalled();   // critical: never overwrites a pinned balance
+    expect(addContactNote).not.toHaveBeenCalled();
+    expect(env.PURCHASE_KV.put).not.toHaveBeenCalled(); // no idempotency write either — leave it re-checkable
+  });
+
+  it('honors the lock whether the checkbox reads ["true"] or the string "true"', async () => {
+    const env = makeEnv();
+    getContact.mockResolvedValue(contact({ [LOCK_FIELD]: 'true' }));
+    const res = await reconcileOrder(env, order());
+    expect(res.status).toBe('skip-locked');
+    expect(patchContact).not.toHaveBeenCalled();
+  });
+
   it('does NOT re-apply when the fields are already set (workflow fired) — marks idempotent instead of resetting a drawn-down balance', async () => {
     const env = makeEnv();
     // Contact already on the 8-session pack, drawn down to 5, portal + LP set.
