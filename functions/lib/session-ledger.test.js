@@ -552,6 +552,41 @@ describe('deriveLedger — overrides and edge cases', () => {
     expect(result.ambiguities.some((a) => a.includes('custom field'))).toBe(true);
   });
 
+  // The series-reconcile worker passes deriveLedger ONLY session_prepaid (its
+  // LEDGER_FIELD_DEFS) — never sessions_remaining/series_type. These two tests lock in
+  // that this "threads the needle": the prepaid guard fires (so the worker won't zero a
+  // real prepaid balance) while the field-disagreement ambiguity does NOT (so the worker
+  // still corrects the very drifts it exists for). Same fixtures as the two tests above,
+  // only the fieldDefs differ.
+  const PREPAID_ONLY_DEFS = { session_prepaid: FIELD_DEFS.session_prepaid };
+
+  it('prepaid-only fieldDefs: prepaid override + no orders → still LOW confidence (guard alive)', () => {
+    const result = deriveLedger({
+      contact: contact({ customFields: [{ id: FIELD_DEFS.session_prepaid, value: 'yes' }] }),
+      orders: [],
+      appointments: [],
+      fieldDefs: PREPAID_ONLY_DEFS,
+    });
+    expect(result.prepaidOverride).toBe(true);
+    expect(result.confidence).toBe('low');
+    expect(result.ambiguities.some((a) => a.toLowerCase().includes('prepaid'))).toBe(true);
+  });
+
+  it('prepaid-only fieldDefs: sessions_remaining disagreement is NOT flagged → HIGH confidence (trap avoided)', () => {
+    const result = deriveLedger({
+      contact: contact({ customFields: [{ id: FIELD_DEFS.sessions_remaining, value: '1' }] }),
+      orders: [order({ sourceName: '4-Session Series', amount: 720 })],
+      appointments: [
+        appt({ calendarId: CAL.followup }),
+        appt({ calendarId: CAL.followup }),
+      ],
+      fieldDefs: PREPAID_ONLY_DEFS,
+    });
+    expect(result.remaining).toBe(2);
+    expect(result.confidence).toBe('high');
+    expect(result.ambiguities).toEqual([]);
+  });
+
   it('lastSessionDate set to most recent attended session', () => {
     const result = deriveLedger({
       contact: contact(),

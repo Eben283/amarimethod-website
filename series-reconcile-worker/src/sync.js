@@ -30,7 +30,26 @@ const FIELD_IDS = {
   // sync, not user-initiated events. Field created 2026-05-29 (Albert Yang
   // case). See SESSION-FIELDS-AUDIT.md.
   sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+  // Manual "this client has a prepaid balance" flag. Read so deriveLedger's
+  // prepaid-override guard can fire — see LEDGER_FIELD_DEFS below.
+  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
 };
+
+// fieldDefs passed to deriveLedger. Intentionally ONLY session_prepaid.
+//
+// Why include it: with empty fieldDefs, deriveLedger can't see session_prepaid, so
+// its "prepaid override set but no orders → count unknown" guard (session-ledger.js
+// step 7) is dead. Without that guard, a client manually flagged prepaid but with no
+// matching orders derives purchased=0 → remaining=0 at HIGH confidence, and the
+// worker writes 0 over their real prepaid balance. Passing the field id revives the
+// guard → confidence drops to "low" → the confidence-skip guard below protects them.
+//
+// Why ONLY session_prepaid (the trap): if we also passed sessions_remaining /
+// series_type, deriveLedger would flag every field-vs-derived disagreement as a
+// low-confidence ambiguity. Correcting those disagreements is the worker's ENTIRE
+// job, so that would make it skip every drift it exists to fix. The worker reads
+// sessions_remaining / series_type / lock by id itself (readField) instead.
+const LEDGER_FIELD_DEFS = { session_prepaid: FIELD_IDS.session_prepaid };
 
 // Lifetime journey patterns. Mirrors NON_JOURNEY_PATTERNS in
 // functions/api/staff-mark-attended.js (2026-05-29 contract).
@@ -149,7 +168,10 @@ export async function getContactCounts(env, contactId, fieldDefs = {}) {
     const lockedRaw = readField(contact, FIELD_IDS.sessions_remaining_locked);
     const isLocked = Array.isArray(lockedRaw) ? lockedRaw.includes("true") : (lockedRaw === "true" || lockedRaw === true);
 
-    const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
+    const ledger = deriveLedger({
+      contact, orders, invoices, appointments,
+      fieldDefs: { ...LEDGER_FIELD_DEFS, ...fieldDefs }, // prepaid-only — see note at FIELD_IDS
+    });
     const lifetimeCount = computeLifetimeCount(appointments);
 
     const seriesRaw = readField(contact, FIELD_IDS.series_type);
@@ -264,8 +286,14 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
       }
     }
 
-    // Derive the ledger.
-    const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
+    // Derive the ledger. Pass session_prepaid (via LEDGER_FIELD_DEFS) so the
+    // prepaid-override guard can fire and the low-confidence skip below protects a
+    // real prepaid balance from being zeroed; NOT sessions_remaining/series_type
+    // (that would trip the disagreement ambiguity on the very drifts we fix).
+    const ledger = deriveLedger({
+      contact, orders, invoices, appointments,
+      fieldDefs: { ...LEDGER_FIELD_DEFS, ...fieldDefs },
+    });
 
     // Skip when confidence is low — likely an ambiguity that needs human
     // review (e.g. derived attended > purchased). Don't overwrite a manual
