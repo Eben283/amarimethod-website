@@ -87,6 +87,24 @@ export function resolveOrderProductId(order) {
   return null;
 }
 
+// Pure: is this GHL order safe to credit from the Orders-API fallback? Mirrors
+// the guards in session-ledger.js → classifyOrder so the webhook and the ledger
+// agree on what counts as a real purchase. (H3 fix, 2026-06-11 review.) Without
+// this, the fallback credited:
+//   • sourceType="calendar" placeholder orders — GHL auto-creates one per
+//     booking; crediting it re-adds a session under a different orderId.
+//   • $0 fully-couponed orders (e.g. a 100%-off referral coupon) — still carry
+//     the package productId, so the fallback granted the full pack for $0.
+export function isCreditableOrder(order) {
+  const status = (order?.status || "").toLowerCase();
+  const amount = Number(order?.amount || 0);
+  const sourceType = (order?.sourceType || order?.source?.type || "").toLowerCase();
+  if (status !== "completed") return false;
+  if (amount <= 0) return false;
+  if (sourceType === "calendar") return false;
+  return true;
+}
+
 // Field keys for the slot-request fields written by create-checkout.js
 // (Settings → Custom Fields → Session Tracking folder)
 const REQUESTED_SLOT_FIELD_KEYS = [
@@ -311,8 +329,17 @@ async function fetchRecentOrder(context, contactId) {
 
     // Walk orders (most recent first) for a recognized product. Reads the nested
     // ids real GHL orders carry + normalizes priceId→productId (see
-    // resolveOrderProductId).
+    // resolveOrderProductId). Skip orders that aren't safe to credit — unpaid,
+    // $0 (fully-couponed), or sourceType=calendar booking placeholders — so the
+    // fallback can't double-credit or grant a free pack (H3, isCreditableOrder).
     for (const order of orders) {
+      if (!isCreditableOrder(order)) {
+        console.log(
+          `[ghl-purchase-webhook] Skipping non-creditable order ${order._id || order.id || "?"} ` +
+          `(status=${order.status}, amount=${order.amount}, sourceType=${order.sourceType || order.source?.type})`
+        );
+        continue;
+      }
       const productId = resolveOrderProductId(order);
       if (productId) {
         return {
