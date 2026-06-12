@@ -156,15 +156,30 @@ const SvgBowl = ({ tint }: { tint: string }) => (
 const SvgRabbit = ({ hop }: { hop?: boolean }) => (
   <svg viewBox="0 0 60 60" className="h-full w-full"><defs><Rough id="fr-rab" /></defs>
     <g stroke="#332B26" strokeWidth="1.5" fill="#fff" strokeLinecap="round" strokeLinejoin="round" filter="url(#fr-rab)"
-      transform={hop ? 'translate(30 34) rotate(-14)' : 'translate(30 36)'}>
+      transform={hop ? 'translate(30 34) rotate(-12)' : 'translate(28 36)'}>
       {hop ? (<>
-        <ellipse cx="0" cy="0" rx="14" ry="8.5" /><circle cx="13" cy="-4" r="6" />
-        <path d="M16 -8 q3 -14 7 -18" fill="none" /><path d="M11 -9 q0 -14 4 -18" fill="none" />
-        <circle cx="16" cy="-5" r="1.4" fill="#332B26" /><circle cx="-13" cy="2" r="2.8" />
+        {/* leaping bunny, facing right */}
+        <circle cx="-15" cy="-1" r="3.2" />{/* cotton tail */}
+        <path d="M-15 1 q-3 9 6 9 q8 0 5 -9Z" />{/* hind leg */}
+        <ellipse cx="0" cy="-2" rx="15" ry="8" />{/* body */}
+        <path d="M8 5 q1 6 -4 6 M12 4 q2 5 -3 6" fill="none" />{/* front legs reaching */}
+        <circle cx="15" cy="-7" r="6" />{/* head */}
+        <path d="M12 -11 q-3 -15 2 -20 q5 2 4 10 q-1 8 -6 11Z" />{/* far ear */}
+        <path d="M16 -11 q0 -14 6 -17 q4 4 0 11 q-3 7 -6 8Z" />{/* near ear */}
+        <path d="M15 -12 q1 -9 4 -12" fill="none" stroke="#E294A0" strokeWidth="2" />{/* inner ear */}
+        <circle cx="17" cy="-8" r="1.3" fill="#332B26" stroke="none" />{/* eye */}
+        <circle cx="20.5" cy="-5" r="1" fill="#E294A0" stroke="none" />{/* nose */}
       </>) : (<>
-        <ellipse cx="0" cy="2" rx="9" ry="11" />
-        <path d="M-3 -8 q-7 -16 -3 -26" fill="none" /><path d="M3 -8 q7 -16 3 -26" fill="none" />
-        <circle cx="0" cy="-10" r="7" /><circle cx="2.4" cy="-11" r="1.3" fill="#332B26" />
+        {/* sitting bunny, facing right */}
+        <circle cx="-10" cy="4" r="3.4" />{/* cotton tail */}
+        <path d="M-11 7 q-4 -16 8 -18 q13 -1 13 12 q0 9 -7 11 q-11 2 -14 -5Z" />{/* body */}
+        <ellipse cx="4" cy="14" rx="6" ry="2.6" />{/* front foot */}
+        <circle cx="9" cy="-8" r="6.2" />{/* head */}
+        <path d="M5 -12 q0 -17 6 -21 q4 3 2 12 q-2 8 -7 11Z" />{/* far ear */}
+        <path d="M10 -12 q1 -18 7 -21 q4 4 2 13 q-2 8 -8 10Z" />{/* near ear */}
+        <path d="M12 -13 q1 -11 5 -15" fill="none" stroke="#E294A0" strokeWidth="2.2" />{/* inner ear */}
+        <circle cx="11" cy="-9" r="1.3" fill="#332B26" stroke="none" />{/* eye */}
+        <circle cx="15" cy="-6" r="1.1" fill="#E294A0" stroke="none" />{/* nose */}
       </>)}
     </g>
   </svg>
@@ -172,15 +187,25 @@ const SvgRabbit = ({ hop }: { hop?: boolean }) => (
 const SvgHedgehog = () => (
   <svg viewBox="0 0 130 90" className="h-full w-full"><defs><Rough id="fr-hog" /></defs>
     <g filter="url(#fr-hog)">
-      <path d="M8 38 q34 -11 68 0 l-8 38 q-26 8 -52 0Z" fill={COL.basket} />
-      <path d="M8 38 q34 -11 68 0" fill="none" stroke="#8a6a35" strokeWidth="2.2" />
-      <path d="M20 50 q22 -7 44 0 M17 62 q24 -7 50 0" stroke="#8a6a35" strokeWidth="1.4" fill="none" opacity=".7" />
-      <circle cx="26" cy="36" r="6.5" fill={COL.radish} /><circle cx="44" cy="32" r="7.5" fill={COL.radish} /><circle cx="62" cy="37" r="6" fill={COL.radish} />
-      <path d="M23 29 q-2 -7 2 -11 M44 23 q0 -9 0 -12 M60 30 q3 -7 -2 -11" stroke="#7BA05B" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      <g transform="translate(102 70)">
-        <path d="M-20 4 q4 -22 21 -22 q17 0 15 22Z" fill="#7a5c43" />
-        <path d="M-16 -4 l-5 -8 M-8 -11 l-2 -10 M1 -13 l0 -10 M10 -11 l4 -9" stroke="#5a4029" strokeWidth="1.7" strokeLinecap="round" />
-        <circle cx="-18" cy="4" r="4.4" fill="#caa987" /><circle cx="-20" cy="3" r="1.1" fill="#2b1b12" />
+      {/* basket — wobbles as it gets nudged */}
+      <g className="fn-basketwob">
+        <path d="M8 38 q34 -11 68 0 l-8 38 q-26 8 -52 0Z" fill={COL.basket} />
+        <path d="M8 38 q34 -11 68 0" fill="none" stroke="#8a6a35" strokeWidth="2.2" />
+        <path d="M20 50 q22 -7 44 0 M17 62 q24 -7 50 0" stroke="#8a6a35" strokeWidth="1.4" fill="none" opacity=".7" />
+        <circle cx="26" cy="36" r="6.5" fill={COL.radish} /><circle cx="44" cy="32" r="7.5" fill={COL.radish} /><circle cx="62" cy="37" r="6" fill={COL.radish} />
+        <path d="M23 29 q-2 -7 2 -11 M44 23 q0 -9 0 -12 M60 30 q3 -7 -2 -11" stroke="#7BA05B" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+      </g>
+      {/* hedgehog — actively shoving the basket from the right */}
+      <g transform="translate(87 59)">
+        <g className="fn-hognudge">
+          {/* front legs braced & pushing into the basket */}
+          <path d="M-14 12 l-7 8 M-5 14 l-5 8" stroke="#5a4029" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+          <path d="M-20 4 q4 -22 21 -22 q17 0 15 22Z" fill="#7a5c43" />
+          <path d="M-16 -4 l-5 -8 M-8 -11 l-2 -10 M1 -13 l0 -10 M10 -11 l4 -9" stroke="#5a4029" strokeWidth="1.7" strokeLinecap="round" />
+          <circle cx="-18" cy="4" r="4.4" fill="#caa987" /><circle cx="-20" cy="3" r="1.1" fill="#2b1b12" />
+          {/* effort puffs behind the push */}
+          <path d="M15 -7 q5 -1 7 2 M17 1 q5 -1 8 2" stroke="#caa987" strokeWidth="1.6" fill="none" strokeLinecap="round" opacity=".45" />
+        </g>
       </g>
     </g>
   </svg>
@@ -386,7 +411,7 @@ export default function FunnelPage() {
         .fn-pop{animation:fn-pop .5s cubic-bezier(.22,1.5,.4,1) both}
         @keyframes fn-bob{0%,100%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(-2.5deg) translateY(-4px)}}
         .fn-bob{animation:fn-bob 3.4s ease-in-out infinite;transform-origin:70% 90%}
-        @keyframes fn-pour{0%{transform:translate(2px,-6px) rotate(0deg) scale(.85);opacity:0}14%{opacity:1}80%{opacity:1}100%{transform:translate(-14px,46px) rotate(190deg) scale(1);opacity:0}}
+        @keyframes fn-pour{0%{transform:translate(0,-6px) rotate(0deg) scale(.8);opacity:0}14%{opacity:1}80%{opacity:1}100%{transform:translate(-2px,58px) rotate(200deg) scale(1);opacity:0}}
         .fn-pour{animation:fn-pour 2.4s ease-in infinite}
         @keyframes fn-tumble{0%{top:1%;transform:rotate(0deg) translateX(0)}25%{transform:rotate(140deg) translateX(5px)}50%{transform:rotate(280deg) translateX(-5px)}90%{opacity:1}100%{top:95%;transform:rotate(540deg) translateX(0);opacity:0}}
         .fn-tumble{animation:fn-tumble 5.2s cubic-bezier(.45,.1,.6,.9) infinite}
@@ -394,6 +419,10 @@ export default function FunnelPage() {
         .fn-hop{animation:fn-hop 7.5s ease-in-out infinite}
         @keyframes fn-twitch{0%,90%,100%{transform:rotate(0)}93%{transform:rotate(-4deg)}96%{transform:rotate(3deg)}}
         .fn-twitch{animation:fn-twitch 5s ease-in-out infinite;transform-origin:50% 90%}
+        @keyframes fn-hognudge{0%,30%,100%{transform:translateX(0) rotate(0)}55%,70%{transform:translateX(-5px) rotate(-5deg)}}
+        .fn-hognudge{animation:fn-hognudge 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 92%}
+        @keyframes fn-basketwob{0%,38%,100%{transform:rotate(0)}58%{transform:rotate(-2.6deg)}78%{transform:rotate(1.4deg)}90%{transform:rotate(0)}}
+        .fn-basketwob{animation:fn-basketwob 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
         @keyframes fn-leafdrift{0%{transform:translate(0,-8px) rotate(0deg);opacity:0}10%{opacity:.85}90%{opacity:.7}100%{transform:translate(-34px,360px) rotate(300deg);opacity:0}}
         .fn-leafdrift{animation:fn-leafdrift 11s linear infinite}
         @keyframes fn-glow{0%,100%{filter:drop-shadow(0 0 2px rgba(232,184,75,.0))}50%{filter:drop-shadow(0 0 7px rgba(232,184,75,.75))}}
@@ -403,7 +432,7 @@ export default function FunnelPage() {
         @keyframes fn-fall{0%{transform:translateY(-12px) rotate(0deg);opacity:1}100%{transform:translateY(430px) rotate(var(--spin,540deg));opacity:0}}
         .fn-fall{animation:fn-fall linear forwards}
         @media (prefers-reduced-motion: reduce){
-          .fn-bob,.fn-pour,.fn-tumble,.fn-hop,.fn-twitch,.fn-leafdrift,.fn-glow,.fn-hopline,.fn-fall{animation:none !important}
+          .fn-bob,.fn-pour,.fn-tumble,.fn-hop,.fn-twitch,.fn-hognudge,.fn-basketwob,.fn-leafdrift,.fn-glow,.fn-hopline,.fn-fall{animation:none !important}
           .fn-pour,.fn-tumble,.fn-fall{opacity:0}
         }
       `}</style>
@@ -485,10 +514,10 @@ export default function FunnelPage() {
             <div className="fn-hop absolute z-10" style={{ top: '25.5%', width: '12%', height: '7%' }}><Art name="rabbitHop" ok={art} /></div>
             <svg className="pointer-events-none absolute" style={{ left: '6%', top: '24%', width: '32%', height: '8%' }} viewBox="0 0 120 48"><path d="M4 40 q56 -34 112 -20" className="fn-hopline" /></svg>
 
-            {/* bear ladling radishes (top-right) */}
-            <div className="fn-bob absolute z-10" style={{ right: '2%', top: '0.5%', width: '37%', height: '21%' }}><Art name="bear" ok={art} alt="" /></div>
+            {/* bear ladling radishes into the funnel mouth (top, centered on the axis) */}
+            <div className="fn-bob absolute z-10" style={{ left: `${TRUNK_AXIS - 4}%`, top: '0%', width: '38%', height: '22%' }}><Art name="bear" ok={art} alt="" /></div>
             {[{ d: '0s' }, { d: '0.8s' }, { d: '1.6s' }].map((p, i) => (
-              <span key={i} className="fn-pour absolute z-10 block" style={{ right: '34%', top: '12%', width: '5.5%', height: '4%', animationDelay: p.d }}><Art name="radish" ok={art} /></span>
+              <span key={i} className="fn-pour absolute z-10 block" style={{ left: `${TRUNK_AXIS - 3}%`, top: '13%', width: '5.5%', height: '4%', animationDelay: p.d }}><Art name="radish" ok={art} /></span>
             ))}
 
             {/* hollow trunk funnel */}
