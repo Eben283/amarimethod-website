@@ -16,6 +16,9 @@ Thumbs.db
 /build/
 quiz/dist/
 
+# Local-only marketing drafts (print assets, not part of the deployed site)
+postcard-*.html
+
 # Dependencies
 node_modules/
 quiz/node_modules/
