@@ -210,8 +210,15 @@ export default function FunnelPage() {
     { v: pct(v.showed, v.booked), word: 'of bookings showed up', none: 'no bookings yet' },
     { v: pct(v.salesCount, v.showed), word: 'of shows bought a pack', none: 'no one has shown yet' },
   ];
-  // coins to drop out the bottom = sales (cap visual at 6)
-  const coins = Math.min(6, Math.max(v.salesCount, 0));
+  // woodland pool geometry (the funnel stages, narrowing down the trunk)
+  const rk: Record<string, typeof rings[number]> = Object.fromEntries(rings.map((r) => [r.key, r]));
+  const POOLS = [
+    { key: 'calls',  y: 150, rx: 96, ry: 17, fs: 22 },
+    { key: 'talked', y: 224, rx: 78, ry: 15, fs: 20 },
+    { key: 'booked', y: 298, rx: 60, ry: 13, fs: 18 },
+    { key: 'showed', y: 372, rx: 44, ry: 11, fs: 16 },
+    { key: 'sales',  y: 446, rx: 30, ry: 10, fs: 15 },
+  ];
 
   return (
     <div className="min-h-screen" style={{ background: COL.bg, color: COL.ink }}>
@@ -228,6 +235,11 @@ export default function FunnelPage() {
         .fn-bob{animation:fn-bob 3s ease-in-out infinite}
         @keyframes fn-pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
         .fn-pop{animation:fn-pop .5s cubic-bezier(.22,1.5,.4,1) both}
+        @keyframes fn-drop{0%{transform:translateY(0);opacity:0}12%{opacity:1}86%{opacity:1}100%{transform:translateY(312px);opacity:0}}
+        @keyframes fn-march{to{stroke-dashoffset:-18}}
+        .fn-drop{animation:fn-drop 2.6s ease-in infinite}
+        .fn-hopline{stroke:#8B8194;stroke-width:1.6;stroke-dasharray:2 7;fill:none;stroke-linecap:round;animation:fn-march 1.1s linear infinite}
+        .fn-dash{animation:fn-march 2.2s linear infinite}
       `}</style>
 
       <div className="mx-auto max-w-2xl px-4 pb-10 pt-5">
@@ -266,74 +278,98 @@ export default function FunnelPage() {
           <p className="-mt-2 mb-4 text-center text-xs" style={{ color: COL.inkSoft }}><b style={{ color: COL.ink }}>{v.remaining.toFixed(1)}</b> packs to go · <b style={{ color: COL.ink }}>{v.daysLeft}</b> day{v.daysLeft === 1 ? '' : 's'} left · aim <b style={{ color: COL.ink }}>~{v.dailyCallsTarget}</b> calls/day</p>
         )}
 
-        {/* ── THE FUNNEL: people in, money out ── */}
-        <div className="fn-reveal relative mb-5 overflow-hidden rounded-3xl px-4 pb-6 pt-3" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
-          {/* leads pouring in */}
-          <div className="relative mx-auto h-14" style={{ width: '60%' }}>
-            {[0, 1, 2, 3].map((i) => (
-              <span key={i} className="fn-pour absolute flex h-7 w-7 items-center justify-center rounded-full"
-                style={{ left: `${12 + i * 24}%`, top: 0, background: i % 2 ? COL.gold : COL.plum, color: i % 2 ? COL.plum : '#fff', animationDelay: `${i * 0.65}s` }}>
-                <User className="h-4 w-4" strokeWidth={2.4} />
-              </span>
-            ))}
-          </div>
+        {/* ── THE FUNNEL: a little woodland ── */}
+        <div className="fn-reveal relative mb-5 overflow-hidden rounded-3xl" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+          <svg key={rangeKey} viewBox="0 0 380 540" className="w-full" role="img" aria-label="Woodland funnel — tap a stage to open it">
+            <defs>
+              <filter id="fn-rough"><feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="5" result="n" /><feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" /></filter>
+            </defs>
 
-          {/* funnel rings */}
-          <div key={rangeKey} className="relative flex flex-col items-center">
-            {rings.map((r, i) => {
-              const hit = r.t >= 1 && r.n >= r.t;
-              const isSel = stage === r.key;
+            {/* ground + foliage */}
+            <ellipse cx="190" cy="524" rx="168" ry="20" fill="#3C4A39" opacity=".10" />
+            <path d="M12 116 q50 -32 92 0 q24 42 -14 72 q-56 22 -92 -14 q-22 -34 14 -58Z" fill="#566B4C" opacity=".16" filter="url(#fn-rough)" />
+
+            {/* tree + rabbits (left) */}
+            <g filter="url(#fn-rough)">
+              <rect x="34" y="146" width="15" height="116" rx="7" fill="#6B5640" />
+              <path d="M42 38 q54 18 42 80 q-6 36 -42 38 q-40 -2 -48 -38 q-14 -62 48 -80Z" fill="#566B4C" />
+            </g>
+            <g stroke="#332B26" strokeWidth="1.5" fill="#fff" strokeLinecap="round" strokeLinejoin="round" filter="url(#fn-rough)">
+              <path d="M30 226 q-8 -14 -4 -26" fill="none" /><path d="M24 226 q-10 -14 -6 -28" fill="none" />
+              <circle cx="27" cy="234" r="8" /><circle cx="24" cy="232" r="1.5" fill="#332B26" />
+            </g>
+            <g transform="translate(94 238) rotate(-16)" stroke="#332B26" strokeWidth="1.5" fill="#fff" strokeLinecap="round" strokeLinejoin="round" filter="url(#fn-rough)">
+              <ellipse cx="0" cy="0" rx="13" ry="8" /><circle cx="12" cy="-4" r="5.5" />
+              <path d="M15 -7 q3 -14 7 -18" fill="none" /><path d="M10 -8 q0 -14 4 -18" fill="none" />
+              <circle cx="15" cy="-5" r="1.3" fill="#332B26" /><circle cx="-12" cy="2" r="2.6" />
+            </g>
+            <path d="M110 226 q44 -34 92 -20" className="fn-hopline" />
+
+            {/* bear dropping radishes (top-right) */}
+            <g filter="url(#fn-rough)">
+              <path d="M300 64 q44 0 44 58 q0 44 -44 48 q-46 -4 -46 -48 q0 -58 46 -58Z" fill="#6E5038" />
+              <circle cx="262" cy="92" r="28" fill="#6E5038" />
+              <circle cx="245" cy="71" r="9" fill="#6E5038" /><circle cx="279" cy="71" r="9" fill="#6E5038" />
+              <circle cx="245" cy="71" r="4" fill="#5A4029" /><circle cx="279" cy="71" r="4" fill="#5A4029" />
+              <ellipse cx="254" cy="102" rx="12" ry="9" fill="#caa987" /><circle cx="252" cy="99" r="2.4" fill="#2b1b12" />
+              <circle cx="252" cy="87" r="1.8" fill="#2b1b12" /><circle cx="267" cy="87" r="1.8" fill="#2b1b12" />
+              <path d="M274 116 q-22 12 -54 14" stroke="#6E5038" strokeWidth="10" fill="none" strokeLinecap="round" />
+              <path d="M312 116 q26 0 24 24 q-2 18 -24 18 q-22 0 -24 -18 q-2 -24 24 -24Z" fill="#B0884E" />
+              <circle cx="304" cy="118" r="5" fill="#C8475A" /><circle cx="320" cy="116" r="5" fill="#C8475A" /><circle cx="330" cy="124" r="4" fill="#C8475A" />
+            </g>
+
+            {/* the hollow trunk funnel */}
+            <path d="M92 140 C 102 226, 142 296, 158 442 Q 190 458 222 442 C 238 296, 278 226, 288 140 Z" fill="#caa276" opacity=".16" stroke="#8a6a3e" strokeWidth="1.4" filter="url(#fn-rough)" />
+
+            {/* radishes tumbling down */}
+            {[{ x: 178, d: '0s' }, { x: 200, d: '0.9s' }, { x: 186, d: '1.8s' }].map((rr, i) => (
+              <g key={i} className="fn-drop" style={{ animationDelay: rr.d }}>
+                <circle cx={rr.x} cy="124" r="6" fill="#C8475A" />
+                <path d={`M${rr.x} 130 q2 6 0 9`} stroke="#9c3344" strokeWidth="1.4" fill="none" />
+                <path d={`M${rr.x - 4} 118 q-2 -7 1 -9 M${rr.x} 116 q0 -8 0 -10 M${rr.x + 4} 118 q2 -7 -1 -9`} stroke="#7BA05B" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+              </g>
+            ))}
+
+            {/* stage pools */}
+            {POOLS.map((p) => {
+              const r = rk[p.key]; if (!r) return null;
+              const hit = r.t >= 1 && r.n >= r.t; const isSel = stage === p.key;
+              const lightText = p.key === 'showed' || p.key === 'sales';
               return (
-              <div key={r.key} className="flex w-full flex-col items-center">
-                <div className="fn-ring relative flex cursor-pointer items-center justify-center active:scale-95" style={{ width: `${r.w}%`, animationDelay: `${i * 110}ms` }}
-                  role="button" tabIndex={0} onClick={() => setStage(r.key as typeof stage)}>
-                  {/* the band */}
-                  <div className="relative w-full" style={{ height: 46 }}>
-                    <div className="absolute inset-0 rounded-[50%/22px]" style={{ background: r.col,
-                      boxShadow: hit
-                        ? `inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18), 0 0 0 2.5px ${COL.green}, 0 0 18px ${COL.green}55`
-                        : isSel
-                        ? `inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18), 0 0 0 2.5px ${COL.ink}`
-                        : 'inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18)' }} />
-                    <div className="absolute inset-0 flex items-center justify-center gap-1.5" style={{ color: r.key === 'showed' || r.key === 'sales' ? COL.ink : '#fff' }}>
-                      <span className="font-serif text-2xl font-bold tabular-nums">{r.n}</span>
-                      {r.t >= 1 && <span className="text-xs tabular-nums" style={{ opacity: .55 }}>/ {r.t}</span>}
-                      <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ opacity: .9 }}>{r.label}</span>
-                    </div>
-                  </div>
-                  {hit && (
-                    <span className="fn-pop absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full text-white shadow-md" style={{ background: COL.green }}>
-                      <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                    </span>
-                  )}
-                </div>
-                {i === 0 && <div className="py-1 text-[11px]" style={{ color: COL.inkSoft }}>🚫 {v.none} no answer · 📩 {v.vm} voicemail</div>}
-                {i < 4 && (
-                  <div className="my-1.5 flex items-center gap-1 rounded-full px-3 py-1 text-[11px]" style={{ background: COL.bg, border: `1px solid ${COL.line}` }}>
-                    <ChevronDown className="h-3 w-3" style={{ color: COL.inkSoft }} strokeWidth={2.5} />
-                    {drops[i].v === '—'
-                      ? <span style={{ color: COL.inkSoft }}>{drops[i].none}</span>
-                      : <span><b className="tabular-nums" style={{ color: COL.ink }}>{drops[i].v}</b> <span style={{ color: COL.inkSoft }}>{drops[i].word}</span></span>}
-                  </div>
-                )}
-              </div>
+                <g key={p.key} onClick={() => setStage(p.key as typeof stage)} style={{ cursor: 'pointer' }}>
+                  {hit && <ellipse cx="190" cy={p.y} rx={p.rx + 9} ry={p.ry + 7} fill="none" stroke={COL.green} strokeWidth="2.4" strokeDasharray="4 8" className="fn-dash" />}
+                  {isSel && !hit && <ellipse cx="190" cy={p.y} rx={p.rx + 5} ry={p.ry + 4} fill="none" stroke={COL.ink} strokeWidth="1.8" strokeDasharray="3 4" />}
+                  <ellipse cx="190" cy={p.y} rx={p.rx} ry={p.ry} fill={r.col} filter="url(#fn-rough)" />
+                  <ellipse cx="190" cy={p.y - p.ry * 0.45} rx={p.rx * 0.9} ry={p.ry * 0.5} fill="#fff" opacity=".15" />
+                  <text x="190" y={p.y + p.fs * 0.34} textAnchor="middle" fontFamily="'Bona Nova',serif" fontWeight="700" fontSize={p.fs} fill={lightText ? COL.ink : '#fff'}>
+                    {r.n}{r.t >= 1 && <tspan fontSize="11" opacity=".6"> / {r.t}</tspan>}
+                  </text>
+                  <text x="190" y={p.y + p.ry + 13} textAnchor="middle" fontFamily="'Bona Nova',serif" fontSize="11" fill={COL.inkSoft}>{r.label}</text>
+                  {hit && <g transform={`translate(${190 + p.rx - 1} ${p.y - p.ry - 1})`}><circle r="7.5" fill={COL.green} /><path d="M-3.4 0 l2.4 2.8 l4.6 -5.6" stroke="#fff" strokeWidth="1.9" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>}
+                </g>
               );
             })}
-          </div>
 
-          {/* money out the bottom */}
-          <div className="relative mx-auto mt-1 h-16" style={{ width: '40%' }}>
-            {coins === 0 ? (
-              <p className="pt-5 text-center text-[11px]" style={{ color: COL.inkSoft }}>no packs out yet this period</p>
-            ) : (
-              Array.from({ length: coins }).map((_, i) => (
-                <span key={i} className="fn-coin absolute flex h-8 w-8 items-center justify-center rounded-full font-bold"
-                  style={{ left: `${8 + (i * 17) % 80}%`, top: 0, background: `radial-gradient(circle at 35% 30%, ${COL.gold}, ${COL.goldDeep})`, color: '#7A5A12', border: `1.5px solid ${COL.goldDeep}`, fontSize: 13, animationDelay: `${i * 0.4}s` }}>$</span>
-              ))
-            )}
+            {/* conversion % beside each gap */}
+            {POOLS.slice(0, 4).map((p, i) => (
+              <text key={i} x={190 + p.rx + 12} y={(p.y + POOLS[i + 1].y) / 2 + 3} fontFamily="'Bona Nova',serif" fontSize="11" fill={COL.inkSoft}>↓ {drops[i].v}</text>
+            ))}
+
+            {/* harvest basket + hedgehog */}
+            <g filter="url(#fn-rough)">
+              <path d="M150 472 q40 -12 80 0 l-9 42 q-31 9 -62 0Z" fill="#B0884E" />
+              <path d="M150 472 q40 -12 80 0" fill="none" stroke="#8a6a35" strokeWidth="2.2" />
+              <circle cx="170" cy="478" r="7" fill="#C8475A" /><circle cx="192" cy="474" r="8" fill="#C8475A" /><circle cx="212" cy="480" r="6" fill="#C8475A" />
+              <path d="M166 471 q-2 -8 2 -12 M190 465 q0 -10 0 -13 M210 471 q3 -8 -2 -12" stroke="#7BA05B" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+              <g transform="translate(290 498)"><path d="M-18 4 q3 -19 19 -19 q15 0 13 19Z" fill="#7a5c43" /><path d="M-15 -3 l-4 -7 M-7 -9 l-2 -9 M1 -11 l0 -9 M9 -9 l3 -8" stroke="#5a4029" strokeWidth="1.6" strokeLinecap="round" /><circle cx="-16" cy="4" r="4" fill="#caa987" /><circle cx="-18" cy="3" r="1" fill="#2b1b12" /></g>
+            </g>
+          </svg>
+
+          {/* notes under the scene */}
+          <div className="px-4 pb-4 text-center">
+            <p className="text-[11px]" style={{ color: COL.inkSoft }}>🚫 {v.none} no answer · 📩 {v.vm} voicemail · <b style={{ color: COL.ink }}>tap a stage</b> to open it</p>
+            {winCount > 0 && <p className="fn-pop mt-1 text-sm font-semibold" style={{ color: COL.green }}>✨ {winCount} of 5 goals hit{winCount === 5 ? ' — full harvest!' : ''}</p>}
           </div>
-          {winCount > 0 && <p className="fn-pop mt-2 text-center text-sm font-semibold" style={{ color: COL.green }}>✨ {winCount} of 5 goals hit{winCount === 5 ? ' — full funnel!' : ''}</p>}
-          <p className="mt-1 text-center text-[10px]" style={{ color: COL.inkSoft }}>{v.salesCount} sale{v.salesCount === 1 ? '' : 's'} · {v.sessionsSold} sessions · booked = bookings made in this period</p>
         </div>
 
         {/* per-stage trend — tap a ring above to switch */}
