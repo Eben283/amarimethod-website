@@ -565,7 +565,10 @@ function priorityScore(p: PartnerProspect): number {
 // Ready view: card leads with Garrett's real sheet data (Status, Notes).
 function ReadyRow({ prospect, onTap }: { prospect: PartnerProspect; onTap: () => void }) {
   const stage = (prospect.partnerStage || 'no-outreach') as PartnerStage;
-  const dSince = daysSince(prospect.lastActivityAt);
+  // Use lastTouchAt (max of lastActivityAt and app-dispositioned signal time) so
+  // a contact just dispositioned in the app isn't mis-flagged stale on its older
+  // /conversations-derived lastActivityAt.
+  const dSince = daysSince(lastTouchAt(prospect));
   const hasRealContact = !!prospect.partnerLastSignal || !!prospect.lastActivityAt || !!prospect.sheetStatus;
   const isStale = stage === 'working' && hasRealContact && (dSince !== null && dSince >= STALE_DAYS_THRESHOLD);
 
@@ -1035,7 +1038,8 @@ function ProspectModal({
             <div className="flex items-center gap-1">
               <button
                 onClick={focusContext.onSkip}
-                className="text-xs text-amari-text-muted hover:text-amari-charcoal px-2 py-1.5"
+                disabled={busy}
+                className="text-xs text-amari-text-muted hover:text-amari-charcoal px-2 py-1.5 disabled:opacity-40 disabled:pointer-events-none"
               >
                 Skip →
               </button>
@@ -1835,7 +1839,9 @@ export default function PartnersPage() {
     if (topStage === 'in-progress' && recencyFilter !== 'all') {
       const threshold = Number(recencyFilter);
       v = v.filter((p) => {
-        const d = daysSince(p.lastActivityAt);
+        // lastTouchAt, not raw lastActivityAt — matches the sort below so an
+        // app-dispositioned contact isn't wrongly shown as ignored/stale.
+        const d = daysSince(lastTouchAt(p));
         return d !== null && d >= threshold;
       });
     }
