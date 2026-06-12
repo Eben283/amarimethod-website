@@ -364,6 +364,7 @@ export interface FunnelData {
   sessions?: FunnelSessionEvent[];
   sales?: FunnelSaleEvent[];
   trailing90?: { calls: number; equivs: number; callsPerEquiv: number | null };
+  targets?: { calls: number; talk: number; booked: number; showed: number; sales: number; source?: string; asOf?: string };
   paceLine?: string;
 }
 
