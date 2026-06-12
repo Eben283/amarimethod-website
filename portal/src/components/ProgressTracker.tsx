@@ -130,6 +130,9 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<'cancel' | 'reschedule'>('cancel');
   const [cancelError, setCancelError] = useState<string | null>(null);
+  // Which appointment the cancelError belongs to — so the message renders under
+  // the row the user acted on, not always under the next-session card.
+  const [errorApptId, setErrorApptId] = useState<string | null>(null);
 
   // Lifetime journey counter — total past appointments that effectively ran.
   // Past 'confirmed' counts because Garrett doesn't always flip them to
@@ -182,6 +185,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
       onRefetch();
     } catch (err) {
       setCancelError(err instanceof Error ? err.message : 'Unable to cancel. Please try again.');
+      setErrorApptId(appointmentId);
     } finally {
       setCancellingId(null);
     }
@@ -212,6 +216,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
         window.open(externalUrl, '_blank', 'noopener,noreferrer');
       } catch (err) {
         setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
+        setErrorApptId(appt.id);
       } finally {
         setReschedulingId(null);
       }
@@ -481,7 +486,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                 </p>
               )}
 
-              {cancelError && (
+              {cancelError && errorApptId === nextApt.id && (
                 <p className="cp-locked" style={{ background: '#fbe6e1', borderLeftColor: 'var(--cp-err)' }}>
                   <span className="cp-lock-dot" style={{ background: 'var(--cp-err)' }}></span>
                   {cancelError}
@@ -580,6 +585,12 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                       </>
                     )}
                   </div>
+                  {cancelError && errorApptId === s.id && (
+                    <p className="cp-locked" style={{ gridColumn: '1 / -1', background: '#fbe6e1', borderLeftColor: 'var(--cp-err)' }}>
+                      <span className="cp-lock-dot" style={{ background: 'var(--cp-err)' }}></span>
+                      {cancelError}
+                    </p>
+                  )}
                 </li>
               );
             })}
