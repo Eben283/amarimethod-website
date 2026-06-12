@@ -331,30 +331,39 @@ export async function triggerActivityRefresh(): Promise<{ triggered: boolean; me
   return fetchApi('/staff-refresh-activity', { method: 'POST' });
 }
 
-// ── Funnel (cohort sales funnel) ──────────────────────────────────────────
+// ── Funnel (sales funnel, v2 event-level snapshot) ────────────────────────
 // Snapshot is computed out-of-band by ~/.claude/ghl-mcp/funnel.mjs and cached
-// in KV; /staff-funnel just serves it. See functions/api/staff-funnel.js.
-export interface FunnelCohort {
-  cohort: string;
-  calls: number;
-  dropped: number;
-  voicemail: number;
-  conversation: number;
-  giftedBooked: number;
-  giftedShowed: number;
-  eightPack: number;
+// in KV; /staff-funnel just serves it. Events are sliced into date ranges
+// client-side. See functions/api/staff-funnel.js.
+export interface FunnelCallEvent {
+  d: string;                       // YYYY-MM-DD (Pacific)
+  o: 'none' | 'vm' | 'talk';       // no answer · voicemail left · talked
+  c: string;                       // cohort
 }
-
+export interface FunnelSessionEvent {
+  d: string;
+  showed: boolean;
+  c: string;
+}
+export interface FunnelSaleEvent {
+  d: string;
+  s: number;                       // sessions sold (8-pack=8, 4-pack=4, single=1…)
+  k: string;                       // kind label
+  c: string;
+  r: boolean;                      // repeat buyer
+  who: string;
+}
 export interface FunnelData {
+  v?: number;
   generatedAt: string | null;
   empty?: boolean;
   windowDays?: number;
-  dailyPulse?: { date: string; calls: number }[];
-  cohorts?: FunnelCohort[];
-  totals?: Omit<FunnelCohort, 'cohort'>;
-  rates?: { callToConvo: number; bookedToShowed: number; showedToEightPack: number };
-  repurchasers?: number;
-  targetMonthly?: [number, number];
+  goal?: { packsPerMonth: number; sessionsPerPack: number };
+  calls?: FunnelCallEvent[];
+  sessions?: FunnelSessionEvent[];
+  sales?: FunnelSaleEvent[];
+  trailing90?: { calls: number; equivs: number; callsPerEquiv: number | null };
+  paceLine?: string;
 }
 
 export async function getFunnel(): Promise<FunnelData> {
