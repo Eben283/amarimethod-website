@@ -122,6 +122,26 @@ function issue(severity, category, contactId, contactName, rule, expected, actua
   return { severity, category, contactId, contactName, rule, expected, actual, suggestion };
 }
 
+// Client Initial Session calendars — the ones that fire the G2 "Initial Session
+// Welcome" post-session flow. We detect the initial session DIRECTLY by calendar.
+// (Was previously inferred from the `sessions_completed` field — which is actually
+// labeled "Sessions Lifetime" and counts comps + FUTURE bookings, so a first-timer
+// who'd already booked their next session read >1 and got silently skipped.
+// Fixed 2026-06-12.) Excludes "Partner Initial Session" (gifted partner-prospect
+// session — its own flow, handled by the partner_session_verify check below).
+export const INITIAL_SESSION_CALENDAR_IDS = new Set([
+  "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person
+  "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner
+]);
+
+export function isClientInitialSession(appt) {
+  if (appt?.calendarId && INITIAL_SESSION_CALENDAR_IDS.has(appt.calendarId)) return true;
+  // Fallback by calendar name: client initials are "Initial Session — …".
+  // "Partner Initial Session" starts with "Partner", so it is NOT matched.
+  return /^\s*initial session\b/i.test(appt?.calendarName || "");
+}
+
 // ── Rule Set 1: Appointment-triggered automations ──
 
 export async function auditAppointments({ cache, appointments }) {
@@ -157,18 +177,15 @@ export async function auditAppointments({ cache, appointments }) {
       ));
     }
 
-    // Status "showed" — verify post-session message
-    // Scope: only flag for FIRST-EVER sessions (sessions_completed <= 1, where
-    // 1 = the just-completed initial). For returning clients no per-session
-    // workflow exists by design (E3/E4/E5 nurture flows handle ongoing touches
-    // via sessions_remaining triggers, not per-attendance), so flagging every
-    // follow-up generates false positives — see audit-triage 2026-05-31 +
-    // GHL-WORKFLOWS-MASTER.md I3/H2 sections. If a generic post-session
-    // workflow gets built later, widen this scope back out.
+    // Status "showed" — verify the post-session message after a client's INITIAL
+    // session (G2 "Initial Session Welcome" / equipment-list email). Scope to the
+    // initial session by CALENDAR (see isClientInitialSession), not by a session-
+    // count field. For returning clients no per-session workflow exists by design
+    // (E3/E4/E5 nurture flows handle ongoing touches via sessions_remaining
+    // triggers, not per-attendance), so flagging every follow-up generates false
+    // positives — see audit-triage 2026-05-31 + GHL-WORKFLOWS-MASTER.md G2/I3/H2.
     if (appt.appointmentStatus === "showed") {
-      const sessionsCompleted = parseInt(fields?.sessions_completed ?? "0", 10);
-      const isFirstSession = !Number.isFinite(sessionsCompleted) || sessionsCompleted <= 1;
-      if (isFirstSession) {
+      if (isClientInitialSession(appt)) {
         const conv = await cache.getConversations(appt.contactId);
         if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
           const allMsgs = conv.flatMap((t) => t.messages || []);
@@ -181,7 +198,7 @@ export async function auditAppointments({ cache, appointments }) {
             issues.push(issue(
               "warning", "appointment", appt.contactId, name,
               "no_post_session_message",
-              "Post-session email/SMS should send within 2h of FIRST-EVER session end (Initial intake → G2 equipment-list step)",
+              "Post-session email/SMS should send within 2h of the INITIAL session end (G2 'Initial Session Welcome' / equipment-list)",
               "No outbound message found in that window",
               "Check if G2 'Initial Session Welcome' workflow fired"
             ));

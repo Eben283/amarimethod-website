@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder, classifyInvoiceItems } from './rules.js';
+import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder, classifyInvoiceItems, isClientInitialSession, auditAppointments } from './rules.js';
 import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 
 // Real GHL ids (kept in sync with ghl-products.js).
@@ -135,5 +135,60 @@ describe('isUnmappedHighValueOrder (alert — paid order ≥ $400 with no known 
     expect(isUnmappedHighValueOrder({ status: 'paid' })).toBe(false);
     expect(isUnmappedHighValueOrder({ amount: 'abc', status: 'paid' })).toBe(false);
     expect(isUnmappedHighValueOrder(null)).toBe(false);
+  });
+});
+
+// ── 2026-06-12: post-session check scoped to the INITIAL session by CALENDAR ──
+// (was inferred from `sessions_completed` = "Sessions Lifetime", which counts
+//  comps + FUTURE bookings → first-timers who'd booked a follow-up got skipped.)
+describe('isClientInitialSession', () => {
+  it('matches the three client Initial Session calendars by id', () => {
+    expect(isClientInitialSession({ calendarId: 'G7OAnnJuFbMF6nQSlZVQ' })).toBe(true); // In Person
+    expect(isClientInitialSession({ calendarId: 'ySmht5hx4uZGEpgZrlCw' })).toBe(true); // Virtual
+    expect(isClientInitialSession({ calendarId: 'uUDFD0ZQEWtzGLS9aLq7' })).toBe(true); // Paid at Partner
+  });
+  it('matches client initials by calendar name when id is absent', () => {
+    expect(isClientInitialSession({ calendarName: 'Initial Session — In Person' })).toBe(true);
+    expect(isClientInitialSession({ calendarName: 'Initial Session — Virtual' })).toBe(true);
+  });
+  it('EXCLUDES the gifted Partner Initial Session (separate flow)', () => {
+    expect(isClientInitialSession({ calendarId: 'lfsnaiGiLNL2z12pLKDP', calendarName: 'Partner Initial Session' })).toBe(false);
+  });
+  it('EXCLUDES follow-ups and discovery calls', () => {
+    expect(isClientInitialSession({ calendarName: 'Follow-up Session — In Person' })).toBe(false);
+    expect(isClientInitialSession({ calendarName: 'Your Free Discovery Call' })).toBe(false);
+    expect(isClientInitialSession({})).toBe(false);
+  });
+});
+
+describe('auditAppointments — no_post_session_message (initial session only)', () => {
+  const mkCache = (fields, conv) => ({
+    getContact: async () => ({ name: 'Test Client', tags: [], fields }),
+    getConversations: async () => conv,
+  });
+  const initialAppt = { contactId: 'c1', appointmentStatus: 'showed', endTime: '2026-06-10T18:00:00.000Z', calendarId: 'G7OAnnJuFbMF6nQSlZVQ', calendarName: 'Initial Session — In Person' };
+  const followupAppt = { ...initialAppt, calendarId: 'SKDVOL8wtUN6Ne0ppbC9', calendarName: 'Follow-up Session — In Person' };
+  const flagged = (issues) => issues.some((i) => i.rule === 'no_post_session_message');
+
+  it('flags a showed INITIAL session with no message in the 2h window', async () => {
+    const issues = await auditAppointments({ cache: mkCache({ sessions_completed: '1' }, []), appointments: [initialAppt] });
+    expect(flagged(issues)).toBe(true);
+  });
+
+  it('STILL flags when "Sessions Lifetime" > 1 (the Jenn regression — a booked follow-up inflates the count)', async () => {
+    // Old code skipped when sessions_completed > 1; the initial session must still flag.
+    const issues = await auditAppointments({ cache: mkCache({ sessions_completed: '3' }, []), appointments: [initialAppt] });
+    expect(flagged(issues)).toBe(true);
+  });
+
+  it('does NOT flag a follow-up session (no per-session workflow by design)', async () => {
+    const issues = await auditAppointments({ cache: mkCache({ sessions_completed: '0' }, []), appointments: [followupAppt] });
+    expect(flagged(issues)).toBe(false);
+  });
+
+  it('does NOT flag when an outbound message went out within 2h of the initial', async () => {
+    const conv = [{ messages: [{ direction: 'outbound', date: '2026-06-10T18:30:00.000Z' }] }];
+    const issues = await auditAppointments({ cache: mkCache({ sessions_completed: '1' }, conv), appointments: [initialAppt] });
+    expect(flagged(issues)).toBe(false);
   });
 });
