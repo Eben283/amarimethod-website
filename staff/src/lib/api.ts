@@ -341,7 +341,8 @@ export interface FunnelCallEvent {
   c: string;                       // cohort
 }
 export interface FunnelSessionEvent {
-  d: string;
+  d: string;                       // booking date (when it was booked)
+  sessionDate?: string;            // the scheduled session date
   showed: boolean;
   c: string;
 }
