@@ -10,6 +10,13 @@ type RangeUnit = 'day' | 'week' | 'month' | 'quarter';
 interface Range { unit: RangeUnit; offset: number }
 const GOAL_PACKS: Record<RangeUnit, number> = { day: 0, week: 2, month: 8, quarter: 24 };
 
+// Realistic per-MONTH targets to land 8 packs, derived from the deduped 2026-06
+// conversion chain: calls→talked 13% · talked→booked 58% · booked→showed 43% ·
+// showed→buy ~80%  ⇒  ~300 calls → 40 talks → 23 booked → 10 showed → 8 packs.
+const MONTHLY_TARGET = { calls: 300, talk: 40, booked: 23, showed: 10, sales: 8 };
+const WORKDAYS_MO = 21;
+const workdays = (calDays: number) => Math.max(1, Math.round((calDays * 5) / 7));
+
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const M3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -165,10 +172,10 @@ export default function FunnelPage() {
   ];
   const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
   const drops = [
-    { v: pct(v.talk, v.callsN), word: 'answered' },
-    { v: pct(v.booked, v.talk), word: 'of talks booked' },
-    { v: pct(v.showed, v.booked), word: 'showed up' },
-    { v: pct(v.salesCount, v.showed), word: 'bought' },
+    { v: pct(v.talk, v.callsN), word: 'of calls were answered', none: 'no calls yet' },
+    { v: pct(v.booked, v.talk), word: 'of talks booked a session', none: 'no one answered yet' },
+    { v: pct(v.showed, v.booked), word: 'of bookings showed up', none: 'no bookings yet' },
+    { v: pct(v.salesCount, v.showed), word: 'of shows bought a pack', none: 'no one has shown yet' },
   ];
   // coins to drop out the bottom = sales (cap visual at 6)
   const coins = Math.min(6, Math.max(v.salesCount, 0));
@@ -249,15 +256,16 @@ export default function FunnelPage() {
                       <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ opacity: .9 }}>{r.label}</span>
                     </div>
                   </div>
-                  {/* conversion label, hanging to the side */}
-                  {i < 4 && (
-                    <div className="absolute -right-1 top-full z-10 -translate-y-1.5 translate-x-full whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: COL.bg, color: COL.maroon, border: `1px solid ${COL.line}` }}>
-                      ↓ <b style={{ color: COL.ink }}>{drops[i].v}</b> <span style={{ color: COL.inkSoft }}>{drops[i].word}</span>
-                    </div>
-                  )}
                 </div>
                 {i === 0 && <div className="py-1 text-[11px]" style={{ color: COL.inkSoft }}>🚫 {v.none} no answer · 📩 {v.vm} voicemail</div>}
-                {i < 4 && <div style={{ height: 6 }} />}
+                {i < 4 && (
+                  <div className="my-1.5 flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px]" style={{ background: COL.bg, border: `1px solid ${COL.line}` }}>
+                    <span aria-hidden style={{ color: COL.maroon }}>↓</span>
+                    {drops[i].v === '—'
+                      ? <span style={{ color: COL.inkSoft }}>{drops[i].none}</span>
+                      : <span><b className="tabular-nums" style={{ color: COL.ink }}>{drops[i].v}</b> <span style={{ color: COL.inkSoft }}>{drops[i].word}</span></span>}
+                  </div>
+                )}
               </div>
             ))}
           </div>
