@@ -14,6 +14,11 @@
 /staff/balances /staff/ 200
 /staff/clients /staff/ 200
 /staff/client/* /staff/ 200
+/staff/playbook /staff/ 200
+/staff/outreach /staff/ 200
+/staff/partners /staff/ 200
+/staff/check-in/* /staff/ 200
+/staff/funnel /staff/ 200
 /staff/login /staff/ 200
 
 # SPA fallback for chief of staff
