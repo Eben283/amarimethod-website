@@ -430,11 +430,3 @@ export interface PartnerOutcomeRequest {
   note?: string;
   followupAt?: string;  // for `deferred` only — when to revisit
 }
-
-export interface PartnerProspectsResponse {
-  generatedAt: string;
-  total: number;
-  countsByCategory: Record<PartnerCategory, number>;
-  stages: PartnerPipelineStage[];
-  prospects: PartnerProspect[];
-}

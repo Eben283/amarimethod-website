@@ -80,11 +80,15 @@ export default function LedgerWarning({
     );
   }
 
+  // lucide icons don't accept a `title` prop (it's dropped, killing the native
+  // tooltip), so wrap in a span that carries the title/aria-label instead.
   return (
-    <Icon
-      className={`w-3 h-3 ${colorClass} flex-shrink-0 cursor-help`}
+    <span
+      className={`inline-flex ${colorClass} flex-shrink-0 cursor-help`}
       title={title}
       aria-label={title}
-    />
+    >
+      <Icon className="w-3 h-3" />
+    </span>
   );
 }
