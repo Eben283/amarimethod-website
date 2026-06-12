@@ -5,6 +5,7 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { isContactRevoked } from "../lib/session-guard.js";
+import { countsTowardLifetime } from "../lib/journey-classification.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -69,7 +70,7 @@ export function countLifetimeCompleted(appointments, nowMs) {
     const startMs = new Date(a.startTime || a.start_time || 0).getTime();
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = `${a.title || ""} ${a.calendarName || ""}`;
-    return !/pain assessment|discovery call|15-minute|15 minute|consultation/i.test(title);
+    return countsTowardLifetime(title);
   }).length;
 }
 

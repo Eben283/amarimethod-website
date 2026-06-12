@@ -33,14 +33,19 @@ export default function LoginPage() {
       setStatus('sent');
       setCountdown(60);
     } catch (err) {
+      // Do not reveal whether an account exists for this email (account
+      // enumeration). A 404 ("no such contact") is shown as the same neutral
+      // "check your email" state as a real send — the only observable
+      // difference a caller can probe for is removed.
+      if (err instanceof ApiError && err.status === 404) {
+        setStatus('sent');
+        setCountdown(60);
+        return;
+      }
       setStatus('error');
       if (err instanceof ApiError && err.status === 429) {
         setErrorMessage('Please wait before requesting another link.');
         setCountdown(60);
-      } else if (err instanceof ApiError && err.status === 404) {
-        setErrorMessage(
-          "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com."
-        );
       } else {
         setErrorMessage('Something went wrong. Please try again.');
       }

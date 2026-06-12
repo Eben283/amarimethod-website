@@ -64,9 +64,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Parse request body
+    // Parse request body. We intentionally ignore any client-supplied `title`:
+    // the PUT below echoes the appointment title back to GHL, so trusting client
+    // input would let a caller overwrite the real title with arbitrary text. We
+    // use the server-known title from the ownership lookup instead.
     const body = await context.request.json();
-    const { appointmentId, title } = body;
+    const { appointmentId } = body;
 
     if (!appointmentId) {
       return new Response(
@@ -77,9 +80,9 @@ export async function onRequestPost(context) {
 
     console.log(`[portal-cancel] User ${tokenPayload.contactId} cancelling appointment ${appointmentId}`);
 
-    // Verify the appointment belongs to this contact before cancelling.
-    // Soft-fail: if the GHL call itself errors, allow through rather than blocking
-    // a legitimate cancellation due to a transient API issue.
+    // Verify the appointment belongs to this contact before cancelling, and
+    // capture its server-known title for the PUT below.
+    let serverTitle = "Session";
     try {
       const ownershipResponse = await fetch(
         `${GHL_API_BASE}/contacts/${tokenPayload.contactId}/appointments`,
@@ -88,8 +91,8 @@ export async function onRequestPost(context) {
       if (ownershipResponse.ok) {
         const ownershipData = await ownershipResponse.json();
         const contactAppointments = ownershipData.appointments || ownershipData.events || [];
-        const ownsAppointment = contactAppointments.some((a) => a.id === appointmentId);
-        if (!ownsAppointment) {
+        const ownedAppointment = contactAppointments.find((a) => a.id === appointmentId);
+        if (!ownedAppointment) {
           console.warn(
             `[portal-cancel] Contact ${tokenPayload.contactId} attempted to cancel appointment ${appointmentId} — not found on their contact`
           );
@@ -97,6 +100,9 @@ export async function onRequestPost(context) {
             JSON.stringify({ error: "Appointment not found." }),
             { status: 404, headers }
           );
+        }
+        if (typeof ownedAppointment.title === "string" && ownedAppointment.title.trim()) {
+          serverTitle = ownedAppointment.title;
         }
       } else {
         console.error(`[portal-cancel] Ownership check GHL error ${ownershipResponse.status} — blocking`);
@@ -121,7 +127,7 @@ export async function onRequestPost(context) {
         method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
-          title: title || "Session",
+          title: serverTitle,
           appointmentStatus: "cancelled",
         }),
       }

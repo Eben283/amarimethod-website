@@ -155,15 +155,74 @@ export function authoritativeCustomerId(charges, contactId) {
 
 // Fetch-based Stripe REST wrapper. Uses Bearer auth (matches cos-lookups.js) so
 // there's no base64/Buffer dependency in the Workers runtime.
+//
+// Both charge endpoints follow Stripe pagination so a long-tenured contact with
+// >100 charges (sessions + entrainments over years) isn't silently truncated at
+// the first page: list endpoints use the `starting_after` cursor, the search
+// endpoint uses the `next_page` token. A safety cap bounds the loop and WARNS
+// (never silently stops) if a contact somehow exceeds it.
+const STRIPE_MAX_PAGES = 20; // 20 × 100 = 2000 charges — far beyond any real contact
+
 export function makeStripeClient(secretKey, fetchImpl = fetch) {
   const base = 'https://api.stripe.com/v1';
   const get = async (path) => {
     const res = await fetchImpl(`${base}${path}`, { headers: { Authorization: `Bearer ${secretKey}` } });
     return res.json();
   };
+
+  // Cursor-paginate a Stripe list endpoint. `buildPath(cursor)` returns the path
+  // for the next page (cursor is the last seen id, or null for the first page).
+  // On a first-page error, returns the raw error object so callers skip it (same
+  // as before). On a later-page error, returns what was collected so far.
+  const getList = async (label, buildPath) => {
+    const all = [];
+    let cursor = null;
+    for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
+      const r = await get(buildPath(cursor));
+      if (!r || r.error) {
+        if (all.length === 0) return r;
+        break;
+      }
+      const data = r.data || [];
+      all.push(...data);
+      if (!r.has_more || data.length === 0) break;
+      cursor = data[data.length - 1].id;
+      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
+        console.warn(`[stripe-charges] ${label}: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true — charge list may be truncated`);
+      }
+    }
+    return { data: all };
+  };
+
+  const searchCharges = async (query) => {
+    const all = [];
+    let pageToken = null;
+    for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
+      const pageParam = pageToken ? `&page=${encodeURIComponent(pageToken)}` : '';
+      const r = await get(`/charges/search?query=${encodeURIComponent(query)}&limit=100${pageParam}`);
+      if (!r || r.error) {
+        if (all.length === 0) return r;
+        break;
+      }
+      all.push(...(r.data || []));
+      if (!r.has_more || !r.next_page) break;
+      pageToken = r.next_page;
+      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
+        console.warn(`[stripe-charges] searchCharges: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true — search results may be truncated`);
+      }
+    }
+    return { data: all };
+  };
+
   return {
-    searchCharges: (query) => get(`/charges/search?query=${encodeURIComponent(query)}&limit=100`),
-    listChargesByCustomer: (customerId) => get(`/charges?customer=${encodeURIComponent(customerId)}&limit=100`),
+    searchCharges,
+    listChargesByCustomer: (customerId) =>
+      getList(
+        `listChargesByCustomer(${customerId})`,
+        (cursor) =>
+          `/charges?customer=${encodeURIComponent(customerId)}&limit=100` +
+          (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '')
+      ),
     listCustomersByEmail: (email) => get(`/customers?email=${encodeURIComponent(email)}&limit=10`),
   };
 }

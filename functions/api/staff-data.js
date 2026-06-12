@@ -6,6 +6,7 @@ import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { readPaymentRecord } from "../lib/session-payment.js";
+import { countsTowardLifetime } from "../lib/journey-classification.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -202,7 +203,6 @@ export async function onRequestGet(context) {
             // session-fields contract (was: ledger.attended which is
             // package-only). Matches portal-data.js semantic so the staff
             // app shows the same number the client sees.
-            const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
             const nowMs = Date.now();
             sessionsCompleted = appointments.filter((a) => {
               const status = (a.appointmentStatus || a.status || "").toLowerCase();
@@ -210,7 +210,7 @@ export async function onRequestGet(context) {
               const startMs = new Date(a.startTime || a.start_time || 0).getTime();
               if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
               const title = (a.title || "") + " " + (a.calendarName || "");
-              return !NON_JOURNEY.test(title);
+              return countsTowardLifetime(title);
             }).length;
             seriesType = ledger.display.seriesType;
             sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;

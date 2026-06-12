@@ -101,6 +101,20 @@ export function guardDelta(currentValue, derivedValue) {
   return Math.abs(derivedValue - currentValue);
 }
 
+// Drop a contact's needs-review flag once it's confirmed back in sync (or the
+// drift was small enough to auto-apply). Without this the 30-day-TTL entry keeps
+// nagging the /needs-review queue after the issue is resolved, and a later run
+// that overwrites the fields can't reflect a NEW drift because the stale flag is
+// still sitting there. Best-effort — a failed delete just leaves the entry to
+// expire on its own TTL.
+export async function clearNeedsReview(env, contactId) {
+  try {
+    await env.PORTAL_KV.delete(KV_NEEDS_REVIEW_PREFIX + contactId);
+  } catch (err) {
+    console.warn(`[needs-review] clear failed for ${contactId}: ${err.message}`);
+  }
+}
+
 // Lifetime count = past appointments that effectively ran (showed/completed/
 // or PAST confirmed), minus the non-journey types. Mirrors the portal's
 // ProgressTracker logic and the new staff-mark-attended.js contract.
@@ -321,6 +335,7 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     const completedMatches = currentCompleted !== null && currentCompleted >= lifetimeCount;
 
     if (remainingMatches && completedMatches) {
+      await clearNeedsReview(env, contactId);
       return {
         status: "skipped-already-in-sync",
         contactId,
@@ -376,6 +391,7 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     }
 
     if (customFields.length === 0) {
+      await clearNeedsReview(env, contactId);
       return { status: "skipped-already-in-sync", contactId };
     }
 
@@ -389,6 +405,9 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
       JSON.stringify({ at: new Date().toISOString(), wrote: customFields.map((f) => f.id) }),
       { expirationTtl: 14 * 86400 },
     );
+
+    // Drift auto-applied — clear any stale large-delta flag for this contact.
+    await clearNeedsReview(env, contactId);
 
     return {
       status: "synced",

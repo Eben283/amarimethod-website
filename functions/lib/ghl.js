@@ -160,10 +160,21 @@ export async function ghlFetch(context, url, options = {}) {
     return response;
   }
 
-  // 429 / 5xx — retry with backoff (max 3 attempts)
+  // 429 / 5xx — retry with backoff (max 3 attempts).
+  //
+  // Only retry 5xx for IDEMPOTENT methods. A POST/PATCH that returns 5xx may
+  // have already committed server-side (GHL stamps the error AFTER the write),
+  // so a blind retry can double-create contacts/tags/appointments/charges. A 429
+  // means the request was rejected before processing (rate limit), so it is
+  // always safe to retry regardless of method.
+  const method = (options.method || "GET").toUpperCase();
+  const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
+  const canRetry5xx = IDEMPOTENT_METHODS.has(method);
+
   const MAX_RETRIES = 3;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    if (response.status !== 429 && response.status < 500) break;
+    const retryable = response.status === 429 || (response.status >= 500 && canRetry5xx);
+    if (!retryable) break;
 
     const retryAfter = response.headers.get("Retry-After");
     const backoffMs = retryAfter

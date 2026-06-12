@@ -6,6 +6,7 @@ import {
   resolveContactCharges,
   pickCustomerId,
   authoritativeCustomerId,
+  makeStripeClient,
 } from './stripe-charges.js';
 
 const charge = (o = {}) => ({
@@ -121,5 +122,58 @@ describe('resolveContactCharges (more)', () => {
     const stripe = mockStripe({ search: [direct], byCustomer: { cus_A: [direct] }, byEmail: { 'x@y.com': [{ id: 'cus_Z' }] } });
     await resolveContactCharges(stripe, { contactId: 'C1', email: 'x@y.com' });
     expect(stripe.calls.listByEmail).toEqual([]);
+  });
+});
+
+describe('makeStripeClient pagination', () => {
+  // Fake fetch returning a queue of Stripe JSON pages, recording requested URLs.
+  const fakeFetch = (pages) => {
+    let i = 0;
+    const urls = [];
+    const fn = async (url) => {
+      urls.push(url);
+      const body = pages[Math.min(i, pages.length - 1)];
+      i++;
+      return { json: async () => body };
+    };
+    fn.urls = urls;
+    return fn;
+  };
+
+  it('follows starting_after across pages for listChargesByCustomer', async () => {
+    const fetchImpl = fakeFetch([
+      { data: [{ id: 'ch_1' }, { id: 'ch_2' }], has_more: true },
+      { data: [{ id: 'ch_3' }], has_more: false },
+    ]);
+    const stripe = makeStripeClient('sk_test', fetchImpl);
+    const r = await stripe.listChargesByCustomer('cus_A');
+    expect(r.data.map((c) => c.id)).toEqual(['ch_1', 'ch_2', 'ch_3']);
+    expect(fetchImpl.urls[1]).toContain('starting_after=ch_2'); // cursor = last id of page 1
+  });
+
+  it('stops after one page when has_more is false', async () => {
+    const fetchImpl = fakeFetch([{ data: [{ id: 'ch_1' }], has_more: false }]);
+    const stripe = makeStripeClient('sk_test', fetchImpl);
+    const r = await stripe.listChargesByCustomer('cus_A');
+    expect(r.data.map((c) => c.id)).toEqual(['ch_1']);
+    expect(fetchImpl.urls).toHaveLength(1);
+  });
+
+  it('follows next_page tokens for searchCharges', async () => {
+    const fetchImpl = fakeFetch([
+      { data: [{ id: 's_1' }], has_more: true, next_page: 'pg2' },
+      { data: [{ id: 's_2' }], has_more: false, next_page: null },
+    ]);
+    const stripe = makeStripeClient('sk_test', fetchImpl);
+    const r = await stripe.searchCharges('metadata["contactId"]:"C1"');
+    expect(r.data.map((c) => c.id)).toEqual(['s_1', 's_2']);
+    expect(fetchImpl.urls[1]).toContain('page=pg2');
+  });
+
+  it('returns the raw error object when the first page errors', async () => {
+    const fetchImpl = fakeFetch([{ error: { message: 'bad key' } }]);
+    const stripe = makeStripeClient('sk_test', fetchImpl);
+    const r = await stripe.listChargesByCustomer('cus_A');
+    expect(r.error).toBeTruthy();
   });
 });
