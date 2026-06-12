@@ -21,6 +21,9 @@ const GOAL_PACKS: Record<RangeUnit, number> = { day: 0, week: 2, month: 8, quart
 // chain: calls→talked 13% · talked→booked 58% · booked→showed 43% · showed→buy ~80%.
 const MONTHLY_TARGET = { calls: 300, talk: 40, booked: 23, showed: 10, sales: 8 };
 const WORKDAYS_MO = 21;
+// Calls are the input metric we control — hold the activity bar at >=15/day
+// regardless of the (lower) measured need, and let a busier month raise it.
+const MIN_DAILY_CALLS = 15;
 const workdays = (calDays: number) => Math.max(1, Math.round((calDays * 5) / 7));
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -308,12 +311,13 @@ export default function FunnelPage() {
 
     // per-stage targets — monthly target (dynamic, from the snapshot) scaled to this range's work-days
     const mt = data.targets || MONTHLY_TARGET;
+    const callsTarget = Math.max(mt.calls, MIN_DAILY_CALLS * WORKDAYS_MO); // 15/day activity floor
     const sc = workdays(totalDays) / WORKDAYS_MO;
     const stageTarget = {
-      calls: Math.round(mt.calls * sc), talk: Math.round(mt.talk * sc), booked: Math.round(mt.booked * sc),
+      calls: Math.round(callsTarget * sc), talk: Math.round(mt.talk * sc), booked: Math.round(mt.booked * sc),
       showed: Math.round(mt.showed * sc), sales: Math.round((mt.sales ?? goalPacks) * sc),
     };
-    const dailyCallsTarget = Math.max(1, Math.round(mt.calls / WORKDAYS_MO));
+    const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
       callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board,
