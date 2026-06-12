@@ -153,7 +153,7 @@ export default function DashboardPage() {
         onReschedule={(appt) => setRescheduleAppt(appt)}
       />
 
-      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} onBooked={refetch} />
 
       {hasHadInitial && <BillingDocuments />}
 
