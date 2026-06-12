@@ -105,14 +105,22 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
     fetchSlots();
   }, [fetchSlots]);
 
+  // Don't let the user dismiss the modal while a booking is in flight — the
+  // request continues server-side, so an abandoned modal can leave them
+  // re-booking a slot that actually succeeded (duplicate sessions).
+  const requestClose = useCallback(() => {
+    if (step === 'loading') return;
+    onClose();
+  }, [step, onClose]);
+
   // ESC to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') requestClose();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
 
   const availableDates = new Set(slots.map((s) => s.date));
   const slotsForDate = selectedDate
@@ -205,7 +213,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
 
   return (
     <div className="cp-screen cp-with-modal" style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
-      <div className="cp-modal-scrim" onClick={onClose} aria-hidden="true" />
+      <div className="cp-modal-scrim" onClick={requestClose} aria-hidden="true" />
       <div className="cp-modal cp-modal-sm" role="dialog" aria-label="Book a session">
         <header className="cp-modal-head">
           <div>
@@ -216,7 +224,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                 : <>Find a time <em>that works.</em></>}
             </h2>
           </div>
-          <button type="button" className="cp-modal-close" aria-label="Close" onClick={onClose}>✕</button>
+          <button type="button" className="cp-modal-close" aria-label="Close" onClick={requestClose} disabled={step === 'loading'}>✕</button>
         </header>
 
         <div className="cp-modal-body">

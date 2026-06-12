@@ -9,6 +9,10 @@ interface ProgressTrackerProps {
   allAppointments: Appointment[];
   onRefetch: () => void;
   onBookSession?: () => void;
+  /** Open the booking modal in reschedule mode for a follow-up appointment.
+   *  The modal books the new slot first, then cancels this one — so abandoning
+   *  it never leaves the client with zero sessions. */
+  onReschedule?: (appt: Appointment) => void;
 }
 
 // Cap on dot rendering — when packageSize > MAX_DOTS we still show MAX_DOTS
@@ -120,7 +124,7 @@ function buildIcsUrl(apt: Appointment): string {
   return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
 }
 
-export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
+export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession, onReschedule }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -191,23 +195,37 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
     return null; // follow-up — use modal
   }
 
-  async function handleReschedule(appointmentId: string, title: string) {
-    setReschedulingId(appointmentId);
-    setCancelError(null);
-    try {
-      await cancelAppointment(appointmentId, title);
-      setConfirmingId(null);
-      onRefetch();
-      const externalUrl = getRescheduleUrl(title);
-      if (externalUrl) {
+  async function handleReschedule(appt: Appointment) {
+    const title = appt.title || 'Session';
+    const externalUrl = getRescheduleUrl(title);
+
+    // Initial / discovery sessions are rebooked on dedicated pages, not the
+    // modal — there's no safe book-first-then-cancel there, so cancel this one
+    // then open the booking page.
+    if (externalUrl) {
+      setReschedulingId(appt.id);
+      setCancelError(null);
+      try {
+        await cancelAppointment(appt.id, title);
+        setConfirmingId(null);
+        onRefetch();
         window.open(externalUrl, '_blank', 'noopener,noreferrer');
-      } else if (onBookSession) {
-        onBookSession();
+      } catch (err) {
+        setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
+      } finally {
+        setReschedulingId(null);
       }
-    } catch (err) {
-      setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
-    } finally {
-      setReschedulingId(null);
+      return;
+    }
+
+    // Follow-up — hand off to the modal in reschedule mode. It books the new
+    // slot first and only then cancels this one, so abandoning the flow never
+    // drops the client to zero sessions.
+    setConfirmingId(null);
+    if (onReschedule) {
+      onReschedule(appt);
+    } else if (onBookSession) {
+      onBookSession();
     }
   }
 
@@ -390,7 +408,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                     <button
                       type="button"
                       onClick={() => confirmMode === 'reschedule'
-                        ? handleReschedule(nextApt.id, apptTitle)
+                        ? handleReschedule(nextApt)
                         : handleCancel(nextApt.id, apptTitle)
                       }
                       disabled={isCancelling || isRescheduling}
@@ -525,7 +543,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                           type="button"
                           className="cp-btn cp-btn-row cp-btn-danger"
                           onClick={() => confirmMode === 'reschedule'
-                            ? handleReschedule(s.id, apptTitle)
+                            ? handleReschedule(s)
                             : handleCancel(s.id, apptTitle)
                           }
                           disabled={isCancelling || isRescheduling}

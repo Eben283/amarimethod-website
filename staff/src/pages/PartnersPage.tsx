@@ -311,10 +311,12 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'linkedin-req': 'LinkedIn connect',
   'instagram-msg': 'Instagram DM',
   'in-person': 'In-person',
-  // 'skip' never persists as partner_last_signal — only sent to the outcome
-  // endpoint to trigger the partner_stage=dropped transition. Label exists
-  // only to satisfy the Record<PartnerLastSignal,…> type.
+  // 'skip' and 'note' never persist as partner_last_signal — they're only sent
+  // to the outcome endpoint ('skip' → partner_stage=dropped, 'note' → note-only
+  // save). Labels exist to satisfy the Record<PartnerLastSignal,…> type and as a
+  // fallback if the backend ever echoes one back.
   'skip': 'Skipped',
+  'note': 'Note added',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

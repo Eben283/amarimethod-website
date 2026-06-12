@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Appointment } from '../types/portal';
 import PortalNav from '../components/PortalNav';
 import QuickActions from '../components/QuickActions';
 import BillingDocuments from '../components/BillingDocuments';
@@ -15,6 +16,7 @@ export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
@@ -105,8 +107,16 @@ export default function DashboardPage() {
         onOpenSettings={() => setShowSettings(true)}
       />
 
-      {showBookingModal && (
-        <BookingModal onClose={() => setShowBookingModal(false)} />
+      {(showBookingModal || rescheduleAppt) && (
+        <BookingModal
+          rescheduleFor={rescheduleAppt}
+          onClose={() => {
+            setShowBookingModal(false);
+            setRescheduleAppt(null);
+            // Reflect any new booking / reschedule in the dashboard.
+            refetch();
+          }}
+        />
       )}
 
       {showSettings && (
@@ -140,9 +150,10 @@ export default function DashboardPage() {
         // you-go, mid-package, low-confidence). Zero-left uses direct package
         // purchase links instead.
         onBookSession={() => setShowBookingModal(true)}
+        onReschedule={(appt) => setRescheduleAppt(appt)}
       />
 
-      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} onBooked={refetch} />
 
       {hasHadInitial && <BillingDocuments />}
 

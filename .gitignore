@@ -62,3 +62,6 @@ videos/hero-candidates-v2/
 
 # Exception: condition-page hero loops are committed assets
 !videos/condition-hero/*.mp4
+
+# TypeScript incremental build cache (from tsc -b)
+*.tsbuildinfo
