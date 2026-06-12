@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Trophy, X, User, Check } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Trophy, X, User, Check } from 'lucide-react';
 import { getFunnel, ApiError, type FunnelData } from '../lib/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -77,6 +77,7 @@ export default function FunnelPage() {
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<Range>({ unit: 'week', offset: 0 });
   const [boardOpen, setBoardOpen] = useState(false);
+  const [stage, setStage] = useState<'calls' | 'talked' | 'booked' | 'showed' | 'sales'>('calls');
 
   const load = useCallback(async () => {
     setIsLoading(true); setError(null);
@@ -125,9 +126,17 @@ export default function FunnelPage() {
     const booked = sessions.length;
     const showed = sessions.filter((s) => s.showed).length;
 
-    const pulse: { d: string; n: number }[] = [];
-    for (let i = 13; i >= 0; i--) { const d = toStr(addDays(new Date(), -i)); pulse.push({ d, n: (data.calls || []).filter((c) => c.d === d).length }); }
-    const callsToday = (data.calls || []).filter((c) => c.d === toStr(new Date())).length;
+    const day14: string[] = []; for (let i = 13; i >= 0; i--) day14.push(toStr(addDays(new Date(), -i)));
+    const countOn: Record<string, (d: string) => number> = {
+      calls: (d) => (data.calls || []).filter((c) => c.d === d).length,
+      talked: (d) => (data.calls || []).filter((c) => c.d === d && c.o === 'talk').length,
+      booked: (d) => (data.sessions || []).filter((s) => s.d === d).length,
+      showed: (d) => (data.sessions || []).filter((s) => s.d === d && s.showed).length,
+      sales: (d) => (data.sales || []).filter((s) => s.d === d).length,
+    };
+    const pulses: Record<string, { d: string; n: number }[]> = {};
+    (['calls', 'talked', 'booked', 'showed', 'sales'] as const).forEach((k) => { pulses[k] = day14.map((d) => ({ d, n: countOn[k](d) })); });
+    const callsToday = countOn.calls(toStr(new Date()));
 
     const cohorts = new Map<string, { sold: number; talk: number; booked: number; showed: number; sales: number }>();
     const row = (c: string) => { if (!cohorts.has(c)) cohorts.set(c, { sold: 0, talk: 0, booked: 0, showed: 0, sales: 0 }); return cohorts.get(c)!; };
@@ -147,7 +156,7 @@ export default function FunnelPage() {
     const dailyCallsTarget = Math.max(1, Math.round(mt.calls / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
-      callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulse, callsToday, board,
+      callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board,
       stageTarget, dailyCallsTarget };
   }, [data, range]);
 
@@ -169,8 +178,21 @@ export default function FunnelPage() {
 
   const v = view;
   const goalHit = !v.isDay && v.equivs >= v.goalPacks;
-  const maxPulse = Math.max(1, ...v.pulse.map((p) => p.n));
   const todayStr = toStr(new Date());
+
+  // per-stage drill-in — the tapped ring drives the trend card below (Oura-style)
+  const SM: Record<string, { label: string; col: string; count: number; target: number; pulse: { d: string; n: number }[] }> = {
+    calls:  { label: 'Calls',  col: COL.plum,   count: v.callsN,     target: v.stageTarget.calls,  pulse: v.pulses.calls },
+    talked: { label: 'Talked', col: COL.maroon, count: v.talk,       target: v.stageTarget.talk,   pulse: v.pulses.talked },
+    booked: { label: 'Booked', col: COL.rust,   count: v.booked,     target: v.stageTarget.booked, pulse: v.pulses.booked },
+    showed: { label: 'Showed', col: COL.ember,  count: v.showed,     target: v.stageTarget.showed, pulse: v.pulses.showed },
+    sales:  { label: 'Sales',  col: COL.gold,   count: v.salesCount, target: v.stageTarget.sales,  pulse: v.pulses.sales },
+  };
+  const sm = SM[stage];
+  const smMax = Math.max(1, ...sm.pulse.map((p) => p.n));
+  const smHit = sm.target >= 1 && sm.count >= sm.target;
+  const smPct = sm.target >= 1 ? Math.min(1, sm.count / sm.target) : 0;
+  const RING_R = 18, RING_C = 2 * Math.PI * 18;
 
   // five funnel rings, widest → narrowest, mapped to the real stages
   const rings = [
@@ -260,14 +282,18 @@ export default function FunnelPage() {
           <div key={rangeKey} className="relative flex flex-col items-center">
             {rings.map((r, i) => {
               const hit = r.t >= 1 && r.n >= r.t;
+              const isSel = stage === r.key;
               return (
               <div key={r.key} className="flex w-full flex-col items-center">
-                <div className="fn-ring relative flex items-center justify-center" style={{ width: `${r.w}%`, animationDelay: `${i * 110}ms` }}>
+                <div className="fn-ring relative flex cursor-pointer items-center justify-center active:scale-95" style={{ width: `${r.w}%`, animationDelay: `${i * 110}ms` }}
+                  role="button" tabIndex={0} onClick={() => setStage(r.key as typeof stage)}>
                   {/* the band */}
                   <div className="relative w-full" style={{ height: 46 }}>
                     <div className="absolute inset-0 rounded-[50%/22px]" style={{ background: r.col,
                       boxShadow: hit
                         ? `inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18), 0 0 0 2.5px ${COL.green}, 0 0 18px ${COL.green}55`
+                        : isSel
+                        ? `inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18), 0 0 0 2.5px ${COL.ink}`
                         : 'inset 0 -7px 0 rgba(0,0,0,.14), inset 0 5px 0 rgba(255,255,255,.18)' }} />
                     <div className="absolute inset-0 flex items-center justify-center gap-1.5" style={{ color: r.key === 'showed' || r.key === 'sales' ? COL.ink : '#fff' }}>
                       <span className="font-serif text-2xl font-bold tabular-nums">{r.n}</span>
@@ -283,8 +309,8 @@ export default function FunnelPage() {
                 </div>
                 {i === 0 && <div className="py-1 text-[11px]" style={{ color: COL.inkSoft }}>🚫 {v.none} no answer · 📩 {v.vm} voicemail</div>}
                 {i < 4 && (
-                  <div className="my-1.5 flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px]" style={{ background: COL.bg, border: `1px solid ${COL.line}` }}>
-                    <span aria-hidden style={{ color: COL.maroon }}>↓</span>
+                  <div className="my-1.5 flex items-center gap-1 rounded-full px-3 py-1 text-[11px]" style={{ background: COL.bg, border: `1px solid ${COL.line}` }}>
+                    <ChevronDown className="h-3 w-3" style={{ color: COL.inkSoft }} strokeWidth={2.5} />
                     {drops[i].v === '—'
                       ? <span style={{ color: COL.inkSoft }}>{drops[i].none}</span>
                       : <span><b className="tabular-nums" style={{ color: COL.ink }}>{drops[i].v}</b> <span style={{ color: COL.inkSoft }}>{drops[i].word}</span></span>}
@@ -310,23 +336,35 @@ export default function FunnelPage() {
           <p className="mt-1 text-center text-[10px]" style={{ color: COL.inkSoft }}>{v.salesCount} sale{v.salesCount === 1 ? '' : 's'} · {v.sessionsSold} sessions · booked = bookings made in this period</p>
         </div>
 
-        {/* calls pulse */}
+        {/* per-stage trend — tap a ring above to switch */}
         <div className="fn-reveal mb-5 rounded-2xl p-4" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold">Calls today</span>
-            <span className="flex items-center text-sm tabular-nums">
-              <b className="font-serif text-xl" style={{ color: v.callsToday >= v.dailyCallsTarget ? COL.green : COL.maroon }}>{v.callsToday}</b>
-              <span style={{ color: COL.inkSoft }}>&nbsp;/ {v.dailyCallsTarget}</span>
-              {v.callsToday >= v.dailyCallsTarget && <Check className="ml-1 h-4 w-4" style={{ color: COL.green }} strokeWidth={3} />}
-            </span>
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest" style={{ color: COL.inkSoft }}>tap a ring above to switch</p>
+              <h3 className="font-serif text-lg leading-tight" style={{ color: sm.col }}>{sm.label}</h3>
+            </div>
+            {sm.target >= 1 && (
+              <div className="relative h-14 w-14 shrink-0">
+                <svg viewBox="0 0 44 44" className="h-14 w-14 -rotate-90">
+                  <circle cx="22" cy="22" r={RING_R} fill="none" stroke="#EBE2D6" strokeWidth="4" />
+                  <circle cx="22" cy="22" r={RING_R} fill="none" stroke={smHit ? COL.green : sm.col} strokeWidth="4" strokeLinecap="round"
+                    strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - smPct)} style={{ transition: 'stroke-dashoffset .9s cubic-bezier(.22,1,.36,1)' }} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-serif text-base font-bold leading-none" style={{ color: COL.ink }}>{sm.count}</span>
+                  <span className="text-[8px]" style={{ color: COL.inkSoft }}>/ {sm.target}</span>
+                </div>
+                {smHit && <span className="fn-pop absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ background: COL.green }}><Check className="h-3 w-3" strokeWidth={3} /></span>}
+              </div>
+            )}
           </div>
-          <div className="mb-2 h-1.5 overflow-hidden rounded-full" style={{ background: '#EBE2D6' }}>
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (v.callsToday / Math.max(1, v.dailyCallsTarget)) * 100)}%`, background: v.callsToday >= v.dailyCallsTarget ? COL.green : COL.ember }} />
+          <div className="flex h-14 items-end gap-[3px]">
+            {sm.pulse.map((p) => <div key={p.d} title={`${p.d}: ${p.n}`} className="flex-1 rounded-t-md transition-all" style={{ height: `${Math.max(5, (p.n / smMax) * 100)}%`, background: p.d === todayStr ? sm.col : '#EBE2D6' }} />)}
           </div>
-          <div className="flex h-10 items-end gap-[3px]">
-            {v.pulse.map((p) => <div key={p.d} title={`${p.d}: ${p.n}`} className="flex-1 rounded-t-md transition-all" style={{ height: `${Math.max(8, (p.n / maxPulse) * 100)}%`, background: p.d === todayStr ? COL.ember : '#EBE2D6' }} />)}
+          <div className="mt-1 flex justify-between text-[10px]" style={{ color: COL.inkSoft }}>
+            <span>last 14 days</span>
+            <span>this {range.unit}: <b style={{ color: COL.ink }}>{sm.count}</b>{sm.target >= 1 && ` / ${sm.target}`}</span>
           </div>
-          <p className="mt-1 text-right text-[10px]" style={{ color: COL.inkSoft }}>last 14 days</p>
         </div>
 
         {/* scoreboard */}
