@@ -67,17 +67,77 @@ export async function getGhlToken(context) {
   throw new Error("No GHL API credentials available");
 }
 
+// Single-flight latch (per isolate). GHL issues SINGLE-USE refresh tokens: each
+// refresh invalidates the previous refresh token and returns a new one. If two
+// requests refresh concurrently with the same token, one wins and the other's
+// token is already dead — and whichever writes KV last can leave a stale/invalid
+// refresh token stored, cascading into global 401s until manual re-auth.
+//
+// This latch collapses concurrent refreshes WITHIN one isolate to a single
+// network call. The double-checked KV read inside performTokenRefresh covers the
+// cross-isolate case: a second refresher re-reads KV first and reuses the token a
+// peer just wrote instead of burning the refresh token again. This is a mitigation,
+// not an airtight distributed lock (KV has no atomic CAS) — the cron token-worker
+// keeping tokens fresh with a 6h margin is what makes on-demand refresh rare.
+let refreshInFlight = null;
+
 /**
  * Refresh the GHL OAuth2 access token using the refresh token.
- * Stores new tokens in KV and returns the new access token.
+ * Stores new tokens in KV and returns the new access token (or null on failure).
+ * Concurrent calls within one isolate share a single in-flight refresh.
  */
-async function refreshGhlToken(context, refreshToken) {
+function refreshGhlToken(context, refreshToken, options = {}) {
+  if (refreshInFlight) return refreshInFlight;
+  refreshInFlight = performTokenRefresh(context, refreshToken, options).finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
+async function performTokenRefresh(context, refreshToken, options = {}) {
+  const kv = context.env.PORTAL_KV;
+  // The 401-retry path passes the token GHL just rejected. The double-check must
+  // NOT hand that same token back — only short-circuit when KV holds a DIFFERENT
+  // (peer-refreshed) token. Without this, a token rejected before its stored
+  // expiry would be returned unchanged and the retry would 401 again, defeating
+  // the self-heal. Undefined for the expiry-driven path (any valid token is fine).
+  const knownBadToken = options.knownBadToken;
+
+  // Double-check: another isolate (or the cron token-worker) may have just
+  // refreshed. If KV already holds a still-valid access token, reuse it rather
+  // than burning the single-use refresh token on a redundant refresh.
+  if (kv) {
+    try {
+      const [existingToken, expiryStr] = await Promise.all([
+        kv.get(KV_ACCESS_TOKEN),
+        kv.get(KV_TOKEN_EXPIRY),
+      ]);
+      const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+      if (existingToken && existingToken !== knownBadToken && expiry > Date.now() + REFRESH_BUFFER_MS) {
+        return existingToken;
+      }
+    } catch (err) {
+      console.error("[ghl] KV double-check read error:", err.message);
+    }
+  }
+
   const clientId = context.env.GHL_CLIENT_ID;
   const clientSecret = context.env.GHL_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
     console.error("[ghl] Missing GHL_CLIENT_ID or GHL_CLIENT_SECRET");
     return null;
+  }
+
+  // Use the freshest refresh token available — the one passed in may already be
+  // stale if a peer refreshed between the caller's read and now.
+  let currentRefreshToken = refreshToken;
+  if (kv) {
+    try {
+      currentRefreshToken = (await kv.get(KV_REFRESH_TOKEN)) || refreshToken;
+    } catch (err) {
+      console.error("[ghl] KV refresh-token read error:", err.message);
+    }
   }
 
   try {
@@ -88,7 +148,7 @@ async function refreshGhlToken(context, refreshToken) {
         grant_type: "refresh_token",
         client_id: clientId,
         client_secret: clientSecret,
-        refresh_token: refreshToken,
+        refresh_token: currentRefreshToken,
       }).toString(),
     });
 
@@ -109,14 +169,15 @@ async function refreshGhlToken(context, refreshToken) {
     }
 
     // Store new tokens in KV
-    const kv = context.env.PORTAL_KV;
     const newExpiry = Date.now() + expiresIn * 1000;
 
-    await Promise.all([
-      kv.put(KV_ACCESS_TOKEN, newAccessToken),
-      kv.put(KV_REFRESH_TOKEN, newRefreshToken || refreshToken),
-      kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
-    ]);
+    if (kv) {
+      await Promise.all([
+        kv.put(KV_ACCESS_TOKEN, newAccessToken),
+        kv.put(KV_REFRESH_TOKEN, newRefreshToken || currentRefreshToken),
+        kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
+      ]);
+    }
 
     console.log("[ghl] Token refreshed successfully");
     return newAccessToken;
@@ -151,8 +212,10 @@ export async function ghlFetch(context, url, options = {}) {
     if (kv) {
       const refreshToken = await kv.get(KV_REFRESH_TOKEN);
       if (refreshToken) {
-        const newToken = await refreshGhlToken(context, refreshToken);
-        if (newToken) {
+        // Pass the rejected token so the refresh double-check forces a real
+        // refresh instead of handing back the same token that just 401'd.
+        const newToken = await refreshGhlToken(context, refreshToken, { knownBadToken: token });
+        if (newToken && newToken !== token) {
           const retryHeaders = { ...ghlHeaders(newToken), ...options.headers };
           return fetch(url, { ...options, headers: retryHeaders });
         }

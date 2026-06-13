@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ghlFetch, applyTagDelta } from './ghl.js';
+import { ghlFetch, applyTagDelta, getGhlToken } from './ghl.js';
+
+const GHL_TOKEN_URL = 'https://services.leadconnectorhq.com/oauth/token';
 
 // No PORTAL_KV → getGhlToken returns the static GHL_API_KEY with no network,
 // so these tests exercise ONLY the retry policy in ghlFetch.
@@ -135,5 +137,97 @@ describe('applyTagDelta — additive tag changes (never replaces the array)', ()
     const f = captureFetch(422);
     vi.stubGlobal('fetch', f);
     await expect(applyTagDelta(ctx, 'c1', { add: ['x'] })).rejects.toThrow(/tag add failed/);
+  });
+});
+
+describe('refreshGhlToken — single-use refresh token safety', () => {
+  // Minimal in-memory KV stub matching the get/put surface ghl.js uses.
+  function fakeKv(store) {
+    return {
+      get: vi.fn(async (k) => (k in store ? store[k] : null)),
+      put: vi.fn(async (k, v) => { store[k] = v; }),
+    };
+  }
+
+  beforeEach(() => {
+    // Make ghlFetch backoff instant in case any retry path runs.
+    vi.stubGlobal('setTimeout', (cb) => { cb(); return 0; });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('collapses concurrent in-isolate refreshes into ONE token-URL call', async () => {
+    const store = {
+      ghl_refresh_token: 'R0',
+      ghl_token_expiry: String(Date.now() - 1000), // expired → forces refresh
+    };
+    const ctx2 = { env: { PORTAL_KV: fakeKv(store), GHL_CLIENT_ID: 'c', GHL_CLIENT_SECRET: 's' } };
+
+    let tokenCalls = 0;
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url === GHL_TOKEN_URL) {
+        tokenCalls++;
+        return { ok: true, status: 200, json: async () => ({ access_token: 'A1', refresh_token: 'R1', expires_in: 86400 }) };
+      }
+      return resp(200);
+    }));
+
+    const [t1, t2] = await Promise.all([getGhlToken(ctx2), getGhlToken(ctx2)]);
+    expect(t1).toBe('A1');
+    expect(t2).toBe('A1');
+    expect(tokenCalls).toBe(1); // single-flight — refresh token burned exactly once
+    expect(store.ghl_refresh_token).toBe('R1'); // rotated token persisted
+  });
+
+  it('on 401, when a PEER already wrote a different valid token, reuses it without refreshing', async () => {
+    // ghlFetch starts with T_old; a peer refresh lands T_new in KV before the
+    // 401 handler reads it. The double-check should hand back T_new (it differs
+    // from the rejected token) without burning the refresh token.
+    const store = {
+      ghl_access_token: 'T_old',
+      ghl_refresh_token: 'R0',
+      ghl_token_expiry: String(Date.now() + 60 * 60 * 1000),
+    };
+    const ctx2 = { env: { PORTAL_KV: fakeKv(store), GHL_CLIENT_ID: 'c', GHL_CLIENT_SECRET: 's' } };
+
+    let tokenCalls = 0;
+    const seenAuth = [];
+    vi.stubGlobal('fetch', vi.fn(async (url, opts) => {
+      if (url === GHL_TOKEN_URL) { tokenCalls++; throw new Error('must not refresh'); }
+      seenAuth.push(opts?.headers?.Authorization);
+      store.ghl_access_token = 'T_new'; // a peer refreshed concurrently
+      return resp(401);
+    }));
+
+    await ghlFetch(ctx2, 'https://api/x');
+    expect(tokenCalls).toBe(0); // peer already refreshed → no burn
+    expect(store.ghl_refresh_token).toBe('R0'); // untouched
+    expect(seenAuth[0]).toBe('Bearer T_old'); // first call used the stale token
+    expect(seenAuth[1]).toBe('Bearer T_new'); // retry used the peer's token
+  });
+
+  it('on 401, when the SAME rejected token is still in KV, forces a real refresh (self-heal)', async () => {
+    // The regression guard: a token rejected BEFORE its stored expiry must not be
+    // handed back by the double-check, or the retry just 401s again.
+    const store = {
+      ghl_access_token: 'BAD',
+      ghl_refresh_token: 'R0',
+      ghl_token_expiry: String(Date.now() + 60 * 60 * 1000), // unexpired by our clock, but GHL rejects it
+    };
+    const ctx2 = { env: { PORTAL_KV: fakeKv(store), GHL_CLIENT_ID: 'c', GHL_CLIENT_SECRET: 's' } };
+
+    let tokenCalls = 0;
+    vi.stubGlobal('fetch', vi.fn(async (url, opts) => {
+      if (url === GHL_TOKEN_URL) {
+        tokenCalls++;
+        return { ok: true, status: 200, json: async () => ({ access_token: 'A1', refresh_token: 'R1', expires_in: 86400 }) };
+      }
+      const auth = opts?.headers?.Authorization || '';
+      return auth.includes('A1') ? resp(200) : resp(401);
+    }));
+
+    const r = await ghlFetch(ctx2, 'https://api/x');
+    expect(tokenCalls).toBe(1); // real refresh happened despite the unexpired KV token
+    expect(r.status).toBe(200); // retry with the fresh token succeeded
+    expect(store.ghl_access_token).toBe('A1');
   });
 });
