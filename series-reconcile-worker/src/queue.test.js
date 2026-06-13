@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextChunk, isQueueStale, remainderAfterProcessing } from './queue.js';
+import { nextChunk, isQueueStale, remainderAfterProcessing, requeueAfterSweep } from './queue.js';
 
 describe('nextChunk', () => {
   it('slices the first N and returns the rest', () => {
@@ -41,5 +41,25 @@ describe('remainderAfterProcessing', () => {
   });
   it('nothing processed (immediate abort) → whole chunk re-queued ahead of the rest', () => {
     expect(remainderAfterProcessing(['a', 'b'], 0, ['c'])).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('requeueAfterSweep', () => {
+  it('appends errored ids to the BACK so they retry without dominating the chunk', () => {
+    // chunk [a,b,c] fully processed, rest [d,e]; b errored → retried after the rest
+    expect(requeueAfterSweep(['a', 'b', 'c'], 3, ['d', 'e'], ['b'])).toEqual(['d', 'e', 'b']);
+  });
+  it('no errors → identical to remainderAfterProcessing', () => {
+    expect(requeueAfterSweep(['a', 'b'], 2, ['c'], [])).toEqual(['c']);
+  });
+  it('dedupes an errored id that is already in the base (unprocessed tail)', () => {
+    // a+b unprocessed (abort at 0), b also errored → b must not appear twice
+    expect(requeueAfterSweep(['a', 'b'], 0, ['c'], ['b'])).toEqual(['a', 'b', 'c']);
+  });
+  it('drops falsy / duplicate errored ids', () => {
+    expect(requeueAfterSweep(['a'], 1, [], ['x', 'x', '', null])).toEqual(['x']);
+  });
+  it('tolerates undefined erroredIds', () => {
+    expect(requeueAfterSweep(['a', 'b'], 2, ['c'], undefined)).toEqual(['c']);
   });
 });
