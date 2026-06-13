@@ -7,8 +7,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, ApiError,
-  type FollowupBrief, type EditableFieldKey,
+  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach, ApiError,
+  type FollowupBrief, type EditableFieldKey, type CallCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
@@ -609,6 +609,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           )}
 
+          <CoachPanel contactId={contactId} />
+
           {/* activity timeline */}
           <div>
             <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Recent activity</p>
@@ -696,6 +698,40 @@ function Details({ p }: { p: PartnerProspect }) {
 // "Build brief": Claude returns who-they-are + talking points + drafts tailored
 // to this person + their thread. Drafted, never sent. On failure, falls back to
 // the static saved texts. Button-triggered (one model call per tap).
+// Shows the daily call-coach output for this contact (recording → transcript →
+// Claude). Lazy: only mounts when a card is expanded. Silent if there's none.
+function CoachPanel({ contactId }: { contactId: string }) {
+  const [coach, setCoach] = useState<CallCoach | null | 'loading'>('loading');
+  useEffect(() => {
+    let live = true;
+    getCallCoach(contactId).then((c) => { if (live) setCoach(c); });
+    return () => { live = false; };
+  }, [contactId]);
+  if (coach === 'loading' || coach === null) return null;
+  const c = coach.coaching;
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
+      <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        Call coach{coach.hasAudio ? ' · from recording' : ''} · {coach.date}
+      </p>
+      {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
+      {c.whatWorked?.length > 0 && (
+        <div className="mt-1.5">
+          <p className="text-[11px] font-medium text-emerald-700">What worked</p>
+          <ul className="list-disc pl-4 text-xs text-amari-charcoal">{c.whatWorked.map((x, i) => <li key={i}>{x}</li>)}</ul>
+        </div>
+      )}
+      {c.whatToImprove?.length > 0 && (
+        <div className="mt-1.5">
+          <p className="text-[11px] font-medium text-amber-700">To improve</p>
+          <ul className="list-disc pl-4 text-xs text-amari-charcoal">{c.whatToImprove.map((x, i) => <li key={i}>{x}</li>)}</ul>
+        </div>
+      )}
+      {c.nextStep && <p className="mt-1.5 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>}
+    </div>
+  );
+}
+
 function BriefPanel({ p, d }: { p: PartnerProspect; d: Derived }) {
   const [brief, setBrief] = useState<FollowupBrief | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');

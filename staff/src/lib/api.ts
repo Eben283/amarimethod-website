@@ -459,4 +459,34 @@ export async function buildFollowupBrief(
   }
 }
 
+// ── Call-coach (daily worker: recording → Whisper → Claude coaching) ─────────
+export interface CallCoach {
+  contactId: string;
+  contactName?: string;
+  date: string;
+  hasAudio?: boolean;
+  callCount?: number;
+  textCount?: number;
+  coaching: {
+    summary: string;
+    whatWorked: string[];
+    whatToImprove: string[];
+    objections: string[];
+    nextStep: string;
+    signal?: string;
+  };
+}
+
+// Returns the contact's coaching for `date` (defaults to yesterday, the cron's
+// output day), or null if there's none — silent, not an error on the card.
+export async function getCallCoach(contactId: string, date?: string): Promise<CallCoach | null> {
+  try {
+    const qs = `contactId=${encodeURIComponent(contactId)}${date ? `&date=${date}` : ''}`;
+    const r = await fetchApi<CallCoach | { error: string }>(`/call-coach?${qs}`);
+    return r && 'coaching' in r ? (r as CallCoach) : null;
+  } catch {
+    return null;
+  }
+}
+
 export { ApiError };
