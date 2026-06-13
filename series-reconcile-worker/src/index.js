@@ -27,7 +27,7 @@
 import { listRecentCompletedOrders, getOrderDetail, fetchActiveSeriesContactIds } from "./ghl.js";
 import { reconcileOrder } from "./reconcile.js";
 import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
-import { nextChunk, isQueueStale, remainderAfterProcessing } from "./queue.js";
+import { nextChunk, isQueueStale, requeueAfterSweep } from "./queue.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 // Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
@@ -228,12 +228,15 @@ async function runReconcile(env, trigger, lookbackHours) {
       } else {
         const { chunk, remaining } = nextChunk(queue, SYNC_SWEEP_CHUNK);
         const r = await syncContacts(env, chunk, {}, { maxPerRun: SYNC_SWEEP_CHUNK });
-        const newQueue = remainderAfterProcessing(chunk, chunk.length, remaining);
+        // Re-queue contacts that errored this run (transient GHL failures) to the
+        // back so they're retried, not dropped until the next ~daily rebuild.
+        const erroredIds = r.results.filter((x) => x.status === "errored").map((x) => x.contactId);
+        const newQueue = requeueAfterSweep(chunk, chunk.length, remaining, erroredIds);
         await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(newQueue));
         const synced = r.results.filter((x) => x.status === "synced");
-        syncSummary = { ...r, queueRemaining: newQueue.length, queueRebuilt: false };
+        syncSummary = { ...r, queueRemaining: newQueue.length, requeuedErrored: erroredIds.length, queueRebuilt: false };
         console.log(
-          `[series-reconcile] field-sync sweep: chunk of ${chunk.length} (${synced.length} written), ${newQueue.length} left in queue`
+          `[series-reconcile] field-sync sweep: chunk of ${chunk.length} (${synced.length} written, ${erroredIds.length} re-queued), ${newQueue.length} left in queue`
         );
       }
     } catch (syncErr) {

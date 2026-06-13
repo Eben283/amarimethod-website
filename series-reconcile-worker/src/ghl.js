@@ -180,6 +180,7 @@ const SWEEP_FIELD = {
 export async function fetchActiveSeriesContactIds(env) {
   const ids = [];
   const PAGE_CAP = 10; // 1000 contacts (matches daily-audit)
+  let hitCap = false;
   for (let page = 1; page <= PAGE_CAP; page++) {
     const data = await ghlPost(env, "/contacts/search", {
       locationId: LOCATION_ID,
@@ -196,6 +197,17 @@ export async function fetchActiveSeriesContactIds(env) {
       if (seriesType !== "none" || remaining > 0 || prepaid) ids.push(c.id);
     }
     if (contacts.length < 100) break;
+    if (page === PAGE_CAP) hitCap = true; // full page AT the cap → more contacts remain
+  }
+  // Surface the cap so we widen the scan as the contact base grows past 1000,
+  // instead of silently dropping active-series contacts from the sweep queue.
+  // daily-audit-worker has the twin scan with the same warning.
+  if (hitCap) {
+    console.warn(
+      `[series-reconcile] fetchActiveSeriesContactIds hit the ${PAGE_CAP * 100}-contact ` +
+      `pagination cap; active-series contacts past that are unqueued this rebuild. ` +
+      `Raise PAGE_CAP in ghl.js.`
+    );
   }
   return ids;
 }

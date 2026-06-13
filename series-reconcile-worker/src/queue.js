@@ -37,3 +37,16 @@ export function remainderAfterProcessing(chunk, processedCount, rest) {
   );
   return [...unprocessed, ...(Array.isArray(rest) ? rest : [])];
 }
+
+// Build the next queue after a sweep, re-queuing contacts that ERRORED this run
+// so a transient GHL failure (5xx / subrequest-budget) is retried instead of
+// being dropped until the ~daily rebuild. Errored ids go to the BACK — never
+// the front — so a persistently-failing contact can't dominate the chunk budget
+// or starve the rest of the queue. Deduped against the base so an id can't appear
+// twice (e.g. if it was both unprocessed and errored).
+export function requeueAfterSweep(chunk, processedCount, rest, erroredIds) {
+  const base = remainderAfterProcessing(chunk, processedCount, rest);
+  const seen = new Set(base);
+  const errs = [...new Set(erroredIds || [])].filter((id) => id && !seen.has(id));
+  return [...base, ...errs];
+}
