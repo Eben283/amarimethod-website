@@ -6,6 +6,7 @@ import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
+import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classification.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -30,11 +31,6 @@ const FIELD_IDS = {
 //   sessions_remaining = prepaid package balance ("when do I need to act?")
 //     Excludes everything above PLUS entrainments (billed separately) AND
 //     partner-initials (comp perk) — neither draws from a prepaid package.
-const NON_JOURNEY_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
-const NON_PACKAGE_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
-// Back-compat alias — older code refs may exist; keep the name pointing at
-// the package predicate (the historical meaning).
-const NON_SESSION_PATTERNS = NON_PACKAGE_PATTERNS;
 
 // Garrett's protocol pairs a follow-up with an immediately-adjacent entrainment.
 // When a follow-up is marked showed, the entrainment within ±90 min is auto-flipped.
@@ -175,8 +171,8 @@ export async function onRequestPost(context) {
     const appointmentTitle = body.appointmentTitle || "";
     const calendarName = body.calendarName || "";
     const titleAndCal = `${appointmentTitle} ${calendarName}`;
-    const countsTowardLifetime = !NON_JOURNEY_PATTERNS.test(titleAndCal);
-    const drawsFromPackage = !NON_PACKAGE_PATTERNS.test(titleAndCal);
+    const countsTowardLifetime = !NON_JOURNEY_PATTERN.test(titleAndCal);
+    const drawsFromPackage = !NON_PACKAGE_PATTERN.test(titleAndCal);
     const isSession = drawsFromPackage; // back-compat API field
     const needsFields = countsTowardLifetime || drawsFromPackage;
 
