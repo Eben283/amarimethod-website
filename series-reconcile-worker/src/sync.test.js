@@ -100,4 +100,19 @@ describe('syncFieldsForContact — guardrail short-circuits', () => {
     const res = await syncFieldsForContact(env(), 'c2', {});
     expect(res.status).toBe('skipped-recent-edit');
   });
+
+  it('skips a low-confidence derivation — protects a real prepaid balance from being zeroed', async () => {
+    // session_prepaid="yes" with NO orders → deriveLedger can't derive a count
+    // (purchased=0) → ambiguity → confidence "low". The worker must NOT write a
+    // derived 0 over the client's real prepaid balance (5 here).
+    const contact = {
+      customFields: [
+        { id: 'sgQ5EbJWhvTfGVhStaOO', value: 'yes' }, // session_prepaid
+        { id: 'wrQSkx6BhXwDGIn1d0V4', value: '5' },    // sessions_remaining — must survive
+      ],
+    };
+    stubGhl(contact); // no orders / invoices / appointments
+    const res = await syncFieldsForContact(env(), 'c3', {});
+    expect(res.status).toBe('skipped-low-confidence');
+  });
 });
