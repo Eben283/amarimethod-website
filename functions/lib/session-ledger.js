@@ -14,7 +14,9 @@
 // computeSessionLedger() is the I/O wrapper that fetches data from GHL.
 
 import { ghlFetch } from "./ghl.js";
-import { getCustomField } from "../api/portal-data.js";
+// Import straight from the lib helper (not ../api/portal-data.js) — a lib file
+// reaching back into an api route created a circular import.
+import { getCustomField } from "./portal-helpers.js";
 import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
 import { hydrateOrders as hydrateOrdersShared } from "./ghl-orders.js";
 
