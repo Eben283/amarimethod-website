@@ -1,6 +1,7 @@
 // Shared GHL API utility — OAuth2 auto-refresh via Cloudflare KV
 // All API functions import from here instead of using static GHL_API_KEY.
 
+const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000; // Refresh 5 minutes before expiry
 
@@ -193,4 +194,53 @@ export async function ghlFetch(context, url, options = {}) {
   }
 
   return response;
+}
+
+/**
+ * Apply an additive tag delta to a contact WITHOUT replacing its full tag array.
+ *
+ * The contact PUT endpoint (`PUT /contacts/{id}` with a `tags` field) replaces
+ * the tag array wholesale, so any tag a concurrent GHL workflow added between
+ * our read and our write is silently lost — and many GHL workflow triggers are
+ * tag-driven, so a lost-update here can break unrelated automations. GHL's
+ * dedicated tag endpoints mutate only the named tags and leave every other tag
+ * untouched, which is the safe way to add/remove tags.
+ *
+ * Both endpoints are idempotent in practice: re-adding a present tag or
+ * removing an absent one is a harmless no-op, so this is safe to retry.
+ *
+ * @param {object} context - Cloudflare context (env/KV)
+ * @param {string} contactId
+ * @param {{ add?: string[], remove?: string[] }} delta
+ * @returns {Promise<{ added: string[], removed: string[] }>}
+ */
+export async function applyTagDelta(context, contactId, { add = [], remove = [] } = {}) {
+  const added = [...new Set(add)].filter(Boolean);
+  const removed = [...new Set(remove)].filter(Boolean);
+
+  if (removed.length) {
+    const res = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contactId}/tags`,
+      { method: "DELETE", body: JSON.stringify({ tags: removed }) },
+    );
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`tag remove failed (${res.status}): ${errText}`);
+    }
+  }
+
+  if (added.length) {
+    const res = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contactId}/tags`,
+      { method: "POST", body: JSON.stringify({ tags: added }) },
+    );
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new Error(`tag add failed (${res.status}): ${errText}`);
+    }
+  }
+
+  return { added, removed };
 }

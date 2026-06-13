@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ghlFetch } from './ghl.js';
+import { ghlFetch, applyTagDelta } from './ghl.js';
 
 // No PORTAL_KV → getGhlToken returns the static GHL_API_KEY with no network,
 // so these tests exercise ONLY the retry policy in ghlFetch.
@@ -74,5 +74,66 @@ describe('ghlFetch retry policy (idempotency-aware)', () => {
     const r = await ghlFetch(ctx, 'https://api/x', { method: 'POST' });
     expect(r.status).toBe(200);
     expect(f.calls).toHaveLength(1);
+  });
+});
+
+describe('applyTagDelta — additive tag changes (never replaces the array)', () => {
+  // Capture method + URL + parsed JSON body of every request.
+  function captureFetch(status = 200) {
+    const calls = [];
+    const fn = vi.fn(async (url, opts) => {
+      calls.push({
+        url,
+        method: (opts?.method || 'GET').toUpperCase(),
+        body: opts?.body ? JSON.parse(opts.body) : undefined,
+      });
+      return { ok: status >= 200 && status < 300, status, text: async () => '' };
+    });
+    fn.calls = calls;
+    return fn;
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('removes only the named tags via DELETE /tags and makes no PUT', async () => {
+    const f = captureFetch();
+    vi.stubGlobal('fetch', f);
+    await applyTagDelta(ctx, 'c1', { remove: ['quiz submitted'] });
+    expect(f.calls).toHaveLength(1);
+    expect(f.calls[0].method).toBe('DELETE');
+    expect(f.calls[0].url).toBe('https://services.leadconnectorhq.com/contacts/c1/tags');
+    expect(f.calls[0].body).toEqual({ tags: ['quiz submitted'] });
+  });
+
+  it('adds tags via POST /tags and removes first when both are given', async () => {
+    const f = captureFetch();
+    vi.stubGlobal('fetch', f);
+    const out = await applyTagDelta(ctx, 'c1', {
+      add: ['invoice-series-purchased'],
+      remove: ['discovery call attended'],
+    });
+    expect(f.calls.map((c) => c.method)).toEqual(['DELETE', 'POST']); // remove before add
+    expect(f.calls[1].body).toEqual({ tags: ['invoice-series-purchased'] });
+    expect(out).toEqual({ added: ['invoice-series-purchased'], removed: ['discovery call attended'] });
+  });
+
+  it('is a no-op (zero requests) when add and remove are both empty', async () => {
+    const f = captureFetch();
+    vi.stubGlobal('fetch', f);
+    await applyTagDelta(ctx, 'c1', {});
+    expect(f.calls).toHaveLength(0);
+  });
+
+  it('dedupes and drops falsy tags before sending', async () => {
+    const f = captureFetch();
+    vi.stubGlobal('fetch', f);
+    await applyTagDelta(ctx, 'c1', { add: ['x', 'x', '', null, 'y'] });
+    expect(f.calls[0].body).toEqual({ tags: ['x', 'y'] });
+  });
+
+  it('throws when GHL returns a non-ok status', async () => {
+    const f = captureFetch(422);
+    vi.stubGlobal('fetch', f);
+    await expect(applyTagDelta(ctx, 'c1', { add: ['x'] })).rejects.toThrow(/tag add failed/);
   });
 });
