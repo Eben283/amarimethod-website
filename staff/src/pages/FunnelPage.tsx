@@ -123,6 +123,11 @@ const SvgBear = () => (
   <svg viewBox="0 0 120 120" className="h-full w-full"><defs><Rough id="fr-bear" /></defs>
     <g filter="url(#fr-bear)">
       <path d="M70 28 q34 0 34 44 q0 34 -34 38 q-36 -4 -36 -38 q0 -44 36 -44Z" fill={COL.bear} />
+      {/* hind legs/paws — seated bear, splayed at the base */}
+      <ellipse cx="52" cy="111" rx="14" ry="8.5" fill={COL.bear} />
+      <ellipse cx="88" cy="112" rx="14" ry="8.5" fill={COL.bear} />
+      <ellipse cx="49" cy="112" rx="6" ry="4" fill="#caa987" opacity="0.85" />
+      <ellipse cx="91" cy="113" rx="6" ry="4" fill="#caa987" opacity="0.85" />
       <circle cx="40" cy="48" r="22" fill={COL.bear} />
       <circle cx="27" cy="32" r="7.5" fill={COL.bear} /><circle cx="53" cy="32" r="7.5" fill={COL.bear} />
       <circle cx="27" cy="32" r="3.4" fill="#5A4029" /><circle cx="53" cy="32" r="3.4" fill="#5A4029" />
@@ -198,8 +203,8 @@ const SvgHedgehog = () => (
       {/* hedgehog — actively shoving the basket from the right */}
       <g transform="translate(87 59)">
         <g className="fn-hognudge">
-          {/* front legs braced & pushing into the basket */}
-          <path d="M-14 12 l-7 8 M-5 14 l-5 8" stroke="#5a4029" strokeWidth="2.8" strokeLinecap="round" fill="none" />
+          {/* front legs braced & pushing into the basket — rooted at the body base (y4) so they don't float */}
+          <path d="M-14 4 L-21 20 M-6 4 L-10 22" stroke="#5a4029" strokeWidth="2.8" strokeLinecap="round" fill="none" />
           <path d="M-20 4 q4 -22 21 -22 q17 0 15 22Z" fill="#7a5c43" />
           <path d="M-16 -4 l-5 -8 M-8 -11 l-2 -10 M1 -13 l0 -10 M10 -11 l4 -9" stroke="#5a4029" strokeWidth="1.7" strokeLinecap="round" />
           <circle cx="-18" cy="4" r="4.4" fill="#caa987" /><circle cx="-20" cy="3" r="1.1" fill="#2b1b12" />
