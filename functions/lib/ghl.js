@@ -86,16 +86,22 @@ let refreshInFlight = null;
  * Stores new tokens in KV and returns the new access token (or null on failure).
  * Concurrent calls within one isolate share a single in-flight refresh.
  */
-function refreshGhlToken(context, refreshToken) {
+function refreshGhlToken(context, refreshToken, options = {}) {
   if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = performTokenRefresh(context, refreshToken).finally(() => {
+  refreshInFlight = performTokenRefresh(context, refreshToken, options).finally(() => {
     refreshInFlight = null;
   });
   return refreshInFlight;
 }
 
-async function performTokenRefresh(context, refreshToken) {
+async function performTokenRefresh(context, refreshToken, options = {}) {
   const kv = context.env.PORTAL_KV;
+  // The 401-retry path passes the token GHL just rejected. The double-check must
+  // NOT hand that same token back — only short-circuit when KV holds a DIFFERENT
+  // (peer-refreshed) token. Without this, a token rejected before its stored
+  // expiry would be returned unchanged and the retry would 401 again, defeating
+  // the self-heal. Undefined for the expiry-driven path (any valid token is fine).
+  const knownBadToken = options.knownBadToken;
 
   // Double-check: another isolate (or the cron token-worker) may have just
   // refreshed. If KV already holds a still-valid access token, reuse it rather
@@ -107,7 +113,7 @@ async function performTokenRefresh(context, refreshToken) {
         kv.get(KV_TOKEN_EXPIRY),
       ]);
       const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
-      if (existingToken && expiry > Date.now() + REFRESH_BUFFER_MS) {
+      if (existingToken && existingToken !== knownBadToken && expiry > Date.now() + REFRESH_BUFFER_MS) {
         return existingToken;
       }
     } catch (err) {
@@ -206,8 +212,10 @@ export async function ghlFetch(context, url, options = {}) {
     if (kv) {
       const refreshToken = await kv.get(KV_REFRESH_TOKEN);
       if (refreshToken) {
-        const newToken = await refreshGhlToken(context, refreshToken);
-        if (newToken) {
+        // Pass the rejected token so the refresh double-check forces a real
+        // refresh instead of handing back the same token that just 401'd.
+        const newToken = await refreshGhlToken(context, refreshToken, { knownBadToken: token });
+        if (newToken && newToken !== token) {
           const retryHeaders = { ...ghlHeaders(newToken), ...options.headers };
           return fetch(url, { ...options, headers: retryHeaders });
         }
