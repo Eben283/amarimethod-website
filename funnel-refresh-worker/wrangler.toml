@@ -1,0 +1,29 @@
+name = "funnel-refresh"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Cron trigger — DISABLED for the staged build.
+#
+# Two reasons it's commented out for now:
+#   1. STAGING: the scheduled() handler writes the TEST key (funnel:latest-test).
+#      We don't want an automatic background run until the verification diff is
+#      approved and the snapshot key is flipped to funnel:latest.
+#   2. FREE-TIER CRON LIMIT: the account is already at Cloudflare's free-tier cap
+#      of 5 cron triggers (daily-audit, ecosystem-scanner, ghl-token-refresh,
+#      partner-activity-refresh, series-reconcile). Enabling a 6th would require
+#      retiring the local LaunchAgent's cron slot or a paid plan. Decide at cutover.
+#
+# Intended schedule once live: ~6:45 AM PT to match the local LaunchAgent
+# (com.amari.funnel-refresh). 6:45 AM PDT = 13:45 UTC; 6:45 AM PST = 14:45 UTC.
+# [triggers]
+# crons = ["45 13 * * *"]
+
+# Same KV namespace as Pages + daily-audit + ghl-token-refresh + partner-activity-refresh.
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Secrets (set via `npx wrangler secret put <KEY>`):
+#   GHL_CLIENT_ID       — same as ghl-token-refresh (for KV token refresh fallback)
+#   GHL_CLIENT_SECRET   — same as ghl-token-refresh
+#   WORKER_AUTH_SECRET  — optional; gates the HTTP /refresh + /status routes
