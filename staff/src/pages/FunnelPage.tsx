@@ -31,7 +31,7 @@ const M3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','D
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 const COL = {
-  bg: '#FBF6EE', card: '#FFFFFF', ink: '#2C2738', inkSoft: '#8B8194', line: '#ECE3D8',
+  bg: '#FBF6EE', card: '#F4EDDF', ink: '#2C2738', inkSoft: '#8B8194', line: '#E2D6C2',
   plum: '#3A2A44', maroon: '#9B3B66', rust: '#C9805A', ember: '#EBA584',
   gold: '#E8B84B', goldDeep: '#CE9A2E', green: '#5C8A6A',
   bear: '#6E5038', trunk: '#6B5640', leaf: '#566B4C', radish: '#C8475A', basket: '#B0884E',
@@ -490,7 +490,7 @@ export default function FunnelPage() {
         {/* header */}
         <div className="mb-3 flex items-end justify-between">
           <div>
-            <h1 className="font-serif text-3xl font-semibold leading-none">The Funnel</h1>
+            <h1 className="fn-story text-4xl font-semibold leading-none" style={{ color: COL.ink }}>The Funnel</h1>
             <p className="mt-1 text-xs" style={{ color: COL.inkSoft }}>leads in the top, packs out the bottom · {refreshing ? 'refreshing…' : `updated ${agoLabel(data.generatedAt)}`}</p>
           </div>
           <button onClick={runRefresh} disabled={refreshing} aria-label="Refresh from GHL" title="Pull fresh data from GHL (~45s)" className="rounded-full p-2.5 active:scale-90 disabled:opacity-60" style={{ border: `1px solid ${COL.line}`, color: COL.inkSoft, background: COL.card }}><RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} /></button>
@@ -512,9 +512,9 @@ export default function FunnelPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-1.5">
               {v.isDay ? (
-                <><span className="font-serif text-3xl font-bold" style={{ color: COL.maroon }}>{v.sessionsSold}</span><span className="text-sm" style={{ color: COL.inkSoft }}>sessions sold {v.label}</span></>
+                <><span className="fn-story text-4xl font-bold" style={{ color: COL.maroon }}>{v.sessionsSold}</span><span className="text-sm" style={{ color: COL.inkSoft }}>sessions sold {v.label}</span></>
               ) : (
-                <><span className="font-serif text-3xl font-bold tabular-nums" style={{ color: COL.maroon }}>{countUp.toFixed(1)}</span><span className="font-serif text-xl" style={{ color: COL.inkSoft }}>/ {v.goalPacks}</span><span className="text-xs uppercase tracking-widest" style={{ color: COL.inkSoft }}>packs · {v.label}</span></>
+                <><span className="fn-story text-4xl font-bold tabular-nums" style={{ color: COL.maroon }}>{countUp.toFixed(1)}</span><span className="fn-story text-xl" style={{ color: COL.inkSoft }}>/ {v.goalPacks}</span><span className="text-xs uppercase tracking-widest" style={{ color: COL.inkSoft }}>packs · {v.label}</span></>
               )}
             </div>
             {v.status.word && <span className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-widest" style={{ background: COL.bg, color: COL.ink, border: `1px solid ${COL.line}` }}><span className="h-2 w-2 animate-pulse rounded-full" style={{ background: v.status.dot }} />{v.status.word}{goalHit && ' 🎉'}</span>}
@@ -646,7 +646,7 @@ export default function FunnelPage() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] uppercase tracking-widest" style={{ color: COL.inkSoft }}>tap a pool above to switch</p>
-              <h3 className="font-serif text-lg leading-tight" style={{ color: sm.col }}>{sm.label}</h3>
+              <h3 className="fn-story text-xl leading-tight" style={{ color: sm.col }}>{sm.label}</h3>
             </div>
             {sm.target >= 1 && (
               <div className="relative h-14 w-14 shrink-0">
@@ -681,10 +681,10 @@ export default function FunnelPage() {
       </div>
 
       {boardOpen && (
-        <div className="fixed inset-0 z-50" style={{ background: 'rgba(44,39,56,.45)' }} onClick={() => setBoardOpen(false)}>
-          <div className="absolute bottom-0 left-0 right-0 max-h-[78vh] overflow-y-auto rounded-t-3xl p-5 pb-10" style={{ background: COL.bg }} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[100]" style={{ background: 'rgba(44,39,56,.45)' }} onClick={() => setBoardOpen(false)}>
+          <div className="absolute bottom-0 left-0 right-0 max-h-[85vh] overflow-y-auto rounded-t-3xl p-5" style={{ background: COL.bg, paddingBottom: 'calc(96px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-serif text-lg font-semibold"><Trophy className="h-5 w-5" style={{ color: COL.goldDeep }} /> Scoreboard · {v.label}</h2>
+              <h2 className="fn-story flex items-center gap-2 text-xl font-semibold"><Trophy className="h-5 w-5" style={{ color: COL.goldDeep }} /> Scoreboard · {v.label}</h2>
               <button onClick={() => setBoardOpen(false)} aria-label="Close" className="rounded-full p-1.5" style={{ color: COL.inkSoft }}><X className="h-5 w-5" /></button>
             </div>
             {v.board.length === 0 && <p className="py-6 text-center text-sm" style={{ color: COL.inkSoft }}>No activity this period.</p>}
