@@ -707,7 +707,7 @@ function CoachPanel({ contactId }: { contactId: string }) {
     getCallCoach(contactId).then((c) => { if (live) setCoach(c); });
     return () => { live = false; };
   }, [contactId]);
-  if (coach === 'loading' || coach === null) return null;
+  if (coach === 'loading' || !coach || !coach.coaching) return null;
   const c = coach.coaching;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">

@@ -4,10 +4,8 @@ import LoginPage from './pages/LoginPage';
 import TodayPage from './pages/TodayPage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
-import MessagesPage from './pages/MessagesPage';
 import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
-import PartnersPage from './pages/PartnersPage';
 import FollowUpPage from './pages/FollowUpPage';
 import FunnelPage from './pages/FunnelPage';
 import CheckInPage from './pages/CheckInPage';
@@ -86,16 +84,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/messages"
-        element={
-          <ProtectedRoute>
-            <LayoutWithNav>
-              <MessagesPage />
-            </LayoutWithNav>
-          </ProtectedRoute>
-        }
-      />
+      {/* Messages retired into Follow-Up (unanswered replies rank on top there) */}
+      <Route path="/messages" element={<Navigate to="/follow-up" replace />} />
       <Route
         path="/balances"
         element={
@@ -116,18 +106,9 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/outreach"
-        element={
-          <ProtectedRoute>
-            <LayoutWithNav>
-              <PartnersPage />
-            </LayoutWithNav>
-          </ProtectedRoute>
-        }
-      />
-      {/* Back-compat: old /partners URL still works */}
-      <Route path="/partners" element={<Navigate to="/outreach" replace />} />
+      {/* Outreach retired into Follow-Up; old URLs redirect there */}
+      <Route path="/outreach" element={<Navigate to="/follow-up" replace />} />
+      <Route path="/partners" element={<Navigate to="/follow-up" replace />} />
       <Route
         path="/follow-up"
         element={

@@ -482,8 +482,9 @@ export interface CallCoach {
 export async function getCallCoach(contactId: string, date?: string): Promise<CallCoach | null> {
   try {
     const qs = `contactId=${encodeURIComponent(contactId)}${date ? `&date=${date}` : ''}`;
-    const r = await fetchApi<CallCoach | { error: string }>(`/call-coach?${qs}`);
-    return r && 'coaching' in r ? (r as CallCoach) : null;
+    // Reader returns 200 with coaching:null when there's none — treat as no coaching.
+    const r = await fetchApi<{ coaching?: unknown } & Record<string, unknown>>(`/call-coach?${qs}`);
+    return r && r.coaching ? (r as unknown as CallCoach) : null;
   } catch {
     return null;
   }
