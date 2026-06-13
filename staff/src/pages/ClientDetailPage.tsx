@@ -581,7 +581,10 @@ export default function ClientDetailPage() {
                 const date = new Date(appt.startTime);
                 const isPast = date < new Date();
                 const isAttended = appt.status === 'showed' || appt.status === 'completed';
-                const canMark = isPast && !isAttended && appt.status !== 'cancelled';
+                // Markable from 2h before the slot onward — so attendance can be
+                // marked when the client actually shows up (incl. early arrivals),
+                // not only strictly after the appointment time has passed.
+                const canMark = date.getTime() <= Date.now() + 2 * 60 * 60 * 1000 && !isAttended && appt.status !== 'cancelled';
                 const isMarking = markingAttended === appt.id;
                 const pill = appt.paymentStatus ? PAYMENT_PILL[appt.paymentStatus] : null;
                 const packageCovers = client.sessionsRemaining > 0 && client.seriesType !== 'none';
