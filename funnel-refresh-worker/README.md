@@ -15,12 +15,22 @@ The compute logic in `src/funnel.js` is a faithful port of `funnel.mjs`; the
 output JSON shape is byte-compatible (`v, generatedAt, windowDays, goal, calls,
 sessions, sales, trailing90, targets, paceLine`).
 
-## STAGED — currently writes the TEST key only
+## LIVE (cutover 2026-06-12)
 
-For the safe, staged rollout this worker writes the snapshot to
-**`funnel:latest-test`**, NOT the live `funnel:latest` key the dashboard reads.
-The cron trigger is commented out. Cutover is gated on review of the verification
-diff (see below).
+This worker writes the live **`funnel:latest`** key the dashboard reads, on an
+HOURLY cron (`0 * * * *`, Workers PAID — no cron cap). The staff dashboard's
+Funnel-tab refresh button calls `POST /refresh` through the
+`functions/api/staff-funnel-refresh.js` Pages function (staff-JWT gated,
+forwards the `WORKER_AUTH_SECRET` bearer).
+
+At cutover `funnel:targets` was seeded from the local frozen
+`funnel-targets.json` (2026-06 `calls:246`) so the first live run kept 246 and
+did not jump to a freshly-computed 260. Verification: live `funnel:latest`
+matched a fresh `node funnel.mjs 180` baseline exactly (calls 229, sessions 16,
+sales 44 / 87 sold, trailing90, cohorts, paceLine — only `generatedAt` differed).
+
+The local `funnel.mjs` + `com.amari.funnel-refresh` LaunchAgent are kept as a
+backup until the cloud path is proven over several days.
 
 ### Verification (2026-06-12)
 
