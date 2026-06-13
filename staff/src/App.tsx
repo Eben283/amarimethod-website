@@ -8,6 +8,7 @@ import MessagesPage from './pages/MessagesPage';
 import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
 import PartnersPage from './pages/PartnersPage';
+import FollowUpPage from './pages/FollowUpPage';
 import FunnelPage from './pages/FunnelPage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
@@ -127,6 +128,16 @@ function AppRoutes() {
       />
       {/* Back-compat: old /partners URL still works */}
       <Route path="/partners" element={<Navigate to="/outreach" replace />} />
+      <Route
+        path="/follow-up"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <FollowUpPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/funnel"
         element={

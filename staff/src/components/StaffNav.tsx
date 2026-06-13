@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   Calendar, Users, MessageSquare, Wallet, MoreHorizontal,
-  Handshake, Sparkles, TrendingUp, BookOpen,
+  Handshake, Sparkles, TrendingUp, BookOpen, ListChecks,
 } from 'lucide-react';
 
 // Bottom nav caps at 5 primary items (more than that and the labels cramp on a
@@ -16,6 +16,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
 
 const MORE_ITEMS = [
   { to: '/cos', label: 'Ask', Icon: Sparkles },
+  { to: '/follow-up', label: 'Follow-Up', Icon: ListChecks },
   { to: '/outreach', label: 'Outreach', Icon: Handshake },
   { to: '/funnel', label: 'Funnel', Icon: TrendingUp },
   { to: '/playbook', label: 'Playbooks', Icon: BookOpen },
