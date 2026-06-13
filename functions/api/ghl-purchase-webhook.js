@@ -23,6 +23,7 @@
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
+import { appointmentEndTime } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -188,19 +189,10 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
     );
   }
 
-  // Compute endTime by adding duration to start. Preserve any timezone
-  // offset suffix on the slot (GHL rejects appointments where the offset
-  // is stripped — mirrors the logic in functions/api/portal-book.js).
-  const offsetMatch = slot.match(/([+-]\d{2}:\d{2}|Z)$/);
-  const offset = offsetMatch ? offsetMatch[1] : "Z";
-  const startMs = new Date(slot).getTime();
-  if (!Number.isFinite(startMs)) {
-    throw new Error(`Invalid requested_session_slot: ${slot}`);
-  }
-  const endMs = startMs + pkg.durationMinutes * 60 * 1000;
-  const endTime = new Date(endMs)
-    .toISOString()
-    .replace("Z", offset === "Z" ? "Z" : offset);
+  // Compute endTime, preserving both the instant (start + duration) and the
+  // slot's timezone offset (GHL rejects appointments where the offset is
+  // stripped). See functions/lib/datetime.js.
+  const endTime = appointmentEndTime(slot, pkg.durationMinutes);
 
   const payload = {
     calendarId: pkg.calendarId,
