@@ -12,7 +12,7 @@
 //   5. Add a contact note recording the attestation (without the image
 //      itself — pointer to the KV key only)
 
-import { ghlFetch } from "../lib/ghl.js";
+import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -116,20 +116,13 @@ export async function onRequestPost(context) {
     }
 
     // Best-effort: tag + note. Don't fail the request if these fail; the
-    // legal record is the KV entry above.
+    // legal record is the KV entry above. Use the dedicated tag endpoint
+    // (additive) rather than a full-array PUT so concurrent contact writes
+    // don't clobber each other's tags. Re-adding a present tag is a no-op,
+    // so no read-before-write is needed.
     try {
-      const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
-      if (contactRes.ok) {
-        const contactData = await contactRes.json();
-        const tags = contactData.contact?.tags || [];
-        const signedTag = `policies-signed-${AGREEMENT_VERSION}`;
-        if (!tags.includes(signedTag)) {
-          await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
-            method: "PUT",
-            body: JSON.stringify({ tags: [...tags, signedTag] }),
-          });
-        }
-      }
+      const signedTag = `policies-signed-${AGREEMENT_VERSION}`;
+      await applyTagDelta(context, contactId, { add: [signedTag] });
     } catch (err) {
       console.error("[staff-checkin] Tag update failed:", err.message);
     }

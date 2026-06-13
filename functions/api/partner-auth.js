@@ -2,7 +2,7 @@
 // Accepts { email }, verifies contact is an approved partner in GHL,
 // generates a magic link token, and triggers email via GHL workflow.
 
-import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { reserveAuthSlot } from "../lib/rate-limit.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -229,21 +229,12 @@ export async function onRequestPost(context) {
       console.error(`[partner-auth] Field update error: ${fieldErr.message}`);
     }
 
-    // Step 2: Add the tag — this triggers the GHL email workflow AFTER the field is saved
+    // Step 2: Add the tag — this triggers the GHL email workflow AFTER the field is saved.
+    // Use the dedicated tag endpoint (additive) so concurrent logins/workflows don't
+    // clobber each other's tag arrays via a full-array PUT.
     try {
-      const tagResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
-        method: "PUT",
-        headers: ghlHeaders(GHL_API_KEY),
-        body: JSON.stringify({
-          tags: [...tags, "partner-login-requested"],
-        }),
-      });
-      if (!tagResponse.ok) {
-        const errText = await tagResponse.text();
-        console.error(`[partner-auth] Failed to add tag: ${tagResponse.status} ${errText}`);
-      } else {
-        console.log(`[partner-auth] partner-login-requested tag added`);
-      }
+      await applyTagDelta(context, contact.id, { add: ["partner-login-requested"] });
+      console.log(`[partner-auth] partner-login-requested tag added`);
     } catch (tagErr) {
       console.error(`[partner-auth] Tag update error: ${tagErr.message}`);
     }

@@ -4,7 +4,7 @@
 //
 // Server-side product map is the source of truth — never trust a client-provided URL.
 
-import { ghlFetch } from "../lib/ghl.js";
+import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -153,16 +153,13 @@ export async function onRequestPost(context) {
     }
 
     // Best-effort: tag the contact for outcome tracking. Don't block on failure.
+    // Use the dedicated tag endpoint (additive) rather than a full-array PUT so
+    // concurrent contact writes don't clobber each other's tags.
     try {
       const existingTags = contact.tags || [];
       const sentTag = `paylink-sent-${productKey}`;
       if (!existingTags.includes(sentTag)) {
-        await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            tags: [...existingTags, sentTag],
-          }),
-        });
+        await applyTagDelta(context, contactId, { add: [sentTag] });
       }
     } catch (err) {
       console.error(`[staff-send-paylink] Tag update failed: ${err.message}`);
