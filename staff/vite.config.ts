@@ -11,6 +11,9 @@ export default defineConfig({
   server: {
     host: "::",
     port: 8082,
+    proxy: {
+      "/api": { target: "https://www.amarimethod.com", changeOrigin: true, secure: true },
+    },
   },
   plugins: [react()],
   resolve: {

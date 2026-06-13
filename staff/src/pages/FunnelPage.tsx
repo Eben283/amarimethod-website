@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Trophy, X, Check } from 'lucide-react';
-import { getFunnel, ApiError, type FunnelData } from '../lib/api';
+import { getFunnel, triggerFunnelRefresh, ApiError, type FunnelData } from '../lib/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNNEL — a little woodland: the bear ladles radishes (leads) into the hollow
@@ -82,11 +82,11 @@ function agoLabel(iso: string | null | undefined): string {
 }
 
 // ── painted-art loader: probe /staff/funnel-art/<file>; fall back to SVG ────
-type ArtName = 'bear' | 'trunk' | 'bowl' | 'rabbitHop' | 'rabbitSit' | 'hedgehog' | 'radish' | 'leaf' | 'ground';
+type ArtName = 'bear' | 'trunk' | 'bowl' | 'rabbitHop' | 'rabbitSit' | 'hedgehog' | 'radish' | 'leaf' | 'ground' | 'forest';
 const ART_FILES: Record<ArtName, string> = {
   bear: 'bear-ladle.png', trunk: 'tree-trunk.png', bowl: 'pool-bowl.png',
   rabbitHop: 'rabbit-hop.png', rabbitSit: 'rabbit-sit.png', hedgehog: 'hedgehog-basket.png',
-  radish: 'radish.png', leaf: 'leaf.png', ground: 'ground-bank.png',
+  radish: 'radish.png', leaf: 'leaf.png', ground: 'ground-bank.png', forest: 'forest.png',
 };
 const artUrl = (n: ArtName) => `${import.meta.env.BASE_URL}funnel-art/${ART_FILES[n]}`;
 const artProbe = new Map<ArtName, Promise<boolean>>();
@@ -239,7 +239,7 @@ const SvgGround = () => (
 function Art({ name, ok, alt = '', className = '', style, tint }: {
   name: ArtName; ok: Record<ArtName, boolean>; alt?: string; className?: string; style?: React.CSSProperties; tint?: string;
 }) {
-  if (ok[name]) return <img src={artUrl(name)} alt={alt} draggable={false} className={className} style={{ width: '100%', height: '100%', objectFit: name === 'trunk' || name === 'bowl' || name === 'ground' ? 'fill' : 'contain', ...style }} />;
+  if (ok[name]) return <img src={artUrl(name)} alt={alt} draggable={false} className={className} style={{ width: '100%', height: '100%', objectFit: name === 'trunk' || name === 'bowl' || name === 'ground' ? 'fill' : name === 'forest' ? 'cover' : 'contain', ...style }} />;
   switch (name) {
     case 'bear': return <SvgBear />;
     case 'trunk': return <SvgTrunk />;
@@ -250,6 +250,7 @@ function Art({ name, ok, alt = '', className = '', style, tint }: {
     case 'radish': return <SvgRadish />;
     case 'leaf': return <SvgLeaf />;
     case 'ground': return <SvgGround />;
+    default: return null;
   }
 }
 
@@ -272,6 +273,8 @@ export default function FunnelPage() {
   const [stage, setStage] = useState<'calls' | 'talked' | 'booked' | 'showed' | 'sales'>('calls');
   const art = useArt();
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const load = useCallback(async () => {
     setIsLoading(true); setError(null);
     try { setData(await getFunnel()); }
@@ -279,6 +282,34 @@ export default function FunnelPage() {
     finally { setIsLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Trigger a live recompute on the funnel-refresh Worker (~45s inline), then
+  // poll getFunnel() until the snapshot's generatedAt advances. This is the
+  // cloud-side recompute — distinct from `load`, which just re-reads the cached
+  // KV snapshot. Quietly re-reads the snapshot in the background; the button
+  // shows a spinning "refreshing…" state for the duration.
+  const runRefresh = useCallback(async () => {
+    if (refreshing) return;
+    const prevGeneratedAt = data?.generatedAt ?? null;
+    setRefreshing(true); setError(null);
+    try {
+      await triggerFunnelRefresh();
+      // Poll for the new snapshot. The worker writes funnel:latest when done.
+      const deadline = Date.now() + 90_000;
+      let fresh: FunnelData | null = null;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 5_000));
+        const next = await getFunnel().catch(() => null);
+        if (next && next.generatedAt && next.generatedAt !== prevGeneratedAt) { fresh = next; break; }
+      }
+      // Fall back to whatever the snapshot is now, even if generatedAt didn't move.
+      setData(fresh ?? (await getFunnel()));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Refresh failed');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing, data]);
   const rangeKey = `${range.unit}:${range.offset}`;
 
   const view = useMemo(() => {
@@ -408,7 +439,7 @@ export default function FunnelPage() {
   const burst = goalHit || winCount === 5;
 
   return (
-    <div className="min-h-screen" style={{ background: COL.bg, color: COL.ink }}>
+    <div className="min-h-screen" style={{ background: 'radial-gradient(130% 90% at 50% -8%, #EDE7DA 0%, #DCD4C2 48%, #C0B6A0 100%)', color: COL.ink }}>
       <style>{`
         @keyframes fn-reveal { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
         .fn-reveal{animation:fn-reveal .55s cubic-bezier(.22,1,.36,1) both}
@@ -442,14 +473,14 @@ export default function FunnelPage() {
         }
       `}</style>
 
-      <div className="mx-auto max-w-2xl px-4 pb-10 pt-5">
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-5">
         {/* header */}
         <div className="mb-3 flex items-end justify-between">
           <div>
             <h1 className="font-serif text-3xl font-semibold leading-none">The Funnel</h1>
-            <p className="mt-1 text-xs" style={{ color: COL.inkSoft }}>leads in the top, packs out the bottom · updated {agoLabel(data.generatedAt)}</p>
+            <p className="mt-1 text-xs" style={{ color: COL.inkSoft }}>leads in the top, packs out the bottom · {refreshing ? 'refreshing…' : `updated ${agoLabel(data.generatedAt)}`}</p>
           </div>
-          <button onClick={load} aria-label="Reload" className="rounded-full p-2.5 active:scale-90" style={{ border: `1px solid ${COL.line}`, color: COL.inkSoft, background: COL.card }}><RefreshCw className="h-4 w-4" /></button>
+          <button onClick={runRefresh} disabled={refreshing} aria-label="Refresh from GHL" title="Pull fresh data from GHL (~45s)" className="rounded-full p-2.5 active:scale-90 disabled:opacity-60" style={{ border: `1px solid ${COL.line}`, color: COL.inkSoft, background: COL.card }}><RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} /></button>
         </div>
 
         {/* range control */}
@@ -483,8 +514,18 @@ export default function FunnelPage() {
         </div>
 
         {/* ── THE WOODLAND ── */}
-        <div className="fn-reveal relative mx-auto mb-5 max-w-[460px] overflow-hidden rounded-3xl" style={{ background: `linear-gradient(180deg, #FDF9F1 0%, ${COL.bg} 55%, #F4ECDD 100%)`, border: `1px solid ${COL.line}` }}>
-          <div key={rangeKey} className="relative w-full" style={{ aspectRatio: '380 / 640' }} role="img" aria-label="Woodland funnel — tap a stage to inspect it">
+        <div className="fn-reveal relative mb-5 overflow-hidden" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', background: `linear-gradient(180deg, #ECE7DB 0%, #DED7C7 52%, #C9C0AD 100%)`, boxShadow: 'inset 0 0 130px rgba(38,30,24,0.34)' }}>
+          {/* framing forest — fills the full page width, fading toward the center */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-0" style={{ width: '50%', maxWidth: 560, opacity: 0.82 }}><Art name="forest" ok={art} /></div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-0" style={{ width: '50%', maxWidth: 560, opacity: 0.82, transform: 'scaleX(-1)' }}><Art name="forest" ok={art} /></div>
+
+          {/* ground across the whole width */}
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1]" style={{ height: '11%' }}><Art name="ground" ok={art} /></div>
+          {/* rabbits hopping among the left trees */}
+          <div className="fn-twitch absolute z-[2]" style={{ left: '6%', top: '54%', width: '4.5%', height: '6%' }}><Art name="rabbitSit" ok={art} /></div>
+          <div className="fn-hop absolute z-[2]" style={{ top: '60%', width: '5%', height: '6%' }}><Art name="rabbitHop" ok={art} /></div>
+
+          <div key={rangeKey} className="relative z-10 mx-auto w-full" style={{ maxWidth: 'min(94vw, calc(88dvh * 380 / 640))', aspectRatio: '380 / 640' }} role="img" aria-label="Woodland funnel — tap a stage to inspect it">
 
             {/* goal-hit burst */}
             {burst && (
@@ -506,15 +547,7 @@ export default function FunnelPage() {
               <span key={i} className="fn-leafdrift pointer-events-none absolute z-10 block h-4 w-4" style={{ left: p.l, top: '4%', animationDelay: p.d }}><Art name="leaf" ok={art} /></span>
             ))}
 
-            {/* back tree + rabbits hopping in */}
-            <div className="absolute" style={{ left: '-2%', top: '5%', width: '30%', height: '24%' }}>
-              <svg viewBox="0 0 100 140" className="h-full w-full"><defs><Rough id="fr-btree" /></defs>
-                <g filter="url(#fr-btree)">
-                  <rect x="42" y="86" width="13" height="52" rx="6" fill={COL.trunk} />
-                  <path d="M48 6 q44 14 35 64 q-5 30 -35 32 q-33 -2 -39 -32 q-11 -50 39 -64Z" fill={COL.leaf} opacity=".9" />
-                </g>
-              </svg>
-            </div>
+            {/* rabbits hopping in */}
             <div className="fn-twitch absolute z-10" style={{ left: '3.5%', top: '24%', width: '11%', height: '7%' }}><Art name="rabbitSit" ok={art} /></div>
             <div className="fn-hop absolute z-10" style={{ top: '25.5%', width: '12%', height: '7%' }}><Art name="rabbitHop" ok={art} /></div>
             <svg className="pointer-events-none absolute" style={{ left: '6%', top: '24%', width: '32%', height: '8%' }} viewBox="0 0 120 48"><path d="M4 40 q56 -34 112 -20" className="fn-hopline" /></svg>
@@ -549,7 +582,6 @@ export default function FunnelPage() {
                   {/* pool (art) */}
                   <div className={`absolute ${hit ? 'fn-glow' : ''}`} style={{ left: `${TRUNK_AXIS - p.w / 2}%`, top: `${p.y - 3.2}%`, width: `${p.w}%`, height: '6.4%' }}>
                     <Art name="bowl" ok={art} tint={r.col} />
-                    {art.bowl && <div className="absolute inset-0 rounded-[50%]" style={{ background: r.col, opacity: .28, mixBlendMode: 'multiply' }} />}
                   </div>
                   {/* tap row: pool + chip in one big target */}
                   <button onClick={() => setStage(p.key)} aria-pressed={isSel}

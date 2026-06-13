@@ -8,20 +8,19 @@
 // partner-activity-refresh worker there is no chunking — one run produces the whole
 // snapshot.
 //
-// SAFE / STAGED: scheduled + manual runs write to the TEST key (funnel:latest-test).
-// The live key (funnel:latest) that the dashboard reads is NOT touched by this
-// worker yet — cutover is gated on Eben's review of the verification diff.
+// LIVE (cutover 2026-06-12): scheduled + manual runs write the live key
+// (funnel:latest) that the dashboard reads. Hourly cron.
 //
 // State in KV:
-//   funnel:latest-test                — the snapshot (TEST key; mirrors funnel:latest shape)
+//   funnel:latest                     — the snapshot the dashboard reads
 //   ops:funnel-refresh:lastRun        — last-run summary (for UI freshness / observability)
 //   funnel:targets                    — frozen monthly per-stage targets (replaces local funnel-targets.json)
 
 import { buildFunnelSnapshot } from "./funnel.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
-// TEST key only for now. Cutover flips this to "funnel:latest".
-const KV_SNAPSHOT_KEY = "funnel:latest-test";
+// LIVE — cutover 2026-06-12. Writes the snapshot the dashboard actually reads.
+const KV_SNAPSHOT_KEY = "funnel:latest";
 const KV_LAST_RUN_KEY = "ops:funnel-refresh:lastRun";
 
 // Match `node funnel.mjs 180`.
@@ -77,7 +76,7 @@ async function runRefresh(env, trigger) {
     const snapshot = await buildFunnelSnapshot(env, WINDOW_DAYS);
     const json = JSON.stringify(snapshot);
 
-    // Write to the TEST key only. DO NOT write funnel:latest here.
+    // Write the live snapshot key (funnel:latest) — the dashboard reads this.
     await env.PORTAL_KV.put(KV_SNAPSHOT_KEY, json);
 
     const finishedAt = new Date();

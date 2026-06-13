@@ -372,4 +372,52 @@ export async function getFunnel(): Promise<FunnelData> {
   return fetchApi('/staff-funnel');
 }
 
+export interface FunnelRefreshResult {
+  triggered: boolean;
+  summary?: {
+    status?: string;
+    snapshotKey?: string;
+    durationMs?: number;
+    calls?: number;
+    sessions?: number;
+    sales?: number;
+    sessionsSold?: number;
+  };
+  error?: string;
+}
+
+// Triggers the funnel-refresh Worker and WAITS for it (the worker runs the full
+// GHL pull inline, ~45s, then writes funnel:latest). Unlike the shared fetchApi
+// (15s timeout) this uses a 90s ceiling so the inline run isn't cut off. The
+// caller should poll getFunnel() afterward until generatedAt advances.
+export async function triggerFunnelRefresh(): Promise<FunnelRefreshResult> {
+  const token = localStorage.getItem('staff_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  try {
+    const response = await fetch(`${API_BASE}/staff-funnel-refresh`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({ triggered: false, error: 'Request failed' }));
+    if (!response.ok && response.status !== 202) {
+      throw new ApiError(data.error || 'Refresh failed', response.status);
+    }
+    return data as FunnelRefreshResult;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      // The worker keeps running server-side; treat as "triggered" so the
+      // caller polls for the new snapshot.
+      return { triggered: true, error: 'timed out — still refreshing' };
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export { ApiError };
