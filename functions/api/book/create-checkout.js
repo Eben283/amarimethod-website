@@ -17,6 +17,7 @@
  */
 
 import { ghlFetch, getGhlToken } from "../../lib/ghl.js";
+import { appointmentEndTime } from "../../lib/datetime.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -315,15 +316,11 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
  * page that has nothing on the calendar.
  */
 async function bookFreeAppointment(context, locationId, contactId, payload, booking) {
-  // GHL requires endTime AND startTime/endTime to keep their timezone offset
-  // (e.g. "2026-05-21T10:00:00-07:00"). Stripping the offset, or omitting
-  // endTime, causes GHL to reject the slot as "not available" for many
-  // calendar configurations. See portal-book.js for the same pattern.
-  const offsetMatch = payload.startTime.match(/([+-]\d{2}:\d{2})$/);
-  const tzOffset = offsetMatch ? offsetMatch[1] : "";
-  const startMs = new Date(payload.startTime).getTime();
-  const endMs = startMs + booking.durationMinutes * 60 * 1000;
-  const endTime = new Date(endMs).toISOString().replace("Z", tzOffset || "Z");
+  // GHL requires startTime/endTime to keep their timezone offset
+  // (e.g. "2026-05-21T10:00:00-07:00"); stripping it makes GHL reject the slot
+  // as "not available". appointmentEndTime preserves both the instant and the
+  // offset (see functions/lib/datetime.js).
+  const endTime = appointmentEndTime(payload.startTime, booking.durationMinutes);
 
   const res = await ghlFetch(
     context,

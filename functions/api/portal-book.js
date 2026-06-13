@@ -13,6 +13,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "../lib/portal-helpers.js";
+import { appointmentEndTime } from "../lib/datetime.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -139,17 +140,10 @@ export async function onRequestPost(context) {
     : 'Follow-up Session (In Person)';
 
   // GHL requires the timezone offset to be present in startTime/endTime
-  // (e.g. "2026-03-15T10:00:00-07:00"). Stripping the offset causes GHL to
-  // reject the slot as "not available" for some calendar types.
-  // Extract the offset so we can re-apply it to the computed endTime.
-  const offsetMatch = startTime.match(/([+-]\d{2}:\d{2})$/);
-  const tzOffset = offsetMatch ? offsetMatch[1] : '';
-
-  // Compute endTime by adding 50 min via epoch ms to handle midnight-crossing slots.
-  const startMs = new Date(startTime).getTime();
-  const endMs = startMs + 50 * 60 * 1000;
-  const endDate = new Date(endMs);
-  const endTime = endDate.toISOString().replace('Z', tzOffset || 'Z');
+  // (e.g. "2026-03-15T10:00:00-07:00"); stripping it makes GHL reject the slot
+  // as "not available". appointmentEndTime preserves both the instant
+  // (start + 50 min, handling midnight crossings) and the offset.
+  const endTime = appointmentEndTime(startTime, 50);
 
   // Build the appointment payload
   const appointmentPayload = {
