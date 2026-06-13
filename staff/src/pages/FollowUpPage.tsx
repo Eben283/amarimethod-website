@@ -42,7 +42,30 @@ const OFFPLATFORM_FOLLOWUP_DAYS = 3;
 const NOANSWER_RETRY_DAYS = 1;
 const QUIET_NUDGE_DAYS = 3;
 const END_OF_ROPE_TOUCHES = 6;
-const SNOOZE_DAYS = 7;
+
+const SNOOZE_OPTIONS = [
+  { value: '3', label: '3 days' },
+  { value: '7', label: '1 week' },
+  { value: '14', label: '2 weeks' },
+  { value: '30', label: '1 month' },
+];
+const SETASIDE_OPTIONS = [
+  { value: 'not-a-fit', label: 'Not a fit' },
+  { value: 'not-interested', label: 'Not interested' },
+  { value: 'talked-in-person', label: 'Talked in person' },
+  { value: 'save-for-later', label: 'Save for later (other campaign)' },
+];
+// Maps a set-aside reason → the outcome it records. Every reason keeps the
+// contact (never deletes); the note preserves WHY for the audit/Set-Aside view.
+const SETASIDE_OPTS: Record<string, { signal: PartnerLastSignal; note?: string; days?: number }> = {
+  'not-a-fit':        { signal: 'skip', note: 'Not a fit' },
+  'not-interested':   { signal: 'not-interested' },
+  'talked-in-person': { signal: 'skip', note: 'Talked in person — not pursuing' },
+  'save-for-later':   { signal: 'deferred', days: 90, note: 'Saved for a different campaign' },
+};
+// Signals that record an actual touch (bump last-signal + timer). skip / note /
+// deferred change stage/schedule but aren't "touches".
+const TOUCH_LIKE = new Set<PartnerLastSignal>(['no-answer', 'voicemail', 'talked', 'link-sent', 'linkedin-msg', 'linkedin-req', 'instagram-msg', 'in-person']);
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
 type ActionKind = 'call' | 'text' | 'reback' | 'decide';
@@ -155,32 +178,32 @@ function derive(p: PartnerProspect): Derived {
   switch (sig) {
     case 'no-answer':
       return due(NOANSWER_RETRY_DAYS)
-        ? { kind: 'act', urgency: 62, action: 'call', why: `Called ${ago(d)}, no answer — worth another try.` }
+        ? { kind: 'act', urgency: 62, action: 'call', why: `Called ${ago(d)}, no answer — give them another call.` }
         : waiting('Just called');
     case 'voicemail':
       return due(VM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 70, action: 'text', why: `Voicemail ${ago(d)} — a follow-up here is normal, not pushy.` }
+        ? { kind: 'act', urgency: 70, action: 'text', why: `Voicemail ${ago(d)} — a text here is good.` }
         : waiting('Voicemail left, giving it a beat');
     case 'talked':
       return due(TALKED_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 76, action: 'text', why: `Talked ${ago(d)} — send the next step while it's warm.` }
+        ? { kind: 'act', urgency: 76, action: 'text', why: `Talked ${ago(d)} — text them the next step while it's warm.` }
         : waiting('Just talked');
     case 'link-sent':
       return due(LINK_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 66, action: 'text', why: `Link sent ${ago(d)}, not booked — a gentle nudge would feel natural.` }
+        ? { kind: 'act', urgency: 66, action: 'text', why: `Sent the link ${ago(d)}, not booked — a text nudge is good.` }
         : waiting('Link just sent');
     case 'linkedin-msg':
     case 'linkedin-req':
     case 'instagram-msg':
     case 'in-person':
       return due(OFFPLATFORM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 55, action: 'text', why: `Reached out ${ago(d)} — time for a warm follow-up.` }
+        ? { kind: 'act', urgency: 55, action: 'text', why: `Reached out ${ago(d)} — a text follow-up is good.` }
         : waiting('Recently reached out');
     case 'not-interested':
       return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not interested' };
     default:
       return due(QUIET_NUDGE_DAYS)
-        ? { kind: 'act', urgency: 50, action: 'text', why: `Quiet ${ago(d)} — a check-in would feel natural here.` }
+        ? { kind: 'act', urgency: 50, action: 'text', why: `Quiet ${ago(d)} — a text check-in is good.` }
         : waiting('Recently touched');
   }
 }
@@ -289,21 +312,37 @@ export default function FollowUpPage() {
     }
   }, [activity]);
 
-  const onOutcome = useCallback(async (contactId: string, signal: PartnerLastSignal) => {
+  const onOutcome = useCallback(async (
+    contactId: string,
+    signal: PartnerLastSignal,
+    opts?: { days?: number; note?: string },
+  ) => {
     setBusyId(contactId);
     try {
-      const followupAt = signal === 'deferred'
-        ? new Date(Date.now() + SNOOZE_DAYS * 86_400_000).toISOString()
+      const followupAt = opts?.days != null
+        ? new Date(Date.now() + opts.days * 86_400_000).toISOString()
         : undefined;
-      await recordPartnerOutcome({ contactId, signal, followupAt });
-      await load();
+      const res = await recordPartnerOutcome({ contactId, signal, note: opts?.note, followupAt });
+      // Optimistic local update from the authoritative result — do NOT refetch
+      // here: GHL's /contacts/search index lags a write by a few seconds, so a
+      // reload would briefly drop the just-changed contact (the "disappeared"
+      // bug). The row recomputes its bucket instantly from this update instead.
+      setProspects((ps) => ps.map((p) => {
+        if (p.contactId !== contactId) return p;
+        return {
+          ...p,
+          partnerStage: res.newStage ?? p.partnerStage,
+          partnerFollowupAt: res.followupAt ?? p.partnerFollowupAt,
+          ...(TOUCH_LIKE.has(signal) ? { partnerLastSignal: res.signal, partnerLastSignalAt: res.signalAt } : {}),
+        };
+      }));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to record');
     } finally {
       setBusyId(null);
     }
-  }, [load, logout]);
+  }, [logout]);
 
   const onDismissReply = useCallback((contactId: string) => {
     setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
@@ -372,7 +411,7 @@ export default function FollowUpPage() {
                   busy={busyId === contactId}
                   noteDraft={expandedId === contactId ? noteDraft : ''}
                   onToggle={() => toggleExpand(contactId)}
-                  onOutcome={(sig) => onOutcome(contactId, sig)}
+                  onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
                   onNoteChange={setNoteDraft}
                   onSaveNote={() => onSaveNote(contactId)}
                   onDismiss={() => onDismissReply(contactId)}
@@ -411,7 +450,7 @@ interface ActRowProps {
   busy: boolean;
   noteDraft: string;
   onToggle: () => void;
-  onOutcome: (signal: PartnerLastSignal) => void;
+  onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
   onDismiss: () => void;
@@ -477,11 +516,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
           </a>
-          <Chip icon={Voicemail} label="Voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
+          <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
           <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
-          <Chip icon={MessageSquare} label="Link sent" busy={busy} onClick={() => onOutcome('link-sent')} />
-          <Chip icon={MoonStar} label={`Snooze ${SNOOZE_DAYS}d`} busy={busy} onClick={() => onOutcome('deferred')} />
-          <Chip icon={Ban} label="Not a fit" busy={busy} onClick={() => onOutcome('skip')} />
+          <Chip icon={MessageSquare} label="Sent link" busy={busy} onClick={() => onOutcome('link-sent')} />
+          <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
+            onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
+          <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
+            onPick={(v) => { const o = SETASIDE_OPTS[v]; if (o) onOutcome(o.signal, { note: o.note, days: o.days }); }} />
         </div>
       )}
 
@@ -593,6 +634,29 @@ function Chip({ icon: Icon, label, busy, onClick }: { icon: typeof Phone; label:
       className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40">
       <Icon className="h-3.5 w-3.5" /> {label}
     </button>
+  );
+}
+
+// A chip-styled dropdown — pick an option and it fires onPick, then resets.
+// Used for Snooze (durations) and Set aside (reasons) so the choice is explicit.
+function ActionSelect({
+  icon: Icon, label, options, busy, onPick,
+}: {
+  icon: typeof Phone; label: string; busy: boolean;
+  options: { value: string; label: string }[]; onPick: (v: string) => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2 py-1.5 text-xs text-amari-text-muted">
+      <Icon className="h-3.5 w-3.5" />
+      <select
+        defaultValue="" disabled={busy}
+        onChange={(e) => { const v = e.target.value; if (v) { onPick(v); e.currentTarget.value = ''; } }}
+        className="bg-transparent pr-1 text-xs text-amari-text-muted focus:outline-none disabled:opacity-40"
+      >
+        <option value="" disabled>{label}</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </span>
   );
 }
 
