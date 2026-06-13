@@ -3,7 +3,7 @@
 // functions/api/ghl-purchase-webhook.js. Kept in sync manually — if the
 // workflow set of actions changes in GHL, update this file.
 
-import { getContact, patchContact, addContactNote } from "./ghl.js";
+import { getContact, patchContact, addContactNote, removeContactTags } from "./ghl.js";
 import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
 
 // Series + upgrade products. Derived from the single source of truth
@@ -202,10 +202,16 @@ export async function reconcileOrder(env, orderDetail) {
     customFields.push({ id: FIELD_IDS.living_practice_access, value: ["true"] });
   }
 
-  const newTags = (contact.tags || []).filter((t) => !REMOVE_TAGS.includes(t));
   const tagsRemoved = (contact.tags || []).filter((t) => REMOVE_TAGS.includes(t));
 
-  await patchContact(env, contactId, customFields, newTags);
+  // Write fields and remove tags as SEPARATE operations. patchContact must NOT
+  // receive a tags array here — a wholesale PUT replace would clobber any tag a
+  // concurrent GHL workflow set between our read and write (GHL triggers are
+  // tag-driven). removeContactTags deletes only the named tags additively.
+  await patchContact(env, contactId, customFields);
+  if (tagsRemoved.length) {
+    await removeContactTags(env, contactId, tagsRemoved);
+  }
 
   const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${pkg.sessionsToSet}, portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
   await addContactNote(env, contactId, noteBody);

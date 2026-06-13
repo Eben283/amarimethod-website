@@ -148,6 +148,18 @@ export async function patchContact(env, contactId, customFields, tags) {
   return ghlPut(env, `/contacts/${contactId}`, body);
 }
 
+// Remove specific tags from a contact WITHOUT replacing its tag array.
+// patchContact's `tags` arg does a wholesale PUT replace, which clobbers tags a
+// concurrent GHL workflow set (and GHL triggers are tag-driven). The dedicated
+// DELETE /contacts/{id}/tags endpoint mutates only the named tags; removing an
+// absent tag is a harmless no-op, so this is safe to retry.
+export async function removeContactTags(env, contactId, tags) {
+  const list = [...new Set(tags || [])].filter(Boolean);
+  if (!list.length) return { removed: [] };
+  await ghlRequest(env, "DELETE", `/contacts/${contactId}/tags`, { tags: list });
+  return { removed: list };
+}
+
 export async function addContactNote(env, contactId, body) {
   return ghlPost(env, `/contacts/${contactId}/notes`, { body });
 }
