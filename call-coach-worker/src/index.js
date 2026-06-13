@@ -44,17 +44,20 @@ export default {
     ctx.waitUntil(runCoach(env, yesterdayPacific()));
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const denied = requireWorkerAuth(request, env);
     if (denied) return denied;
 
     const url = new URL(request.url);
 
     // /run?date=YYYY-MM-DD — coach a given Pacific date (defaults to yesterday).
+    // Fire-and-return: running inline exceeds the fetch request limit and gets cut
+    // before writing the digest/status. waitUntil lets it finish in the background
+    // (same as the cron). Poll /status or /latest after.
     if (url.pathname === "/run") {
       const date = url.searchParams.get("date") || yesterdayPacific();
-      const result = await runCoach(env, date);
-      return json(result);
+      ctx.waitUntil(runCoach(env, date));
+      return json({ started: true, date, message: "Coaching run started — check /status or /latest." }, 202);
     }
 
     // /latest?date=YYYY-MM-DD — read the daily digest (defaults to yesterday).
