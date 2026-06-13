@@ -386,7 +386,10 @@ export async function onRequestPost(context) {
         note: (body.compNote || "").trim() || null,
         drawsFromPackage,
         currentRemaining,
-        recordedBy: tokenPayload.email || tokenPayload.sub || "staff",
+        // staff-auth issues a token shaped { role, user, exp } — it has no
+        // email/sub, so the old read always fell through to "staff" and payment
+        // records lost the Garrett-vs-Eben attribution. Use the actual field.
+        recordedBy: tokenPayload.user || tokenPayload.email || tokenPayload.sub || "staff",
         at: new Date().toISOString(),
       });
       if (capture && context.env.PURCHASE_KV) {
