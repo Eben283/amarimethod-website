@@ -10,10 +10,11 @@ vi.mock('../lib/ghl.js', () => ({
   ghlFetch: vi.fn(),
   ghlHeaders: vi.fn(() => ({ Authorization: 'Bearer tok' })),
   getGhlToken: vi.fn(async () => 'tok'),
+  applyTagDelta: vi.fn(async () => ({ added: [], removed: [] })),
 }));
 
 import { onRequestPost, INVOICE_PURCHASE_PRODUCTS } from './ghl-invoice-webhook.js';
-import { ghlFetch } from '../lib/ghl.js';
+import { ghlFetch, applyTagDelta } from '../lib/ghl.js';
 
 const SECRET = 'shh';
 const FIELD = {
@@ -78,7 +79,14 @@ describe('invoice-webhook — write orchestration', () => {
       { id: FIELD.portalAccess, field_value: true },
       { id: FIELD.livingPractice, field_value: true },
     ]));
-    expect(payload.tags).toContain('invoice-series-purchased'); // downstream cleanup trigger
+    // Tags are NOT in the PUT body — that would clobber concurrent workflow tags.
+    expect(payload.tags).toBeUndefined();
+    // The downstream cleanup trigger tag is applied additively instead.
+    expect(applyTagDelta).toHaveBeenCalledWith(
+      expect.anything(),
+      'c1',
+      expect.objectContaining({ add: ['invoice-series-purchased'] }),
+    );
     expect(ctx.env.PURCHASE_KV.put).toHaveBeenCalledWith('invoice:inv1', expect.any(String), expect.objectContaining({ expirationTtl: expect.any(Number) }));
   });
 

@@ -13,10 +13,11 @@ vi.mock('./ghl.js', () => ({
   getContact: vi.fn(),
   patchContact: vi.fn(),
   addContactNote: vi.fn(),
+  removeContactTags: vi.fn(),
 }));
 
-import { reconcileOrder, PACKAGE_PRODUCTS, FIELD_IDS } from './reconcile.js';
-import { getContact, patchContact, addContactNote } from './ghl.js';
+import { reconcileOrder, PACKAGE_PRODUCTS, FIELD_IDS, REMOVE_TAGS } from './reconcile.js';
+import { getContact, patchContact, addContactNote, removeContactTags } from './ghl.js';
 
 // Real productIds (mirror reconcile.test.js / PACKAGE_PRODUCTS).
 const PID = {
@@ -85,6 +86,37 @@ describe('reconcileOrder — write orchestration', () => {
     expect(env.PURCHASE_KV.put).toHaveBeenCalled();
     expect(env.PURCHASE_KV.put.mock.calls[0][0]).toBe('processed:order-1');
     expect(JSON.parse(env.store['processed:order-1']).action).toBe('applied');
+  });
+
+  it('REGRESSION (tag-clobber M10): removes only REMOVE_TAGS via removeContactTags and never PUTs a full tag array — unrelated tags survive', async () => {
+    const env = makeEnv();
+    const removeTag = REMOVE_TAGS[0]; // e.g. "discovery call attended"
+    const unrelatedTag = 'vip-do-not-clobber';
+    getContact.mockResolvedValue(contact({}, [removeTag, unrelatedTag]));
+
+    const res = await reconcileOrder(env, order());
+    expect(res.status).toBe('applied');
+
+    // patchContact must be called WITHOUT a tags array (4th arg undefined) so the
+    // contact PUT can't replace the whole tag set and drop `unrelatedTag`.
+    expect(patchContact).toHaveBeenCalledTimes(1);
+    expect(patchContact.mock.calls[0][3]).toBeUndefined();
+
+    // Only the REMOVE_TAG is deleted, additively; the unrelated tag is never touched.
+    expect(removeContactTags).toHaveBeenCalledTimes(1);
+    const [, , tagsArg] = removeContactTags.mock.calls[0];
+    expect(tagsArg).toEqual([removeTag]);
+    expect(tagsArg).not.toContain(unrelatedTag);
+  });
+
+  it('skips removeContactTags entirely when the contact carries none of REMOVE_TAGS', async () => {
+    const env = makeEnv();
+    getContact.mockResolvedValue(contact({}, ['vip-only']));
+
+    await reconcileOrder(env, order());
+
+    expect(patchContact).toHaveBeenCalledTimes(1);
+    expect(removeContactTags).not.toHaveBeenCalled();
   });
 
   it('applies a 4-session purchase WITHOUT living_practice_access (4-pack has no LP)', async () => {

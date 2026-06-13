@@ -39,7 +39,7 @@
 // 11. Add tag: invoice-series-purchased (triggers downstream cleanup workflow)
 // 12. Store invoice id in KV for idempotency
 
-import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 
@@ -321,14 +321,11 @@ export async function onRequestPost(context) {
       fieldUpdates.push({ id: FIELD_IDS.livingPracticeAccess, field_value: true });
     }
 
-    // 7. PUT updated fields + tag changes to GHL
+    // 7. PUT updated custom fields to GHL.
+    //    IMPORTANT: never send a `tags` field on this PUT — GHL replaces the
+    //    whole tag array, which would clobber tags a concurrent workflow set
+    //    (and GHL triggers are tag-driven). Tags are applied additively in 7b.
     const token = await getGhlToken(context);
-    const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
-    const nextTags = [
-      ...existingTags.filter((t) => !TAGS_TO_REMOVE.includes(t)),
-      ...(existingTags.includes(DOWNSTREAM_TRIGGER_TAG) ? [] : [DOWNSTREAM_TRIGGER_TAG]),
-    ];
-
     const updateRes = await fetch(
       `${GHL_API_BASE}/contacts/${sanitizedContactId}`,
       {
@@ -336,7 +333,6 @@ export async function onRequestPost(context) {
         headers: ghlHeaders(token),
         body: JSON.stringify({
           customFields: fieldUpdates,
-          tags: nextTags,
         }),
       },
     );
@@ -348,6 +344,27 @@ export async function onRequestPost(context) {
       );
       return new Response(
         JSON.stringify({ error: "Failed to update contact" }),
+        { status: 500, headers },
+      );
+    }
+
+    // 7b. Apply tag changes additively (only the tags we own), so concurrent
+    //     workflow tag writes survive. Safe to retry: add of a present tag /
+    //     remove of an absent tag are no-ops.
+    const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
+    try {
+      await applyTagDelta(context, sanitizedContactId, {
+        add: existingTags.includes(DOWNSTREAM_TRIGGER_TAG)
+          ? []
+          : [DOWNSTREAM_TRIGGER_TAG],
+        remove: TAGS_TO_REMOVE.filter((t) => existingTags.includes(t)),
+      });
+    } catch (err) {
+      console.error(
+        `[ghl-invoice-webhook] tag delta failed for ${sanitizedContactId}: ${err.message}`,
+      );
+      return new Response(
+        JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
       );
     }
