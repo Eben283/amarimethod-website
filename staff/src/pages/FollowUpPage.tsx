@@ -104,6 +104,22 @@ function ago(d: number | null): string {
   return `${d}d ago`;
 }
 
+// Not every inbound message needs a reply. "Thanks", "we'll be in touch", 👍 are
+// conversation-closers — terminal, no action. GHL flags any inbound-last message
+// as needs-reply, so we filter closers out of the urgent tier. Imperfect on
+// purpose — backed by a one-tap "No reply needed" on each row, and the Messages
+// tab still shows everything as the safety net.
+const CLOSER_RE = /\b(thank you|thanks|thx|ty|appreciate it|much appreciated|sounds good|sounds great|will do|we'?ll be in touch|be in touch|likewise|same to you|talk soon|see you|see ya|no worries|got it|perfect|great|awesome|wonderful)\b/i;
+const QUESTION_RE = /\?|\b(can|could|would|when|what|where|how|why|which|do you|are you|is there|reschedul|cancel|change|price|cost|available|book|question)\b/i;
+function isCloser(text: string | null | undefined): boolean {
+  if (!text) return true;            // empty/unknown inbound = nothing actionable
+  const t = text.trim();
+  if (!t) return true;
+  if (t.length > 80) return false;   // long messages probably say something
+  if (QUESTION_RE.test(t)) return false; // a question always needs a reply
+  return CLOSER_RE.test(t);
+}
+
 // The Act Now engine: one reason per prospect, derived from GHL signals.
 function derive(p: PartnerProspect): Derived {
   if (p.isActivePartner || p.partnerStage === 'partner' || p.partnerStage === 'session-booked') {
@@ -121,8 +137,13 @@ function derive(p: PartnerProspect): Derived {
   const d = daysSince(lastTouchAt(p));
   const sig = p.partnerLastSignal;
 
+  // New / untouched ranks BELOW warm in-progress follow-ups (urgency < the
+  // talked/voicemail/link tiers): the leak we're fixing is dropped follow-through,
+  // and Garrett over-indexes on fresh first calls. No arrival date in the feed
+  // yet, so we can't bump genuinely-fresh leads for speed-to-lead — all untouched
+  // sit in one low tier above only the end-of-rope decision.
   if (!sig && (p.touchCount ?? 0) === 0) {
-    return { kind: 'act', urgency: 80, action: 'call', why: 'New — not contacted yet.' };
+    return { kind: 'act', urgency: 45, action: 'call', why: 'New lead — first contact (after your follow-ups).' };
   }
   if ((p.touchCount ?? 0) >= END_OF_ROPE_TOUCHES) {
     return { kind: 'act', urgency: 38, action: 'decide', why: `${p.touchCount} touches, no traction — keep trying, or set aside?` };
@@ -191,6 +212,7 @@ export default function FollowUpPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
+  const [dismissedReplies, setDismissedReplies] = useState<Set<string>>(new Set()); // session-only "no reply needed"
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,7 +247,7 @@ export default function FollowUpPage() {
   // 1) Unanswered replies — always top. (Messages folded in.)
   const replyItems = useMemo<ReplyItem[]>(() => {
     return conversations
-      .filter((c) => c.needsReply)
+      .filter((c) => c.needsReply && !isCloser(c.lastMessagePreview) && !dismissedReplies.has(c.contactId))
       .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
       .map((conv) => ({
         kind: 'reply' as const,
@@ -233,7 +255,7 @@ export default function FollowUpPage() {
         // A non-prospect who messaged is treated as a client; partners are clients too.
         isClient: prospectMap.get(conv.contactId)?.isActivePartner ?? !prospectMap.has(conv.contactId),
       }));
-  }, [conversations, prospectMap]);
+  }, [conversations, prospectMap, dismissedReplies]);
 
   // 2) Prospects needing a touch — minus anyone already surfaced as a reply.
   const prospectActNow = useMemo<ProspectItem[]>(() => {
@@ -282,6 +304,10 @@ export default function FollowUpPage() {
       setBusyId(null);
     }
   }, [load, logout]);
+
+  const onDismissReply = useCallback((contactId: string) => {
+    setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
+  }, []);
 
   const onSaveNote = useCallback(async (contactId: string) => {
     const text = noteDraft.trim();
@@ -349,6 +375,7 @@ export default function FollowUpPage() {
                   onOutcome={(sig) => onOutcome(contactId, sig)}
                   onNoteChange={setNoteDraft}
                   onSaveNote={() => onSaveNote(contactId)}
+                  onDismiss={() => onDismissReply(contactId)}
                 />
               );
             })}
@@ -387,9 +414,10 @@ interface ActRowProps {
   onOutcome: (signal: PartnerLastSignal) => void;
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
+  onDismiss: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -427,6 +455,20 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
         </div>
       </button>
+
+      {/* reply quick actions — reply in GHL, or clear it if nothing's needed */}
+      {isReply && (
+        <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+          <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+            <ExternalLink className="h-3.5 w-3.5" /> Reply in GHL
+          </a>
+          <button type="button" onClick={onDismiss}
+            className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand">
+            <CheckCircle2 className="h-3.5 w-3.5" /> No reply needed
+          </button>
+        </div>
+      )}
 
       {/* quick triage — prospects only (replies you handle in GHL) */}
       {!isReply && (
