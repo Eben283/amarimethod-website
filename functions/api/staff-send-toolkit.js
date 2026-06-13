@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: POST /api/staff-send-toolkit
 // Sends the partner toolkit SMS, adds affiliate-partner tag, and updates pipeline to Partner/Won
 
-import { ghlFetch } from "../lib/ghl.js";
+import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -84,14 +84,11 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers });
     }
 
-    // Add affiliate-partner tag if not already present
+    // Add affiliate-partner tag if not already present. Use the dedicated tag
+    // endpoint (additive) rather than a full-array PUT so concurrent contact
+    // writes don't clobber each other's tags.
     if (!tags.includes("affiliate-partner")) {
-      await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          tags: [...tags, "affiliate-partner"],
-        }),
-      });
+      await applyTagDelta(context, contactId, { add: ["affiliate-partner"] });
     }
 
     // Update Partnership Pipeline opportunity to Partner/Won
