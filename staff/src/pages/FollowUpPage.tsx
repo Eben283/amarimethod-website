@@ -9,6 +9,7 @@ import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, ApiError,
 } from '../lib/api';
+import { suggestedTexts } from '../lib/followupCopy';
 import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
@@ -534,7 +535,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               <ExternalLink className="h-3.5 w-3.5" /> Reply in GHL
             </a>
           ) : (
-            <Details p={item.p} />
+            <>
+              <SuggestedTexts p={item.p} d={item.d} />
+              <Details p={item.p} />
+            </>
           )}
 
           {/* activity timeline */}
@@ -617,6 +621,44 @@ function Details({ p }: { p: PartnerProspect }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Garrett-voice texts for this prospect — tap to copy, paste into the GHL thread.
+// Copy lives in src/lib/followupCopy.ts (edit there).
+function SuggestedTexts({ p, d }: { p: PartnerProspect; d: Derived }) {
+  if (d.action !== 'text' && d.action !== 'reback') return null;
+  const texts = suggestedTexts(p);
+  if (!texts.length) return null;
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        Texts to send — tap to copy, paste in GHL
+      </p>
+      <div className="space-y-1.5">
+        {texts.map((t, i) => <CopyText key={i} text={t} />)}
+      </div>
+    </div>
+  );
+}
+
+function CopyText({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard?.writeText(text)
+          .then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); })
+          .catch(() => {});
+      }}
+      className="block w-full rounded-lg border border-amari-border p-2.5 text-left hover:bg-amari-light-sand"
+    >
+      <span className="block text-sm text-amari-charcoal">{text}</span>
+      <span className={`mt-1 block text-[11px] ${copied ? 'text-emerald-600' : 'text-amari-text-muted'}`}>
+        {copied ? '✓ Copied' : 'Tap to copy'}
+      </span>
+    </button>
   );
 }
 
