@@ -1,36 +1,47 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
-  Voicemail, CheckCircle2, Clock, MoonStar, Ban,
+  Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
+  Mail, StickyNote, Calendar, Globe, Reply, Send,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getPartnerProspects, recordPartnerOutcome, ApiError } from '../lib/api';
-import type { PartnerProspect, PartnerLastSignal } from '../types/staff';
+import {
+  getPartnerProspects, getConversations, getPartnerActivity,
+  recordPartnerOutcome, addNote, ApiError,
+} from '../lib/api';
+import type {
+  PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
+} from '../types/staff';
 
-// ── FOLLOW-UP / COMMUNICATION SURFACE (v1, additive) ──────────────────────────
-// A worklist, not a database to filter. Each row exists for ONE reason ("why now")
-// and offers the next action. Built additively alongside the existing Outreach tab
-// (PartnersPage) so it's fully reversible — see ops/drafts/followup-comms-surface-spec.md.
+// ── FOLLOW-UP / COMMUNICATION SURFACE ─────────────────────────────────────────
+// The single place for "who do I need to communicate with, and what's the next
+// move" — prospects AND clients. Replaces Outreach + Messages. A ranked worklist,
+// not a database to filter; full detail one tap away. See the spec:
+// ops/drafts/followup-comms-surface-spec.md (in the amari-method-docs repo).
 //
-// What's NOT here yet (edit later):
-//  • Inbound-reply prioritization (needs the conversations-direction merge).
-//  • Auto-emails (GHL workflows — pending a fix-advisor pass; this page sends nothing).
-//  • Garrett's real intervals + industry-segmented copy variations.
-//  • "Bring back" from Set Aside writes no stage (no clean reactivate signal yet) — opens GHL.
+// Ranking (top → bottom): unanswered inbound replies → hot momentum → timed
+// follow-ups due → scheduled returns → end-of-rope decision. Everything else is
+// Waiting (cooling off, counted) or Set Aside (parked, reversible).
+//
+// GHL is the only sender — this page records outcomes + deep-links to the GHL
+// thread to actually call/text. It sends no messages itself.
+//
+// Still placeholder (edit later): per-stage copy-paste variations (Garrett's
+// words), auto-emails (GHL workflows, fix-advisor first), inline field editing,
+// Garrett's real cadence intervals, full IA promotion to primary nav.
 
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
 const ghlContactUrl = (contactId: string) =>
   `https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${contactId}`;
 
-// Cadence thresholds — PLACEHOLDERS, tunable to Garrett's actual rhythm (he runs
-// slower than sales-optimal; coach mode nudges him forward, see spec).
+// Cadence thresholds — PLACEHOLDERS, tunable to Garrett's actual (slower) rhythm.
 const VM_FOLLOWUP_DAYS = 3;
 const TALKED_FOLLOWUP_DAYS = 1;
 const LINK_FOLLOWUP_DAYS = 3;
 const OFFPLATFORM_FOLLOWUP_DAYS = 3;
 const NOANSWER_RETRY_DAYS = 1;
 const QUIET_NUDGE_DAYS = 3;
-const END_OF_ROPE_TOUCHES = 6;       // ~3 VM / extras — refine with real caps
+const END_OF_ROPE_TOUCHES = 6;
 const SNOOZE_DAYS = 7;
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
@@ -38,12 +49,13 @@ type ActionKind = 'call' | 'text' | 'reback' | 'decide';
 
 interface Derived {
   kind: RowKind;
-  urgency: number;       // higher sorts first in Act Now
-  why: string;          // the "why now" line, coach-framed
+  urgency: number;
+  why: string;
   action: ActionKind | null;
-  asideReason?: string;  // shown in Set Aside view
+  asideReason?: string;
 }
 
+// ── helpers ──────────────────────────────────────────────────────────────────
 function daysSince(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const then = new Date(iso).getTime();
@@ -65,6 +77,18 @@ function friendlyDate(iso: string | null | undefined): string {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function relTime(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms)) return '';
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function displayName(s: string | null | undefined): string {
   if (!s) return '';
   const t = s.trim();
@@ -80,42 +104,31 @@ function ago(d: number | null): string {
   return `${d}d ago`;
 }
 
-// The engine: one reason per prospect, derived from GHL signals.
+// The Act Now engine: one reason per prospect, derived from GHL signals.
 function derive(p: PartnerProspect): Derived {
-  // Converted — they booked / are a partner. v1 keeps them out of the worklist
-  // (client-mode comms is a later phase); we just count them.
   if (p.isActivePartner || p.partnerStage === 'partner' || p.partnerStage === 'session-booked') {
     return { kind: 'converted', urgency: 0, why: 'Booked — now a client.', action: null };
   }
-
-  // Set aside — dropped / not interested.
   if (p.partnerStage === 'dropped') {
     return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not a fit' };
   }
-
-  // Snoozed (future-potential): back in the list once the date passes, else parked.
   if (p.partnerStage === 'future-potential') {
     const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : true;
-    if (due) {
-      return { kind: 'act', urgency: 92, action: 'reback', why: 'Snoozed lead is back — worth another look.' };
-    }
+    if (due) return { kind: 'act', urgency: 92, action: 'reback', why: 'Snoozed lead is back — worth another look.' };
     return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: `Snoozed until ${friendlyDate(p.partnerFollowupAt)}` };
   }
 
   const d = daysSince(lastTouchAt(p));
   const sig = p.partnerLastSignal;
 
-  // Never contacted.
   if (!sig && (p.touchCount ?? 0) === 0) {
     return { kind: 'act', urgency: 80, action: 'call', why: 'New — not contacted yet.' };
   }
-
-  // End of the rope — stop the nagging, ask for a decision instead.
   if ((p.touchCount ?? 0) >= END_OF_ROPE_TOUCHES) {
     return { kind: 'act', urgency: 38, action: 'decide', why: `${p.touchCount} touches, no traction — keep trying, or set aside?` };
   }
 
-  const due = (threshold: number) => d === null || d >= threshold;
+  const due = (t: number) => d === null || d >= t;
   const waiting = (label: string): Derived => ({ kind: 'waiting', urgency: 0, why: label, action: null });
 
   switch (sig) {
@@ -145,112 +158,50 @@ function derive(p: PartnerProspect): Derived {
     case 'not-interested':
       return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not interested' };
     default:
-      // Working, touched before, signal unclear.
       return due(QUIET_NUDGE_DAYS)
         ? { kind: 'act', urgency: 50, action: 'text', why: `Quiet ${ago(d)} — a check-in would feel natural here.` }
         : waiting('Recently touched');
   }
 }
 
-const URGENCY_DOT: Record<ActionKind, string> = {
-  reback: 'bg-amari-accent-warm',
-  call: 'bg-emerald-500',
-  text: 'bg-amari-accent-warm',
-  decide: 'bg-amber-500',
-};
+// Unified worklist item: an unanswered reply OR a prospect needing a touch.
+type ReplyItem = { kind: 'reply'; conv: ConversationSummary; isClient: boolean };
+type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived };
+type ActItem = ReplyItem | ProspectItem;
 
+const URGENCY_DOT: Record<ActionKind, string> = {
+  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', decide: 'bg-amber-500',
+};
 const ACTION_LABEL: Record<ActionKind, string> = {
   reback: 'Re-reach', call: 'Call', text: 'Text', decide: 'Decide',
 };
 
-interface RowProps {
-  p: PartnerProspect;
-  d: Derived;
-  busy: boolean;
-  onOutcome: (p: PartnerProspect, signal: PartnerLastSignal) => void;
-}
-
-function Row({ p, d, busy, onOutcome }: RowProps) {
-  const name = displayName(p.fullName);
-  const industry = p.category && p.category !== 'unknown' ? p.category : '';
-  const isClient = p.isActivePartner;
-  const touch = ago(daysSince(lastTouchAt(p)));
-
-  return (
-    <div
-      className={`rounded-xl border bg-white p-3 ${
-        isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'
-      }`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            {d.action && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[d.action]}`} />}
-            <span className="truncate font-medium text-amari-charcoal">{name || 'Unknown'}</span>
-            {industry && (
-              <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">
-                {industry}
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-amari-charcoal">{d.why}</p>
-          <p className="mt-0.5 text-[11px] text-amari-text-muted">Last touch: {touch}</p>
-        </div>
-        {d.action && (
-          <span className="shrink-0 rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">
-            {ACTION_LABEL[d.action]}
-          </span>
-        )}
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <a
-          href={ghlContactUrl(p.contactId)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand"
-        >
-          <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
-        </a>
-        <Chip icon={Voicemail} label="Voicemail" busy={busy} onClick={() => onOutcome(p, 'voicemail')} />
-        <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome(p, 'talked')} />
-        <Chip icon={MessageSquare} label="Link sent" busy={busy} onClick={() => onOutcome(p, 'link-sent')} />
-        <Chip icon={MoonStar} label={`Snooze ${SNOOZE_DAYS}d`} busy={busy} onClick={() => onOutcome(p, 'deferred')} />
-        <Chip icon={Ban} label="Not a fit" busy={busy} onClick={() => onOutcome(p, 'skip')} />
-      </div>
-    </div>
-  );
-}
-
-function Chip({
-  icon: Icon, label, busy, onClick,
-}: { icon: typeof Phone; label: string; busy: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40"
-    >
-      <Icon className="h-3.5 w-3.5" /> {label}
-    </button>
-  );
-}
+const ACTIVITY_ICON: Record<PartnerActivityEvent['type'], typeof Phone> = {
+  call: Phone, sms: MessageSquare, email: Mail, signal: CheckCircle2, note: StickyNote, appointment: Calendar,
+};
 
 export default function FollowUpPage() {
   const { logout } = useAuth();
   const [prospects, setProspects] = useState<PartnerProspect[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'act' | 'aside'>('act');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
+  const [noteDraft, setNoteDraft] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getPartnerProspects();
-      setProspects(res.prospects);
+      const [prospectsRes, convoRes] = await Promise.all([
+        getPartnerProspects(),
+        getConversations('needs_reply').catch(() => ({ conversations: [] as ConversationSummary[] })),
+      ]);
+      setProspects(prospectsRes.prospects);
+      setConversations((convoRes as { conversations: ConversationSummary[] }).conversations || []);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load follow-ups');
@@ -261,31 +212,68 @@ export default function FollowUpPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const rows = useMemo(
+  const prospectMap = useMemo(
+    () => new Map(prospects.map((p) => [p.contactId, p])),
+    [prospects],
+  );
+
+  const derived = useMemo(
     () => prospects.map((p) => ({ p, d: derive(p) })),
     [prospects],
   );
 
-  const actNow = useMemo(
-    () => rows.filter((r) => r.d.kind === 'act').sort((a, b) => b.d.urgency - a.d.urgency),
-    [rows],
-  );
-  const setAside = useMemo(() => rows.filter((r) => r.d.kind === 'aside'), [rows]);
-  const counts = useMemo(() => ({
-    act: rows.filter((r) => r.d.kind === 'act').length,
-    waiting: rows.filter((r) => r.d.kind === 'waiting').length,
-    aside: rows.filter((r) => r.d.kind === 'aside').length,
-    converted: rows.filter((r) => r.d.kind === 'converted').length,
-    total: rows.length,
-  }), [rows]);
+  // 1) Unanswered replies — always top. (Messages folded in.)
+  const replyItems = useMemo<ReplyItem[]>(() => {
+    return conversations
+      .filter((c) => c.needsReply)
+      .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
+      .map((conv) => ({
+        kind: 'reply' as const,
+        conv,
+        // A non-prospect who messaged is treated as a client; partners are clients too.
+        isClient: prospectMap.get(conv.contactId)?.isActivePartner ?? !prospectMap.has(conv.contactId),
+      }));
+  }, [conversations, prospectMap]);
 
-  const onOutcome = useCallback(async (p: PartnerProspect, signal: PartnerLastSignal) => {
-    setBusyId(p.contactId);
+  // 2) Prospects needing a touch — minus anyone already surfaced as a reply.
+  const prospectActNow = useMemo<ProspectItem[]>(() => {
+    const replyIds = new Set(replyItems.map((r) => r.conv.contactId));
+    return derived
+      .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId))
+      .sort((a, b) => b.d.urgency - a.d.urgency)
+      .map((r) => ({ kind: 'prospect' as const, p: r.p, d: r.d }));
+  }, [derived, replyItems]);
+
+  const actItems = useMemo<ActItem[]>(() => [...replyItems, ...prospectActNow], [replyItems, prospectActNow]);
+  const setAside = useMemo(() => derived.filter((r) => r.d.kind === 'aside'), [derived]);
+
+  const counts = useMemo(() => ({
+    replies: replyItems.length,
+    act: prospectActNow.length,
+    waiting: derived.filter((r) => r.d.kind === 'waiting').length,
+    aside: setAside.length,
+    converted: derived.filter((r) => r.d.kind === 'converted').length,
+    total: derived.length,
+  }), [replyItems, prospectActNow, derived, setAside]);
+
+  const toggleExpand = useCallback((contactId: string) => {
+    setExpandedId((cur) => (cur === contactId ? null : contactId));
+    setNoteDraft('');
+    if (!activity[contactId]) {
+      setActivity((a) => ({ ...a, [contactId]: 'loading' }));
+      getPartnerActivity(contactId)
+        .then((res) => setActivity((a) => ({ ...a, [contactId]: res.events })))
+        .catch(() => setActivity((a) => ({ ...a, [contactId]: 'error' })));
+    }
+  }, [activity]);
+
+  const onOutcome = useCallback(async (contactId: string, signal: PartnerLastSignal) => {
+    setBusyId(contactId);
     try {
       const followupAt = signal === 'deferred'
         ? new Date(Date.now() + SNOOZE_DAYS * 86_400_000).toISOString()
         : undefined;
-      await recordPartnerOutcome({ contactId: p.contactId, signal, followupAt });
+      await recordPartnerOutcome({ contactId, signal, followupAt });
       await load();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
@@ -295,19 +283,33 @@ export default function FollowUpPage() {
     }
   }, [load, logout]);
 
+  const onSaveNote = useCallback(async (contactId: string) => {
+    const text = noteDraft.trim();
+    if (!text) return;
+    setBusyId(contactId);
+    try {
+      await addNote(contactId, text);
+      setNoteDraft('');
+      setActivity((a) => { const next = { ...a }; delete next[contactId]; return next; });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) { logout(); return; }
+      setError(err instanceof Error ? err.message : 'Failed to save note');
+    } finally {
+      setBusyId(null);
+    }
+  }, [noteDraft, logout]);
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-amari-charcoal">Follow-Up</h1>
           <p className="text-xs text-amari-text-muted">
-            {counts.total} in the funnel · {counts.act} to act on · {counts.waiting} cooling off · {counts.converted} booked
+            {counts.replies} to reply · {counts.act} to reach out · {counts.waiting} cooling off · {counts.total} in the funnel
           </p>
         </div>
         <button
-          type="button"
-          onClick={load}
-          disabled={loading}
+          type="button" onClick={load} disabled={loading}
           className="rounded-lg border border-amari-border p-2 text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40"
           aria-label="Refresh"
         >
@@ -316,7 +318,7 @@ export default function FollowUpPage() {
       </div>
 
       <div className="mb-4 flex gap-1 rounded-xl bg-amari-light-sand p-1">
-        <Tab active={view === 'act'} onClick={() => setView('act')} label={`Act Now (${counts.act})`} icon={Clock} />
+        <Tab active={view === 'act'} onClick={() => setView('act')} label={`Act Now (${counts.replies + counts.act})`} icon={Clock} />
         <Tab active={view === 'aside'} onClick={() => setView('aside')} label={`Set Aside (${counts.aside})`} icon={MoonStar} />
       </div>
 
@@ -327,17 +329,29 @@ export default function FollowUpPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-amari-charcoal" />
-        </div>
+        <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-amari-charcoal" /></div>
       ) : view === 'act' ? (
-        actNow.length === 0 ? (
-          <Empty icon={CheckCircle2} title="Nothing needs you right now" sub="Cleared the list — nice." />
+        actItems.length === 0 ? (
+          <Empty icon={CheckCircle2} title="Nothing needs you right now" sub="No unanswered messages, no follow-ups due. Nice." />
         ) : (
           <div className="space-y-2">
-            {actNow.map(({ p, d }) => (
-              <Row key={p.contactId} p={p} d={d} busy={busyId === p.contactId} onOutcome={onOutcome} />
-            ))}
+            {actItems.map((item) => {
+              const contactId = item.kind === 'reply' ? item.conv.contactId : item.p.contactId;
+              return (
+                <ActRow
+                  key={`${item.kind}-${contactId}`}
+                  item={item}
+                  expanded={expandedId === contactId}
+                  activity={activity[contactId]}
+                  busy={busyId === contactId}
+                  noteDraft={expandedId === contactId ? noteDraft : ''}
+                  onToggle={() => toggleExpand(contactId)}
+                  onOutcome={(sig) => onOutcome(contactId, sig)}
+                  onNoteChange={setNoteDraft}
+                  onSaveNote={() => onSaveNote(contactId)}
+                />
+              );
+            })}
           </div>
         )
       ) : setAside.length === 0 ? (
@@ -350,12 +364,8 @@ export default function FollowUpPage() {
                 <span className="truncate font-medium text-amari-charcoal">{displayName(p.fullName) || 'Unknown'}</span>
                 <p className="text-[11px] text-amari-text-muted">{d.asideReason}</p>
               </div>
-              <a
-                href={ghlContactUrl(p.contactId)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand"
-              >
+              <a href={ghlContactUrl(p.contactId)} target="_blank" rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
                 <ExternalLink className="h-3.5 w-3.5" /> GHL
               </a>
             </div>
@@ -366,15 +376,188 @@ export default function FollowUpPage() {
   );
 }
 
+// ── unified row (reply or prospect), expandable ──────────────────────────────
+interface ActRowProps {
+  item: ActItem;
+  expanded: boolean;
+  activity: PartnerActivityEvent[] | 'loading' | 'error' | undefined;
+  busy: boolean;
+  noteDraft: string;
+  onToggle: () => void;
+  onOutcome: (signal: PartnerLastSignal) => void;
+  onNoteChange: (v: string) => void;
+  onSaveNote: () => void;
+}
+
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote }: ActRowProps) {
+  const isReply = item.kind === 'reply';
+  const contactId = isReply ? item.conv.contactId : item.p.contactId;
+  const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
+  const isClient = isReply ? item.isClient : item.p.isActivePartner;
+  const industry = !isReply && item.p.category !== 'unknown' ? item.p.category : '';
+
+  return (
+    <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
+      <button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-2 p-3 text-left">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {isReply
+              ? <Reply className="h-3.5 w-3.5 shrink-0 text-amari-accent-warm" />
+              : item.d.action && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[item.d.action]}`} />}
+            <span className="truncate font-medium text-amari-charcoal">{name}</span>
+            {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
+            {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
+          </div>
+          {isReply ? (
+            <>
+              <p className="mt-1 line-clamp-2 text-sm text-amari-charcoal">{item.conv.lastMessagePreview || 'Sent you a message'}</p>
+              <p className="mt-0.5 text-[11px] text-amari-text-muted">Replied {relTime(item.conv.lastMessageDate)} · {item.conv.lastMessageType || 'message'}</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-amari-charcoal">{item.d.why}</p>
+              <p className="mt-0.5 text-[11px] text-amari-text-muted">Last touch: {ago(daysSince(lastTouchAt(item.p)))}</p>
+            </>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isReply
+            ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
+            : item.d.action && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[item.d.action]}</span>}
+          {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
+        </div>
+      </button>
+
+      {/* quick triage — prospects only (replies you handle in GHL) */}
+      {!isReply && (
+        <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+          <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+            <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
+          </a>
+          <Chip icon={Voicemail} label="Voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
+          <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
+          <Chip icon={MessageSquare} label="Link sent" busy={busy} onClick={() => onOutcome('link-sent')} />
+          <Chip icon={MoonStar} label={`Snooze ${SNOOZE_DAYS}d`} busy={busy} onClick={() => onOutcome('deferred')} />
+          <Chip icon={Ban} label="Not a fit" busy={busy} onClick={() => onOutcome('skip')} />
+        </div>
+      )}
+
+      {expanded && (
+        <div className="space-y-3 border-t border-amari-border px-3 py-3">
+          {isReply ? (
+            <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white">
+              <ExternalLink className="h-3.5 w-3.5" /> Reply in GHL
+            </a>
+          ) : (
+            <Details p={item.p} />
+          )}
+
+          {/* activity timeline */}
+          <div>
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Recent activity</p>
+            {activity === 'loading' || activity === undefined ? (
+              <Loader2 className="h-4 w-4 animate-spin text-amari-text-muted" />
+            ) : activity === 'error' ? (
+              <p className="text-xs text-amari-text-muted">Couldn't load activity.</p>
+            ) : activity.length === 0 ? (
+              <p className="text-xs text-amari-text-muted">No recent activity.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {activity.slice(0, 12).map((e, i) => {
+                  const Icon = ACTIVITY_ICON[e.type] ?? StickyNote;
+                  return (
+                    <li key={i} className="flex items-start gap-2 text-xs text-amari-charcoal">
+                      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amari-text-muted" />
+                      <span className="shrink-0 text-amari-text-muted">{friendlyDate(e.date)}</span>
+                      <span className="capitalize">{e.signal || e.type}{e.direction ? ` · ${e.direction}` : ''}</span>
+                      {e.body && <span className="truncate text-amari-text-muted">— {e.body}</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* note (second-stage) */}
+          <div>
+            <textarea
+              value={noteDraft}
+              onChange={(e) => onNoteChange(e.target.value)}
+              placeholder="Add a note…"
+              rows={2}
+              className="w-full resize-none rounded-lg border border-amari-border p-2 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
+            />
+            <button
+              type="button" onClick={onSaveNote} disabled={busy || !noteDraft.trim()}
+              className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-40"
+            >
+              <Send className="h-3.5 w-3.5" /> Save note
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Expanded prospect detail (replaces Outreach's modal info).
+function Details({ p }: { p: PartnerProspect }) {
+  const socials = [
+    p.linkedinUrl && { label: 'LinkedIn', url: p.linkedinUrl },
+    p.instagram && { label: 'Instagram', url: p.instagram.startsWith('http') ? p.instagram : `https://instagram.com/${p.instagram.replace(/^@/, '')}` },
+    ...((p.otherUrls || '').split(';').map((u) => u.trim()).filter(Boolean).map((u) => ({ label: 'Web', url: u.startsWith('http') ? u : `https://${u}` }))),
+  ].filter(Boolean) as { label: string; url: string }[];
+
+  return (
+    <div className="space-y-2 text-sm text-amari-charcoal">
+      {p.rundown && <p className="text-amari-text-muted">{p.rundown}</p>}
+      <div className="flex flex-col gap-1">
+        {p.phone && <DetailLine icon={Phone} value={p.phone} href={`tel:${p.phone}`} />}
+        {p.email && <DetailLine icon={Mail} value={p.email} href={`mailto:${p.email}`} />}
+        {p.website && <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />}
+      </div>
+      {(p.partnerFacility || p.partnerFacilityRole) && (
+        <p className="text-xs text-amari-text-muted">
+          {p.partnerFacility}{p.partnerFacility && p.partnerFacilityRole ? ' · ' : ''}{p.partnerFacilityRole}
+        </p>
+      )}
+      {socials.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {socials.map((s, i) => (
+            <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2 py-1 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+              <ExternalLink className="h-3 w-3" /> {s.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailLine({ icon: Icon, value, href }: { icon: typeof Phone; value: string; href: string }) {
+  return (
+    <a href={href} className="inline-flex items-center gap-2 text-amari-charcoal hover:underline">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-amari-text-muted" /> <span className="truncate">{value}</span>
+    </a>
+  );
+}
+
+function Chip({ icon: Icon, label, busy, onClick }: { icon: typeof Phone; label: string; busy: boolean; onClick: () => void }) {
+  return (
+    <button type="button" disabled={busy} onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40">
+      <Icon className="h-3.5 w-3.5" /> {label}
+    </button>
+  );
+}
+
 function Tab({ active, onClick, label, icon: Icon }: { active: boolean; onClick: () => void; label: string; icon: typeof Clock }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors ${
-        active ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'
-      }`}
-    >
+    <button type="button" onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition-colors ${active ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'}`}>
       <Icon className="h-4 w-4" /> {label}
     </button>
   );
