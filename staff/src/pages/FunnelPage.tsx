@@ -82,11 +82,12 @@ function agoLabel(iso: string | null | undefined): string {
 }
 
 // ── painted-art loader: probe /staff/funnel-art/<file>; fall back to SVG ────
-type ArtName = 'bear' | 'trunk' | 'bowl' | 'rabbitHop' | 'rabbitSit' | 'hedgehog' | 'radish' | 'leaf' | 'ground' | 'forest';
+type ArtName = 'bear' | 'trunk' | 'bowl' | 'rabbitHop' | 'rabbitSit' | 'hedgehog' | 'radish' | 'leaf' | 'ground' | 'forest' | 'fgtree' | 'fgtree2' | 'bg';
 const ART_FILES: Record<ArtName, string> = {
   bear: 'bear-ladle.png', trunk: 'tree-trunk.png', bowl: 'pool-bowl.png',
   rabbitHop: 'rabbit-hop.png', rabbitSit: 'rabbit-sit.png', hedgehog: 'hedgehog-basket.png',
   radish: 'radish.png', leaf: 'leaf.png', ground: 'ground-bank.png', forest: 'forest.png',
+  fgtree: 'fgtree.png', fgtree2: 'fgtree2.png', bg: 'bg.png',
 };
 const artUrl = (n: ArtName) => `${import.meta.env.BASE_URL}funnel-art/${ART_FILES[n]}`;
 const artProbe = new Map<ArtName, Promise<boolean>>();
@@ -255,7 +256,7 @@ function Art({ name, ok, alt = '', className = '', style, tint }: {
 }
 
 // scene geometry (percent of the scene box) — five pool rows down the trunk
-const TRUNK_AXIS = 35; // % from left
+const TRUNK_AXIS = 39; // % from left
 const ROWS: { key: 'calls' | 'talked' | 'booked' | 'showed' | 'sales'; y: number; w: number }[] = [
   { key: 'calls',  y: 26.5, w: 40 },
   { key: 'talked', y: 40,   w: 33 },
@@ -282,6 +283,13 @@ export default function FunnelPage() {
     finally { setIsLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // one rabbit hops across at a time, from a random side at a random cadence
+  const [hop, setHop] = useState({ key: 0, dir: 1 });
+  useEffect(() => {
+    const t = setTimeout(() => setHop((h) => ({ key: h.key + 1, dir: Math.random() < 0.5 ? 1 : -1 })), 9000 + Math.random() * 5500);
+    return () => clearTimeout(t);
+  }, [hop.key]);
 
   // Trigger a live recompute on the funnel-refresh Worker (~45s inline), then
   // poll getFunnel() until the snapshot's generatedAt advances. This is the
@@ -441,6 +449,8 @@ export default function FunnelPage() {
   return (
     <div className="min-h-screen" style={{ background: 'radial-gradient(130% 90% at 50% -8%, #EDE7DA 0%, #DCD4C2 48%, #C0B6A0 100%)', color: COL.ink }}>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&display=swap');
+        .fn-story{font-family:'Fraunces',Georgia,serif}
         @keyframes fn-reveal { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
         .fn-reveal{animation:fn-reveal .55s cubic-bezier(.22,1,.36,1) both}
         @keyframes fn-pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.3)}100%{transform:scale(1);opacity:1}}
@@ -448,11 +458,14 @@ export default function FunnelPage() {
         @keyframes fn-bob{0%,100%{transform:rotate(0deg) translateY(0)}50%{transform:rotate(-2.5deg) translateY(-4px)}}
         .fn-bob{animation:fn-bob 3.4s ease-in-out infinite;transform-origin:70% 90%}
         @keyframes fn-pour{0%{transform:translate(0,-6px) rotate(0deg) scale(.8);opacity:0}14%{opacity:1}80%{opacity:1}100%{transform:translate(-2px,58px) rotate(200deg) scale(1);opacity:0}}
-        .fn-pour{animation:fn-pour 2.4s ease-in infinite}
+        .fn-pour{animation:fn-pour 4s ease-in infinite}
         @keyframes fn-tumble{0%{top:1%;transform:rotate(0deg) translateX(0)}25%{transform:rotate(140deg) translateX(5px)}50%{transform:rotate(280deg) translateX(-5px)}90%{opacity:1}100%{top:95%;transform:rotate(540deg) translateX(0);opacity:0}}
-        .fn-tumble{animation:fn-tumble 5.2s cubic-bezier(.45,.1,.6,.9) infinite}
-        @keyframes fn-hop{0%{left:4%;opacity:0}6%{opacity:1}12%{transform:translateY(-9px)}18%{transform:translateY(0)}24%{transform:translateY(-9px)}30%{transform:translateY(0)}36%{transform:translateY(-8px)}42%{left:26%;transform:translateY(0);opacity:1}48%{opacity:0;left:27%}100%{left:27%;opacity:0}}
-        .fn-hop{animation:fn-hop 7.5s ease-in-out infinite}
+        .fn-tumble{animation:fn-tumble 9s cubic-bezier(.45,.1,.6,.9) infinite}
+        @keyframes fn-hopL2R{from{left:-9%}to{left:109%}}
+        @keyframes fn-hopR2L{from{left:109%}to{left:-9%}}
+        @keyframes fn-hopbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        .fn-hopL2R{animation:fn-hopL2R 9s linear forwards, fn-hopbob 0.6s ease-in-out infinite}
+        .fn-hopR2L{animation:fn-hopR2L 9s linear forwards, fn-hopbob 0.6s ease-in-out infinite}
         @keyframes fn-twitch{0%,90%,100%{transform:rotate(0)}93%{transform:rotate(-4deg)}96%{transform:rotate(3deg)}}
         .fn-twitch{animation:fn-twitch 5s ease-in-out infinite;transform-origin:50% 90%}
         @keyframes fn-hognudge{0%,30%,100%{transform:translateX(0) rotate(0)}55%,70%{transform:translateX(-5px) rotate(-5deg)}}
@@ -468,7 +481,7 @@ export default function FunnelPage() {
         @keyframes fn-fall{0%{transform:translateY(-12px) rotate(0deg);opacity:1}100%{transform:translateY(430px) rotate(var(--spin,540deg));opacity:0}}
         .fn-fall{animation:fn-fall linear forwards}
         @media (prefers-reduced-motion: reduce){
-          .fn-bob,.fn-pour,.fn-tumble,.fn-hop,.fn-twitch,.fn-hognudge,.fn-basketwob,.fn-leafdrift,.fn-glow,.fn-hopline,.fn-fall{animation:none !important}
+          .fn-bob,.fn-pour,.fn-tumble,.fn-hopL2R,.fn-hopR2L,.fn-twitch,.fn-hognudge,.fn-basketwob,.fn-leafdrift,.fn-glow,.fn-hopline,.fn-fall{animation:none !important}
           .fn-pour,.fn-tumble,.fn-fall{opacity:0}
         }
       `}</style>
@@ -515,15 +528,32 @@ export default function FunnelPage() {
 
         {/* ── THE WOODLAND ── */}
         <div className="fn-reveal relative mb-5 overflow-hidden" style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)', background: `linear-gradient(180deg, #ECE7DB 0%, #DED7C7 52%, #C9C0AD 100%)`, boxShadow: 'inset 0 0 130px rgba(38,30,24,0.34)' }}>
+          {/* full-scene backdrop — the deep misty woods behind everything */}
+          <div className="pointer-events-none absolute inset-0 z-0"><Art name="bg" ok={art} style={{ objectFit: 'cover', objectPosition: 'center top' }} /></div>
           {/* framing forest — fills the full page width, fading toward the center */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-0" style={{ width: '50%', maxWidth: 560, opacity: 0.82 }}><Art name="forest" ok={art} /></div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-0" style={{ width: '50%', maxWidth: 560, opacity: 0.82, transform: 'scaleX(-1)' }}><Art name="forest" ok={art} /></div>
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-[1]" style={{ width: '50%', maxWidth: 560, opacity: 0.82 }}><Art name="forest" ok={art} /></div>
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-[1]" style={{ width: '50%', maxWidth: 560, opacity: 0.82, transform: 'scaleX(-1)' }}><Art name="forest" ok={art} /></div>
+          {/* mid-depth trees — taller columnar trunks layered over the side forests, behind the rabbit */}
+          <div className="pointer-events-none absolute bottom-0 left-0 z-[2]" style={{ width: '25%', height: '112%', opacity: 0.94 }}><Art name="fgtree2" ok={art} style={{ objectFit: 'contain', objectPosition: 'left bottom' }} /></div>
+          <div className="pointer-events-none absolute bottom-0 right-0 z-[2]" style={{ width: '25%', height: '112%', opacity: 0.94, transform: 'scaleX(-1)' }}><Art name="fgtree2" ok={art} style={{ objectFit: 'contain', objectPosition: 'left bottom' }} /></div>
 
-          {/* ground across the whole width */}
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[1]" style={{ height: '11%' }}><Art name="ground" ok={art} /></div>
-          {/* rabbits hopping among the left trees */}
-          <div className="fn-twitch absolute z-[2]" style={{ left: '6%', top: '54%', width: '4.5%', height: '6%' }}><Art name="rabbitSit" ok={art} /></div>
-          <div className="fn-hop absolute z-[2]" style={{ top: '60%', width: '5%', height: '6%' }}><Art name="rabbitHop" ok={art} /></div>
+          {/* ground — two mirrored halves so it tiles across without stretching */}
+          <div className="pointer-events-none absolute bottom-0 left-0 z-[1]" style={{ width: '50%', height: '20%' }}><Art name="ground" ok={art} style={{ objectFit: 'cover', objectPosition: 'center bottom' }} /></div>
+          <div className="pointer-events-none absolute bottom-0 right-0 z-[1]" style={{ width: '50%', height: '20%', transform: 'scaleX(-1)' }}><Art name="ground" ok={art} style={{ objectFit: 'cover', objectPosition: 'center bottom' }} /></div>
+          {/* sitting rabbits among the trees */}
+          <div className="fn-twitch absolute z-[3]" style={{ left: '5%', bottom: '10%', width: '7%', height: '13%' }}><Art name="rabbitSit" ok={art} /></div>
+          <div className="fn-twitch absolute z-[3]" style={{ right: '7%', bottom: '9%', width: '6.5%', height: '12%', animationDelay: '0.8s', transform: 'scaleX(-1)' }}><Art name="rabbitSit" ok={art} /></div>
+          {/* one rabbit hops across at a time, from a random side */}
+          <div key={hop.key} className={`absolute z-[3] ${hop.dir === 1 ? 'fn-hopL2R' : 'fn-hopR2L'}`} style={{ bottom: '9%', width: '9%', height: '10%' }}>
+            <div style={{ width: '100%', height: '100%', transform: hop.dir === 1 ? 'none' : 'scaleX(-1)' }}><Art name="rabbitHop" ok={art} /></div>
+          </div>
+          {/* foreground trees at the edges — the hopping rabbit emerges from behind these */}
+          <div className="pointer-events-none absolute bottom-0 left-0 z-[5]" style={{ width: '32%', height: '124%' }}><Art name="fgtree" ok={art} style={{ objectFit: 'contain', objectPosition: 'left bottom' }} /></div>
+          <div className="pointer-events-none absolute bottom-0 right-0 z-[5]" style={{ width: '32%', height: '124%', transform: 'scaleX(-1)' }}><Art name="fgtree" ok={art} style={{ objectFit: 'contain', objectPosition: 'left bottom' }} /></div>
+          {/* leaves drifting down from above the trees, across the whole scene */}
+          {[{ l: '6%', d: '0s' }, { l: '22%', d: '5s' }, { l: '47%', d: '2.5s' }, { l: '71%', d: '8s' }, { l: '90%', d: '3.5s' }].map((p, i) => (
+            <span key={i} className="fn-leafdrift pointer-events-none absolute z-[4] block" style={{ left: p.l, top: '-3%', width: '2.4%', height: '3%', animationDelay: p.d }}><Art name="leaf" ok={art} /></span>
+          ))}
 
           <div key={rangeKey} className="relative z-10 mx-auto w-full" style={{ maxWidth: 'min(94vw, calc(88dvh * 380 / 640))', aspectRatio: '380 / 640' }} role="img" aria-label="Woodland funnel — tap a stage to inspect it">
 
@@ -542,35 +572,32 @@ export default function FunnelPage() {
               </div>
             )}
 
-            {/* drifting leaves */}
-            {[{ l: '12%', d: '0s' }, { l: '58%', d: '4s' }, { l: '84%', d: '8s' }].map((p, i) => (
-              <span key={i} className="fn-leafdrift pointer-events-none absolute z-10 block h-4 w-4" style={{ left: p.l, top: '4%', animationDelay: p.d }}><Art name="leaf" ok={art} /></span>
-            ))}
 
-            {/* rabbits hopping in */}
-            <div className="fn-twitch absolute z-10" style={{ left: '3.5%', top: '24%', width: '11%', height: '7%' }}><Art name="rabbitSit" ok={art} /></div>
-            <div className="fn-hop absolute z-10" style={{ top: '25.5%', width: '12%', height: '7%' }}><Art name="rabbitHop" ok={art} /></div>
-            <svg className="pointer-events-none absolute" style={{ left: '6%', top: '24%', width: '32%', height: '8%' }} viewBox="0 0 120 48"><path d="M4 40 q56 -34 112 -20" className="fn-hopline" /></svg>
 
-            {/* bear ladling radishes into the funnel mouth (top, centered on the axis) */}
-            <div className="fn-bob absolute z-10" style={{ left: `${TRUNK_AXIS - 4}%`, top: '0%', width: '38%', height: '22%' }}><Art name="bear" ok={art} alt="" /></div>
+            {/* bear standing on the treetop, ladling radishes straight down the trunk */}
+            <div className="fn-bob absolute z-10" style={{ left: '24%', top: '2%', width: '32%', height: '19%' }}><Art name="bear" ok={art} alt="" /></div>
             {[{ d: '0s' }, { d: '0.8s' }, { d: '1.6s' }].map((p, i) => (
               <span key={i} className="fn-pour absolute z-10 block" style={{ left: `${TRUNK_AXIS - 3}%`, top: '13%', width: '5.5%', height: '4%', animationDelay: p.d }}><Art name="radish" ok={art} /></span>
             ))}
 
-            {/* hollow trunk funnel */}
-            <div className="absolute" style={{ left: `${TRUNK_AXIS - 23}%`, top: '8.5%', width: '46%', height: '85%' }}><Art name="trunk" ok={art} /></div>
+            {/* the tree — shifted 10% right, layered above the side forests so the rabbit hops behind it */}
+            <div className="absolute z-[4]" style={{ left: `${TRUNK_AXIS - 16}%`, top: '3%', width: '52%', height: '96%' }}><Art name="trunk" ok={art} /></div>
 
-            {/* radishes tumbling down the trunk */}
-            <div className="pointer-events-none absolute" style={{ left: `${TRUNK_AXIS - 4}%`, top: '24%', width: '8%', height: '58%' }}>
+            {/* radishes tumbling down the trunk (in front of the tree) */}
+            <div className="pointer-events-none absolute z-[6]" style={{ left: `${TRUNK_AXIS - 4}%`, top: '24%', width: '8%', height: '58%' }}>
               {[{ d: '0s', x: '0%' }, { d: '1.7s', x: '40%' }, { d: '3.4s', x: '15%' }].map((p, i) => (
                 <span key={i} className="fn-tumble absolute block" style={{ left: p.x, width: '60%', aspectRatio: '24/28', animationDelay: p.d }}><Art name="radish" ok={art} /></span>
               ))}
             </div>
 
-            {/* ground + harvest */}
-            <div className="absolute bottom-0 left-0 right-0" style={{ height: '13%' }}><Art name="ground" ok={art} /></div>
-            <div className="absolute z-10" style={{ right: '3%', bottom: '1%', width: '36%', height: '15%' }}><Art name="hedgehog" ok={art} alt="" /></div>
+            {/* hedgehog catching the harvest (in front of the tree base) */}
+            <div className="absolute z-[6]" style={{ left: `${TRUNK_AXIS - 16}%`, bottom: '8%', width: '36%', height: '15%' }}><Art name="hedgehog" ok={art} alt="" /></div>
+
+            {/* soft paper halo behind each number — localized legibility, no panel edge.
+                Invisible over the beige center; lifts the numbers off the trees on narrow screens. */}
+            {ROWS.map((p) => (
+              <div key={`halo-${p.key}`} className="pointer-events-none absolute z-[15]" style={{ right: '-1%', top: `${p.y - 5}%`, width: '40%', height: '13%', background: 'radial-gradient(ellipse 58% 54% at 72% 56%, rgba(236,231,219,0.95) 0%, rgba(236,231,219,0.7) 36%, rgba(236,231,219,0) 70%)', filter: 'blur(5px)' }} />
+            ))}
 
             {/* ── DATA LAYER: pools + chips + plain-language conversions ── */}
             {ROWS.map((p, i) => {
@@ -579,43 +606,27 @@ export default function FunnelPage() {
               const next = i < 4 ? ROWS[i + 1] : null;
               return (
                 <div key={p.key}>
-                  {/* pool (art) */}
-                  <div className={`absolute ${hit ? 'fn-glow' : ''}`} style={{ left: `${TRUNK_AXIS - p.w / 2}%`, top: `${p.y - 3.2}%`, width: `${p.w}%`, height: '6.4%' }}>
-                    <Art name="bowl" ok={art} tint={r.col} />
-                  </div>
-                  {/* tap row: pool + chip in one big target */}
+                  {/* stage caption — bare storybook words on the dusky scene */}
                   <button onClick={() => setStage(p.key)} aria-pressed={isSel}
                     aria-label={`${r.label}: ${r.n}${r.t >= 1 ? ` of ${r.t} target` : ''} — tap to inspect`}
-                    className="absolute z-20 flex items-center justify-end"
-                    style={{ left: '2%', right: '2.5%', top: `${p.y - 5.6}%`, height: '11.2%', background: 'transparent' }}>
-                    <span className="flex w-[44%] items-center justify-between rounded-2xl px-3 py-2 text-left transition-transform active:scale-95"
-                      style={{
-                        background: 'rgba(251,246,238,.95)', backdropFilter: 'blur(2px)',
-                        border: isSel ? `2px solid ${r.col}` : `1px solid rgba(44,39,56,.14)`,
-                        boxShadow: isSel ? `0 2px 12px ${r.col}44` : '0 1px 6px rgba(44,39,56,.08)',
-                      }}>
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: r.col }}>
-                          {r.label}
-                          {hit && <span className="fn-pop inline-flex h-3.5 w-3.5 items-center justify-center rounded-full" style={{ background: COL.green }}><Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} /></span>}
-                        </span>
-                        <span className="block font-serif text-[22px] font-bold leading-tight tabular-nums" style={{ color: COL.ink }}>
-                          {r.n}{r.t >= 1 && <span className="text-xs font-normal" style={{ color: COL.inkSoft }}> / {r.t}</span>}
-                        </span>
-                        {p.key === 'calls' && (
-                          <span className="block text-[9.5px] leading-tight" style={{ color: COL.inkSoft }}>🚫 {v.none} no answer · 📩 {v.vm} vm</span>
-                        )}
-                      </span>
-                      <ChevronRight className="h-4 w-4 shrink-0" style={{ color: isSel ? r.col : COL.inkSoft, opacity: .8 }} />
+                    className="fn-story absolute z-20 flex flex-col items-end text-right transition-opacity active:scale-95"
+                    style={{ right: '7%', top: `${p.y - 4.5}%`, width: '40%', opacity: isSel ? 1 : 0.94 }}>
+                    <span className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-[0.2em]" style={{ color: r.col }}>
+                      {r.label}
+                      {hit && <span className="fn-pop inline-flex h-4 w-4 items-center justify-center rounded-full" style={{ background: COL.green }}><Check className="h-2.5 w-2.5 text-white" strokeWidth={3.5} /></span>}
                     </span>
+                    <span className="leading-none tabular-nums" style={{ fontSize: 'clamp(30px, 4.4vw, 52px)', fontWeight: 600, color: COL.ink, textShadow: '0 1px 12px rgba(236,231,219,0.95), 0 0 5px rgba(236,231,219,0.9)' }}>
+                      {r.n}<span style={{ fontSize: '0.48em', fontWeight: 400, color: COL.inkSoft }}>{r.t >= 1 ? ` / ${r.t}` : ''}</span>
+                    </span>
+                    {p.key === 'calls' && (
+                      <span className="text-xs" style={{ color: COL.inkSoft, textShadow: '0 1px 8px rgba(236,231,219,0.9)' }}>{v.none} no answer · {v.vm} vm</span>
+                    )}
+                    {isSel && <span className="mt-1 block h-[2px] w-12" style={{ background: r.col }} />}
                   </button>
-                  {/* plain-language conversion to the next stage */}
+                  {/* conversion to the next stage */}
                   {next && (
-                    <p className="pointer-events-none absolute z-10 w-[44%] text-right text-[10.5px] leading-tight"
-                      style={{ right: '2.5%', top: `${(p.y + next.y) / 2 + (i === 0 ? 0.5 : -1.4)}%`, color: COL.inkSoft }}>
-                      {drops[i].v === '—'
-                        ? <i>{drops[i].none}</i>
-                        : <><b style={{ color: COL.ink }}>{drops[i].v}</b> {drops[i].word}</>}
+                    <p className="fn-story pointer-events-none absolute z-[16] whitespace-nowrap text-right italic" style={{ right: '7%', top: `${next.y - 8}%`, width: '60%', fontSize: '12px', color: COL.inkSoft, textShadow: '0 0 10px rgba(236,231,219,1), 0 0 6px rgba(236,231,219,1), 0 1px 3px rgba(236,231,219,1)' }}>
+                      {drops[i].v === '—' ? drops[i].none : <><b style={{ color: COL.ink, fontWeight: 600 }}>{drops[i].v}</b> {drops[i].word}</>}
                     </p>
                   )}
                 </div>
