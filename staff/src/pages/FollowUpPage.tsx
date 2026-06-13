@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
-  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles,
+  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil, Check, X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, buildFollowupBrief, ApiError,
-  type FollowupBrief,
+  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, ApiError,
+  type FollowupBrief, type EditableFieldKey,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
@@ -238,6 +238,8 @@ export default function FollowUpPage() {
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
   const [dismissedReplies, setDismissedReplies] = useState<Set<string>>(new Set()); // session-only "no reply needed"
+  const [query, setQuery] = useState('');
+  const [showRubric, setShowRubric] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -302,6 +304,16 @@ export default function FollowUpPage() {
     converted: derived.filter((r) => r.d.kind === 'converted').length,
     total: derived.length,
   }), [replyItems, prospectActNow, derived, setAside]);
+
+  // Search across ALL prospects (any bucket), like the Outreach search.
+  const searchItems = useMemo<ProspectItem[]>(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return derived
+      .filter(({ p }) => [p.fullName, p.partnerFacility, p.category, p.companyName, p.city, p.email, p.phone]
+        .some((v) => v && String(v).toLowerCase().includes(q)))
+      .map((r) => ({ kind: 'prospect' as const, p: r.p, d: r.d }));
+  }, [derived, query]);
 
   const toggleExpand = useCallback((contactId: string) => {
     setExpandedId((cur) => (cur === contactId ? null : contactId));
@@ -384,9 +396,15 @@ export default function FollowUpPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex gap-1 rounded-xl bg-amari-light-sand p-1">
-        <Tab active={view === 'act'} onClick={() => setView('act')} label={`Act Now (${counts.replies + counts.act})`} icon={Clock} />
-        <Tab active={view === 'aside'} onClick={() => setView('aside')} label={`Set Aside (${counts.aside})`} icon={MoonStar} />
+      {/* search — find anyone across all buckets (same idea as Outreach) */}
+      <div className="relative mb-3">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amari-text-muted" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search everyone…"
+          className="w-full rounded-xl border border-amari-border py-2 pl-9 pr-3 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
+        />
       </div>
 
       {error && (
@@ -395,50 +413,99 @@ export default function FollowUpPage() {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-amari-charcoal" /></div>
-      ) : view === 'act' ? (
-        actItems.length === 0 ? (
-          <Empty icon={CheckCircle2} title="Nothing needs you right now" sub="No unanswered messages, no follow-ups due. Nice." />
+      {query.trim() ? (
+        searchItems.length === 0 ? (
+          <Empty icon={Search} title="No matches" sub={`Nobody matches "${query.trim()}".`} />
         ) : (
           <div className="space-y-2">
-            {actItems.map((item) => {
-              const contactId = item.kind === 'reply' ? item.conv.contactId : item.p.contactId;
-              return (
-                <ActRow
-                  key={`${item.kind}-${contactId}`}
-                  item={item}
-                  expanded={expandedId === contactId}
-                  activity={activity[contactId]}
-                  busy={busyId === contactId}
-                  noteDraft={expandedId === contactId ? noteDraft : ''}
-                  onToggle={() => toggleExpand(contactId)}
-                  onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
-                  onNoteChange={setNoteDraft}
-                  onSaveNote={() => onSaveNote(contactId)}
-                  onDismiss={() => onDismissReply(contactId)}
-                />
-              );
-            })}
+            {searchItems.map((item) => (
+              <ActRow
+                key={`s-${item.p.contactId}`}
+                item={item}
+                expanded={expandedId === item.p.contactId}
+                activity={activity[item.p.contactId]}
+                busy={busyId === item.p.contactId}
+                noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
+                onToggle={() => toggleExpand(item.p.contactId)}
+                onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
+                onNoteChange={setNoteDraft}
+                onSaveNote={() => onSaveNote(item.p.contactId)}
+                onDismiss={() => onDismissReply(item.p.contactId)}
+              />
+            ))}
           </div>
         )
-      ) : setAside.length === 0 ? (
-        <Empty icon={MoonStar} title="Nothing set aside" sub="Snoozed and not-a-fit leads show up here." />
       ) : (
-        <div className="space-y-2">
-          {setAside.map(({ p, d }) => (
-            <div key={p.contactId} className="flex items-center justify-between rounded-xl border border-amari-border bg-white p-3">
-              <div className="min-w-0">
-                <span className="truncate font-medium text-amari-charcoal">{displayName(p.fullName) || 'Unknown'}</span>
-                <p className="text-[11px] text-amari-text-muted">{d.asideReason}</p>
-              </div>
-              <a href={ghlContactUrl(p.contactId)} target="_blank" rel="noopener noreferrer"
-                className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
-                <ExternalLink className="h-3.5 w-3.5" /> GHL
-              </a>
+        <>
+          <div className="mb-2 flex gap-1 rounded-xl bg-amari-light-sand p-1">
+            <Tab active={view === 'act'} onClick={() => setView('act')} label={`Act Now (${counts.replies + counts.act})`} icon={Clock} />
+            <Tab active={view === 'aside'} onClick={() => setView('aside')} label={`Set Aside (${counts.aside})`} icon={MoonStar} />
+          </div>
+
+          <button type="button" onClick={() => setShowRubric((v) => !v)}
+            className="mb-3 inline-flex items-center gap-1 text-[11px] text-amari-text-muted hover:text-amari-charcoal">
+            {showRubric ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />} Why this order?
+          </button>
+          {showRubric && (
+            <div className="mb-3 rounded-lg border border-amari-border bg-amari-light-sand/50 p-3 text-xs text-amari-charcoal">
+              <p className="mb-1 font-medium">How this list is ordered:</p>
+              <ol className="list-decimal space-y-0.5 pl-4 text-amari-text-muted">
+                <li>Replies waiting — someone wrote, unanswered</li>
+                <li>Hot — just called (→ text) or just talked (→ next step)</li>
+                <li>Follow-ups due — voicemail ~3d, link sent ~3d, quiet ~3d</li>
+                <li>New leads — not contacted yet</li>
+                <li>Out of cadence — decide: keep trying or set aside</li>
+              </ol>
+              <p className="mt-1 text-amari-text-muted">Hidden until due: cooling-off (just touched) and snoozed.</p>
             </div>
-          ))}
-        </div>
+          )}
+
+          {loading ? (
+            <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-amari-charcoal" /></div>
+          ) : view === 'act' ? (
+            actItems.length === 0 ? (
+              <Empty icon={CheckCircle2} title="Nothing needs you right now" sub="No unanswered messages, no follow-ups due. Nice." />
+            ) : (
+              <div className="space-y-2">
+                {actItems.map((item) => {
+                  const contactId = item.kind === 'reply' ? item.conv.contactId : item.p.contactId;
+                  return (
+                    <ActRow
+                      key={`${item.kind}-${contactId}`}
+                      item={item}
+                      expanded={expandedId === contactId}
+                      activity={activity[contactId]}
+                      busy={busyId === contactId}
+                      noteDraft={expandedId === contactId ? noteDraft : ''}
+                      onToggle={() => toggleExpand(contactId)}
+                      onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
+                      onNoteChange={setNoteDraft}
+                      onSaveNote={() => onSaveNote(contactId)}
+                      onDismiss={() => onDismissReply(contactId)}
+                    />
+                  );
+                })}
+              </div>
+            )
+          ) : setAside.length === 0 ? (
+            <Empty icon={MoonStar} title="Nothing set aside" sub="Snoozed and not-a-fit leads show up here." />
+          ) : (
+            <div className="space-y-2">
+              {setAside.map(({ p, d }) => (
+                <div key={p.contactId} className="flex items-center justify-between rounded-xl border border-amari-border bg-white p-3">
+                  <div className="min-w-0">
+                    <span className="truncate font-medium text-amari-charcoal">{displayName(p.fullName) || 'Unknown'}</span>
+                    <p className="text-[11px] text-amari-text-muted">{d.asideReason}</p>
+                  </div>
+                  <a href={ghlContactUrl(p.contactId)} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+                    <ExternalLink className="h-3.5 w-3.5" /> GHL
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -600,17 +667,16 @@ function Details({ p }: { p: PartnerProspect }) {
 
   return (
     <div className="space-y-2 text-sm text-amari-charcoal">
-      {p.rundown && <p className="text-amari-text-muted">{p.rundown}</p>}
+      <EditableField key={`${p.contactId}-rundown`} contactId={p.contactId} field="partnerRundown" label="story" value={p.rundown} multiline />
       <div className="flex flex-col gap-1">
         {p.phone && <DetailLine icon={Phone} value={p.phone} href={`tel:${p.phone}`} />}
         {p.email && <DetailLine icon={Mail} value={p.email} href={`mailto:${p.email}`} />}
         {p.website && <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />}
       </div>
-      {(p.partnerFacility || p.partnerFacilityRole) && (
-        <p className="text-xs text-amari-text-muted">
-          {p.partnerFacility}{p.partnerFacility && p.partnerFacilityRole ? ' · ' : ''}{p.partnerFacilityRole}
-        </p>
-      )}
+      <div className="flex flex-col gap-1 text-xs">
+        <EditableField key={`${p.contactId}-facility`} contactId={p.contactId} field="partnerFacility" label="facility" value={p.partnerFacility} />
+        <EditableField key={`${p.contactId}-role`} contactId={p.contactId} field="partnerFacilityRole" label="role" value={p.partnerFacilityRole} />
+      </div>
       {socials.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {socials.map((s, i) => (
@@ -727,6 +793,51 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
         {copied ? '✓ Copied' : 'Tap to copy'}
       </span>
     </button>
+  );
+}
+
+// Inline-editable field — click the pencil to edit, saves to GHL via
+// updateContactField. Optimistic: shows the new value immediately.
+function EditableField({ contactId, field, label, value, multiline }: {
+  contactId: string; field: EditableFieldKey; label: string; value: string | null; multiline?: boolean;
+}) {
+  const [val, setVal] = useState(value || '');
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || '');
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateContactField(contactId, field, draft.trim());
+      setVal(draft.trim());
+      setEditing(false);
+    } catch { /* leave the editor open so the text isn't lost */ } finally { setSaving(false); }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-start gap-1">
+        {multiline
+          ? <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} rows={3}
+              className="w-full resize-none rounded-lg border border-amari-border p-2 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />
+          : <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
+              className="flex-1 rounded-lg border border-amari-border px-2 py-1 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />}
+        <button type="button" onClick={save} disabled={saving}
+          className="shrink-0 rounded-lg border border-amari-border p-1.5 text-emerald-600 disabled:opacity-40"><Check className="h-3.5 w-3.5" /></button>
+        <button type="button" onClick={() => { setDraft(val); setEditing(false); }}
+          className="shrink-0 rounded-lg border border-amari-border p-1.5 text-amari-text-muted"><X className="h-3.5 w-3.5" /></button>
+      </div>
+    );
+  }
+  return (
+    <div className="group flex items-start gap-1.5">
+      <span className={val ? 'text-amari-charcoal' : 'italic text-amari-text-muted'}>{val || `No ${label} yet`}</span>
+      <button type="button" onClick={() => { setDraft(val); setEditing(true); }}
+        className="mt-0.5 shrink-0 text-amari-text-muted opacity-60 hover:opacity-100" aria-label={`Edit ${label}`}>
+        <Pencil className="h-3 w-3" />
+      </button>
+    </div>
   );
 }
 
