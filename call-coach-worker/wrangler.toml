@@ -1,0 +1,30 @@
+name = "call-coach"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Daily at 11:00 UTC (4 AM PDT / 3 AM PST) — runs right after daily-audit's
+# own 11:00 cron. Both at 11:00 is fine: they're independent invocations on
+# separate Workers. Coaches yesterday's calls + outgoing texts.
+[triggers]
+crons = ["0 11 * * *"]
+
+# Same KV namespace as Pages + daily-audit + ghl-token-refresh. The
+# ghl-token-refresh worker keeps ghl_access_token / ghl_refresh_token /
+# ghl_token_expiry fresh here; src/ghl.js reads them.
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Workers AI — used for @cf/openai/whisper transcription of GHL call
+# recordings. Spike 0 (2026-06-13) confirmed recordings are reachable as
+# audio/x-wav via GET /conversations/messages/{id}/locations/{loc}/recording,
+# so the audio path is live (not the text-only fallback).
+[ai]
+binding = "AI"
+
+# Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
+#   GHL_CLIENT_ID       — same as ghl-token-refresh / daily-audit
+#   GHL_CLIENT_SECRET   — same as ghl-token-refresh / daily-audit
+#   ANTHROPIC_API_KEY   — Claude coaching calls (am-anthropic-api-key in Keychain)
+#   WORKER_AUTH_SECRET  — gates the /run, /latest HTTP routes (worker-auth.js)

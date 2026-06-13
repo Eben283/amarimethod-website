@@ -215,6 +215,7 @@ const CATEGORY_FILTERS: { id: PartnerCategoryFilter; label: string }[] = [
   { id: 'tennis', label: 'Tennis' },
   { id: 'trainer', label: 'Personal Trainer' },
   { id: 'business', label: 'Business' },
+  { id: 'therapist', label: 'Therapist' },
 ];
 
 const CATEGORY_BADGE: Record<PartnerCategory, string> = {
@@ -222,6 +223,7 @@ const CATEGORY_BADGE: Record<PartnerCategory, string> = {
   tennis: 'bg-amber-100 text-amber-900',
   trainer: 'bg-sky-100 text-sky-900',
   business: 'bg-violet-100 text-violet-900',
+  therapist: 'bg-rose-100 text-rose-900',
   unknown: 'bg-gray-100 text-gray-700',
 };
 
@@ -1809,7 +1811,7 @@ export default function PartnersPage() {
 
   // Category counts within the current tab + verification filter
   const categoryCountsInTab = useMemo(() => {
-    const counts: Record<PartnerCategory, number> = { golf: 0, tennis: 0, trainer: 0, business: 0, unknown: 0 };
+    const counts: Record<PartnerCategory, number> = { golf: 0, tennis: 0, trainer: 0, business: 0, therapist: 0, unknown: 0 };
     for (const p of prospectsAfterVerification) counts[p.category] = (counts[p.category] || 0) + 1;
     return counts;
   }, [prospectsAfterVerification]);

@@ -70,6 +70,10 @@ const CATEGORY_TAGS = {
   trainer: ["trainer-new-partner", "trainer-outreach"],
   // Non-sports professionals — business pros, tech, leadership/exec coaches.
   business: ["business-new-partner"],
+  // Mental-health / somatic therapists. `mental-health-prospect` is the tag the
+  // existing ~50 sourced therapists already carry; `therapist-new-partner` is for
+  // future imports via ops/scripts/import-prospects.mjs (Fill the Funnel, 2026-06-13).
+  therapist: ["therapist-new-partner", "mental-health-prospect"],
 };
 // `ambassador-prospect` added 2026-05-23 after migration missed Troy Weakley
 // (his only tag was ambassador-prospect, so he was excluded entirely).
@@ -104,6 +108,7 @@ function deriveCategory(tags) {
   if (CATEGORY_TAGS.tennis.some((t) => tags.includes(t))) return "tennis";
   if (CATEGORY_TAGS.trainer.some((t) => tags.includes(t))) return "trainer";
   if (CATEGORY_TAGS.business.some((t) => tags.includes(t))) return "business";
+  if (CATEGORY_TAGS.therapist.some((t) => tags.includes(t))) return "therapist";
   return "unknown";
 }
 
@@ -332,7 +337,7 @@ export async function onRequestGet(context) {
     //   (b) the contact is in Garrett's SF Personal Trainers sheet
     //       (sheet inclusion = his curation, the whole point of joining the sheet).
     // This matches the user intent: "view this is confirmed enriched data good to call".
-    const countsByCategory = { golf: 0, tennis: 0, trainer: 0, business: 0, unknown: 0 };
+    const countsByCategory = { golf: 0, tennis: 0, trainer: 0, business: 0, therapist: 0, unknown: 0 };
     const countsByStage = Object.fromEntries(ALL_STAGES.map((s) => [s, 0]));
     let verifiedCount = 0;
     let unverifiedCount = 0;

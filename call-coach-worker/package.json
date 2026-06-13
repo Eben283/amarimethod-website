@@ -1,0 +1,10 @@
+{
+  "name": "call-coach",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker cron that coaches Garrett's daily calls (Whisper transcription) + outgoing texts via Claude, caching pointers in KV for the Follow-Up card and /day digest",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  }
+}
