@@ -420,4 +420,43 @@ export async function triggerFunnelRefresh(): Promise<FunnelRefreshResult> {
   }
 }
 
+// ── Follow-Up brief (Claude-drafted: who they are + talking points + texts) ──
+export interface FollowupBrief {
+  summary: string;
+  talkingPoints: string[];
+  drafts: { channel: 'text' | 'call' | 'email'; text: string }[];
+}
+
+// Calls the Claude-backed brief endpoint. Uses its own 45s ceiling (the model
+// call exceeds fetchApi's 15s timeout). `contact` is the known card context.
+export async function buildFollowupBrief(
+  contactId: string,
+  contact: Record<string, unknown>,
+): Promise<FollowupBrief> {
+  const token = localStorage.getItem('staff_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(`${API_BASE}/staff-followup-brief`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ contactId, contact }),
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({ error: 'Request failed' }));
+    if (!response.ok) throw new ApiError(data.error || 'Failed to build brief', response.status);
+    return data as FollowupBrief;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError('The brief took too long. Try again.', 408);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 export { ApiError };

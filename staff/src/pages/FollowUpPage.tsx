@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
-  Mail, StickyNote, Calendar, Globe, Reply, Send,
+  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, ApiError,
+  recordPartnerOutcome, addNote, buildFollowupBrief, ApiError,
+  type FollowupBrief,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
@@ -536,7 +537,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </a>
           ) : (
             <>
-              <SuggestedTexts p={item.p} d={item.d} />
+              <BriefPanel p={item.p} d={item.d} />
               <Details p={item.p} />
             </>
           )}
@@ -626,6 +627,72 @@ function Details({ p }: { p: PartnerProspect }) {
 
 // Garrett-voice texts for this prospect — tap to copy, paste into the GHL thread.
 // Copy lives in src/lib/followupCopy.ts (edit there).
+// "Build brief": Claude returns who-they-are + talking points + drafts tailored
+// to this person + their thread. Drafted, never sent. On failure, falls back to
+// the static saved texts. Button-triggered (one model call per tap).
+function BriefPanel({ p, d }: { p: PartnerProspect; d: Derived }) {
+  const [brief, setBrief] = useState<FollowupBrief | null>(null);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+
+  if (!d.action || d.action === 'decide') return null;
+
+  const run = () => {
+    setStatus('loading');
+    buildFollowupBrief(p.contactId, {
+      name: p.fullName, firstName: p.firstName, category: p.category,
+      facility: p.partnerFacility, facilityRole: p.partnerFacilityRole,
+      company: p.companyName, city: p.city, state: p.state, rundown: p.rundown,
+      lastSignal: p.partnerLastSignal, lastSignalAt: p.partnerLastSignalAt,
+    })
+      .then((b) => { setBrief(b); setStatus('idle'); })
+      .catch(() => setStatus('error'));
+  };
+
+  if (brief) {
+    return (
+      <div className="space-y-2">
+        {brief.talkingPoints.length > 0 && (
+          <div>
+            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Talking points</p>
+            <ul className="list-disc space-y-0.5 pl-4 text-sm text-amari-charcoal">
+              {brief.talkingPoints.map((t, i) => <li key={i}>{t}</li>)}
+            </ul>
+          </div>
+        )}
+        {brief.drafts.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Drafts — tap to copy, paste in GHL</p>
+            <div className="space-y-1.5">
+              {brief.drafts.map((dr, i) => <CopyText key={i} text={dr.text} channel={dr.channel} />)}
+            </div>
+          </div>
+        )}
+        <button type="button" onClick={run}
+          className="inline-flex items-center gap-1 text-[11px] text-amari-text-muted hover:text-amari-charcoal">
+          <RefreshCw className="h-3 w-3" /> Rebuild
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <button type="button" onClick={run} disabled={status === 'loading'}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
+        {status === 'loading'
+          ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Building…</>
+          : <><Sparkles className="h-3.5 w-3.5" /> Draft what to say</>}
+      </button>
+      {status === 'error' && (
+        <>
+          <p className="text-xs text-red-600">Couldn't build the brief. Showing saved texts.</p>
+          <SuggestedTexts p={p} d={d} />
+        </>
+      )}
+    </div>
+  );
+}
+
 function SuggestedTexts({ p, d }: { p: PartnerProspect; d: Derived }) {
   if (d.action !== 'text' && d.action !== 'reback') return null;
   const texts = suggestedTexts(p);
@@ -642,7 +709,7 @@ function SuggestedTexts({ p, d }: { p: PartnerProspect; d: Derived }) {
   );
 }
 
-function CopyText({ text }: { text: string }) {
+function CopyText({ text, channel }: { text: string; channel?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
@@ -654,6 +721,7 @@ function CopyText({ text }: { text: string }) {
       }}
       className="block w-full rounded-lg border border-amari-border p-2.5 text-left hover:bg-amari-light-sand"
     >
+      {channel && <span className="mb-1 inline-block rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">{channel}</span>}
       <span className="block text-sm text-amari-charcoal">{text}</span>
       <span className={`mt-1 block text-[11px] ${copied ? 'text-emerald-600' : 'text-amari-text-muted'}`}>
         {copied ? '✓ Copied' : 'Tap to copy'}
