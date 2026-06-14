@@ -51,12 +51,16 @@ async function mapLimit(items, limit, fn) {
   return out;
 }
 
-export async function runSync(env, trigger) {
+export async function runSync(env, trigger, full = false) {
   const kv = env.PORTAL_KV;
   const start = Date.now();
   const prevHigh = Number(await kv.get("conv:sync:lastRun")) || 0;
   const firstRun = !prevHigh;
-  const cutoff = firstRun ? start - BACKFILL_DAYS * DAY_MS : prevHigh - OVERLAP_MS;
+  // `full` (weekly reconcile) ignores the high-water mark and re-scans the whole
+  // BACKFILL_DAYS window — cheap insurance against incremental drift (a missed
+  // cursor / half-completed run silently leaving the cache wrong). Merge is
+  // idempotent (dedupe by ts|kind|dir), so re-scanning only fixes, never harms.
+  const cutoff = (firstRun || full) ? start - BACKFILL_DAYS * DAY_MS : prevHigh - OVERLAP_MS;
 
   // 1. Collect conversations changed since the cutoff (newest first; stop early).
   const changed = [];

@@ -16,6 +16,16 @@ const DROPPED_MAX_DAYS = 30;
 const GIFTED_PARTNER_CALENDAR = "lfsnaiGiLNL2z12pLKDP";
 const BOOKING_SUPPRESS_DAYS = 21;
 
+// Skip-persistence: honor the Follow-Up app's existing disposition so a contact
+// Garrett/Eben "Set Aside" (which writes partner_stage) stays out of the coach too
+// — no parallel skip system. Closed/parked stages suppress the coach card.
+const PARTNER_STAGE_FIELD = "KfPow1mYDxJqiOCS6mDZ";
+const CLOSED_STAGES = new Set(["dropped", "future-potential", "session-booked"]);
+const getField = (contact, id) => {
+  const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
+  return f ? (f.value ?? f.field_value) : undefined;
+};
+
 // Cadence policy (amari/strategy/outreach-cadence-policy.md): days to wait after
 // the nth outbound touch before the next. Widens; 6 is end-of-rope.
 const WAIT_AFTER_TOUCH = [2, 2, 3, 4, 5, 7];
@@ -95,6 +105,11 @@ function classify(p) {
   const since = p.sinceLastTouchDays;
   const outN = p.outCount;
 
+  // Skip-persistence: a contact explicitly set aside (coach:skip) or parked/closed
+  // in the app (partner_stage) stays out — so a human "no" sticks across cycles.
+  if (p.skipped) return { state: "skipped", due: false, action: "Set aside (won't resurface until un-skipped)", priority: 0 };
+  if (CLOSED_STAGES.has(p.partnerStage)) return { state: "set-aside", due: false, action: `Parked in the app (stage: ${p.partnerStage})`, priority: 0 };
+
   if (p.hasBooking) return { state: "booked", due: false, action: "Already booked or just attended a session", priority: 0 };
   if (p.hasHumanTouch === false) return { state: "drip-only", due: false, action: "Email/quiz drip only, not a call or text target", priority: 0 };
 
@@ -135,6 +150,29 @@ async function loadBookedSet(env) {
   return set;
 }
 
+// Map contactId -> partner_stage (from the app's disposition), honoring the
+// partner-session-booked tag the way the staff app does (tag wins).
+async function loadStageMap(env) {
+  const map = new Map();
+  let after = null, afterId = null;
+  for (let p = 0; p < 12; p++) {
+    let path = `/contacts/?locationId=${LOCATION_ID}&limit=100`;
+    if (afterId) path += `&startAfterId=${afterId}&startAfter=${after}`;
+    let d;
+    try { d = await ghlRetry(env, path); } catch { break; }
+    const cs = d.contacts || [];
+    for (const c of cs) {
+      const stage = (c.tags || []).includes("partner-session-booked")
+        ? "session-booked"
+        : getField(c, PARTNER_STAGE_FIELD);
+      if (stage) map.set(c.id, stage);
+    }
+    afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
+    if (cs.length < 100 || !afterId) break;
+  }
+  return map;
+}
+
 export async function deriveCadence(env) {
   const kv = env.PORTAL_KV;
   const start = Date.now();
@@ -152,7 +190,13 @@ export async function deriveCadence(env) {
   })).filter(Boolean);
 
   const booked = await loadBookedSet(env);
-  for (const r of rows) r.hasBooking = booked.has(r.contactId);
+  const stageMap = await loadStageMap(env);
+  const skip = (await kv.get("coach:skip", "json")) || {};       // { contactId: {reason, setAt} }
+  for (const r of rows) {
+    r.hasBooking = booked.has(r.contactId);
+    r.partnerStage = stageMap.get(r.contactId);
+    r.skipped = Boolean(skip[r.contactId]);
+  }
 
   const prospects = rows.filter((r) => !r.internal && !r.highVolume);
   const scored = prospects.map((p) => ({ ...p, ...classify(p) }));
@@ -185,6 +229,8 @@ export async function deriveCadence(env) {
     counts,
     bookedSuppressed: rows.filter((r) => r.hasBooking).length,
     dripOnly: scored.filter((s) => s.state === "drip-only").length,
+    setAside: scored.filter((s) => s.state === "set-aside").length,
+    skipped: scored.filter((s) => s.state === "skipped").length,
     durationMs: Date.now() - start,
   };
   await kv.put("ops:coach-cadence:lastRun", JSON.stringify(summary));

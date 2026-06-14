@@ -7,10 +7,11 @@ compatibility_date = "2024-01-01"
 # outreach coach's cadence step, learning, etc.) read the cache instead of each
 # re-pulling 60 days of GHL conversations every day.
 #
-# Cron: every 3 hours, keeps the cache fresh cheaply. The first run backfills
-# ~90 days; every run after is just the delta.
+# Crons: every 3 hours = cheap incremental sync (just the delta). Mondays 09:00 UTC
+# = a FULL reconcile (re-scan the whole window) as drift insurance. The first run
+# backfills ~90 days.
 [triggers]
-crons = ["0 */3 * * *"]
+crons = ["0 */3 * * *", "0 9 * * 1"]
 
 # Same KV namespace as Pages + the other workers.
 [[kv_namespaces]]

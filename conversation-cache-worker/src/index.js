@@ -21,8 +21,10 @@ import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 export default {
   async scheduled(event, env, ctx) {
-    // Sync the cache first, then derive the due-list off it (ordering guaranteed).
-    ctx.waitUntil(runSync(env, "cron").then(() => deriveCadence(env)));
+    // The Monday weekly cron does a FULL reconcile (drift insurance); the 3-hourly
+    // cron does the cheap incremental sync. Both then derive the due-list.
+    const full = event.cron === "0 9 * * 1";
+    ctx.waitUntil(runSync(env, full ? "cron-full" : "cron", full).then(() => deriveCadence(env)));
   },
 
   async fetch(request, env, ctx) {
@@ -34,7 +36,9 @@ export default {
     if (url.pathname === "/sync" || url.pathname === "/__scheduled") {
       // Awaited inline (not ctx.waitUntil): the message fetches are I/O-bound and
       // can run tens of seconds; the caller waits for the summary.
-      const sync = await runSync(env, "manual");
+      // ?full=1 forces a full reconcile (re-scan the whole window).
+      const full = url.searchParams.get("full") === "1";
+      const sync = await runSync(env, full ? "manual-full" : "manual", full);
       const cadence = await deriveCadence(env);
       return json({ sync, cadence });
     }

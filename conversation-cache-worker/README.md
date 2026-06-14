@@ -24,13 +24,29 @@ per-contact state + "is a touch due today" + the booked/drip-only excludes →
 `coach:due:latest`. Proven 2026-06-14: matches the local pipeline (137 due, same
 states) but in 3.3s off the cache vs a 2-3 min GHL pull.
 
+### Skip-persistence (a human "no" sticks)
+The derive suppresses a contact when ANY of these hold, so they don't resurface:
+- **`partner_stage` is closed/parked** (dropped / future-potential / session-booked,
+  or the `partner-session-booked` tag) — i.e. the Follow-Up app's existing **Set
+  Aside** disposition. No parallel system: Garrett's own triage flows straight in.
+- **listed in `coach:skip`** — a small KV store for analysis-time skips not yet a
+  formal GHL disposition (e.g. a referral source, or someone who declined off-system).
+- (plus the earlier excludes: already booked, drip-only, their-court).
+
+### Reconcile (drift insurance)
+Incremental sync can silently drift (missed cursor / half-run). The **Monday 09:00
+UTC** cron does a FULL re-scan of the whole window; merge is idempotent so it only
+fixes. Manual: `/sync?full=1`. Nightly is unnecessary — drift is rare + self-heals.
+
 ## KV (PORTAL_KV `79cff30d0e45419791b0d25cd81961df`)
 - `conv:{contactId}` → `{ contactId, name, lastMessageDate, touches:[{ts,kind,dir}] }`
 - `conv:index` → `{ [contactId]: lastMessageDate }` (roster)
 - `conv:sync:lastRun` → high-water mark (ms)
 - `ops:conversation-cache:lastRun` → sync run summary
 - `coach:due:latest` → derived due-list (same shape as local coach-due.json)
-- `ops:coach-cadence:lastRun` → derive run summary
+- `coach:cadence:latest` → full prospects snapshot (replaces outreach-cadence.json)
+- `coach:skip` → `{ [contactId]: {reason, setAt} }` analysis-time skips
+- `ops:coach-cadence:lastRun` → derive run summary (incl. setAside/skipped counts)
 
 ## Routes (Bearer `WORKER_AUTH_SECRET`)
 `/sync` (sync + derive, awaited), `/cadence` (re-derive off cache, no GHL conv
