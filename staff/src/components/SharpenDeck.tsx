@@ -26,6 +26,39 @@ function shuffled<T>(arr: T[]): T[] {
   return a;
 }
 
+// Show a small FRESH set each day, not the whole pile — better a few good cards
+// than 25 that blur together. A date-seeded shuffle picks today's set (stable
+// through the day, different each day), cycling the whole pool over time.
+const DAILY_COUNT = 5;
+function todaysSet(list: SharpenCard[]): SharpenCard[] {
+  if (list.length <= DAILY_COUNT) return list;
+  const day = Math.floor(Date.now() / 86_400_000);
+  const a = [...list];
+  let seed = day + 1;
+  for (let i = a.length - 1; i > 0; i--) {
+    seed = (seed * 9301 + 49297) % 233280;
+    const j = Math.floor((seed / 233280) * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, DAILY_COUNT);
+}
+
+// Abstract, light, brand-warm backgrounds so each card looks distinct (waves,
+// stars, blobs, gradients) — charcoal text stays readable on all of them.
+const BACKGROUNDS: string[] = [
+  'linear-gradient(135deg,#faf4ec 0%,#f1e2d2 100%)',
+  'radial-gradient(circle at 18% 22%, rgba(235,165,132,.20), transparent 45%), radial-gradient(circle at 82% 78%, rgba(235,165,132,.13), transparent 42%), #faf4ec',
+  'radial-gradient(1.6px 1.6px at 20% 28%, rgba(58,58,58,.18), transparent 60%), radial-gradient(1.6px 1.6px at 68% 52%, rgba(58,58,58,.13), transparent 60%), radial-gradient(1.6px 1.6px at 44% 80%, rgba(58,58,58,.11), transparent 60%), #f8f2eb',
+  'linear-gradient(135deg,#eef2f5 0%,#e3ebf1 100%)',
+  'linear-gradient(160deg,#fcf0e6 0%,#f6dac6 100%)',
+  'repeating-radial-gradient(circle at 50% -30%, rgba(235,165,132,.10) 0 14px, transparent 14px 30px), #faf4ec',
+];
+function bgFor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return BACKGROUNDS[h % BACKGROUNDS.length];
+}
+
 export default function SharpenDeck() {
   const [cards, setCards] = useState<SharpenCard[]>([]);
   const [deck, setDeck] = useState<SharpenCard[]>([]);
@@ -36,7 +69,8 @@ export default function SharpenDeck() {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<{ category: SharpenCategory; title: string; body: string }>({ category: 'frame', title: '', body: '' });
 
-  const reshuffle = useCallback((list: SharpenCard[]) => { setDeck(shuffled(list)); setPos(0); }, []);
+  // Deck = today's fresh set (rotates daily), in a shuffled order.
+  const reshuffle = useCallback((list: SharpenCard[]) => { setDeck(shuffled(todaysSet(list))); setPos(0); }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,8 +155,8 @@ export default function SharpenDeck() {
         </p>
       ) : (
         <>
-          {/* the card */}
-          <div className="group relative rounded-2xl border border-amari-border bg-white p-4 shadow-sm">
+          {/* the card — each gets its own abstract background */}
+          <div className="group relative rounded-2xl border border-amari-border p-4 shadow-sm" style={{ background: bgFor(card.id) }}>
             <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${CHIP[card.category].cls}`}>{CHIP[card.category].label}</span>
             {card.title && <h3 className="text-base font-semibold leading-snug text-amari-charcoal">{card.title}</h3>}
             {card.body && <p className="mt-2 text-sm leading-relaxed text-amari-text-muted">{card.body}</p>}
