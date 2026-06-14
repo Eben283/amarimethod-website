@@ -6,6 +6,7 @@ import { getDayData, ApiError } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
 import GarrettDay from '../components/GarrettDay';
+import SharpenDeck from '../components/SharpenDeck';
 
 type ViewMode = 'day' | 'week';
 
@@ -128,8 +129,11 @@ export default function TodayPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      {/* Garrett's Day — manual directive list, first thing on the Schedule tab. */}
+      {/* Garrett's Day — manual directive list, first thing on the tab. */}
       <GarrettDay />
+
+      {/* Sharpen — shuffle-through call-craft card deck (downtime / instead-of-scrolling). */}
+      <SharpenDeck />
 
       {/* View toggle */}
       <div className="flex items-center justify-between mb-4">
