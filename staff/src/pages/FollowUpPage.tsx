@@ -38,29 +38,14 @@ const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
 const ghlContactUrl = (contactId: string) =>
   `https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${contactId}`;
 
-// Cadence thresholds — PLACEHOLDERS, tunable to Garrett's actual (slower) rhythm.
-const VM_FOLLOWUP_DAYS = 3;
-const TALKED_FOLLOWUP_DAYS = 1;
-const LINK_FOLLOWUP_DAYS = 3;
-const OFFPLATFORM_FOLLOWUP_DAYS = 3;
-const NOANSWER_RETRY_DAYS = 1;
-const QUIET_NUDGE_DAYS = 3;
-const END_OF_ROPE_TOUCHES = 6;
+// Cadence thresholds + the frequency boost moved SERVER-SIDE (functions/api/
+// staff-partner-prospects.js) so the Act-Now decision lives in one place. The UI
+// no longer computes it — it reads `p.derived`. (Was duplicated here; removed
+// 2026-06-14 to kill the two-copies drift.)
 
 // Daily proactive worklist size. Target ~15 calls/day; 30 gives Garrett options
 // without surfacing the whole backlog (hundreds) as an overwhelming wall.
 const ACT_NOW_CAP = 30;
-
-// The leak is FREQUENCY: ~80% of prospects got one touch then were dropped; booked
-// partners averaged ~4 touches vs ~1.3. So pull the touched-once-and-dropped to the
-// top — the recoverable cohort. Never-touched (0) gets no boost (Garrett over-indexes
-// on fresh first calls); 4+ touches = real follow-through. Mirror of the server's freqBoost.
-function freqBoost(tc: number): number {
-  if (tc === 1) return 30;
-  if (tc === 2) return 15;
-  if (tc === 3) return 6;
-  return 0;
-}
 
 const SNOOZE_OPTIONS = [
   { value: '3', label: '3 days' },
@@ -247,74 +232,11 @@ function isCloser(text: string | null | undefined): boolean {
   return CLOSER_RE.test(t);
 }
 
-// The Act Now engine: one reason per prospect, derived from GHL signals.
-function derive(p: PartnerProspect): Derived {
-  if (p.isActivePartner || p.partnerStage === 'partner' || p.partnerStage === 'session-booked') {
-    return { kind: 'converted', urgency: 0, why: 'Booked — now a client.', action: null };
-  }
-  if (p.partnerStage === 'dropped') {
-    return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not a fit' };
-  }
-  if (p.partnerStage === 'future-potential') {
-    const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : true;
-    if (due) return { kind: 'act', urgency: 92, action: 'reback', why: 'Snoozed lead is back — worth another look.' };
-    return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: `Snoozed until ${friendlyDate(p.partnerFollowupAt)}` };
-  }
-
-  const d = daysSince(lastTouchAt(p));
-  const sig = p.partnerLastSignal;
-
-  // New / untouched ranks BELOW warm in-progress follow-ups (urgency < the
-  // talked/voicemail/link tiers): the leak we're fixing is dropped follow-through,
-  // and Garrett over-indexes on fresh first calls. No arrival date in the feed
-  // yet, so we can't bump genuinely-fresh leads for speed-to-lead — all untouched
-  // sit in one low tier above only the end-of-rope decision.
-  if (!sig && (p.touchCount ?? 0) === 0) {
-    return { kind: 'act', urgency: 45, action: 'call', why: 'New lead — give them a call once you\'re through your follow-ups.' };
-  }
-  if ((p.touchCount ?? 0) >= END_OF_ROPE_TOUCHES) {
-    return { kind: 'act', urgency: 38, action: 'decide', why: `You've reached out ${p.touchCount} times with nothing back. Give it one more try, or let it go.` };
-  }
-
-  const due = (t: number) => d === null || d >= t;
-  // Touch-count-primary resurfacing (touched-once rises) + a small FRESHEST-FIRST
-  // recency tiebreak: within a same-urgency tier, just-due/warm cards top the pile,
-  // months-cold ones sink. Capped low so it never jumps a tier.
-  const fb = freqBoost(p.touchCount ?? 0) + (d == null ? 0 : (60 - Math.min(d, 60)) * 0.1);
-  const waiting = (label: string): Derived => ({ kind: 'waiting', urgency: 0, why: label, action: null });
-
-  switch (sig) {
-    case 'no-answer':
-      return due(NOANSWER_RETRY_DAYS)
-        ? { kind: 'act', urgency: 62 + fb, action: 'call', why: `Couldn't reach them last time — try them again today.` }
-        : waiting('Just called — give it a day.');
-    case 'voicemail':
-      return due(VM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 70 + fb, action: 'text', why: `You left a voicemail ${ago(d)} and haven't heard back. Text them — they're more likely to see it.` }
-        : waiting('Left a voicemail — give it a few days.');
-    case 'talked':
-      return due(TALKED_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 76 + fb, action: 'text', why: `You talked ${ago(d)} — text them the next step before it goes cold.` }
-        : waiting('Just talked — give it a day.');
-    case 'link-sent':
-      return due(LINK_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 66 + fb, action: 'text', why: `You sent the link ${ago(d)} and they haven't booked. Text them and check in.` }
-        : waiting('Just sent the link.');
-    case 'linkedin-msg':
-    case 'linkedin-req':
-    case 'instagram-msg':
-    case 'in-person':
-      return due(OFFPLATFORM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 55 + fb, action: 'text', why: `You reached out ${ago(d)} — send them a text to follow up.` }
-        : waiting('Just reached out.');
-    case 'not-interested':
-      return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not interested' };
-    default:
-      return due(QUIET_NUDGE_DAYS)
-        ? { kind: 'act', urgency: 50 + fb, action: 'text', why: `You haven't connected in ${ago(d)} — text them to check in.` }
-        : waiting('Just touched base.');
-  }
-}
+// The Act Now decision now lives in ONE place: the server (functions/api/
+// staff-partner-prospects.js → deriveActNow), returned per prospect as `p.derived`.
+// The UI just reads it (see the `derived` useMemo). This avoids the old two-copies
+// drift. If the server ever omits it, we fall back to a safe "waiting" (no action).
+const DERIVED_FALLBACK: Derived = { kind: 'waiting', urgency: 0, why: '', action: null };
 
 // Unified worklist item: an unanswered reply OR a prospect needing a touch.
 type ReplyItem = { kind: 'reply'; conv: ConversationSummary; isClient: boolean };
@@ -346,6 +268,7 @@ export default function FollowUpPage() {
   const [dismissedReplies, setDismissedReplies] = useState<Set<string>>(new Set()); // session-only "no reply needed"
   const [query, setQuery] = useState('');
   const [showRubric, setShowRubric] = useState(false);
+  const [coachDataAt, setCoachDataAt] = useState<string | null>(null); // freshness stamp
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -356,6 +279,7 @@ export default function FollowUpPage() {
         getConversations('needs_reply').catch(() => ({ conversations: [] as ConversationSummary[] })),
       ]);
       setProspects(prospectsRes.prospects);
+      setCoachDataAt(prospectsRes.coachDataAt ?? null);
       setConversations((convoRes as { conversations: ConversationSummary[] }).conversations || []);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
@@ -376,7 +300,7 @@ export default function FollowUpPage() {
   // UI and the coach pipeline share ONE due-decision. Falls back to the local
   // derive() if the server didn't send one (rollout-safe).
   const derived = useMemo(
-    () => prospects.map((p) => ({ p, d: (p.derived as Derived | undefined) ?? derive(p) })),
+    () => prospects.map((p) => ({ p, d: (p.derived as Derived | undefined) ?? DERIVED_FALLBACK })),
     [prospects],
   );
 
@@ -566,6 +490,14 @@ export default function FollowUpPage() {
           <span className="text-amari-text-muted"> · {dayBanner(todayDow)}</span>
         </p>
       </div>
+
+      {/* Freshness — loud if the coach pipeline stalled, so stale-but-plausible data
+          doesn't pass as current. Only fires when the stamp is genuinely old (>12h). */}
+      {coachDataAt && (Date.now() - new Date(coachDataAt).getTime() > 12 * 60 * 60 * 1000) && (
+        <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Heads up — the coach data last refreshed {relTime(coachDataAt)}. The background refresh may have stalled, so who's booked or set aside could be out of date.
+        </div>
+      )}
 
       {/* search — find anyone across all buckets (same idea as Outreach) */}
       <div className="relative mb-3">

@@ -404,10 +404,12 @@ export async function onRequestGet(context) {
     // excludes (booked via calendar, set-aside via coach:skip) from KV.
     let cadenceMap = new Map();
     let skipSet = new Set();
+    let coachDataAt = null; // freshness stamp: when the coach worker last refreshed eligibility
     try {
       if (context.env.PORTAL_KV) {
         const cad = await context.env.PORTAL_KV.get("coach:cadence:latest", "json");
         if (cad?.prospects) for (const c of cad.prospects) cadenceMap.set(c.contactId, c);
+        coachDataAt = cad?.generatedAtISO || cad?.generatedAt || null;
         const sk = await context.env.PORTAL_KV.get("coach:skip", "json");
         if (sk && typeof sk === "object") skipSet = new Set(Object.keys(sk));
       }
@@ -449,6 +451,10 @@ export async function onRequestGet(context) {
         // empty (worker never run) or unreadable.
         activityRefreshAt: activityRefreshLastRun?.finishedAt || null,
         activityRefreshStatus: activityRefreshLastRun?.status || null,
+        // Freshness stamp: when the coach worker last refreshed the eligibility
+        // (booked/skip) overlay. The UI shows a loud banner if this goes stale, so
+        // a silently-stalled pipeline becomes visible instead of plausible-looking.
+        coachDataAt,
         total: prospects.length,
         verifiedCount,
         unverifiedCount,

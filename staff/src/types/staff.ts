@@ -413,6 +413,9 @@ export interface PartnerProspectsResponse {
   activityRefreshAt?: string | null;
   /** "ok" or "error" from the last Worker run. */
   activityRefreshStatus?: string | null;
+  /** When the coach worker last refreshed the eligibility overlay (ISO). The UI
+   *  shows a stale-data banner if this is old. Null if the worker never ran. */
+  coachDataAt?: string | null;
   total: number;
   verifiedCount: number;
   unverifiedCount: number;
