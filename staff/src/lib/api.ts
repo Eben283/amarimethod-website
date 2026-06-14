@@ -211,6 +211,40 @@ export async function sendPayLink(
   });
 }
 
+// ── Garrett's Day tasks (Schedule tab directive list) ───────────────────────
+export interface StaffTask {
+  id: string;
+  text: string;
+  done: boolean;
+  addedBy: string;
+  createdAt: string;
+  doneAt?: string | null;
+}
+
+export async function getTasks(): Promise<{ tasks: StaffTask[] }> {
+  return fetchApi('/staff-tasks');
+}
+
+type TaskAction =
+  | { action: 'add'; text: string }
+  | { action: 'edit'; id: string; text: string }
+  | { action: 'toggle'; id: string }
+  | { action: 'delete'; id: string }
+  | { action: 'clear-done' };
+
+export async function mutateTask(input: TaskAction): Promise<{ tasks: StaffTask[] }> {
+  return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
+}
+
+// One-tap post-call text (the "just left a voicemail" nudge). Sends the
+// staff-chosen pre-written body via GHL.
+export async function sendFollowupText(contactId: string, message: string): Promise<{ success: boolean }> {
+  return fetchApi('/staff-send-text', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, message }),
+  });
+}
+
 export async function staffCheckIn(
   contactId: string,
   payload: { typedName: string; signatureImage: string },
