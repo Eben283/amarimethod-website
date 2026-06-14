@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
@@ -725,7 +725,6 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </a>
           ) : (
             <>
-              <BriefPanel p={item.p} d={item.d} />
               <Details p={item.p} />
             </>
           )}
@@ -985,6 +984,12 @@ function EditSendText({ contactId, text, channel }: { contactId: string; text: s
   const [val, setVal] = useState(text);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [copied, setCopied] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  // Auto-grow to fit the whole message — no scrollbar inside the box.
+  useEffect(() => {
+    const el = ref.current;
+    if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+  }, [val]);
   const send = async () => {
     if (!val.trim() || status === 'sending') return;
     setStatus('sending');
@@ -995,10 +1000,11 @@ function EditSendText({ contactId, text, channel }: { contactId: string; text: s
     <div className="rounded-lg border border-amari-border p-2.5">
       {channel && <span className="mb-1 inline-block rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">{channel}</span>}
       <textarea
+        ref={ref}
         value={val}
         onChange={(e) => { setVal(e.target.value); if (status !== 'idle') setStatus('idle'); }}
         rows={3}
-        className="w-full resize-y rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
+        className="w-full resize-y overflow-hidden rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
       />
       <div className="mt-1.5 flex items-center gap-2">
         <button type="button" onClick={send} disabled={status === 'sending' || status === 'sent' || !val.trim()}
