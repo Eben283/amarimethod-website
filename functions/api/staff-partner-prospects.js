@@ -196,7 +196,7 @@ function deriveActNow(p, elig) {
   const waiting = (label) => ({ kind: "waiting", urgency: 0, why: label, action: null });
   switch (sig) {
     case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62 + fb, action: "call", why: `Couldn't reach them last time — try them again today.` } : waiting("Just called — give it a day.");
-    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, action: "text", why: `You left a voicemail ${agoLabel(d)} and haven't heard back. Text them — they're more likely to see it.` } : waiting("Left a voicemail — give it a few days.");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, action: "text", why: `You called ${agoLabel(d)} and haven't heard back. A text's worth a shot — it's more likely to get seen.` } : waiting("Called — give it a few days.");
     case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
     case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
     case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
