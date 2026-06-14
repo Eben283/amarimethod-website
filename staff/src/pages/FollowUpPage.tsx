@@ -3,7 +3,7 @@ import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
   Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil, Check, X,
-  Linkedin, Instagram, UserPlus, Users,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -70,6 +70,24 @@ const SETASIDE_OPTS: Record<string, { signal: PartnerLastSignal; note?: string; 
 // Signals that record an actual touch (bump last-signal + timer). skip / note /
 // deferred change stage/schedule but aren't "touches".
 const TOUCH_LIKE = new Set<PartnerLastSignal>(['no-answer', 'voicemail', 'talked', 'link-sent', 'linkedin-msg', 'linkedin-req', 'instagram-msg', 'in-person']);
+
+// "Sent link" dropdown — records WHICH link Garrett sent (no send happens). The
+// note lands in the activity timeline so the coach knows what's gone out.
+const LINK_SENT_OPTIONS = [
+  { value: 'partnership-session', label: 'Partnership Session Link' },
+  { value: 'partnership-toolkit', label: 'Partnership Toolkit' },
+];
+const LINK_SENT_LABEL: Record<string, string> = {
+  'partnership-session': 'Partnership Session Link',
+  'partnership-toolkit': 'Partnership Toolkit',
+};
+// Off-platform touches bundled into one dropdown. value === the outcome signal.
+const OTHER_CHANNEL_OPTIONS = [
+  { value: 'linkedin-msg', label: 'LinkedIn DM' },
+  { value: 'linkedin-req', label: 'LinkedIn connect' },
+  { value: 'instagram-msg', label: 'Instagram DM' },
+  { value: 'in-person', label: 'In-person' },
+];
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
 type ActionKind = 'call' | 'text' | 'reback' | 'decide';
@@ -670,12 +688,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           </a>
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
           <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
-          <Chip icon={MessageSquare} label="Sent link" busy={busy} onClick={() => onOutcome('link-sent')} />
-          {/* off-platform touches GHL can't see — record so the timeline + timer reflect them */}
-          <Chip icon={Linkedin} label="LinkedIn DM" busy={busy} onClick={() => onOutcome('linkedin-msg')} />
-          <Chip icon={UserPlus} label="LinkedIn connect" busy={busy} onClick={() => onOutcome('linkedin-req')} />
-          <Chip icon={Instagram} label="Instagram DM" busy={busy} onClick={() => onOutcome('instagram-msg')} />
-          <Chip icon={Users} label="In-person" busy={busy} onClick={() => onOutcome('in-person')} />
+          {/* records which link Garrett sent (no send) — note shows in activity */}
+          <ActionSelect icon={MessageSquare} label="Sent link…" busy={busy} options={LINK_SENT_OPTIONS}
+            onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
+          {/* off-platform touches GHL can't see — one dropdown, record so the timeline + timer reflect them */}
+          <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
+            onPick={(v) => onOutcome(v as PartnerLastSignal)} />
           <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
             onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
           <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
