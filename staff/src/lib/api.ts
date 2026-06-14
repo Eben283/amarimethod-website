@@ -221,7 +221,16 @@ export interface StaffTask {
   doneAt?: string | null;
 }
 
-export async function getTasks(): Promise<{ tasks: StaffTask[] }> {
+// The full Schedule-tab "Garrett's Day" state: the goal (why), the pinned rule,
+// the booked-today win counter, and the checkable tasks.
+export interface StaffDay {
+  goal: string;
+  rule: string;
+  bookedToday: number;
+  tasks: StaffTask[];
+}
+
+export async function getTasks(): Promise<StaffDay> {
   return fetchApi('/staff-tasks');
 }
 
@@ -230,9 +239,13 @@ type TaskAction =
   | { action: 'edit'; id: string; text: string }
   | { action: 'toggle'; id: string }
   | { action: 'delete'; id: string }
-  | { action: 'clear-done' };
+  | { action: 'clear-done' }
+  | { action: 'set-goal'; text: string }
+  | { action: 'set-rule'; text: string }
+  | { action: 'booked-inc' }
+  | { action: 'booked-dec' };
 
-export async function mutateTask(input: TaskAction): Promise<{ tasks: StaffTask[] }> {
+export async function mutateTask(input: TaskAction): Promise<StaffDay> {
   return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
 }
 
