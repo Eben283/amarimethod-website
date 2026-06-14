@@ -353,8 +353,11 @@ export default function FollowUpPage() {
     [prospects],
   );
 
+  // Prefer the SERVER-computed Act-Now decision (engine-merge 2026-06-14) so the
+  // UI and the coach pipeline share ONE due-decision. Falls back to the local
+  // derive() if the server didn't send one (rollout-safe).
   const derived = useMemo(
-    () => prospects.map((p) => ({ p, d: derive(p) })),
+    () => prospects.map((p) => ({ p, d: (p.derived as Derived | undefined) ?? derive(p) })),
     [prospects],
   );
 

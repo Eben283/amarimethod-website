@@ -138,6 +138,58 @@ function normalizePhone(s) {
   return null;
 }
 
+// ── Act-Now engine (server-side, engine-merge 2026-06-14) ───────────────────
+// Faithful port of the staff app's client-side actNowReason, moved here so the
+// UI and the coach pipeline read ONE due-decision (no two-engine drift). Same
+// constants + urgency tiers + copy as the client. Adds the coach's eligibility
+// excludes (booked via calendar, set-aside via coach:skip). Touch-count
+// re-weighting is a deliberate LATER step — this is a faithful relocation.
+const VM_FOLLOWUP_DAYS = 3, TALKED_FOLLOWUP_DAYS = 1, LINK_FOLLOWUP_DAYS = 3;
+const OFFPLATFORM_FOLLOWUP_DAYS = 3, NOANSWER_RETRY_DAYS = 1, QUIET_NUDGE_DAYS = 3;
+const END_OF_ROPE_TOUCHES = 6;
+function daysSinceDate(iso) {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / 86_400_000);
+}
+function lastTouchAt(p) {
+  const a = p.lastActivityAt ? new Date(p.lastActivityAt).getTime() : null;
+  const b = p.partnerLastSignalAt ? new Date(p.partnerLastSignalAt).getTime() : null;
+  if (a === null && b === null) return null;
+  return new Date(Math.max(a ?? 0, b ?? 0)).toISOString();
+}
+function agoLabel(d) { if (d === null) return "never"; if (d <= 0) return "today"; if (d === 1) return "yesterday"; return `${d}d ago`; }
+
+// p = prospect; elig = { hasBooking, skipped } from the coach (KV).
+function deriveActNow(p, elig) {
+  if (elig?.skipped) return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Set aside" };
+  if (p.isActivePartner || p.partnerStage === "partner" || p.partnerStage === "session-booked" || elig?.hasBooking)
+    return { kind: "converted", urgency: 0, why: "Booked — now a client.", action: null };
+  if (p.partnerStage === "dropped") return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not a fit" };
+  if (p.partnerStage === "future-potential") {
+    const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : true;
+    return due ? { kind: "act", urgency: 92, action: "reback", why: "Snoozed lead is back — worth another look." }
+               : { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Snoozed" };
+  }
+  const d = daysSinceDate(lastTouchAt(p));
+  const sig = p.partnerLastSignal;
+  const tc = p.touchCount ?? 0;
+  if (!sig && tc === 0) return { kind: "act", urgency: 45, action: "call", why: "New lead — first contact (after your follow-ups)." };
+  if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", urgency: 38, action: "decide", why: `${tc} touches, no traction — keep trying, or set aside?` };
+  const due = (t) => d === null || d >= t;
+  const waiting = (label) => ({ kind: "waiting", urgency: 0, why: label, action: null });
+  switch (sig) {
+    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62, action: "call", why: `Called ${agoLabel(d)}, no answer — give them another call.` } : waiting("Just called");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70, action: "text", why: `Voicemail ${agoLabel(d)} — a text here is good.` } : waiting("Voicemail left, giving it a beat");
+    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76, action: "text", why: `Talked ${agoLabel(d)} — text them the next step while it's warm.` } : waiting("Just talked");
+    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66, action: "text", why: `Sent the link ${agoLabel(d)}, not booked — a text nudge is good.` } : waiting("Link just sent");
+    case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
+      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55, action: "text", why: `Reached out ${agoLabel(d)} — a text follow-up is good.` } : waiting("Recently reached out");
+    case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
+    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50, action: "text", why: `Quiet ${agoLabel(d)} — a text check-in is good.` } : waiting("Recently touched");
+  }
+}
+
 // Lookup Garrett's sheet row for a contact by phone or email match.
 function lookupSheetRow(contact) {
   const phoneNorm = normalizePhone(contact.phone);
@@ -330,6 +382,28 @@ export async function onRequestGet(context) {
       }
     }
     const prospects = Array.from(byId.values()).map(toProspect);
+
+    // Engine-merge: compute the Act-Now decision SERVER-SIDE so the UI and the
+    // coach pipeline read one due-decision. Fold in the coach's eligibility
+    // excludes (booked via calendar, set-aside via coach:skip) from KV.
+    let cadenceMap = new Map();
+    let skipSet = new Set();
+    try {
+      if (context.env.PORTAL_KV) {
+        const cad = await context.env.PORTAL_KV.get("coach:cadence:latest", "json");
+        if (cad?.prospects) for (const c of cad.prospects) cadenceMap.set(c.contactId, c);
+        const sk = await context.env.PORTAL_KV.get("coach:skip", "json");
+        if (sk && typeof sk === "object") skipSet = new Set(Object.keys(sk));
+      }
+    } catch (err) {
+      console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
+    }
+    for (const p of prospects) {
+      p.derived = deriveActNow(p, {
+        hasBooking: cadenceMap.get(p.contactId)?.hasBooking,
+        skipped: skipSet.has(p.contactId),
+      });
+    }
 
     // Counts.
     // A contact counts as "verified / ready to call" if either:

@@ -387,6 +387,16 @@ export interface PartnerProspect {
   /** Number of outbound outreach actions for this contact (backfilled from /conversations,
    *  incremented on every recorded outcome). 0 if never touched or backfill hasn't run. */
   touchCount: number;
+  /** Server-computed Act-Now decision (engine-merge 2026-06-14). The UI prefers this
+   *  over its local derive() so there is ONE due-decision shared with the coach
+   *  pipeline. Optional during rollout — UI falls back to local derive() if absent. */
+  derived?: {
+    kind: 'act' | 'waiting' | 'aside' | 'converted';
+    urgency: number;
+    why: string;
+    action: 'call' | 'text' | 'reback' | 'decide' | null;
+    asideReason?: string;
+  };
   // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
   sheetStatus: string | null;
   sheetNotes: string | null;
