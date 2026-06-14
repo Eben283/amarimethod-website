@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ListTodo, Plus, Minus, X, Check, Circle, Loader2, Star, Target, Pin } from 'lucide-react';
+import { ListTodo, Plus, X, Check, Circle, Loader2, Star, Target, Pin } from 'lucide-react';
 import { getTasks, mutateTask, ApiError, type StaffDay } from '../lib/api';
 
 // "Garrett's Day" — the directive surface on the Schedule tab. ADHD-shaped:
@@ -116,26 +116,6 @@ export default function GarrettDay() {
             {day.goal || <span className="text-amari-text-muted">Set today's goal…</span>}
           </span>
         )}
-      </div>
-
-      {/* BOOKED today — the real win. A tap = someone helped. */}
-      <div className="mb-3 flex items-center justify-between rounded-xl bg-amari-accent-warm/10 px-3 py-2">
-        <div>
-          <p className="text-[11px] uppercase tracking-wide text-amari-text-muted">Booked today</p>
-          <p className="text-2xl font-bold leading-none text-amari-charcoal">{day.bookedToday}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {day.bookedToday > 0 && (
-            <button type="button" onClick={() => run({ action: 'booked-dec' })} disabled={busy}
-              className="rounded-full border border-amari-border p-1.5 text-amari-text-muted hover:bg-white disabled:opacity-50" aria-label="Undo a booking">
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-          )}
-          <button type="button" onClick={() => run({ action: 'booked-inc' })} disabled={busy}
-            className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
-            +1 booked
-          </button>
-        </div>
       </div>
 
       {/* RULE — a standing reflex, pinned, never a checkbox. Tap to edit. */}
