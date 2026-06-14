@@ -15,7 +15,6 @@ import { verifySessionToken } from "../lib/auth.js";
 const TASKS_KEY = "staff:garrett-tasks";
 const MAX_TASKS = 50;
 const MAX_TEXT_LEN = 280;
-const MAX_BOOKED = 200;
 
 const DEFAULT_GOAL = "Today: get people out of pain — every call is someone you could help.";
 const DEFAULT_RULE = "Every call ends with a text — tap VM + text or Talked + text.";
@@ -30,11 +29,6 @@ function corsHeaders(origin) {
   };
   if (ALLOWED_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
   return headers;
-}
-
-// Practice-local (Pacific) date, so "booked today" rolls at local midnight.
-function pacificToday() {
-  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
 }
 
 export async function onRequestOptions(context) {
@@ -53,16 +47,13 @@ async function requireStaff(context, headers) {
   return { payload };
 }
 
-// Read the full state, applying defaults + the daily booked-counter reset.
+// Read the full state, applying defaults. (Bookings are tracked authoritatively
+// in the funnel — deliberately NOT counted here, to avoid two diverging numbers.)
 async function readState(env) {
   const raw = (await env.PORTAL_KV.get(TASKS_KEY, "json")) || {};
-  const today = pacificToday();
-  const bookedToday = raw.bookedDate === today ? (raw.bookedToday || 0) : 0;
   return {
     goal: typeof raw.goal === "string" ? raw.goal : DEFAULT_GOAL,
     rule: typeof raw.rule === "string" ? raw.rule : DEFAULT_RULE,
-    bookedToday,
-    bookedDate: today,
     tasks: Array.isArray(raw.tasks) ? raw.tasks : [],
   };
 }
@@ -72,7 +63,7 @@ async function writeState(env, state) {
 }
 
 function publicView(state) {
-  return { goal: state.goal, rule: state.rule, bookedToday: state.bookedToday, tasks: state.tasks };
+  return { goal: state.goal, rule: state.rule, tasks: state.tasks };
 }
 
 export async function onRequestGet(context) {
@@ -130,14 +121,6 @@ export async function onRequestPost(context) {
     }
     case "set-rule": {
       state.rule = text;
-      break;
-    }
-    case "booked-inc": {
-      state.bookedToday = Math.min(MAX_BOOKED, (state.bookedToday || 0) + 1);
-      break;
-    }
-    case "booked-dec": {
-      state.bookedToday = Math.max(0, (state.bookedToday || 0) - 1);
       break;
     }
     default:

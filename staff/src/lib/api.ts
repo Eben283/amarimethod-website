@@ -222,11 +222,10 @@ export interface StaffTask {
 }
 
 // The full Schedule-tab "Garrett's Day" state: the goal (why), the pinned rule,
-// the booked-today win counter, and the checkable tasks.
+// and the checkable tasks. (Bookings are tracked in the funnel, not here.)
 export interface StaffDay {
   goal: string;
   rule: string;
-  bookedToday: number;
   tasks: StaffTask[];
 }
 
@@ -241,9 +240,7 @@ type TaskAction =
   | { action: 'delete'; id: string }
   | { action: 'clear-done' }
   | { action: 'set-goal'; text: string }
-  | { action: 'set-rule'; text: string }
-  | { action: 'booked-inc' }
-  | { action: 'booked-dec' };
+  | { action: 'set-rule'; text: string };
 
 export async function mutateTask(input: TaskAction): Promise<StaffDay> {
   return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
