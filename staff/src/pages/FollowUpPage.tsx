@@ -840,7 +840,7 @@ function OutreachCoachPanel({ contactId }: { contactId: string }) {
       <p className="mb-2 text-sm text-amari-charcoal">{coach.whyNow}</p>
       <div className="space-y-1.5">
         {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
-          <CopyText key={i} text={t} channel={coach.channel} />
+          <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} />
         ))}
       </div>
     </div>
@@ -976,6 +976,43 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
         {copied ? '✓ Copied' : 'Tap to copy'}
       </span>
     </button>
+  );
+}
+
+// Editable message + Send. Garrett can tweak the wording, then send the text right
+// from the card (via the same GHL send path as the VM/Talked chips) — no copy-paste.
+function EditSendText({ contactId, text, channel }: { contactId: string; text: string; channel?: string }) {
+  const [val, setVal] = useState(text);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [copied, setCopied] = useState(false);
+  const send = async () => {
+    if (!val.trim() || status === 'sending') return;
+    setStatus('sending');
+    try { await sendFollowupText(contactId, val.trim()); setStatus('sent'); }
+    catch { setStatus('error'); }
+  };
+  return (
+    <div className="rounded-lg border border-amari-border p-2.5">
+      {channel && <span className="mb-1 inline-block rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">{channel}</span>}
+      <textarea
+        value={val}
+        onChange={(e) => { setVal(e.target.value); if (status !== 'idle') setStatus('idle'); }}
+        rows={3}
+        className="w-full resize-y rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
+      />
+      <div className="mt-1.5 flex items-center gap-2">
+        <button type="button" onClick={send} disabled={status === 'sending' || status === 'sent' || !val.trim()}
+          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          {status === 'sending' ? 'Sending…' : status === 'sent' ? '✓ Sent' : 'Send text'}
+        </button>
+        <button type="button"
+          onClick={() => { navigator.clipboard?.writeText(val).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
+          className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+        {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
+      </div>
+    </div>
   );
 }
 
