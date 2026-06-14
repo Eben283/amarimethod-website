@@ -490,4 +490,28 @@ export async function getCallCoach(contactId: string, date?: string): Promise<Ca
   }
 }
 
+// ── Outreach coach (local generator: cadence + thread + voice → who/why/message)
+export interface OutreachCoach {
+  contactId: string;
+  name?: string;
+  bucket?: string;        // dropped-reply | gone-quiet | never-followed-up | referral
+  whyNow: string;         // why this person is surfaced right now
+  message: string;        // the ready-to-send draft in Garrett's voice
+  channel?: 'text' | 'email';
+  generatedAt?: string;
+}
+
+// Returns the contact's outreach-coach record, or null if there's none — silent,
+// not an error on the card. Reader returns 200 with coach:null when absent.
+export async function getOutreachCoach(contactId: string): Promise<OutreachCoach | null> {
+  try {
+    const r = await fetchApi<{ coach?: OutreachCoach | null }>(
+      `/outreach-coach?contactId=${encodeURIComponent(contactId)}`,
+    );
+    return r && r.coach && r.coach.message ? r.coach : null;
+  } catch {
+    return null;
+  }
+}
+
 export { ApiError };

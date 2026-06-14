@@ -8,8 +8,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach, ApiError,
-  type FollowupBrief, type EditableFieldKey, type CallCoach,
+  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach,
+  getOutreachCoach, ApiError,
+  type FollowupBrief, type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
@@ -603,6 +604,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
 
       {expanded && (
         <div className="space-y-3 border-t border-amari-border px-3 py-3">
+          <OutreachCoachPanel contactId={contactId} />
           {isReply ? (
             <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white">
@@ -706,6 +708,28 @@ function Details({ p }: { p: PartnerProspect }) {
 // the static saved texts. Button-triggered (one model call per tap).
 // Shows the daily call-coach output for this contact (recording → transcript →
 // Claude). Lazy: only mounts when a card is expanded. Silent if there's none.
+// The outreach coach: who / why-now / message from the local generator (cadence
+// + thread + Garrett's voice). Shows at the top of the expanded card with the
+// ready-to-send message to copy. Silent if there's no record for this contact.
+function OutreachCoachPanel({ contactId }: { contactId: string }) {
+  const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
+  useEffect(() => {
+    let live = true;
+    getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); });
+    return () => { live = false; };
+  }, [contactId]);
+  if (coach === 'loading' || !coach) return null;
+  return (
+    <div className="rounded-lg border border-amari-accent-warm/40 bg-amari-accent-warm/5 p-3">
+      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-accent-warm">
+        <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
+      </p>
+      <p className="mb-2 text-sm text-amari-charcoal">{coach.whyNow}</p>
+      <CopyText text={coach.message} channel={coach.channel} />
+    </div>
+  );
+}
+
 function CoachPanel({ contactId }: { contactId: string }) {
   const [coach, setCoach] = useState<CallCoach | null | 'loading'>('loading');
   useEffect(() => {
