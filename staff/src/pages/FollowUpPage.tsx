@@ -47,6 +47,17 @@ const NOANSWER_RETRY_DAYS = 1;
 const QUIET_NUDGE_DAYS = 3;
 const END_OF_ROPE_TOUCHES = 6;
 
+// The leak is FREQUENCY: ~80% of prospects got one touch then were dropped; booked
+// partners averaged ~4 touches vs ~1.3. So pull the touched-once-and-dropped to the
+// top — the recoverable cohort. Never-touched (0) gets no boost (Garrett over-indexes
+// on fresh first calls); 4+ touches = real follow-through. Mirror of the server's freqBoost.
+function freqBoost(tc: number): number {
+  if (tc === 1) return 30;
+  if (tc === 2) return 15;
+  if (tc === 3) return 6;
+  return 0;
+}
+
 const SNOOZE_OPTIONS = [
   { value: '3', label: '3 days' },
   { value: '7', label: '1 week' },
@@ -262,37 +273,41 @@ function derive(p: PartnerProspect): Derived {
   }
 
   const due = (t: number) => d === null || d >= t;
+  // Touch-count-primary resurfacing (touched-once rises) + a small FRESHEST-FIRST
+  // recency tiebreak: within a same-urgency tier, just-due/warm cards top the pile,
+  // months-cold ones sink. Capped low so it never jumps a tier.
+  const fb = freqBoost(p.touchCount ?? 0) + (d == null ? 0 : (60 - Math.min(d, 60)) * 0.1);
   const waiting = (label: string): Derived => ({ kind: 'waiting', urgency: 0, why: label, action: null });
 
   switch (sig) {
     case 'no-answer':
       return due(NOANSWER_RETRY_DAYS)
-        ? { kind: 'act', urgency: 62, action: 'call', why: `Couldn't reach them last time — try them again today.` }
+        ? { kind: 'act', urgency: 62 + fb, action: 'call', why: `Couldn't reach them last time — try them again today.` }
         : waiting('Just called — give it a day.');
     case 'voicemail':
       return due(VM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 70, action: 'text', why: `You left a voicemail ${ago(d)} and haven't heard back. Text them — they're more likely to see it.` }
+        ? { kind: 'act', urgency: 70 + fb, action: 'text', why: `You left a voicemail ${ago(d)} and haven't heard back. Text them — they're more likely to see it.` }
         : waiting('Left a voicemail — give it a few days.');
     case 'talked':
       return due(TALKED_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 76, action: 'text', why: `You talked ${ago(d)} — text them the next step before it goes cold.` }
+        ? { kind: 'act', urgency: 76 + fb, action: 'text', why: `You talked ${ago(d)} — text them the next step before it goes cold.` }
         : waiting('Just talked — give it a day.');
     case 'link-sent':
       return due(LINK_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 66, action: 'text', why: `You sent the link ${ago(d)} and they haven't booked. Text them and check in.` }
+        ? { kind: 'act', urgency: 66 + fb, action: 'text', why: `You sent the link ${ago(d)} and they haven't booked. Text them and check in.` }
         : waiting('Just sent the link.');
     case 'linkedin-msg':
     case 'linkedin-req':
     case 'instagram-msg':
     case 'in-person':
       return due(OFFPLATFORM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 55, action: 'text', why: `You reached out ${ago(d)} — send them a text to follow up.` }
+        ? { kind: 'act', urgency: 55 + fb, action: 'text', why: `You reached out ${ago(d)} — send them a text to follow up.` }
         : waiting('Just reached out.');
     case 'not-interested':
       return { kind: 'aside', urgency: 0, why: '', action: null, asideReason: 'Not interested' };
     default:
       return due(QUIET_NUDGE_DAYS)
-        ? { kind: 'act', urgency: 50, action: 'text', why: `You haven't connected in ${ago(d)} — text them to check in.` }
+        ? { kind: 'act', urgency: 50 + fb, action: 'text', why: `You haven't connected in ${ago(d)} — text them to check in.` }
         : waiting('Just touched base.');
   }
 }

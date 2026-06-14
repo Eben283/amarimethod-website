@@ -160,6 +160,18 @@ function lastTouchAt(p) {
 }
 function agoLabel(d) { if (d === null) return "never"; if (d <= 0) return "today"; if (d === 1) return "yesterday"; return `${d} days ago`; }
 
+// The leak is FREQUENCY, not timing: ~80% of prospects got one touch then were
+// dropped; booked partners averaged ~4 touches vs ~1.3 for the rest. So pull the
+// touched-once-and-dropped to the top — they're the recoverable cohort. Never-
+// touched (0) gets NO boost on purpose (Garrett over-indexes on fresh first calls);
+// 4+ touches = real follow-through, no boost.
+function freqBoost(tc) {
+  if (tc === 1) return 30;
+  if (tc === 2) return 15;
+  if (tc === 3) return 6;
+  return 0;
+}
+
 // p = prospect; elig = { hasBooking, skipped } from the coach (KV).
 function deriveActNow(p, elig) {
   if (elig?.skipped) return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Set aside" };
@@ -177,16 +189,20 @@ function deriveActNow(p, elig) {
   if (!sig && tc === 0) return { kind: "act", urgency: 45, action: "call", why: "New lead — give them a call once you're through your follow-ups." };
   if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", urgency: 38, action: "decide", why: `You've reached out ${tc} times with nothing back. Give it one more try, or let it go.` };
   const due = (t) => d === null || d >= t;
+  // Touch-count-primary resurfacing (touched-once rises) + a small FRESHEST-FIRST
+  // recency tiebreak: within a tier of same-urgency cards, the just-due/warm ones
+  // top the pile and the months-cold ones sink. Capped low so it never jumps a tier.
+  const fb = freqBoost(tc) + (d == null ? 0 : (60 - Math.min(d, 60)) * 0.1);
   const waiting = (label) => ({ kind: "waiting", urgency: 0, why: label, action: null });
   switch (sig) {
-    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62, action: "call", why: `Couldn't reach them last time — try them again today.` } : waiting("Just called — give it a day.");
-    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70, action: "text", why: `You left a voicemail ${agoLabel(d)} and haven't heard back. Text them — they're more likely to see it.` } : waiting("Left a voicemail — give it a few days.");
-    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
-    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
+    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62 + fb, action: "call", why: `Couldn't reach them last time — try them again today.` } : waiting("Just called — give it a day.");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, action: "text", why: `You left a voicemail ${agoLabel(d)} and haven't heard back. Text them — they're more likely to see it.` } : waiting("Left a voicemail — give it a few days.");
+    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
+    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
     case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
-      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
+      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
     case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
-    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");
+    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50 + fb, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");
   }
 }
 
