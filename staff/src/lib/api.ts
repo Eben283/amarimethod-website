@@ -257,9 +257,14 @@ export async function sendFollowupText(contactId: string, message: string): Prom
 
 // ── Sharpen (call-craft card feed) ──────────────────────────────────────────
 export type SharpenCategory = 'frame' | 'objection' | 'discovery' | 'close' | 'real-call';
+// kind = what TYPE of card this is (orthogonal to topic/category): a data-derived
+// trend (bucket), a single replayable real-call win (move), or evergreen technique
+// (craft). Drives the card background colour. Defaults to 'craft' when absent.
+export type SharpenKind = 'bucket' | 'move' | 'craft';
 export interface SharpenCard {
   id: string;
   category: SharpenCategory;
+  kind?: SharpenKind;
   title: string;
   body: string;
   addedBy?: string;

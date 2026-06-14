@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zap, Shuffle, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
-import { getSharpen, mutateSharpen, ApiError, type SharpenCard, type SharpenCategory } from '../lib/api';
+import { getSharpen, mutateSharpen, ApiError, type SharpenCard, type SharpenCategory, type SharpenKind } from '../lib/api';
 
 // "Sharpen" — a shuffle-through card DECK on the Schedule/Today tab (not its own
 // tab, not a full-screen reel). One card faces up; Next/Shuffle to flick through
@@ -43,20 +43,30 @@ function todaysSet(list: SharpenCard[]): SharpenCard[] {
   return a.slice(0, DAILY_COUNT);
 }
 
-// Abstract, light, brand-warm backgrounds so each card looks distinct (waves,
-// stars, blobs, gradients) — charcoal text stays readable on all of them.
-const BACKGROUNDS: string[] = [
-  'linear-gradient(135deg,#faf4ec 0%,#f1e2d2 100%)',
-  'radial-gradient(circle at 18% 22%, rgba(235,165,132,.20), transparent 45%), radial-gradient(circle at 82% 78%, rgba(235,165,132,.13), transparent 42%), #faf4ec',
-  'radial-gradient(1.6px 1.6px at 20% 28%, rgba(58,58,58,.18), transparent 60%), radial-gradient(1.6px 1.6px at 68% 52%, rgba(58,58,58,.13), transparent 60%), radial-gradient(1.6px 1.6px at 44% 80%, rgba(58,58,58,.11), transparent 60%), #f8f2eb',
-  'linear-gradient(135deg,#eef2f5 0%,#e3ebf1 100%)',
-  'linear-gradient(160deg,#fcf0e6 0%,#f6dac6 100%)',
-  'repeating-radial-gradient(circle at 50% -30%, rgba(235,165,132,.10) 0 14px, transparent 14px 30px), #faf4ec',
-];
-function bgFor(id: string): string {
+// Background colour encodes the card KIND, so it reads at a glance: blue = a
+// trend/number to work on, gold = a win to repeat, sage-green = evergreen craft.
+// Two light shades per kind for variety on the scroll; charcoal text stays
+// readable on all. Buckets are a CALM blue, never red — a trend is a focus to
+// improve, not an alarm. Cards with no kind default to craft.
+const BG_BY_KIND: Record<SharpenKind, string[]> = {
+  bucket: [
+    'linear-gradient(135deg,#eef2f5 0%,#e3ebf1 100%)',
+    'radial-gradient(circle at 20% 24%, rgba(120,150,185,.16), transparent 46%), linear-gradient(135deg,#eef3f8 0%,#dde7f0 100%)',
+  ],
+  move: [
+    'linear-gradient(160deg,#fcf0e6 0%,#f6dac6 100%)',
+    'radial-gradient(circle at 18% 22%, rgba(235,165,132,.20), transparent 45%), radial-gradient(circle at 82% 78%, rgba(235,165,132,.12), transparent 42%), #faf4ec',
+  ],
+  craft: [
+    'linear-gradient(135deg,#eef4ec 0%,#dde9d6 100%)',
+    'radial-gradient(circle at 80% 78%, rgba(120,160,120,.15), transparent 46%), linear-gradient(135deg,#f0f5ed 0%,#e1ecda 100%)',
+  ],
+};
+function bgForKind(card: SharpenCard): string {
+  const set = BG_BY_KIND[card.kind ?? 'craft'];
   let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return BACKGROUNDS[h % BACKGROUNDS.length];
+  for (let i = 0; i < card.id.length; i++) h = (h * 31 + card.id.charCodeAt(i)) >>> 0;
+  return set[h % set.length];
 }
 
 export default function SharpenDeck() {
@@ -156,7 +166,7 @@ export default function SharpenDeck() {
       ) : (
         <>
           {/* the card — each gets its own abstract background */}
-          <div className="group relative rounded-2xl border border-amari-border p-4 shadow-sm" style={{ background: bgFor(card.id) }}>
+          <div className="group relative rounded-2xl border border-amari-border p-4 shadow-sm" style={{ background: bgForKind(card) }}>
             <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${CHIP[card.category].cls}`}>{CHIP[card.category].label}</span>
             {card.title && <h3 className="text-base font-semibold leading-snug text-amari-charcoal">{card.title}</h3>}
             {card.body && <p className="mt-2 text-sm leading-relaxed text-amari-text-muted">{card.body}</p>}
