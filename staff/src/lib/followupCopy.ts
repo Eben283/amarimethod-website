@@ -34,12 +34,13 @@ const BUSINESS_FOLLOWUP: string[] = [
   "Hi, I'd still love to set up a session for someone on your team to try the protocols. We partner with gyms and studios to keep members healthy and training longer, with a nice incentive for you. Who's the best person to talk to about it?",
 ];
 
-// Therapists — the somatic angle from the locked postcard copy ("your body keeps
-// the score... hands-on work that helps it settle and reorganize"). Pairs with
-// talk therapy rather than competing with it.
+// Therapists — the somatic angle (stress and strain settling into the body, and
+// helping it release). Pairs with talk therapy rather than competing with it.
+// NOTE: do NOT use "the body keeps the score" in a 1:1 text or voicemail — it's a
+// borrowed book line. Fine on the evergreen postcard, not in direct outreach.
 const THERAPIST_FOLLOWUP: string[] = [
   "Hi {first}, following up. So much of what your clients carry shows up in the body, the stress, the strain, the old injury. I teach at-home protocols that help the body settle and reorganize, a real complement to the work you do. I'd love to gift you a session to feel it yourself. Feel free to call or text when you have time.",
-  "Hi {first}, I'd still love to gift you a session. The body keeps the score of everything it holds, and I teach gentle at-home protocols that help it settle. It pairs really well with the work you do, and if you're interested we could talk about partnering. Feel free to call or text when you have time.",
+  "Hi {first}, I'd still love to gift you a session. So much stress and strain settles into the body and stays there, and I teach gentle at-home protocols that help it release. It pairs really well with the work you do, and if you're interested we could talk about partnering. Feel free to call or text when you have time.",
   "Hi {first}, I partner with therapists because the body holds so much of what we work through. I'd love to gift you a session to experience the protocols yourself. Feel free to call or text when you have time.",
 ];
 
