@@ -40,6 +40,13 @@ async function mapLimit(items, limit, fn) {
   return out;
 }
 
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 // Collapse consecutive same-direction touches within SESSION_GAP_MS into one event.
 function collapseEvents(touches) {
   const sorted = [...touches].sort((a, b) => a.ts - b.ts);
@@ -59,18 +66,24 @@ function buildRow(contactId, name, touches) {
   const events = collapseEvents(touches);
   const out = events.filter((e) => e.dir === "out");
   const inb = events.filter((e) => e.dir === "in");
+  const outGaps = [];
+  for (let i = 1; i < out.length; i++) outGaps.push(out[i].ts - out[i - 1].ts);
   let droppedReplies = 0;
   for (const im of inb) { if (!out.find((o) => o.ts > im.ts)) droppedReplies++; }
   const last = events[events.length - 1];
+  const medGap = median(outGaps);
   return {
     contactId,
     name,
     internal: isInternal(name),
     outCount: out.length,
     inCount: inb.length,
+    firstTouch: events[0].ts,
     lastTouch: last.ts,
     lastDir: last.dir,
     sinceLastTouchDays: (Date.now() - last.ts) / DAY,
+    // In DAYS (the local outreach-cadence.mjs stored raw ms here — the bug B flagged).
+    medianOutGapDays: medGap == null ? null : medGap / DAY,
     droppedReplies,
     highVolume: out.length >= HIGH_VOLUME,
     hasHumanTouch: touches.some((t) => t.dir === "out" && (t.kind === "call" || t.kind === "sms")),
@@ -148,18 +161,24 @@ export async function deriveCadence(env) {
   const counts = {};
   for (const d of due) counts[d.state] = (counts[d.state] || 0) + 1;
 
-  const payload = {
-    generatedAt: new Date(start).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }),
-    generatedAtISO: new Date(start).toISOString(),
-    activeContacts: activeIds.length,
-    prospects: prospects.length,
-    due,
-    counts,
-  };
-  await kv.put("coach:due:latest", JSON.stringify(payload));
+  const generatedAt = new Date(start).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+  const generatedAtISO = new Date(start).toISOString();
+
+  // coach:due:latest — the due-list (same shape as the local coach-due.json).
+  await kv.put("coach:due:latest", JSON.stringify({
+    generatedAt, generatedAtISO, activeContacts: activeIds.length, prospects: prospects.length, due, counts,
+  }));
+
+  // coach:cadence:latest — the FULL prospects snapshot (replaces outreach-cadence.json
+  // for the downstream coach-outcomes + coach-learning steps, and the Sharpen
+  // instance's read-only analysis). Strip the internal-only `internal` flag.
+  await kv.put("coach:cadence:latest", JSON.stringify({
+    generatedAt, generatedAtISO, windowDays: 90,
+    prospects: scored.map(({ internal, ...p }) => p),
+  }));
 
   const summary = {
-    ranAt: payload.generatedAtISO,
+    ranAt: generatedAtISO,
     activeContacts: activeIds.length,
     prospects: prospects.length,
     dueCount: due.length,
