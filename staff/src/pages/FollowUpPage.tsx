@@ -82,6 +82,60 @@ interface Derived {
   asideReason?: string;
 }
 
+// ── Day-of-week outreach weighting ──────────────────────────────────────────
+// Calls & texts land differently by weekday — reach people when they're both
+// reachable AND not annoyed to hear from you. Email is low-intrusion, so it is
+// NEVER weighted; only 'call'/'text' actions shift. Each number is an urgency
+// delta (urgencies run ~38–92): + floats a row up today, − lets it wait for a
+// better day. Tune any cell freely. dow: 0=Sun … 6=Sat.
+type OutreachType = 'phys' | 'talk' | 'trainer' | 'golf' | 'tennis' | 'business' | 'other';
+
+const DAY_WEIGHTS: Record<number, { all?: number } & Partial<Record<OutreachType, number>>> = {
+  0: { all: -50 },                                                              // Sun — email day; calls/texts rest
+  1: { golf: 15, tennis: 15, business: 10 },                                    // Mon — golf/tennis off; business plans week
+  2: {}, 3: {}, 4: {},                                                          // Tue–Thu — core window, neutral
+  5: { trainer: 5, phys: 5, talk: -10, business: -10, golf: -10, tennis: -10 }, // Fri — clinical/desk folks winding down
+  6: { phys: 20, trainer: 5, talk: -30, business: -30, golf: -30, tennis: -30 },// Sat — PTs/gyms open; therapists/business off; golf/tennis slammed
+};
+
+function outreachType(p: PartnerProspect): OutreachType {
+  if (p.partnerFacilityRole === 'Physical Therapist') return 'phys';
+  switch (p.category) {
+    case 'therapist': return 'talk';
+    case 'trainer': return 'trainer';
+    case 'golf': return 'golf';
+    case 'tennis': return 'tennis';
+    case 'business': return 'business';
+    default: return 'other';
+  }
+}
+
+// Urgency delta for a row given today's weekday. Only calls/texts are weighted.
+function dayWeight(action: ActionKind | null, p: PartnerProspect, dow: number): number {
+  if (action !== 'call' && action !== 'text') return 0;
+  const w = DAY_WEIGHTS[dow] || {};
+  return (w.all ?? 0) + (w[outreachType(p)] ?? 0);
+}
+
+// Short, friendly hint for a row the weekday moved (null = no hint).
+function dayHint(delta: number, dow: number): string | null {
+  if (delta <= -40) return dow === 0 ? 'Email day — this call/text can wait' : 'Better another day';
+  if (delta <= -20) return 'Not the best day for this one';
+  if (delta >= 15) return 'Good day to reach this one';
+  return null;
+}
+
+// One-line "why today looks like this" for the date bar.
+function dayBanner(dow: number): string {
+  switch (dow) {
+    case 0: return 'Email day — calls & texts can wait till tomorrow';
+    case 1: return 'Golf & tennis pros are reachable today (their day off)';
+    case 5: return 'Trainers & physical therapists good · desk/clinical folks winding down';
+    case 6: return 'Good for physical therapists · talk therapists & desk folks can wait';
+    default: return 'Core outreach day — everyone in range';
+  }
+}
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 function daysSince(iso: string | null | undefined): number | null {
   if (!iso) return null;
@@ -214,7 +268,7 @@ function derive(p: PartnerProspect): Derived {
 
 // Unified worklist item: an unanswered reply OR a prospect needing a touch.
 type ReplyItem = { kind: 'reply'; conv: ConversationSummary; isClient: boolean };
-type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived };
+type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived; weight?: number; hint?: string | null };
 type ActItem = ReplyItem | ProspectItem;
 
 const URGENCY_DOT: Record<ActionKind, string> = {
@@ -286,14 +340,27 @@ export default function FollowUpPage() {
       }));
   }, [conversations, prospectMap, dismissedReplies]);
 
+  // Today's weekday drives the call/text weighting + the date bar. 0=Sun … 6=Sat.
+  const todayDow = useMemo(() => new Date().getDay(), []);
+  const todayLabel = useMemo(
+    () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }),
+    [],
+  );
+
   // 2) Prospects needing a touch — minus anyone already surfaced as a reply.
+  //    Ranked by urgency PLUS today's day-of-week weight, so calls/texts that
+  //    don't suit the day sink and the day-appropriate work floats up. Replies
+  //    (above) stay pinned on top regardless.
   const prospectActNow = useMemo<ProspectItem[]>(() => {
     const replyIds = new Set(replyItems.map((r) => r.conv.contactId));
     return derived
       .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId))
-      .sort((a, b) => b.d.urgency - a.d.urgency)
-      .map((r) => ({ kind: 'prospect' as const, p: r.p, d: r.d }));
-  }, [derived, replyItems]);
+      .map((r) => {
+        const weight = dayWeight(r.d.action, r.p, todayDow);
+        return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
+      })
+      .sort((a, b) => (b.d.urgency + (b.weight ?? 0)) - (a.d.urgency + (a.weight ?? 0)));
+  }, [derived, replyItems, todayDow]);
 
   const actItems = useMemo<ActItem[]>(() => [...replyItems, ...prospectActNow], [replyItems, prospectActNow]);
   const setAside = useMemo(() => derived.filter((r) => r.d.kind === 'aside'), [derived]);
@@ -398,6 +465,16 @@ export default function FollowUpPage() {
         </button>
       </div>
 
+      {/* Date bar — today + how the weekday is weighting calls/texts. The list
+          below reorders by this; nothing is blocked. */}
+      <div className="mb-3 flex items-start gap-2 rounded-xl border border-amari-border bg-amari-light-sand/60 px-3 py-2 text-xs">
+        <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-amari-accent-warm" />
+        <p className="text-amari-charcoal">
+          <span className="font-semibold">{todayLabel}</span>
+          <span className="text-amari-text-muted"> · {dayBanner(todayDow)}</span>
+        </p>
+      </div>
+
       {/* search — find anyone across all buckets (same idea as Outreach) */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amari-text-muted" />
@@ -459,6 +536,7 @@ export default function FollowUpPage() {
                 <li>Out of cadence — decide: keep trying or set aside</li>
               </ol>
               <p className="mt-1 text-amari-text-muted">Hidden until due: cooling-off (just touched) and snoozed.</p>
+              <p className="mt-1 text-amari-text-muted">Today's weekday nudges calls/texts up or down by who's reachable (see the date bar) — nothing is blocked, just reordered.</p>
             </div>
           )}
 
@@ -554,6 +632,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           ) : (
             <>
               <p className="mt-1 text-sm text-amari-charcoal">{item.d.why}</p>
+              {item.kind === 'prospect' && item.hint && (
+                <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
+              )}
               <p className="mt-0.5 text-[11px] text-amari-text-muted">Last touch: {ago(daysSince(lastTouchAt(item.p)))}</p>
             </>
           )}
