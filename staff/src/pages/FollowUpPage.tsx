@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach,
-  getOutreachCoach, ApiError,
+  getOutreachCoach, sendFollowupText, ApiError,
   type FollowupBrief, type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
@@ -88,6 +88,13 @@ const OTHER_CHANNEL_OPTIONS = [
   { value: 'instagram-msg', label: 'Instagram DM' },
   { value: 'in-person', label: 'In-person' },
 ];
+
+// The one-tap post-call text — logistics, not a pitch (matches "just left a
+// voicemail"). The "VM + text" chip records the voicemail AND sends this in one
+// tap, so the text is part of the call, not a separate task. Edit here to change
+// what it sends.
+const vmText = (firstName?: string | null) =>
+  `Hey${firstName ? ' ' + firstName : ''}, just left you a voicemail — give me a call back when you get a sec!`;
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
 type ActionKind = 'call' | 'text' | 'reback' | 'decide';
@@ -445,6 +452,24 @@ export default function FollowUpPage() {
     }
   }, [logout]);
 
+  // One tap = leave-VM behavior done: sends the pre-written text, THEN records
+  // the voicemail outcome. If the text fails, we don't record the VM (so it
+  // stays actionable). This bundles the money-behavior into the call so it isn't
+  // a separate task competing with the next call.
+  const onVmText = useCallback(async (contactId: string, firstName?: string | null) => {
+    setBusyId(contactId);
+    try {
+      await sendFollowupText(contactId, vmText(firstName));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) { logout(); return; }
+      setError(err instanceof Error ? err.message : 'Failed to send text — voicemail not recorded');
+      setBusyId(null);
+      return;
+    }
+    setBusyId(null);
+    await onOutcome(contactId, 'voicemail');
+  }, [onOutcome, logout]);
+
   const onDismissReply = useCallback((contactId: string) => {
     setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
   }, []);
@@ -525,6 +550,7 @@ export default function FollowUpPage() {
                 noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
                 onToggle={() => toggleExpand(item.p.contactId)}
                 onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
+                onVmText={() => onVmText(item.p.contactId, item.p.firstName)}
                 onNoteChange={setNoteDraft}
                 onSaveNote={() => onSaveNote(item.p.contactId)}
                 onDismiss={() => onDismissReply(item.p.contactId)}
@@ -577,6 +603,7 @@ export default function FollowUpPage() {
                       noteDraft={expandedId === contactId ? noteDraft : ''}
                       onToggle={() => toggleExpand(contactId)}
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
+                      onVmText={() => { if (item.kind === 'prospect') onVmText(item.p.contactId, item.p.firstName); }}
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
                       onDismiss={() => onDismissReply(contactId)}
@@ -618,12 +645,13 @@ interface ActRowProps {
   noteDraft: string;
   onToggle: () => void;
   onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
+  onVmText: () => void;
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
   onDismiss: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -686,6 +714,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
           </a>
+          <Chip icon={Send} label="VM + text" busy={busy} onClick={onVmText} />
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
           <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
           {/* records which link Garrett sent (no send) — note shows in activity */}
