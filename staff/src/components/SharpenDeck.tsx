@@ -129,7 +129,6 @@ export default function SharpenDeck() {
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-amari-accent-warm" />
           <h2 className="text-sm font-semibold text-amari-charcoal">Sharpen</h2>
-          <span className="text-[11px] text-amari-text-muted">— a minute beats scrolling</span>
         </div>
         <button type="button" onClick={() => setAdding((v) => !v)}
           className="rounded-lg border border-amari-border p-1.5 text-amari-text-muted hover:bg-amari-light-sand" aria-label="Add a card">
