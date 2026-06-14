@@ -16,11 +16,13 @@
 // Cron: every 3 hours (see wrangler.toml).
 
 import { runSync } from "./sync.js";
+import { deriveCadence } from "./cadence.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runSync(env, "cron"));
+    // Sync the cache first, then derive the due-list off it (ordering guaranteed).
+    ctx.waitUntil(runSync(env, "cron").then(() => deriveCadence(env)));
   },
 
   async fetch(request, env, ctx) {
@@ -32,8 +34,20 @@ export default {
     if (url.pathname === "/sync" || url.pathname === "/__scheduled") {
       // Awaited inline (not ctx.waitUntil): the message fetches are I/O-bound and
       // can run tens of seconds; the caller waits for the summary.
-      const result = await runSync(env, "manual");
-      return json(result);
+      const sync = await runSync(env, "manual");
+      const cadence = await deriveCadence(env);
+      return json({ sync, cadence });
+    }
+
+    if (url.pathname === "/cadence") {
+      // Re-derive the due-list from the existing cache (no GHL conversation pull).
+      const cadence = await deriveCadence(env);
+      return json(cadence);
+    }
+
+    if (url.pathname === "/due") {
+      const data = await env.PORTAL_KV.get("coach:due:latest", "json");
+      return data ? json(data) : json({ error: "Never derived" }, 404);
     }
 
     if (url.pathname === "/status") {
