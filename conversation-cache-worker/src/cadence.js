@@ -19,12 +19,60 @@ const BOOKING_SUPPRESS_DAYS = 21;
 // Skip-persistence: honor the Follow-Up app's existing disposition so a contact
 // Garrett/Eben "Set Aside" (which writes partner_stage) stays out of the coach too
 // — no parallel skip system. Closed/parked stages suppress the coach card.
-const PARTNER_STAGE_FIELD = "KfPow1mYDxJqiOCS6mDZ";
 const CLOSED_STAGES = new Set(["dropped", "future-potential", "session-booked"]);
+// GHL custom-field IDs (from staff-partner-prospects.js FIELD_IDS).
+const FIELD = {
+  stage: "KfPow1mYDxJqiOCS6mDZ",
+  lastSignal: "XyUoMtbxadTuZunQwX3Y",
+  lastSignalAt: "J0lnfsvtt0vcFOdSbUSf",
+  followupAt: "stVYzQB4Xpi29cuyUYnA",
+  lastRealActivity: "W7JoyJKPKhPI8hZ5EgUv",
+  touchCount: "qKtPT2XZP61emgUDK7fd",
+};
 const getField = (contact, id) => {
   const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
   return f ? (f.value ?? f.field_value) : undefined;
 };
+
+// ── SHADOW: faithful port of the app's client-side actNowReason (`derive`) so we
+// can compute the unified due-set server-side and DIFF it against the coach's
+// touch-count model BEFORE touching the front-end. Constants copied verbatim from
+// FollowUpPage.tsx. (engine-merge step 1 — shadow only, nothing consumes it yet.)
+const VM_FOLLOWUP_DAYS = 3, TALKED_FOLLOWUP_DAYS = 1, LINK_FOLLOWUP_DAYS = 3;
+const OFFPLATFORM_FOLLOWUP_DAYS = 3, NOANSWER_RETRY_DAYS = 1, QUIET_NUDGE_DAYS = 3;
+const END_OF_ROPE_TOUCHES = 6;
+const daysSinceISO = (iso) => { if (!iso) return null; const t = new Date(iso).getTime(); return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / DAY); };
+
+// meta = { stage, lastSignal, lastSignalAt, followupAt, lastActivity, touchCount, sessionBookedTag }
+function appDerive(meta) {
+  const stage = meta.stage;
+  if (meta.sessionBookedTag || stage === "partner" || stage === "session-booked") return { kind: "converted", due: false, action: null, why: "Booked — now a client." };
+  if (stage === "dropped") return { kind: "aside", due: false, action: null, why: "Not a fit" };
+  if (stage === "future-potential") {
+    const due = meta.followupAt ? new Date(meta.followupAt).getTime() <= Date.now() : true;
+    return due ? { kind: "act", due: true, action: "reback", why: "Snoozed lead is back — worth another look." }
+               : { kind: "aside", due: false, action: null, why: "Snoozed" };
+  }
+  const a = meta.lastActivity ? new Date(meta.lastActivity).getTime() : 0;
+  const b = meta.lastSignalAt ? new Date(meta.lastSignalAt).getTime() : 0;
+  const d = (a || b) ? Math.floor((Date.now() - Math.max(a, b)) / DAY) : null;
+  const sig = meta.lastSignal;
+  const tc = Number(meta.touchCount) || 0;
+  const due = (t) => d === null || d >= t;
+  const wait = (why) => ({ kind: "waiting", due: false, action: null, why });
+  if (!sig && tc === 0) return { kind: "act", due: true, action: "call", why: "New lead — first contact (after your follow-ups)." };
+  if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", due: true, action: "decide", why: `${tc} touches, no traction — keep trying, or set aside?` };
+  switch (sig) {
+    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", due: true, action: "call", why: "Called, no answer — give them another call." } : wait("Just called");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Voicemail — a text here is good." } : wait("Voicemail left, giving it a beat");
+    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Talked — text them the next step while it's warm." } : wait("Just talked");
+    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Sent the link, not booked — a text nudge is good." } : wait("Link just sent");
+    case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
+      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Reached out — a text follow-up is good." } : wait("Recently reached out");
+    case "not-interested": return { kind: "aside", due: false, action: null, why: "Not interested" };
+    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", due: true, action: "text", why: "Quiet — a text check-in is good." } : wait("Recently touched");
+  }
+}
 
 // Cadence policy (amari/strategy/outreach-cadence-policy.md): days to wait after
 // the nth outbound touch before the next. Widens; 6 is end-of-rope.
@@ -150,9 +198,9 @@ async function loadBookedSet(env) {
   return set;
 }
 
-// Map contactId -> partner_stage (from the app's disposition), honoring the
-// partner-session-booked tag the way the staff app does (tag wins).
-async function loadStageMap(env) {
+// Map contactId -> contact meta (disposition + signal fields the app's derive uses).
+// Honors the partner-session-booked tag the way the staff app does (tag wins on stage).
+async function loadContactMeta(env) {
   const map = new Map();
   let after = null, afterId = null;
   for (let p = 0; p < 12; p++) {
@@ -162,10 +210,16 @@ async function loadStageMap(env) {
     try { d = await ghlRetry(env, path); } catch { break; }
     const cs = d.contacts || [];
     for (const c of cs) {
-      const stage = (c.tags || []).includes("partner-session-booked")
-        ? "session-booked"
-        : getField(c, PARTNER_STAGE_FIELD);
-      if (stage) map.set(c.id, stage);
+      const sessionBookedTag = (c.tags || []).includes("partner-session-booked");
+      map.set(c.id, {
+        stage: sessionBookedTag ? "session-booked" : getField(c, FIELD.stage),
+        sessionBookedTag,
+        lastSignal: getField(c, FIELD.lastSignal),
+        lastSignalAt: getField(c, FIELD.lastSignalAt),
+        followupAt: getField(c, FIELD.followupAt),
+        lastActivity: getField(c, FIELD.lastRealActivity),
+        touchCount: getField(c, FIELD.touchCount),
+      });
     }
     afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
     if (cs.length < 100 || !afterId) break;
@@ -190,11 +244,11 @@ export async function deriveCadence(env) {
   })).filter(Boolean);
 
   const booked = await loadBookedSet(env);
-  const stageMap = await loadStageMap(env);
+  const metaMap = await loadContactMeta(env);
   const skip = (await kv.get("coach:skip", "json")) || {};       // { contactId: {reason, setAt} }
   for (const r of rows) {
     r.hasBooking = booked.has(r.contactId);
-    r.partnerStage = stageMap.get(r.contactId);
+    r.partnerStage = metaMap.get(r.contactId)?.stage;
     r.skipped = Boolean(skip[r.contactId]);
   }
 
@@ -219,6 +273,39 @@ export async function deriveCadence(env) {
   await kv.put("coach:cadence:latest", JSON.stringify({
     generatedAt, generatedAtISO, windowDays: 90,
     prospects: scored.map(({ internal, ...p }) => p),
+  }));
+
+  // coach:due:shadow — engine-merge step 1. The app's actNowReason (signal-based)
+  // computed server-side, eligibility-gated, with the coach's touch-count as a
+  // resurfacing input — so we can DIFF the unified model against the live coach
+  // due-list before any front-end change. NOTHING consumes this yet (shadow).
+  const stateOf = new Map(scored.map((s) => [s.contactId, { state: s.state, due: s.due }]));
+  const shadow = [];
+  for (const r of prospects) {
+    const meta = metaMap.get(r.contactId) || {};
+    // Eligibility gate (axis A) wins first — same excludes as the live coach.
+    if (r.hasBooking || r.hasHumanTouch === false || r.skipped) continue;
+    const app = appDerive({ ...meta, touchCount: meta.touchCount ?? r.outCount });
+    if (!app.due) continue;
+    const cs = stateOf.get(r.contactId) || {};
+    shadow.push({
+      contactId: r.contactId, name: r.name,
+      action: app.action, why: app.why, kind: app.kind,
+      signalBucket: meta.lastSignal || (r.outCount === 0 ? "new" : "quiet"),
+      touchCount: Number(meta.touchCount) || r.outCount,
+      coachState: cs.state,           // what the touch-count model said, for the diff
+      coachDue: Boolean(cs.due),
+    });
+  }
+  // How often do the two models DISAGREE on the contacted set? (the merge's whole point)
+  const liveDueIds = new Set(due.map((d) => d.contactId));
+  const shadowDueIds = new Set(shadow.map((s) => s.contactId));
+  const onlyShadow = [...shadowDueIds].filter((id) => !liveDueIds.has(id)).length;
+  const onlyLive = [...liveDueIds].filter((id) => !shadowDueIds.has(id)).length;
+  await kv.put("coach:due:shadow", JSON.stringify({
+    generatedAt, generatedAtISO, note: "engine-merge step 1 — app actNowReason computed server-side; shadow only, nothing consumes it",
+    shadowDue: shadow.length, liveDue: due.length, agreeBoth: shadow.length - onlyShadow,
+    onlyShadow, onlyLive, items: shadow,
   }));
 
   const summary = {
