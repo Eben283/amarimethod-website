@@ -94,7 +94,13 @@ const OTHER_CHANNEL_OPTIONS = [
 // tap, so the text is part of the call, not a separate task. Edit here to change
 // what it sends.
 const vmText = (firstName?: string | null) =>
-  `Hey${firstName ? ' ' + firstName : ''}, just left you a voicemail — give me a call back when you get a sec!`;
+  `Hey${firstName ? ' ' + firstName : ''}, just left you a voicemail, give me a call back when you get a sec!`;
+
+// "Talked + text" — sent the second a connected call ends, while interest is at
+// its peak (the highest-value post-call text per speed-to-lead research). Records
+// the talk AND sends the link in one tap. Edit here to change wording or link.
+const talkedText = (firstName?: string | null) =>
+  `So glad we talked${firstName ? ', ' + firstName : ''}! Here's the link to grab a time whenever works for you: https://www.amarimethod.com/partner-session`;
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
 type ActionKind = 'call' | 'text' | 'reback' | 'decide';
@@ -470,6 +476,23 @@ export default function FollowUpPage() {
     await onOutcome(contactId, 'voicemail');
   }, [onOutcome, logout]);
 
+  // Same one-tap pattern for a connected call: send the link immediately (peak
+  // interest), THEN record the talk. The day-based cadence below stays the LATER
+  // re-engagement layer; this is the immediate post-call text.
+  const onTalkedText = useCallback(async (contactId: string, firstName?: string | null) => {
+    setBusyId(contactId);
+    try {
+      await sendFollowupText(contactId, talkedText(firstName));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) { logout(); return; }
+      setError(err instanceof Error ? err.message : 'Failed to send text, talk not recorded');
+      setBusyId(null);
+      return;
+    }
+    setBusyId(null);
+    await onOutcome(contactId, 'talked');
+  }, [onOutcome, logout]);
+
   const onDismissReply = useCallback((contactId: string) => {
     setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
   }, []);
@@ -551,6 +574,7 @@ export default function FollowUpPage() {
                 onToggle={() => toggleExpand(item.p.contactId)}
                 onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
                 onVmText={() => onVmText(item.p.contactId, item.p.firstName)}
+                onTalkedText={() => onTalkedText(item.p.contactId, item.p.firstName)}
                 onNoteChange={setNoteDraft}
                 onSaveNote={() => onSaveNote(item.p.contactId)}
                 onDismiss={() => onDismissReply(item.p.contactId)}
@@ -604,6 +628,7 @@ export default function FollowUpPage() {
                       onToggle={() => toggleExpand(contactId)}
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
                       onVmText={() => { if (item.kind === 'prospect') onVmText(item.p.contactId, item.p.firstName); }}
+                      onTalkedText={() => { if (item.kind === 'prospect') onTalkedText(item.p.contactId, item.p.firstName); }}
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
                       onDismiss={() => onDismissReply(contactId)}
@@ -646,12 +671,13 @@ interface ActRowProps {
   onToggle: () => void;
   onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
   onVmText: () => void;
+  onTalkedText: () => void;
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
   onDismiss: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onTalkedText, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -716,7 +742,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           </a>
           <Chip icon={Send} label="VM + text" busy={busy} onClick={onVmText} />
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
-          <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
+          <Chip icon={Send} label="Talked + text" busy={busy} onClick={onTalkedText} />
+          <Chip icon={Phone} label="Talked (no text)" busy={busy} onClick={() => onOutcome('talked')} />
           {/* records which link Garrett sent (no send) — note shows in activity */}
           <ActionSelect icon={MessageSquare} label="Sent link…" busy={busy} options={LINK_SENT_OPTIONS}
             onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
