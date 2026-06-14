@@ -10,6 +10,7 @@ import FollowUpPage from './pages/FollowUpPage';
 import FunnelPage from './pages/FunnelPage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
+import SharpenPage from './pages/SharpenPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -102,6 +103,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav>
               <PlaybookPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sharpen"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <SharpenPage />
             </LayoutWithNav>
           </ProtectedRoute>
         }
