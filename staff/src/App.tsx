@@ -10,7 +10,6 @@ import FollowUpPage from './pages/FollowUpPage';
 import FunnelPage from './pages/FunnelPage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
-import SharpenPage from './pages/SharpenPage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -107,16 +106,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/sharpen"
-        element={
-          <ProtectedRoute>
-            <LayoutWithNav>
-              <SharpenPage />
-            </LayoutWithNav>
-          </ProtectedRoute>
-        }
-      />
+      {/* Sharpen moved onto the Today tab as a card deck; old URL → home */}
+      <Route path="/sharpen" element={<Navigate to="/" replace />} />
       {/* Outreach retired into Follow-Up; old URLs redirect there */}
       <Route path="/outreach" element={<Navigate to="/follow-up" replace />} />
       <Route path="/partners" element={<Navigate to="/follow-up" replace />} />
