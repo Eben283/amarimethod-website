@@ -38,9 +38,15 @@ const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
 const ghlContactUrl = (contactId: string) =>
   `https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${contactId}`;
 
-// Cadence thresholds — PLACEHOLDERS, tunable to Garrett's actual (slower) rhythm.
-const VM_FOLLOWUP_DAYS = 3;
-const TALKED_FOLLOWUP_DAYS = 1;
+// Cadence thresholds — tunable to Garrett's actual rhythm.
+// The post-CALL text is IMMEDIATE (0 days): per the agreed directive, every call
+// ends with a text right after — voicemail → "just left a VM", talked → the next
+// step while it's warm. Speed-to-lead: the immediate text is the one that
+// converts; a days-later text lands cold. The genuine RE-ENGAGEMENT delays
+// (link-sent, off-platform, quiet) stay multi-day — those are the 2nd-layer
+// nudges for non-responders, a different moment.
+const VM_FOLLOWUP_DAYS = 0;     // text right after leaving the voicemail
+const TALKED_FOLLOWUP_DAYS = 0; // text the next step right after the call, while warm
 const LINK_FOLLOWUP_DAYS = 3;
 const OFFPLATFORM_FOLLOWUP_DAYS = 3;
 const NOANSWER_RETRY_DAYS = 1;
@@ -265,11 +271,11 @@ function derive(p: PartnerProspect): Derived {
         : waiting('Just called');
     case 'voicemail':
       return due(VM_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 70, action: 'text', why: `Voicemail ${ago(d)} — a text here is good.` }
+        ? { kind: 'act', urgency: 70, action: 'text', why: `Left a voicemail — text them now (tap "VM + text").` }
         : waiting('Voicemail left, giving it a beat');
     case 'talked':
       return due(TALKED_FOLLOWUP_DAYS)
-        ? { kind: 'act', urgency: 76, action: 'text', why: `Talked ${ago(d)} — text them the next step while it's warm.` }
+        ? { kind: 'act', urgency: 76, action: 'text', why: `Talked ${ago(d)} — text the next step now, while it's warm.` }
         : waiting('Just talked');
     case 'link-sent':
       return due(LINK_FOLLOWUP_DAYS)
