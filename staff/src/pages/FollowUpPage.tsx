@@ -47,6 +47,10 @@ const NOANSWER_RETRY_DAYS = 1;
 const QUIET_NUDGE_DAYS = 3;
 const END_OF_ROPE_TOUCHES = 6;
 
+// Daily proactive worklist size. Target ~15 calls/day; 30 gives Garrett options
+// without surfacing the whole backlog (hundreds) as an overwhelming wall.
+const ACT_NOW_CAP = 30;
+
 // The leak is FREQUENCY: ~80% of prospects got one touch then were dropped; booked
 // partners averaged ~4 touches vs ~1.3. So pull the touched-once-and-dropped to the
 // top — the recoverable cohort. Never-touched (0) gets no boost (Garrett over-indexes
@@ -408,7 +412,11 @@ export default function FollowUpPage() {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
-      .sort((a, b) => (b.d.urgency + (b.weight ?? 0)) - (a.d.urgency + (a.weight ?? 0)));
+      .sort((a, b) => (b.d.urgency + (b.weight ?? 0)) - (a.d.urgency + (a.weight ?? 0)))
+      // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
+      // options without the full backlog (hundreds) becoming a wall. Replies are
+      // pinned above this and never capped. The rest stays in the data, not the screen.
+      .slice(0, ACT_NOW_CAP);
   }, [derived, replyItems, todayDow]);
 
   const actItems = useMemo<ActItem[]>(() => [...replyItems, ...prospectActNow], [replyItems, prospectActNow]);
