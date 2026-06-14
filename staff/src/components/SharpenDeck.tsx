@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Zap, Shuffle, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
+import { Zap, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
 import { getSharpen, mutateSharpen, ApiError, type SharpenCard, type SharpenCategory, type SharpenKind } from '../lib/api';
 
 // "Sharpen" — a shuffle-through card DECK on the Schedule/Today tab (not its own
-// tab, not a full-screen reel). One card faces up; Next/Shuffle to flick through
+// tab, not a full-screen reel). One card faces up; Next to flick through
 // the deck — like riffling index cards. The "scroll this instead of Instagram"
 // thing, sitting in the normal page scroll. Content is curated + grown from real
 // calls (see staff-sharpen.js); never generic sales-bro filler.
@@ -177,10 +177,6 @@ export default function SharpenDeck() {
 
           {/* deck controls */}
           <div className="mt-2 flex items-center justify-between">
-            <button type="button" onClick={() => reshuffle(cards)} disabled={busy || deck.length < 2}
-              className="inline-flex items-center gap-1 text-xs text-amari-text-muted hover:text-amari-charcoal disabled:opacity-40">
-              <Shuffle className="h-3.5 w-3.5" /> Shuffle
-            </button>
             <span className="text-[11px] text-amari-text-muted">{pos + 1} / {deck.length}</span>
             <button type="button" onClick={next} disabled={deck.length < 2}
               className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-3 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-40">
