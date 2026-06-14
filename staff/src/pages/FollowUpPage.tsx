@@ -880,7 +880,11 @@ function OutreachCoachPanel({ contactId }: { contactId: string }) {
         <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
       </p>
       <p className="mb-2 text-sm text-amari-charcoal">{coach.whyNow}</p>
-      <CopyText text={coach.message} channel={coach.channel} />
+      <div className="space-y-1.5">
+        {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
+          <CopyText key={i} text={t} channel={coach.channel} />
+        ))}
+      </div>
     </div>
   );
 }

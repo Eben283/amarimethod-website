@@ -531,6 +531,7 @@ export interface OutreachCoach {
   bucket?: string;        // dropped-reply | gone-quiet | never-followed-up | referral
   whyNow: string;         // why this person is surfaced right now
   message: string;        // the ready-to-send draft in Garrett's voice
+  variations?: string[];  // 2-3 wordings to choose from (message is variations[0])
   channel?: 'text' | 'email';
   generatedAt?: string;
 }
@@ -542,7 +543,7 @@ export async function getOutreachCoach(contactId: string): Promise<OutreachCoach
     const r = await fetchApi<{ coach?: OutreachCoach | null }>(
       `/outreach-coach?contactId=${encodeURIComponent(contactId)}`,
     );
-    return r && r.coach && r.coach.message ? r.coach : null;
+    return r && r.coach && (r.coach.message || r.coach.variations?.length) ? r.coach : null;
   } catch {
     return null;
   }
