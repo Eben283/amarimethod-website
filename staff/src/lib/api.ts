@@ -255,6 +255,30 @@ export async function sendFollowupText(contactId: string, message: string): Prom
   });
 }
 
+// ── Sharpen (call-craft card feed) ──────────────────────────────────────────
+export type SharpenCategory = 'frame' | 'objection' | 'discovery' | 'close' | 'real-call';
+export interface SharpenCard {
+  id: string;
+  category: SharpenCategory;
+  title: string;
+  body: string;
+  addedBy?: string;
+  createdAt?: string;
+}
+
+export async function getSharpen(): Promise<{ cards: SharpenCard[] }> {
+  return fetchApi('/staff-sharpen');
+}
+
+type SharpenAction =
+  | { action: 'add'; category: SharpenCategory; title: string; body: string }
+  | { action: 'edit'; id: string; category: SharpenCategory; title: string; body: string }
+  | { action: 'delete'; id: string };
+
+export async function mutateSharpen(input: SharpenAction): Promise<{ cards: SharpenCard[] }> {
+  return fetchApi('/staff-sharpen', { method: 'POST', body: JSON.stringify(input) });
+}
+
 export async function staffCheckIn(
   contactId: string,
   payload: { typedName: string; signatureImage: string },
