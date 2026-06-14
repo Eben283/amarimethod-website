@@ -642,6 +642,17 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   const isClient = isReply ? item.isClient : item.p.isActivePartner;
   const industry = !isReply && item.p.category !== 'unknown' ? item.p.category : '';
 
+  // Fetch the coach record once (here, not in the panel) so the card HEADLINE can
+  // use the coach's why-now — it's richer/more specific than the generic derive why.
+  const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
+  useEffect(() => {
+    if (isReply) { setCoach(null); return; }
+    let live = true;
+    getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); }).catch(() => { if (live) setCoach(null); });
+    return () => { live = false; };
+  }, [contactId, isReply]);
+  const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
+
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
       <button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-2 p-3 text-left">
@@ -661,7 +672,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-amari-charcoal">{item.d.why}</p>
+              <p className="mt-1 text-sm text-amari-charcoal">{coachWhy || item.d.why}</p>
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
               )}
@@ -717,7 +728,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
 
       {expanded && (
         <div className="space-y-3 border-t border-amari-border px-3 py-3">
-          <OutreachCoachPanel contactId={contactId} />
+          <OutreachCoachPanel coach={coach} contactId={contactId} />
           {isReply ? (
             <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white">
@@ -823,20 +834,16 @@ function Details({ p }: { p: PartnerProspect }) {
 // The outreach coach: who / why-now / message from the local generator (cadence
 // + thread + Garrett's voice). Shows at the top of the expanded card with the
 // ready-to-send message to copy. Silent if there's no record for this contact.
-function OutreachCoachPanel({ contactId }: { contactId: string }) {
-  const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
-  useEffect(() => {
-    let live = true;
-    getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); });
-    return () => { live = false; };
-  }, [contactId]);
+// Takes the coach record as a prop (fetched once by ActRow so the headline can use
+// the same whyNow). The whyNow is shown as the card headline now, so it's not
+// repeated here — just the label + the editable/sendable messages.
+function OutreachCoachPanel({ coach, contactId }: { coach: OutreachCoach | null | 'loading'; contactId: string }) {
   if (coach === 'loading' || !coach) return null;
   return (
     <div className="rounded-lg border border-amari-accent-warm/40 bg-amari-accent-warm/5 p-3">
-      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-accent-warm">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-accent-warm">
         <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
       </p>
-      <p className="mb-2 text-sm text-amari-charcoal">{coach.whyNow}</p>
       <div className="space-y-1.5">
         {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
           <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} />
