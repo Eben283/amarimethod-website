@@ -1,0 +1,23 @@
+name = "conversation-cache"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Incremental conversation cache. Pulls only what changed since the last run and
+# upserts per-contact message history into KV, so downstream consumers (the
+# outreach coach's cadence step, learning, etc.) read the cache instead of each
+# re-pulling 60 days of GHL conversations every day.
+#
+# Cron: every 3 hours, keeps the cache fresh cheaply. The first run backfills
+# ~90 days; every run after is just the delta.
+[triggers]
+crons = ["0 */3 * * *"]
+
+# Same KV namespace as Pages + the other workers.
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Secrets (set via `npx wrangler secret put <KEY>`):
+#   GHL_CLIENT_ID       — same as ghl-token-refresh (token refresh fallback)
+#   GHL_CLIENT_SECRET   — same as ghl-token-refresh
+#   WORKER_AUTH_SECRET  — gates the HTTP /sync + /status routes
