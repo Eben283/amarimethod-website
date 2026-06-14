@@ -3,6 +3,7 @@ import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
   Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil, Check, X,
+  Linkedin, Instagram, UserPlus, Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -588,6 +589,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
           <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
           <Chip icon={MessageSquare} label="Sent link" busy={busy} onClick={() => onOutcome('link-sent')} />
+          {/* off-platform touches GHL can't see — record so the timeline + timer reflect them */}
+          <Chip icon={Linkedin} label="LinkedIn DM" busy={busy} onClick={() => onOutcome('linkedin-msg')} />
+          <Chip icon={UserPlus} label="LinkedIn connect" busy={busy} onClick={() => onOutcome('linkedin-req')} />
+          <Chip icon={Instagram} label="Instagram DM" busy={busy} onClick={() => onOutcome('instagram-msg')} />
+          <Chip icon={Users} label="In-person" busy={busy} onClick={() => onOutcome('in-person')} />
           <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
             onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
           <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
