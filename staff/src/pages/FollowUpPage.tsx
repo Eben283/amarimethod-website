@@ -262,6 +262,9 @@ export default function FollowUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'act' | 'aside'>('act');
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Synchronous in-flight guard for the VM/Talked chips — setBusyId is async, so a
+  // double-tap can fire two sends (and two outcome records) before the re-render.
+  const sendingChips = useRef<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
@@ -413,6 +416,8 @@ export default function FollowUpPage() {
   // stays actionable). This bundles the money-behavior into the call so it isn't
   // a separate task competing with the next call.
   const onVmText = useCallback(async (contactId: string, firstName?: string | null) => {
+    if (sendingChips.current.has(contactId)) return; // sync guard — closes double-tap race
+    sendingChips.current.add(contactId);
     setBusyId(contactId);
     try {
       await sendFollowupText(contactId, vmText(firstName));
@@ -420,16 +425,20 @@ export default function FollowUpPage() {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to send text — voicemail not recorded');
       setBusyId(null);
+      sendingChips.current.delete(contactId);
       return;
     }
     setBusyId(null);
     await onOutcome(contactId, 'voicemail');
+    sendingChips.current.delete(contactId);
   }, [onOutcome, logout]);
 
   // Same one-tap pattern for a connected call: send the link immediately (peak
   // interest), THEN record the talk. The day-based cadence below stays the LATER
   // re-engagement layer; this is the immediate post-call text.
   const onTalkedText = useCallback(async (contactId: string, firstName?: string | null) => {
+    if (sendingChips.current.has(contactId)) return; // sync guard — closes double-tap race
+    sendingChips.current.add(contactId);
     setBusyId(contactId);
     try {
       await sendFollowupText(contactId, talkedText(firstName));
@@ -437,10 +446,12 @@ export default function FollowUpPage() {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to send text, talk not recorded');
       setBusyId(null);
+      sendingChips.current.delete(contactId);
       return;
     }
     setBusyId(null);
     await onOutcome(contactId, 'talked');
+    sendingChips.current.delete(contactId);
   }, [onOutcome, logout]);
 
   const onDismissReply = useCallback((contactId: string) => {
@@ -990,39 +1001,65 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
 function EditSendText({ contactId, text, channel }: { contactId: string; text: string; channel?: string }) {
   const [val, setVal] = useState(text);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [sentTo, setSentTo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
+  // Synchronous send-lock: a double-click fires two onClicks before React re-renders
+  // with status==='sending', so the state check alone has a real double-send window.
+  // A ref flips immediately, so the second click is a no-op. We also remember the
+  // exact text we sent, so Send only re-enables for a GENUINELY different message.
+  const sendingRef = useRef(false);
+  const sentValRef = useRef<string | null>(null);
   // Auto-grow to fit the whole message — no scrollbar inside the box.
   useEffect(() => {
     const el = ref.current;
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
   }, [val]);
   const send = async () => {
-    if (!val.trim() || status === 'sending') return;
+    const msg = val.trim();
+    if (!msg || sendingRef.current) return;      // sync guard — closes the double-tap race
+    if (msg === sentValRef.current) return;       // already sent this exact text
+    sendingRef.current = true;
     setStatus('sending');
-    try { await sendFollowupText(contactId, val.trim()); setStatus('sent'); }
-    catch { setStatus('error'); }
+    try {
+      const res = await sendFollowupText(contactId, msg);
+      sentValRef.current = msg;
+      setSentTo(res?.sentTo ?? null);
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    } finally {
+      sendingRef.current = false;
+    }
   };
+  const sentThisText = status === 'sent' && val.trim() === sentValRef.current;
   return (
     <div className="rounded-lg border border-amari-border p-2.5">
       {channel && <span className="mb-1 inline-block rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">{channel}</span>}
       <textarea
         ref={ref}
         value={val}
-        onChange={(e) => { setVal(e.target.value); if (status !== 'idle') setStatus('idle'); }}
+        onChange={(e) => {
+          setVal(e.target.value);
+          // Re-enable Send only when the text actually changes after a send/error —
+          // editing to a NEW message is a legit new send; identical text stays locked.
+          if (status === 'error') setStatus('idle');
+          else if (status === 'sent' && e.target.value.trim() !== sentValRef.current) setStatus('idle');
+        }}
         rows={3}
         className="w-full resize-y overflow-hidden rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
       />
       <div className="mt-1.5 flex items-center gap-2">
-        <button type="button" onClick={send} disabled={status === 'sending' || status === 'sent' || !val.trim()}
+        <button type="button" onClick={send} disabled={status === 'sending' || sentThisText || !val.trim()}
           className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-          {status === 'sending' ? 'Sending…' : status === 'sent' ? '✓ Sent' : 'Send text'}
+          {status === 'sending' ? 'Sending…' : sentThisText ? '✓ Sent' : 'Send text'}
         </button>
         <button type="button"
           onClick={() => { navigator.clipboard?.writeText(val).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
           className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
           {copied ? '✓ Copied' : 'Copy'}
         </button>
+        {sentThisText && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
         {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
       </div>
     </div>

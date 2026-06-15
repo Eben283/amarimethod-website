@@ -248,7 +248,10 @@ export async function mutateTask(input: TaskAction): Promise<StaffDay> {
 
 // One-tap post-call text (the "just left a voicemail" nudge). Sends the
 // staff-chosen pre-written body via GHL.
-export async function sendFollowupText(contactId: string, message: string): Promise<{ success: boolean }> {
+export async function sendFollowupText(
+  contactId: string,
+  message: string,
+): Promise<{ success: boolean; deduped?: boolean; sentTo?: string }> {
   return fetchApi('/staff-send-text', {
     method: 'POST',
     body: JSON.stringify({ contactId, message }),

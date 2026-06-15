@@ -71,6 +71,11 @@ export async function onRequestGet(context) {
     if (!contactId) {
       return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers });
     }
+    // GHL ids are alphanumeric — reject anything else so a crafted contactId can't
+    // reach outside the coach: namespace into other KV keys.
+    if (!/^[A-Za-z0-9]+$/.test(contactId)) {
+      return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers });
+    }
 
     const record = await kv.get(`${KV_COACH_PREFIX}${contactId}`, "json");
     if (!record) {
