@@ -18,6 +18,10 @@ crons = ["0 */3 * * *", "0 9 * * 1"]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
 
+# Workers AI — Whisper transcription of call recordings (cloud, no Mac dependency).
+[ai]
+binding = "AI"
+
 # Secrets (set via `npx wrangler secret put <KEY>`):
 #   GHL_CLIENT_ID       — same as ghl-token-refresh (token refresh fallback)
 #   GHL_CLIENT_SECRET   — same as ghl-token-refresh
