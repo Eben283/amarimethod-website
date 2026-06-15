@@ -507,6 +507,12 @@ export default function FunnelPage() {
           <button onClick={() => setRange((r) => ({ ...r, offset: Math.min(0, r.offset + 1) }))} aria-label="Next" disabled={range.offset >= 0} className="rounded-full p-2 active:scale-90 disabled:opacity-30" style={{ border: `1px solid ${COL.line}`, background: COL.card }}><ChevronRight className="h-4 w-4" /></button>
         </div>
 
+        {/* active date range — spells out exactly which dates the arrows landed on */}
+        <div className="mb-4 -mt-2 text-center text-sm font-semibold tabular-nums" style={{ color: COL.ink }}>
+          {v.label}
+          {v.isCurrent && <span className="ml-1.5 font-normal" style={{ color: COL.inkSoft }}>· {range.unit === 'day' ? 'today' : `this ${range.unit}`}</span>}
+        </div>
+
         {/* pace banner — the 5-second answer */}
         <div className="fn-reveal mb-4 rounded-2xl px-4 py-3" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
           <div className="flex items-center justify-between">

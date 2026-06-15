@@ -1,0 +1,325 @@
+// Cloud cadence + due derivation. Reads the conversation cache (conv:*) and the
+// gifted-session calendar, then computes the same per-contact state + "is a touch
+// due today" that the local outreach-cadence.mjs + coach-build.mjs produced — but
+// in the cloud, off the cache, so the coach no longer re-pulls 60 days of GHL.
+//
+// Writes KV `coach:due:latest` (same shape as the local coach-due.json):
+//   { generatedAt, generatedAtISO, due:[{contactId,name,state,action,priority,...}], counts }
+
+import { ghlRetry, LOCATION_ID } from "./ghl.js";
+
+const DAY = 86_400_000;
+const SESSION_GAP_MS = 2 * 3_600_000;   // touches within 2h = one event
+const HIGH_VOLUME = 10;                  // 10+ outbound events = active client/hot thread, reviewed separately
+const ACTIVE_DAYS = 65;                  // only consider contacts touched this recently
+const DROPPED_MAX_DAYS = 30;
+const GIFTED_PARTNER_CALENDAR = "lfsnaiGiLNL2z12pLKDP";
+const BOOKING_SUPPRESS_DAYS = 21;
+
+// Skip-persistence: honor the Follow-Up app's existing disposition so a contact
+// Garrett/Eben "Set Aside" (which writes partner_stage) stays out of the coach too
+// — no parallel skip system. Closed/parked stages suppress the coach card.
+const CLOSED_STAGES = new Set(["dropped", "future-potential", "session-booked"]);
+// GHL custom-field IDs (from staff-partner-prospects.js FIELD_IDS).
+const FIELD = {
+  stage: "KfPow1mYDxJqiOCS6mDZ",
+  lastSignal: "XyUoMtbxadTuZunQwX3Y",
+  lastSignalAt: "J0lnfsvtt0vcFOdSbUSf",
+  followupAt: "stVYzQB4Xpi29cuyUYnA",
+  lastRealActivity: "W7JoyJKPKhPI8hZ5EgUv",
+  touchCount: "qKtPT2XZP61emgUDK7fd",
+};
+const getField = (contact, id) => {
+  const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
+  return f ? (f.value ?? f.field_value) : undefined;
+};
+
+// ── SHADOW: faithful port of the app's client-side actNowReason (`derive`) so we
+// can compute the unified due-set server-side and DIFF it against the coach's
+// touch-count model BEFORE touching the front-end. Constants copied verbatim from
+// FollowUpPage.tsx. (engine-merge step 1 — shadow only, nothing consumes it yet.)
+const VM_FOLLOWUP_DAYS = 3, TALKED_FOLLOWUP_DAYS = 1, LINK_FOLLOWUP_DAYS = 3;
+const OFFPLATFORM_FOLLOWUP_DAYS = 3, NOANSWER_RETRY_DAYS = 1, QUIET_NUDGE_DAYS = 3;
+const END_OF_ROPE_TOUCHES = 6;
+const daysSinceISO = (iso) => { if (!iso) return null; const t = new Date(iso).getTime(); return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / DAY); };
+
+// meta = { stage, lastSignal, lastSignalAt, followupAt, lastActivity, touchCount, sessionBookedTag }
+function appDerive(meta) {
+  const stage = meta.stage;
+  if (meta.sessionBookedTag || stage === "partner" || stage === "session-booked") return { kind: "converted", due: false, action: null, why: "Booked — now a client." };
+  if (stage === "dropped") return { kind: "aside", due: false, action: null, why: "Not a fit" };
+  if (stage === "future-potential") {
+    const due = meta.followupAt ? new Date(meta.followupAt).getTime() <= Date.now() : true;
+    return due ? { kind: "act", due: true, action: "reback", why: "Snoozed lead is back — worth another look." }
+               : { kind: "aside", due: false, action: null, why: "Snoozed" };
+  }
+  const a = meta.lastActivity ? new Date(meta.lastActivity).getTime() : 0;
+  const b = meta.lastSignalAt ? new Date(meta.lastSignalAt).getTime() : 0;
+  const d = (a || b) ? Math.floor((Date.now() - Math.max(a, b)) / DAY) : null;
+  const sig = meta.lastSignal;
+  const tc = Number(meta.touchCount) || 0;
+  const due = (t) => d === null || d >= t;
+  const wait = (why) => ({ kind: "waiting", due: false, action: null, why });
+  if (!sig && tc === 0) return { kind: "act", due: true, action: "call", why: "New lead — first contact (after your follow-ups)." };
+  if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", due: true, action: "decide", why: `${tc} touches, no traction — keep trying, or set aside?` };
+  switch (sig) {
+    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", due: true, action: "call", why: "Called, no answer — give them another call." } : wait("Just called");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Voicemail — a text here is good." } : wait("Voicemail left, giving it a beat");
+    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Talked — text them the next step while it's warm." } : wait("Just talked");
+    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Sent the link, not booked — a text nudge is good." } : wait("Link just sent");
+    case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
+      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", due: true, action: "text", why: "Reached out — a text follow-up is good." } : wait("Recently reached out");
+    case "not-interested": return { kind: "aside", due: false, action: null, why: "Not interested" };
+    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", due: true, action: "text", why: "Quiet — a text check-in is good." } : wait("Recently touched");
+  }
+}
+
+// Cadence policy (amari/strategy/outreach-cadence-policy.md): days to wait after
+// the nth outbound touch before the next. Widens; 6 is end-of-rope.
+const WAIT_AFTER_TOUCH = [2, 2, 3, 4, 5, 7];
+const END_OF_ROPE = 6;
+const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) - 1] ?? 7;
+
+const INTERNAL = new Set(["garrett@amarimethod.com", "eben metivier", "eben", "garrett"]);
+const isInternal = (name) => {
+  const n = (name || "").trim().toLowerCase();
+  return INTERNAL.has(n) || n.includes("amarimethod.com");
+};
+
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const idx = i++;
+      try { out[idx] = await fn(items[idx], idx); } catch { out[idx] = null; }
+    }
+  }));
+  return out;
+}
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+// Collapse consecutive same-direction touches within SESSION_GAP_MS into one event.
+function collapseEvents(touches) {
+  const sorted = [...touches].sort((a, b) => a.ts - b.ts);
+  const events = [];
+  for (const t of sorted) {
+    const last = events[events.length - 1];
+    if (last && last.dir === t.dir && t.ts - last.lastTs <= SESSION_GAP_MS) {
+      last.lastTs = t.ts;
+    } else {
+      events.push({ ts: t.ts, lastTs: t.ts, dir: t.dir });
+    }
+  }
+  return events;
+}
+
+function buildRow(contactId, name, touches) {
+  const events = collapseEvents(touches);
+  const out = events.filter((e) => e.dir === "out");
+  const inb = events.filter((e) => e.dir === "in");
+  const outGaps = [];
+  for (let i = 1; i < out.length; i++) outGaps.push(out[i].ts - out[i - 1].ts);
+  let droppedReplies = 0;
+  for (const im of inb) { if (!out.find((o) => o.ts > im.ts)) droppedReplies++; }
+  const last = events[events.length - 1];
+  const medGap = median(outGaps);
+  return {
+    contactId,
+    name,
+    internal: isInternal(name),
+    outCount: out.length,
+    inCount: inb.length,
+    firstTouch: events[0].ts,
+    lastTouch: last.ts,
+    lastDir: last.dir,
+    sinceLastTouchDays: (Date.now() - last.ts) / DAY,
+    // In DAYS (the local outreach-cadence.mjs stored raw ms here — the bug B flagged).
+    medianOutGapDays: medGap == null ? null : medGap / DAY,
+    droppedReplies,
+    highVolume: out.length >= HIGH_VOLUME,
+    hasHumanTouch: touches.some((t) => t.dir === "out" && (t.kind === "call" || t.kind === "sms")),
+  };
+}
+
+// Port of coach-build.mjs classify() — same states + due logic + the machine-knowable excludes.
+function classify(p) {
+  const since = p.sinceLastTouchDays;
+  const outN = p.outCount;
+
+  // Skip-persistence: a contact explicitly set aside (coach:skip) or parked/closed
+  // in the app (partner_stage) stays out — so a human "no" sticks across cycles.
+  if (p.skipped) return { state: "skipped", due: false, action: "Set aside (won't resurface until un-skipped)", priority: 0 };
+  if (CLOSED_STAGES.has(p.partnerStage)) return { state: "set-aside", due: false, action: `Parked in the app (stage: ${p.partnerStage})`, priority: 0 };
+
+  if (p.hasBooking) return { state: "booked", due: false, action: "Already booked or just attended a session", priority: 0 };
+  if (p.hasHumanTouch === false) return { state: "drip-only", due: false, action: "Email/quiz drip only, not a call or text target", priority: 0 };
+
+  if (p.droppedReplies > 0 && since <= DROPPED_MAX_DAYS) {
+    return { state: "reply-waiting", due: true, action: "Respond to their reply now", priority: 100 + Math.max(0, 30 - since) };
+  }
+  if (p.lastDir === "in") {
+    return { state: "their-court", due: false, action: "Waiting on them (confirm in thread)", priority: 0 };
+  }
+  if (outN >= END_OF_ROPE) {
+    return { state: "end-of-rope", due: since >= 14, action: `Touch #${outN} already sent. One last try or set aside.`, priority: since >= 14 ? 20 : 0 };
+  }
+  const wait = waitAfter(outN);
+  const due = since >= wait;
+  const state = outN === 1 ? (p.inCount > 0 ? "talked-no-next" : "one-touch-no-reply")
+                           : (p.inCount > 0 ? "gone-quiet" : "no-reply");
+  const nextTouch = outN + 1;
+  const action = due
+    ? `Send touch #${nextTouch} now (last touch ${since.toFixed(0)}d ago, cadence says by ${wait}d)`
+    : `Not yet — next touch in ${(wait - since).toFixed(0)}d`;
+  const priority = due ? 60 + Math.min(40, since - wait) : 0;
+  return { state, due, action, priority };
+}
+
+// Contacts with a gifted session upcoming or attended in the last 21d.
+async function loadBookedSet(env) {
+  const set = new Set();
+  try {
+    const start = Date.now() - BOOKING_SUPPRESS_DAYS * DAY;
+    const end = Date.now() + 120 * DAY;
+    const d = await ghlRetry(env, `/calendars/events?locationId=${LOCATION_ID}&calendarId=${GIFTED_PARTNER_CALENDAR}&startTime=${start}&endTime=${end}`);
+    for (const e of d.events || []) {
+      const status = (e.appointmentStatus || "").toLowerCase();
+      if (status === "cancelled" || status === "invalid" || status === "noshow") continue;
+      if (e.contactId) set.add(e.contactId);
+    }
+  } catch { /* no suppression this run */ }
+  return set;
+}
+
+// Map contactId -> contact meta (disposition + signal fields the app's derive uses).
+// Honors the partner-session-booked tag the way the staff app does (tag wins on stage).
+async function loadContactMeta(env) {
+  const map = new Map();
+  let after = null, afterId = null;
+  for (let p = 0; p < 12; p++) {
+    let path = `/contacts/?locationId=${LOCATION_ID}&limit=100`;
+    if (afterId) path += `&startAfterId=${afterId}&startAfter=${after}`;
+    let d;
+    try { d = await ghlRetry(env, path); } catch { break; }
+    const cs = d.contacts || [];
+    for (const c of cs) {
+      const sessionBookedTag = (c.tags || []).includes("partner-session-booked");
+      map.set(c.id, {
+        stage: sessionBookedTag ? "session-booked" : getField(c, FIELD.stage),
+        sessionBookedTag,
+        lastSignal: getField(c, FIELD.lastSignal),
+        lastSignalAt: getField(c, FIELD.lastSignalAt),
+        followupAt: getField(c, FIELD.followupAt),
+        lastActivity: getField(c, FIELD.lastRealActivity),
+        touchCount: getField(c, FIELD.touchCount),
+      });
+    }
+    afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
+    if (cs.length < 100 || !afterId) break;
+  }
+  return map;
+}
+
+export async function deriveCadence(env) {
+  const kv = env.PORTAL_KV;
+  const start = Date.now();
+  const index = (await kv.get("conv:index", "json")) || {};
+  const activeCutoff = start - ACTIVE_DAYS * DAY;
+  const activeIds = Object.entries(index)
+    .filter(([, lastMs]) => Number(lastMs) >= activeCutoff)
+    .map(([id]) => id);
+
+  // Read each active contact's cached touches and build a row.
+  const rows = (await mapLimit(activeIds, 10, async (id) => {
+    const rec = await kv.get(`conv:${id}`, "json");
+    if (!rec || !rec.touches?.length) return null;
+    return buildRow(id, rec.name, rec.touches);
+  })).filter(Boolean);
+
+  const booked = await loadBookedSet(env);
+  const metaMap = await loadContactMeta(env);
+  const skip = (await kv.get("coach:skip", "json")) || {};       // { contactId: {reason, setAt} }
+  for (const r of rows) {
+    r.hasBooking = booked.has(r.contactId);
+    r.partnerStage = metaMap.get(r.contactId)?.stage;
+    r.skipped = Boolean(skip[r.contactId]);
+  }
+
+  const prospects = rows.filter((r) => !r.internal && !r.highVolume);
+  const scored = prospects.map((p) => ({ ...p, ...classify(p) }));
+  const due = scored.filter((s) => s.due).sort((a, b) => b.priority - a.priority);
+
+  const counts = {};
+  for (const d of due) counts[d.state] = (counts[d.state] || 0) + 1;
+
+  const generatedAt = new Date(start).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+  const generatedAtISO = new Date(start).toISOString();
+
+  // coach:due:latest — the due-list (same shape as the local coach-due.json).
+  await kv.put("coach:due:latest", JSON.stringify({
+    generatedAt, generatedAtISO, activeContacts: activeIds.length, prospects: prospects.length, due, counts,
+  }));
+
+  // coach:cadence:latest — the FULL prospects snapshot (replaces outreach-cadence.json
+  // for the downstream coach-outcomes + coach-learning steps, and the Sharpen
+  // instance's read-only analysis). Strip the internal-only `internal` flag.
+  await kv.put("coach:cadence:latest", JSON.stringify({
+    generatedAt, generatedAtISO, windowDays: 90,
+    prospects: scored.map(({ internal, ...p }) => p),
+  }));
+
+  // coach:due:shadow — engine-merge step 1. The app's actNowReason (signal-based)
+  // computed server-side, eligibility-gated, with the coach's touch-count as a
+  // resurfacing input — so we can DIFF the unified model against the live coach
+  // due-list before any front-end change. NOTHING consumes this yet (shadow).
+  const stateOf = new Map(scored.map((s) => [s.contactId, { state: s.state, due: s.due }]));
+  const shadow = [];
+  for (const r of prospects) {
+    const meta = metaMap.get(r.contactId) || {};
+    // Eligibility gate (axis A) wins first — same excludes as the live coach.
+    if (r.hasBooking || r.hasHumanTouch === false || r.skipped) continue;
+    const app = appDerive({ ...meta, touchCount: meta.touchCount ?? r.outCount });
+    if (!app.due) continue;
+    const cs = stateOf.get(r.contactId) || {};
+    shadow.push({
+      contactId: r.contactId, name: r.name,
+      action: app.action, why: app.why, kind: app.kind,
+      signalBucket: meta.lastSignal || (r.outCount === 0 ? "new" : "quiet"),
+      touchCount: Number(meta.touchCount) || r.outCount,
+      coachState: cs.state,           // what the touch-count model said, for the diff
+      coachDue: Boolean(cs.due),
+    });
+  }
+  // How often do the two models DISAGREE on the contacted set? (the merge's whole point)
+  const liveDueIds = new Set(due.map((d) => d.contactId));
+  const shadowDueIds = new Set(shadow.map((s) => s.contactId));
+  const onlyShadow = [...shadowDueIds].filter((id) => !liveDueIds.has(id)).length;
+  const onlyLive = [...liveDueIds].filter((id) => !shadowDueIds.has(id)).length;
+  await kv.put("coach:due:shadow", JSON.stringify({
+    generatedAt, generatedAtISO, note: "engine-merge step 1 — app actNowReason computed server-side; shadow only, nothing consumes it",
+    shadowDue: shadow.length, liveDue: due.length, agreeBoth: shadow.length - onlyShadow,
+    onlyShadow, onlyLive, items: shadow,
+  }));
+
+  const summary = {
+    ranAt: generatedAtISO,
+    activeContacts: activeIds.length,
+    prospects: prospects.length,
+    dueCount: due.length,
+    counts,
+    bookedSuppressed: rows.filter((r) => r.hasBooking).length,
+    dripOnly: scored.filter((s) => s.state === "drip-only").length,
+    setAside: scored.filter((s) => s.state === "set-aside").length,
+    skipped: scored.filter((s) => s.state === "skipped").length,
+    durationMs: Date.now() - start,
+  };
+  await kv.put("ops:coach-cadence:lastRun", JSON.stringify(summary));
+  return summary;
+}
