@@ -44,99 +44,67 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: var(--bg-primary, #F7F2E8);
-      color: var(--color-text, #2a2520);
+      background: var(--bg-primary, #FFFCF5);
+      color: var(--color-text, #252525);
       font-family: 'Inter', system-ui, sans-serif;
       padding: 32px 24px;
     }
-    .gate {
-      width: 100%;
-      max-width: 540px;
-      text-align: center;
-    }
-    .gate .logo {
-      height: 44px;
-      width: auto;
-      margin-bottom: 48px;
-    }
+    .gate { width: 100%; max-width: 480px; text-align: center; }
+    .gate .logo { height: 44px; width: auto; margin-bottom: 48px; }
     .gate h1 {
       font-family: var(--font-serif-primary, 'Bona Nova', serif);
       font-weight: 400;
-      font-size: clamp(30px, 5vw, 44px);
+      font-size: clamp(28px, 5vw, 40px);
       line-height: 1.15;
       letter-spacing: -0.02em;
       margin: 0 0 16px;
     }
     .gate .sub {
       font-size: 16px;
-      color: var(--color-text-secondary, #6b6359);
-      margin: 0 0 48px;
+      color: var(--color-text-secondary, #484742);
+      margin: 0 0 36px;
       line-height: 1.5;
     }
-    .gate .choices {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .gate .choice {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 22px 28px;
-      border-radius: 14px;
-      font-size: 18px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: transform .2s, box-shadow .2s, background .2s;
-      cursor: pointer;
-    }
-    .gate .choice .emoji { font-size: 24px; line-height: 1; }
-    .gate .yes {
-      background: var(--color-accent-warm, #C56B4E);
-      color: #fff;
-    }
-    .gate .yes:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(197,107,78,.28); }
-    .gate .no {
-      background: transparent;
-      color: var(--color-text, #2a2520);
-      border: 1px solid var(--color-border, #ddd6c9);
-    }
-    .gate .no:hover { transform: translateY(-2px); background: var(--bg-secondary, #efe9dc); }
-    .gate .feedback-panel {
-      margin-top: 16px;
-      text-align: left;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .gate .feedback-panel[hidden] { display: none; }
-    .gate .feedback-input {
+    /* one screen at a time */
+    .screen[hidden] { display: none; }
+
+    /* use the SITE buttons (.btn-primary / .btn-secondary from style-v5.css);
+       just stack them full-width for this single-column layout. */
+    .choices { display: flex; flex-direction: column; gap: 14px; margin-top: 40px; }
+    .choices .btn-primary,
+    .choices .btn-secondary { width: 100%; box-sizing: border-box; justify-content: center; }
+
+    .feedback-input {
       width: 100%;
       box-sizing: border-box;
-      min-height: 130px;
+      min-height: 150px;
+      margin: 0 0 16px;
       padding: 16px 18px;
-      border-radius: 14px;
-      border: 1px solid var(--color-border, #ddd6c9);
-      background: var(--bg-secondary, #efe9dc);
-      color: var(--color-text, #2a2520);
+      border-radius: 16px;
+      border: 1px solid var(--color-border-dark, #C5CDD8);
+      background: var(--bg-card, #fff);
+      color: var(--color-text, #252525);
       font-family: 'Inter', system-ui, sans-serif;
       font-size: 16px;
       line-height: 1.5;
       resize: vertical;
+      text-align: left;
     }
-    .gate .feedback-input:focus {
-      outline: none;
-      border-color: var(--color-accent-warm, #C56B4E);
+    .feedback-input:focus { outline: none; border-color: var(--color-accent-warm, #C56B4E); }
+    .feedback-input::placeholder { color: var(--color-text-muted, #666); }
+    .back {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--color-text-muted, #666);
+      background: none; border: none; cursor: pointer; text-decoration: underline;
     }
-    .gate .feedback-input::placeholder { color: var(--color-text-muted, #a89f92); }
-    .gate .feedback-send { width: 100%; box-sizing: border-box; }
     .gate .footer {
       margin-top: 48px;
       font-size: 12px;
       letter-spacing: .12em;
       text-transform: uppercase;
-      color: var(--color-text-muted, #a89f92);
+      color: var(--color-text-muted, #666);
     }
   </style>
 </head>
@@ -144,57 +112,63 @@
 
   <!--
     ============================================================
-    LINKS:
-    - "My session helped"   -> Google review (live): g.page/r/Cd5GNnATe8p_EAE/review
-    - "Feedback for team"   -> opens a drop-down textarea; "Send to the team"
-      emails whatever they type to hello@amarimethod.com (mailto, no backend).
-      Upgrade to a GHL feedback form when ready by swapping the send handler.
+    FLOW (one screen at a time):
+    1. "How was your session?" -> It helped / Not really
+       - "It helped"  -> leaves straight to the Google review (g.page/r/Cd5GNnATe8p_EAE/review).
+         The Google page IS the next screen — no interstitial.
+       - "Not really" -> swaps to the feedback screen (#feedback).
+    2. Feedback screen -> textarea -> "Send to the team" (mailto hello@amarimethod.com).
+    Swap the mailto handler for a GHL form when ready.
     ============================================================
   -->
 
   <main class="gate">
     <img class="logo" src="images/AmariLogo.avif" alt="Amari Method" width="200" height="44">
 
-    <h1>Help the next person find their way out?</h1>
-    <p class="sub">Someone out there is in the pain you came in with. A few words from you helps them find this.</p>
+    <!-- Screen 1: the question -->
+    <section class="screen" id="ask">
+      <h1>How was your session?</h1>
+      <div class="choices">
+        <a class="btn-primary"
+           href="https://g.page/r/Cd5GNnATe8p_EAE/review"
+           onclick="gtag('event','review_gate_positive');">
+          <span class="btn-content"><span class="btn-text">It helped</span><span class="arrow">&rarr;</span></span>
+        </a>
+        <button type="button" class="btn-secondary" onclick="showFeedback();">
+          <span class="btn-content"><span class="btn-text">Not really</span></span>
+        </button>
+      </div>
+    </section>
 
-    <div class="choices">
-      <a class="choice yes"
-         href="https://g.page/r/Cd5GNnATe8p_EAE/review"
-         onclick="gtag('event','review_gate_positive');">
-        <span>My session helped</span>
-      </a>
-      <button type="button" class="choice no" id="feedbackToggle"
-         aria-expanded="false" aria-controls="feedbackPanel"
-         onclick="gtag('event','review_gate_feedback'); toggleFeedback();">
-        <span>Feedback for team</span>
-      </button>
-    </div>
-
-    <div class="feedback-panel" id="feedbackPanel" hidden>
+    <!-- Screen 2: private feedback (only on "Not really") -->
+    <section class="screen" id="feedback" hidden>
+      <h1>What could we have done better?</h1>
+      <p class="sub">Tell us straight. We read every note, and we'll make it right.</p>
       <textarea class="feedback-input" id="feedbackText"
-        placeholder="Leave your feedback for the team here — how your session went, anything that didn't land, or what you'd like next time. We read every note."></textarea>
-      <a class="choice yes feedback-send" id="feedbackSend" href="#">
-        <span>Send to the team</span>
-      </a>
-    </div>
+        placeholder="What happened, what didn't land, what you'd want next time."></textarea>
+      <div class="choices">
+        <a class="btn-primary" id="feedbackSend" href="#">
+          <span class="btn-content"><span class="btn-text">Send to the team</span><span class="arrow">&rarr;</span></span>
+        </a>
+      </div>
+      <button type="button" class="back" onclick="showAsk();">&larr; Back</button>
+    </section>
 
-    <div class="footer">Amari Method · San Francisco</div>
+    <div class="footer">Amari Method &middot; San Francisco</div>
   </main>
 
   <script>
-    function toggleFeedback() {
-      var panel = document.getElementById('feedbackPanel');
-      var toggle = document.getElementById('feedbackToggle');
-      var isOpen = !panel.hasAttribute('hidden');
-      if (isOpen) {
-        panel.setAttribute('hidden', '');
-        toggle.setAttribute('aria-expanded', 'false');
-      } else {
-        panel.removeAttribute('hidden');
-        toggle.setAttribute('aria-expanded', 'true');
-        document.getElementById('feedbackText').focus();
-      }
+    var ask = document.getElementById('ask');
+    var feedback = document.getElementById('feedback');
+    function showFeedback() {
+      gtag('event', 'review_gate_feedback');
+      ask.setAttribute('hidden', '');
+      feedback.removeAttribute('hidden');
+      document.getElementById('feedbackText').focus();
+    }
+    function showAsk() {
+      feedback.setAttribute('hidden', '');
+      ask.removeAttribute('hidden');
     }
     document.getElementById('feedbackSend').addEventListener('click', function (e) {
       var text = document.getElementById('feedbackText').value.trim();
