@@ -75,10 +75,23 @@ function appDerive(meta) {
 }
 
 // Cadence policy (amari/strategy/outreach-cadence-policy.md): days to wait after
-// the nth outbound touch before the next. Widens; 6 is end-of-rope.
+// the nth outbound touch before the next. Widens; the last step is the breakup.
 const WAIT_AFTER_TOUCH = [2, 2, 3, 4, 5, 7];
 const END_OF_ROPE = 6;
 const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) - 1] ?? 7;
+
+// Named-sequence cadence (design: channel-aware-engine-design-2026-06-15.md).
+// Two variants by warmth; the FINAL step is the breakup; once it's sent and they
+// stay quiet, the contact auto-exhausts (drops off the worklist, re-opens on a reply).
+//   COLD = never replied (no inbound). WARM = talked/replied (has inbound).
+// channel = the recommended next move per step; a "call" step is Garrett's Play
+// (call → voicemail that tees up the follow-up → the text/email that references it).
+const COLD_STEPS = 6;
+const WARM_STEPS = 4;
+const COLD_CHANNELS = ["call", "text", "call", "email", "call", "text"]; // step 1..6 (6 = breakup)
+const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step 1..4 (4 = breakup)
+const channelForStep = (variant, step) =>
+  (variant === "warm" ? WARM_CHANNELS : COLD_CHANNELS)[step - 1] || "text";
 
 const INTERNAL = new Set(["garrett@amarimethod.com", "eben metivier", "eben", "garrett"]);
 const isInternal = (name) => {
@@ -167,19 +180,42 @@ function classify(p) {
   if (p.lastDir === "in") {
     return { state: "their-court", due: false, action: "Waiting on them (confirm in thread)", priority: 0 };
   }
-  if (outN >= END_OF_ROPE) {
-    return { state: "end-of-rope", due: since >= 14, action: `Touch #${outN} already sent. One last try or set aside.`, priority: since >= 14 ? 20 : 0 };
+  // Named-sequence model: variant by warmth, the next step is outN+1, the final
+  // step is the breakup, and once the breakup is sent we auto-exhaust.
+  const warm = p.inCount > 0;
+  const variant = warm ? "warm" : "cold";
+  const totalSteps = warm ? WARM_STEPS : COLD_STEPS;
+  const nextStep = outN + 1;
+
+  // Cadence spent (the breakup / final step is already sent and they stayed quiet).
+  // Eben 2026-06-15: NEVER auto-drop a lead who ENGAGED with us.
+  if (outN >= totalSteps) {
+    if (warm) {
+      // They replied/talked/booked at some point — too much intent to silently park.
+      // Surface a low-priority human decision instead of dropping them.
+      return { state: "warm-stalled", variant, step: outN, totalSteps, channel: "call",
+               due: since >= 7, action: "Engaged with you, then went quiet, and the cadence is spent. Your call — one more personal try, or set aside.", priority: 15 };
+    }
+    // Cold + never engaged: the breakup was the close. Auto-exhaust → drops off the
+    // worklist. Reversible: an inbound reply routes through reply-waiting (priority 100).
+    return { state: "exhausted", variant, step: outN, totalSteps, channel: null,
+             due: false, action: "Cadence finished — breakup sent, no response. Parked (re-opens on a reply).", priority: 0 };
   }
+
   const wait = waitAfter(outN);
   const due = since >= wait;
-  const state = outN === 1 ? (p.inCount > 0 ? "talked-no-next" : "one-touch-no-reply")
-                           : (p.inCount > 0 ? "gone-quiet" : "no-reply");
-  const nextTouch = outN + 1;
+  const isBreakup = nextStep === totalSteps;
+  const channel = channelForStep(variant, nextStep);
+  const state = isBreakup ? "breakup"
+              : (outN === 1 ? (warm ? "talked-no-next" : "one-touch-no-reply")
+                            : (warm ? "gone-quiet" : "no-reply"));
   const action = due
-    ? `Send touch #${nextTouch} now (last touch ${since.toFixed(0)}d ago, cadence says by ${wait}d)`
-    : `Not yet — next touch in ${(wait - since).toFixed(0)}d`;
+    ? (isBreakup
+        ? `Send the breakup (step ${nextStep} of ${totalSteps}) — light, no blame, door open.`
+        : `Send step ${nextStep} of ${totalSteps} now (${channel}; last touch ${since.toFixed(0)}d ago).`)
+    : `Not yet — next step in ${(wait - since).toFixed(0)}d`;
   const priority = due ? 60 + Math.min(40, since - wait) : 0;
-  return { state, due, action, priority };
+  return { state, variant, step: nextStep, totalSteps, channel, isBreakup, due, action, priority };
 }
 
 // Contacts with a gifted session upcoming or attended in the last 21d.

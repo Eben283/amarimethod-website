@@ -102,7 +102,13 @@ export async function runSync(env, trigger, full = false) {
       if (!ts) continue;
       const k = kind(m.messageType || m.type);
       if (k === "other") continue;
-      fresh.push({ ts, kind: k, dir: isOut(m) ? "out" : "in" });
+      // Capture call duration (seconds) — the free signal that distinguishes a
+      // no-answer (short) from a voicemail left (medium) from a real talk (long),
+      // which both the cadence variant (talked → warm) and the truthful copy
+      // ("tried to reach" vs "left a voicemail" vs "talked") key off.
+      const t = { ts, kind: k, dir: isOut(m) ? "out" : "in" };
+      if (k === "call") t.dur = Number(m.meta?.call?.duration) || 0;
+      fresh.push(t);
     }
     if (!fresh.length) return;
 
@@ -112,7 +118,11 @@ export async function runSync(env, trigger, full = false) {
     let added = 0;
     for (const t of fresh) {
       const id = `${t.ts}|${t.kind}|${t.dir}`;
-      if (!seen.has(id)) { seen.set(id, t); added++; }
+      const prev = seen.get(id);
+      if (!prev) { seen.set(id, t); added++; }
+      // Backfill duration onto already-cached call touches on a re-sync/reconcile
+      // (older touches were stored before we captured dur).
+      else if (t.dur != null && prev.dur == null) { seen.set(id, { ...prev, dur: t.dur }); }
     }
     const merged = [...seen.values()].filter((t) => t.ts >= trimCutoff).sort((a, b) => a.ts - b.ts);
     const name = c.contactName || c.fullName || existing.name || c.contactId;
