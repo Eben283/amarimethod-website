@@ -103,6 +103,34 @@
       border: 1px solid var(--color-border, #ddd6c9);
     }
     .gate .no:hover { transform: translateY(-2px); background: var(--bg-secondary, #efe9dc); }
+    .gate .feedback-panel {
+      margin-top: 16px;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .gate .feedback-panel[hidden] { display: none; }
+    .gate .feedback-input {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 130px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      border: 1px solid var(--color-border, #ddd6c9);
+      background: var(--bg-secondary, #efe9dc);
+      color: var(--color-text, #2a2520);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: vertical;
+    }
+    .gate .feedback-input:focus {
+      outline: none;
+      border-color: var(--color-accent-warm, #C56B4E);
+    }
+    .gate .feedback-input::placeholder { color: var(--color-text-muted, #a89f92); }
+    .gate .feedback-send { width: 100%; box-sizing: border-box; }
     .gate .footer {
       margin-top: 48px;
       font-size: 12px;
@@ -117,9 +145,10 @@
   <!--
     ============================================================
     LINKS:
-    - 😊 "It helped"      -> Google review (live): g.page/r/Cd5GNnATe8p_EAE/review
-    - 😕 "Not quite there" -> INTERIM: emails hello@amarimethod.com (pre-addressed
-      to Garrett). Upgrade to a GHL feedback form when ready by swapping the href.
+    - "My session helped"   -> Google review (live): g.page/r/Cd5GNnATe8p_EAE/review
+    - "Feedback for team"   -> opens a drop-down textarea; "Send to the team"
+      emails whatever they type to hello@amarimethod.com (mailto, no backend).
+      Upgrade to a GHL feedback form when ready by swapping the send handler.
     ============================================================
   -->
 
@@ -133,17 +162,53 @@
       <a class="choice yes"
          href="https://g.page/r/Cd5GNnATe8p_EAE/review"
          onclick="gtag('event','review_gate_positive');">
-        <span>Amari helped me</span>
+        <span>My session helped</span>
       </a>
-      <a class="choice no"
-         href="mailto:hello@amarimethod.com?subject=About%20my%20session&body=Hi%20Dr.%20Garrett%2C%20here%27s%20what%27s%20going%20on%3A%0A%0A"
-         onclick="gtag('event','review_gate_feedback');">
-        <span>I'm not there yet</span>
+      <button type="button" class="choice no" id="feedbackToggle"
+         aria-expanded="false" aria-controls="feedbackPanel"
+         onclick="gtag('event','review_gate_feedback'); toggleFeedback();">
+        <span>Feedback for team</span>
+      </button>
+    </div>
+
+    <div class="feedback-panel" id="feedbackPanel" hidden>
+      <textarea class="feedback-input" id="feedbackText"
+        placeholder="Leave your feedback for the team here — how your session went, anything that didn't land, or what you'd like next time. We read every note."></textarea>
+      <a class="choice yes feedback-send" id="feedbackSend" href="#">
+        <span>Send to the team</span>
       </a>
     </div>
 
     <div class="footer">Amari Method · San Francisco</div>
   </main>
+
+  <script>
+    function toggleFeedback() {
+      var panel = document.getElementById('feedbackPanel');
+      var toggle = document.getElementById('feedbackToggle');
+      var isOpen = !panel.hasAttribute('hidden');
+      if (isOpen) {
+        panel.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', 'false');
+      } else {
+        panel.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.getElementById('feedbackText').focus();
+      }
+    }
+    document.getElementById('feedbackSend').addEventListener('click', function (e) {
+      var text = document.getElementById('feedbackText').value.trim();
+      if (!text) {
+        e.preventDefault();
+        document.getElementById('feedbackText').focus();
+        return;
+      }
+      gtag('event', 'review_gate_feedback_sent');
+      this.href = 'mailto:hello@amarimethod.com'
+        + '?subject=' + encodeURIComponent('Feedback for the team')
+        + '&body=' + encodeURIComponent(text);
+    });
+  </script>
 
 </body>
 </html>
