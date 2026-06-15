@@ -187,10 +187,17 @@ function classify(p) {
   const totalSteps = warm ? WARM_STEPS : COLD_STEPS;
   const nextStep = outN + 1;
 
-  // Auto-exhaust (Eben 2026-06-15): the breakup (final step) is already sent and
-  // they stayed quiet → drop off the active worklist. Reversible: an inbound reply
-  // routes back through reply-waiting (priority 100) above, re-opening the contact.
+  // Cadence spent (the breakup / final step is already sent and they stayed quiet).
+  // Eben 2026-06-15: NEVER auto-drop a lead who ENGAGED with us.
   if (outN >= totalSteps) {
+    if (warm) {
+      // They replied/talked/booked at some point — too much intent to silently park.
+      // Surface a low-priority human decision instead of dropping them.
+      return { state: "warm-stalled", variant, step: outN, totalSteps, channel: "call",
+               due: since >= 7, action: "Engaged with you, then went quiet, and the cadence is spent. Your call — one more personal try, or set aside.", priority: 15 };
+    }
+    // Cold + never engaged: the breakup was the close. Auto-exhaust → drops off the
+    // worklist. Reversible: an inbound reply routes through reply-waiting (priority 100).
     return { state: "exhausted", variant, step: outN, totalSteps, channel: null,
              due: false, action: "Cadence finished — breakup sent, no response. Parked (re-opens on a reply).", priority: 0 };
   }
