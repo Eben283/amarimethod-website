@@ -47,6 +47,11 @@ const VALID_SIGNALS = new Set([
   "voicemail",
   "talked",
   "link-sent",
+  // App-sent touches: Garrett composed + sent a text/email from the card. Behave
+  // like talked/link-sent — record signal + last_signal_at + touch_count, and
+  // promote a no-outreach contact to working (a send is real outreach).
+  "texted",
+  "emailed",
   "booked",
   "deferred",
   "not-interested",
@@ -75,6 +80,8 @@ const SIGNAL_TO_STAGE = {
   "voicemail":      null,
   "talked":         null,
   "link-sent":      null,
+  "texted":         null,
+  "emailed":        null,
   "booked":         "session-booked",
   "deferred":       "future-potential",
   "not-interested": "dropped",
@@ -102,6 +109,8 @@ const SIGNAL_NOTE_LABEL = {
   "voicemail":      "Voicemail",
   "talked":         "Talked",
   "link-sent":      "Sent link",
+  "texted":         "Texted",
+  "emailed":        "Emailed",
   "booked":         "Booked",
   "deferred":       "Future potential",
   "not-interested": "Not interested",

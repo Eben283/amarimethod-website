@@ -1031,6 +1031,11 @@ function EditSendText({ contactId, text, channel }: { contactId: string; text: s
       sentValRef.current = msg;
       setSentTo(res?.sentTo ?? null);
       setStatus('sent');
+      // Record the send as a touch so the engine sees it (no more "call them" right
+      // after a text). Idempotent: the server's 5-min send-dedupe gates the SMS, so a
+      // deduped re-send returns deduped:true and we skip the touch — no double-count.
+      // Fire-and-forget: a failed touch-record must not break the (already sent) UX.
+      if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'texted' }).catch(() => {});
     } catch {
       setStatus('error');
     } finally {
@@ -1106,6 +1111,9 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody }: { contactId: 
       sentKeyRef.current = key;
       setSentTo(res?.sentTo ?? null);
       setStatus('sent');
+      // Record the send as a touch so the engine sees it. Idempotent via the server's
+      // 5-min send-dedupe (deduped:true → skip the touch). Fire-and-forget.
+      if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'emailed' }).catch(() => {});
     } catch {
       setStatus('error');
     } finally {

@@ -306,6 +306,8 @@ const SIGNAL_LABEL: Record<PartnerLastSignal, string> = {
   'voicemail': 'Voicemail',
   'talked': 'Talked',
   'link-sent': 'Sent link',
+  'texted': 'Texted',
+  'emailed': 'Emailed',
   'booked': 'Booked',
   'deferred': 'Future potential',
   'not-interested': 'Not interested',

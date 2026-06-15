@@ -297,6 +297,11 @@ export type PartnerLastSignal =
   | 'voicemail'
   | 'talked'
   | 'link-sent'
+  // App-sent touches — Garrett composed + sent a text/email from the card.
+  // Recorded so the engine sees the send (bumps count + last_signal_at, promotes
+  // no-outreach→working). Only ever set from the in-app Send buttons.
+  | 'texted'
+  | 'emailed'
   | 'booked'
   | 'deferred'
   | 'not-interested'
