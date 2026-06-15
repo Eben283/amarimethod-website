@@ -517,8 +517,18 @@ export default function FollowUpPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search everyone…"
-          className="w-full rounded-xl border border-amari-border py-2 pl-9 pr-3 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
+          className="w-full rounded-xl border border-amari-border py-2 pl-9 pr-9 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            aria-label="Clear search"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-amari-text-muted hover:bg-amari-light-sand hover:text-amari-charcoal"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {error && (
