@@ -450,8 +450,12 @@ export async function onRequestGet(context) {
         sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
         isLead: true,
         // Verdict from the cadence engine (the UI reads p.derived; these have no partner fields).
+        // `urgency` is REQUIRED: the UI ranks Act Now by d.urgency and caps at 30, so a lead
+        // with no urgency NaN-sorts off the bottom and never appears (the bug that hid Wendy).
+        // The cadence `priority` (0-127; reply-waiting tops it) is the right rank — pass it through.
         derived: {
           kind: c.due ? "act" : "waiting", due: !!c.due,
+          urgency: Number(c.priority) || 0,
           action: c.action || "Follow up", why: c.action || "Needs follow-up",
           channel: c.channel || null, source: "cadence-lead",
         },
