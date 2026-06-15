@@ -423,6 +423,41 @@ export async function onRequestGet(context) {
       });
     }
 
+    // Follow-Up = EVERYONE who needs follow-up, not just partner-tagged (Eben 2026-06-15:
+    // "every person, every rabbit or oak tree that needs follow-up lives in followup").
+    // Union in the cadence engine's conversation-active contacts who AREN'T partner-tagged —
+    // i.e. client leads with an open thread (e.g. Wendy, who verbally agreed to $225, stalled
+    // on price, and was invisible because she has no partner tag). Their verdict comes straight
+    // from the cadence (conversation-cache-derived), since they have no partner signal fields.
+    // This also reconnects the cadence engine to the app (they had been two separate systems).
+    for (const [cid, c] of cadenceMap) {
+      if (!cid || byId.has(cid) || skipSet.has(cid)) continue;       // partner / explicitly set aside
+      if (c.hasBooking) continue;                                    // already booked → not a target
+      if (["drip-only", "set-aside", "skipped", "booked"].includes(c.state)) continue;
+      const lastIso = c.lastTouch ? new Date(c.lastTouch).toISOString() : null;
+      prospects.push({
+        contactId: cid, firstName: "", lastName: "", fullName: c.name || "(no name)",
+        category: "client", tags: [],
+        phone: null, email: null, website: null, companyName: null,
+        address1: null, city: null, state: null, postalCode: null,
+        socialProfile: null, linkedinUrl: null, instagram: null, otherUrls: null, rundown: null,
+        lastActivityAt: lastIso, isActivePartner: false,
+        partnerStage: null, partnerSource: null,
+        partnerLastSignal: null, partnerLastSignalAt: lastIso, partnerFollowupAt: null,
+        partnerFacility: null, partnerFacilityType: null, partnerFacilityRole: null,
+        hasPtOnStaff: null, outreachVerified: false,
+        touchCount: Number(c.outCount) || 0,
+        sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
+        isLead: true,
+        // Verdict from the cadence engine (the UI reads p.derived; these have no partner fields).
+        derived: {
+          kind: c.due ? "act" : "waiting", due: !!c.due,
+          action: c.action || "Follow up", why: c.action || "Needs follow-up",
+          channel: c.channel || null, source: "cadence-lead",
+        },
+      });
+    }
+
     // Counts.
     // A contact counts as "verified / ready to call" if either:
     //   (a) Outreach Verified checkbox is true (manual confirm), OR
