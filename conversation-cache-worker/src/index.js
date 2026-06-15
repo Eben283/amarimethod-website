@@ -17,14 +17,106 @@
 
 import { runSync } from "./sync.js";
 import { deriveCadence } from "./cadence.js";
+import { getAccessToken, LOCATION_ID, ghlRetry } from "./ghl.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+
+const GHL_BASE = "https://services.leadconnectorhq.com";
+const isCallType = (t) => {
+  const u = String(t || "").toUpperCase();
+  return u.includes("CALL") || t === 1;
+};
+
+// Download a call recording from GHL and transcribe it with Workers AI Whisper.
+// Returns { ok, text?, status?, bytes? }. Cloud-only — no local whisper, no Mac.
+async function transcribeRecording(env, messageId) {
+  const token = await getAccessToken(env);
+  const res = await fetch(`${GHL_BASE}/conversations/messages/${messageId}/locations/${LOCATION_ID}/recording`, {
+    headers: { Authorization: `Bearer ${token}`, Version: "2021-04-15", Accept: "audio/x-wav" },
+  });
+  if (!res.ok) return { ok: false, status: res.status };
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength < 1000) return { ok: false, status: "empty" };
+  // base64 in chunks (no 3M-element spread — that blows the Worker CPU) and use
+  // the turbo model, which takes a base64 string instead of a number[] array.
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  const audio = btoa(bin);
+  const out = await env.AI.run("@cf/openai/whisper-large-v3-turbo", { audio });
+  return { ok: true, text: (out && out.text) || "", bytes: buf.byteLength };
+}
+
+// Ongoing auto-transcribe: scan recent conversations, transcribe any call we
+// haven't done yet (bounded per run), and store the transcript linked to the
+// contact. Idempotent — `transcript:{messageId}` marks done (incl. noRecording so
+// dead calls aren't retried forever). Cron-friendly: `limit` keeps it under the
+// worker wall-clock + the Workers-AI free allotment; it catches up over runs.
+async function transcribePending(env, limit = 8) {
+  const kv = env.PORTAL_KV;
+  // Pull recent conversations (newest first); recordings only exist for recent
+  // calls anyway, so a shallow scan keeps current without re-enumerating history.
+  const seen = [];
+  let startAfterDate = null;
+  for (let page = 0; page < 2; page++) {
+    let p = `/conversations/search?limit=100&sortBy=last_message_date&sort=desc`;
+    if (startAfterDate) p += `&startAfterDate=${startAfterDate}`;
+    let data;
+    try { data = await ghlRetry(env, p); } catch { break; }
+    const convs = data.conversations || [];
+    if (!convs.length) break;
+    seen.push(...convs);
+    const last = convs[convs.length - 1];
+    const cursor = last.sort?.[0] || last.lastMessageDate || last.dateUpdated;
+    if (!cursor || convs.length < 100) break;
+    startAfterDate = typeof cursor === "number" ? cursor : new Date(cursor).getTime();
+  }
+  let transcribed = 0, noRec = 0, skipped = 0, scanned = 0;
+  for (const c of seen) {
+    if (transcribed >= limit) break;
+    if (!c.id) continue;
+    let md;
+    try { md = await ghlRetry(env, `/conversations/${c.id}/messages?limit=100`); } catch { continue; }
+    const msgs = md.messages?.messages || md.messages || [];
+    for (const m of msgs) {
+      if (transcribed >= limit) break;
+      if (!isCallType(m.messageType || m.type)) continue;
+      const dur = Number(m.meta?.call?.duration) || 0;
+      if (dur < 8) continue;                                   // dead-air / no-answer, nothing to transcribe
+      scanned++;
+      const key = `transcript:${m.id}`;
+      if (await kv.get(key)) { skipped++; continue; }          // already done (or marked no-recording)
+      const r = await transcribeRecording(env, m.id);
+      if (!r.ok) {
+        // mark no-recording so we don't retry every run; keep a light record.
+        await kv.put(key, JSON.stringify({ messageId: m.id, contactId: m.contactId || c.contactId, noRecording: true, status: r.status }));
+        noRec++;
+        continue;
+      }
+      await kv.put(key, JSON.stringify({
+        messageId: m.id, contactId: m.contactId || c.contactId,
+        name: c.contactName || c.fullName || null,
+        direction: m.direction === 0 || m.direction === "outbound" ? "outbound" : "inbound",
+        durationSec: dur, date: m.dateAdded || m.date, text: r.text,
+      }));
+      transcribed++;
+    }
+  }
+  return { transcribed, noRecording: noRec, skipped, callsScanned: scanned, convsScanned: seen.length };
+}
 
 export default {
   async scheduled(event, env, ctx) {
     // The Monday weekly cron does a FULL reconcile (drift insurance); the 3-hourly
     // cron does the cheap incremental sync. Both then derive the due-list.
     const full = event.cron === "0 9 * * 1";
-    ctx.waitUntil(runSync(env, full ? "cron-full" : "cron", full).then(() => deriveCadence(env)));
+    // Sync + derive, then transcribe a bounded batch of new call recordings
+    // (catches up the backlog over runs, then stays current with new calls).
+    ctx.waitUntil(
+      runSync(env, full ? "cron-full" : "cron", full)
+        .then(() => deriveCadence(env))
+        .then(() => transcribePending(env, full ? 20 : 8))
+        .catch((e) => console.error("[cron] transcribe failed:", e.message))
+    );
   },
 
   async fetch(request, env, ctx) {
@@ -52,6 +144,24 @@ export default {
     if (url.pathname === "/due") {
       const data = await env.PORTAL_KV.get("coach:due:latest", "json");
       return data ? json(data) : json({ error: "Never derived" }, 404);
+    }
+
+    // Proof-of-concept: transcribe one recording via Workers AI Whisper.
+    // /transcribe-test?messageId=XXX  — confirms the cloud-Whisper path before
+    // wiring it into the sync loop.
+    if (url.pathname === "/transcribe-test") {
+      const messageId = url.searchParams.get("messageId");
+      if (!messageId) return json({ error: "messageId required" }, 400);
+      const r = await transcribeRecording(env, messageId);
+      return json(r, r.ok ? 200 : 422);
+    }
+
+    // Manual run of the auto-transcribe loop (also runs on the cron).
+    // /transcribe-pending?limit=N
+    if (url.pathname === "/transcribe-pending") {
+      const limit = Math.min(40, Number(url.searchParams.get("limit")) || 8);
+      const r = await transcribePending(env, limit);
+      return json(r);
     }
 
     if (url.pathname === "/status") {
