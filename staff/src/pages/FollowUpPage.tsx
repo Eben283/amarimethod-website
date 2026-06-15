@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach,
-  getOutreachCoach, sendFollowupText, ApiError,
+  getOutreachCoach, sendFollowupText, sendFollowupEmail, ApiError,
   type FollowupBrief, type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
@@ -859,6 +859,11 @@ function OutreachCoachPanel({ coach, contactId }: { coach: OutreachCoach | null 
         {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
           <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} />
         ))}
+        <EditSendEmail
+          contactId={contactId}
+          defaultSubject="A note from Dr. Garrett"
+          defaultBody={coach.message || ''}
+        />
       </div>
     </div>
   );
@@ -1060,6 +1065,80 @@ function EditSendText({ contactId, text, channel }: { contactId: string; text: s
           {copied ? '✓ Copied' : 'Copy'}
         </button>
         {sentThisText && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
+        {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
+      </div>
+    </div>
+  );
+}
+
+// Plain-text → safe HTML for the email body: escape, paragraph on blank lines,
+// <br> on single newlines. Keeps Garrett's line breaks without trusting raw input.
+function bodyToHtml(s: string): string {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return s.trim().split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+// Editable subject + body + Send email. The email twin of EditSendText — Garrett tweaks
+// the wording, then sends THROUGH GHL (logged on the timeline, traceable) with the same
+// synchronous double-send lock. Body is plain text in the box; converted to HTML on send.
+function EditSendEmail({ contactId, defaultSubject, defaultBody }: { contactId: string; defaultSubject: string; defaultBody: string }) {
+  const [subject, setSubject] = useState(defaultSubject);
+  const [body, setBody] = useState(defaultBody);
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const sendingRef = useRef(false);
+  const sentKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
+  }, [body]);
+  const key = `${subject.trim()} ${body.trim()}`;
+  const send = async () => {
+    const subj = subject.trim();
+    const msg = body.trim();
+    if (!subj || !msg || sendingRef.current) return;   // sync guard — closes the double-tap race
+    if (key === sentKeyRef.current) return;             // already sent this exact email
+    sendingRef.current = true;
+    setStatus('sending');
+    try {
+      const res = await sendFollowupEmail(contactId, subj, bodyToHtml(msg));
+      sentKeyRef.current = key;
+      setSentTo(res?.sentTo ?? null);
+      setStatus('sent');
+    } catch {
+      setStatus('error');
+    } finally {
+      sendingRef.current = false;
+    }
+  };
+  const sentThis = status === 'sent' && key === sentKeyRef.current;
+  const onEdit = () => { if (status === 'error') setStatus('idle'); else if (status === 'sent' && key !== sentKeyRef.current) setStatus('idle'); };
+  return (
+    <div className="rounded-lg border border-amari-border p-2.5">
+      <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">
+        <Mail className="h-3 w-3" /> Email
+      </span>
+      <input
+        type="text"
+        value={subject}
+        onChange={(e) => { setSubject(e.target.value); onEdit(); }}
+        placeholder="Subject"
+        className="mb-1.5 w-full rounded border border-amari-border bg-white px-2 py-1.5 text-sm font-medium text-amari-charcoal"
+      />
+      <textarea
+        ref={ref}
+        value={body}
+        onChange={(e) => { setBody(e.target.value); onEdit(); }}
+        rows={6}
+        className="w-full resize-y overflow-hidden rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
+      />
+      <div className="mt-1.5 flex items-center gap-2">
+        <button type="button" onClick={send} disabled={status === 'sending' || sentThis || !subject.trim() || !body.trim()}
+          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          {status === 'sending' ? 'Sending…' : sentThis ? '✓ Sent' : 'Send email'}
+        </button>
+        {sentThis && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
         {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
       </div>
     </div>
