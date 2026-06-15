@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
@@ -16,6 +16,9 @@ import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
 import '../styles/session-a.css';
+
+// Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
+const PAY_BTN: CSSProperties = { padding: '9px 14px', borderRadius: 9, border: '1px solid #cbd5e1', background: '#fff', fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' };
 
 // ── small display helpers ─────────────────────────────────────────────────
 function fmtDate(iso: string): string {
@@ -588,6 +591,8 @@ export default function ClientDetailPage() {
                 const isMarking = markingAttended === appt.id;
                 const pill = appt.paymentStatus ? PAYMENT_PILL[appt.paymentStatus] : null;
                 const packageCovers = client.sessionsRemaining > 0 && client.seriesType !== 'none';
+                // Gifted partner sessions are always comp — one-tap mark, no "how was this paid?".
+                const isGift = /partner initial/i.test(appt.calendarName || '') || /partner initial/i.test(appt.title || '');
                 const choosing = payingApptId === appt.id;
                 return (
                   <div key={appt.id}>
@@ -610,9 +615,11 @@ export default function ClientDetailPage() {
                         <button
                           className="sa-att"
                           onClick={() => {
-                            // Package-covered → mark straight away (backend auto-records on-package).
-                            // Otherwise ask how it was paid before marking.
+                            // One clean tap when there's no payment decision: package-covered
+                            // (backend auto-records on-package) and gifted partner sessions (always comp).
+                            // Only pay-as-you-go opens the "how was this paid?" step.
                             if (packageCovers) handleMarkAttended(appt);
+                            else if (isGift) handleMarkAttended(appt, { paymentStatus: 'comped', compNote: 'Partner gift' });
                             else { setPayingApptId(appt.id); setCompNoteDraft(''); }
                           }}
                           disabled={isMarking}
@@ -626,22 +633,22 @@ export default function ClientDetailPage() {
                       )}
                     </div>
                     {choosing && (
-                      <div style={{ margin: '6px 0 12px', padding: 10, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#334155' }}>How was this paid?</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'stripe' })}><span>Paid</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'cash' })}><span>Cash</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'pay-next-visit' })}><span>Pay next visit</span></button>
+                      <div style={{ margin: '6px 0 12px', padding: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: '#334155' }}>Marking attended — how was it paid?</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'stripe' })}>Paid (card)</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'cash' })}>Paid (cash)</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'pay-next-visit' })}>Owes — pay next visit</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || 'Comp' })}>Comp / free</button>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <input
                             value={compNoteDraft}
                             onChange={(e) => setCompNoteDraft(e.target.value)}
                             placeholder="Comp reason (optional)"
-                            style={{ flex: 1, fontSize: 13, padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                            style={{ flex: 1, fontSize: 13, padding: '7px 9px', border: '1px solid #cbd5e1', borderRadius: 8 }}
                           />
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || null })}><span>Comp</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}><span>Cancel</span></button>
+                          <button disabled={isMarking} style={{ ...PAY_BTN, border: 'none', background: 'transparent', color: '#94a3b8', fontWeight: 500 }} onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}>Cancel</button>
                         </div>
                       </div>
                     )}
