@@ -32,15 +32,26 @@ function shuffled<T>(arr: T[]): T[] {
 const DAILY_COUNT = 5;
 function todaysSet(list: SharpenCard[]): SharpenCard[] {
   if (list.length <= DAILY_COUNT) return list;
-  const day = Math.floor(Date.now() / 86_400_000);
+  // Stable shuffle (seed is FIXED, not day-derived) so the pool order is the same
+  // every day, then deal the next DAILY_COUNT-card BLOCK by day. This walks the whole
+  // pool with NO card repeating until the pool has fully cycled (ceil(N/5) days),
+  // instead of an independent daily re-shuffle (which could repeat a card day-to-day).
+  // New cards change the order (pool grows), so the rotation evolves as we add more.
   const a = [...list];
-  let seed = day + 1;
+  let seed = 12345;
   for (let i = a.length - 1; i > 0; i--) {
     seed = (seed * 9301 + 49297) % 233280;
     const j = Math.floor((seed / 233280) * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
-  return a.slice(0, DAILY_COUNT);
+  const blocks = Math.ceil(a.length / DAILY_COUNT);
+  const day = Math.floor(Date.now() / 86_400_000);
+  const block = ((day % blocks) + blocks) % blocks;
+  const start = block * DAILY_COUNT;
+  const out = a.slice(start, start + DAILY_COUNT);
+  // wrap the short final block from the front so every day still shows DAILY_COUNT
+  if (out.length < DAILY_COUNT) out.push(...a.slice(0, DAILY_COUNT - out.length));
+  return out;
 }
 
 // Background colour encodes the card KIND, so it reads at a glance: blue = a
