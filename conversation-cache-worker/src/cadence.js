@@ -88,6 +88,11 @@ const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) -
 // (call → voicemail that tees up the follow-up → the text/email that references it).
 const COLD_STEPS = 6;
 const WARM_STEPS = 4;
+// A call this long (seconds) counts as a real conversation → the contact is warm.
+// Below this is a dial-and-miss or a short voicemail (verified: VMs ran ~15-150s,
+// real talks ~120s+). Tuned conservative; the transcript is the ground truth when
+// we have one, but duration is the live signal the engine has at classify time.
+const TALKED_CALL_SEC = 120;
 const COLD_CHANNELS = ["call", "text", "call", "email", "call", "text"]; // step 1..6 (6 = breakup)
 const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step 1..4 (4 = breakup)
 const channelForStep = (variant, step) =>
@@ -158,6 +163,11 @@ function buildRow(contactId, name, touches) {
     droppedReplies,
     highVolume: out.length >= HIGH_VOLUME,
     hasHumanTouch: touches.some((t) => t.dir === "out" && (t.kind === "call" || t.kind === "sms")),
+    // A real conversation: a call that lasted long enough to be a talk (not a
+    // dial-and-miss or a short voicemail). This is the signal that a contact is
+    // WARM even when they never sent an inbound text — they answered and talked on
+    // the phone. (Needs call duration in the cache; backfilled on a full reconcile.)
+    talkedCall: touches.some((t) => t.kind === "call" && (t.dur || 0) >= TALKED_CALL_SEC),
   };
 }
 
@@ -182,7 +192,10 @@ function classify(p) {
   }
   // Named-sequence model: variant by warmth, the next step is outN+1, the final
   // step is the breakup, and once the breakup is sent we auto-exhaust.
-  const warm = p.inCount > 0;
+  // WARM = they engaged: replied (inbound) OR talked on the phone (a real call).
+  // The talkedCall half fixes the big miss — someone who answered a call and talked
+  // for minutes but never texted was wrongly treated as a cold one-touch lead.
+  const warm = p.inCount > 0 || p.talkedCall;
   const variant = warm ? "warm" : "cold";
   const totalSteps = warm ? WARM_STEPS : COLD_STEPS;
   const nextStep = outN + 1;
