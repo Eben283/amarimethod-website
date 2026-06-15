@@ -258,6 +258,19 @@ export async function sendFollowupText(
   });
 }
 
+// One-tap custom email — sends a staff-composed subject + body THROUGH GHL, so it's
+// logged on the contact's timeline (traceable) exactly like the SMS path. Body is HTML.
+export async function sendFollowupEmail(
+  contactId: string,
+  subject: string,
+  html: string,
+): Promise<{ success: boolean; deduped?: boolean; sentTo?: string }> {
+  return fetchApi('/staff-send-email', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, subject, html }),
+  });
+}
+
 // ── Sharpen (call-craft card feed) ──────────────────────────────────────────
 export type SharpenCategory = 'frame' | 'objection' | 'discovery' | 'close' | 'real-call';
 // kind = what TYPE of card this is (orthogonal to topic/category): a data-derived
