@@ -86,11 +86,11 @@ const ConditionStory = ({ content }: Props) => {
             </div>
 
             <p className="text-center mt-4 text-xs font-sans uppercase tracking-widest text-amari-text-light">
-              {content.protocolIntro.durationLabel} · Dr. Garrett introducing the protocol
+              {content.protocolIntro.durationLabel} · Garrett introducing the protocol
             </p>
 
             <p className="text-center mt-6 text-sm font-sans text-amari-text-light max-w-xl mx-auto leading-relaxed">
-              The actual hands-on guidance lives in your first session, where Dr. Garrett adapts the protocol to your specific body. <a href="#booking-cta" className="text-amari-charcoal underline underline-offset-4 decoration-amari-border hover:decoration-amari-pine-teal transition-colors">See what session 1 covers ↓</a>
+              The actual hands-on guidance lives in your first session, where Garrett adapts the protocol to your specific body. <a href="#booking-cta" className="text-amari-charcoal underline underline-offset-4 decoration-amari-border hover:decoration-amari-pine-teal transition-colors">See what session 1 covers ↓</a>
             </p>
           </div>
         ) : null}

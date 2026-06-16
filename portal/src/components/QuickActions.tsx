@@ -159,7 +159,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
     primaryCard = (
       <BookingCard
         label="Book your initial session"
-        description="60-minute assessment with Dr. Garrett."
+        description="60-minute assessment with Garrett."
         price="$225"
         open={showInitialChoice}
         onOpen={() => setShowInitialChoice(true)}
@@ -209,7 +209,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
   const livingPracticeAction: Action = client.hasLivingPractice
     ? {
         label: 'Continue Living Practice',
-        description: 'Your daily home-practice videos with Dr. Garrett.',
+        description: 'Your daily home-practice videos with Garrett.',
         onClick: () => navigate(LIVING_PRACTICE_ROUTE),
         testId: 'living-practice-card',
       }
@@ -249,7 +249,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
     : null;
 
   const contactAction: Action = {
-    label: 'Contact Dr. Garrett',
+    label: 'Contact Garrett',
     description: 'Questions, scheduling, or notes between sessions.',
     href: 'mailto:eben@amarimethod.com',
     muted: true,

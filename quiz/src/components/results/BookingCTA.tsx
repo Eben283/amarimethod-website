@@ -84,7 +84,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           <ul className="space-y-2.5 mb-7">
             <li className="flex items-start gap-3">
               <CheckIcon />
-              <span className="font-sans text-amari-charcoal">Full assessment with Dr. Garrett</span>
+              <span className="font-sans text-amari-charcoal">Full assessment with Garrett</span>
             </li>
             <li className="flex items-start gap-3">
               <CheckIcon />

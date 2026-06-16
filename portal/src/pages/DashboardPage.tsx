@@ -58,7 +58,7 @@ export default function DashboardPage() {
             <button type="button" className="cp-btn cp-btn-primary" onClick={refetch}>
               <span>Try again</span><span className="cp-arrow">→</span>
             </button>
-            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Dr. Garrett</a>
+            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Garrett</a>
           </div>
         </section>
       </div>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
         <span className="cp-dot">·</span>
         <a href="mailto:hello@amarimethod.com">Help &amp; policies</a>
         <span className="cp-dot">·</span>
-        <a href="mailto:hello@amarimethod.com">Contact Dr. Garrett</a>
+        <a href="mailto:hello@amarimethod.com">Contact Garrett</a>
         <span className="cp-foot-r">© {new Date().getFullYear()} Amari Method</span>
       </footer>
     </div>

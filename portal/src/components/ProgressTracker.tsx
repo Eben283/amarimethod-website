@@ -68,9 +68,9 @@ function buildGoogleCalendarUrl(apt: Appointment): string {
   const meet = apt.meetingUrl || '';
   const details = format === 'Virtual'
     ? (meet
-        ? `Virtual session with Dr. Garrett. Join: ${meet}`
-        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
-    : 'In-person session with Dr. Garrett at Amari Method.';
+        ? `Virtual session with Garrett. Join: ${meet}`
+        : 'Virtual session with Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Garrett at Amari Method.';
   const location = meet || (format === 'In-person' ? 'Amari Method' : '');
   const params = new URLSearchParams({
     action: 'TEMPLATE',
@@ -100,9 +100,9 @@ function buildIcsUrl(apt: Appointment): string {
   const meet = apt.meetingUrl || '';
   const description = format === 'Virtual'
     ? (meet
-        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
-        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
-    : 'In-person session with Dr. Garrett at Amari Method.';
+        ? `Virtual session with Garrett. Join here: ${meet}`
+        : 'Virtual session with Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Garrett at Amari Method.';
   const locationLine = meet
     ? `LOCATION:${icsText(meet)}`
     : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
@@ -395,7 +395,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                     <span className="cp-dot">·</span>
                     <span>{format}</span>
                     <span className="cp-dot">·</span>
-                    <span>with <b>Dr. Garrett</b></span>
+                    <span>with <b>Garrett</b></span>
                   </p>
                   {format === 'Virtual' && !nextApt.meetingUrl && (
                     <p className="cp-next-note">Google Meet link is in your confirmation email.</p>
@@ -482,7 +482,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
               {tooSoon && !isConfirming && (
                 <p className="cp-locked">
                   <span className="cp-lock-dot"></span>
-                  Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Dr. Garrett</a> and we'll review it.
+                  Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Garrett</a> and we'll review it.
                 </p>
               )}
 

@@ -871,7 +871,7 @@ function OutreachCoachPanel({ coach, contactId }: { coach: OutreachCoach | null 
         ))}
         <EditSendEmail
           contactId={contactId}
-          defaultSubject="A note from Dr. Garrett"
+          defaultSubject="A note from Garrett"
           defaultBody={coach.message || ''}
         />
       </div>

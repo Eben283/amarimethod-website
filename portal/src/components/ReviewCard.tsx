@@ -14,7 +14,7 @@ export default function ReviewCard() {
     >
       <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 600 }}>Help us grow</h3>
       <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8, maxWidth: 520 }}>
-        A quick Google review is the best way to help the practice grow and bring Dr. Garrett's work
+        A quick Google review is the best way to help the practice grow and bring Garrett's work
         to more people. It takes a minute, and it means a lot.
       </p>
       <a
