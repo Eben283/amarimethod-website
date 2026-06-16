@@ -663,18 +663,17 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   const isClient = isReply ? item.isClient : item.p.isActivePartner;
   const industry = !isReply && item.p.category !== 'unknown' ? item.p.category : '';
 
-  // Fetch the coach record once (here, not in the panel) so the card HEADLINE can
-  // use the coach's why-now (prospects) AND the expanded panel can show the
-  // editable/sendable drafts. Fetch for REPLIES too — a reply is the warmest moment
-  // to answer in-app with a drafted message; only the headline differs (replies use
-  // the message preview, prospects use coachWhy). Skipping replies here was the
-  // regression that stripped the send boxes off reply cards (6a50a18).
+  // Fetch the PROACTIVE outreach coach (headline why-now + the editable/sendable
+  // drafts) for PROSPECT cards only. Reply cards don't use it — the proactive
+  // draft is the wrong message for someone mid-conversation; they answer with the
+  // call-coach's in-context Suggested reply instead (CoachPanel below).
   const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
   useEffect(() => {
+    if (isReply) { setCoach(null); return; }
     let live = true;
     getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); }).catch(() => { if (live) setCoach(null); });
     return () => { live = false; };
-  }, [contactId]);
+  }, [contactId, isReply]);
   const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
 
   return (
@@ -752,14 +751,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
 
       {expanded && (
         <div className="space-y-3 border-t border-amari-border px-3 py-3">
-          <OutreachCoachPanel coach={coach} contactId={contactId} />
-          {isReply ? (
-            <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white">
-              <ExternalLink className="h-3.5 w-3.5" /> Reply in GHL
-            </a>
-          ) : (
+          {/* Prospects get the proactive outreach drafts; replies get only the
+              in-context Suggested reply (in CoachPanel) — Reply in GHL already
+              sits in the quick-action row above, so no duplicate here. */}
+          {!isReply && (
             <>
+              <OutreachCoachPanel coach={coach} contactId={contactId} />
               <Details p={item.p} />
             </>
           )}
