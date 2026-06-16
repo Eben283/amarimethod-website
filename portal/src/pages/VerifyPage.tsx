@@ -96,7 +96,7 @@ export default function VerifyPage() {
                 <span>Request a new link</span><span className="cp-arrow">→</span>
               </a>
               <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">
-                Contact Dr. Garrett
+                Contact Garrett
               </a>
             </div>
           </>

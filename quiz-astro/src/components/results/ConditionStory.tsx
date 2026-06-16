@@ -125,12 +125,12 @@ const ConditionStory = ({ content }: Props) => {
             </div>
 
             <div className="video-cap">
-              <span>{protocolDurationLabel} · Dr. Garrett introducing the protocol</span>
+              <span>{protocolDurationLabel} · Garrett introducing the protocol</span>
               <span>Fig. {content.protocolIntro.name}</span>
             </div>
 
             <p className="video-note">
-              The actual hands-on guidance lives in your first session, where Dr. Garrett adapts the protocol to your specific body.
+              The actual hands-on guidance lives in your first session, where Garrett adapts the protocol to your specific body.
             </p>
           </div>
         </section>

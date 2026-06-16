@@ -103,7 +103,7 @@ const lowerBack: ConditionContent = {
     {
       num: '01', flow: 'PELVIS → POSITION',
       title: 'Your pelvis is out of position.',
-      body: 'When the pelvis tips forward, the lower back is forced into compression with every step you take and every moment you stand. This is the most common pattern Dr. Garrett sees in people with chronic lower back pain. It\'s correctable, usually within the first few sessions.',
+      body: 'When the pelvis tips forward, the lower back is forced into compression with every step you take and every moment you stand. This is the most common pattern Garrett sees in people with chronic lower back pain. It\'s correctable, usually within the first few sessions.',
     },
     {
       num: '02', flow: 'HIPS → OFFLINE',
@@ -113,7 +113,7 @@ const lowerBack: ConditionContent = {
     {
       num: '03', flow: 'PATTERN → PAIN',
       title: 'Your spine is compensating for everything below it.',
-      body: 'Whether your pain is from a disc issue, SI joint dysfunction, sciatica, or general tightness, the pattern driving it is identifiable. Dr. Garrett assesses how force moves through your pelvis and spine and finds the specific imbalance creating your symptoms.',
+      body: 'Whether your pain is from a disc issue, SI joint dysfunction, sciatica, or general tightness, the pattern driving it is identifiable. Garrett assesses how force moves through your pelvis and spine and finds the specific imbalance creating your symptoms.',
     },
   ],
 };
@@ -196,7 +196,7 @@ const shoulder: ConditionContent = {
     {
       num: '01', flow: 'SHOULDER BLADE → POSITION',
       title: 'Your shoulder blade is out of position.',
-      body: 'When the shoulder blade tips forward and down, it narrows the space where your rotator cuff tendons live. Every time you raise your arm, those tendons get pinched. This is the most common pattern Dr. Garrett sees in people with chronic shoulder pain.',
+      body: 'When the shoulder blade tips forward and down, it narrows the space where your rotator cuff tendons live. Every time you raise your arm, those tendons get pinched. This is the most common pattern Garrett sees in people with chronic shoulder pain.',
     },
     {
       num: '02', flow: 'UPPER BACK → OFFLINE',
@@ -245,7 +245,7 @@ const hip: ConditionContent = {
     {
       num: '01', flow: 'PELVIS → POSITION',
       title: 'Your pelvis is out of position.',
-      body: "When the pelvis tips forward, it compresses the front of the hip joint. This is the single most common pattern Dr. Garrett sees in people with chronic hip pain. It's behind most diagnoses of impingement, labral irritation, hip flexor strain, and groin tightness.",
+      body: "When the pelvis tips forward, it compresses the front of the hip joint. This is the single most common pattern Garrett sees in people with chronic hip pain. It's behind most diagnoses of impingement, labral irritation, hip flexor strain, and groin tightness.",
     },
     {
       num: '02', flow: 'HIPS → OFFLINE',
@@ -260,7 +260,7 @@ const hip: ConditionContent = {
     {
       num: '04', flow: 'PATTERN → PAIN',
       title: 'Your pattern is specific to you.',
-      body: 'Hip pain presents differently in every person. Dr. Garrett assesses your individual pelvic position, how your hip moves under load, and which structures are overworking and which have shut down.',
+      body: 'Hip pain presents differently in every person. Garrett assesses your individual pelvic position, how your hip moves under load, and which structures are overworking and which have shut down.',
     },
   ],
 };
@@ -362,7 +362,7 @@ const fallback = (displayName: string, normalized: string): ConditionContent => 
     {
       num: '03', flow: 'PATTERN → PAIN',
       title: 'Your pattern is identifiable.',
-      body: 'Dr. Garrett assesses how force moves through your whole body — not just the area that hurts — and finds the specific imbalance creating your symptoms.',
+      body: 'Garrett assesses how force moves through your whole body — not just the area that hurts — and finds the specific imbalance creating your symptoms.',
     },
   ],
 });
@@ -447,7 +447,7 @@ const T_PAUL: MatchedTestimonial = {
 };
 
 const T_KATIE: MatchedTestimonial = {
-  quote: 'One visit with Dr. Garrett gave me better results than three months of physical therapy.',
+  quote: 'One visit with Garrett gave me better results than three months of physical therapy.',
   name: 'Katie',
   attribution: 'Runner recovery',
 };
