@@ -156,76 +156,93 @@ async function fetchMessages(env, conversationId, limit = 100) {
   return data.messages?.messages || [];
 }
 
-// Enumerate recent conversations location-wide, then pull each one's messages,
-// keeping only those whose CALL or outgoing-SMS/EMAIL activity falls inside the
-// [startMs, endMs] window. Returns a per-contact bundle:
-//   { contactId, contactName, calls: [...], outgoingTexts: [...] }
+// Enumerate conversations touched in the [startMs, endMs] window, then pull each
+// one's FULL message history (not just the in-window slice) so the coach sees the
+// WHOLE relationship, not one day. Returns a per-contact bundle:
+//   { contactId, contactName, triggerCalls, calls, thread, hadWindowActivity }
 //
-// "calls" = answered/completed call messages with a duration worth coaching.
-// "outgoingTexts" = outbound SMS + email bodies in-window (the text-coaching
-// input — works even when a call has no recording).
-export async function fetchCallsAndTextsForRange(env, startMs, endMs, { minCallDuration = 10, maxConversations = 60 } = {}) {
+// - triggerCalls = calls that landed IN the window (the fresh thing to coach +
+//   transcribe live).
+// - calls        = ALL calls on record (any date); prior ones get their cached
+//   transcript from KV so the coach has earlier-call content for free.
+// - thread        = the COMPLETE two-way SMS/email history, BOTH directions —
+//   so the contact's own replies are visible (the whole point of this fix).
+// Only contacts with in-window activity are returned (something new to coach).
+export async function fetchRelationshipBundles(env, startMs, endMs, { minCallDuration = 10, maxConversations = 60, maxThread = 40, maxCalls = 6 } = {}) {
   const search = await ghlFetch(env, `/conversations/search?limit=${maxConversations}`);
   const conversations = search.conversations || [];
 
-  // Window-filter at the conversation level first to avoid pulling messages for
-  // conversations untouched in the period.
-  const inWindow = conversations.filter((c) => {
+  // Pre-filter to conversations touched at/after the window start — those are the
+  // ones with something new. We still read each one's full history below.
+  const recent = conversations.filter((c) => {
     const last = new Date(c.lastMessageDate || c.dateUpdated || 0).getTime();
-    return last >= startMs; // last activity at/after window start (cheap pre-filter)
+    return last >= startMs;
   });
 
   const byContact = new Map();
-  for (const conv of inWindow) {
+  for (const conv of recent) {
     let msgs;
     try { msgs = await fetchMessages(env, conv.id); }
     catch { continue; }
 
     for (const m of msgs) {
-      const ts = new Date(m.dateAdded || m.date || 0).getTime();
-      if (ts < startMs || ts > endMs) continue;
       const contactId = m.contactId || conv.contactId;
       if (!contactId) continue;
+      const ts = new Date(m.dateAdded || m.date || 0).getTime();
+      const inWindow = ts >= startMs && ts <= endMs;
+      const outbound = isOutbound(m);
 
       const bucket = byContact.get(contactId) || {
         contactId,
         contactName: conv.contactName || conv.fullName || null,
+        triggerCalls: [],
         calls: [],
-        outgoingTexts: [],
+        thread: [],
+        hadWindowActivity: false,
       };
 
       const t = m.messageType || m.type;
       if (isCallType(t)) {
         const dur = m.meta?.call?.duration || 0;
-        const status = m.meta?.call?.status || m.status || "";
         if (dur >= minCallDuration) {
-          bucket.calls.push({
+          const rec = {
             messageId: m.id,
-            conversationId: conv.id,
-            altId: m.altId || null,
-            direction: isOutbound(m) ? "outbound" : "inbound",
+            direction: outbound ? "outbound" : "inbound",
             duration: dur,
-            status,
             date: m.dateAdded || m.date,
-          });
+            isTrigger: inWindow,
+          };
+          bucket.calls.push(rec);
+          if (inWindow) { bucket.triggerCalls.push(rec); bucket.hadWindowActivity = true; }
         }
-      } else if (isOutbound(m) && (isSmsType(t) || isEmailType(t))) {
+      } else if (isSmsType(t) || isEmailType(t)) {
         const body = (m.body || m.message || "").toString();
         if (body.trim()) {
-          bucket.outgoingTexts.push({
-            messageId: m.id,
+          bucket.thread.push({
+            direction: outbound ? "outbound" : "inbound",
             channel: isEmailType(t) ? "email" : "sms",
             date: m.dateAdded || m.date,
             body: stripHtml(body).slice(0, 1500),
           });
+          // An outgoing text in-window is itself a coachable trigger.
+          if (inWindow && outbound) bucket.hadWindowActivity = true;
         }
       }
       byContact.set(contactId, bucket);
     }
   }
 
-  // Keep only contacts that had at least one coachable call OR outgoing text.
-  return [...byContact.values()].filter((b) => b.calls.length > 0 || b.outgoingTexts.length > 0);
+  const byDate = (a, b) => new Date(a.date) - new Date(b.date);
+  const out = [];
+  for (const b of byContact.values()) {
+    if (!b.hadWindowActivity) continue;
+    b.thread.sort(byDate);
+    b.calls.sort(byDate);
+    if (b.thread.length > maxThread) b.thread = b.thread.slice(-maxThread);
+    if (b.calls.length > maxCalls) b.calls = b.calls.slice(-maxCalls);
+    out.push(b);
+  }
+  return out;
 }
 
 // Download a GHL call recording as an ArrayBuffer.

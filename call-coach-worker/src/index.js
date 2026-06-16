@@ -19,7 +19,7 @@
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import {
-  fetchCallsAndTextsForRange,
+  fetchRelationshipBundles,
   fetchRecording,
   fetchStoredTranscription,
   dateToRange,
@@ -130,7 +130,7 @@ async function runCoach(env, dateStr) {
   let bundles;
   try {
     const { startMs, endMs } = dateToRange(dateStr);
-    bundles = await fetchCallsAndTextsForRange(env, startMs, endMs);
+    bundles = await fetchRelationshipBundles(env, startMs, endMs);
   } catch (err) {
     lastRun.status = "error";
     lastRun.error = `enumerate failed: ${err.message}`;
@@ -144,21 +144,37 @@ async function runCoach(env, dateStr) {
 
   for (const bundle of bundles) {
     try {
-      // Transcribe up to N calls for this contact, concatenate transcripts.
-      const calls = bundle.calls.slice(0, MAX_CALLS_PER_CONTACT);
+      // Assemble call content for the WHOLE relationship (chronological).
+      // Prior calls: read the cached transcript:{messageId} the conversation-cache
+      // pipeline already produced (free). Fresh in-window calls without a cache
+      // yet: transcribe live (bounded). Either way the coach sees earlier calls.
+      let freshTranscribed = 0;
       const transcriptParts = [];
       let anyAudio = false;
-      for (const call of calls) {
-        const { transcript, source, error } = await transcribeCall(env, call.messageId);
-        if (transcript) {
-          anyAudio = anyAudio || source === "whisper" || source === "ghl-stored";
-          lastRun.callsTranscribed++;
+      for (const call of bundle.calls) {
+        let text = null;
+        let source = null;
+        const cached = await env.PORTAL_KV.get(`transcript:${call.messageId}`, "json");
+        if (cached?.text) {
+          text = cached.text;
+          source = "cached";
+        } else if (call.isTrigger && freshTranscribed < MAX_CALLS_PER_CONTACT) {
+          const r = await transcribeCall(env, call.messageId);
+          if (r.transcript) { text = r.transcript; source = r.source; freshTranscribed++; }
+          else if (r.error === "no recording") lastRun.callsNoRecording++;
+        }
+        if (text) {
+          anyAudio = true;
+          if (source !== "cached") lastRun.callsTranscribed++;
           transcriptParts.push(
-            `[call ${call.date} · ${call.direction} · ${call.duration}s · via ${source}]\n${transcript}`
+            `[call ${call.date} · ${call.direction} · ${call.duration}s · via ${source}]\n${text}`
           );
         } else {
-          if (error === "no recording") lastRun.callsNoRecording++;
-          console.log(`[call-coach] ${bundle.contactId} call ${call.messageId}: ${error || "no transcript"}`);
+          // Still tell the coach the call happened — it's relationship context
+          // even without a transcript (e.g. a never-recorded earlier call).
+          transcriptParts.push(
+            `[call ${call.date} · ${call.direction} · ${call.duration}s · (no transcript on record)]`
+          );
         }
       }
 
@@ -167,7 +183,7 @@ async function runCoach(env, dateStr) {
       const { coaching, error: coachErr } = await coachInteraction(env, {
         contactName: bundle.contactName,
         transcript,
-        outgoingTexts: bundle.outgoingTexts,
+        thread: bundle.thread,
       });
 
       if (coachErr) {
@@ -184,7 +200,7 @@ async function runCoach(env, dateStr) {
         generatedAt: new Date().toISOString(),
         hasAudio: anyAudio,
         callCount: bundle.calls.length,
-        textCount: bundle.outgoingTexts.length,
+        threadCount: bundle.thread.length,
         coaching,
       };
 
