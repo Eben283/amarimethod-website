@@ -28,9 +28,12 @@ Respond as STRICT JSON only (no prose, no markdown fences) with this shape:
   "whatToImprove": ["specific, actionable, anchored point", ...],
   "objections": ["objection the client raised + how it was/should be handled", ...],
   "nextStep": "the single concrete next action for Garrett with this person",
+  "suggestedReply": "a ready-to-send message, or empty string",
   "signal": "high" | "low"
 }
-Use empty arrays where a section doesn't apply. "signal":"low" when there wasn't enough to meaningfully coach.`;
+Use empty arrays where a section doesn't apply. "signal":"low" when there wasn't enough to meaningfully coach.
+
+"suggestedReply" rules: if the contact's MOST RECENT message is an inbound that warrants a response (a question, a reply, an objection left hanging), write the actual message Garrett should send back — ready to send as-is, in his warm grounded voice, grounded in what they actually said and the whole relationship. No placeholder brackets, no "[link]" unless you write a real instruction the app can't fill (prefer "the booking link" in words). 1-4 sentences. This is the ONE field Garrett may send as-is, so it must pass the outbound-copy bar: write it the way he texts a person, NOT written prose. NO em-dashes (use a period or comma), NO semicolons, no "—", no corporate polish, no filler like "honestly/genuinely". Warm, plain, grounded. If the latest interaction does NOT need a reply from Garrett (e.g. he left a voicemail, or the ball is genuinely in his court to act not reply), set "suggestedReply" to an empty string.`;
 
 function buildUserContent({ contactName, transcript, thread }) {
   const who = contactName || "the contact";
@@ -72,6 +75,7 @@ function parseCoaching(text) {
       whatToImprove: Array.isArray(obj.whatToImprove) ? obj.whatToImprove : [],
       objections: Array.isArray(obj.objections) ? obj.objections : [],
       nextStep: typeof obj.nextStep === "string" ? obj.nextStep : "",
+      suggestedReply: typeof obj.suggestedReply === "string" ? obj.suggestedReply : "",
       signal: obj.signal === "low" ? "low" : "high",
     };
   } catch {
