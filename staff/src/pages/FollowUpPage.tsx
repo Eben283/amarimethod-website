@@ -664,14 +664,17 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   const industry = !isReply && item.p.category !== 'unknown' ? item.p.category : '';
 
   // Fetch the coach record once (here, not in the panel) so the card HEADLINE can
-  // use the coach's why-now — it's richer/more specific than the generic derive why.
+  // use the coach's why-now (prospects) AND the expanded panel can show the
+  // editable/sendable drafts. Fetch for REPLIES too — a reply is the warmest moment
+  // to answer in-app with a drafted message; only the headline differs (replies use
+  // the message preview, prospects use coachWhy). Skipping replies here was the
+  // regression that stripped the send boxes off reply cards (6a50a18).
   const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
   useEffect(() => {
-    if (isReply) { setCoach(null); return; }
     let live = true;
     getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); }).catch(() => { if (live) setCoach(null); });
     return () => { live = false; };
-  }, [contactId, isReply]);
+  }, [contactId]);
   const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
 
   return (
