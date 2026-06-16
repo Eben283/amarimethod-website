@@ -95,6 +95,33 @@ export default {
       }
     }
 
+    // /rebuild-digest?date=YYYY-MM-DD — reconstruct the daily digest from the
+    // per-contact call-coach:{date}:{contactId} cards. Use after /coach-one
+    // updates individual cards (which don't touch the batch digest), so /day
+    // stays consistent without waiting for the next full cron.
+    if (url.pathname === "/rebuild-digest") {
+      const date = url.searchParams.get("date") || yesterdayPacific();
+      const prefix = `${KV_CALL_PREFIX}${date}:`; // matches call-coach:{date}:{contactId} only
+      const listed = await env.PORTAL_KV.list({ prefix });
+      const items = [];
+      for (const k of listed.keys) {
+        const rec = await env.PORTAL_KV.get(k.name, "json");
+        if (!rec?.coaching) continue;
+        items.push({
+          contactId: rec.contactId,
+          contactName: rec.contactName,
+          hasAudio: rec.hasAudio,
+          summary: rec.coaching.summary,
+          nextStep: rec.coaching.nextStep,
+          signal: rec.coaching.signal,
+          topImprovement: rec.coaching.whatToImprove?.[0] || null,
+        });
+      }
+      const digest = { date, generatedAt: new Date().toISOString(), count: items.length, items };
+      await safePut(env, `${KV_DAILY_PREFIX}${date}`, digest, RESULT_TTL_S);
+      return json(digest);
+    }
+
     // /latest?date=YYYY-MM-DD — read the daily digest (defaults to yesterday).
     if (url.pathname === "/latest") {
       const date = url.searchParams.get("date") || yesterdayPacific();
