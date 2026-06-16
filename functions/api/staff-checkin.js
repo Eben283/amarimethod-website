@@ -128,11 +128,10 @@ export async function onRequestPost(context) {
     }
 
     try {
-      // Embed the signature inline as an HTML img tag so it lives in GHL
-      // alongside the metadata, not only in our KV. GHL note rendering
-      // accepts <img> with data URLs; even if a future renderer strips
-      // them, the base64 bytes are preserved in the note body and
-      // remain extractable.
+      // The signature image lives in the KV attestation record above (the legal
+      // record). We deliberately DO NOT embed the base64 <img> in the note body:
+      // inlining a ~50KB data-URL breaks every view that renders the note as text
+      // (it dumps a wall of base64) and bloats each note. The KV key is the pointer.
       const noteBody = [
         `Practice policies signed`,
         ``,
@@ -141,10 +140,7 @@ export async function onRequestPost(context) {
         `Signed at: ${timestamp}`,
         `IP: ${ip || "—"}`,
         ``,
-        `Backup record in staff dashboard KV: ${kvKey}`,
-        ``,
-        `Signature:`,
-        `<img src="${signatureImage}" alt="Signature of ${typedName.trim()}" style="max-width: 480px; border: 1px solid #ccc; background: white;" />`,
+        `Signature on file — stored in the staff dashboard KV: ${kvKey}`,
       ].join("\n");
 
       await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`, {
