@@ -153,8 +153,12 @@ function daysSinceDate(iso) {
   return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / 86_400_000);
 }
 function lastTouchAt(p) {
-  const a = p.lastActivityAt ? new Date(p.lastActivityAt).getTime() : null;
-  const b = p.partnerLastSignalAt ? new Date(p.partnerLastSignalAt).getTime() : null;
+  // Coerce NaN (malformed date string) → null, not just empty. Otherwise a single
+  // bad lastActivityAt/partnerLastSignalAt → Math.max(NaN,…) → new Date(NaN)
+  // .toISOString() THROWS → the whole prospects request 500s for everyone.
+  const ms = (v) => { if (!v) return null; const t = new Date(v).getTime(); return Number.isNaN(t) ? null : t; };
+  const a = ms(p.lastActivityAt);
+  const b = ms(p.partnerLastSignalAt);
   if (a === null && b === null) return null;
   return new Date(Math.max(a ?? 0, b ?? 0)).toISOString();
 }
@@ -172,6 +176,21 @@ function freqBoost(tc) {
   return 0;
 }
 
+// Canonical partner_last_signal values the switch below understands. Legacy/variant
+// values (underscores, capitalization, e.g. "link_sent", "Talked") would otherwise
+// fall through to the default "haven't connected — text them" branch = wrong advice.
+// Normalize to canonical, and log anything we still don't recognize so new values surface.
+const KNOWN_SIGNALS = new Set([
+  "no-answer", "voicemail", "talked", "link-sent", "linkedin-msg",
+  "linkedin-req", "instagram-msg", "in-person", "not-interested",
+]);
+function normalizeSignal(raw) {
+  if (!raw) return null;
+  const s = String(raw).trim().toLowerCase().replace(/[_\s]+/g, "-");
+  if (!KNOWN_SIGNALS.has(s)) console.warn(`[staff-partner-prospects] unknown partner_last_signal: ${JSON.stringify(raw)} (normalized "${s}")`);
+  return s;
+}
+
 // p = prospect; elig = { hasBooking, skipped } from the coach (KV).
 function deriveActNow(p, elig) {
   if (elig?.skipped) return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Set aside" };
@@ -179,12 +198,14 @@ function deriveActNow(p, elig) {
     return { kind: "converted", urgency: 0, why: "Booked — now a client.", action: null };
   if (p.partnerStage === "dropped") return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not a fit" };
   if (p.partnerStage === "future-potential") {
-    const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : true;
+    // No follow-up date = still snoozed (NOT due). Defaulting to true here inverted
+    // the snooze — a future-potential lead with no date resurfaced at urgency 92 forever.
+    const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : false;
     return due ? { kind: "act", urgency: 92, action: "reback", why: "Snoozed lead is back — worth another look." }
                : { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Snoozed" };
   }
   const d = daysSinceDate(lastTouchAt(p));
-  const sig = p.partnerLastSignal;
+  const sig = normalizeSignal(p.partnerLastSignal);
   const tc = p.touchCount ?? 0;
   if (!sig && tc === 0) return { kind: "act", urgency: 45, action: "call", why: "New lead — give them a call once you're through your follow-ups." };
   if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", urgency: 38, action: "decide", why: `You've reached out ${tc} times with nothing back. Give it one more try, or let it go.` };
