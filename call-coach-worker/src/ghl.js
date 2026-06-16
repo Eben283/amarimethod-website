@@ -245,6 +245,48 @@ export async function fetchRelationshipBundles(env, startMs, endMs, { minCallDur
   return out;
 }
 
+// Build the FULL relationship bundle for ONE contact, no date window — used by
+// the synchronous /coach-one endpoint to (re)generate a single card on demand.
+// Same shape as fetchRelationshipBundles' items. The most recent call is marked
+// isTrigger so an un-cached latest call still gets transcribed live.
+export async function fetchContactRelationship(env, contactId, { maxThread = 40, maxCalls = 6 } = {}) {
+  const s = await ghlFetch(env, `/conversations/search?contactId=${contactId}`);
+  const convs = s.conversations || [];
+  let contactName = null;
+  const calls = [];
+  const thread = [];
+  for (const conv of convs) {
+    contactName = contactName || conv.contactName || conv.fullName || null;
+    let msgs;
+    try { msgs = await fetchMessages(env, conv.id); }
+    catch { continue; }
+    for (const m of msgs) {
+      const t = m.messageType || m.type;
+      const outbound = isOutbound(m);
+      if (isCallType(t)) {
+        const dur = m.meta?.call?.duration || 0;
+        calls.push({ messageId: m.id, direction: outbound ? "outbound" : "inbound", duration: dur, date: m.dateAdded || m.date, isTrigger: false });
+      } else if (isSmsType(t) || isEmailType(t)) {
+        const body = (m.body || m.message || "").toString();
+        if (body.trim()) {
+          thread.push({ direction: outbound ? "outbound" : "inbound", channel: isEmailType(t) ? "email" : "sms", date: m.dateAdded || m.date, body: stripHtml(body).slice(0, 1500) });
+        }
+      }
+    }
+  }
+  const byDate = (a, b) => new Date(a.date) - new Date(b.date);
+  calls.sort(byDate);
+  thread.sort(byDate);
+  if (calls.length) calls[calls.length - 1].isTrigger = true; // latest call → transcribe if uncached
+  return {
+    contactId,
+    contactName,
+    calls: calls.slice(-maxCalls),
+    thread: thread.slice(-maxThread),
+    hadWindowActivity: true,
+  };
+}
+
 // Download a GHL call recording as an ArrayBuffer.
 // Spike 0 (2026-06-13): the working endpoint shape is
 //   GET /conversations/messages/{messageId}/locations/{locationId}/recording

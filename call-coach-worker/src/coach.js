@@ -90,7 +90,7 @@ export async function coachInteraction(env, { contactName, transcript, thread })
 
   const body = {
     model: MODEL,
-    max_tokens: 900,
+    max_tokens: 1500,
     system: SYSTEM,
     messages: [{ role: "user", content: buildUserContent({ contactName, transcript, thread }) }],
   };
