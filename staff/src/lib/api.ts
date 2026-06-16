@@ -562,6 +562,7 @@ export interface CallCoach {
     whatToImprove: string[];
     objections: string[];
     nextStep: string;
+    suggestedReply?: string;
     signal?: string;
   };
 }

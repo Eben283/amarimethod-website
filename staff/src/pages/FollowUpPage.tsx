@@ -897,6 +897,14 @@ function CoachPanel({ contactId }: { contactId: string }) {
         Call coach{coach.hasAudio ? ' · from recording' : ''} · {coach.date}
       </p>
       {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
+      {/* Ready-to-send reply, grounded in the thread — editable + sendable in-app.
+          Surfaces when the contact's latest message needs an answer (esp. reply cards). */}
+      {c.suggestedReply && (
+        <div className="mt-2">
+          <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
+          <EditSendText contactId={contactId} text={c.suggestedReply} channel="text" />
+        </div>
+      )}
       {c.whatWorked?.length > 0 && (
         <div className="mt-1.5">
           <p className="text-[11px] font-medium text-emerald-700">What worked</p>
