@@ -1,4 +1,5 @@
-// Claude coaching pass over a call transcript + recent outgoing texts.
+// Claude coaching pass over a contact's FULL relationship — every call
+// transcript + the complete two-way message thread (both directions).
 // Produces constructive, specific, evidence-based pointers for Garrett —
 // "what worked / what to improve / objections / next step" — grounded ONLY in
 // what was actually said. No fabrication, no generic sales-script advice.
@@ -9,14 +10,16 @@ const MODEL = "claude-sonnet-4-6";
 // Amari context so the coach judges against how Garrett actually works, not a
 // generic high-pressure sales frame. Mirrors the positioning rules: warm,
 // grounded, "your body can heal you", no woo, no "fix", no hard close.
-const SYSTEM = `You are a calls/texts coach for Garrett, the practitioner at Amari Method — a bodywork practice positioned as "a doctor who teaches you to heal yourself." Garrett guides; the client does the work. Tone is warm, grounded, confident — never clinical, never woo, never high-pressure sales.
+const SYSTEM = `You are a calls/texts coach for Garrett, the practitioner at Amari Method — a bodywork practice where Garrett guides and the client does the work ("teaching you to heal yourself"). Tone is warm, grounded, confident — never clinical, never woo, never high-pressure sales.
 
-You review one outreach interaction (a phone call transcript and/or recent outgoing texts) and give Garrett honest, specific, evidence-based coaching. Rules:
+You are given the FULL relationship with one contact: every call transcript we have AND the complete two-way message thread (both the contact's replies and Garrett's outgoing messages), in chronological order. Coach the MOST RECENT interaction, but always in the context of the whole relationship — what was said on earlier calls, what the contact has already replied, where things stand now. Rules:
+- The contact's OWN replies are included. Read them. Never say "no response" or "no prior context" when the thread shows otherwise — judge the relationship as it actually is.
 - Ground EVERY point in something actually said. Quote or closely paraphrase. Never invent what "should" have happened from generic sales literature.
 - Be constructive and concrete, not vague ("ask more questions" is useless — say WHICH question, anchored to a real moment).
 - Judge against Amari's style: invite, don't pressure; lead with the client's problem in their words; offer the next concrete step (book a first session, send the booking link) without a hard close.
+- If a recent call was just a voicemail or a short logistics text, that's fine — coach the relationship it sits inside (e.g. an unanswered question the contact raised), not the 12 seconds in isolation.
 - If the interaction was good, say what specifically worked and why — don't manufacture criticism.
-- If there is too little signal to coach (e.g. a 12-second voicemail, one logistics text), say so plainly rather than padding.
+- If there is genuinely too little across the whole relationship to coach, say so plainly rather than padding.
 
 Respond as STRICT JSON only (no prose, no markdown fences) with this shape:
 {
@@ -29,19 +32,26 @@ Respond as STRICT JSON only (no prose, no markdown fences) with this shape:
 }
 Use empty arrays where a section doesn't apply. "signal":"low" when there wasn't enough to meaningfully coach.`;
 
-function buildUserContent({ contactName, transcript, outgoingTexts }) {
+function buildUserContent({ contactName, transcript, thread }) {
+  const who = contactName || "the contact";
   const parts = [];
   parts.push(`Contact: ${contactName || "(unknown)"}`);
   if (transcript) {
-    parts.push(`\n--- CALL TRANSCRIPT ---\n${transcript}`);
+    parts.push(`\n--- CALL TRANSCRIPT(S) (chronological; may include earlier calls) ---\n${transcript}`);
   } else {
-    parts.push(`\n(No call recording/transcript available for this interaction.)`);
+    parts.push(`\n(No call recording/transcript available — coach from the message thread below.)`);
   }
-  if (outgoingTexts && outgoingTexts.length) {
-    const texts = outgoingTexts
-      .map((t) => `[${t.channel} ${t.date}] ${t.body}`)
+  if (thread && thread.length) {
+    const lines = thread
+      .map((m) => {
+        const sender = m.direction === "outbound" ? "Garrett" : who;
+        const date = (m.date || "").slice(0, 10);
+        return `[${date} · ${sender} · ${m.channel}] ${m.body}`;
+      })
       .join("\n");
-    parts.push(`\n--- RECENT OUTGOING TEXTS (Garrett → contact) ---\n${texts}`);
+    parts.push(`\n--- FULL MESSAGE THREAD (both directions, chronological) ---\n${lines}`);
+  } else {
+    parts.push(`\n(No text messages on record with this contact.)`);
   }
   return parts.join("\n");
 }
@@ -70,19 +80,19 @@ function parseCoaching(text) {
 }
 
 // Returns { coaching, error }. coaching is the parsed object on success.
-export async function coachInteraction(env, { contactName, transcript, outgoingTexts }) {
+export async function coachInteraction(env, { contactName, transcript, thread }) {
   const apiKey = env.ANTHROPIC_API_KEY;
   if (!apiKey) return { error: "ANTHROPIC_API_KEY not configured" };
 
-  if (!transcript && !(outgoingTexts && outgoingTexts.length)) {
-    return { error: "nothing to coach (no transcript, no outgoing texts)" };
+  if (!transcript && !(thread && thread.length)) {
+    return { error: "nothing to coach (no transcript, no message thread)" };
   }
 
   const body = {
     model: MODEL,
-    max_tokens: 900,
+    max_tokens: 1500,
     system: SYSTEM,
-    messages: [{ role: "user", content: buildUserContent({ contactName, transcript, outgoingTexts }) }],
+    messages: [{ role: "user", content: buildUserContent({ contactName, transcript, thread }) }],
   };
 
   let res;
