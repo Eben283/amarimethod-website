@@ -103,7 +103,7 @@ const talkedText = (firstName?: string | null) =>
   `So glad we talked${firstName ? ', ' + firstName : ''}! Here's the link to grab a time whenever works for you: https://www.amarimethod.com/partner-session`;
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
-type ActionKind = 'call' | 'text' | 'reback' | 'decide';
+type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide';
 
 interface Derived {
   kind: RowKind;
@@ -244,10 +244,10 @@ type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived; weight?:
 type ActItem = ReplyItem | ProspectItem;
 
 const URGENCY_DOT: Record<ActionKind, string> = {
-  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', decide: 'bg-amber-500',
+  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500',
 };
 const ACTION_LABEL: Record<ActionKind, string> = {
-  reback: 'Re-reach', call: 'Call', text: 'Text', decide: 'Decide',
+  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide',
 };
 
 const ACTIVITY_ICON: Record<PartnerActivityEvent['type'], typeof Phone> = {
@@ -269,6 +269,11 @@ export default function FollowUpPage() {
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
   const [dismissedReplies, setDismissedReplies] = useState<Set<string>>(new Set()); // session-only "no reply needed"
+  // Session-only "I just handled this person" — a send or an outcome action drops
+  // them from Act Now immediately, so you don't see ghosts of people you've worked
+  // until the cadence snapshot catches up (≤3h). Cleared on reload.
+  const [handledIds, setHandledIds] = useState<Set<string>>(new Set());
+  const markHandled = useCallback((id: string) => setHandledIds((s) => { const n = new Set(s); n.add(id); return n; }), []);
   const [query, setQuery] = useState('');
   const [showRubric, setShowRubric] = useState(false);
   const [coachDataAt, setCoachDataAt] = useState<string | null>(null); // freshness stamp
@@ -310,7 +315,7 @@ export default function FollowUpPage() {
   // 1) Unanswered replies — always top. (Messages folded in.)
   const replyItems = useMemo<ReplyItem[]>(() => {
     return conversations
-      .filter((c) => c.needsReply && !isCloser(c.lastMessagePreview) && !dismissedReplies.has(c.contactId))
+      .filter((c) => c.needsReply && !isCloser(c.lastMessagePreview) && !dismissedReplies.has(c.contactId) && !handledIds.has(c.contactId))
       .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
       .map((conv) => ({
         kind: 'reply' as const,
@@ -318,7 +323,7 @@ export default function FollowUpPage() {
         // A non-prospect who messaged is treated as a client; partners are clients too.
         isClient: prospectMap.get(conv.contactId)?.isActivePartner ?? !prospectMap.has(conv.contactId),
       }));
-  }, [conversations, prospectMap, dismissedReplies]);
+  }, [conversations, prospectMap, dismissedReplies, handledIds]);
 
   // Today's weekday drives the call/text weighting + the date bar. 0=Sun … 6=Sat.
   const todayDow = useMemo(() => new Date().getDay(), []);
@@ -334,7 +339,7 @@ export default function FollowUpPage() {
   const prospectActNow = useMemo<ProspectItem[]>(() => {
     const replyIds = new Set(replyItems.map((r) => r.conv.contactId));
     return derived
-      .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId))
+      .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
       .map((r) => {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
@@ -344,7 +349,7 @@ export default function FollowUpPage() {
       // options without the full backlog (hundreds) becoming a wall. Replies are
       // pinned above this and never capped. The rest stays in the data, not the screen.
       .slice(0, ACT_NOW_CAP);
-  }, [derived, replyItems, todayDow]);
+  }, [derived, replyItems, todayDow, handledIds]);
 
   const actItems = useMemo<ActItem[]>(() => [...replyItems, ...prospectActNow], [replyItems, prospectActNow]);
   const setAside = useMemo(() => derived.filter((r) => r.d.kind === 'aside'), [derived]);
@@ -403,13 +408,14 @@ export default function FollowUpPage() {
           ...(TOUCH_LIKE.has(signal) ? { partnerLastSignal: res.signal, partnerLastSignalAt: res.signalAt } : {}),
         };
       }));
+      markHandled(contactId); // you acted → drop the card now, don't wait for the cadence refresh
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to record');
     } finally {
       setBusyId(null);
     }
-  }, [logout]);
+  }, [logout, markHandled]);
 
   // One tap = leave-VM behavior done: sends the pre-written text, THEN records
   // the voicemail outcome. If the text fails, we don't record the VM (so it
@@ -557,6 +563,7 @@ export default function FollowUpPage() {
                 onNoteChange={setNoteDraft}
                 onSaveNote={() => onSaveNote(item.p.contactId)}
                 onDismiss={() => onDismissReply(item.p.contactId)}
+                onHandled={() => markHandled(item.p.contactId)}
               />
             ))}
           </div>
@@ -611,6 +618,7 @@ export default function FollowUpPage() {
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
                       onDismiss={() => onDismissReply(contactId)}
+                      onHandled={() => markHandled(contactId)}
                     />
                   );
                 })}
@@ -654,9 +662,10 @@ interface ActRowProps {
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
   onDismiss: () => void;
+  onHandled: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onTalkedText, onNoteChange, onSaveNote, onDismiss }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onTalkedText, onNoteChange, onSaveNote, onDismiss, onHandled }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -675,6 +684,14 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     return () => { live = false; };
   }, [contactId, isReply]);
   const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
+  // The channel pill MUST match the why-line. The coach record carries both the
+  // why-now AND the channel (written together, so they agree) — so when a coach
+  // record exists, the pill comes from it, not the older signal-derived action
+  // which could disagree (e.g. Dana: coach says "call", derive said "text").
+  // Falls back to the derived action for contacts with no coach record.
+  const coachChannel = coach && coach !== 'loading' ? coach.channel : null;
+  const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
+  const effAction: ActionKind | null = (coachChannel as ActionKind) || derivedAction;
 
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
@@ -683,7 +700,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           <div className="flex items-center gap-2">
             {isReply
               ? <Reply className="h-3.5 w-3.5 shrink-0 text-amari-accent-warm" />
-              : item.d.action && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[item.d.action]}`} />}
+              : effAction && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[effAction]}`} />}
             <span className="truncate font-medium text-amari-charcoal">{name}</span>
             {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
             {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
@@ -706,7 +723,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
         <div className="flex shrink-0 items-center gap-1.5">
           {isReply
             ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
-            : item.d.action && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[item.d.action]}</span>}
+            : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
           {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
         </div>
       </button>
@@ -756,12 +773,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               sits in the quick-action row above, so no duplicate here. */}
           {!isReply && (
             <>
-              <OutreachCoachPanel coach={coach} contactId={contactId} />
+              <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
               <Details p={item.p} />
             </>
           )}
 
-          <CoachPanel contactId={contactId} />
+          <CoachPanel contactId={contactId} onHandled={onHandled} />
 
           {/* activity timeline */}
           <div>
@@ -858,7 +875,7 @@ function Details({ p }: { p: PartnerProspect }) {
 // Takes the coach record as a prop (fetched once by ActRow so the headline can use
 // the same whyNow). The whyNow is shown as the card headline now, so it's not
 // repeated here — just the label + the editable/sendable messages.
-function OutreachCoachPanel({ coach, contactId }: { coach: OutreachCoach | null | 'loading'; contactId: string }) {
+function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCoach | null | 'loading'; contactId: string; onHandled?: () => void }) {
   if (coach === 'loading' || !coach) return null;
   return (
     <div className="rounded-lg border border-amari-accent-warm/40 bg-amari-accent-warm/5 p-3">
@@ -867,19 +884,20 @@ function OutreachCoachPanel({ coach, contactId }: { coach: OutreachCoach | null 
       </p>
       <div className="space-y-1.5">
         {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
-          <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} />
+          <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} onSent={onHandled} />
         ))}
         <EditSendEmail
           contactId={contactId}
           defaultSubject="A note from Garrett"
           defaultBody={coach.message || ''}
+          onSent={onHandled}
         />
       </div>
     </div>
   );
 }
 
-function CoachPanel({ contactId }: { contactId: string }) {
+function CoachPanel({ contactId, onHandled }: { contactId: string; onHandled?: () => void }) {
   const [coach, setCoach] = useState<CallCoach | null | 'loading'>('loading');
   useEffect(() => {
     let live = true;
@@ -899,7 +917,7 @@ function CoachPanel({ contactId }: { contactId: string }) {
       {c.suggestedReply && (
         <div className="mt-2">
           <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
-          <EditSendText contactId={contactId} text={c.suggestedReply} channel="text" />
+          <EditSendText contactId={contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
         </div>
       )}
       {c.whatWorked?.length > 0 && (
@@ -1021,7 +1039,7 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
 
 // Editable message + Send. Garrett can tweak the wording, then send the text right
 // from the card (via the same GHL send path as the VM/Talked chips) — no copy-paste.
-function EditSendText({ contactId, text, channel }: { contactId: string; text: string; channel?: string }) {
+function EditSendText({ contactId, text, channel, onSent }: { contactId: string; text: string; channel?: string; onSent?: () => void }) {
   const [val, setVal] = useState(text);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -1054,6 +1072,7 @@ function EditSendText({ contactId, text, channel }: { contactId: string; text: s
       // deduped re-send returns deduped:true and we skip the touch — no double-count.
       // Fire-and-forget: a failed touch-record must not break the (already sent) UX.
       if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'texted' }).catch(() => {});
+      onSent?.(); // drop the card from Act Now now — you handled them
     } catch {
       setStatus('error');
     } finally {
@@ -1104,7 +1123,7 @@ function bodyToHtml(s: string): string {
 // Editable subject + body + Send email. The email twin of EditSendText — Garrett tweaks
 // the wording, then sends THROUGH GHL (logged on the timeline, traceable) with the same
 // synchronous double-send lock. Body is plain text in the box; converted to HTML on send.
-function EditSendEmail({ contactId, defaultSubject, defaultBody }: { contactId: string; defaultSubject: string; defaultBody: string }) {
+function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { contactId: string; defaultSubject: string; defaultBody: string; onSent?: () => void }) {
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
@@ -1132,6 +1151,7 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody }: { contactId: 
       // Record the send as a touch so the engine sees it. Idempotent via the server's
       // 5-min send-dedupe (deduped:true → skip the touch). Fire-and-forget.
       if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'emailed' }).catch(() => {});
+      onSent?.(); // drop the card from Act Now now — you handled them
     } catch {
       setStatus('error');
     } finally {
