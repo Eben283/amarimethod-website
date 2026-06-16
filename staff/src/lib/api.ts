@@ -588,7 +588,7 @@ export interface OutreachCoach {
   whyNow: string;         // why this person is surfaced right now
   message: string;        // the ready-to-send draft in Garrett's voice
   variations?: string[];  // 2-3 wordings to choose from (message is variations[0])
-  channel?: 'text' | 'email';
+  channel?: 'call' | 'text' | 'email';
   generatedAt?: string;
 }
 

@@ -103,7 +103,7 @@ const talkedText = (firstName?: string | null) =>
   `So glad we talked${firstName ? ', ' + firstName : ''}! Here's the link to grab a time whenever works for you: https://www.amarimethod.com/partner-session`;
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
-type ActionKind = 'call' | 'text' | 'reback' | 'decide';
+type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide';
 
 interface Derived {
   kind: RowKind;
@@ -244,10 +244,10 @@ type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived; weight?:
 type ActItem = ReplyItem | ProspectItem;
 
 const URGENCY_DOT: Record<ActionKind, string> = {
-  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', decide: 'bg-amber-500',
+  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500',
 };
 const ACTION_LABEL: Record<ActionKind, string> = {
-  reback: 'Re-reach', call: 'Call', text: 'Text', decide: 'Decide',
+  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide',
 };
 
 const ACTIVITY_ICON: Record<PartnerActivityEvent['type'], typeof Phone> = {
@@ -675,6 +675,14 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     return () => { live = false; };
   }, [contactId, isReply]);
   const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
+  // The channel pill MUST match the why-line. The coach record carries both the
+  // why-now AND the channel (written together, so they agree) — so when a coach
+  // record exists, the pill comes from it, not the older signal-derived action
+  // which could disagree (e.g. Dana: coach says "call", derive said "text").
+  // Falls back to the derived action for contacts with no coach record.
+  const coachChannel = coach && coach !== 'loading' ? coach.channel : null;
+  const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
+  const effAction: ActionKind | null = (coachChannel as ActionKind) || derivedAction;
 
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
@@ -683,7 +691,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           <div className="flex items-center gap-2">
             {isReply
               ? <Reply className="h-3.5 w-3.5 shrink-0 text-amari-accent-warm" />
-              : item.d.action && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[item.d.action]}`} />}
+              : effAction && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[effAction]}`} />}
             <span className="truncate font-medium text-amari-charcoal">{name}</span>
             {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
             {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
@@ -706,7 +714,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
         <div className="flex shrink-0 items-center gap-1.5">
           {isReply
             ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
-            : item.d.action && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[item.d.action]}</span>}
+            : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
           {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
         </div>
       </button>
