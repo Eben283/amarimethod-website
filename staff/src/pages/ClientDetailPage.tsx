@@ -63,6 +63,19 @@ function noteKind(body: string): string {
   return 'Note';
 }
 
+// A note body can carry an embedded signature as a base64 <img> (the policy-attestation
+// flow does this). Pull the image out so it renders as an actual small image, and strip
+// the raw <img>/base64 markup from the text so we don't dump a wall of base64.
+function splitNoteBody(body: string): { text: string; signature: string | null } {
+  const img = body.match(/<img[^>]*\bsrc=["'](data:image\/[^"']+)["'][^>]*>/i);
+  const signature = img ? img[1] : null;
+  let text = body;
+  if (img) text = text.replace(img[0], '').replace(/Signature:\s*$/im, '').trimEnd();
+  // safety net: collapse any stray base64 image blob to a placeholder
+  text = text.replace(/data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/g, '[signature image]').trim();
+  return { text, signature };
+}
+
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -501,12 +514,18 @@ export default function ClientDetailPage() {
             <p className="sa-empty">No notes yet</p>
           ) : (
             <div className="sa-notes">
-              {client.notes.map((n) => (
-                <div key={n.id} className="sa-note">
-                  <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
-                  <p>{n.body}</p>
-                </div>
-              ))}
+              {client.notes.map((n) => {
+                const nb = splitNoteBody(n.body);
+                return (
+                  <div key={n.id} className="sa-note">
+                    <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
+                    {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
+                    {nb.signature && (
+                      <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
