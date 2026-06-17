@@ -231,6 +231,10 @@ function classify(p) {
   return { state, variant, step: nextStep, totalSteps, channel, isBreakup, due, action, priority };
 }
 
+// Exported for the regression-test harness (test/cadence.regression.test.mjs).
+// Pure functions, no behavior change — they close over the module constants.
+export { buildRow, classify, collapseEvents };
+
 // Contacts with a gifted session upcoming or attended in the last 21d.
 async function loadBookedSet(env) {
   const set = new Set();
