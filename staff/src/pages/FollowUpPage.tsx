@@ -739,6 +739,15 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand">
             <CheckCircle2 className="h-3.5 w-3.5" /> No reply needed
           </button>
+          {/* Categorize the reply itself — a reply is an interaction to triage too
+              (a soft "no" like "Im good" → Not a fit). INTENTIONAL (Eben 2026-06-17):
+              do NOT strip these in a future "declutter" pass. The outbound-send chips
+              (VM/Talked + text) stay prospect-only; these only record an outcome. */}
+          <Chip icon={Ban} label="Not a fit" busy={busy} onClick={() => onOutcome('skip', { note: 'Not a fit' })} />
+          <ActionSelect icon={X} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
+            onPick={(v) => { const o = SETASIDE_OPTS[v]; if (o) onOutcome(o.signal, { note: o.note, days: o.days }); }} />
+          <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
+            onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
         </div>
       )}
 
@@ -798,7 +807,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amari-text-muted" />
                       <span className="shrink-0 text-amari-text-muted">{friendlyDate(e.date)}</span>
                       <span className="capitalize">{e.signal || e.type}{e.direction ? ` · ${e.direction}` : ''}</span>
-                      {e.body && <span className="truncate text-amari-text-muted">— {e.body}</span>}
+                      {e.body && <span className="min-w-0 break-words text-amari-text-muted">— {e.body}</span>}
                     </li>
                   );
                 })}
