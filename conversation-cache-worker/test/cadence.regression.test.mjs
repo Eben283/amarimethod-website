@@ -102,3 +102,27 @@ test('GUARD: a contact set aside in the app (partner_stage=dropped) stays out', 
   ], 'Set Aside', { partnerStage: 'dropped' });
   assert.equal(v.due, false, 'a human "not a fit" must stick');
 });
+
+// I2 — phantom reply: an unsolicited, contentless inbound (a missed call) from a
+// number we never reached out to is NOT a dropped reply. (415)-numbers/JELLY BORDEN.
+test('TARGET phantom-inbound: a contentless inbound CALL with zero outbound is not a dropped reply', () => {
+  const row = buildRow('c1', '(415) 358-1861', [
+    { ts: ago(43), kind: 'call', dir: 'in', text: '' }, // they called once, no transcript, we never reached out
+  ]);
+  assert.equal(row.droppedReplies, 0, 'an unsolicited contentless inbound call must not count as a reply');
+});
+
+test('GUARD: a contentful inbound with zero outbound (a real new lead texting in) STILL counts', () => {
+  const row = buildRow('c1', 'New Lead', [
+    { ts: ago(0.5), kind: 'sms', dir: 'in', text: 'Hi! I saw your post, I am interested in a session.' },
+  ]);
+  assert.equal(row.droppedReplies, 1, 'a real inbound lead with content must still surface');
+});
+
+test('GUARD: a contentless inbound CALL inside an active thread (prior outbound) STILL counts', () => {
+  const row = buildRow('c1', 'Active Thread', [
+    { ts: ago(2), kind: 'sms',  dir: 'out', text: 'Following up — want me to send the link?' },
+    { ts: ago(1), kind: 'call', dir: 'in',  text: '' }, // they called back, worth returning
+  ]);
+  assert.equal(row.droppedReplies, 1, 'a callback inside an active thread is still a reply worth returning');
+});
