@@ -13,6 +13,7 @@ const SESSION_GAP_MS = 2 * 3_600_000;   // touches within 2h = one event
 const HIGH_VOLUME = 10;                  // 10+ outbound events = active client/hot thread, reviewed separately
 const ACTIVE_DAYS = 65;                  // only consider contacts touched this recently
 const DROPPED_MAX_DAYS = 30;
+const COLD_STALE_DAYS = 30;   // cold + quiet longer than this -> park (no endless "send step 2")
 const GIFTED_PARTNER_CALENDAR = "lfsnaiGiLNL2z12pLKDP";
 const BOOKING_SUPPRESS_DAYS = 21;
 
@@ -123,7 +124,34 @@ function median(arr) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+// Low-signal inbound detection — an inbound that does NOT mean "a human is waiting
+// on us." Two kinds: a courtesy sign-off ("thanks!", "we'll be in touch") and an
+// automated reply ("this is X gym, how can we help?"). Conservative by design:
+// anything substantive (a question, a real ask) is NOT low-signal and still surfaces.
+function isCloser(text) {
+  const raw = (text || "").trim();
+  if (!raw) return false; // unreadable (e.g. an inbound CALL has no body) — never silence it; surface it
+  const low = raw.toLowerCase();
+  // A substantive ask is never a closer — keep it (safe direction).
+  if (/\?|\bwhen\b|what time|how much|\bavailable\b|can you|could you|do you|are you|let me know|\bquestion\b|interested|sign me up|\bbook\b|how do|how much/.test(low)) return false;
+  const t = low.replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!t || t.split(" ").length > 12) return false; // too long to be a pure sign-off
+  return /\b(ok|okay|kk|thanks|thank you|thx|ty|great|perfect|sounds good|sounds great|will do|got it|gotcha|cool|awesome|likewise|same here|you too|appreciate|no problem|no worries|talk soon|in touch|be in touch|see you|cheers|good luck|best of luck|all the best|take care|glad (?:you|we) connected|nice (?:talking|connecting)|have a (?:good|great))\b/.test(t);
+}
+function isAutoresponder(text) {
+  const t = (text || "").toLowerCase();
+  if (!t) return false;
+  return /this is .{0,30}\b(gym|fitness|studio|team|clinic|office)\b/.test(t)
+    || /we (saw|noticed|received|got)\b.{0,24}(missed|your)\b.{0,12}(call|message|text)/.test(t)
+    || /how can we help/.test(t)
+    || /thanks for (reaching|contacting|messaging|your message|getting in touch)/.test(t)
+    || /we('| wi)?ll (get back|be in touch|respond)\b.{0,24}(soon|shortly|asap|24|business)/.test(t)
+    || /\b(auto(matic|-?reply|responder)|currently (closed|unavailable|away)|business hours|out of office)\b/.test(t);
+}
+const isLowSignalInbound = (ev) => isCloser(ev && ev.text) || isAutoresponder(ev && ev.text);
+
 // Collapse consecutive same-direction touches within SESSION_GAP_MS into one event.
+// Carries the latest message's kind+text so the classifier can read what was said.
 function collapseEvents(touches) {
   const sorted = [...touches].sort((a, b) => a.ts - b.ts);
   const events = [];
@@ -131,8 +159,10 @@ function collapseEvents(touches) {
     const last = events[events.length - 1];
     if (last && last.dir === t.dir && t.ts - last.lastTs <= SESSION_GAP_MS) {
       last.lastTs = t.ts;
+      if (t.kind) last.kind = t.kind;
+      if (t.text) last.text = t.text;
     } else {
-      events.push({ ts: t.ts, lastTs: t.ts, dir: t.dir });
+      events.push({ ts: t.ts, lastTs: t.ts, dir: t.dir, kind: t.kind, text: t.text });
     }
   }
   return events;
@@ -145,7 +175,7 @@ function buildRow(contactId, name, touches) {
   const outGaps = [];
   for (let i = 1; i < out.length; i++) outGaps.push(out[i].ts - out[i - 1].ts);
   let droppedReplies = 0;
-  for (const im of inb) { if (!out.find((o) => o.ts > im.ts)) droppedReplies++; }
+  for (const im of inb) { if (!out.find((o) => o.ts > im.ts) && !isLowSignalInbound(im)) droppedReplies++; }
   const last = events[events.length - 1];
   const medGap = median(outGaps);
   return {
@@ -200,6 +230,14 @@ function classify(p) {
   const totalSteps = warm ? WARM_STEPS : COLD_STEPS;
   const nextStep = outN + 1;
 
+  // Cold + never engaged + quiet past the cadence window: the sequence stalled
+  // (Garrett never advanced it). Don't keep surfacing "send the next step" months
+  // later — park it. Re-opens on a real reply (routes through reply-waiting above).
+  if (!warm && since > COLD_STALE_DAYS) {
+    return { state: "exhausted", variant: "cold", step: outN, totalSteps: COLD_STEPS, channel: null,
+             due: false, action: "Cold and quiet past the cadence window — parked (re-opens on a reply).", priority: 0 };
+  }
+
   // Cadence spent (the breakup / final step is already sent and they stayed quiet).
   // Eben 2026-06-15: NEVER auto-drop a lead who ENGAGED with us.
   if (outN >= totalSteps) {
@@ -230,6 +268,10 @@ function classify(p) {
   const priority = due ? 60 + Math.min(40, since - wait) : 0;
   return { state, variant, step: nextStep, totalSteps, channel, isBreakup, due, action, priority };
 }
+
+// Exported for the regression-test harness (test/cadence.regression.test.mjs).
+// Pure functions, no behavior change — they close over the module constants.
+export { buildRow, classify, collapseEvents };
 
 // Contacts with a gifted session upcoming or attended in the last 21d.
 async function loadBookedSet(env) {

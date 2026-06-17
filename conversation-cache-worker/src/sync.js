@@ -108,6 +108,7 @@ export async function runSync(env, trigger, full = false) {
       // ("tried to reach" vs "left a voicemail" vs "talked") key off.
       const t = { ts, kind: k, dir: isOut(m) ? "out" : "in" };
       if (k === "call") t.dur = Number(m.meta?.call?.duration) || 0;
+      else { const b = (m.body || "").trim(); if (b) t.text = b.slice(0, 280); } // last-message text → closer/autoresponder detection in cadence
       fresh.push(t);
     }
     if (!fresh.length) return;
@@ -120,9 +121,14 @@ export async function runSync(env, trigger, full = false) {
       const id = `${t.ts}|${t.kind}|${t.dir}`;
       const prev = seen.get(id);
       if (!prev) { seen.set(id, t); added++; }
-      // Backfill duration onto already-cached call touches on a re-sync/reconcile
-      // (older touches were stored before we captured dur).
-      else if (t.dur != null && prev.dur == null) { seen.set(id, { ...prev, dur: t.dur }); }
+      else {
+        // Backfill newer fields (dur, text) onto already-cached touches stored
+        // before we captured them, on a re-sync/reconcile.
+        const patch = {};
+        if (t.dur != null && prev.dur == null) patch.dur = t.dur;
+        if (t.text != null && prev.text == null) patch.text = t.text;
+        if (Object.keys(patch).length) seen.set(id, { ...prev, ...patch });
+      }
     }
     const merged = [...seen.values()].filter((t) => t.ts >= trimCutoff).sort((a, b) => a.ts - b.ts);
     const name = c.contactName || c.fullName || existing.name || c.contactId;
