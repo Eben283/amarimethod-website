@@ -318,15 +318,19 @@ export default function FollowUpPage() {
     return conversations
       .filter((c) => {
         if (!c.needsReply || isCloser(c.lastMessagePreview) || dismissedReplies.has(c.contactId) || handledIds.has(c.contactId)) return false;
-        // Honor a PERSISTED "Not a fit" / not-interested disposition. A reply from
-        // someone you've set aside shouldn't keep topping Act Now across reloads —
-        // the skip writes partner_stage='dropped' in GHL, but the session-only
-        // markHandled didn't survive a refresh (the Steve Grubbs bug, 2026-06-17).
+        // Honor a PERSISTED disposition. A reply from someone you've already set
+        // aside (not-a-fit / snoozed / future-potential) or who's already booked
+        // shouldn't keep topping Act Now on a courtesy line ("Im good.").
+        // Reuse the app's OWN decision (derived.kind, which already folds in every
+        // aside/booked case) instead of a partial stage list — the old
+        // dropped/not-interested-only check missed snoozed, so a deferred contact
+        // kept resurfacing (the Steve Grubbs bug, 2026-06-17).
         const pp = prospectMap.get(c.contactId);
+        const ppKind = (pp?.derived as Derived | undefined)?.kind;
         // ...UNLESS they sent a real question — a set-aside contact who re-engages
         // with a genuine ask must still surface (the only reply surface now; the
         // Messages tab is gone, so suppressing it = silent permanent loss).
-        if (pp && (pp.partnerStage === 'dropped' || pp.partnerLastSignal === 'not-interested') && !QUESTION_RE.test(c.lastMessagePreview || '')) return false;
+        if (pp && (ppKind === 'aside' || ppKind === 'converted') && !QUESTION_RE.test(c.lastMessagePreview || '')) return false;
         return true;
       })
       .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
