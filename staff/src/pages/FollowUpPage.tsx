@@ -315,7 +315,16 @@ export default function FollowUpPage() {
   // 1) Unanswered replies — always top. (Messages folded in.)
   const replyItems = useMemo<ReplyItem[]>(() => {
     return conversations
-      .filter((c) => c.needsReply && !isCloser(c.lastMessagePreview) && !dismissedReplies.has(c.contactId) && !handledIds.has(c.contactId))
+      .filter((c) => {
+        if (!c.needsReply || isCloser(c.lastMessagePreview) || dismissedReplies.has(c.contactId) || handledIds.has(c.contactId)) return false;
+        // Honor a PERSISTED "Not a fit" / not-interested disposition. A reply from
+        // someone you've set aside shouldn't keep topping Act Now across reloads —
+        // the skip writes partner_stage='dropped' in GHL, but the session-only
+        // markHandled didn't survive a refresh (the Steve Grubbs bug, 2026-06-17).
+        const pp = prospectMap.get(c.contactId);
+        if (pp && (pp.partnerStage === 'dropped' || pp.partnerLastSignal === 'not-interested')) return false;
+        return true;
+      })
       .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
       .map((conv) => ({
         kind: 'reply' as const,
