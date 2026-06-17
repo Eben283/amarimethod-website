@@ -211,15 +211,6 @@ function SignedView({
               Missed Appointment Policy
             </a>
           </li>
-          <li className="flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <a
-              href="/member-agreement"
-              className="text-amari-accent-warm underline underline-offset-2"
-            >
-              Practice Member Agreement
-            </a>
-          </li>
         </ul>
       </section>
 
@@ -311,14 +302,6 @@ function SigningForm({
               Missed Appointment Policy →
             </a>
           </li>
-          <li>
-            <a
-              href="/member-agreement"
-              className="text-amari-accent-warm underline underline-offset-2"
-            >
-              Practice Member Agreement →
-            </a>
-          </li>
         </ul>
         <p className="text-xs text-amari-text-muted mt-3">
           Tap a link to open the full text in a new tab.
@@ -347,8 +330,7 @@ function SigningForm({
         </span>
         <SignaturePad onChange={setSignature} className="mt-1 mb-2" />
         <p className="text-xs text-amari-text-muted leading-relaxed">
-          By signing above, I confirm I have read and agree to the Missed Appointment Policy
-          and the Practice Member Agreement.
+          By signing above, I confirm I have read and agree to the Missed Appointment Policy.
         </p>
       </section>
 

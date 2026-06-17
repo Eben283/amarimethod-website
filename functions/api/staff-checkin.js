@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: POST /api/staff-checkin
 // Records the client's signature + acceptance of the Missed Appointment Policy
-// and Practice Member Agreement when they arrive for a session.
+// when they arrive for a session.
 //
 // Flow:
 //   1. Staff JWT auth

@@ -117,11 +117,11 @@ function validateBody(b) {
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }
-  // PMA + Missed Appointment Policy agreement is only required for paid
-  // bookings. Discovery call is free and has no PMA gate.
+  // Missed Appointment Policy agreement is only required for paid
+  // bookings. Discovery call is free and has no policy gate.
   // agreeCommunications is always optional.
   if (!booking.isFreeBooking && !b.agreePolicies) {
-    return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
+    return "Missed Appointment Policy must be agreed to";
   }
   return null;
 }
@@ -272,13 +272,12 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
     `Session: ${booking.title}`,
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
     isFree
-      ? `Free booking: no payment or PMA gate`
+      ? `Free booking: no payment or policy gate`
       : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
     ...(isFree
       ? []
       : [
-          `Practice Member Agreement: yes (clickwrap)`,
           `Missed Appointment Policy: yes (clickwrap)`,
         ]),
     `IP: ${ip || "unknown"}`,
