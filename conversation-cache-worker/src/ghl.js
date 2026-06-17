@@ -103,14 +103,41 @@ export async function ghlFetch(env, path) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ghlFetch with exponential backoff on 429 — direct port of funnel.mjs ghlRetry.
+// Is a GHL error transient (worth retrying) vs. a hard failure (give up)?
+// ghlFetch throws `GHL API <status>: <body>`. We parse the status EXACTLY (the old
+// /429/.test() matched "429" anywhere in the body — e.g. inside a contactId — and
+// could retry a hard 400 forever, or miss the real failure mode). Retry on:
+//   - 408 / 429 / any 5xx               (rate-limit + upstream/gateway)
+//   - 400 whose body is a gateway "Request Timeout" — GHL returns this under load
+//     (this is the bug that silently truncated loadContactMeta's pagination)
+//   - transport-level errors (fetch reject / abort) that never reached an HTTP status
+export function isRetryable(err) {
+  const msg = String(err?.message ?? err ?? "");
+  const m = msg.match(/^GHL API (\d+):/);
+  if (m) {
+    const status = Number(m[1]);
+    if (status === 408 || status === 429 || (status >= 500 && status <= 599)) return true;
+    // The 400 GHL returns under load: {"message":"Request Timeout after 30000ms",...}
+    if (status === 400 && /request timeout|timed?\s*out|gateway timeout/i.test(msg)) return true;
+    return false; // any other HTTP status (401/403/404/real 400) is a hard failure
+  }
+  // No HTTP status → transport error (fetch failed, network, abort) → transient.
+  return /fetch failed|network|timed?\s*out|socket|econn|abort/i.test(msg);
+}
+
+// ghlFetch with exponential backoff on TRANSIENT errors (see isRetryable). Base
+// delay is env-overridable (GHL_RETRY_BASE_MS) so tests can run without real waits.
 export async function ghlRetry(env, path, tries = 6) {
+  const baseMs = Number(env?.GHL_RETRY_BASE_MS) || 600;
+  let lastErr;
   for (let i = 0; i < tries; i++) {
     try {
       return await ghlFetch(env, path);
     } catch (e) {
-      if (!/429/.test(e.message) || i === tries - 1) throw e;
-      await sleep(600 * 2 ** i + Math.floor(600 * Math.random()));
+      lastErr = e;
+      if (!isRetryable(e) || i === tries - 1) throw e;
+      await sleep(baseMs * 2 ** i + Math.floor(baseMs * Math.random()));
     }
   }
+  throw lastErr; // exhausted — never silently return undefined
 }

@@ -291,14 +291,29 @@ async function loadBookedSet(env) {
 
 // Map contactId -> contact meta (disposition + signal fields the app's derive uses).
 // Honors the partner-session-booked tag the way the staff app does (tag wins on stage).
-async function loadContactMeta(env) {
+//
+// Returns { map, complete }. `complete` is the load-bearing flag: if ANY page fails
+// after all retries, or we hit the 12-page cap with more to fetch, complete=false and
+// the caller MUST NOT write a due-list from this partial map — a missing contact reads
+// as partnerStage=undefined, which silently un-gates dropped/booked contacts into the
+// due-list (the Steve-Grubbs-floods-coach:due bug, 2026-06-17).
+export async function loadContactMeta(env) {
   const map = new Map();
   let after = null, afterId = null;
+  let complete = false;
   for (let p = 0; p < 12; p++) {
     let path = `/contacts/?locationId=${LOCATION_ID}&limit=100`;
     if (afterId) path += `&startAfterId=${afterId}&startAfter=${after}`;
     let d;
-    try { d = await ghlRetry(env, path); } catch { break; }
+    try {
+      d = await ghlRetry(env, path);
+    } catch (e) {
+      // A page failed every retry (GHL timeout storm). Do NOT pretend the map is
+      // whole — return what we have flagged incomplete so the caller keeps the
+      // last-known-good snapshot instead of clobbering it with partial dispositions.
+      console.error(`[cadence] loadContactMeta page ${p} failed after retries: ${e?.message || e}`);
+      return { map, complete: false };
+    }
     const cs = d.contacts || [];
     for (const c of cs) {
       const sessionBookedTag = (c.tags || []).includes("partner-session-booked");
@@ -313,9 +328,10 @@ async function loadContactMeta(env) {
       });
     }
     afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
-    if (cs.length < 100 || !afterId) break;
+    if (cs.length < 100 || !afterId) { complete = true; break; }
   }
-  return map;
+  // complete stays false if we fell out by hitting the 12-page cap (still more to fetch).
+  return { map, complete };
 }
 
 export async function deriveCadence(env) {
@@ -335,7 +351,24 @@ export async function deriveCadence(env) {
   })).filter(Boolean);
 
   const booked = await loadBookedSet(env);
-  const metaMap = await loadContactMeta(env);
+  const meta = await loadContactMeta(env);
+  if (!meta.complete) {
+    // Disposition meta is partial (GHL pagination failed after retries). Writing a
+    // due-list now would un-gate dropped/booked contacts. Keep last-known-good.
+    const summary = {
+      ranAt: new Date(start).toISOString(),
+      skipped: true,
+      reason: "incomplete-contact-meta",
+      note: "GHL /contacts pagination failed after retries; kept last-known-good coach:due/cadence (never clobber with partial disposition meta).",
+      activeContacts: activeIds.length,
+      metaLoaded: meta.map.size,
+      durationMs: Date.now() - start,
+    };
+    await kv.put("ops:coach-cadence:lastRun", JSON.stringify(summary));
+    console.error("[cadence] " + summary.note + ` (loaded ${meta.map.size} contacts before failure)`);
+    return summary;
+  }
+  const metaMap = meta.map;
   const skip = (await kv.get("coach:skip", "json")) || {};       // { contactId: {reason, setAt} }
   for (const r of rows) {
     r.hasBooking = booked.has(r.contactId);
