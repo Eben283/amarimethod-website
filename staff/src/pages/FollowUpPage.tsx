@@ -89,19 +89,6 @@ const OTHER_CHANNEL_OPTIONS = [
   { value: 'in-person', label: 'In-person' },
 ];
 
-// The one-tap post-call text — logistics, not a pitch (matches "just left a
-// voicemail"). The "VM + text" chip records the voicemail AND sends this in one
-// tap, so the text is part of the call, not a separate task. Edit here to change
-// what it sends.
-const vmText = (firstName?: string | null) =>
-  `Hey${firstName ? ' ' + firstName : ''}, just left you a voicemail, give me a call back when you get a sec!`;
-
-// "Talked + text" — sent the second a connected call ends, while interest is at
-// its peak (the highest-value post-call text per speed-to-lead research). Records
-// the talk AND sends the link in one tap. Edit here to change wording or link.
-const talkedText = (firstName?: string | null) =>
-  `So glad we talked${firstName ? ', ' + firstName : ''}! Here's the link to grab a time whenever works for you: https://www.amarimethod.com/partner-session`;
-
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
 type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide';
 
@@ -267,9 +254,6 @@ export default function FollowUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'act' | 'aside'>('act');
   const [busyId, setBusyId] = useState<string | null>(null);
-  // Synchronous in-flight guard for the VM/Talked chips — setBusyId is async, so a
-  // double-tap can fire two sends (and two outcome records) before the re-render.
-  const sendingChips = useRef<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
@@ -444,49 +428,6 @@ export default function FollowUpPage() {
     }
   }, [logout, markHandled]);
 
-  // One tap = leave-VM behavior done: sends the pre-written text, THEN records
-  // the voicemail outcome. If the text fails, we don't record the VM (so it
-  // stays actionable). This bundles the money-behavior into the call so it isn't
-  // a separate task competing with the next call.
-  const onVmText = useCallback(async (contactId: string, firstName?: string | null) => {
-    if (sendingChips.current.has(contactId)) return; // sync guard — closes double-tap race
-    sendingChips.current.add(contactId);
-    setBusyId(contactId);
-    try {
-      await sendFollowupText(contactId, vmText(firstName));
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) { logout(); return; }
-      setError(err instanceof Error ? err.message : 'Failed to send text — voicemail not recorded');
-      setBusyId(null);
-      sendingChips.current.delete(contactId);
-      return;
-    }
-    setBusyId(null);
-    await onOutcome(contactId, 'voicemail');
-    sendingChips.current.delete(contactId);
-  }, [onOutcome, logout]);
-
-  // Same one-tap pattern for a connected call: send the link immediately (peak
-  // interest), THEN record the talk. The day-based cadence below stays the LATER
-  // re-engagement layer; this is the immediate post-call text.
-  const onTalkedText = useCallback(async (contactId: string, firstName?: string | null) => {
-    if (sendingChips.current.has(contactId)) return; // sync guard — closes double-tap race
-    sendingChips.current.add(contactId);
-    setBusyId(contactId);
-    try {
-      await sendFollowupText(contactId, talkedText(firstName));
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) { logout(); return; }
-      setError(err instanceof Error ? err.message : 'Failed to send text, talk not recorded');
-      setBusyId(null);
-      sendingChips.current.delete(contactId);
-      return;
-    }
-    setBusyId(null);
-    await onOutcome(contactId, 'talked');
-    sendingChips.current.delete(contactId);
-  }, [onOutcome, logout]);
-
   const onDismissReply = useCallback((contactId: string) => {
     setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
   }, []);
@@ -585,8 +526,6 @@ export default function FollowUpPage() {
                 noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
                 onToggle={() => toggleExpand(item.p.contactId)}
                 onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
-                onVmText={() => onVmText(item.p.contactId, item.p.firstName)}
-                onTalkedText={() => onTalkedText(item.p.contactId, item.p.firstName)}
                 onNoteChange={setNoteDraft}
                 onSaveNote={() => onSaveNote(item.p.contactId)}
                 onDismiss={() => onDismissReply(item.p.contactId)}
@@ -640,8 +579,6 @@ export default function FollowUpPage() {
                       noteDraft={expandedId === contactId ? noteDraft : ''}
                       onToggle={() => toggleExpand(contactId)}
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
-                      onVmText={() => { if (item.kind === 'prospect') onVmText(item.p.contactId, item.p.firstName); }}
-                      onTalkedText={() => { if (item.kind === 'prospect') onTalkedText(item.p.contactId, item.p.firstName); }}
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
                       onDismiss={() => onDismissReply(contactId)}
@@ -684,15 +621,13 @@ interface ActRowProps {
   noteDraft: string;
   onToggle: () => void;
   onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
-  onVmText: () => void;
-  onTalkedText: () => void;
   onNoteChange: (v: string) => void;
   onSaveNote: () => void;
   onDismiss: () => void;
   onHandled: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onVmText, onTalkedText, onNoteChange, onSaveNote, onDismiss, onHandled }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote, onDismiss, onHandled }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -768,8 +703,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           </button>
           {/* Categorize the reply itself — a reply is an interaction to triage too
               (a soft "no" like "Im good" → Not a fit). INTENTIONAL (Eben 2026-06-17):
-              do NOT strip these in a future "declutter" pass. The outbound-send chips
-              (VM/Talked + text) stay prospect-only; these only record an outcome. */}
+              do NOT strip these in a future "declutter" pass. These only record an
+              outcome; no chip sends a text (the only text sender is the inline field). */}
           <Chip icon={Ban} label="Not a fit" busy={busy} onClick={() => onOutcome('skip', { note: 'Not a fit' })} />
           <ActionSelect icon={X} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
             onPick={(v) => { const o = SETASIDE_OPTS[v]; if (o) onOutcome(o.signal, { note: o.note, days: o.days }); }} />
@@ -785,10 +720,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
           </a>
-          <Chip icon={Send} label="VM + text" busy={busy} onClick={onVmText} />
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
-          <Chip icon={Send} label="Talked + text" busy={busy} onClick={onTalkedText} />
-          <Chip icon={Phone} label="Talked (no text)" busy={busy} onClick={() => onOutcome('talked')} />
+          <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
           {/* records which link Garrett sent (no send) — note shows in activity */}
           <ActionSelect icon={MessageSquare} label="Sent link…" busy={busy} options={LINK_SENT_OPTIONS}
             onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
