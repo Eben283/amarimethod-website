@@ -122,20 +122,18 @@ export async function runSync(env, trigger, full = false) {
 
     const key = `conv:${c.contactId}`;
     const existing = (await kv.get(key, "json")) || { contactId: c.contactId, touches: [] };
-    const seen = new Map((existing.touches || []).map((t) => [`${t.ts}|${t.kind}|${t.dir}`, t]));
+    // Dedup by ts|kind (NOT dir): the same message is one touch. Keying on dir too
+    // meant a corrected direction (e.g. touchDir re-stamping a campaign email
+    // out→in) created a DUPLICATE touch instead of replacing the stale one. A fresh
+    // fetch is authoritative for dir; preserve dur/text across the merge. Distinct
+    // messages don't collide (ms timestamps), so this won't merge a real in/out pair.
+    const seen = new Map((existing.touches || []).map((t) => [`${t.ts}|${t.kind}`, t]));
     let added = 0;
     for (const t of fresh) {
-      const id = `${t.ts}|${t.kind}|${t.dir}`;
+      const id = `${t.ts}|${t.kind}`;
       const prev = seen.get(id);
       if (!prev) { seen.set(id, t); added++; }
-      else {
-        // Backfill newer fields (dur, text) onto already-cached touches stored
-        // before we captured them, on a re-sync/reconcile.
-        const patch = {};
-        if (t.dur != null && prev.dur == null) patch.dur = t.dur;
-        if (t.text != null && prev.text == null) patch.text = t.text;
-        if (Object.keys(patch).length) seen.set(id, { ...prev, ...patch });
-      }
+      else seen.set(id, { ...prev, ...t, dur: t.dur ?? prev.dur, text: t.text ?? prev.text }); // fresh wins on dir; keep dur/text
     }
     const merged = [...seen.values()].filter((t) => t.ts >= trimCutoff).sort((a, b) => a.ts - b.ts);
     const name = c.contactName || c.fullName || existing.name || c.contactId;
