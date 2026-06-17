@@ -201,14 +201,17 @@ function deriveActNow(p, elig) {
     // No follow-up date = still snoozed (NOT due). Defaulting to true here inverted
     // the snooze — a future-potential lead with no date resurfaced at urgency 92 forever.
     const due = p.partnerFollowupAt ? new Date(p.partnerFollowupAt).getTime() <= Date.now() : false;
-    return due ? { kind: "act", urgency: 92, action: "reback", why: "Snoozed lead is back — worth another look." }
+    return due ? { kind: "act", urgency: 92, warmth: 2, action: "reback", why: "Snoozed lead is back — worth another look." }
                : { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Snoozed" };
   }
   const d = daysSinceDate(lastTouchAt(p));
   const sig = normalizeSignal(p.partnerLastSignal);
   const tc = p.touchCount ?? 0;
-  if (!sig && tc === 0) return { kind: "act", urgency: 45, action: "call", why: "New lead — give them a call once you're through your follow-ups." };
-  if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", urgency: 38, action: "decide", why: `You've reached out ${tc} times with nothing back. Give it one more try, or let it go.` };
+  // Warmth tier (engagement): 2=they replied/talked, 1=we reached out one-way, 0=never
+  // touched. The UI adds a small bonus so an engaged contact edges out a same-urgency
+  // one we only left a voicemail for (the hannah-above-abraham fix).
+  if (!sig && tc === 0) return { kind: "act", urgency: 45, warmth: 0, action: "call", why: "New lead — give them a call once you're through your follow-ups." };
+  if (tc >= END_OF_ROPE_TOUCHES) return { kind: "act", urgency: 38, warmth: 1, action: "decide", why: `You've reached out ${tc} times with nothing back. Give it one more try, or let it go.` };
   const due = (t) => d === null || d >= t;
   // Touch-count-primary resurfacing (touched-once rises) + a small FRESHEST-FIRST
   // recency tiebreak: within a tier of same-urgency cards, the just-due/warm ones
@@ -216,14 +219,14 @@ function deriveActNow(p, elig) {
   const fb = freqBoost(tc) + (d == null ? 0 : (60 - Math.min(d, 60)) * 0.1);
   const waiting = (label) => ({ kind: "waiting", urgency: 0, why: label, action: null });
   switch (sig) {
-    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62 + fb, action: "call", why: `Couldn't reach them last time — try them again today.` } : waiting("Just called — give it a day.");
-    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, action: "text", why: `You called ${agoLabel(d)} and haven't heard back. A text's worth a shot — it's more likely to get seen.` } : waiting("Called — give it a few days.");
-    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
-    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
+    case "no-answer": return due(NOANSWER_RETRY_DAYS) ? { kind: "act", urgency: 62 + fb, warmth: 1, action: "call", why: `Couldn't reach them last time — try them again today.` } : waiting("Just called — give it a day.");
+    case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, warmth: 1, action: "text", why: `You called ${agoLabel(d)} and haven't heard back. A text's worth a shot — it's more likely to get seen.` } : waiting("Called — give it a few days.");
+    case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, warmth: 2, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
+    case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, warmth: 2, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
     case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
-      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
+      return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, warmth: 1, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
     case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
-    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50 + fb, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");
+    default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50 + fb, warmth: 1, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");
   }
 }
 
@@ -235,10 +238,15 @@ function deriveActNow(p, elig) {
 function cadenceVerdict(c) {
   if (c.state === "drip-only") return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Email/quiz drip only" };
   const channel = c.channel || "text";            // call / text / email
+  // Warmth tier (engagement), so the UI can let someone who actually replied/talked
+  // edge out a same-urgency contact we only one-way-touched. 2=engaged, 1=reached
+  // out, 0=never touched. A cadence contact has always been touched (min 1).
+  const engaged = (Number(c.inCount) || 0) > 0 || c.talkedCall || (Number(c.droppedReplies) || 0) > 0;
   return {
     kind: c.due ? "act" : "waiting",
     due: !!c.due,
     urgency: Number(c.priority) || 0,             // one priority scale (0-127; reply-waiting tops it)
+    warmth: engaged ? 2 : 1,
     action: c.due ? channel : null,               // pill fallback + day-weighting (call/text/email)
     why: c.action || "Needs follow-up",           // the cadence's human action sentence
     channel,

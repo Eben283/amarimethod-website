@@ -111,6 +111,10 @@ interface Derived {
   why: string;
   action: ActionKind | null;
   asideReason?: string;
+  // Engagement tier from the server (2=replied/talked, 1=we reached out, 0=never
+  // touched). A small bonus lets an engaged contact edge out a same-urgency one we
+  // only one-way-touched. Optional for back-compat with cards generated pre-2026-06-17.
+  warmth?: number;
 }
 
 // ── Day-of-week outreach weighting ──────────────────────────────────────────
@@ -355,13 +359,19 @@ export default function FollowUpPage() {
   //    (above) stay pinned on top regardless.
   const prospectActNow = useMemo<ProspectItem[]>(() => {
     const replyIds = new Set(replyItems.map((r) => r.conv.contactId));
+    // Engagement bonus: a contact who actually replied/talked (warmth 2) edges out a
+    // same-urgency one we only one-way-touched (warmth 1), and a never-touched new
+    // lead (warmth 0) sits a touch lower. Small on purpose — it breaks near-ties, it
+    // never jumps a real urgency gap (so a due one-touch still beats a cooling warm one).
+    const warmthBonus = (w?: number) => (w === 2 ? 10 : w === 0 ? -5 : 0);
+    const score = (d: Derived, weight: number) => d.urgency + weight + warmthBonus(d.warmth);
     return derived
       .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
       .map((r) => {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
-      .sort((a, b) => (b.d.urgency + (b.weight ?? 0)) - (a.d.urgency + (a.weight ?? 0)))
+      .sort((a, b) => score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0))
       // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
       // options without the full backlog (hundreds) becoming a wall. Replies are
       // pinned above this and never capped. The rest stays in the data, not the screen.
