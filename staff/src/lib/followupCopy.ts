@@ -60,7 +60,12 @@ const BY_CATEGORY: Record<string, string[]> = {
 };
 
 export function suggestedTexts(p: PartnerProspect): string[] {
-  const first = (p.firstName || p.fullName || '').trim().split(/\s+/)[0] || 'there';
+  // Greeting guard: an org's brand token often sits in the firstName field
+  // ("PURE", "Punch", "Tribe", "mx3", "Local's", "The Culture") → "Hi PURE,". Only
+  // greet by a token that looks like a real first name; otherwise use "there".
+  const tok = (p.firstName || p.fullName || '').trim().split(/\s+/)[0] || '';
+  const ORG_WORDS = /^(the|a|an|fit|fitness|gym|studio|club|performance|training|strength|crossfit|pilates|yoga|wellness|raise|punch|pure|tribe|local|bar|house|lab|co|sf|llc|inc|method|works|bodyworks|culture)$/i;
+  const first = (/^[A-Z][a-z]+$/.test(tok) && !ORG_WORDS.test(tok)) ? tok : 'there';
   const fill = (s: string) => s.replace(/\{first\}/g, first);
   const set = BY_CATEGORY[(p.category as string) || ''];
   return (set && set.length ? set : GENERIC_FOLLOWUP).map(fill);

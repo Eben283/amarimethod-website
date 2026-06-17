@@ -219,14 +219,15 @@ function ago(d: number | null): string {
 // Not every inbound message needs a reply. "Thanks", "we'll be in touch", 👍 are
 // conversation-closers — terminal, no action. GHL flags any inbound-last message
 // as needs-reply, so we filter closers out of the urgent tier. Imperfect on
-// purpose — backed by a one-tap "No reply needed" on each row, and the Messages
-// tab still shows everything as the safety net.
+// purpose — backed by a one-tap "No reply needed" on each row. (The old Messages
+// tab is gone, so a real QUESTION is never suppressed — here or in the dropped-skip
+// below — via QUESTION_RE.)
 const CLOSER_RE = /\b(thank you|thanks|thx|ty|appreciate it|much appreciated|sounds good|sounds great|will do|we'?ll be in touch|be in touch|likewise|same to you|talk soon|see you|see ya|no worries|got it|perfect|great|awesome|wonderful)\b/i;
 const QUESTION_RE = /\?|\b(can|could|would|when|what|where|how|why|which|do you|are you|is there|reschedul|cancel|change|price|cost|available|book|question)\b/i;
 function isCloser(text: string | null | undefined): boolean {
-  if (!text) return true;            // empty/unknown inbound = nothing actionable
+  if (!text) return false;           // empty (e.g. an inbound call/MMS, no body) — surface it, never silently suppress
   const t = text.trim();
-  if (!t) return true;
+  if (!t) return false;
   if (t.length > 80) return false;   // long messages probably say something
   if (QUESTION_RE.test(t)) return false; // a question always needs a reply
   return CLOSER_RE.test(t);
@@ -322,7 +323,10 @@ export default function FollowUpPage() {
         // the skip writes partner_stage='dropped' in GHL, but the session-only
         // markHandled didn't survive a refresh (the Steve Grubbs bug, 2026-06-17).
         const pp = prospectMap.get(c.contactId);
-        if (pp && (pp.partnerStage === 'dropped' || pp.partnerLastSignal === 'not-interested')) return false;
+        // ...UNLESS they sent a real question — a set-aside contact who re-engages
+        // with a genuine ask must still surface (the only reply surface now; the
+        // Messages tab is gone, so suppressing it = silent permanent loss).
+        if (pp && (pp.partnerStage === 'dropped' || pp.partnerLastSignal === 'not-interested') && !QUESTION_RE.test(c.lastMessagePreview || '')) return false;
         return true;
       })
       .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
