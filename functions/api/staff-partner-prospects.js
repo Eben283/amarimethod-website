@@ -227,6 +227,25 @@ function deriveActNow(p, elig) {
   }
 }
 
+// The conversation engine's verdict for a contact the cadence knows about — the
+// SINGLE authority for who's due, how urgent, and on which channel. Used for both
+// partner prospects and non-partner leads, so the app and the coach pipeline share
+// one brain. deriveActNow is only for never-contacted partners (no cadence record)
+// + the partner-stage gates (booked / dropped / snoozed / set-aside).
+function cadenceVerdict(c) {
+  if (c.state === "drip-only") return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Email/quiz drip only" };
+  const channel = c.channel || "text";            // call / text / email
+  return {
+    kind: c.due ? "act" : "waiting",
+    due: !!c.due,
+    urgency: Number(c.priority) || 0,             // one priority scale (0-127; reply-waiting tops it)
+    action: c.due ? channel : null,               // pill fallback + day-weighting (call/text/email)
+    why: c.action || "Needs follow-up",           // the cadence's human action sentence
+    channel,
+    source: "cadence",
+  };
+}
+
 // Lookup Garrett's sheet row for a contact by phone or email match.
 function lookupSheetRow(contact) {
   const phoneNorm = normalizePhone(contact.phone);
@@ -438,10 +457,20 @@ export async function onRequestGet(context) {
       console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
     }
     for (const p of prospects) {
-      p.derived = deriveActNow(p, {
-        hasBooking: cadenceMap.get(p.contactId)?.hasBooking,
-        skipped: skipSet.has(p.contactId),
-      });
+      const c = cadenceMap.get(p.contactId);
+      const skipped = skipSet.has(p.contactId);
+      // ONE engine: partner-stage gates (booked / dropped / snoozed / set-aside) and
+      // never-contacted partners go through deriveActNow; every conversation-active
+      // contact the cadence knows uses the cadence verdict (its due-decision, priority
+      // rank, and channel) — so the worklist and the coach pipeline share one brain.
+      const stageGated = skipped
+        || p.isActivePartner
+        || p.partnerStage === "partner" || p.partnerStage === "session-booked"
+        || p.partnerStage === "dropped" || p.partnerStage === "future-potential"
+        || !!c?.hasBooking;
+      p.derived = (c && !stageGated)
+        ? cadenceVerdict(c)
+        : deriveActNow(p, { hasBooking: c?.hasBooking, skipped });
     }
 
     // Follow-Up = EVERYONE who needs follow-up, not just partner-tagged (Eben 2026-06-15:
@@ -470,16 +499,8 @@ export async function onRequestGet(context) {
         touchCount: Number(c.outCount) || 0,
         sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
         isLead: true,
-        // Verdict from the cadence engine (the UI reads p.derived; these have no partner fields).
-        // `urgency` is REQUIRED: the UI ranks Act Now by d.urgency and caps at 30, so a lead
-        // with no urgency NaN-sorts off the bottom and never appears (the bug that hid Wendy).
-        // The cadence `priority` (0-127; reply-waiting tops it) is the right rank — pass it through.
-        derived: {
-          kind: c.due ? "act" : "waiting", due: !!c.due,
-          urgency: Number(c.priority) || 0,
-          action: c.action || "Follow up", why: c.action || "Needs follow-up",
-          channel: c.channel || null, source: "cadence-lead",
-        },
+        // Same single cadence verdict as conversation-active partners (one brain).
+        derived: cadenceVerdict(c),
       });
     }
 
