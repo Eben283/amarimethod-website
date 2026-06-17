@@ -175,7 +175,18 @@ function buildRow(contactId, name, touches) {
   const outGaps = [];
   for (let i = 1; i < out.length; i++) outGaps.push(out[i].ts - out[i - 1].ts);
   let droppedReplies = 0;
-  for (const im of inb) { if (!out.find((o) => o.ts > im.ts) && !isLowSignalInbound(im)) droppedReplies++; }
+  for (const im of inb) {
+    // A "dropped reply" = an inbound with no outbound after it that we should answer.
+    // EXCLUDE an unsolicited, contentless inbound when we never reached out (outCount 0)
+    // — e.g. a stale missed call from a number we never contacted. That's not a reply
+    // to our outreach; counting it makes a phantom reply-waiting. A contentful inbound
+    // (a real new lead texting in) and any inbound inside an active thread (prior
+    // outbound exists — e.g. a call worth returning) BOTH still count.
+    const contentless = !(im.text && im.text.trim());
+    const hasPriorOut = out.some((o) => o.ts < im.ts);
+    if (contentless && !hasPriorOut) continue;
+    if (!out.find((o) => o.ts > im.ts) && !isLowSignalInbound(im)) droppedReplies++;
+  }
   const last = events[events.length - 1];
   const medGap = median(outGaps);
   return {
