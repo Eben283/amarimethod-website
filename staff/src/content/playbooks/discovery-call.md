@@ -1,24 +1,29 @@
 ---
 title: Discovery Call Playbook
-status: rebuilt-v2-2026-06-02
-last_updated: 2026-06-02
-voice_source: amari/transcripts/Questions 1-10, 11-16, 12-26 (Garrett describing the work in his own voice); Recording 2474 (Garrett with a partner/friend); Recording 2490 (gym-owner pitch)
-gaps: no actual disco call recording yet — Eben enabled call recording 2026-06-02; next 2–3 real calls swap in for the ⚠️ sections
+status: revenue-roadmap-v3-2026-06-16
+last_updated: 2026-06-16
+voice_source: amari/transcripts/calls-pulled/2026-06-12_roger-reinitz (Wendy — the one real 14-min client discovery call); garrett-voice-profile.md (built from real recordings); Questions 1-10/11-16/12-26 (Garrett on the work); Recording 2474, 2490
+strategy_source: NotebookLM extraction of SPIN / Gap Selling / Never Split the Difference / Lost Art of Closing / To Sell Is Human / SalesCode / Selling Made Simple; amari/strategy/sharpen-focus-backlog.md; amari/strategy/guarantee.md
+gaps: still only ONE real disco recording (Wendy). Swap the ⚠️ lines for verbatim as more real calls come in.
 ---
 
-# Discovery Call Playbook (v2)
+# Discovery Call Playbook (v3 — revenue roadmap)
 
-15-min call with a prospective client. Goal: hear them, name what's going on, recommend a tier, book it on the call.
+15-min call with someone in pain deciding whether to pay for a session. This isn't a script to recite — it's the path that does right by them *and* makes the practice money. Those are the same thing here: the honest recommendation for chronic pain is usually the series, and the guarantee makes it safe for them to say yes.
 
-**About v2.** Same outline as v1 — Garrett confirmed the structure held after the 6/1 partner disco. Words rebuilt against the transcript corpus. *Italics with a recording citation* = verbatim Garrett. ⚠️ = still inferred, replace once we have a real disco call recorded.
+**The job of this call:** understand them → name what's going on → recommend what they actually need → **book and pay before they hang up.**
+
+**The one rule that matters most — book it on the call.** Garrett's real disco calls die at the booking step, not the selling step. Wendy was a clear yes, then the call ended with "go make the appointment yourself" and she never did (broken computer, cost on her mind, life got in the way). A ready yes that books *later* mostly doesn't book. Staying on the line to book it isn't pushy — it's the most helpful thing you can do.
+
+**Not aggressive.** No "don't let them off the phone." No urgency tricks. You recommend what's right, you remove the risk with the guarantee, and you're genuinely willing to walk away when it's not a fit. That integrity is what earns the series, the repeat visits, and the referrals.
+
+*Italics with a recording citation = verbatim Garrett. ⚠️ = still inferred, replace once we have more real disco calls.*
 
 ---
 
 ## 0. Frame the call (~60 sec)
 
-State the order so they're not waiting for a pitch.
-
-⚠️ Working version — needs Garrett-voice variant from a real call:
+State the order so they're not braced for a pitch.
 
 > "Tell me what's going on. I'll listen. Then I'll tell you what I think, and what I'd recommend."
 
@@ -28,20 +33,20 @@ One line. Don't pad — you have 15 minutes.
 
 ## 1. Listen (1–6 min)
 
-Hear them. Trust comes from feeling heard before anything else.
+Hear them. Trust comes from feeling heard before anything else. On the Wendy call this was most of the call — she talked, he mostly listened and reflected.
 
 **Listen for:**
-- Body parts — specific ("right knee," "between the shoulder blades")
+- Body parts — specific ("low back," "neck," "between the shoulder blades")
 - How long, when it started, what triggered it
 - What they've tried + why it stopped helping
-- What they can't do anymore that they care about ("can't sit through meetings," "can't sleep on my side," "can't pick up my kid")
-- Emotional words — "fed up," "scared," "at the end of my rope"
+- What they can't do anymore that they care about ("can't get out of bed for a couple hours," "can't sit through meetings," "can't ride my bike")
+- Emotional words — "fed up," "scared," "at the end of my rope," "it's a nightmare"
 
-**While they talk:** don't interrupt. Minimal interjections — *"keep going," "and then what?"*
+**While they talk:** don't interrupt. Garrett's real minimal interjections (Wendy call): *"I hear you."* / *"Of course, of course."* / *"That's a nightmare."*
 
 After they finish, up to 3 clarifiers (not a 4th — that's an intake form):
 
-1. **Timing.** Morning, after activity, end of day, or constant?
+1. **Where / what.** 🎙️ *"Is it low back?"* — Recording 6/12. Short, confirms the primary site.
 2. **What's been tried.** What shifted, what didn't?
 3. **Why now.** Why now instead of six months ago?
 
@@ -49,174 +54,175 @@ After they finish, up to 3 clarifiers (not a 4th — that's an intake form):
 
 ---
 
-## 2. Reflect (8–10 min)
+## 2. Reflect (6–8 min)
 
-Mirror back the specifics they used. Body part, duration, what they tried, functional impact, why now. End with *"is that about right?"* so they can correct.
+Mirror back the specifics they used — body part, duration, what they tried, functional impact, why now. End with *"is that about right?"* so they can correct.
 
 > "OK so what I'm hearing — [body part / duration] → [what they tried + why it stopped helping] → [what they can't do that matters] → [why now]. Is that about right?"
 
 If they correct you, that's the trust signal. Listen, re-mirror.
 
 **Don't:**
-- Say "I hear you" — therapist-language. Mirror with their specifics instead.
+- Say "I hear you" as a *reflection* — mirror with their specifics instead (it's fine as a quick interjection while they talk).
 - Interpret yet ("sounds like SI joint…") — you'll be wrong and it kills credibility.
 
 ---
 
-## 3. Diagnose + reframe (10–12 min)
+## 3. Diagnose + reframe (8–10 min)
 
-This is the section where Garrett has the most voice signal. Use his actual phrasing — don't author over it.
+The most voice signal Garrett has. Use his actual phrasing — don't author over it.
 
 **Ask permission first:**
 
 > "OK — want to hear what I think?"
 
-Wait for yes.
+**Name what's going on.** Pick whichever lands — don't recite all of them:
 
-**Name what's going on.** Garrett's actual lines from Questions 1-10/11-16/12-26 — use whichever lands in the moment, don't recite all three:
+- 🎙️ *"I like to make this very simple. Your body is out of balance. That's what it is."* — Recording 6/12
+- 🎙️ *"The body is asking for balance. It doesn't want surgery. It doesn't want steroid injections. It wants balance."* — Questions 11-16
+- 🎙️ *"The reason you're in pain is because something in your body is working too hard. And the reason it's working too hard is because other things aren't working enough."* — Questions 1-10
 
-- 🎙️ *"Here's the thing I want everyone to know. The body is simple. The body is asking for balance. That is it."*
-- 🎙️ *"Your body's out of balance and it's yelling at you because it wants balance. It doesn't want surgery. It doesn't want steroid injections. It wants balance."*
-- 🎙️ *"The reason you have tension, the reason you're in pain, the reason you're experiencing dysfunction is because something in your body is working too hard. And the reason it's working too hard is because other things aren't working enough."*
+The concept to land: one area is overworking, another isn't pulling its share; the painful spot is rarely the cause; what they've tried treated the area that hurts, not the pattern overloading it.
 
-The concept to land:
-- One area is overworking. Another isn't pulling its share.
-- The painful area is rarely the cause — it's where the overload shows.
-- What they've tried treated the area that hurts, not the pattern overloading it.
+**Why you, if they're "healing themselves"** (Wendy opened with this herself):
 
-**Don't reach for a rehearsed metaphor** (suspension bridge etc.). If a metaphor comes live, use it. If it doesn't, name it plainly.
+- 🎙️ *"Michael Jordan had a coach. You can't see your blind spot, and you can't be in your own body. I'm your guide, I guide you through the protocols."* — Recording 6/12
 
-**Reframe what they've tried** — only modalities THEY brought up. Garrett's actual reframes:
+**Reframe what they've tried** — only modalities THEY brought up. Garrett distinguishes, he never trashes:
 
-| What they tried | Garrett's concept |
+| What they tried | Garrett's actual line |
 |---|---|
+| Active release / bodywork | 🎙️ *"I did active release too. The thing is with this, I'm showing your body how to rebalance itself."* — Recording 6/12 |
 | Chiro (cracking) | 🎙️ *"The client is passive, laying on a table, and the chiropractor is doing all the work. I want you to be participatory in the entire process."* — Questions 12-26 |
-| PT | 🎙️ *"Most physical therapy just talks about musculature imbalances… if somebody is already too active in their body, they're just going to keep building muscle around a structure that's not sound."* — Questions 12-26 |
-| Massage | 🎙️ *"If someone gets a deep tissue massage, that's going to throw off the intelligence of the body. The body's going to think — wait, I shouldn't have slack in that muscle. The way this person holds their body, I need tension in that muscle, not slack."* — Questions 12-26 |
+| PT | 🎙️ *"Physical therapy is too focused on the active system, the musculature."* — voice profile |
 | Painkillers | 🎙️ *"You're shooting the messenger. When you're out of balance, you should be in pain."* — Questions 12-26 |
-| Surgery | 🎙️ *"It's looking at you like you're Frankenstein. It's all biomechanics, and even on that level it doesn't work."* — Recording 2474. ⚠️ Said to a friend; cold-prospect tone needs softening |
 
-**Lead with the both/and**, not the reframe:
-
-- 🎙️ *"You can get pain relief with chiropractors and physical therapists, and of course painkillers. Of course. But you're not going to get balance."* — Questions 12-26
-- 🎙️ *"I'm not looking for relief. I'm looking for function. Function, function, function."* — Questions 12-26
-
-**~30 seconds on what Amari is.** Use whichever of these comes naturally:
+**~30 seconds on what Amari is** — pick one:
 
 - 🎙️ *"I've developed protocols that teach people how to correct their own bodily imbalances at home or on the road."* — Questions 1-10
-- 🎙️ *"I'm not a personal trainer. You're not going to be holding a two-minute plank with me."* — Questions 1-10
+- 🎙️ *"We're having you see in real time what rebalancing your body feels like. This is about feeling good."* — Recording 6/12
 - 🎙️ *"My job is to get you back to balance, back to neutral. How you mess yourself up is up to you."* — Questions 1-10
-- 🎙️ *"I'm a guide. I'm a facilitator."* — Recording 2474
-- 🎙️ *"Michael Jordan needs a coach. Everyone has a blind spot. So I'm directing them."* — Questions 11-16
-
-Don't lift marketing copy. Don't run all five — pick one or two.
 
 **Don't:**
-- Use the word "fix" — 🎙️ *"You don't fix a human body. You fix a kitchen sink. You fix a car."* — Questions 11-16
+- Use the word "fix" — 🎙️ *"You don't fix a human body. You fix a kitchen sink."* — Questions 11-16
 - Mention Network Spinal, chiropractic lineage, modality names
 - Lead with credentials — earned position, doesn't need re-asserting
 
 ---
 
-## 4. Recommend + book (12–14 min)
+## 4. Recommend + book (10–14 min) — the revenue core
 
-Make the call FOR them. Don't ask "do you want to book?" — that puts the work back on them.
+This is where the money is won or lost. Three moves, in order: **recommend the right tier → de-risk it with the guarantee → book and pay on the call.**
 
-### Stakes (~30 sec) — before the recommendation
+### Stakes (~20 sec) — before the recommendation
 
-Pull from what they actually said. Two halves:
-- **If they keep doing what they're doing** — name the trajectory (6 months / a year out). Use specifics they mentioned.
-- **What they get back** — name the functional moments they said mattered to them.
+Pull from what they actually said. Two halves: where they're headed if nothing changes (use their specifics), and what they get back (the functional moments they named — "get out of bed without losing two hours," "ride my bike again"). Not fear-mongering — just reflecting their own trajectory back.
 
-Optional 3rd beat: who their condition is affecting (spouse, kids, team) — only if they brought it up.
+### Recommend the right tier — and for chronic pain that's the series
 
-Not fear-mongering — just reflecting back the trajectory they already described.
+Most people on this call have *chronic* pain — that's the whole Amari thesis (imbalance, not injury). One session can't retrain a pattern that's been building for years, so the honest recommendation is the series. This is exactly what Garrett already does naturally:
 
-### Recommend
+- 🎙️ *"If you do an eight session package, which I definitely recommend, that brings it down to 162 a session. And that includes the first visit. With that eight pack you get my living library videos, all my protocols on video, about five videos per protocol, that usually runs 350 by itself, included."* — Recording 6/12
 
-> "Based on what you've told me — [one-sentence reflection] — what I'd recommend is **[tier]**."
+Say the number plainly and stop (don't soften, don't pre-discount):
 
-Then A/B time:
-
-> "I've got [day at time] or [day at time]. Which works?"
-
-A/B beats open-ended because scanning a whole calendar = friction = "let me get back to you."
-
-Optional capacity context (only if true):
-
-> "For context, I take about 6 new series clients a month and Tuesday/Thursday afternoons fill 2-3 weeks out."
-
-### Which tier
+> "Based on what you've told me — [one-sentence reflection] — what I'd recommend is the 8-session series. It's $1,295, which works out to $162 a session including today, and it comes with the full video library."
 
 | What you heard | Recommend |
 |---|---|
-| Acute, recent, healthy | Initial $225 |
-| Chronic, localized | 4-pack $720 |
-| Chronic + multiple sites + been through the medical system | 8-pack $1,295 |
-| Surgery deadline / urgent | 8-pack $1,295 |
+| Chronic, ongoing, been through the medical system | **8-pack $1,295** (the default for real chronic pain) |
+| Chronic but localized, lower stakes | 4-pack $720 |
+| Genuinely acute, recent, healthy, just needs a reset | Single $225 |
 | Acute injury, red flags, neuro symptoms | Refer out |
-| 🎙️ *"Oh, I'm not going to do anything at home. I'm never good with doing exercises at home."* | Not for them — Questions 12-26 |
+| 🎙️ *"I'm never good with doing exercises at home."* | Not for them — Questions 12-26 |
 
-Pick one tier. Don't offer two.
+Recommend *one* tier. Don't lay out a menu and make them choose.
 
-### Book it
+### De-risk it with the guarantee (locked 2026-06-15)
 
-1. Book the appointment in GHL during the call
-2. From the client's page in the staff app, tap the pay-link button for the recommended tier
-3. Stay on the line. Walk them through paying
-4. Confirm payment landed. Confirm slot back to them
+This is what lets a cost-sensitive person say yes to the *right* package instead of defaulting down. A price objection is really a *risk* objection — "will this actually work for me." The guarantee answers it:
 
-Don't mention iPad / policies — they sign when they arrive.
+> "And you're not taking a risk on it — come in, we find out what's actually causing your pain, and if you don't feel noticeable relief, we keep working until you do, at no extra charge."
 
-### Pay-link script
+Risk-reversal, not a refund, not a discount. (On the Wendy call her exact words were *"am I going to see enough difference within the first session to do something off insurance?"* — that's the guarantee moment. He answered "Absolutely" with conviction, which is good; the guarantee makes it airtight.)
 
-> "Cool — let's lock you in. Texting you the link now. Apple Pay, should take about a minute. Stay on with me."
+### The upgrade path — never lose the series
 
-(tap)
+If they want to start small, you don't lose the series, you sequence it. The single $225 credits toward the series:
 
-> "Got the text? Tap it — Stripe, totally secure…"
+> "We can start with the single session today if you'd rather feel it first. If it lands — and it will — the $225 rolls right into the series, so you're not paying for it twice."
+
+(Upgrade pricing: 1 single → 4-pack = $495 more; 1 single → 8-pack = $1,070 more.)
+
+### Book and pay on the call — the #1 revenue rule
+
+A ready yes that you tell to "go book it later" mostly evaporates. Stay on the line and do it together:
+
+1. Pull up their booking, offer two times (not an open calendar): *"I've got Tuesday at 4 or Thursday at 4:30 — which works?"*
+2. Text the pay link while you're still talking.
+3. **Stay on the line and walk them through paying.** Narrate, don't go silent.
+4. Confirm the payment landed and the slot back to them.
+
+> "Cool — let's lock you in right now while we're on the phone. I'm texting you the link, it's Apple Pay, takes about a minute. Stay on with me."
 
 When it confirms:
 
-> "Got it on my end. You're in for [day at time]. Looking forward."
+> 🎙️ *"I can't wait to meet you. I'm going to text you the link now."* — Recording 6/12 → then "Got it on my end, you're in for [day/time]."
+
+**⚠️ The Wendy stall — learn from it.** That call ended with 🎙️ *"Why don't you make the appointment, and on that first visit we can decide how you want to pay."* She was a yes with a broken computer, and "make the appointment yourself" meant it never happened. **If there's any friction — no computer, cost worry, "I'll do it later" — that's exactly when you book it on the call, not when you hand it off.** Deferring payment to the first visit is fine; deferring the *booking* loses them.
 
 **Rules:**
-- No link until you've heard a clear verbal yes
-- Don't hang up before payment confirms
-- Don't go silent while they pay — narrate
-- Confirm immediately after payment lands
+- Recommend the series for chronic pain, plainly, with the guarantee. Don't push, don't menu.
+- Book the appointment on the call. Don't hang up with it un-booked.
+- Don't go silent while they pay — narrate.
+- A single is a real option, but tee up the upgrade so the series isn't lost.
 
 ---
 
-## Objections — placeholder
+## Objections
 
-⚠️ *Every script in v1 was authored from Voss/Hormozi templates, not transcribed from a real Garrett call. These are concepts, not lines. Real phrasing comes from real recordings.*
+⚠️ *Phrasing still needs more real recordings — these are concepts, not Garrett's verbatim lines. ONE exception: the relief guarantee is LOCKED strategy (2026-06-15, `amari/strategy/guarantee.md`), use the idea as-is and let Garrett find his own words.*
 
-**"Can we just start with one?"** Yes — and the $225 credits toward a series if they convert. Removes the financial penalty for trying one.
+**The guarantee is your answer to price, insurance, and "will it work for me."** A price objection is a risk objection. Lead with the guarantee any time cost, insurance/Medicare, or "how do I know it'll work" comes up:
 
-**"Let me think about it."** Usually a hidden constraint, fear of change, or a decision-maker not on the call. Not a real no. Probe:
+> "Come in, we find out what's actually causing your pain, and if you don't feel noticeable relief, we keep working until you do, at no extra charge."
+
+**"Can we just start with one?"** Yes — and the $225 credits toward the series if they convert. Removes the penalty for trying one, keeps the series alive (see the upgrade path above).
+
+**"How do I know it'll work for me?"** The risk objection — answer with the guarantee. (Supersedes the old "I don't guarantee" line, which predates the 6/15 locked guarantee.)
+> "Most people feel a real shift in the first session. And if you don't, we keep working until you do, at no extra charge — so there's no risk to you in finding out."
+
+**"It's a lot of money."** Lead with the guarantee — the price feels like a risk, so remove the risk:
+> "I hear you. But you're not gambling on it — if you don't feel a real shift, we keep working until you do, at no extra charge. So the only real question is whether it's worth finding out what's actually going on."
+
+**"Insurance / Medicare?"** Garrett's real handling (Wendy call): we don't take it, but we can super-bill so they can submit it themselves. Don't let it stall the booking — pivot to the guarantee and book.
+
+**"Let me think about it."** Usually a hidden constraint, fear of change, or a decision-maker not on the call. Not a real no. Don't push — surface the cost of waiting, then book:
 - "What's the biggest thing you'd be weighing?"
 - Or — "How on board is [partner / household] with this?"
 
-**"I've tried everything, why would this be different?"** Garrett's actual concept (Questions 12-26):
-- Everything they tried treated the area that hurts. The Amari work is on the imbalance pulling the area into pain — and that variable hasn't been tested.
+**"I've tried everything, why would this be different?"** Acknowledge first, *then* why it's different (don't lecture the mechanism):
+- 🎙️ *"You probably have tried a ton."* Then: everything they tried was passive — done *to* them. This is them learning to unwind it themselves, so it actually holds.
 
-**"How do I know it'll work for me?"** ⚠️ Don't guarantee. Don't oversell. Working version:
-> "I don't guarantee. Most clients feel a real shift in the first session. If you don't, we talk about whether to keep going."
-
-**"It's a lot of money."** ⚠️ The 1-to-10 scale move is Hormozi-borrowed, not Garrett:
-> "Real quick — on a scale of 1 to 10, how ready are you to actually be out of pain?"
-> - 8+: figure out what works. Half now, half at session 3 if it helps.
-> - 7 or below: this might not be the right moment. Better to wait until you're actually ready.
-
-**"My doctor said I need surgery."** Garrett's actual stance:
+**"My doctor said I need surgery."** Don't argue a committed decision. Offer a low-risk experiment around it:
 - 🎙️ *"I've had people cancel surgeries."* — Questions 1-10
-- Concept: surgery treats structure. What's driving structural failure is usually a pattern. Test the pattern for a few sessions — surgery is still there if it doesn't help.
+- "Booked for surgery in the fall? Try this once before then — worst case you're out an hour, and surgery's still there."
+
+---
+
+## What the real Wendy call teaches (grounded mini-case)
+
+Our one real disco recording, so worth holding up:
+
+**What went right:** he listened a long time, met her with empathy, used the Michael Jordan line when she opened the door, recommended the 8-pack plainly, and answered her value objection with conviction.
+
+**What lost the sale:** he didn't book it on the call. She was cost-sensitive with a broken computer, defaulted down to the single, and left to "make the appointment" herself — which never happened. The guarantee (locked *after* this call) would have answered her "enough difference to do it off insurance" worry and made the series safe to say yes to. **Both fixes are in Section 4: lead with the series + guarantee, and book on the call.**
 
 ---
 
 ## Post-call (within 5 min)
 
 1. Booked → confirm appointment in GHL, payment logged, slot on calendar
-2. Not booked → note the reason and followup date in contact record
-3. Declined for a real reason (timing, money, partner not on board) → no follow-up sequence. One personal note in 3-4 weeks.
+2. Booked the single, not the series → note it so you can tee up the upgrade at session 1–2 once they've felt it
+3. Not booked → note the reason and follow-up date in the contact record; if there was any friction, the lesson is to book on the next call
+4. Declined for a real reason (timing, money, partner not on board) → no follow-up sequence, one personal note in 3–4 weeks
