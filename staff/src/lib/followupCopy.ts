@@ -44,6 +44,13 @@ const THERAPIST_FOLLOWUP: string[] = [
   "Hi {first}, I partner with therapists because the body holds so much of what we work through. I'd love to gift you a session to experience the protocols yourself. Feel free to call or text when you have time.",
 ];
 
+// Generic fallback for an uncovered/unknown category — so a "text" card ALWAYS has
+// a real draft to send (never a dead-end). Plain, gift-led, no slop, no dashes.
+const GENERIC_FOLLOWUP: string[] = [
+  "Hi {first}, following up. I teach at-home protocols that are incredibly effective for low back and joint pain. I'd love to gift you a session so you can feel the work for yourself. Feel free to call or text when you have time.",
+  "Hi {first}, I'd still love to gift you a session to try the protocols. They clear the kind of pain that gets in the way of training and moving well. Feel free to call or text when you have time.",
+];
+
 const BY_CATEGORY: Record<string, string[]> = {
   golf: GOLF_FOLLOWUP,
   trainer: TRAINER_FOLLOWUP,
@@ -56,5 +63,5 @@ export function suggestedTexts(p: PartnerProspect): string[] {
   const first = (p.firstName || p.fullName || '').trim().split(/\s+/)[0] || 'there';
   const fill = (s: string) => s.replace(/\{first\}/g, first);
   const set = BY_CATEGORY[(p.category as string) || ''];
-  return set ? set.map(fill) : [];
+  return (set && set.length ? set : GENERIC_FOLLOWUP).map(fill);
 }
