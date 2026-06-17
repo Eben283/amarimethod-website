@@ -130,11 +130,13 @@ function median(arr) {
 // anything substantive (a question, a real ask) is NOT low-signal and still surfaces.
 function isCloser(text) {
   const raw = (text || "").trim();
-  if (!raw) return true; // emoji/blank-only
-  if (/\?|\bwhen\b|what time|how much|\bavailable\b|can you|could you|do you|are you|let me know|\bquestion\b/.test(raw.toLowerCase())) return false;
-  const t = raw.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
-  if (!t || t.split(" ").length > 7) return false; // too long to be a pure sign-off
-  return /\b(ok|okay|kk|thanks|thank you|thx|ty|great|perfect|sounds good|sounds great|will do|got it|gotcha|cool|awesome|likewise|same here|you too|appreciate it|np|no problem|talk soon|in touch|be in touch|see you|cheers)\b/.test(t);
+  if (!raw) return false; // unreadable (e.g. an inbound CALL has no body) — never silence it; surface it
+  const low = raw.toLowerCase();
+  // A substantive ask is never a closer — keep it (safe direction).
+  if (/\?|\bwhen\b|what time|how much|\bavailable\b|can you|could you|do you|are you|let me know|\bquestion\b|interested|sign me up|\bbook\b|how do|how much/.test(low)) return false;
+  const t = low.replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ").trim();
+  if (!t || t.split(" ").length > 12) return false; // too long to be a pure sign-off
+  return /\b(ok|okay|kk|thanks|thank you|thx|ty|great|perfect|sounds good|sounds great|will do|got it|gotcha|cool|awesome|likewise|same here|you too|appreciate|no problem|no worries|talk soon|in touch|be in touch|see you|cheers|good luck|best of luck|all the best|take care|glad (?:you|we) connected|nice (?:talking|connecting)|have a (?:good|great))\b/.test(t);
 }
 function isAutoresponder(text) {
   const t = (text || "").toLowerCase();

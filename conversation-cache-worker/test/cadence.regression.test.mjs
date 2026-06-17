@@ -42,13 +42,33 @@ test('TARGET Strong Friends: a gym autoresponder ("how can we help?") is not an 
   assert.notEqual(v.state, 'reply-waiting', 'an autoresponder must not top the worklist as a reply');
 });
 
-test('TARGET Kwanua: an acknowledged soft-close ("we\'ll be in touch") after we sent the link is not urgent', () => {
+test('TARGET Kwanua: the REAL soft-close ("Thanks, Dr. Garrett! We\'ll be in touch.") is not urgent', () => {
+  // Real pulled text (8 words) — my earlier 6-word fixture passed while reality failed.
   const v = verdict([
     { ts: ago(13.2), kind: 'call', dir: 'in' },
     { ts: ago(13.1), kind: 'sms',  dir: 'out', text: "Great talking! https://www.amarimethod.com/partner-session" },
-    { ts: ago(12.9), kind: 'sms',  dir: 'in',  text: "Thanks! We'll be in touch." },
+    { ts: ago(12.9), kind: 'sms',  dir: 'in',  text: "Thanks, Dr. Garrett! We'll be in touch." },
   ], 'Kwanua Robinson');
   assert.notEqual(v.state, 'reply-waiting', '"we\'ll be in touch" is their court, not respond-now');
+});
+
+test('TARGET Anton: a longer real sign-off ("...Glad you connected. Good luck!") is not urgent', () => {
+  const v = verdict([
+    { ts: ago(2.1), kind: 'sms', dir: 'out', text: 'Following up!' },
+    { ts: ago(2.0), kind: 'sms', dir: 'in',  text: 'Sorry, just seeing this. Glad you connected. Good luck!' },
+  ], 'Anton Stryhas');
+  assert.notEqual(v.state, 'reply-waiting', 'a polite sign-off, even a longer one, is not respond-now');
+});
+
+test('GUARD: an inbound CALL with no text is NOT suppressed (they called us back — surface it)', () => {
+  // Real case (Andrea/Dan): we reached out, they called back, no text body. Empty
+  // text must default to KEEP, never read as a "closer" — or we silence a live lead.
+  const v = verdict([
+    { ts: ago(1.2), kind: 'sms',  dir: 'out', text: 'Hi, following up!' },
+    { ts: ago(1.0), kind: 'call', dir: 'in' },
+  ], 'Called Us Back');
+  assert.equal(v.state, 'reply-waiting', 'an unreturned inbound call must surface');
+  assert.equal(v.due, true);
 });
 
 test('TARGET Abraham/Taylor: a 77-day-old single cold call should be parked, not "send step 2"', () => {
