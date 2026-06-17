@@ -783,6 +783,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           {!isReply && (
             <>
               <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
+              {/* No cloud draft, but the recommended move is a text → fall back to a
+                  static suggested draft so a "text" card is never a dead-end with
+                  nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
+                  OutreachCoachPanel above; this only fills the gap. */}
+              {coach !== 'loading' && !coach && effAction === 'text' && (
+                <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
+              )}
               <Details p={item.p} />
             </>
           )}
@@ -884,6 +891,26 @@ function Details({ p }: { p: PartnerProspect }) {
 // Takes the coach record as a prop (fetched once by ActRow so the headline can use
 // the same whyNow). The whyNow is shown as the card headline now, so it's not
 // repeated here — just the label + the editable/sendable messages.
+// Fallback draft for a "text" card with no cloud coach record — reuses the static
+// per-category suggested copy + the same editable Send box, so a "text" action
+// always has something to send instead of being a dead-end.
+function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandled?: () => void }) {
+  const texts = suggestedTexts(p);
+  if (!texts.length) return null;
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        <Sparkles className="h-3 w-3" /> Suggested text
+      </p>
+      <div className="space-y-1.5">
+        {texts.map((t, i) => (
+          <EditSendText key={i} contactId={p.contactId} text={t} channel="text" onSent={onHandled} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCoach | null | 'loading'; contactId: string; onHandled?: () => void }) {
   if (coach === 'loading' || !coach) return null;
   return (
