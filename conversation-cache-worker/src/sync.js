@@ -35,6 +35,13 @@ function kind(t) {
   return "other";
 }
 const isOut = (m) => m.direction === 0 || m.direction === "outbound";
+// GHL OMITS `direction` on outbound campaign emails (it comes back undefined, not
+// "inbound"/1). Without this, our OWN cold-batch emails get stored as inbound →
+// phantom "replies" → false reply-waiting cards (the 2026-06-17 audit finding).
+// Treat a direction-less EMAIL as outbound; SMS/calls always carry a direction.
+export function touchDir(m, k) {
+  return (isOut(m) || (m.direction == null && k === "email")) ? "out" : "in";
+}
 
 // limited-concurrency map (ported from funnel.mjs) — sequential message fetches
 // over a 90-day backfill blow the Worker wall-clock; 5-wide keeps it well under.
@@ -106,7 +113,7 @@ export async function runSync(env, trigger, full = false) {
       // no-answer (short) from a voicemail left (medium) from a real talk (long),
       // which both the cadence variant (talked → warm) and the truthful copy
       // ("tried to reach" vs "left a voicemail" vs "talked") key off.
-      const t = { ts, kind: k, dir: isOut(m) ? "out" : "in" };
+      const t = { ts, kind: k, dir: touchDir(m, k) };
       if (k === "call") t.dur = Number(m.meta?.call?.duration) || 0;
       else { const b = (m.body || "").trim(); if (b) t.text = b.slice(0, 280); } // last-message text → closer/autoresponder detection in cadence
       fresh.push(t);
