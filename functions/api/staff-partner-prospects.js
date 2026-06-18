@@ -146,6 +146,7 @@ function normalizePhone(s) {
 // re-weighting is a deliberate LATER step — this is a faithful relocation.
 const VM_FOLLOWUP_DAYS = 3, TALKED_FOLLOWUP_DAYS = 1, LINK_FOLLOWUP_DAYS = 3;
 const OFFPLATFORM_FOLLOWUP_DAYS = 3, NOANSWER_RETRY_DAYS = 1, QUIET_NUDGE_DAYS = 3;
+const LINKEDIN_FOLLOWUP_DAYS = 7;
 const END_OF_ROPE_TOUCHES = 6;
 function daysSinceDate(iso) {
   if (!iso) return null;
@@ -223,7 +224,16 @@ function deriveActNow(p, elig) {
     case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, warmth: 1, action: "text", why: `You called ${agoLabel(d)} and haven't heard back. A text's worth a shot — it's more likely to get seen.` } : waiting("Called — give it a few days.");
     case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, warmth: 2, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
     case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, warmth: 2, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
-    case "linkedin-msg": case "linkedin-req": case "instagram-msg": case "in-person":
+    // LinkedIn-sourced: the phone on file is almost always the facility's front
+    // desk (a golf club / studio switchboard), not a cell — so a text bounces or
+    // lands at a pro shop. Follow up where we actually connected: LinkedIn. Low
+    // urgency (a cold, often-unanswered connection request is bottom-of-list work),
+    // and NO freqBoost — that recovery boost is for real touched-and-dropped leads.
+    case "linkedin-req":
+      return due(LINKEDIN_FOLLOWUP_DAYS) ? { kind: "act", urgency: 38, warmth: 1, action: "linkedin", why: `LinkedIn request sent ${agoLabel(d)} — check if they accepted, then message them on LinkedIn (the number on file is the facility's, not a cell).` } : waiting("Just sent a LinkedIn request.");
+    case "linkedin-msg":
+      return due(LINKEDIN_FOLLOWUP_DAYS) ? { kind: "act", urgency: 45, warmth: 1, action: "linkedin", why: `You messaged on LinkedIn ${agoLabel(d)} — follow up there, that's where you connected (the number on file is the facility's, not a cell).` } : waiting("Just messaged on LinkedIn.");
+    case "instagram-msg": case "in-person":
       return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, warmth: 1, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
     case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
     default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50 + fb, warmth: 1, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");

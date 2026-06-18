@@ -90,7 +90,7 @@ const OTHER_CHANNEL_OPTIONS = [
 ];
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
-type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide';
+type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide' | 'linkedin';
 
 interface Derived {
   kind: RowKind;
@@ -236,10 +236,10 @@ type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived; weight?:
 type ActItem = ReplyItem | ProspectItem;
 
 const URGENCY_DOT: Record<ActionKind, string> = {
-  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500',
+  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500', linkedin: 'bg-sky-700',
 };
 const ACTION_LABEL: Record<ActionKind, string> = {
-  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide',
+  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide', linkedin: 'LinkedIn',
 };
 
 const ACTIVITY_ICON: Record<PartnerActivityEvent['type'], typeof Phone> = {
@@ -653,7 +653,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // Falls back to the derived action for contacts with no coach record.
   const coachChannel = coach && coach !== 'loading' ? coach.channel : null;
   const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
-  const effAction: ActionKind | null = (coachChannel as ActionKind) || derivedAction;
+  // A LinkedIn-sourced contact can't be texted (the number is the facility's front
+  // desk), so the LinkedIn action WINS over any coach channel — we never want to show
+  // a text-send box for them. Otherwise the coach record's channel leads.
+  const isLinkedIn = derivedAction === 'linkedin';
+  const effAction: ActionKind | null = isLinkedIn ? 'linkedin' : ((coachChannel as ActionKind) || derivedAction);
 
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
@@ -742,13 +746,22 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               sits in the quick-action row above, so no duplicate here. */}
           {!isReply && (
             <>
-              <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
-              {/* No cloud draft, but the recommended move is a text → fall back to a
-                  static suggested draft so a "text" card is never a dead-end with
-                  nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
-                  OutreachCoachPanel above; this only fills the gap. */}
-              {coach !== 'loading' && !coach && effAction === 'text' && (
-                <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
+              {/* LinkedIn-sourced: don't show a text/email send box (the number is the
+                  facility's front desk). Point Garrett to the profile + a message to
+                  copy into LinkedIn, where we actually connected. */}
+              {isLinkedIn ? (
+                <LinkedInPanel p={item.p} />
+              ) : (
+                <>
+                  <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
+                  {/* No cloud draft, but the recommended move is a text → fall back to a
+                      static suggested draft so a "text" card is never a dead-end with
+                      nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
+                      OutreachCoachPanel above; this only fills the gap. */}
+                  {coach !== 'loading' && !coach && effAction === 'text' && (
+                    <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
+                  )}
+                </>
               )}
               <Details p={item.p} />
             </>
@@ -867,6 +880,30 @@ function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandle
           <EditSendText key={i} contactId={p.contactId} text={t} channel="text" onSent={onHandled} />
         ))}
       </div>
+    </div>
+  );
+}
+
+// LinkedIn-sourced contacts: no send box (the number on file is the facility's
+// front desk, not a cell). Point Garrett to the profile and give him a message to
+// COPY into LinkedIn — that's where the connection lives. We strip the "call or
+// text" tail from the category copy since neither applies here.
+function LinkedInPanel({ p }: { p: PartnerProspect }) {
+  const suggestion = (suggestedTexts(p)[0] || '').replace(/\s*Feel free to (?:call or text|call|text)[^.]*\.\s*$/i, '').trim();
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        <ExternalLink className="h-3 w-3" /> Follow up on LinkedIn
+      </p>
+      {p.linkedinUrl ? (
+        <a href={p.linkedinUrl} target="_blank" rel="noopener noreferrer"
+          className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amari-border bg-white px-2.5 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand">
+          <ExternalLink className="h-3.5 w-3.5" /> Open LinkedIn profile
+        </a>
+      ) : (
+        <p className="mb-2 text-xs text-amari-text-muted">No LinkedIn URL on file — search their name on LinkedIn.</p>
+      )}
+      {suggestion && <CopyText text={suggestion} channel="linkedin" />}
     </div>
   );
 }
