@@ -284,7 +284,17 @@ function finalizePlay(p) {
   // business) counts. (Future: a call-verified flag set by a discovery call.)
   const trusted = !!(p.outreachVerified || tags.includes("trainer-solo"));
   const engaged = d.warmth === 2; // actually replied/talked → we may already know who to reach
-  if (isFacility && !trusted && !engaged) {
+  // A named owner/sole-operator IS the decision-maker — pitch them directly. Don't run a
+  // "find who handles partnerships" discovery card on the person who owns the place. The
+  // facility tag fires on EVERY owner-operator (their name is the business), so it alone
+  // can't mean "decision-maker unknown". Only treat a facility as DM-unknown when there's
+  // no named owner to reach: an org-name contact, or a non-owner role (coach/staff/manager).
+  const firstTok = (p.firstName || p.fullName || "").trim().split(/\s+/)[0] || "";
+  const ORG_WORDS = /^(the|a|an|fit|fitness|gym|studio|club|performance|training|strength|crossfit|pilates|yoga|wellness|raise|punch|pure|tribe|local|bar|house|lab|co|sf|llc|inc|method|works|bodyworks|culture)$/i;
+  const hasPersonName = /^[A-Z][a-z]+$/i.test(firstTok) && !ORG_WORDS.test(firstTok) && !!(p.lastName || "").trim();
+  const isOwnerRole = /owner|sole|principal|founder/i.test(p.partnerFacilityRole || "");
+  const knownDecisionMaker = hasPersonName && isOwnerRole; // we already know exactly who to reach
+  if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     return { ...d, action: "discovery", channel: "call",
       why: "Facility, unverified contact — call and ask who handles partnerships, then get a name." };
   }
