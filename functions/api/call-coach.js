@@ -15,6 +15,7 @@ import { verifySessionToken } from "../lib/auth.js";
 const PT = "America/Los_Angeles";
 const KV_CALL_PREFIX = "call-coach:";
 const KV_DAILY_PREFIX = "call-coach:daily:";
+const KV_LATEST_PREFIX = "call-coach:latest:";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -74,14 +75,19 @@ export async function onRequestGet(context) {
     }
 
     const url = new URL(context.request.url);
-    const date = url.searchParams.get("date") || yesterdayPacific();
+    const dateParam = url.searchParams.get("date");
     const contactId = url.searchParams.get("contactId");
 
     if (contactId) {
-      const record = await kv.get(`${KV_CALL_PREFIX}${date}:${contactId}`, "json");
+      // No explicit date → the persistent "latest" pointer (the last call we coached for
+      // this contact, used by the Follow-Up card). With a date → that day's record (back-compat).
+      const key = dateParam
+        ? `${KV_CALL_PREFIX}${dateParam}:${contactId}`
+        : `${KV_LATEST_PREFIX}${contactId}`;
+      const record = await kv.get(key, "json");
       if (!record) {
         return new Response(
-          JSON.stringify({ contactId, date, coaching: null, message: "No coaching for this contact on this date" }),
+          JSON.stringify({ contactId, date: dateParam || null, coaching: null, message: "No coaching for this contact" }),
           { status: 200, headers },
         );
       }
@@ -89,6 +95,7 @@ export async function onRequestGet(context) {
     }
 
     // No contactId → daily digest.
+    const date = dateParam || yesterdayPacific();
     const digest = await kv.get(`${KV_DAILY_PREFIX}${date}`, "json");
     if (!digest) {
       return new Response(

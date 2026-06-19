@@ -31,8 +31,10 @@ import { coachInteraction } from "./coach.js";
 
 const KV_CALL_PREFIX = "call-coach:";              // call-coach:{date}:{contactId}
 const KV_DAILY_PREFIX = "call-coach:daily:";       // call-coach:daily:{date}
+const KV_LATEST_PREFIX = "call-coach:latest:";     // call-coach:latest:{contactId} — persistent pointer
 const KV_LAST_RUN = "call-coach:status:lastRun";
 const RESULT_TTL_S = 30 * 86400;                   // 30-day retention
+const LATEST_TTL_S = 180 * 86400;                  // keep the last-call notes ~6 months so the card can show them
 
 // Cap how many contacts/calls we process per run so one heavy day can't blow the
 // subrequest budget or the Whisper quota. Tune as volume grows.
@@ -89,6 +91,7 @@ export default {
           coaching,
         };
         await safePut(env, `${KV_CALL_PREFIX}${date}:${contactId}`, record, RESULT_TTL_S);
+        await safePut(env, `${KV_LATEST_PREFIX}${contactId}`, record, LATEST_TTL_S);
         return json(record);
       } catch (err) {
         return json({ contactId, error: err instanceof Error ? err.message : String(err) }, 500);
@@ -133,6 +136,27 @@ export default {
     if (url.pathname === "/status") {
       const last = await env.PORTAL_KV.get(KV_LAST_RUN, "json");
       return json(last || { error: "never run" });
+    }
+
+    // /backfill-latest — one-off: populate call-coach:latest:{contactId} from the existing
+    // dated records (newest per contact) so cards show notes for already-coached contacts
+    // without waiting for the next cron. Idempotent.
+    if (url.pathname === "/backfill-latest") {
+      const listed = await env.PORTAL_KV.list({ prefix: KV_CALL_PREFIX });
+      const dateRe = /^call-coach:(\d{4}-\d{2}-\d{2}):(.+)$/;
+      const newest = {};
+      for (const k of listed.keys) {
+        const m = k.name.match(dateRe);
+        if (!m) continue;
+        const [, d, cid] = m;
+        if (!newest[cid] || d > newest[cid].d) newest[cid] = { d, key: k.name };
+      }
+      let written = 0;
+      for (const cid of Object.keys(newest)) {
+        const rec = await env.PORTAL_KV.get(newest[cid].key, "json");
+        if (rec?.coaching) { await safePut(env, `${KV_LATEST_PREFIX}${cid}`, rec, LATEST_TTL_S); written++; }
+      }
+      return json({ backfilled: written, contacts: Object.keys(newest).length, listComplete: listed.list_complete });
     }
 
     return new Response("Not found", { status: 404 });
@@ -265,6 +289,9 @@ async function runCoach(env, dateStr) {
       };
 
       await safePut(env, `${KV_CALL_PREFIX}${dateStr}:${bundle.contactId}`, record, RESULT_TTL_S);
+      // Persistent per-contact pointer so the Follow-Up card can fetch "the last call's
+      // notes" by contactId alone (the dated record expires in 30d).
+      await safePut(env, `${KV_LATEST_PREFIX}${bundle.contactId}`, record, LATEST_TTL_S);
       lastRun.coached++;
       digestItems.push({
         contactId: bundle.contactId,
