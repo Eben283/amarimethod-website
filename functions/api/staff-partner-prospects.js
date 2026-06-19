@@ -264,6 +264,38 @@ function cadenceVerdict(c) {
   };
 }
 
+// ── Phase 1: play-decision finalization (the card-trust fix) ──────────────────
+// One pass re-shapes the actionable card from everything we know, so the channel and
+// why-line can't contradict (the Amanda failure: "text this coach" → a VoIP front desk).
+// Source/confidence-based, NOT the enriched role field (proven unreliable — a coach was
+// mislabeled facility_role="Manager"):
+//   - A FACILITY contact we have NOT verified and have NOT actually engaged is not a pitch
+//     target — we don't know who to reach. → DISCOVERY card: call, find the person. The
+//     enriched role/facility is treated as an unverified hint, never a basis to pitch.
+//   - A landline/VoIP number never gets a "text" recommendation (it's a switchboard).
+function finalizePlay(p) {
+  const d = p.derived;
+  if (!d || d.kind !== "act" || d.action === "linkedin") return d; // leave non-actionable + LinkedIn
+  const tags = Array.isArray(p.tags) ? p.tags : [];
+  const isFacility = tags.includes("trainer-facility") || p.category === "business";
+  // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
+  // means Garrett added the lead — Amanda's in the sheet but she's a coach, wrong
+  // person). Only an explicit outreach-verified flag or a solo contact (who IS the
+  // business) counts. (Future: a call-verified flag set by a discovery call.)
+  const trusted = !!(p.outreachVerified || tags.includes("trainer-solo"));
+  const engaged = d.warmth === 2; // actually replied/talked → we may already know who to reach
+  if (isFacility && !trusted && !engaged) {
+    return { ...d, action: "discovery", channel: "call",
+      why: "Facility, unverified contact — call and ask who handles partnerships, then get a name." };
+  }
+  if ((d.action === "text" || d.action === "reback") && ["landline", "toll_free", "voip"].includes(p.phoneType)) {
+    const kind = p.phoneType === "voip" ? "a VoIP / switchboard" : `a ${p.phoneType}`;
+    return { ...d, action: "call", channel: "call",
+      why: `The number on file is ${kind} line, not a cell — call instead.` };
+  }
+  return d;
+}
+
 // Lookup Garrett's sheet row for a contact by phone or email match.
 function lookupSheetRow(contact) {
   const phoneNorm = normalizePhone(contact.phone);
@@ -530,6 +562,10 @@ export async function onRequestGet(context) {
     // Attach phone line type (from the line-type sweep) to every prospect — partner
     // and unioned lead alike — so the UI can suppress SMS to landline/toll-free numbers.
     for (const p of prospects) p.phoneType = lineTypeMap.get(p.contactId) || null;
+
+    // Phase 1 play-decision: re-shape each actionable card so its channel + why agree
+    // (discovery for unverified facility contacts; call instead of text to switchboards).
+    for (const p of prospects) p.derived = finalizePlay(p);
 
     // Counts.
     // A contact counts as "verified / ready to call" if either:

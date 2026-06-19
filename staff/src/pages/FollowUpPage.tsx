@@ -90,7 +90,7 @@ const OTHER_CHANNEL_OPTIONS = [
 ];
 
 type RowKind = 'act' | 'waiting' | 'aside' | 'converted';
-type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide' | 'linkedin';
+type ActionKind = 'call' | 'text' | 'email' | 'reback' | 'decide' | 'linkedin' | 'discovery';
 
 interface Derived {
   kind: RowKind;
@@ -236,10 +236,10 @@ type ProspectItem = { kind: 'prospect'; p: PartnerProspect; d: Derived; weight?:
 type ActItem = ReplyItem | ProspectItem;
 
 const URGENCY_DOT: Record<ActionKind, string> = {
-  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500', linkedin: 'bg-sky-700',
+  reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500', linkedin: 'bg-sky-700', discovery: 'bg-violet-500',
 };
 const ACTION_LABEL: Record<ActionKind, string> = {
-  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide', linkedin: 'LinkedIn',
+  reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide', linkedin: 'LinkedIn', discovery: 'Find contact',
 };
 
 const ACTIVITY_ICON: Record<PartnerActivityEvent['type'], typeof Phone> = {
@@ -657,13 +657,17 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // desk), so the LinkedIn action WINS over any coach channel — we never want to show
   // a text-send box for them. Otherwise the coach record's channel leads.
   const isLinkedIn = derivedAction === 'linkedin';
+  // Discovery (server play-decision): an unverified facility contact — we don't know who
+  // to reach, so the card is "call and find the person," not a pitch. Wins over channel.
+  const isDiscovery = derivedAction === 'discovery';
   // A landline / toll-free / VoIP number can't (reliably) receive SMS — it's a
   // switchboard. Don't offer a text box; route to a call. (Line type comes from the
   // AbstractAPI sweep; unclassified/mobile stay textable.) VoIP is treated
   // conservatively as call-first — most here are gym front desks.
   const phoneType = item.kind === 'prospect' ? (item.p.phoneType || null) : null;
-  const isUntextable = !isLinkedIn && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip');
+  const isUntextable = !isLinkedIn && !isDiscovery && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip');
   const effAction: ActionKind | null = isLinkedIn ? 'linkedin'
+    : isDiscovery ? 'discovery'
     : isUntextable ? 'call'
     : ((coachChannel as ActionKind) || derivedAction);
 
@@ -757,7 +761,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               {/* LinkedIn-sourced: don't show a text/email send box (the number is the
                   facility's front desk). Point Garrett to the profile + a message to
                   copy into LinkedIn, where we actually connected. */}
-              {isLinkedIn ? (
+              {isDiscovery ? (
+                /* Unverified facility — we don't know who to reach. No pitch; call to
+                   find the decision-maker first. (The Amanda/Flagship fix.) */
+                <DiscoveryPanel p={item.p} />
+              ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
               ) : isUntextable ? (
                 /* Landline / toll-free / VoIP — a switchboard that can't receive SMS.
@@ -892,6 +900,34 @@ function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandle
           <EditSendText key={i} contactId={p.contactId} text={t} channel="text" onSent={onHandled} />
         ))}
       </div>
+    </div>
+  );
+}
+
+// Discovery: an unverified facility contact (e.g. a coach at a multi-location gym).
+// We don't actually know who handles partnerships, and the enriched role is unreliable
+// — so we DON'T pitch. The play is a call to find the right person. No draft, no pitch:
+// a call button + the one question to ask. What Garrett learns becomes the real record.
+function DiscoveryPanel({ p }: { p: PartnerProspect }) {
+  const where = p.companyName || p.partnerFacility || 'them';
+  const ask = `Hi, this is Garrett from Amari Method — I do body-alignment work and partner with gyms so coaches have somewhere to send members with stubborn pain. Who's the best person to talk to about setting that up?`;
+  return (
+    <div className="rounded-lg border border-violet-300 bg-violet-50/60 p-3">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-violet-700">
+        <Phone className="h-3 w-3" /> Find the right person first
+      </p>
+      <p className="mb-2 text-xs text-amari-text-muted">
+        {where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then come back.
+      </p>
+      {p.phone ? (
+        <a href={`tel:${p.phone}`}
+          className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amari-border bg-white px-2.5 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand">
+          <Phone className="h-3.5 w-3.5" /> Call {p.phone}
+        </a>
+      ) : (
+        <p className="mb-2 text-xs text-amari-text-muted">No phone on file — find the gym&apos;s number.</p>
+      )}
+      <CopyText text={ask} channel="ask on the call" />
     </div>
   );
 }
