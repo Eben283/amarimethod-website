@@ -462,6 +462,7 @@ export async function onRequestGet(context) {
     // excludes (booked via calendar, set-aside via coach:skip) from KV.
     let cadenceMap = new Map();
     let skipSet = new Set();
+    let lineTypeMap = new Map(); // contactId -> "mobile" | "landline" | "voip" | "toll_free" | ...
     let coachDataAt = null; // freshness stamp: when the coach worker last refreshed eligibility
     try {
       if (context.env.PORTAL_KV) {
@@ -470,6 +471,10 @@ export async function onRequestGet(context) {
         coachDataAt = cad?.generatedAtISO || cad?.generatedAt || null;
         const sk = await context.env.PORTAL_KV.get("coach:skip", "json");
         if (sk && typeof sk === "object") skipSet = new Set(Object.keys(sk));
+        // Phone line type from the AbstractAPI sweep (classify-line-type.mjs) — lets the
+        // UI suppress SMS to landline/toll-free numbers (switchboards that can't text).
+        const lt = await context.env.PORTAL_KV.get("contact:linetype", "json");
+        if (lt && typeof lt === "object") for (const [id, rec] of Object.entries(lt)) lineTypeMap.set(id, rec?.type || null);
       }
     } catch (err) {
       console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
@@ -521,6 +526,10 @@ export async function onRequestGet(context) {
         derived: cadenceVerdict(c),
       });
     }
+
+    // Attach phone line type (from the line-type sweep) to every prospect — partner
+    // and unioned lead alike — so the UI can suppress SMS to landline/toll-free numbers.
+    for (const p of prospects) p.phoneType = lineTypeMap.get(p.contactId) || null;
 
     // Counts.
     // A contact counts as "verified / ready to call" if either:
