@@ -657,7 +657,15 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // desk), so the LinkedIn action WINS over any coach channel — we never want to show
   // a text-send box for them. Otherwise the coach record's channel leads.
   const isLinkedIn = derivedAction === 'linkedin';
-  const effAction: ActionKind | null = isLinkedIn ? 'linkedin' : ((coachChannel as ActionKind) || derivedAction);
+  // A landline / toll-free / VoIP number can't (reliably) receive SMS — it's a
+  // switchboard. Don't offer a text box; route to a call. (Line type comes from the
+  // AbstractAPI sweep; unclassified/mobile stay textable.) VoIP is treated
+  // conservatively as call-first — most here are gym front desks.
+  const phoneType = item.kind === 'prospect' ? (item.p.phoneType || null) : null;
+  const isUntextable = !isLinkedIn && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip');
+  const effAction: ActionKind | null = isLinkedIn ? 'linkedin'
+    : isUntextable ? 'call'
+    : ((coachChannel as ActionKind) || derivedAction);
 
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
@@ -751,6 +759,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                   copy into LinkedIn, where we actually connected. */}
               {isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
+              ) : isUntextable ? (
+                /* Landline / toll-free / VoIP — a switchboard that can't receive SMS.
+                   Offer a call instead of a text box, with a talking point to use. */
+                <UntextablePanel p={item.p} phoneType={phoneType} />
               ) : (
                 <>
                   <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
@@ -904,6 +916,30 @@ function LinkedInPanel({ p }: { p: PartnerProspect }) {
         <p className="mb-2 text-xs text-amari-text-muted">No LinkedIn URL on file — search their name on LinkedIn.</p>
       )}
       {suggestion && <CopyText text={suggestion} channel="linkedin" />}
+    </div>
+  );
+}
+
+// Landline / toll-free / VoIP number (from the line-type sweep) — a switchboard
+// that can't receive SMS. No text box; offer a call (tap to dial) + a talking
+// point to use on the phone. Email still works via Open in GHL / the contact card.
+function UntextablePanel({ p, phoneType }: { p: PartnerProspect; phoneType: string | null }) {
+  const suggestion = suggestedTexts(p)[0] || '';
+  const label = phoneType === 'voip' ? 'VoIP — likely a switchboard' : phoneType === 'toll_free' ? 'Toll-free line' : 'Landline';
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        <Phone className="h-3 w-3" /> {label} — call instead (texts won&apos;t reach it)
+      </p>
+      {p.phone ? (
+        <a href={`tel:${p.phone}`}
+          className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amari-border bg-white px-2.5 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand">
+          <Phone className="h-3.5 w-3.5" /> Call {p.phone}
+        </a>
+      ) : (
+        <p className="mb-2 text-xs text-amari-text-muted">No phone on file.</p>
+      )}
+      {suggestion && <CopyText text={suggestion} channel="talking point" />}
     </div>
   );
 }

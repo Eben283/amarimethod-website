@@ -350,6 +350,10 @@ export interface PartnerProspect {
   category: PartnerCategory;
   tags: string[];
   phone: string | null;
+  // Phone line type from the AbstractAPI sweep (KV contact:linetype) — "mobile" |
+  // "landline" | "voip" | "toll_free" | "unknown" | null (unclassified). The UI
+  // suppresses SMS to landline/toll_free/voip (switchboards that can't text).
+  phoneType?: string | null;
   email: string | null;
   website: string | null;
   /** Standard GHL contact fields populated from enrichment (May 2026) — were
