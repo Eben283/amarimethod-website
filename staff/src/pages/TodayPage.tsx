@@ -6,6 +6,7 @@ import { getDayData, ApiError } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
 import GarrettDay from '../components/GarrettDay';
+import MoneyMoments from '../components/MoneyMoments';
 import SharpenDeck from '../components/SharpenDeck';
 
 type ViewMode = 'day' | 'week';
@@ -131,6 +132,10 @@ export default function TodayPage() {
     <div className="px-4 pt-6 pb-4">
       {/* Garrett's Day — manual directive list, first thing on the tab. */}
       <GarrettDay />
+
+      {/* Today's sell moments — 8-pack opportunities hiding in today's schedule
+          (renewals at last session + first-timers to pitch). */}
+      <MoneyMoments />
 
       {/* Sharpen — shuffle-through call-craft card deck (downtime / instead-of-scrolling). */}
       <SharpenDeck />
