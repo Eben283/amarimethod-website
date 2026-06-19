@@ -807,7 +807,14 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amari-text-muted" />
                       <span className="shrink-0 text-amari-text-muted">{friendlyDate(e.date)}</span>
                       <span className="capitalize">{e.signal || e.type}{e.direction ? ` · ${e.direction}` : ''}</span>
-                      {e.body && <span className="min-w-0 break-words text-amari-text-muted">— {e.body}</span>}
+                      {e.body && (
+                        <span className={`min-w-0 break-words ${
+                          // A call that never connected pops red so "didn't reach them" is obvious.
+                          e.type === 'call' && ['failed', 'no-answer', 'noanswer', 'busy', 'canceled', 'cancelled'].includes((e.callStatus || '').toLowerCase())
+                            ? 'font-medium text-rose-600'
+                            : 'text-amari-text-muted'
+                        }`}>— {e.body}</span>
+                      )}
                     </li>
                   );
                 })}

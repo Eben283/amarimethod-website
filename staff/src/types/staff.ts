@@ -443,6 +443,9 @@ export interface PartnerActivityEvent {
   body?: string;
   // For all:
   direction?: 'inbound' | 'outbound';
+  // For call events: raw outcome (failed / no-answer / completed / voicemail / …).
+  // `body` carries the human label ("failed", "2m 14s"); this lets the UI color a miss.
+  callStatus?: string;
 }
 
 // Outcome capture payload (POST to staff-partner-outcome)
