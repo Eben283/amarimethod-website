@@ -53,11 +53,15 @@ const NUMERIC_TYPE_MAP = {
 
 // Human label for a call's outcome — the "did he actually reach them?" signal that
 // was invisible before (Amanda's two May-27 calls both `failed`, but the card just
-// showed "call · outbound"). A duration means a real conversation happened.
+// showed "call · outbound"). A duration is what proves a real conversation happened.
 function callOutcomeLabel(status, dur) {
   if (dur > 0) { const mm = Math.floor(dur / 60), ss = dur % 60; return mm ? `${mm}m ${ss}s` : `${ss}s`; }
   switch ((status || "").toLowerCase()) {
-    case "completed": return "connected";
+    // "completed" with NO duration is NOT a connect — Twilio reports "completed" for any
+    // call that ended normally, incl. voicemail and rang-out. Without a duration we have no
+    // evidence anyone was reached, so don't claim "connected" (Luis Chirinos: a bare
+    // "completed" was showing as "connected"). Say "called" — a call went out, outcome unknown.
+    case "completed": return "called";
     case "no-answer": case "noanswer": return "no answer";
     case "voicemail": return "voicemail";
     case "failed": return "failed";
