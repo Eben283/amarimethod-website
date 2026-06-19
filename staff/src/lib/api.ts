@@ -385,6 +385,19 @@ export async function recordPartnerOutcome(
   });
 }
 
+// Verification flywheel: a discovery call found the decision-maker. Tags the contact
+// dm-verified (→ play-decision flips discovery to pitch) and optionally repoints the
+// record to the real person (name / direct line).
+export async function verifyDecisionMaker(
+  contactId: string,
+  dm: { dmFirstName?: string; dmLastName?: string; dmPhone?: string },
+): Promise<{ success: boolean }> {
+  return fetchApi('/staff-partner-verify', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, ...dm }),
+  });
+}
+
 export async function toggleOutreachVerified(
   contactId: string,
   verified: boolean,
