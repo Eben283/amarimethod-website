@@ -645,6 +645,16 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); }).catch(() => { if (live) setCoach(null); });
     return () => { live = false; };
   }, [contactId, isReply]);
+
+  // Fetch the call-coach NOTES — what happened on the last call/interaction (summary,
+  // objections, next step), grounded in the transcript when we have one. Shown so Garrett
+  // sees what was already said BEFORE he reaches out. Null when there's no coached call.
+  const [callNotes, setCallNotes] = useState<CallCoach | null | 'loading'>('loading');
+  useEffect(() => {
+    let live = true;
+    getCallCoach(contactId).then((c) => { if (live) setCallNotes(c); }).catch(() => { if (live) setCallNotes(null); });
+    return () => { live = false; };
+  }, [contactId]);
   const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
   // The channel pill MUST match the why-line. The coach record carries both the
   // why-now AND the channel (written together, so they agree) — so when a coach
@@ -753,6 +763,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
 
       {expanded && (
         <div className="space-y-3 border-t border-amari-border px-3 py-3">
+          {/* What happened on the last call/interaction — transcript-grounded notes so
+              Garrett sees what was already said before reaching out. Empty when no
+              recorded/coached call exists (honest: no story yet). */}
+          <CallNotesPanel notes={callNotes} />
           {/* Prospects get the proactive outreach drafts; replies get only the
               in-context Suggested reply (in CoachPanel) — Reply in GHL already
               sits in the quick-action row above, so no duplicate here. */}
@@ -925,6 +939,37 @@ function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandle
 // We don't actually know who handles partnerships, and the enriched role is unreliable
 // — so we DON'T pitch. The play is a call to find the right person. No draft, no pitch:
 // a call button + the one question to ask. What Garrett learns becomes the real record.
+// What happened on the last coached call/interaction — transcript-grounded when we have
+// audio, else from the message thread. Renders nothing when there's no meaningful coaching
+// (honest: a contact with no recorded call shows no story, not a fabricated one).
+function CallNotesPanel({ notes }: { notes: CallCoach | null | 'loading' }) {
+  if (!notes || notes === 'loading') return null;
+  const c = notes.coaching;
+  if (!c || !c.summary || c.signal === 'low') return null;
+  const when = notes.date
+    ? new Date(`${notes.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    : '';
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/50 p-3">
+      <p className="mb-1 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        <Phone className="h-3 w-3" /> What happened last{when ? ` · ${when}` : ''}{notes.hasAudio ? '' : ' (from messages)'}
+      </p>
+      <p className="text-xs text-amari-charcoal">{c.summary}</p>
+      {c.objections && c.objections.length > 0 && (
+        <div className="mt-2">
+          <p className="text-[11px] font-medium text-amari-text-muted">Objections raised</p>
+          <ul className="list-disc space-y-0.5 pl-4 text-xs text-amari-charcoal">
+            {c.objections.map((o, i) => <li key={i}>{o}</li>)}
+          </ul>
+        </div>
+      )}
+      {c.nextStep && (
+        <p className="mt-2 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>
+      )}
+    </div>
+  );
+}
+
 function DiscoveryPanel({ p, onHandled }: { p: PartnerProspect; onHandled?: () => void }) {
   const where = p.companyName || p.partnerFacility || 'them';
   const ask = `Hi, this is Garrett from Amari Method — I do body-alignment work and partner with gyms so coaches have somewhere to send members with stubborn pain. Who's the best person to talk to about setting that up?`;
