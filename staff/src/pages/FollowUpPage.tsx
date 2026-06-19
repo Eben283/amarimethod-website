@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach,
-  getOutreachCoach, sendFollowupText, sendFollowupEmail, ApiError,
+  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, ApiError,
   type FollowupBrief, type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
@@ -764,7 +764,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               {isDiscovery ? (
                 /* Unverified facility — we don't know who to reach. No pitch; call to
                    find the decision-maker first. (The Amanda/Flagship fix.) */
-                <DiscoveryPanel p={item.p} />
+                <DiscoveryPanel p={item.p} onHandled={onHandled} />
               ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
               ) : isUntextable ? (
@@ -925,16 +925,30 @@ function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandle
 // We don't actually know who handles partnerships, and the enriched role is unreliable
 // — so we DON'T pitch. The play is a call to find the right person. No draft, no pitch:
 // a call button + the one question to ask. What Garrett learns becomes the real record.
-function DiscoveryPanel({ p }: { p: PartnerProspect }) {
+function DiscoveryPanel({ p, onHandled }: { p: PartnerProspect; onHandled?: () => void }) {
   const where = p.companyName || p.partnerFacility || 'them';
   const ask = `Hi, this is Garrett from Amari Method — I do body-alignment work and partner with gyms so coaches have somewhere to send members with stubborn pain. Who's the best person to talk to about setting that up?`;
+  const [open, setOpen] = useState(false);
+  const [first, setFirst] = useState('');
+  const [last, setLast] = useState('');
+  const [phone, setPhone] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const inputCls = 'w-full rounded-lg border border-amari-border px-2 py-1 text-xs text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm';
+  const submit = async () => {
+    setBusy(true); setErr('');
+    try {
+      await verifyDecisionMaker(p.contactId, { dmFirstName: first.trim(), dmLastName: last.trim(), dmPhone: phone.trim() });
+      onHandled?.(); // verified → drops off; next load it's a pitch, not discovery
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Failed to save'); setBusy(false); }
+  };
   return (
     <div className="rounded-lg border border-violet-300 bg-violet-50/60 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-violet-700">
         <Phone className="h-3 w-3" /> Find the right person first
       </p>
       <p className="mb-2 text-xs text-amari-text-muted">
-        {where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then come back.
+        {where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then mark it verified.
       </p>
       {p.phone ? (
         <a href={`tel:${p.phone}`}
@@ -945,6 +959,28 @@ function DiscoveryPanel({ p }: { p: PartnerProspect }) {
         <p className="mb-2 text-xs text-amari-text-muted">No phone on file — find the gym&apos;s number.</p>
       )}
       <CopyText text={ask} channel="ask on the call" />
+      <div className="mt-2 border-t border-violet-200 pt-2">
+        {!open ? (
+          <button type="button" onClick={() => setOpen(true)}
+            className="inline-flex items-center gap-1 rounded-lg border border-violet-300 bg-white px-2.5 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50">
+            <Check className="h-3.5 w-3.5" /> Found the right person
+          </button>
+        ) : (
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-violet-700">Who handles partnerships? Marking verified moves this to a pitch.</p>
+            <div className="flex gap-1.5">
+              <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" className={inputCls} />
+              <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" className={inputCls} />
+            </div>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Direct line (optional)" className={inputCls} />
+            {err && <p className="text-xs text-rose-600">{err}</p>}
+            <button type="button" onClick={submit} disabled={busy}
+              className="inline-flex items-center gap-1 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-700 disabled:opacity-40">
+              <Check className="h-3.5 w-3.5" /> {busy ? 'Saving…' : 'Mark verified'}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

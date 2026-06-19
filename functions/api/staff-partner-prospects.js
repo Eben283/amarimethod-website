@@ -280,9 +280,10 @@ function finalizePlay(p) {
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
   // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
   // means Garrett added the lead — Amanda's in the sheet but she's a coach, wrong
-  // person). Only an explicit outreach-verified flag or a solo contact (who IS the
-  // business) counts. (Future: a call-verified flag set by a discovery call.)
-  const trusted = !!(p.outreachVerified || tags.includes("trainer-solo"));
+  // person). Counts: an explicit outreach-verified flag, a solo contact (who IS the
+  // business), or `dm-verified` — the flywheel tag a discovery call writes once Garrett
+  // confirms the decision-maker (staff-partner-verify). That's how discovery → pitch.
+  const trusted = !!(p.outreachVerified || tags.includes("trainer-solo") || tags.includes("dm-verified"));
   const engaged = d.warmth === 2; // actually replied/talked → we may already know who to reach
   // A named owner/sole-operator IS the decision-maker — pitch them directly. Don't run a
   // "find who handles partnerships" discovery card on the person who owns the place. The
