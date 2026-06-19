@@ -681,6 +681,22 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     : isUntextable ? 'call'
     : ((coachChannel as ActionKind) || derivedAction);
 
+  // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
+  // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
+  // that are actually true. A solid card (real recorded call, verified person, full
+  // contact info) shows few or none, which itself signals "this one you can trust".
+  const gaps: string[] = [];
+  if (item.kind === 'prospect') {
+    const pp = item.p;
+    if (callNotes !== 'loading' && !(callNotes && callNotes.hasAudio)) gaps.push('no call transcript');
+    if (!phoneType) gaps.push('line type unknown');
+    if (isDiscovery) gaps.push('who the decision-maker is');
+    if (!pp.phone) gaps.push('no phone');
+    if (!pp.email) gaps.push('no email');
+    if (!pp.website) gaps.push('no website');
+    if (!(pp.rundown && String(pp.rundown).trim())) gaps.push('no background');
+  }
+
   return (
     <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
       <button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-2 p-3 text-left">
@@ -852,6 +868,15 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               <Send className="h-3.5 w-3.5" /> Save note
             </button>
           </div>
+
+          {/* What we don't know — a quiet footnote so a thin card never looks as
+              confident as a rich one. Only the gaps that are actually true; a solid
+              card shows few or none. */}
+          {gaps.length > 0 && (
+            <p className="border-t border-amari-border/60 pt-2 text-[11px] leading-relaxed text-amari-text-muted">
+              <span className="font-medium">What we don&apos;t know:</span> {gaps.join(' · ')}
+            </p>
+          )}
         </div>
       )}
     </div>
