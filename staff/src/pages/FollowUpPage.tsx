@@ -861,8 +861,18 @@ function Details({ p }: { p: PartnerProspect }) {
         {p.website && <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />}
       </div>
       <div className="flex flex-col gap-1 text-xs">
-        <EditableField key={`${p.contactId}-facility`} contactId={p.contactId} field="partnerFacility" label="facility" value={p.partnerFacility} />
-        <EditableField key={`${p.contactId}-role`} contactId={p.contactId} field="partnerFacilityRole" label="role" value={p.partnerFacilityRole} />
+        {/* TRUSTED type — the solo-vs-facility classification (confidence-floored, 2026-06-19),
+            distinct from the unreliable enriched role below. */}
+        {(() => {
+          const t = p.tags || [];
+          const cls = t.includes('trainer-solo') ? 'Solo practitioner' : t.includes('trainer-facility') ? 'Facility' : null;
+          return cls ? <span className="text-amari-charcoal"><span className="text-amari-text-muted">type: </span>{cls}</span> : null;
+        })()}
+        {/* Enriched facility/role are AUTO-GUESSES and proven unreliable (Amanda: "Manager"
+            for a coach). Label them unverified so they never read as confirmed fact —
+            drops to plain once a contact is actually verified (outreach_verified). */}
+        <EditableField key={`${p.contactId}-facility`} contactId={p.contactId} field="partnerFacility" label={p.outreachVerified ? 'facility' : 'facility · unverified'} value={p.partnerFacility} />
+        <EditableField key={`${p.contactId}-role`} contactId={p.contactId} field="partnerFacilityRole" label={p.outreachVerified ? 'role' : 'role · unverified'} value={p.partnerFacilityRole} />
       </div>
       {socials.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
