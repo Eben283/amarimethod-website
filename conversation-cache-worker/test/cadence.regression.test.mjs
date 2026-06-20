@@ -91,9 +91,9 @@ test('GUARD: a real unanswered question IS reply-waiting (do not over-suppress)'
 
 test('GUARD: a 5-day-old cold one-touch is still due for a nudge (do not over-park)', () => {
   const v = verdict([
-    { ts: ago(5), kind: 'call', dir: 'out' },
+    { ts: ago(5), kind: 'call', dir: 'out' }, // a dial-and-miss (no duration) → invisible to them
   ], 'Fresh Cold Lead');
-  assert.equal(v.due, true, 'a recent cold one-touch should still get step 2');
+  assert.equal(v.due, true, 'a recent cold one-touch must still nudge, not over-park');
 });
 
 test('GUARD: a contact set aside in the app (partner_stage=dropped) stays out', () => {
@@ -125,4 +125,41 @@ test('GUARD: a contentless inbound CALL inside an active thread (prior outbound)
     { ts: ago(1), kind: 'call', dir: 'in',  text: '' }, // they called back, worth returning
   ]);
   assert.equal(row.droppedReplies, 1, 'a callback inside an active thread is still a reply worth returning');
+});
+
+// ── Invisible calls (Eben 2026-06-19): a no-answer/no-voicemail call leaves zero memory,
+// so it must NOT advance the "follow-up" sequence — but it counts toward a give-up cap so
+// we don't dial a dead number forever. (No call duration on record = assume they didn't pick up.)
+
+test('invisible call: a single dead call is a FRESH first touch, not a "follow-up text"', () => {
+  // One outbound call, no duration (rang out, no VM). To them, we never made contact.
+  const v = verdict([{ ts: ago(5), kind: 'call', dir: 'out' }], 'Dead Call Once');
+  assert.equal(v.step, 1, 'a dead call must not advance the sequence to step 2');
+  assert.equal(v.channel, 'call', 'still cold step 1 (a fresh call), not a follow-up text');
+});
+
+test('invisible call: a LANDED call (a voicemail, dur >= 15s) DOES advance the sequence', () => {
+  const v = verdict([{ ts: ago(5), kind: 'call', dir: 'out', dur: 30 }], 'Left a VM');
+  assert.equal(v.step, 2, 'a voicemail landed, so the next touch is step 2');
+  assert.equal(v.channel, 'text', 'cold step 2 is the follow-up text');
+});
+
+test('give-up cap: 3 dead calls, never reached → stop calling, switch to a text', () => {
+  const v = verdict([
+    { ts: ago(8), kind: 'call', dir: 'out' },
+    { ts: ago(5), kind: 'call', dir: 'out' },
+    { ts: ago(3), kind: 'call', dir: 'out' },
+  ], 'Never Answers');
+  assert.equal(v.state, 'call-exhausted', 'after 3 dead calls we stop dialing');
+  assert.equal(v.channel, 'text', 'switch to a text instead of a 4th call');
+});
+
+test('give-up cap: a warm contact (they talked) is never call-exhausted', () => {
+  const v = verdict([
+    { ts: ago(20), kind: 'call', dir: 'out', dur: 130 }, // a real talk → warm
+    { ts: ago(8),  kind: 'call', dir: 'out' },
+    { ts: ago(5),  kind: 'call', dir: 'out' },
+    { ts: ago(3),  kind: 'call', dir: 'out' },
+  ], 'Talked Then Dialed');
+  assert.notEqual(v.state, 'call-exhausted', 'a contact who engaged is never auto-given-up by the call cap');
 });

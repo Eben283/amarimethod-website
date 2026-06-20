@@ -94,6 +94,15 @@ const WARM_STEPS = 4;
 // real talks ~120s+). Tuned conservative; the transcript is the ground truth when
 // we have one, but duration is the live signal the engine has at classify time.
 const TALKED_CALL_SEC = 120;
+// A call >= this (seconds) LANDED — they heard a voicemail or talked. Below this (or NO
+// duration on record) is a dial-and-miss that left nothing, invisible to the contact
+// (Eben 2026-06-19: no duration = assume they didn't pick up). VMs ran ~15-150s, so 15s
+// cleanly separates "left something" from "rang out".
+const LANDED_CALL_SEC = 15;
+// After this many DEAD (no-answer, no-voicemail) calls, stop dialing — they screen / wrong
+// number / not worth it. Switch to a text, then park. Counts OUR attempts, not their
+// awareness (a dead call is invisible to them, so it never makes the next touch a "follow-up").
+const DEAD_CALL_CAP = 3;
 const COLD_CHANNELS = ["call", "text", "call", "email", "call", "text"]; // step 1..6 (6 = breakup)
 const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step 1..4 (4 = breakup)
 const channelForStep = (variant, step) =>
@@ -161,8 +170,9 @@ function collapseEvents(touches) {
       last.lastTs = t.ts;
       if (t.kind) last.kind = t.kind;
       if (t.text) last.text = t.text;
+      if ((t.dur || 0) > (last.dur || 0)) last.dur = t.dur || 0; // keep the max call duration in the session
     } else {
-      events.push({ ts: t.ts, lastTs: t.ts, dir: t.dir, kind: t.kind, text: t.text });
+      events.push({ ts: t.ts, lastTs: t.ts, dir: t.dir, kind: t.kind, text: t.text, dur: t.dur || 0 });
     }
   }
   return events;
@@ -189,11 +199,19 @@ function buildRow(contactId, name, touches) {
   }
   const last = events[events.length - 1];
   const medGap = median(outGaps);
+  // A DEAD call = an outbound call that left nothing the contact would perceive (a
+  // dial-and-miss, dur below LANDED_CALL_SEC or no duration at all). Everything else
+  // outbound (texts, emails, calls that landed a voicemail or a talk) is a LANDED touch.
+  const deadCalls = out.filter((e) => e.kind === "call" && (e.dur || 0) < LANDED_CALL_SEC).length;
   return {
     contactId,
     name,
     internal: isInternal(name),
     outCount: out.length,
+    // Touches the contact actually PERCEIVED — these drive the follow-up sequence. A dead
+    // call is invisible, so it never advances the sequence or the breakup.
+    landedTouches: out.length - deadCalls,
+    deadCalls,
     inCount: inb.length,
     firstTouch: events[0].ts,
     lastTouch: last.ts,
@@ -216,6 +234,10 @@ function buildRow(contactId, name, touches) {
 function classify(p) {
   const since = p.sinceLastTouchDays;
   const outN = p.outCount;
+  // Touches the contact PERCEIVED drive the sequence; our no-answer dials drive a give-up
+  // cap (back-compat: rows cached before the buildRow change fall back to outCount/0).
+  const landed = p.landedTouches ?? outN;
+  const deadCalls = p.deadCalls ?? 0;
 
   // Skip-persistence: a contact explicitly set aside (coach:skip) or parked/closed
   // in the app (partner_stage) stays out — so a human "no" sticks across cycles.
@@ -239,37 +261,56 @@ function classify(p) {
   const warm = p.inCount > 0 || p.talkedCall;
   const variant = warm ? "warm" : "cold";
   const totalSteps = warm ? WARM_STEPS : COLD_STEPS;
-  const nextStep = outN + 1;
+  const nextStep = landed + 1;
 
   // Cold + never engaged + quiet past the cadence window: the sequence stalled
   // (Garrett never advanced it). Don't keep surfacing "send the next step" months
   // later — park it. Re-opens on a real reply (routes through reply-waiting above).
   if (!warm && since > COLD_STALE_DAYS) {
-    return { state: "exhausted", variant: "cold", step: outN, totalSteps: COLD_STEPS, channel: null,
+    return { state: "exhausted", variant: "cold", step: landed, totalSteps: COLD_STEPS, channel: null,
              due: false, action: "Cold and quiet past the cadence window — parked (re-opens on a reply).", priority: 0 };
+  }
+
+  // Call give-up: we've dialed DEAD_CALL_CAP+ times and never reached them (no answer, no
+  // voicemail). Stop dialing — they screen / wrong number / not worth it. The dead calls
+  // were invisible to them, so this is NOT a follow-up: if we have never landed a text or
+  // email, send ONE now (a fresh first touch); if we already have and they're still silent,
+  // park. (Warm contacts never hit this — they answered or replied at some point.)
+  if (!warm && deadCalls >= DEAD_CALL_CAP) {
+    if (landed === 0) {
+      return { state: "call-exhausted", variant: "cold", step: 1, totalSteps: COLD_STEPS,
+               channel: "text", isBreakup: false, due: since >= NOANSWER_RETRY_DAYS,
+               action: `Called ${deadCalls}x, never reached them — stop calling, send one text instead.`,
+               priority: since >= NOANSWER_RETRY_DAYS ? 55 : 0 };
+    }
+    return { state: "exhausted", variant: "cold", step: landed, totalSteps: COLD_STEPS, channel: null,
+             due: false, action: `Called ${deadCalls}x and already reached out, no response — parked (re-opens on a reply).`, priority: 0 };
   }
 
   // Cadence spent (the breakup / final step is already sent and they stayed quiet).
   // Eben 2026-06-15: NEVER auto-drop a lead who ENGAGED with us.
-  if (outN >= totalSteps) {
+  if (landed >= totalSteps) {
     if (warm) {
       // They replied/talked/booked at some point — too much intent to silently park.
       // Surface a low-priority human decision instead of dropping them.
-      return { state: "warm-stalled", variant, step: outN, totalSteps, channel: "call",
+      return { state: "warm-stalled", variant, step: landed, totalSteps, channel: "call",
                due: since >= 7, action: "Engaged with you, then went quiet, and the cadence is spent. Your call — one more personal try, or set aside.", priority: 15 };
     }
     // Cold + never engaged: the breakup was the close. Auto-exhaust → drops off the
     // worklist. Reversible: an inbound reply routes through reply-waiting (priority 100).
-    return { state: "exhausted", variant, step: outN, totalSteps, channel: null,
+    return { state: "exhausted", variant, step: landed, totalSteps, channel: null,
              due: false, action: "Cadence finished — breakup sent, no response. Parked (re-opens on a reply).", priority: 0 };
   }
 
+  // Pacing (how soon to reach out again) goes by attempts — we DID just spend effort, even
+  // on a dead call, so don't re-dial 5 minutes later. Only the step/channel/framing above
+  // goes by landed touches (a dead call doesn't advance the sequence, but it does set the clock).
   const wait = waitAfter(outN);
   const due = since >= wait;
   const isBreakup = nextStep === totalSteps;
   const channel = channelForStep(variant, nextStep);
   const state = isBreakup ? "breakup"
-              : (outN === 1 ? (warm ? "talked-no-next" : "one-touch-no-reply")
+              : (landed === 1 ? (warm ? "talked-no-next" : "one-touch-no-reply")
                             : (warm ? "gone-quiet" : "no-reply"));
   const action = due
     ? (isBreakup
