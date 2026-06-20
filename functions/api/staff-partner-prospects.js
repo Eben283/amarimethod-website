@@ -271,7 +271,7 @@ function cadenceVerdict(c) {
 //     target — we don't know who to reach. → DISCOVERY card: call, find the person. The
 //     enriched role/facility is treated as an unverified hint, never a basis to pitch.
 //   - A landline/VoIP number never gets a "text" recommendation (it's a switchboard).
-function finalizePlay(p) {
+export function finalizePlay(p) {
   const d = p.derived;
   // Park trainers who already have a physical therapist on staff — they handle pain
   // in-house, so they're not a referral fit right now. Held for a future campaign
@@ -296,11 +296,32 @@ function finalizePlay(p) {
   // facility tag fires on EVERY owner-operator (their name is the business), so it alone
   // can't mean "decision-maker unknown". Only treat a facility as DM-unknown when there's
   // no named owner to reach: an org-name contact, or a non-owner role (coach/staff/manager).
-  const firstTok = (p.firstName || p.fullName || "").trim().split(/\s+/)[0] || "";
-  const ORG_WORDS = /^(the|a|an|fit|fitness|gym|studio|club|performance|training|strength|crossfit|pilates|yoga|wellness|raise|punch|pure|tribe|local|bar|house|lab|co|sf|llc|inc|method|works|bodyworks|culture)$/i;
-  const hasPersonName = /^[A-Z][a-z]+$/i.test(firstTok) && !ORG_WORDS.test(firstTok) && !!(p.lastName || "").trim();
+  const nameStr = (p.fullName || `${p.firstName || ""} ${p.lastName || ""}`).trim();
+  const nameToks = nameStr.split(/\s+/).filter(Boolean);
+  const firstTok = nameToks[0] || "";
+  const ORG_WORDS = /^(the|a|an|fit|fitness|gym|gyms|studio|club|performance|training|strength|crossfit|pilates|yoga|wellness|raise|punch|pure|tribe|local|bar|house|lab|co|sf|llc|inc|method|works|bodyworks|culture)$/i;
+  // Does the name read like a business rather than a person? Orgs get stuffed into the name
+  // field ("Revel Training Club", "CA Sculpt Pilates", "Advanced Wellness") — reject if any
+  // token is an org word or the name is 3+ tokens. This is the real person/business test:
+  // the auto role often says "owner" for an org too, so it's the NAME that tells a person we
+  // pitch directly from a business we run discovery on to find the actual person.
+  const looksLikeOrg = nameToks.some((t) => ORG_WORDS.test(t)) || nameToks.length >= 3;
+  const hasPersonFirstName = /^[A-Z][a-z]+$/i.test(firstTok) && !ORG_WORDS.test(firstTok) && !looksLikeOrg;
   const isOwnerRole = /owner|sole|principal|founder/i.test(p.partnerFacilityRole || "");
-  const knownDecisionMaker = hasPersonName && isOwnerRole; // we already know exactly who to reach
+  // The rundown often already states they run the place ("Michael Crammond runs Whole Body
+  // Solutions", "Jae is a co-owner of J+K"). Only trust it when the rundown OPENS with their
+  // first name and an ownership verb follows in the same clause — that anchors the ownership
+  // to THIS contact, not "Trainer at X, which is owned by someone else" or a business whose
+  // name merely starts like a first name ("Alex Fitness ... family-owned").
+  const ownerInRundown = hasPersonFirstName && new RegExp(
+    "^" + firstTok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
+    "\\b[^.]{0,60}\\b(owns?|runs?|founded|founder|owner|co-?owner|principal|sole)\\b",
+    "i").test((p.rundown || "").trim());
+  // Known decision-maker = a named person AND a clear ownership signal. An explicit "Owner"
+  // role counts even without a last name (it's their own contact, e.g. "Charlie", "Ramy");
+  // otherwise require the rundown ownership statement. Stay conservative: discovery (find the
+  // person) is the safe default — a premature pitch to the wrong person is the actual harm.
+  const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     return { ...d, action: "discovery", channel: "call",
       why: "Facility, unverified contact — call and ask who handles partnerships, then get a name." };
