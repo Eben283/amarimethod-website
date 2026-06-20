@@ -299,10 +299,12 @@ function finalizePlay(p) {
     return { ...d, action: "discovery", channel: "call",
       why: "Facility, unverified contact — call and ask who handles partnerships, then get a name." };
   }
-  if ((d.action === "text" || d.action === "reback") && ["landline", "toll_free", "voip"].includes(p.phoneType)) {
-    const kind = p.phoneType === "voip" ? "a VoIP / switchboard" : `a ${p.phoneType}`;
+  // Only landline + toll-free are truly untextable. VoIP is NOT suppressed: most
+  // personal VoIP (Google Voice, TextNow, MVNO cells routed over VoIP) receives
+  // SMS fine, so blanket-suppressing it would stop us texting reachable people.
+  if ((d.action === "text" || d.action === "reback") && ["landline", "toll_free"].includes(p.phoneType)) {
     return { ...d, action: "call", channel: "call",
-      why: `The number on file is ${kind} line, not a cell — call instead.` };
+      why: `The number on file is a ${p.phoneType.replace("_", "-")} line, not a cell — call instead.` };
   }
   return d;
 }
