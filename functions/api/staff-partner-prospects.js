@@ -342,7 +342,7 @@ export function finalizePlay(p) {
   const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     return { ...d, action: "discovery", channel: "call",
-      why: "Facility, unverified contact — call and ask who handles partnerships, then get a name." };
+      why: "Call and ask who handles partnerships, then get a name. It's a facility and we don't know the decision-maker yet." };
   }
   // Only landline + toll-free are truly untextable. VoIP is NOT suppressed: most
   // personal VoIP (Google Voice, TextNow, MVNO cells routed over VoIP) receives
