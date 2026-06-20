@@ -690,10 +690,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // why isn't rewritten); discovery/LinkedIn use the server's corrected why; otherwise the
   // coach's whyNow leads (written together with its channel, so they agree).
   const untextableWhy = phoneType === 'landline'
-    ? 'This number is a landline, not a cell, so call instead of texting.'
+    ? "Call them, the number on file is a landline, not a textable cell."
     : phoneType === 'toll_free'
-    ? 'This is a toll-free line (a switchboard), so call instead of texting.'
-    : 'This number is VoIP (likely a front desk), so call instead of texting.';
+    ? "Call them, the number on file is a toll-free line (a switchboard, not a cell)."
+    : "Call them, the number on file is VoIP (likely a front desk, not a textable cell).";
   const displayWhy = item.kind !== 'prospect' ? null
     : isUntextable ? untextableWhy
     : (isDiscovery || isLinkedIn) ? item.d.why
