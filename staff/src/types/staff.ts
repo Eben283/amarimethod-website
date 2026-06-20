@@ -20,6 +20,7 @@ export interface TodayAppointment {
   endTime: string;
   title: string;
   calendarName: string;
+  appointmentStatus?: string;
   sessionsRemaining: number;
   sessionsCompleted: number;
   seriesType: string;

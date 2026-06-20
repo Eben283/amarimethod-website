@@ -66,6 +66,9 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const dateParam = url.searchParams.get('date');
     const endDateParam = url.searchParams.get('endDate');
+    // MoneyMoments needs today's CANCELLED sessions (to surface a reschedule+pitch
+    // recovery moment). The main Today schedule omits this param → cancelled stay hidden.
+    const includeCancelled = url.searchParams.get('includeCancelled') === '1';
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -122,8 +125,8 @@ export async function onRequestGet(context) {
     }
     const events = Array.from(eventMap.values());
 
-    // Filter to non-cancelled appointments
-    const todayEvents = events.filter(
+    // Filter to non-cancelled appointments (unless includeCancelled — MoneyMoments).
+    const todayEvents = includeCancelled ? events : events.filter(
       (e) => (e.appointmentStatus || e.status || "").toLowerCase() !== "cancelled"
     );
 
@@ -236,6 +239,7 @@ export async function onRequestGet(context) {
           endTime: event.endTime || event.end_time,
           title: event.title || event.calendarName || "Session",
           calendarName: event.calendarName || "",
+          appointmentStatus: (event.appointmentStatus || event.status || "").toLowerCase(),
           sessionsRemaining,
           sessionsCompleted,
           seriesType,
