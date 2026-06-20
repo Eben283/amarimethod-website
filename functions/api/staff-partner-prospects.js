@@ -275,6 +275,14 @@ function cadenceVerdict(c) {
 //   - A landline/VoIP number never gets a "text" recommendation (it's a switchboard).
 function finalizePlay(p) {
   const d = p.derived;
+  // Park trainers who already have a physical therapist on staff — they handle pain
+  // in-house, so they're not a referral fit right now. Held for a future campaign
+  // (Eben 2026-06-20). Suppress from the worklist (kind→aside); the data + tag stay.
+  // Field `has_pt_on_staff` is null/"No"/"Unknown"/"Yes" — only "Yes" suppresses.
+  if (d && d.kind === "act" && /^yes$/i.test(p.hasPtOnStaff || "")) {
+    return { ...d, kind: "aside", urgency: 0, action: null, why: "",
+      asideReason: "Has a physical therapist on staff — parked for a future campaign" };
+  }
   if (!d || d.kind !== "act" || d.action === "linkedin") return d; // leave non-actionable + LinkedIn
   const tags = Array.isArray(p.tags) ? p.tags : [];
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
