@@ -680,6 +680,24 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     : isDiscovery ? 'discovery'
     : isUntextable ? 'call'
     : ((coachChannel as ActionKind) || derivedAction);
+  // When the play-decision OVERRODE the channel (untextable→call, discovery, LinkedIn), the
+  // coach's whyNow was written for a different channel ("Text Abraham now…" on a landline) and
+  // contradicts the pill. Show the corrected derived why instead so the headline matches the
+  // action. Otherwise the coach's whyNow leads (it and the channel were written together).
+  // The headline must match the pill. When the play-decision overrode the channel, the coach's
+  // whyNow was written for a different channel ("Text Abraham now…" on a landline) — show the
+  // corrected why instead. Untextable routes to a call, said plainly (covers VoIP, whose server
+  // why isn't rewritten); discovery/LinkedIn use the server's corrected why; otherwise the
+  // coach's whyNow leads (written together with its channel, so they agree).
+  const untextableWhy = phoneType === 'landline'
+    ? 'This number is a landline, not a cell, so call instead of texting.'
+    : phoneType === 'toll_free'
+    ? 'This is a toll-free line (a switchboard), so call instead of texting.'
+    : 'This number is VoIP (likely a front desk), so call instead of texting.';
+  const displayWhy = item.kind !== 'prospect' ? null
+    : isUntextable ? untextableWhy
+    : (isDiscovery || isLinkedIn) ? item.d.why
+    : (coachWhy || item.d.why);
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
@@ -716,7 +734,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-amari-charcoal">{coachWhy || item.d.why}</p>
+              <p className="mt-1 text-sm text-amari-charcoal">{displayWhy}</p>
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
               )}
@@ -1363,7 +1381,7 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
     const el = ref.current;
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
   }, [body]);
-  const key = `${subject.trim()} ${body.trim()}`;
+  const key = `${subject.trim()}${body.trim()}`;
   const send = async () => {
     const subj = subject.trim();
     const msg = body.trim();
