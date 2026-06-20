@@ -25,6 +25,11 @@ const SESSIONS_PER_PACK = 8;
 //   <120s = scripted voicemail left          → "vm"
 //   ≥120s = live conversation                → "talk"
 const CALL_TIER = { noneUnderSec: 20, voicemailUnderSec: 120 };
+
+// GHL message `source` values that mean an AUTOMATED send (not Garrett's manual
+// outreach). Texts/emails from these are excluded from the activity counts so
+// the banner reflects work done, not workflow confirmations/reminders/drips.
+const AUTOMATED_SOURCES = new Set(["workflow", "campaign", "bulk_actions", "bulk"]);
 const DAY_MS = 86_400_000;
 const TZ = "America/Los_Angeles";
 
@@ -185,21 +190,30 @@ async function loadCalls(env, lid, cutoffMs, cohortOf) {
   );
   console.log(`conversations in window: ${inWindow.length} (of ${convs.size} pulled)`);
 
-  const raw = [];
+  const raw = [], rawTexts = [], rawEmails = [];
   await mapLimit(inWindow, 3, async (c) => {
     const m = await ghlRetry(env, `/conversations/${c.id}/messages`);
     const msgs = m.messages?.messages || m.messages || [];
     for (const x of msgs) {
-      if (!String(x.messageType || x.type || "").toUpperCase().includes("CALL")) continue;
       if ((x.direction || "").toLowerCase() !== "outbound") continue; // outreach only
       const ts = new Date(x.dateAdded).getTime();
       if (ts < cutoffMs) continue;
-      const dur = x.meta?.call?.duration ?? 0;
-      const status = (x.meta?.call?.status || x.status || "").toLowerCase();
-      let o = "none";
-      if (status === "completed" && dur >= CALL_TIER.voicemailUnderSec) o = "talk";
-      else if (status === "completed" && dur >= CALL_TIER.noneUnderSec) o = "vm";
-      raw.push({ d: laDate(x.dateAdded), o, c: cohortOf(x.contactId), contactId: x.contactId });
+      const mtype = String(x.messageType || x.type || "").toUpperCase();
+      if (mtype.includes("CALL")) {
+        const dur = x.meta?.call?.duration ?? 0;
+        const status = (x.meta?.call?.status || x.status || "").toLowerCase();
+        let o = "none";
+        if (status === "completed" && dur >= CALL_TIER.voicemailUnderSec) o = "talk";
+        else if (status === "completed" && dur >= CALL_TIER.noneUnderSec) o = "vm";
+        raw.push({ d: laDate(x.dateAdded), o, c: cohortOf(x.contactId), contactId: x.contactId });
+      } else if (mtype.includes("SMS") || mtype.includes("EMAIL")) {
+        // Count only MANUAL outreach (parallel to calls), not automated GHL
+        // workflow/campaign/bulk sends (confirmations, reminders, drips).
+        if (AUTOMATED_SOURCES.has(String(x.source || "").toLowerCase())) continue;
+        const touch = { d: laDate(x.dateAdded), contactId: x.contactId };
+        if (mtype.includes("SMS")) rawTexts.push(touch);
+        else rawEmails.push(touch);
+      }
     }
   });
   // Collapse REDIALS — one call per contact per day, keeping the best outcome
@@ -212,8 +226,16 @@ async function loadCalls(env, lid, cutoffMs, cohortOf) {
     if (!prev || (RANK[r.o] || 0) > (RANK[prev.o] || 0)) dedup.set(key, r);
   }
   const calls = [...dedup.values()].map(({ contactId, ...rest }) => rest);
-  console.log(`outbound calls in window: ${calls.length} unique (from ${raw.length} attempts)`);
-  return calls;
+  // texts/emails: one outreach touch per contact per day (parallel to calls), then drop contactId.
+  const dedupTouch = (arr) => {
+    const m = new Map();
+    for (const r of arr) m.set(`${r.d}|${r.contactId || "?"}`, r);
+    return [...m.values()].map(({ contactId, ...rest }) => rest);
+  };
+  const texts = dedupTouch(rawTexts);
+  const emails = dedupTouch(rawEmails);
+  console.log(`outbound in window — calls ${calls.length} (from ${raw.length}) · texts ${texts.length} · emails ${emails.length}`);
+  return { calls, texts, emails };
 }
 
 async function loadGifted(env, lid, cutoffMs, cohortOf) {
@@ -295,11 +317,12 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
   const contacts = await loadContacts(env, lid);
   const cohortOf = (id) => contacts.get(id)?.cohort || "Direct / untagged";
 
-  const [calls, sessions, sales] = await Promise.all([
+  const [touches, sessions, sales] = await Promise.all([
     loadCalls(env, lid, cutoffMs, cohortOf),
     loadGifted(env, lid, cutoffMs, cohortOf),
     loadSales(env, lid, contacts),
   ]);
+  const { calls, texts, emails } = touches;
 
   // trailing-90 calls-per-pack-equivalent → drives "need ~N calls/day"
   const cut90 = laDate(new Date(Date.now() - 90 * DAY_MS).toISOString());
@@ -339,6 +362,8 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
     windowDays,
     goal: { packsPerMonth: GOAL_PACKS_PER_MONTH, sessionsPerPack: SESSIONS_PER_PACK },
     calls,      // [{d, o: "none"|"vm"|"talk", c: cohort}]
+    texts,      // [{d}] outbound SMS, one touch per contact-day
+    emails,     // [{d}] outbound email, one touch per contact-day
     sessions,   // [{d, showed, c}]
     sales,      // [{d, s: sessionsSold, k: kind, c, r: repeat, who}]
     trailing90: { calls: calls90, equivs: Number(equivs90.toFixed(2)), callsPerEquiv: callsPerEquiv ? Math.round(callsPerEquiv) : null },

@@ -463,6 +463,8 @@ export interface FunnelData {
   windowDays?: number;
   goal?: { packsPerMonth: number; sessionsPerPack: number };
   calls?: FunnelCallEvent[];
+  texts?: { d: string }[];         // outbound SMS, one touch per contact-day
+  emails?: { d: string }[];        // outbound email, one touch per contact-day
   sessions?: FunnelSessionEvent[];
   sales?: FunnelSaleEvent[];
   trailing90?: { calls: number; equivs: number; callsPerEquiv: number | null };

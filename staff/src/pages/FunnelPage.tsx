@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Trophy, X, Check } from 'lucide-react';
+import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Trophy, X, Check, MessageSquare, Mail, Voicemail } from 'lucide-react';
 import { getFunnel, triggerFunnelRefresh, ApiError, type FunnelData } from '../lib/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -326,6 +326,8 @@ export default function FunnelPage() {
     const startStr = toStr(start), endStr = toStr(end);
     const inR = (d: string) => d >= startStr && d < endStr;
     const calls = (data.calls || []).filter((e) => inR(e.d));
+    const texts = (data.texts || []).filter((e) => inR(e.d));
+    const emails = (data.emails || []).filter((e) => inR(e.d));
     const sessions = (data.sessions || []).filter((e) => inR(e.d));
     const sales = (data.sales || []).filter((e) => inR(e.d));
 
@@ -390,6 +392,7 @@ export default function FunnelPage() {
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
       callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board,
+      textsN: texts.length, emailsN: emails.length,
       stageTarget, dailyCallsTarget };
   }, [data, range]);
 
@@ -530,6 +533,21 @@ export default function FunnelPage() {
               <b style={{ color: COL.ink }}>{v.remaining.toFixed(1)}</b> packs to go · <b style={{ color: COL.ink }}>{v.daysLeft}</b> day{v.daysLeft === 1 ? '' : 's'} left · aim <b style={{ color: COL.ink }}>~{v.dailyCallsTarget}</b> calls/day
             </p>
           )}
+        </div>
+
+        {/* outreach touches this period — the non-call work (texts, emails, voicemails left) */}
+        <div className="fn-reveal mb-5 grid grid-cols-3 gap-2">
+          {[
+            { Icon: MessageSquare, n: v.textsN, label: v.textsN === 1 ? 'text' : 'texts', col: COL.plum },
+            { Icon: Mail, n: v.emailsN, label: v.emailsN === 1 ? 'email' : 'emails', col: COL.rust },
+            { Icon: Voicemail, n: v.vm, label: v.vm === 1 ? 'voicemail' : 'voicemails', col: COL.ember },
+          ].map((s) => (
+            <div key={s.label} className="flex flex-col items-center rounded-2xl px-2 py-2.5" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+              <s.Icon className="mb-1 h-3.5 w-3.5" style={{ color: s.col }} />
+              <span className="fn-story text-2xl font-bold leading-none tabular-nums" style={{ color: COL.ink }}>{s.n}</span>
+              <span className="mt-1 text-[10px] uppercase tracking-wider" style={{ color: COL.inkSoft }}>{s.label}</span>
+            </div>
+          ))}
         </div>
 
         {/* ── THE WOODLAND ── */}
