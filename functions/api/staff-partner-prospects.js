@@ -224,15 +224,13 @@ function deriveActNow(p, elig) {
     case "voicemail": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 70 + fb, warmth: 1, action: "text", why: `You called ${agoLabel(d)} and haven't heard back. A text's worth a shot — it's more likely to get seen.` } : waiting("Called — give it a few days.");
     case "talked": return due(TALKED_FOLLOWUP_DAYS) ? { kind: "act", urgency: 76 + fb, warmth: 2, action: "text", why: `You talked ${agoLabel(d)} — text them the next step before it goes cold.` } : waiting("Just talked — give it a day.");
     case "link-sent": return due(LINK_FOLLOWUP_DAYS) ? { kind: "act", urgency: 66 + fb, warmth: 2, action: "text", why: `You sent the link ${agoLabel(d)} and they haven't booked. Text them and check in.` } : waiting("Just sent the link.");
-    // LinkedIn-sourced: the phone on file is almost always the facility's front
-    // desk (a golf club / studio switchboard), not a cell — so a text bounces or
-    // lands at a pro shop. Follow up where we actually connected: LinkedIn. Low
-    // urgency (a cold, often-unanswered connection request is bottom-of-list work),
-    // and NO freqBoost — that recovery boost is for real touched-and-dropped leads.
+    // LinkedIn RETIRED as a channel (Eben 2026-06-20). These were sourced because the
+    // number on file is a facility front desk (a club / studio switchboard), not a cell.
+    // We keep the people; we just reach them by phone now: CALL and ask for them by name.
+    // Never text a switchboard. Low-ish urgency, no freqBoost (cold connection-request work).
     case "linkedin-req":
-      return due(LINKEDIN_FOLLOWUP_DAYS) ? { kind: "act", urgency: 38, warmth: 1, action: "linkedin", why: `LinkedIn request sent ${agoLabel(d)} — check if they accepted, then message them on LinkedIn (the number on file is the facility's, not a cell).` } : waiting("Just sent a LinkedIn request.");
     case "linkedin-msg":
-      return due(LINKEDIN_FOLLOWUP_DAYS) ? { kind: "act", urgency: 45, warmth: 1, action: "linkedin", why: `You messaged on LinkedIn ${agoLabel(d)} — follow up there, that's where you connected (the number on file is the facility's, not a cell).` } : waiting("Just messaged on LinkedIn.");
+      return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 48, warmth: 1, action: "call", why: `Connected on LinkedIn earlier, but we're off LinkedIn now. The number on file is likely the facility's, so call and ask for them by name.` } : waiting("Recently reached out.");
     case "instagram-msg": case "in-person":
       return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, warmth: 1, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
     case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
@@ -283,7 +281,7 @@ function finalizePlay(p) {
     return { ...d, kind: "aside", urgency: 0, action: null, why: "",
       asideReason: "Has a physical therapist on staff — parked for a future campaign" };
   }
-  if (!d || d.kind !== "act" || d.action === "linkedin") return d; // leave non-actionable + LinkedIn
+  if (!d || d.kind !== "act") return d; // leave non-actionable (LinkedIn action retired 2026-06-20)
   const tags = Array.isArray(p.tags) ? p.tags : [];
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
   // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
