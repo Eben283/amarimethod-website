@@ -1,5 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { finalizePlay } from './staff-partner-prospects.js';
+import { finalizePlay, manualTouchIsFresherThanCadence } from './staff-partner-prospects.js';
+
+describe('manualTouchIsFresherThanCadence — a just-marked touch beats the stale cadence', () => {
+  const M = manualTouchIsFresherThanCadence;
+  it('returns true when a texted touch is newer than the cadence last touch', () => {
+    expect(M('texted', '2026-06-20', '2026-05-30T10:00:00Z')).toBe(true);
+  });
+  it('returns true for a same-day touch (date-only field, cadence ran earlier the same day)', () => {
+    // partner_last_signal_at is a GHL DATE field → no time → must compare by date.
+    expect(M('texted', '2026-06-20', '2026-06-20T18:00:00Z')).toBe(true);
+  });
+  it('returns true for a chip outcome (talked/voicemail) with no cadence touch on file', () => {
+    expect(M('talked', '2026-06-20', null)).toBe(true);
+    expect(M('voicemail', '2026-06-20', undefined)).toBe(true);
+  });
+  it('returns false when the manual touch is OLDER than the cadence already knows', () => {
+    expect(M('texted', '2026-06-18', '2026-06-20T09:00:00Z')).toBe(false);
+  });
+  it('returns false for non-touch signals (stage changes are handled by the stage gate)', () => {
+    expect(M('not-interested', '2026-06-20', null)).toBe(false);
+    expect(M('booked', '2026-06-20', null)).toBe(false);
+    expect(M('note', '2026-06-20', null)).toBe(false);
+  });
+  it('returns false when there is no signal date', () => {
+    expect(M('texted', null, '2026-06-20T09:00:00Z')).toBe(false);
+    expect(M(undefined, undefined, undefined)).toBe(false);
+  });
+});
 
 // Build a facility prospect with an actionable card. Defaults make it discovery-eligible
 // (facility tag, unverified, not engaged) so each test isolates the owner-detection logic.
