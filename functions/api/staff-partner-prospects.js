@@ -163,6 +163,24 @@ function lastTouchAt(p) {
   if (a === null && b === null) return null;
   return new Date(Math.max(a ?? 0, b ?? 0)).toISOString();
 }
+
+// A manual outcome (a Follow-Up chip tap, or an app-sent text) writes partner_last_signal_at,
+// but the cloud cadence snapshot (coach:cadence:latest) is conversation-derived + up to 3h
+// stale and NEVER reads that field — so a just-marked touch (especially an off-platform call
+// logged via a chip) leaves the card stuck as "act" until the next cron, or forever for a
+// chip the cadence has no conversation record of. GHL stores partner_last_signal_at as a DATE
+// (no time), so compare by calendar date: if the manual touch is at least as recent as the
+// cadence's own last touch, the cadence is stale for this contact and we trust the live engine.
+const FRESH_TOUCH_SIGNALS = new Set(["texted", "emailed", "talked", "voicemail", "link-sent", "no-answer"]);
+export function manualTouchIsFresherThanCadence(signal, signalAt, cadenceLastTouch) {
+  if (!FRESH_TOUCH_SIGNALS.has(signal) || !signalAt) return false;
+  const sigDate = String(signalAt).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(sigDate)) return false;
+  if (!cadenceLastTouch) return true;
+  const cadMs = new Date(cadenceLastTouch).getTime();
+  if (Number.isNaN(cadMs)) return true;
+  return sigDate >= new Date(cadMs).toISOString().slice(0, 10);
+}
 function agoLabel(d) { if (d === null) return "never"; if (d <= 0) return "today"; if (d === 1) return "yesterday"; return `${d} days ago`; }
 
 // The leak is FREQUENCY, not timing: ~80% of prospects got one touch then were
@@ -563,7 +581,12 @@ export async function onRequestGet(context) {
         || p.partnerStage === "partner" || p.partnerStage === "session-booked"
         || p.partnerStage === "dropped" || p.partnerStage === "future-potential"
         || !!c?.hasBooking;
-      p.derived = (c && !stageGated)
+      // If a manual touch (chip / app-send) is fresher than the cadence's last known touch,
+      // the 3h-stale conversation-derived cadence hasn't accounted for it — fall back to the
+      // live engine so a just-marked contact actually parks in "waiting" (and stays parked on
+      // reload), instead of staying stuck as "act".
+      const freshTouch = manualTouchIsFresherThanCadence(p.partnerLastSignal, p.partnerLastSignalAt, c?.lastTouch);
+      p.derived = (c && !stageGated && !freshTouch)
         ? cadenceVerdict(c)
         : deriveActNow(p, { hasBooking: c?.hasBooking, skipped });
     }
