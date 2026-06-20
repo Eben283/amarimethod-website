@@ -63,10 +63,11 @@ export async function staffLogin(pin: string): Promise<{ token: string }> {
   });
 }
 
-export async function getDayData(date?: string, endDate?: string): Promise<import('../types/staff').TodayAppointment[]> {
+export async function getDayData(date?: string, endDate?: string, includeCancelled?: boolean): Promise<import('../types/staff').TodayAppointment[]> {
   const params = new URLSearchParams();
   if (date) params.set('date', date);
   if (endDate) params.set('endDate', endDate);
+  if (includeCancelled) params.set('includeCancelled', '1');
   const qs = params.toString();
   return fetchApi(`/staff-data${qs ? `?${qs}` : ''}`);
 }
