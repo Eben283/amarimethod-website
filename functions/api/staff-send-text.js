@@ -10,7 +10,11 @@ import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const MAX_LEN = 480; // ~3 SMS segments; a follow-up nudge is far shorter
+// The personalized coach drafts are warm + full (Garrett's voice, "never clipped") and run
+// ~480-520 chars; the old 480 cap silently 400'd them ("Message too long" hidden behind a
+// generic UI error). 720 ≈ 5 concatenated SMS segments — covers the drafts with headroom
+// while still rejecting a runaway paste. (Generator targets ~70 words; tighten it separately.)
+const MAX_LEN = 720;
 const DEDUPE_TTL_S = 300; // 5 min — kills double-taps + retry-after-timeout dupes
 
 const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
