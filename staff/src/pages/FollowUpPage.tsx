@@ -1615,8 +1615,10 @@ function EditableField({ contactId, field, label, value, multiline }: {
 }
 
 function DetailLine({ icon: Icon, value, href }: { icon: typeof Phone; value: string; href: string }) {
+  const isExternal = href.startsWith('http');
   return (
-    <a href={href} className="inline-flex items-center gap-2 text-amari-charcoal hover:underline">
+    <a href={href} className="inline-flex items-center gap-2 text-amari-charcoal hover:underline"
+      {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
       <Icon className="h-3.5 w-3.5 shrink-0 text-amari-text-muted" /> <span className="truncate">{value}</span>
     </a>
   );
