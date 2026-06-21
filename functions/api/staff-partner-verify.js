@@ -13,6 +13,9 @@ import { verifySessionToken } from "../lib/auth.js";
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
 const VERIFIED_TAG = "dm-verified";
+// GHL search index has a lag updating tags, so we also write the outreach_verified
+// custom field — it's read from the contact record directly and has no lag.
+const OUTREACH_VERIFIED_FIELD_ID = "PVftrxrmNRPmfdlQAwzl";
 
 function corsHeaders(origin) {
   const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -66,18 +69,21 @@ export async function onRequestPost(context) {
     });
     if (!tagRes.ok) { const t = await tagRes.text(); console.error("[verify] tag failed", tagRes.status, t); return new Response(JSON.stringify({ error: "Failed to tag contact" }), { status: 422, headers }); }
 
-    // 2) Optionally repoint the record to the real person (name / direct line).
-    const update = {};
+    // 2) Repoint the record to the real person (name / direct line) and set the
+    //    outreach_verified custom field. The field is a reliable fallback because
+    //    GHL's search index can lag minutes before a newly-added tag appears in
+    //    search results — the custom field is on the contact record directly.
+    const update = {
+      customFields: [{ id: OUTREACH_VERIFIED_FIELD_ID, value: ["Verified"] }],
+    };
     if (dmFirstName) update.firstName = dmFirstName;
     if (dmLastName) update.lastName = dmLastName;
     if (dmPhone) update.phone = dmPhone;
-    if (Object.keys(update).length) {
-      const upRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
-        method: "PUT", headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
-        body: JSON.stringify(update),
-      });
-      if (!upRes.ok) console.error("[verify] update failed", upRes.status, await upRes.text());
-    }
+    const upRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
+      method: "PUT", headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
+      body: JSON.stringify(update),
+    });
+    if (!upRes.ok) console.error("[verify] update failed", upRes.status, await upRes.text());
 
     // 3) Audit note.
     const dmName = [dmFirstName, dmLastName].filter(Boolean).join(" ");
