@@ -519,22 +519,37 @@ export default function FollowUpPage() {
           <Empty icon={Search} title="No matches" sub={`Nobody matches "${query.trim()}".`} />
         ) : (
           <div className="space-y-2">
-            {searchItems.map((item) => (
-              <ActRow
-                key={`s-${item.p.contactId}`}
-                item={item}
-                expanded={expandedId === item.p.contactId}
-                activity={activity[item.p.contactId]}
-                busy={busyId === item.p.contactId}
-                noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
-                onToggle={() => toggleExpand(item.p.contactId)}
-                onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
-                onNoteChange={setNoteDraft}
-                onSaveNote={() => onSaveNote(item.p.contactId)}
-                onDismiss={() => onDismissReply(item.p.contactId)}
-                onHandled={() => markHandled(item.p.contactId)}
-              />
-            ))}
+            {searchItems.map((item) =>
+              item.d.kind === 'aside' || item.d.kind === 'converted' ? (
+                <div key={`s-${item.p.contactId}`} className="flex items-center justify-between rounded-xl border border-amari-border bg-white p-3">
+                  <div className="min-w-0">
+                    <span className="truncate font-medium text-amari-charcoal">{displayName(item.p.fullName) || 'Unknown'}</span>
+                    <p className="text-[11px] text-amari-text-muted">
+                      {item.d.asideReason || (item.d.kind === 'converted' ? 'Active partner' : 'Set aside')}
+                    </p>
+                  </div>
+                  <a href={ghlContactUrl(item.p.contactId)} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+                    <ExternalLink className="h-3.5 w-3.5" /> GHL
+                  </a>
+                </div>
+              ) : (
+                <ActRow
+                  key={`s-${item.p.contactId}`}
+                  item={item}
+                  expanded={expandedId === item.p.contactId}
+                  activity={activity[item.p.contactId]}
+                  busy={busyId === item.p.contactId}
+                  noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
+                  onToggle={() => toggleExpand(item.p.contactId)}
+                  onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
+                  onNoteChange={setNoteDraft}
+                  onSaveNote={() => onSaveNote(item.p.contactId)}
+                  onDismiss={() => onDismissReply(item.p.contactId)}
+                  onHandled={() => markHandled(item.p.contactId)}
+                />
+              )
+            )}
           </div>
         )
       ) : (
@@ -636,6 +651,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
   const isClient = isReply ? item.isClient : item.p.isActivePartner;
   const industry = !isReply && item.p.category !== 'unknown' ? item.p.category : '';
+  // Aside/converted contacts must never trigger a coach fetch or show drafts —
+  // they're off the list and the card is stale by definition.
+  const isGated = item.kind === 'prospect' && (item.d.kind === 'aside' || item.d.kind === 'converted');
 
   // Fetch the PROACTIVE outreach coach (headline why-now + the editable/sendable
   // drafts) for PROSPECT cards only. Reply cards don't use it — the proactive
@@ -643,11 +661,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // call-coach's in-context Suggested reply instead (CoachPanel below).
   const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
   useEffect(() => {
-    if (isReply) { setCoach(null); return; }
+    if (isReply || isGated) { setCoach(null); return; }
     let live = true;
     getOutreachCoach(contactId).then((c) => { if (live) setCoach(c); }).catch(() => { if (live) setCoach(null); });
     return () => { live = false; };
-  }, [contactId, isReply]);
+  }, [contactId, isReply, isGated]);
 
   // Fetch the call-coach NOTES — what happened on the last call/interaction (summary,
   // objections, next step), grounded in the transcript when we have one. Shown so Garrett
@@ -799,12 +817,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                 <UntextablePanel p={item.p} phoneType={phoneType} />
               ) : (
                 <>
-                  <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
+                  {!isGated && <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />}
                   {/* No cloud draft, but the recommended move is a text → fall back to a
                       static suggested draft so a "text" card is never a dead-end with
                       nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
                       OutreachCoachPanel above; this only fills the gap. */}
-                  {coach !== 'loading' && !coach && effAction === 'text' && (
+                  {!isGated && coach !== 'loading' && !coach && effAction === 'text' && (
                     <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
                   )}
                 </>
