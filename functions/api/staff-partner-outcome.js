@@ -299,6 +299,15 @@ export async function onRequestPost(context) {
       console.error(`[staff-partner-outcome] note write failed: ${noteRes.status} ${text.slice(0, 200)}`);
     }
 
+    // Purge stale outreach-coach draft — a closed contact must not carry a stale
+    // "here's what to pitch" card that could leak through any display path. Fire-and-
+    // forget: KV delete failure must never block the outcome record from returning.
+    if ((newStage === "dropped" || newStage === "future-potential") && context.env.PORTAL_KV) {
+      context.env.PORTAL_KV.delete(`coach:${contactId}`).catch((err) => {
+        console.error("[staff-partner-outcome] KV coach delete failed:", err instanceof Error ? err.message : String(err));
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
