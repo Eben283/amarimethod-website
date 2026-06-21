@@ -12,6 +12,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import sheetCache from "../lib/partner-sheet-cache.json";
+import { buildCard } from "../lib/build-card.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -257,6 +258,83 @@ function deriveActNow(p, elig) {
 }
 
 // The conversation engine's verdict for a contact the cadence knows about — the
+// ── Phase 3: buildCard helpers ────────────────────────────────────────────────
+// Convert sync.js compact touch format → buildCard thread format.
+function compactToThread(t) {
+  const TYPE = { call: "CALL", sms: "SMS", email: "EMAIL" };
+  return {
+    direction:    t.dir === "out" ? "outbound" : "inbound",
+    type:         TYPE[t.kind] || "OTHER",
+    body:         t.text || "",
+    callDuration: t.dur ?? null,
+    hasTranscript: false,
+    date:          t.ts,
+  };
+}
+
+// Build a dossier for buildCard from a contact + its conv:{id} KV record.
+function buildContactDossier(p, conv, lineTypeMap) {
+  const lt = conv?.lineType || lineTypeMap.get(p.contactId) || null;
+  return {
+    firstName: conv?.firstName || p.firstName || "",
+    lastName:  conv?.lastName  || p.lastName  || "",
+    fullName:  p.fullName || conv?.name || `${p.firstName || ""} ${p.lastName || ""}`.trim() || "(no name)",
+    role:      p.partnerFacilityRole || conv?.role || null,
+    business:  p.companyName || conv?.business || null,
+    lineType:  lt,
+    rundown:   p.rundown || conv?.rundown || null,
+    thread:    conv ? (conv.touches || []).map(compactToThread) : [],
+  };
+}
+
+// Lines that genuinely can't receive SMS — buildCard forces "call" for these.
+// Mobile/unknown stays on the cadence's channel (call/text alternation is intentional;
+// collapsing it to all-text turns calls into texts on numbers Garrett can and should call).
+const FORCED_CALL_LINES = new Set(["landline", "toll_free", "voip"]);
+
+// Merge cadence verdict (kind/urgency/warmth/due) with buildCard output
+// (why/channel/action/state/play). Code decides the truth; cadence provides timing.
+//
+// Channel policy:
+//   - Untextable line (landline/voip/toll_free) → always "call" (capability fix)
+//   - Textable line (mobile/unknown) → preserve cadence's channel so the call/text
+//     sequence runs as configured (Garrett deliberately alternates to avoid all-text)
+//   - Discovery → always "call" (calling to find the decision-maker)
+//
+// Why verb: MUST match the final channel. buildCard wrote "Text/Call [name]..." for
+// card.channel; when we preserve a different channel, rewrite the opening verb.
+function overlayCard(base, card) {
+  const lineType = card.facts?.lineType || null;
+  const isDiscovery = card.play === "discovery";
+  const lineForced = FORCED_CALL_LINES.has(lineType);
+
+  // Final channel: capability-forced or discovery always wins;
+  // otherwise keep what the cadence/signal engine chose.
+  const finalChannel = (lineForced || isDiscovery)
+    ? "call"
+    : (base.channel || (base.action === "call" ? "call" : "text"));
+
+  // Rewrite the opening verb only when the channel changed from card.channel.
+  let why = card.why;
+  if (!isDiscovery && finalChannel === "call" && card.channel !== "call") {
+    // card said "text" (mobile line) but cadence wants a call → swap verb
+    why = why.replace(/^Text /, "Call ");
+  }
+  // Email channel: preserve cadence's why (buildCard doesn't write email sentences)
+  if (!isDiscovery && finalChannel === "email") {
+    why = base.why || card.why;
+  }
+
+  return {
+    ...base,
+    why,
+    channel: finalChannel,
+    action:  isDiscovery ? "discovery" : finalChannel,
+    state:   card.state,
+    play:    card.play,
+  };
+}
+
 // SINGLE authority for who's due, how urgent, and on which channel. Used for both
 // partner prospects and non-partner leads, so the app and the coach pipeline share
 // one brain. deriveActNow is only for never-contacted partners (no cadence record)
@@ -280,15 +358,9 @@ function cadenceVerdict(c) {
   };
 }
 
-// ── Phase 1: play-decision finalization (the card-trust fix) ──────────────────
-// One pass re-shapes the actionable card from everything we know, so the channel and
-// why-line can't contradict (the Amanda failure: "text this coach" → a VoIP front desk).
-// Source/confidence-based, NOT the enriched role field (proven unreliable — a coach was
-// mislabeled facility_role="Manager"):
-//   - A FACILITY contact we have NOT verified and have NOT actually engaged is not a pitch
-//     target — we don't know who to reach. → DISCOVERY card: call, find the person. The
-//     enriched role/facility is treated as an unverified hint, never a basis to pitch.
-//   - A landline/VoIP number never gets a "text" recommendation (it's a switchboard).
+// Phase 3 note: landline channel correction moved to buildCard (overlayCard).
+// Discovery + PT-on-staff remain here — they depend on GHL tags (trainer-facility,
+// trainer-solo, dm-verified) that buildCard's dossier doesn't carry.
 export function finalizePlay(p) {
   const d = p.derived;
   // Park trainers who already have a physical therapist on staff — they handle pain
@@ -299,7 +371,7 @@ export function finalizePlay(p) {
     return { ...d, kind: "aside", urgency: 0, action: null, why: "",
       asideReason: "Has a physical therapist on staff — parked for a future campaign" };
   }
-  if (!d || d.kind !== "act") return d; // leave non-actionable (LinkedIn action retired 2026-06-20)
+  if (!d || d.kind !== "act") return d;
   const tags = Array.isArray(p.tags) ? p.tags : [];
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
   // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
@@ -318,38 +390,17 @@ export function finalizePlay(p) {
   const nameToks = nameStr.split(/\s+/).filter(Boolean);
   const firstTok = nameToks[0] || "";
   const ORG_WORDS = /^(the|a|an|fit|fitness|gym|gyms|studio|club|performance|training|strength|crossfit|pilates|yoga|wellness|raise|punch|pure|tribe|local|bar|house|lab|co|sf|llc|inc|method|works|bodyworks|culture)$/i;
-  // Does the name read like a business rather than a person? Orgs get stuffed into the name
-  // field ("Revel Training Club", "CA Sculpt Pilates", "Advanced Wellness") — reject if any
-  // token is an org word or the name is 3+ tokens. This is the real person/business test:
-  // the auto role often says "owner" for an org too, so it's the NAME that tells a person we
-  // pitch directly from a business we run discovery on to find the actual person.
   const looksLikeOrg = nameToks.some((t) => ORG_WORDS.test(t)) || nameToks.length >= 3;
   const hasPersonFirstName = /^[A-Z][a-z]+$/i.test(firstTok) && !ORG_WORDS.test(firstTok) && !looksLikeOrg;
   const isOwnerRole = /owner|sole|principal|founder/i.test(p.partnerFacilityRole || "");
-  // The rundown often already states they run the place ("Michael Crammond runs Whole Body
-  // Solutions", "Jae is a co-owner of J+K"). Only trust it when the rundown OPENS with their
-  // first name and an ownership verb follows in the same clause — that anchors the ownership
-  // to THIS contact, not "Trainer at X, which is owned by someone else" or a business whose
-  // name merely starts like a first name ("Alex Fitness ... family-owned").
   const ownerInRundown = hasPersonFirstName && new RegExp(
     "^" + firstTok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
     "\\b[^.]{0,60}\\b(owns?|runs?|founded|founder|owner|co-?owner|principal|sole)\\b",
     "i").test((p.rundown || "").trim());
-  // Known decision-maker = a named person AND a clear ownership signal. An explicit "Owner"
-  // role counts even without a last name (it's their own contact, e.g. "Charlie", "Ramy");
-  // otherwise require the rundown ownership statement. Stay conservative: discovery (find the
-  // person) is the safe default — a premature pitch to the wrong person is the actual harm.
   const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     return { ...d, action: "discovery", channel: "call",
       why: "Call and ask who handles partnerships, then get a name. It's a facility and we don't know the decision-maker yet." };
-  }
-  // Only landline + toll-free are truly untextable. VoIP is NOT suppressed: most
-  // personal VoIP (Google Voice, TextNow, MVNO cells routed over VoIP) receives
-  // SMS fine, so blanket-suppressing it would stop us texting reachable people.
-  if ((d.action === "text" || d.action === "reback") && ["landline", "toll_free"].includes(p.phoneType)) {
-    return { ...d, action: "call", channel: "call",
-      why: `The number on file is a ${p.phoneType.replace("_", "-")} line, not a cell — call instead.` };
   }
   return d;
 }
@@ -569,6 +620,26 @@ export async function onRequestGet(context) {
     } catch (err) {
       console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
     }
+
+    // Phase 3: batch-read conv records for all prospects + non-partner cadence leads in
+    // one parallel round-trip, so the derive loop can overlay buildCard facts (why/channel/
+    // action/state/play) on every actionable card without sequential KV round-trips.
+    let convMap = new Map();
+    try {
+      if (context.env.PORTAL_KV) {
+        const idsToFetch = new Set([
+          ...prospects.map((p) => p.contactId),
+          ...[...cadenceMap.keys()].filter((id) => !byId.has(id)),
+        ]);
+        const entries = await Promise.all(
+          [...idsToFetch].map(async (id) => [id, await context.env.PORTAL_KV.get(`conv:${id}`, "json")])
+        );
+        for (const [id, rec] of entries) if (rec) convMap.set(id, rec);
+      }
+    } catch (err) {
+      console.error("[staff-partner-prospects] conv batch read failed:", err);
+    }
+
     for (const p of prospects) {
       const c = cadenceMap.get(p.contactId);
       const skipped = skipSet.has(p.contactId);
@@ -586,9 +657,18 @@ export async function onRequestGet(context) {
       // live engine so a just-marked contact actually parks in "waiting" (and stays parked on
       // reload), instead of staying stuck as "act".
       const freshTouch = manualTouchIsFresherThanCadence(p.partnerLastSignal, p.partnerLastSignalAt, c?.lastTouch);
-      p.derived = (c && !stageGated && !freshTouch)
+      const base = (c && !stageGated && !freshTouch)
         ? cadenceVerdict(c)
         : deriveActNow(p, { hasBooking: c?.hasBooking, skipped });
+      // Phase 3: for all actionable (act/waiting) non-stage-gated contacts, overlay
+      // buildCard to make why/channel/action/state/play deterministic and contradition-free.
+      // Stage-gated (aside/converted) cards are fine as-is; they're not actionable.
+      if (!stageGated && (base.kind === "act" || base.kind === "waiting")) {
+        const card = buildCard(buildContactDossier(p, convMap.get(p.contactId), lineTypeMap));
+        p.derived = overlayCard(base, card);
+      } else {
+        p.derived = base;
+      }
     }
 
     // Follow-Up = EVERYONE who needs follow-up, not just partner-tagged (Eben 2026-06-15:
@@ -603,6 +683,22 @@ export async function onRequestGet(context) {
       if (c.hasBooking) continue;                                    // already booked → not a target
       if (["drip-only", "set-aside", "skipped", "booked"].includes(c.state)) continue;
       const lastIso = c.lastTouch ? new Date(c.lastTouch).toISOString() : null;
+      const base = cadenceVerdict(c);
+      const conv = convMap.get(cid);
+      let derived = base;
+      if (base.kind === "act" || base.kind === "waiting") {
+        const dossier = {
+          firstName: conv?.firstName || "",
+          lastName:  conv?.lastName  || "",
+          fullName:  c.name || conv?.name || "(no name)",
+          role:      conv?.role     || null,
+          business:  conv?.business || null,
+          lineType:  conv?.lineType || null,
+          rundown:   conv?.rundown  || null,
+          thread:    conv ? (conv.touches || []).map(compactToThread) : [],
+        };
+        derived = overlayCard(base, buildCard(dossier));
+      }
       prospects.push({
         contactId: cid, firstName: "", lastName: "", fullName: c.name || "(no name)",
         category: "client", tags: [],
@@ -617,8 +713,7 @@ export async function onRequestGet(context) {
         touchCount: Number(c.outCount) || 0,
         sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
         isLead: true,
-        // Same single cadence verdict as conversation-active partners (one brain).
-        derived: cadenceVerdict(c),
+        derived,
       });
     }
 

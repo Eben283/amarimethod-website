@@ -404,8 +404,11 @@ export interface PartnerProspect {
     kind: 'act' | 'waiting' | 'aside' | 'converted';
     urgency: number;
     why: string;
-    action: 'call' | 'text' | 'reback' | 'decide' | null;
+    action: 'call' | 'text' | 'reback' | 'decide' | 'discovery' | null;
+    channel?: string;
     asideReason?: string;
+    state?: 'cold' | 'engaged' | 'talked';
+    play?: 'pitch' | 'discovery';
   };
   // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
   sheetStatus: string | null;

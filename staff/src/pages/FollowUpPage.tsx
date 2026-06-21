@@ -102,6 +102,9 @@ interface Derived {
   // touched). A small bonus lets an engaged contact edge out a same-urgency one we
   // only one-way-touched. Optional for back-compat with cards generated pre-2026-06-17.
   warmth?: number;
+  // Phase 3: buildCard output — deterministic state + play computed from conv thread.
+  state?: 'cold' | 'engaged' | 'talked';
+  play?: 'pitch' | 'discovery';
 }
 
 // ── Day-of-week outreach weighting ──────────────────────────────────────────
@@ -655,49 +658,24 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     getCallCoach(contactId).then((c) => { if (live) setCallNotes(c); }).catch(() => { if (live) setCallNotes(null); });
     return () => { live = false; };
   }, [contactId]);
-  const coachWhy = coach && coach !== 'loading' ? coach.whyNow : null;
-  // The channel pill MUST match the why-line. The coach record carries both the
-  // why-now AND the channel (written together, so they agree) — so when a coach
-  // record exists, the pill comes from it, not the older signal-derived action
-  // which could disagree (e.g. Dana: coach says "call", derive said "text").
-  // Falls back to the derived action for contacts with no coach record.
-  const coachChannel = coach && coach !== 'loading' ? coach.channel : null;
   const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
-  // A LinkedIn-sourced contact can't be texted (the number is the facility's front
-  // desk), so the LinkedIn action WINS over any coach channel — we never want to show
-  // a text-send box for them. Otherwise the coach record's channel leads.
   const isLinkedIn = derivedAction === 'linkedin';
-  // Discovery (server play-decision): an unverified facility contact — we don't know who
-  // to reach, so the card is "call and find the person," not a pitch. Wins over channel.
+  // Discovery: buildCard set action="discovery" (unverified facility, DM unknown).
   const isDiscovery = derivedAction === 'discovery';
-  // A landline / toll-free / VoIP number can't (reliably) receive SMS — it's a
-  // switchboard. Don't offer a text box; route to a call. (Line type comes from the
-  // AbstractAPI sweep; unclassified/mobile stay textable.) VoIP is treated
-  // conservatively as call-first — most here are gym front desks.
+  // Untextable: switchboard line that can't receive SMS — still checked separately so
+  // UntextablePanel renders correctly (buildCard.channel is "call" for these too, so
+  // the pill already says "Call"; the panel gives Garrett the talking points).
   const phoneType = item.kind === 'prospect' ? (item.p.phoneType || null) : null;
   const isUntextable = !isLinkedIn && !isDiscovery && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip');
+  // Phase 3: buildCard writes why + channel together from the same dossier, so they
+  // never contradict. No more coachWhy/coachChannel override layers needed.
   const effAction: ActionKind | null = isLinkedIn ? 'linkedin'
     : isDiscovery ? 'discovery'
     : isUntextable ? 'call'
-    : ((coachChannel as ActionKind) || derivedAction);
-  // When the play-decision OVERRODE the channel (untextable→call, discovery, LinkedIn), the
-  // coach's whyNow was written for a different channel ("Text Abraham now…" on a landline) and
-  // contradicts the pill. Show the corrected derived why instead so the headline matches the
-  // action. Otherwise the coach's whyNow leads (it and the channel were written together).
-  // The headline must match the pill. When the play-decision overrode the channel, the coach's
-  // whyNow was written for a different channel ("Text Abraham now…" on a landline) — show the
-  // corrected why instead. Untextable routes to a call, said plainly (covers VoIP, whose server
-  // why isn't rewritten); discovery/LinkedIn use the server's corrected why; otherwise the
-  // coach's whyNow leads (written together with its channel, so they agree).
-  const untextableWhy = phoneType === 'landline'
-    ? "Call them, the number on file is a landline, not a textable cell."
-    : phoneType === 'toll_free'
-    ? "Call them, the number on file is a toll-free line (a switchboard, not a cell)."
-    : "Call them, the number on file is VoIP (likely a front desk, not a textable cell).";
-  const displayWhy = item.kind !== 'prospect' ? null
-    : isUntextable ? untextableWhy
-    : (isDiscovery || isLinkedIn) ? item.d.why
-    : (coachWhy || item.d.why);
+    : derivedAction;
+  // item.d.why is the deterministic buildCard headline (correct for all cases:
+  // untextable, discovery, cold, engaged, talked). No overrides needed.
+  const displayWhy = item.kind !== 'prospect' ? null : item.d.why;
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
