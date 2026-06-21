@@ -72,10 +72,25 @@ Respond as STRICT JSON only (no prose, no markdown fences) with this shape:
   "whatToImprove": ["specific, actionable, anchored point", ...],
   "objections": ["objection the client raised + how it was/should be handled", ...],
   "nextStep": "the single concrete next action for Garrett with this person",
+  "actionLine": "10-20 word imperative action line for the card header — see rules below",
+  "holdState": "active" | "cool-off" | "close-loop",
   "suggestedReply": "a ready-to-send message, or empty string",
   "signal": "high" | "low"
 }
 Use empty arrays where a section doesn't apply. "signal":"low" when there wasn't enough to meaningfully coach.
+
+"holdState" rules — a clean enum the app reads directly to decide whether to suppress the outreach panel:
+- "cool-off": the right call is to wait. Do NOT reach out now. This covers: contact declined or went cold and needs space, the thread needs to rest, Garrett should hold for weeks before any contact.
+- "close-loop": ONE final light touch is permitted, then done. This covers: if Garrett tries one more time and gets no response, the outreach ends; the move is a single brief personal message, not a re-pitch.
+- "active": normal outreach is appropriate now. Use this whenever the relationship is open and the recommended move is to act (send a text, make a call, follow up). When in doubt, use "active" — only use "cool-off" or "close-loop" when the nextStep explicitly says to wait or wrap up.
+Emit exactly one of the three string values. No other values are valid.
+
+"actionLine" rules — this is the headline Garrett reads at a glance before opening the card:
+- 10-20 words. Start with an imperative verb ("Send", "Text", "Call", "Follow up", "Wait", "Close the loop").
+- Name the ACTION, not the words to say. "Send Nikita a short text offering the gifted session" is correct. "Send 'Hi Nikita — Garrett here, just checking in...'" is WRONG (no quoted message content).
+- NEVER write "Dr." — not "Dr. Garrett", not "Dr. G", not any form. Legal rule, no exceptions.
+- No em-dashes, no semicolons. Plain imperative English.
+- Must make sense as a standalone one-liner: someone reading only this line should know exactly what move to make.
 
 "suggestedReply" rules: if the contact's MOST RECENT message is an inbound that warrants a response (a question, a reply, an objection left hanging), write the actual message Garrett should send back — ready to send as-is, in his warm grounded voice, grounded in what they actually said and the whole relationship. No placeholder brackets, no "[link]" unless you write a real instruction the app can't fill (prefer "the booking link" in words). 1-4 sentences. This is the ONE field Garrett may send as-is, so it must pass the outbound-copy bar: write it the way he texts a person, NOT written prose. NO em-dashes (use a period or comma), NO semicolons, no "—", no corporate polish, no filler like "honestly/genuinely". Warm, plain, grounded. If the latest interaction does NOT need a reply from Garrett (e.g. he left a voicemail, or the ball is genuinely in his court to act not reply), set "suggestedReply" to an empty string.`;
 
@@ -119,6 +134,8 @@ function parseCoaching(text) {
       whatToImprove: Array.isArray(obj.whatToImprove) ? obj.whatToImprove : [],
       objections: Array.isArray(obj.objections) ? obj.objections : [],
       nextStep: typeof obj.nextStep === "string" ? obj.nextStep : "",
+      actionLine: typeof obj.actionLine === "string" ? obj.actionLine : "",
+      holdState: obj.holdState === "cool-off" ? "cool-off" : obj.holdState === "close-loop" ? "close-loop" : "active",
       suggestedReply: typeof obj.suggestedReply === "string" ? obj.suggestedReply : "",
       signal: obj.signal === "low" ? "low" : "high",
     };
