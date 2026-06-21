@@ -630,6 +630,73 @@ export default function FollowUpPage() {
   );
 }
 
+// ─── Phase B: call-coach decline detection + draft resolution ────────────────
+const COOLOFF_PATTERNS = [
+  /\blet this breathe\b/i,
+  /\bgive it time\b/i,
+  /\bgive h(?:er|im|em) space\b/i,
+  /\bcool off\b/i,
+  /\bdon'?t reach out\b/i,
+  /\bhold off\b/i,
+  /\bstep back\b/i,
+] as const;
+
+const CLOSELOOP_PATTERNS = [
+  /\bclose the loop\b/i,
+  /\bone final\b/i,
+  /\bone last\b/i,
+  /\blight.touch\b/i,
+] as const;
+
+type DeclineState = 'cool-off' | 'close-loop';
+
+interface ResolvedDraft {
+  why: string;
+  draft: string | null;
+  source: 'call-coach' | 'buildcard';
+  declineState?: DeclineState;
+}
+
+function headlineFromNextStep(nextStep: string): string {
+  const CONTEXT_START = /^(?:The |It |She |He |This |There |Now |At |By |Since )/;
+  const sentences = nextStep.split(/\.\s+/);
+  const action = sentences.length > 1 && CONTEXT_START.test(sentences[0])
+    ? (sentences[1] ?? sentences[0])
+    : sentences[0];
+  const trimmed = action
+    .replace(/,?\s+then\b.*$/i, '')
+    .replace(/\s+—.*$/, '')
+    .replace(/\s+and\b.*$/, '')
+    .replace(/\.$/, '')
+    .trim();
+  return trimmed.length > 85 ? `${trimmed.slice(0, 82)}…` : trimmed;
+}
+
+function resolveDraft(
+  why: string,
+  callNotes: CallCoach | null | 'loading',
+  coach: OutreachCoach | null | 'loading',
+): ResolvedDraft | 'loading' {
+  if (callNotes === 'loading' || coach === 'loading') return 'loading';
+  if (callNotes) {
+    const { nextStep, suggestedReply, signal } = callNotes.coaching;
+    if (signal !== 'high') {
+      if (COOLOFF_PATTERNS.some((p) => p.test(nextStep))) {
+        return { why: headlineFromNextStep(nextStep), draft: null, source: 'call-coach', declineState: 'cool-off' };
+      }
+      if (CLOSELOOP_PATTERNS.some((p) => p.test(nextStep))) {
+        return { why: headlineFromNextStep(nextStep), draft: suggestedReply ?? null, source: 'call-coach', declineState: 'close-loop' };
+      }
+    }
+    return {
+      why: headlineFromNextStep(nextStep),
+      draft: suggestedReply ?? (coach ? coach.message : null),
+      source: 'call-coach',
+    };
+  }
+  return { why, draft: coach ? coach.message : null, source: 'buildcard' };
+}
+
 // ── unified row (reply or prospect), expandable ──────────────────────────────
 interface ActRowProps {
   item: ActItem;
@@ -694,6 +761,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // item.d.why is the deterministic buildCard headline (correct for all cases:
   // untextable, discovery, cold, engaged, talked). No overrides needed.
   const displayWhy = item.kind !== 'prospect' ? null : item.d.why;
+  // Phase B: call-coach drives the expanded-card headline + decline suppression.
+  // Collapsed row keeps buildCard.why unchanged (expand-only).
+  const resolved: ResolvedDraft | 'loading' | null =
+    item.kind === 'prospect' && !isGated
+      ? resolveDraft(item.d.why, callNotes, coach)
+      : null;
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
@@ -797,6 +870,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               Garrett sees what was already said before reaching out. Empty when no
               recorded/coached call exists (honest: no story yet). */}
           <CallNotesPanel notes={callNotes} />
+          {/* Phase B: call-coach action headline — shown in expanded view for contacts
+              where call-coach is the authority (not decline state: those get the notice
+              below). Collapsed row keeps buildCard.why (expand-only). */}
+          {!isReply && resolved !== 'loading' && resolved?.source === 'call-coach' && !resolved?.declineState && resolved?.why && (
+            <p className="text-sm font-semibold text-amari-charcoal">{resolved.why}</p>
+          )}
           {/* Prospects get the proactive outreach drafts; replies get only the
               in-context Suggested reply (in CoachPanel) — Reply in GHL already
               sits in the quick-action row above, so no duplicate here. */}
@@ -817,13 +896,34 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                 <UntextablePanel p={item.p} phoneType={phoneType} />
               ) : (
                 <>
-                  {!isGated && <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />}
-                  {/* No cloud draft, but the recommended move is a text → fall back to a
-                      static suggested draft so a "text" card is never a dead-end with
-                      nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
-                      OutreachCoachPanel above; this only fills the gap. */}
-                  {!isGated && coach !== 'loading' && !coach && effAction === 'text' && (
-                    <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
+                  {/* Phase B: suppress cold-outreach panel when call-coach says hold.
+                      cool-off → no outreach at all; close-loop → CoachPanel's suggestedReply
+                      handles the send; active/no coach → show OutreachCoachPanel normally.
+                      While both fetches are settling (resolved=loading), show normally so
+                      there's no flash of empty space. */}
+                  {!isGated && (resolved === 'loading' || !resolved?.declineState) && (
+                    <>
+                      <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
+                      {/* No cloud draft, but the recommended move is a text → fall back to a
+                          static suggested draft so a "text" card is never a dead-end with
+                          nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
+                          OutreachCoachPanel above; this only fills the gap. */}
+                      {coach !== 'loading' && !coach && effAction === 'text' && (
+                        <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
+                      )}
+                    </>
+                  )}
+                  {!isGated && resolved !== 'loading' && resolved?.declineState === 'cool-off' && (
+                    <div className="rounded-lg border border-amari-border bg-amari-light-sand/50 p-3">
+                      <p className="text-xs font-medium text-amari-charcoal">Hold — no outreach yet</p>
+                      <p className="mt-1 text-xs text-amari-text-muted">Call notes say to let this breathe. Check back when the window opens.</p>
+                    </div>
+                  )}
+                  {!isGated && resolved !== 'loading' && resolved?.declineState === 'close-loop' && (
+                    <div className="rounded-lg border border-amari-border bg-amari-light-sand/50 p-3">
+                      <p className="text-xs font-medium text-amari-charcoal">One final message, then close the loop</p>
+                      <p className="mt-1 text-xs text-amari-text-muted">Send the suggested reply in the call notes — if no response, you're done.</p>
+                    </div>
                   )}
                 </>
               )}
