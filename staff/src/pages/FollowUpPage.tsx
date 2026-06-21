@@ -1171,10 +1171,9 @@ function DiscoveryPanel({ p, onHandled }: { p: PartnerProspect; onHandled?: () =
         {where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then mark it verified.
       </p>
       {p.phone ? (
-        <a href={`tel:${p.phone}`}
-          className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amari-border bg-white px-2.5 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand">
-          <Phone className="h-3.5 w-3.5" /> Call {p.phone}
-        </a>
+        <p className="mb-2 inline-flex items-center gap-1 text-xs text-amari-charcoal">
+          <Phone className="h-3.5 w-3.5 text-amari-text-muted" /> {p.phone}
+        </p>
       ) : (
         <p className="mb-2 text-xs text-amari-text-muted">No phone on file — find the gym&apos;s number.</p>
       )}
@@ -1241,10 +1240,9 @@ function UntextablePanel({ p, phoneType }: { p: PartnerProspect; phoneType: stri
         <Phone className="h-3 w-3" /> {label} — call instead (texts won&apos;t reach it)
       </p>
       {p.phone ? (
-        <a href={`tel:${p.phone}`}
-          className="mb-2 inline-flex items-center gap-1 rounded-lg border border-amari-border bg-white px-2.5 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand">
-          <Phone className="h-3.5 w-3.5" /> Call {p.phone}
-        </a>
+        <p className="mb-2 inline-flex items-center gap-1 text-xs text-amari-charcoal">
+          <Phone className="h-3.5 w-3.5 text-amari-text-muted" /> {p.phone}
+        </p>
       ) : (
         <p className="mb-2 text-xs text-amari-text-muted">No phone on file.</p>
       )}
@@ -1616,6 +1614,14 @@ function EditableField({ contactId, field, label, value, multiline }: {
 
 function DetailLine({ icon: Icon, value, href }: { icon: typeof Phone; value: string; href: string }) {
   const isExternal = href.startsWith('http');
+  const isTel = href.startsWith('tel:');
+  if (isTel) {
+    return (
+      <span className="inline-flex items-center gap-2 text-amari-charcoal">
+        <Icon className="h-3.5 w-3.5 shrink-0 text-amari-text-muted" /> <span className="truncate">{value}</span>
+      </span>
+    );
+  }
   return (
     <a href={href} className="inline-flex items-center gap-2 text-amari-charcoal hover:underline"
       {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
