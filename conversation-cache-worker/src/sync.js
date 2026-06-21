@@ -4,9 +4,15 @@
 // touch history into KV. First run backfills BACKFILL_DAYS.
 //
 // KV written:
-//   conv:{contactId}              -> { contactId, name, lastMessageDate, touches:[{ts,kind,dir}] }
-//   conv:index                    -> { [contactId]: lastMessageDate }   (lightweight roster)
-//   conv:sync:lastRun             -> high-water mark (ms) used to bound the next pull
+//   conv:{contactId}  -> {
+//     contactId, name, firstName, lastName, lastMessageDate,
+//     touches: [{ts,kind,dir,dur?,text?}],
+//     role, business, rundown,     ← GHL custom fields (refreshed every 24h)
+//     lineType,                    ← from contact:linetype map
+//     dossierFetchedAt             ← ms of last profile fetch (gates the 24h refresh)
+//   }
+//   conv:index                    -> { [contactId]: lastMessageDate }
+//   conv:sync:lastRun             -> high-water mark (ms)
 //   ops:conversation-cache:lastRun-> last-run summary (observability)
 
 import { ghlRetry } from "./ghl.js";
@@ -15,6 +21,14 @@ const DAY_MS = 86_400_000;
 const BACKFILL_DAYS = 90;          // first run reaches back this far
 const TRIM_DAYS = 90;              // keep only the last 90d of touches per contact
 const OVERLAP_MS = 30 * 60 * 1000; // re-scan a 30-min overlap so nothing slips the boundary
+const PROFILE_TTL = DAY_MS;        // re-fetch contact profile once per 24h per contact
+
+// GHL custom-field IDs for partner-prospect dossier (mirrors card-brain-generate.mjs FID).
+const DOSSIER_FIELDS = {
+  role:     "FGakk9CgiRqeY0tleGQD",
+  business: "eYBj61zgMnIFMIesoDR5",
+  rundown:  "Yd3lsw6fAxl0HVCxr1cD",
+};
 
 // Message-type codes — mirror outreach-cadence.mjs so the cache and the local
 // pipeline classify touches identically.
@@ -95,6 +109,8 @@ export async function runSync(env, trigger, full = false) {
   // 2. For each changed conversation, fetch messages and merge into its contact
   //    cache — 5-wide so the backfill fits the Worker wall-clock.
   const trimCutoff = start - TRIM_DAYS * DAY_MS;
+  // Read line-type map once; used to stamp lineType onto each contact record.
+  const lineTypeMap = (await kv.get("contact:linetype", "json")) || {};
   const indexUpdates = {};
   let contactsUpdated = 0;
   let newTouches = 0;
@@ -138,7 +154,45 @@ export async function runSync(env, trigger, full = false) {
     const merged = [...seen.values()].filter((t) => t.ts >= trimCutoff).sort((a, b) => a.ts - b.ts);
     const name = c.contactName || c.fullName || existing.name || c.contactId;
     const lastMessageDate = merged.length ? merged[merged.length - 1].ts : (existing.lastMessageDate || 0);
-    await kv.put(key, JSON.stringify({ contactId: c.contactId, name, lastMessageDate, touches: merged }));
+
+    // Conditionally refresh dossier profile (role, business, rundown, name parts).
+    // Only hits GHL when the stored profile is absent or older than PROFILE_TTL (24h).
+    const profileAge = existing.dossierFetchedAt ? (start - existing.dossierFetchedAt) : Infinity;
+    let profile = {};
+    if (profileAge > PROFILE_TTL) {
+      try {
+        const cd = await ghlRetry(env, `/contacts/${c.contactId}`);
+        const contact = cd.contact || cd;
+        const gf = (id) => {
+          const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
+          const v = f ? (f.value ?? f.field_value) : null;
+          return (v === "" || v == null) ? null : v;
+        };
+        profile = {
+          firstName:        contact.firstName || "",
+          lastName:         contact.lastName  || "",
+          role:             gf(DOSSIER_FIELDS.role),
+          business:         gf(DOSSIER_FIELDS.business),
+          rundown:          gf(DOSSIER_FIELDS.rundown),
+          dossierFetchedAt: start,
+        };
+      } catch { /* keep existing profile on error; will retry next run */ }
+    }
+
+    await kv.put(key, JSON.stringify({
+      contactId:        c.contactId,
+      name,
+      firstName:        profile.firstName        ?? existing.firstName        ?? "",
+      lastName:         profile.lastName         ?? existing.lastName         ?? "",
+      role:             profile.role             ?? existing.role             ?? null,
+      business:         profile.business         ?? existing.business         ?? null,
+      rundown:          profile.rundown          ?? existing.rundown          ?? null,
+      // lineTypeMap values are objects {type, isVoip, ...}; buildCard expects the string.
+      lineType:         (lineTypeMap[c.contactId]?.type || existing.lineType)  ?? null,
+      dossierFetchedAt: profile.dossierFetchedAt ?? existing.dossierFetchedAt ?? null,
+      lastMessageDate,
+      touches:          merged,
+    }));
     indexUpdates[c.contactId] = lastMessageDate;
     contactsUpdated++;
     newTouches += added;

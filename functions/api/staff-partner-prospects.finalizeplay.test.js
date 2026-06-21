@@ -123,13 +123,8 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
     expect(r.kind).toBe('aside');
   });
 
-  it('routes a landline text card to a call (unchanged)', () => {
-    const r = finalizePlay(card({
-      firstName: 'pat', lastName: 'jones', partnerFacilityRole: 'Owner', phoneType: 'landline',
-    }));
-    // Owner → not discovery; landline → call instead.
-    expect(r.action).toBe('call');
-  });
+  // Landline channel correction is Phase 3 buildCard's job (not finalizePlay's).
+  // See build-card.test.js: "channel is line-type, full stop".
 
   it('leaves a non-actionable card untouched', () => {
     const aside = { derived: { kind: 'aside', action: null }, tags: [], category: 'trainer' };
