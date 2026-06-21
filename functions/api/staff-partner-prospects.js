@@ -335,6 +335,9 @@ function overlayCard(base, card) {
     action:  isDiscovery ? "discovery" : finalChannel,
     state:   card.state,
     play:    card.play,
+    // Stash cadence's timing-aware why when discovery overwrites it, so finalizePlay
+    // can restore it if the contact turns out to be trusted (outreach-verified / dm-verified).
+    ...(isDiscovery && base.why ? { _cadenceWhy: base.why } : {}),
   };
 }
 
@@ -383,6 +386,18 @@ export function finalizePlay(p) {
   // business), or `dm-verified` — the flywheel tag a discovery call writes once Garrett
   // confirms the decision-maker (staff-partner-verify). That's how discovery → pitch.
   const trusted = !!(p.outreachVerified || tags.includes("trainer-solo") || tags.includes("dm-verified"));
+  // Trusted contacts (outreach-verified, solo, dm-verified) must never show discovery,
+  // even if buildCard inferred it from line type (landline heuristic). If discovery
+  // slipped through, flip it back to the right action now.
+  if (trusted && d.action === "discovery") {
+    const ch = FORCED_CALL_LINES.has(p.phoneType) ? "call" : "text";
+    const name = (p.firstName || (p.fullName || "").split(/\s+/)[0] || "them").trim();
+    const verb = ch === "call" ? "Call" : "Text";
+    const why = d._cadenceWhy
+      ? d._cadenceWhy.replace(/^(Call|Text) /, `${verb} `)
+      : `${verb} ${name}, pitch directly.`;
+    return { ...d, action: ch, channel: ch, why };
+  }
   const engaged = d.warmth === 2; // actually replied/talked → we may already know who to reach
   // A named owner/sole-operator IS the decision-maker — pitch them directly. Don't run a
   // "find who handles partnerships" discovery card on the person who owns the place. The
