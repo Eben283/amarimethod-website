@@ -351,7 +351,15 @@ export default function FollowUpPage() {
     // lead (warmth 0) sits a touch lower. Small on purpose — it breaks near-ties, it
     // never jumps a real urgency gap (so a due one-touch still beats a cooling warm one).
     const warmthBonus = (w?: number) => (w === 2 ? 10 : w === 0 ? -5 : 0);
-    const score = (d: Derived, weight: number) => d.urgency + weight + warmthBonus(d.warmth);
+    // "Discovery" = a business/venue we have no named person to reach ("call the front
+    // desk and ask who handles partnerships"). Eben deprioritized these hard (2026-06-21):
+    // a known-person follow-up always beats a cold no-contact venue. Sink them far below
+    // the act-now cap so they don't crowd out real prospects. They stay in the data
+    // (reachable via search), just off the daily worklist.
+    const DISCOVERY_PENALTY = 1000;
+    const score = (d: Derived, weight: number) =>
+      d.urgency + weight + warmthBonus(d.warmth) -
+      (d.action === 'discovery' ? DISCOVERY_PENALTY : 0);
     return derived
       .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
       .map((r) => {
