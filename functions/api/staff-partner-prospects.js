@@ -287,14 +287,49 @@ function buildContactDossier(p, conv, lineTypeMap) {
   };
 }
 
+// Lines that genuinely can't receive SMS — buildCard forces "call" for these.
+// Mobile/unknown stays on the cadence's channel (call/text alternation is intentional;
+// collapsing it to all-text turns calls into texts on numbers Garrett can and should call).
+const FORCED_CALL_LINES = new Set(["landline", "toll_free", "voip"]);
+
 // Merge cadence verdict (kind/urgency/warmth/due) with buildCard output
 // (why/channel/action/state/play). Code decides the truth; cadence provides timing.
+//
+// Channel policy:
+//   - Untextable line (landline/voip/toll_free) → always "call" (capability fix)
+//   - Textable line (mobile/unknown) → preserve cadence's channel so the call/text
+//     sequence runs as configured (Garrett deliberately alternates to avoid all-text)
+//   - Discovery → always "call" (calling to find the decision-maker)
+//
+// Why verb: MUST match the final channel. buildCard wrote "Text/Call [name]..." for
+// card.channel; when we preserve a different channel, rewrite the opening verb.
 function overlayCard(base, card) {
+  const lineType = card.facts?.lineType || null;
+  const isDiscovery = card.play === "discovery";
+  const lineForced = FORCED_CALL_LINES.has(lineType);
+
+  // Final channel: capability-forced or discovery always wins;
+  // otherwise keep what the cadence/signal engine chose.
+  const finalChannel = (lineForced || isDiscovery)
+    ? "call"
+    : (base.channel || (base.action === "call" ? "call" : "text"));
+
+  // Rewrite the opening verb only when the channel changed from card.channel.
+  let why = card.why;
+  if (!isDiscovery && finalChannel === "call" && card.channel !== "call") {
+    // card said "text" (mobile line) but cadence wants a call → swap verb
+    why = why.replace(/^Text /, "Call ");
+  }
+  // Email channel: preserve cadence's why (buildCard doesn't write email sentences)
+  if (!isDiscovery && finalChannel === "email") {
+    why = base.why || card.why;
+  }
+
   return {
     ...base,
-    why:     card.why,
-    channel: card.channel,
-    action:  card.play === "discovery" ? "discovery" : card.channel,
+    why,
+    channel: finalChannel,
+    action:  isDiscovery ? "discovery" : finalChannel,
     state:   card.state,
     play:    card.play,
   };
