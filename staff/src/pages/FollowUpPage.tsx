@@ -631,14 +631,18 @@ export default function FollowUpPage() {
 }
 
 // ─── Phase B: call-coach decline detection + draft resolution ────────────────
+// Match diverse cool-off phrasing the model uses (worker doesn't emit a status field).
+// The model varies wording: "let this breathe", "let this thread rest", "hold for now", etc.
 const COOLOFF_PATTERNS = [
-  /\blet this breathe\b/i,
-  /\bgive it time\b/i,
-  /\bgive h(?:er|im|em) space\b/i,
+  /\blet this (breathe|rest|sit|settle)\b/i,
+  /\blet .{0,25} (rest|settle|breathe) (for now|a (while|bit|moment))?\b/i,
+  /\bgive (it|this|h(?:er|im|em|them)) (time|space|room|a break)\b/i,
   /\bcool off\b/i,
   /\bdon'?t reach out\b/i,
-  /\bhold off\b/i,
+  /\bhold (off|for now|the (thread|outreach))\b/i,
   /\bstep back\b/i,
+  /\bpause (outreach|contact|follow-?up)\b/i,
+  /\bno (outreach|follow-?up|contact) (for now|yet|right now)\b/i,
 ] as const;
 
 const CLOSELOOP_PATTERNS = [
@@ -646,6 +650,8 @@ const CLOSELOOP_PATTERNS = [
   /\bone final\b/i,
   /\bone last\b/i,
   /\blight.touch\b/i,
+  /\blight re.engage\b/i,
+  /\bone (more |brief |short )?(re-engage|reach.out|check.?in|message|touch)\b/i,
 ] as const;
 
 type DeclineState = 'cool-off' | 'close-loop';
@@ -658,8 +664,19 @@ interface ResolvedDraft {
 }
 
 function headlineFromNextStep(nextStep: string): string {
+  // Split on ". " but not on common abbreviations (e.g., i.e., Dr., Mr., etc.)
+  // so "Dr. Garrett" and "(e.g. the gifted session)" don't false-split.
+  const ABBREV = /\b(?:e\.g|i\.e|vs|Mr|Mrs|Ms|Dr|Prof|St|Sr|Jr|etc)\s*$/i;
+  const rawSentences = nextStep.split(/\.\s+/);
+  const sentences: string[] = [];
+  let acc = '';
+  for (const s of rawSentences) {
+    acc = acc ? `${acc}. ${s}` : s;
+    if (!ABBREV.test(acc)) { sentences.push(acc); acc = ''; }
+  }
+  if (acc) sentences.push(acc);
+
   const CONTEXT_START = /^(?:The |It |She |He |This |There |Now |At |By |Since )/;
-  const sentences = nextStep.split(/\.\s+/);
   const action = sentences.length > 1 && CONTEXT_START.test(sentences[0])
     ? (sentences[1] ?? sentences[0])
     : sentences[0];
@@ -669,7 +686,10 @@ function headlineFromNextStep(nextStep: string): string {
     .replace(/\s+and\b.*$/, '')
     .replace(/\.$/, '')
     .trim();
-  return trimmed.length > 85 ? `${trimmed.slice(0, 82)}…` : trimmed;
+  // Truncate at a word boundary, not mid-word.
+  if (trimmed.length <= 85) return trimmed;
+  const cut = trimmed.lastIndexOf(' ', 85);
+  return `${trimmed.slice(0, cut > 0 ? cut : 82)}…`;
 }
 
 function resolveDraft(
@@ -679,17 +699,33 @@ function resolveDraft(
 ): ResolvedDraft | 'loading' {
   if (callNotes === 'loading' || coach === 'loading') return 'loading';
   if (callNotes) {
-    const { nextStep, suggestedReply, signal } = callNotes.coaching;
-    if (signal !== 'high') {
-      if (COOLOFF_PATTERNS.some((p) => p.test(nextStep))) {
-        return { why: headlineFromNextStep(nextStep), draft: null, source: 'call-coach', declineState: 'cool-off' };
-      }
-      if (CLOSELOOP_PATTERNS.some((p) => p.test(nextStep))) {
-        return { why: headlineFromNextStep(nextStep), draft: suggestedReply ?? null, source: 'call-coach', declineState: 'close-loop' };
+    const { nextStep, actionLine, holdState, suggestedReply, signal } = callNotes.coaching;
+    const headline = (actionLine && actionLine.trim()) || headlineFromNextStep(nextStep);
+
+    // holdState is the authoritative worker-emitted field. Regex patterns are pure fallback
+    // for pre-backfill records that don't have it yet — the failure mode (declined contact
+    // flipping to active) is too costly to leave on free-text pattern matching.
+    let decline: DeclineState | undefined;
+    if (holdState === 'cool-off') {
+      decline = 'cool-off';
+    } else if (holdState === 'close-loop') {
+      decline = 'close-loop';
+    } else if (!holdState) {
+      // Fallback: records without holdState (pre-backfill) — keep regex for graceful degradation.
+      if (signal !== 'high') {
+        if (COOLOFF_PATTERNS.some((p) => p.test(nextStep))) decline = 'cool-off';
+        else if (CLOSELOOP_PATTERNS.some((p) => p.test(nextStep))) decline = 'close-loop';
       }
     }
+
+    if (decline === 'cool-off') {
+      return { why: headline, draft: null, source: 'call-coach', declineState: 'cool-off' };
+    }
+    if (decline === 'close-loop') {
+      return { why: headline, draft: suggestedReply ?? null, source: 'call-coach', declineState: 'close-loop' };
+    }
     return {
-      why: headlineFromNextStep(nextStep),
+      why: headline,
       draft: suggestedReply ?? (coach ? coach.message : null),
       source: 'call-coach',
     };

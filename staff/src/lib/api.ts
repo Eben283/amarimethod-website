@@ -578,6 +578,8 @@ export interface CallCoach {
     whatToImprove: string[];
     objections: string[];
     nextStep: string;
+    actionLine?: string;
+    holdState?: 'active' | 'cool-off' | 'close-loop';
     suggestedReply?: string;
     signal?: string;
   };
