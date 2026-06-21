@@ -1047,7 +1047,10 @@ function Details({ p }: { p: PartnerProspect }) {
       <div className="flex flex-col gap-1">
         {p.phone && <DetailLine icon={Phone} value={p.phone} href={`tel:${p.phone}`} />}
         {p.email && <DetailLine icon={Mail} value={p.email} href={`mailto:${p.email}`} />}
-        {p.website && <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />}
+        {p.website
+          ? <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />
+          : <EditableField key={`${p.contactId}-website`} contactId={p.contactId} field="website" label="website" value={null} />
+        }
       </div>
       <div className="flex flex-col gap-1 text-xs">
         {/* TRUSTED type — the solo-vs-facility classification (confidence-floored, 2026-06-19),
