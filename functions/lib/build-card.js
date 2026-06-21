@@ -115,13 +115,15 @@ export function buildCard(dossier, now = Date.now()) {
 
   // ── play: pitch when we can reach the right person directly; else discovery ──
   // PITCH = a named owner (their place — call the line), OR a named person on a personal
-  // line (mobile/unknown — we reach THEM). DISCOVERY = we can't reach the right person:
-  // an org-name contact, or a named non-owner whose number is a facility switchboard
-  // (landline/VoIP front desk), where we must call and ask who handles partnerships.
+  // line (mobile/unknown — we reach THEM), OR a solo trainer (they ARE the decision-maker
+  // regardless of what line type their GHL record has). DISCOVERY = we can't reach the
+  // right person: an org-name contact, or a named non-owner whose number is a facility
+  // switchboard (landline/VoIP front desk), where we must call and ask who handles
+  // partnerships.
   const named = isPersonName(d.firstName, d.lastName, d.fullName);
   const ownerRole = /owner|sole|principal|founder/i.test(d.role || "");
   const reachableLine = !d.lineType || d.lineType === "mobile" || d.lineType === "unknown";
-  const play = named && (ownerRole || reachableLine) ? "pitch" : "discovery";
+  const play = (named && (ownerRole || reachableLine || d.isSolo)) ? "pitch" : "discovery";
 
   // ── the headline writes itself from the facts (action-first, never contradictory) ──
   const name = (d.firstName || (d.fullName || "").split(/\s+/)[0] || "there").trim();

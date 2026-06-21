@@ -275,6 +275,7 @@ function compactToThread(t) {
 // Build a dossier for buildCard from a contact + its conv:{id} KV record.
 function buildContactDossier(p, conv, lineTypeMap) {
   const lt = conv?.lineType || lineTypeMap.get(p.contactId) || null;
+  const tags = Array.isArray(p.tags) ? p.tags : [];
   return {
     firstName: conv?.firstName || p.firstName || "",
     lastName:  conv?.lastName  || p.lastName  || "",
@@ -284,6 +285,8 @@ function buildContactDossier(p, conv, lineTypeMap) {
     lineType:  lt,
     rundown:   p.rundown || conv?.rundown || null,
     thread:    conv ? (conv.touches || []).map(compactToThread) : [],
+    // Solo trainers ARE the decision-maker — never treat as discovery regardless of line type.
+    isSolo:    tags.includes("trainer-solo"),
   };
 }
 
