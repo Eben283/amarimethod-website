@@ -14,7 +14,11 @@ const HIGH_VOLUME = 10;                  // 10+ outbound events = active client/
 const ACTIVE_DAYS = 65;                  // only consider contacts touched this recently
 const DROPPED_MAX_DAYS = 30;
 const COLD_STALE_DAYS = 30;   // cold + quiet longer than this -> park (no endless "send step 2")
-const GIFTED_PARTNER_CALENDAR = "lfsnaiGiLNL2z12pLKDP";
+// Both partner-initial calendars (in person + virtual) suppress booking nudges.
+const GIFTED_PARTNER_CALENDARS = [
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (in person)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual
+];
 const BOOKING_SUPPRESS_DAYS = 21;
 
 // Skip-persistence: honor the Follow-Up app's existing disposition so a contact
@@ -331,11 +335,17 @@ async function loadBookedSet(env) {
   try {
     const start = Date.now() - BOOKING_SUPPRESS_DAYS * DAY;
     const end = Date.now() + 120 * DAY;
-    const d = await ghlRetry(env, `/calendars/events?locationId=${LOCATION_ID}&calendarId=${GIFTED_PARTNER_CALENDAR}&startTime=${start}&endTime=${end}`);
-    for (const e of d.events || []) {
-      const status = (e.appointmentStatus || "").toLowerCase();
-      if (status === "cancelled" || status === "invalid" || status === "noshow") continue;
-      if (e.contactId) set.add(e.contactId);
+    const responses = await Promise.all(
+      GIFTED_PARTNER_CALENDARS.map((calId) =>
+        ghlRetry(env, `/calendars/events?locationId=${LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`)
+      )
+    );
+    for (const d of responses) {
+      for (const e of d.events || []) {
+        const status = (e.appointmentStatus || "").toLowerCase();
+        if (status === "cancelled" || status === "invalid" || status === "noshow") continue;
+        if (e.contactId) set.add(e.contactId);
+      }
     }
   } catch { /* no suppression this run */ }
   return set;

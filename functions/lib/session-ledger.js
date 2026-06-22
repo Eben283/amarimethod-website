@@ -69,6 +69,7 @@ export const NON_SERIES_CALENDAR_IDS = new Set([
   "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
   "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
   "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (free perk for partners)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual (same comp perk, Google Meet)
   "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner (partner POS, no order in GHL)
 ]);
 
