@@ -360,7 +360,6 @@ export default function FunnelPage() {
     const booked = sessions.length;
     const showed = sessions.filter((s) => s.showed).length;
 
-    const day14: string[] = []; for (let i = 13; i >= 0; i--) day14.push(toStr(addDays(new Date(), -i)));
     const countOn: Record<string, (d: string) => number> = {
       calls: (d) => (data.calls || []).filter((c) => c.d === d).length,
       talked: (d) => (data.calls || []).filter((c) => c.d === d && c.o === 'talk').length,
@@ -368,8 +367,22 @@ export default function FunnelPage() {
       showed: (d) => (data.sessions || []).filter((s) => s.d === d && s.showed).length,
       sales: (d) => (data.sales || []).filter((s) => s.d === d).length,
     };
+    // trend window adapts to the selected range — daily bars for day/week/month, weekly bars for the quarter
+    const TREND_DAYS: Record<RangeUnit, number> = { day: 3, week: 7, month: 30, quarter: 91 };
+    const trendBucket = range.unit === 'quarter' ? 7 : 1;
+    const winDays = TREND_DAYS[range.unit];
+    const trendEnd = isCurrent ? new Date() : addDays(end, -1); // last day shown ends at the period's end (or today)
+    const trendDayList: string[] = []; for (let i = winDays - 1; i >= 0; i--) trendDayList.push(toStr(addDays(trendEnd, -i)));
     const pulses: Record<string, { d: string; n: number }[]> = {};
-    (['calls', 'talked', 'booked', 'showed', 'sales'] as const).forEach((k) => { pulses[k] = day14.map((d) => ({ d, n: countOn[k](d) })); });
+    (['calls', 'talked', 'booked', 'showed', 'sales'] as const).forEach((k) => {
+      const pts: { d: string; n: number }[] = [];
+      for (let i = 0; i < trendDayList.length; i += trendBucket) {
+        const grp = trendDayList.slice(i, i + trendBucket);
+        pts.push({ d: grp[grp.length - 1], n: grp.reduce((s, d) => s + countOn[k](d), 0) });
+      }
+      pulses[k] = pts;
+    });
+    const trendLabel = range.unit === 'day' ? 'last 3 days' : range.unit === 'week' ? 'last 7 days' : range.unit === 'month' ? 'last 30 days' : 'last 13 weeks';
     const callsToday = countOn.calls(toStr(new Date()));
 
     const cohorts = new Map<string, { sold: number; talk: number; booked: number; showed: number; sales: number }>();
@@ -391,7 +404,7 @@ export default function FunnelPage() {
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
-      callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board,
+      callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
       textsN: texts.length, emailsN: emails.length,
       stageTarget, dailyCallsTarget };
   }, [data, range]);
@@ -660,7 +673,7 @@ export default function FunnelPage() {
 
           {/* under the scene */}
           <div className="px-4 pb-4 text-center">
-            <p className="text-[11px]" style={{ color: COL.inkSoft }}><b style={{ color: COL.ink }}>tap a pool</b> to see its 14-day trend below</p>
+            <p className="text-[11px]" style={{ color: COL.inkSoft }}><b style={{ color: COL.ink }}>tap a pool</b> to see its {v.trendLabel.replace('last ', '')} trend below</p>
             {winCount > 0 && <p className="fn-pop mt-1 text-sm font-semibold" style={{ color: COL.green }}>✨ {winCount} of 5 goals hit{winCount === 5 ? ' — full harvest!' : ''}</p>}
           </div>
         </div>
@@ -691,7 +704,7 @@ export default function FunnelPage() {
             {sm.pulse.map((p) => <div key={p.d} title={`${p.d}: ${p.n}`} className="flex-1 rounded-t-md transition-all" style={{ height: `${Math.max(5, (p.n / smMax) * 100)}%`, background: p.d === todayStr ? sm.col : '#EBE2D6' }} />)}
           </div>
           <div className="mt-1 flex justify-between text-[10px]" style={{ color: COL.inkSoft }}>
-            <span>last 14 days</span>
+            <span>{v.trendLabel}</span>
             <span>this {range.unit}: <b style={{ color: COL.ink }}>{sm.count}</b>{sm.target >= 1 && ` / ${sm.target}`}</span>
           </div>
         </div>
