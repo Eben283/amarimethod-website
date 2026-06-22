@@ -17,7 +17,13 @@
 
 import { ghlRetry, LOCATION_ID } from "./ghl.js";
 
-const GIFTED_PARTNER_CALENDAR = "lfsnaiGiLNL2z12pLKDP"; // "Partner Initial Session"
+// Gifted/comp partner initial sessions — both delivery modes. The GHL
+// /calendars/events endpoint takes one calendarId per call, so loadGifted
+// sweeps each and merges.
+const GIFTED_PARTNER_CALENDARS = [
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (in person)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual
+];
 const GOAL_PACKS_PER_MONTH = 8;
 const SESSIONS_PER_PACK = 8;
 // Call outcome tiers (ground-truthed against recordings 2026-06-11):
@@ -242,11 +248,16 @@ async function loadGifted(env, lid, cutoffMs, cohortOf) {
   // Fetch FUTURE bookings too (was endTime=now, which silently dropped every
   // session scheduled for a future date).
   const futureEnd = Date.now() + 120 * 24 * 60 * 60 * 1000;
-  const d = await ghlRetry(
-    env,
-    `/calendars/events?locationId=${lid}&calendarId=${GIFTED_PARTNER_CALENDAR}&startTime=${cutoffMs}&endTime=${futureEnd}`
+  const responses = await Promise.all(
+    GIFTED_PARTNER_CALENDARS.map((calId) =>
+      ghlRetry(
+        env,
+        `/calendars/events?locationId=${lid}&calendarId=${calId}&startTime=${cutoffMs}&endTime=${futureEnd}`
+      )
+    )
   );
-  const out = (d.events || []).map((e) => ({
+  const events = responses.flatMap((d) => d.events || []);
+  const out = events.map((e) => ({
     // Bucket by BOOKING date (dateAdded), not the session date.
     d: laDate(e.dateAdded || e.startTime),
     sessionDate: laDate(e.startTime || e.dateAdded),

@@ -411,6 +411,7 @@ async function getGhlSummary(context) {
       "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
       "B5aGXLoS4kzAjZAMMXxk", // Entrainment
       "lfsnaiGiLNL2z12pLKDP", // Partner Initial
+      "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
       "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
       "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
       "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
