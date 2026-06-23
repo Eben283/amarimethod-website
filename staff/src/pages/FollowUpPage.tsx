@@ -69,7 +69,7 @@ const SETASIDE_OPTS: Record<string, { signal: PartnerLastSignal; note?: string; 
 };
 // Signals that record an actual touch (bump last-signal + timer). skip / note /
 // deferred change stage/schedule but aren't "touches".
-const TOUCH_LIKE = new Set<PartnerLastSignal>(['no-answer', 'voicemail', 'talked', 'link-sent', 'linkedin-msg', 'linkedin-req', 'instagram-msg', 'in-person']);
+const TOUCH_LIKE = new Set<PartnerLastSignal>(['no-answer', 'voicemail', 'talked', 'link-sent', 'linkedin-msg', 'linkedin-req', 'instagram-msg', 'in-person', 'texted', 'emailed']);
 
 // "Sent link" dropdown — records WHICH link Garrett sent (no send happens). The
 // note lands in the activity timeline so the coach knows what's gone out.
@@ -414,7 +414,7 @@ export default function FollowUpPage() {
     setBusyId(contactId);
     try {
       const followupAt = opts?.days != null
-        ? new Date(Date.now() + opts.days * 86_400_000).toISOString()
+        ? new Date(Date.now() + opts.days * 86_400_000).toISOString().slice(0, 10)
         : undefined;
       const res = await recordPartnerOutcome({ contactId, signal, note: opts?.note, followupAt });
       // Optimistic local update from the authoritative result — do NOT refetch
@@ -783,10 +783,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // sees what was already said BEFORE he reaches out. Null when there's no coached call.
   const [callNotes, setCallNotes] = useState<CallCoach | null | 'loading'>('loading');
   useEffect(() => {
+    if (isReply) { setCallNotes(null); return; }
     let live = true;
     getCallCoach(contactId).then((c) => { if (live) setCallNotes(c); }).catch(() => { if (live) setCallNotes(null); });
     return () => { live = false; };
-  }, [contactId]);
+  }, [contactId, isReply]);
   const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
   const isLinkedIn = derivedAction === 'linkedin';
   // Discovery: buildCard set action="discovery" (unverified facility, DM unknown).
@@ -1270,15 +1271,17 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
         <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
       </p>
       <div className="space-y-1.5">
-        {(coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
+        {coach.channel !== 'call' && (coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
           <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} onSent={onHandled} />
         ))}
-        <EditSendEmail
-          contactId={contactId}
-          defaultSubject="A note from Garrett"
-          defaultBody={coach.message || ''}
-          onSent={onHandled}
-        />
+        {coach.channel !== 'call' && (
+          <EditSendEmail
+            contactId={contactId}
+            defaultSubject="A note from Garrett"
+            defaultBody={coach.message || ''}
+            onSent={onHandled}
+          />
+        )}
       </div>
     </div>
   );

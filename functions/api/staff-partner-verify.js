@@ -74,7 +74,7 @@ export async function onRequestPost(context) {
     //    GHL's search index can lag minutes before a newly-added tag appears in
     //    search results — the custom field is on the contact record directly.
     const update = {
-      customFields: [{ id: OUTREACH_VERIFIED_FIELD_ID, value: ["Verified"] }],
+      customFields: [{ id: OUTREACH_VERIFIED_FIELD_ID, value: "true" }],
     };
     if (dmFirstName) update.firstName = dmFirstName;
     if (dmLastName) update.lastName = dmLastName;
