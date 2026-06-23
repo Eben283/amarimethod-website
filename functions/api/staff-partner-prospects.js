@@ -311,17 +311,31 @@ function overlayCard(base, card) {
   const isDiscovery = card.play === "discovery";
   const lineForced = FORCED_CALL_LINES.has(lineType);
 
+  // If the contact engaged via a specific channel, mirror it: they called → call back;
+  // they texted/emailed → text back. Capability (untextable line) still wins over preference.
+  const reachBackType = card.state === "engaged" && card.facts?.lastReachBack?.type;
+  const engagedByCall = reachBackType === "CALL";
+  const engagedByText = reachBackType === "SMS" || reachBackType === "EMAIL";
+
   // Final channel: capability-forced or discovery always wins;
+  // engaged contacts mirror their reach-back channel;
   // otherwise keep what the cadence/signal engine chose.
   const finalChannel = (lineForced || isDiscovery)
     ? "call"
-    : (base.channel || (base.action === "call" ? "call" : "text"));
+    : engagedByCall
+      ? "call"
+      : engagedByText
+        ? "text"
+        : (base.channel || (base.action === "call" ? "call" : "text"));
 
-  // Rewrite the opening verb only when the channel changed from card.channel.
+  // Rewrite the opening verb when the channel differs from what buildCard assumed.
   let why = card.why;
-  if (!isDiscovery && finalChannel === "call" && card.channel !== "call") {
-    // card said "text" (mobile line) but cadence wants a call → swap verb
-    why = why.replace(/^Text /, "Call ");
+  if (!isDiscovery) {
+    if (finalChannel === "call" && card.channel !== "call") {
+      why = why.replace(/^Text /, "Call ");
+    } else if (finalChannel === "text" && card.channel !== "text") {
+      why = why.replace(/^Call /, "Text ");
+    }
   }
   // Email channel: preserve cadence's why (buildCard doesn't write email sentences)
   if (!isDiscovery && finalChannel === "email") {
@@ -367,7 +381,7 @@ function cadenceVerdict(c) {
 // Phase 3 note: landline channel correction moved to buildCard (overlayCard).
 // Discovery + PT-on-staff remain here — they depend on GHL tags (trainer-facility,
 // trainer-solo, dm-verified) that buildCard's dossier doesn't carry.
-export function finalizePlay(p) {
+export function finalizePlay(p, warmFacilities = new Set()) {
   const d = p.derived;
   // Park trainers who already have a physical therapist on staff — they handle pain
   // in-house, so they're not a referral fit right now. Held for a future campaign
@@ -417,6 +431,10 @@ export function finalizePlay(p) {
     "i").test((p.rundown || "").trim());
   const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
+    // Check if a person contact linked via trainer_facility is warm/trusted.
+    // If so, we already know who to reach — let cadence drive instead of forcing discovery.
+    const facilityKey = (p.companyName || p.fullName || "").trim().toLowerCase();
+    if (facilityKey && warmFacilities.has(facilityKey)) return d;
     return { ...d, action: "discovery", channel: "call",
       why: "Call and ask who handles partnerships, then get a name. It's a facility and we don't know the decision-maker yet." };
   }
@@ -739,9 +757,22 @@ export async function onRequestGet(context) {
     // and unioned lead alike — so the UI can suppress SMS to landline/toll-free numbers.
     for (const p of prospects) p.phoneType = lineTypeMap.get(p.contactId) || null;
 
+    // Build a set of facility names where at least one linked person contact is trusted
+    // or engaged. A facility that has a known warm owner shouldn't be forced to discovery —
+    // the code join bridges the GHL split between the facility record and its people records
+    // (linked only by the free-text trainer_facility field).
+    const warmFacilities = new Set();
+    for (const p of prospects) {
+      if (!p.partnerFacility) continue;
+      const tags = Array.isArray(p.tags) ? p.tags : [];
+      const isTrusted = !!(p.outreachVerified || tags.includes("trainer-solo") || tags.includes("dm-verified"));
+      const isEngaged = p.derived && p.derived.warmth === 2;
+      if (isTrusted || isEngaged) warmFacilities.add(p.partnerFacility.trim().toLowerCase());
+    }
+
     // Phase 1 play-decision: re-shape each actionable card so its channel + why agree
     // (discovery for unverified facility contacts; call instead of text to switchboards).
-    for (const p of prospects) p.derived = finalizePlay(p);
+    for (const p of prospects) p.derived = finalizePlay(p, warmFacilities);
 
     // Counts.
     // A contact counts as "verified / ready to call" if either:

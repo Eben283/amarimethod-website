@@ -1429,6 +1429,7 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
 function EditSendText({ contactId, text, channel, onSent }: { contactId: string; text: string; channel?: string; onSent?: () => void }) {
   const [val, setVal] = useState(text);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [errMsg, setErrMsg] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -1460,7 +1461,8 @@ function EditSendText({ contactId, text, channel, onSent }: { contactId: string;
       // Fire-and-forget: a failed touch-record must not break the (already sent) UX.
       if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'texted' }).catch(() => {});
       onSent?.(); // drop the card from Act Now now — you handled them
-    } catch {
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Failed to send');
       setStatus('error');
     } finally {
       sendingRef.current = false;
@@ -1477,7 +1479,7 @@ function EditSendText({ contactId, text, channel, onSent }: { contactId: string;
           setVal(e.target.value);
           // Re-enable Send only when the text actually changes after a send/error —
           // editing to a NEW message is a legit new send; identical text stays locked.
-          if (status === 'error') setStatus('idle');
+          if (status === 'error') { setStatus('idle'); setErrMsg(null); }
           else if (status === 'sent' && e.target.value.trim() !== sentValRef.current) setStatus('idle');
         }}
         rows={3}
@@ -1494,7 +1496,7 @@ function EditSendText({ contactId, text, channel, onSent }: { contactId: string;
           {copied ? '✓ Copied' : 'Copy'}
         </button>
         {sentThisText && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
-        {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
+        {status === 'error' && <span className="text-xs text-red-600">{errMsg || "Didn't send — try again"}</span>}
       </div>
     </div>
   );
@@ -1514,6 +1516,7 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [errMsg, setErrMsg] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const ref = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
@@ -1539,14 +1542,15 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
       // 5-min send-dedupe (deduped:true → skip the touch). Fire-and-forget.
       if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'emailed' }).catch(() => {});
       onSent?.(); // drop the card from Act Now now — you handled them
-    } catch {
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Failed to send');
       setStatus('error');
     } finally {
       sendingRef.current = false;
     }
   };
   const sentThis = status === 'sent' && key === sentKeyRef.current;
-  const onEdit = () => { if (status === 'error') setStatus('idle'); else if (status === 'sent' && key !== sentKeyRef.current) setStatus('idle'); };
+  const onEdit = () => { if (status === 'error') { setStatus('idle'); setErrMsg(null); } else if (status === 'sent' && key !== sentKeyRef.current) setStatus('idle'); };
   return (
     <div className="rounded-lg border border-amari-border p-2.5">
       <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">
@@ -1572,7 +1576,7 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
           {status === 'sending' ? 'Sending…' : sentThis ? '✓ Sent' : 'Send email'}
         </button>
         {sentThis && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
-        {status === 'error' && <span className="text-xs text-red-600">Didn't send — try again</span>}
+        {status === 'error' && <span className="text-xs text-red-600">{errMsg || "Didn't send — try again"}</span>}
       </div>
     </div>
   );
