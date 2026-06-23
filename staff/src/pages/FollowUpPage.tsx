@@ -8,9 +8,9 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, buildFollowupBrief, updateContactField, getCallCoach,
+  recordPartnerOutcome, addNote, updateContactField, getCallCoach,
   getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, ApiError,
-  type FollowupBrief, type EditableFieldKey, type CallCoach, type OutreachCoach,
+  type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
@@ -976,7 +976,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           )}
 
-          <CoachPanel contactId={contactId} onHandled={onHandled} />
+          <CoachPanel notes={callNotes} onHandled={onHandled} />
 
           {/* activity timeline */}
           <div>
@@ -1287,15 +1287,9 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
   );
 }
 
-function CoachPanel({ contactId, onHandled }: { contactId: string; onHandled?: () => void }) {
-  const [coach, setCoach] = useState<CallCoach | null | 'loading'>('loading');
-  useEffect(() => {
-    let live = true;
-    getCallCoach(contactId).then((c) => { if (live) setCoach(c); });
-    return () => { live = false; };
-  }, [contactId]);
-  if (coach === 'loading' || !coach || !coach.coaching) return null;
-  const c = coach.coaching;
+function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading'; onHandled?: () => void }) {
+  if (notes === 'loading' || !notes || !notes.coaching) return null;
+  const c = notes.coaching;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
@@ -1323,85 +1317,6 @@ function CoachPanel({ contactId, onHandled }: { contactId: string; onHandled?: (
         </div>
       )}
       {c.nextStep && <p className="mt-1.5 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>}
-    </div>
-  );
-}
-
-function BriefPanel({ p, d }: { p: PartnerProspect; d: Derived }) {
-  const [brief, setBrief] = useState<FollowupBrief | null>(null);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
-
-  if (!d.action || d.action === 'decide') return null;
-
-  const run = () => {
-    setStatus('loading');
-    buildFollowupBrief(p.contactId, {
-      name: p.fullName, firstName: p.firstName, category: p.category,
-      facility: p.partnerFacility, facilityRole: p.partnerFacilityRole,
-      company: p.companyName, city: p.city, state: p.state, rundown: p.rundown,
-      lastSignal: p.partnerLastSignal, lastSignalAt: p.partnerLastSignalAt,
-    })
-      .then((b) => { setBrief(b); setStatus('idle'); })
-      .catch(() => setStatus('error'));
-  };
-
-  if (brief) {
-    return (
-      <div className="space-y-2">
-        {brief.talkingPoints.length > 0 && (
-          <div>
-            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Talking points</p>
-            <ul className="list-disc space-y-0.5 pl-4 text-sm text-amari-charcoal">
-              {brief.talkingPoints.map((t, i) => <li key={i}>{t}</li>)}
-            </ul>
-          </div>
-        )}
-        {brief.drafts.length > 0 && (
-          <div>
-            <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">Drafts — tap to copy, paste in GHL</p>
-            <div className="space-y-1.5">
-              {brief.drafts.map((dr, i) => <CopyText key={i} text={dr.text} channel={dr.channel} />)}
-            </div>
-          </div>
-        )}
-        <button type="button" onClick={run}
-          className="inline-flex items-center gap-1 text-[11px] text-amari-text-muted hover:text-amari-charcoal">
-          <RefreshCw className="h-3 w-3" /> Rebuild
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <button type="button" onClick={run} disabled={status === 'loading'}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-amari-charcoal px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50">
-        {status === 'loading'
-          ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Building…</>
-          : <><Sparkles className="h-3.5 w-3.5" /> Draft what to say</>}
-      </button>
-      {status === 'error' && (
-        <>
-          <p className="text-xs text-red-600">Couldn't build the brief. Showing saved texts.</p>
-          <SuggestedTexts p={p} d={d} />
-        </>
-      )}
-    </div>
-  );
-}
-
-function SuggestedTexts({ p, d }: { p: PartnerProspect; d: Derived }) {
-  if (d.action !== 'text' && d.action !== 'reback') return null;
-  const texts = suggestedTexts(p);
-  if (!texts.length) return null;
-  return (
-    <div>
-      <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        Texts to send — tap to copy, paste in GHL
-      </p>
-      <div className="space-y-1.5">
-        {texts.map((t, i) => <CopyText key={i} text={t} />)}
-      </div>
     </div>
   );
 }
