@@ -203,6 +203,7 @@ function freqBoost(tc) {
 const KNOWN_SIGNALS = new Set([
   "no-answer", "voicemail", "talked", "link-sent", "linkedin-msg",
   "linkedin-req", "instagram-msg", "in-person", "not-interested",
+  "texted", "emailed",
 ]);
 function normalizeSignal(raw) {
   if (!raw) return null;
@@ -253,6 +254,8 @@ function deriveActNow(p, elig) {
     case "instagram-msg": case "in-person":
       return due(OFFPLATFORM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 55 + fb, warmth: 1, action: "text", why: `You reached out ${agoLabel(d)} — send them a text to follow up.` } : waiting("Just reached out.");
     case "not-interested": return { kind: "aside", urgency: 0, why: "", action: null, asideReason: "Not interested" };
+    case "texted": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 65 + fb, warmth: 1, action: "call", why: `You texted them ${agoLabel(d)} and haven't heard back. Give them a call.` } : waiting("Just texted — give it a day or two.");
+    case "emailed": return due(VM_FOLLOWUP_DAYS) ? { kind: "act", urgency: 60 + fb, warmth: 1, action: "call", why: `You emailed them ${agoLabel(d)} and haven't heard back. Give them a call.` } : waiting("Just emailed — give it a day or two.");
     default: return due(QUIET_NUDGE_DAYS) ? { kind: "act", urgency: 50 + fb, warmth: 1, action: "text", why: `You haven't connected in ${agoLabel(d)} — text them to check in.` } : waiting("Just touched base.");
   }
 }
