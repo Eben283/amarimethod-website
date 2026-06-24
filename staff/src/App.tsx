@@ -8,6 +8,7 @@ import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
 import FollowUpPage from './pages/FollowUpPage';
 import FunnelPage from './pages/FunnelPage';
+import PipelinePage from './pages/PipelinePage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
 import StaffNav from './components/StaffNav';
@@ -127,6 +128,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav>
               <FunnelPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pipeline"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <PipelinePage />
             </LayoutWithNav>
           </ProtectedRoute>
         }
