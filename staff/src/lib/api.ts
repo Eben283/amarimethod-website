@@ -623,4 +623,34 @@ export async function getOutreachCoach(contactId: string): Promise<OutreachCoach
   }
 }
 
+// ── Pipeline view (Eben's Kanban: Touch 1-6 → Discovery → First Session → Pack 1-3+)
+export interface PipelineCard {
+  id: string;
+  name: string;
+  touchCount: number;
+  sessionsCompleted: number;
+  sessionsRemaining: number;
+  seriesType: string;
+  lastActivity: string | null;
+}
+
+export interface PipelineColumns {
+  'touch-1': PipelineCard[];
+  'touch-2': PipelineCard[];
+  'touch-3': PipelineCard[];
+  'touch-4': PipelineCard[];
+  'touch-5': PipelineCard[];
+  'touch-6': PipelineCard[];
+  discovery: PipelineCard[];
+  'first-session': PipelineCard[];
+  'multipack-1': PipelineCard[];
+  'multipack-2': PipelineCard[];
+  'multipack-3': PipelineCard[];
+}
+
+export async function getPipeline(): Promise<PipelineColumns> {
+  const r = await fetchApi<{ columns: PipelineColumns }>('/staff-pipeline');
+  return r.columns;
+}
+
 export { ApiError };
