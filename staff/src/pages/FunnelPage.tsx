@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, Trophy, X, Check, MessageSquare, Mail, Voicemail } from 'lucide-react';
-import { getFunnel, triggerFunnelRefresh, ApiError, type FunnelData } from '../lib/api';
+import { getFunnel, getPartnerProspects, triggerFunnelRefresh, ApiError, type FunnelData } from '../lib/api';
+import type { PartnerProspect, PartnerProspectsResponse } from '../types/staff';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FUNNEL — a little woodland: the bear ladles radishes (leads) into the hollow
@@ -265,7 +266,184 @@ const ROWS: { key: 'calls' | 'talked' | 'booked' | 'showed' | 'sales'; y: number
   { key: 'sales',  y: 80.5, w: 16.5 },
 ];
 
+// ── shared tab toggle ────────────────────────────────────────────────────────
+type FunnelTab = 'sessions' | 'pipeline';
+function ViewToggle({ value, onChange }: { value: FunnelTab; onChange: (v: FunnelTab) => void }) {
+  return (
+    <div className="flex overflow-hidden rounded-full text-sm" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+      {(['sessions', 'pipeline'] as FunnelTab[]).map((t) => (
+        <button key={t} onClick={() => onChange(t)} className="flex-1 py-2 font-medium capitalize transition-all"
+          style={value === t ? { background: COL.plum, color: '#fff' } : { color: COL.inkSoft }}>
+          {t === 'sessions' ? 'Sessions' : 'Pipeline'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ── partner acquisition pipeline view ────────────────────────────────────────
+function PipelineView({ onTabChange }: { onTabChange: (t: FunnelTab) => void }) {
+  const [data, setData] = useState<PartnerProspectsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    getPartnerProspects()
+      .then(setData)
+      .catch((e: Error) => setErr(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const funnel = useMemo(() => {
+    if (!data) return null;
+    const all = data.prospects.filter((p) => (p.category as string) !== 'client');
+
+    const isPartner   = (p: PartnerProspect) => p.isActivePartner || p.partnerStage === 'partner';
+    const hasSentLink = (p: PartnerProspect) => isPartner(p) || p.partnerStage === 'session-booked' || p.partnerLastSignal === 'link-sent';
+    const hasTalked   = (p: PartnerProspect) => hasSentLink(p) || p.partnerLastSignal === 'talked' || p.partnerLastSignal === 'in-person';
+    const hasContacted = (p: PartnerProspect) =>
+      hasTalked(p) || p.touchCount > 0 ||
+      (p.partnerLastSignal != null && p.partnerLastSignal !== 'not-interested');
+
+    const stages = [
+      { label: 'In List',        count: all.length,                      col: COL.plum,    note: 'all outreach targets' },
+      { label: 'Contacted',      count: all.filter(hasContacted).length,  col: COL.maroon,  note: 'any outreach made' },
+      { label: 'Talked',         count: all.filter(hasTalked).length,     col: COL.rust,    note: 'real conversation' },
+      { label: 'Link Sent',      count: all.filter(hasSentLink).length,   col: COL.goldDeep,note: 'booking link shared' },
+      { label: 'Active Partner', count: all.filter(isPartner).length,     col: COL.green,   note: 'partner session done' },
+    ];
+
+    const snoozed   = all.filter((p) => p.partnerStage === 'future-potential').length;
+    const dropped   = all.filter((p) => p.partnerStage === 'dropped' || p.partnerLastSignal === 'not-interested').length;
+    const untouched = all.filter((p) => p.partnerStage === 'no-outreach' && p.touchCount === 0 && p.partnerLastSignal == null).length;
+
+    const cats = Object.entries(data.countsByCategory as Record<string, number>)
+      .filter(([k, n]) => k !== 'client' && n > 0)
+      .sort((a, b) => b[1] - a[1]) as [string, number][];
+
+    return { stages, snoozed, dropped, untouched, cats, generatedAt: data.generatedAt, total: all.length };
+  }, [data]);
+
+  const pctLabel = (a: number, b: number) => b > 0 ? `${Math.round((a / b) * 100)}%` : '—';
+
+  return (
+    <div className="min-h-screen" style={{ background: COL.bg, color: COL.ink }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&display=swap');.fn-story{font-family:'Fraunces',Georgia,serif}@keyframes fn-reveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}.fn-reveal{animation:fn-reveal .55s cubic-bezier(.22,1,.36,1) both}`}</style>
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-5">
+
+        {/* header */}
+        <div className="mb-3">
+          <h1 className="fn-story text-4xl font-semibold leading-none" style={{ color: COL.ink }}>Partner Pipeline</h1>
+          <p className="mt-1 text-xs" style={{ color: COL.inkSoft }}>
+            cumulative state · {data ? `updated ${agoLabel(data.generatedAt)}` : 'loading…'}
+          </p>
+        </div>
+
+        {/* tab toggle */}
+        <div className="mb-5"><ViewToggle value="pipeline" onChange={onTabChange} /></div>
+
+        {loading && (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin" style={{ color: COL.maroon }} />
+          </div>
+        )}
+        {err && (
+          <div className="rounded-2xl p-5 text-center" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+            <AlertCircle className="mx-auto mb-2 h-6 w-6" style={{ color: COL.inkSoft }} />
+            <p className="text-sm" style={{ color: COL.inkSoft }}>{err}</p>
+          </div>
+        )}
+
+        {funnel && (
+          <>
+            {/* acquisition funnel */}
+            <div className="fn-reveal mb-4 rounded-2xl p-4" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+              <p className="mb-4 text-[10px] uppercase tracking-widest" style={{ color: COL.inkSoft }}>Acquisition funnel</p>
+              {funnel.stages.map((s, i) => {
+                const barPct = funnel.total > 0 ? Math.max(2, (s.count / funnel.total) * 100) : 2;
+                const next   = funnel.stages[i + 1];
+                const convPct   = next ? pctLabel(next.count, s.count) : null;
+                const dropCount = next ? s.count - next.count : null;
+                return (
+                  <div key={s.label}>
+                    {/* stage row */}
+                    <div className="mb-1 flex items-center gap-3">
+                      <span className="w-[104px] shrink-0 text-[11px] font-semibold uppercase tracking-wide" style={{ color: s.col }}>
+                        {s.label}
+                      </span>
+                      <div className="relative flex-1 overflow-hidden rounded-md" style={{ height: 26, background: '#EBE2D6' }}>
+                        <div className="h-full rounded-md transition-[width] duration-700"
+                          style={{ width: `${barPct}%`, background: s.col }} />
+                      </div>
+                      <span className="w-9 text-right tabular-nums text-base font-bold" style={{ color: COL.ink }}>{s.count}</span>
+                    </div>
+
+                    {/* drop-off connector */}
+                    {next && (
+                      <div className="mb-2 flex items-start gap-3">
+                        <span className="w-[104px] shrink-0" />
+                        <div className="flex-1 py-0.5 text-[11px]" style={{ color: COL.inkSoft }}>
+                          <span style={{ color: next.col, fontWeight: 600 }}>{convPct} continued</span>
+                          {dropCount != null && dropCount > 0 && (
+                            <span> · {dropCount} not yet reached</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* overall conversion */}
+              {funnel.total > 0 && (
+                <div className="mt-2 border-t pt-3 text-center text-xs" style={{ borderColor: COL.line }}>
+                  <span style={{ color: COL.inkSoft }}>Overall: </span>
+                  <span className="font-semibold" style={{ color: COL.green }}>
+                    {pctLabel(funnel.stages[4].count, funnel.total)} converted to active partner
+                  </span>
+                  <span style={{ color: COL.inkSoft }}> ({funnel.stages[4].count} of {funnel.total})</span>
+                </div>
+              )}
+            </div>
+
+            {/* side buckets */}
+            <div className="fn-reveal mb-4 grid grid-cols-3 gap-3">
+              {[
+                { label: 'Never contacted', count: funnel.untouched, col: COL.inkSoft },
+                { label: 'Snoozed',         count: funnel.snoozed,   col: COL.goldDeep },
+                { label: 'Not pursuing',    count: funnel.dropped,   col: COL.inkSoft },
+              ].map(({ label, count, col }) => (
+                <div key={label} className="rounded-2xl p-3 text-center" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+                  <span className="fn-story block text-2xl font-semibold" style={{ color: col }}>{count}</span>
+                  <p className="mt-0.5 text-[11px] leading-tight" style={{ color: COL.inkSoft }}>{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* category breakdown */}
+            {funnel.cats.length > 0 && (
+              <div className="fn-reveal rounded-2xl p-4" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+                <p className="mb-3 text-[10px] uppercase tracking-widest" style={{ color: COL.inkSoft }}>By category</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {funnel.cats.map(([cat, n]) => (
+                    <div key={cat} className="text-center">
+                      <span className="fn-story block text-xl font-semibold" style={{ color: COL.ink }}>{n}</span>
+                      <p className="mt-0.5 text-xs capitalize" style={{ color: COL.inkSoft }}>{cat}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function FunnelPage() {
+  const [tab, setTab] = useState<FunnelTab>('sessions');
   const [data, setData] = useState<FunnelData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -411,6 +589,10 @@ export default function FunnelPage() {
 
   const countUp = useCountUp(view?.equivs ?? 0, rangeKey);
 
+  // Pipeline tab — renders before sessions loading/error states so the toggle
+  // is always reachable even when funnel KV hasn't been seeded yet.
+  if (tab === 'pipeline') return <PipelineView onTabChange={setTab} />;
+
   if (isLoading) return <div className="flex min-h-screen items-center justify-center" style={{ background: COL.bg }}><Loader2 className="h-8 w-8 animate-spin" style={{ color: COL.maroon }} /></div>;
   if (error) return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center" style={{ background: COL.bg }}>
@@ -511,6 +693,9 @@ export default function FunnelPage() {
           </div>
           <button onClick={runRefresh} disabled={refreshing} aria-label="Refresh from GHL" title="Pull fresh data from GHL (~45s)" className="rounded-full p-2.5 active:scale-90 disabled:opacity-60" style={{ border: `1px solid ${COL.line}`, color: COL.inkSoft, background: COL.card }}><RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} /></button>
         </div>
+
+        {/* tab toggle */}
+        <div className="mb-4"><ViewToggle value="sessions" onChange={setTab} /></div>
 
         {/* range control */}
         <div className="mb-4 flex items-center gap-2">
