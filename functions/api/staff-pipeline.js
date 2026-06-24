@@ -3,14 +3,19 @@
 // the full Amari lifecycle: Touch 1-6 → Discovery → First Session → Pack 1-3+
 // Eben's private pipeline view — staff auth required.
 
-import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
-// GHL custom field ID for outbound touch count (partner_touch_count)
-const TOUCH_COUNT_FIELD_ID = "qKtPT2XZP61emgUDK7fd";
+// GHL custom field IDs — hardcoded to avoid dynamic map lookup failures
+const FIELD_IDS = {
+  touch_count:         "qKtPT2XZP61emgUDK7fd",
+  series_type:         "3i93lTkmuAV49s9nh0q8",
+  sessions_completed:  "TE0udwVH1Km5RsKaN5H0",
+  sessions_remaining:  "wrQSkx6BhXwDGIn1d0V4",
+};
 
 // 6 months ago cutoff for touch columns — older contacts drop off
 const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
@@ -47,33 +52,27 @@ function corsHeaders(origin) {
   };
 }
 
-// Read a custom field by its field key, using fieldDefsMap = { [fieldKey]: fieldId }.
-// Falls back to matching by key name on the contact's customFields array directly.
-function readField(contact, fieldKey, fieldDefsMap) {
+function readFieldById(contact, fieldId) {
   const arr = contact.customFields || [];
-  const fieldId = fieldDefsMap[fieldKey];
-  const entry = arr.find(
-    (f) =>
-      (fieldId && f.id === fieldId) ||
-      f.key === fieldKey ||
-      f.key === `contact.${fieldKey}`
-  );
+  const entry = arr.find((f) => f.id === fieldId);
   const v = entry?.value ?? entry?.field_value;
   return v === "" || v === null || v === undefined ? null : v;
 }
 
 function getTouchCount(contact) {
-  const arr = contact.customFields || [];
-  const entry = arr.find((f) => f.id === TOUCH_COUNT_FIELD_ID);
-  return parseInt(entry?.value ?? "0", 10) || 0;
+  return parseInt(readFieldById(contact, FIELD_IDS.touch_count) ?? "0", 10) || 0;
 }
 
-function getSessionsCompleted(contact, fieldDefsMap) {
-  return parseInt(readField(contact, "sessions_completed", fieldDefsMap) ?? "0", 10) || 0;
+function getSessionsCompleted(contact) {
+  return parseInt(readFieldById(contact, FIELD_IDS.sessions_completed) ?? "0", 10) || 0;
 }
 
-function getSeriesType(contact, fieldDefsMap) {
-  return (readField(contact, "series_type", fieldDefsMap) || "none").toLowerCase();
+function getSessionsRemaining(contact) {
+  return parseInt(readFieldById(contact, FIELD_IDS.sessions_remaining) ?? "0", 10) || 0;
+}
+
+function getSeriesType(contact) {
+  return (readFieldById(contact, FIELD_IDS.series_type) || "none").toLowerCase();
 }
 
 function getTags(contact) {
@@ -87,9 +86,9 @@ function getLastActivity(contact) {
   return raw ? new Date(raw).getTime() : 0;
 }
 
-function assignColumn(contact, fieldDefsMap) {
-  const sessionsCompleted = getSessionsCompleted(contact, fieldDefsMap);
-  const seriesType = getSeriesType(contact, fieldDefsMap);
+function assignColumn(contact) {
+  const sessionsCompleted = getSessionsCompleted(contact);
+  const seriesType = getSeriesType(contact);
   const tags = getTags(contact);
   const touchCount = getTouchCount(contact);
 
@@ -197,24 +196,6 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
   }
 
-  // Fetch field definitions and build { fieldKey: fieldId } map for readField()
-  let fieldDefsMap = {};
-  try {
-    const defsRes = await ghlFetch(
-      context,
-      `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`
-    );
-    if (defsRes.ok) {
-      const defsData = await defsRes.json();
-      for (const f of defsData.customFields || []) {
-        const key = f.fieldKey || f.key;
-        if (key) fieldDefsMap[key] = f.id;
-      }
-    }
-  } catch {
-    // non-fatal
-  }
-
   // Two fetches in parallel:
   // 1. Outreach-tagged contacts (for touch/discovery columns)
   // 2. All contacts — filtered to those with sessions_completed > 0 (for session columns)
@@ -231,9 +212,8 @@ export async function onRequestGet(context) {
     }
   }
   for (const c of allContacts) {
-    if (byId.has(c.id)) continue; // already have them from tag fetch
-    const sessionsCompleted = getSessionsCompleted(c, fieldDefsMap);
-    if (sessionsCompleted > 0) byId.set(c.id, c);
+    if (byId.has(c.id)) continue;
+    if (getSessionsCompleted(c) > 0 || getSeriesType(c) !== "none") byId.set(c.id, c);
   }
 
   // Bucket into columns
@@ -252,15 +232,12 @@ export async function onRequestGet(context) {
   };
 
   for (const contact of byId.values()) {
-    const col = assignColumn(contact, fieldDefsMap);
+    const col = assignColumn(contact);
     if (!col) continue; // stale — outside 6-month window, no sessions
 
-    const sessionsCompleted = getSessionsCompleted(contact, fieldDefsMap);
-    const sessionsRemaining = parseInt(
-      readField(contact, "sessions_remaining", fieldDefsMap) ?? "0",
-      10
-    ) || 0;
-    const seriesType = getSeriesType(contact, fieldDefsMap);
+    const sessionsCompleted = getSessionsCompleted(contact);
+    const sessionsRemaining = getSessionsRemaining(contact);
+    const seriesType = getSeriesType(contact);
     const touchCount = getTouchCount(contact);
 
     columns[col].push({
