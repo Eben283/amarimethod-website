@@ -20,6 +20,7 @@
 /staff/follow-up /staff/ 200
 /staff/check-in/* /staff/ 200
 /staff/funnel /staff/ 200
+/staff/pipeline /staff/ 200
 /staff/login /staff/ 200
 
 # SPA fallback for chief of staff
