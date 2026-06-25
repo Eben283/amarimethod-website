@@ -6,6 +6,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  errorMessage?: string;
 }
 
 // Catches render-time crashes anywhere below it so a single thrown error shows a
@@ -14,8 +15,8 @@ interface State {
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
 
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, errorMessage: error?.message || String(error) };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -44,6 +45,11 @@ export default class ErrorBoundary extends Component<Props, State> {
         <p style={{ maxWidth: '28rem', margin: 0, opacity: 0.8 }}>
           This page hit an unexpected error. Reloading usually fixes it.
         </p>
+        {this.state.errorMessage && (
+          <p style={{ maxWidth: '28rem', margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', background: '#fff', padding: '0.5rem', borderRadius: '0.25rem', wordBreak: 'break-all' }}>
+            {this.state.errorMessage}
+          </p>
+        )}
         <button
           onClick={() => window.location.reload()}
           style={{
