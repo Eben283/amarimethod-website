@@ -833,15 +833,28 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     : isDiscovery ? 'discovery'
     : isUntextable ? 'call'
     : derivedAction;
-  // item.d.why is the deterministic buildCard headline (correct for all cases:
-  // untextable, discovery, cold, engaged, talked). No overrides needed.
   const displayWhy = item.kind !== 'prospect' ? null : item.d.why;
-  // Phase B: call-coach drives the expanded-card headline + decline suppression.
-  // Collapsed row keeps buildCard.why unchanged (expand-only).
   const resolved: ResolvedDraft | 'loading' | null =
     item.kind === 'prospect' && !isGated
       ? resolveDraft(item.d.why, callNotes, coach)
       : null;
+
+  // Single synthesized headline driven by ALL data: resolved.why once both fetches
+  // settle, displayWhy as placeholder while they're in-flight. One answer shown
+  // everywhere — no "collapsed says X, expanded says Y" incoherence.
+  const headlineWhy = !isReply
+    ? (resolved !== null && resolved !== 'loading' ? resolved.why : displayWhy)
+    : null;
+
+  // Reflect hold state in the pill + quick-action row so the card doesn't look
+  // actionable when call notes say to wait.
+  const isHoldState = !isReply && resolved !== 'loading' && resolved?.declineState === 'cool-off';
+
+  // One-liner from the last call — shown on the collapsed card so Garrett has
+  // context before acting without having to expand first (build #2).
+  const callNotePreview = !isReply && callNotes !== 'loading' && callNotes?.coaching?.summary
+    ? callNotes.coaching.summary.split(/\.\s+/)[0]?.trim() ?? null
+    : null;
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
@@ -885,7 +898,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-amari-charcoal">{displayWhy}</p>
+              <p className="mt-1 text-sm text-amari-charcoal">{headlineWhy}</p>
+              {callNotePreview && (
+                <p className="mt-0.5 line-clamp-1 text-[11px] italic text-amari-text-muted">&quot;{callNotePreview}&quot;</p>
+              )}
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
               )}
@@ -894,9 +910,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {isReply
-            ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
-            : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
+          {isHoldState
+            ? <span className="rounded-lg bg-amari-light-sand px-2.5 py-1 text-xs font-medium text-amari-text-muted">Hold</span>
+            : isReply
+              ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
+              : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
           {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
         </div>
       </button>
@@ -931,18 +949,25 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
           </a>
-          <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
-          <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
-          <button
-            type="button"
-            onClick={() => setPaySheetOpen(true)}
-            className="inline-flex items-center gap-1 rounded-lg bg-amari-accent-warm px-2.5 py-1.5 text-xs font-medium text-white"
-          >
-            <CreditCard className="h-3.5 w-3.5" /> Send link
-          </button>
-          {/* off-platform touches GHL can't see — one dropdown, record so the timeline + timer reflect them */}
-          <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
-            onPick={(v) => onOutcome(v as PartnerLastSignal)} />
+          {/* Active outreach chips hidden when call notes say hold — expand to see why */}
+          {!isHoldState && (
+            <>
+              <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
+              <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
+              <button
+                type="button"
+                onClick={() => setPaySheetOpen(true)}
+                className="inline-flex items-center gap-1 rounded-lg bg-amari-accent-warm px-2.5 py-1.5 text-xs font-medium text-white"
+              >
+                <CreditCard className="h-3.5 w-3.5" /> Send link
+              </button>
+              <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
+                onPick={(v) => onOutcome(v as PartnerLastSignal)} />
+            </>
+          )}
+          {isHoldState && (
+            <p className="self-center text-[11px] italic text-amari-text-muted">Call notes say hold — expand to see why</p>
+          )}
           <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
             onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
           <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
@@ -956,12 +981,6 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               Garrett sees what was already said before reaching out. Empty when no
               recorded/coached call exists (honest: no story yet). */}
           <CallNotesPanel notes={callNotes} />
-          {/* Phase B: call-coach action headline — shown in expanded view for contacts
-              where call-coach is the authority (not decline state: those get the notice
-              below). Collapsed row keeps buildCard.why (expand-only). */}
-          {!isReply && resolved !== 'loading' && resolved?.source === 'call-coach' && !resolved?.declineState && resolved?.why && (
-            <p className="text-sm font-semibold text-amari-charcoal">{resolved.why}</p>
-          )}
           {/* Prospects get the proactive outreach drafts; replies get only the
               in-context Suggested reply (in CoachPanel) — Reply in GHL already
               sits in the quick-action row above, so no duplicate here. */}
