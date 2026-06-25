@@ -850,9 +850,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // actionable when call notes say to wait.
   const isHoldState = !isReply && resolved !== 'loading' && resolved?.declineState === 'cool-off';
 
-  // One-liner from the last call — shown on the collapsed card so Garrett has
-  // context before acting without having to expand first (build #2).
-  const callNotePreview = !isReply && callNotes !== 'loading' && callNotes?.coaching?.summary
+  // One-liner from the last call — only shown when there's no call coach panel
+  // (which would show the full version in expanded). Avoids the same sentence
+  // appearing twice: once as a preview and again inside CallNotesPanel.
+  const callNotePreview = !isReply
+    && callNotes !== 'loading' && callNotes?.coaching?.summary
+    && (resolved === 'loading' || resolved?.source !== 'call-coach')
     ? callNotes.coaching.summary.split(/\.\s+/)[0]?.trim() ?? null
     : null;
 
@@ -1217,9 +1220,6 @@ function CallNotesPanel({ notes }: { notes: CallCoach | null | 'loading' }) {
           </ul>
         </div>
       )}
-      {c.nextStep && (
-        <p className="mt-2 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>
-      )}
     </div>
   );
 }
@@ -1357,16 +1357,18 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
 function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading'; onHandled?: () => void }) {
   if (notes === 'loading' || !notes || !notes.coaching) return null;
   const c = notes.coaching;
+  // Nothing left to show if all three are empty (summary + nextStep moved elsewhere).
+  if (!c.suggestedReply && !(c.whatWorked?.length) && !(c.whatToImprove?.length)) return null;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
         Call coach{notes.hasAudio ? ' · from recording' : ''} · {notes.date}
       </p>
-      {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
-      {/* Ready-to-send reply, grounded in the thread — editable + sendable in-app.
-          Surfaces when the contact's latest message needs an answer (esp. reply cards). */}
+      {/* summary is already shown by CallNotesPanel above — skip it here.
+          nextStep is already the collapsed headline — skip it too.
+          This panel owns: coaching analysis + the ready-to-send reply. */}
       {c.suggestedReply && (
-        <div className="mt-2">
+        <div className="mt-1">
           <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
           <EditSendText contactId={notes.contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
         </div>
@@ -1383,7 +1385,6 @@ function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading';
           <ul className="list-disc pl-4 text-xs text-amari-charcoal">{c.whatToImprove.map((x, i) => <li key={i}>{x}</li>)}</ul>
         </div>
       )}
-      {c.nextStep && <p className="mt-1.5 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>}
     </div>
   );
 }
