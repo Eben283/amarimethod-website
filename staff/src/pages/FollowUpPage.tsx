@@ -761,20 +761,39 @@ const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; pri
   { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
 ];
 
-function PayLinkSheet({ contactId, onClose }: { contactId: string; onClose: () => void }) {
+const PARTNER_LINKS = [
+  { value: 'partnership-session', label: 'Partnership Session Link' },
+  { value: 'partnership-toolkit', label: 'Partnership Toolkit' },
+];
+
+function PayLinkSheet({
+  contactId,
+  onClose,
+  onLinkSent,
+}: {
+  contactId: string;
+  onClose: () => void;
+  onLinkSent?: (note: string) => void;
+}) {
   const [status, setStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [showMore, setShowMore] = useState(false);
   const visible = showMore ? PAY_PRODUCTS : PAY_PRODUCTS.filter((p) => p.primary);
 
-  async function handleSend(product: PayLinkProduct) {
+  async function handleSend(product: PayLinkProduct, label: string) {
     if (status[product] === 'sending' || status[product] === 'sent') return;
     setStatus((s) => ({ ...s, [product]: 'sending' }));
     try {
       await sendPayLink(contactId, product);
       setStatus((s) => ({ ...s, [product]: 'sent' }));
+      onLinkSent?.(`Sent ${label} pay link`);
     } catch {
       setStatus((s) => ({ ...s, [product]: 'error' }));
     }
+  }
+
+  function handlePartnerLink(label: string) {
+    onLinkSent?.(`Sent ${label}`);
+    onClose();
   }
 
   return createPortal(
@@ -785,11 +804,34 @@ function PayLinkSheet({ contactId, onClose }: { contactId: string; onClose: () =
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <span className="font-semibold text-amari-charcoal">Send pay link</span>
+          <span className="font-semibold text-amari-charcoal">Send link</span>
           <button type="button" onClick={onClose} className="text-amari-text-muted">
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Partnership links — record only (no in-app send) */}
+        <div className="space-y-2 mb-3">
+          {PARTNER_LINKS.map(({ value, label }) => (
+            <div
+              key={value}
+              className="flex items-center justify-between rounded-xl border border-amari-border px-3 py-2.5"
+            >
+              <span className="text-sm font-medium text-amari-charcoal">{label}</span>
+              <button
+                type="button"
+                onClick={() => handlePartnerLink(label)}
+                className="rounded-lg px-3 py-1.5 text-xs font-medium bg-amari-charcoal text-white"
+              >
+                Send
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-3 border-t border-amari-border" />
+
+        {/* Payment links — sends via GHL */}
         <div className="space-y-2">
           {visible.map(({ product, label, price }) => {
             const s = status[product] || 'idle';
@@ -805,7 +847,7 @@ function PayLinkSheet({ contactId, onClose }: { contactId: string; onClose: () =
                 <button
                   type="button"
                   disabled={s === 'sending'}
-                  onClick={() => handleSend(product)}
+                  onClick={() => handleSend(product, label)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
                     s === 'sent' ? 'bg-green-50 text-green-700' :
                     s === 'error' ? 'bg-red-50 text-red-600' :
@@ -993,11 +1035,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             onClick={() => setPaySheetOpen(true)}
             className="inline-flex items-center gap-1 rounded-lg bg-amari-accent-warm px-2.5 py-1.5 text-xs font-medium text-white"
           >
-            <CreditCard className="h-3.5 w-3.5" /> Pay link
+            <CreditCard className="h-3.5 w-3.5" /> Send link
           </button>
-          {/* records which link Garrett sent (no send) — note shows in activity */}
-          <ActionSelect icon={MessageSquare} label="Sent link…" busy={busy} options={LINK_SENT_OPTIONS}
-            onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
           {/* off-platform touches GHL can't see — one dropdown, record so the timeline + timer reflect them */}
           <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
             onPick={(v) => onOutcome(v as PartnerLastSignal)} />
@@ -1137,7 +1176,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           )}
         </div>
       )}
-      {paySheetOpen && <PayLinkSheet contactId={contactId} onClose={() => setPaySheetOpen(false)} />}
+      {paySheetOpen && (
+        <PayLinkSheet
+          contactId={contactId}
+          onClose={() => setPaySheetOpen(false)}
+          onLinkSent={(note) => onOutcome('link-sent', { note })}
+        />
+      )}
     </div>
   );
 }
