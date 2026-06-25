@@ -632,6 +632,7 @@ export interface PipelineCard {
   sessionsRemaining: number;
   seriesType: string;
   lastActivity: string | null;
+  dateAdded: string | null;
 }
 
 export interface PipelineColumns {
@@ -641,6 +642,7 @@ export interface PipelineColumns {
   'touch-4': PipelineCard[];
   'touch-5': PipelineCard[];
   'touch-6': PipelineCard[];
+  'discovery-noshow': PipelineCard[];
   discovery: PipelineCard[];
   'first-session': PipelineCard[];
   'multipack-1': PipelineCard[];

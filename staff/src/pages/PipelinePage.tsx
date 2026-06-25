@@ -11,6 +11,7 @@ const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'touch-4', label: 'Touch 4', sub: '4 outreaches' },
   { id: 'touch-5', label: 'Touch 5', sub: '5 outreaches' },
   { id: 'touch-6', label: 'Touch 6+', sub: '6+ outreaches' },
+  { id: 'discovery-noshow', label: 'No-Show', sub: 'cancelled / ghosted' },
   { id: 'discovery', label: 'Discovery', sub: 'call attended' },
   { id: 'first-session', label: 'First Session', sub: 'session attended' },
   { id: 'multipack-1', label: 'Pack 1', sub: 'first series' },
@@ -26,6 +27,7 @@ const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot:
   'touch-4': { bg: '#EDE3D3', ring: '#CBB99E', dot: '#977C61' },
   'touch-5': { bg: '#E9DCC8', ring: '#C6AF8E', dot: '#8D6D4E' },
   'touch-6': { bg: '#E5D5BC', ring: '#C0A47D', dot: '#855F3B' },
+  'discovery-noshow': { bg: '#F5E8E8', ring: '#DEB8B8', dot: '#A04040' },
   discovery: { bg: '#EAE0EE', ring: '#C9B5D8', dot: '#8B5DA8' },
   'first-session': { bg: '#E4EEE6', ring: '#B4D3B9', dot: '#4A8C56' },
   'multipack-1': { bg: '#EBE8D8', ring: '#C8C09A', dot: '#8B7A3A' },
@@ -66,6 +68,11 @@ function Card({ card, colId, onClick }: {
           style={{ background: colors.dot }}
         />
         <div className="min-w-0">
+          {card.dateAdded ? (
+            <p className="text-[10px] text-amari-text-muted mb-0.5">
+              {new Date(card.dateAdded).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            </p>
+          ) : null}
           <p className="text-sm font-medium text-amari-charcoal leading-snug truncate">
             {card.name}
           </p>

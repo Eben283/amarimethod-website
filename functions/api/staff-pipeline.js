@@ -9,6 +9,9 @@ import { verifySessionToken } from "../lib/auth.js";
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
+// Internal contacts excluded from the pipeline view
+const EXCLUDED_EMAILS = new Set(["eben@ebenforrest.com"]);
+
 // GHL custom field IDs — hardcoded to avoid dynamic map lookup failures
 const FIELD_IDS = {
   touch_count:         "qKtPT2XZP61emgUDK7fd",
@@ -88,7 +91,7 @@ function getLastActivity(contact) {
   return raw ? new Date(raw).getTime() : 0;
 }
 
-function assignColumn(contact) {
+function assignColumn(contact, discoveryStatusMap) {
   const sessionsCompleted = getSessionsCompleted(contact);
   const seriesType = getSeriesType(contact);
   const tags = getTags(contact);
@@ -98,10 +101,21 @@ function assignColumn(contact) {
   if (tags.includes("referred-a-client")) return "referred";
 
   // Session columns take priority over touch columns
-  if (sessionsCompleted >= 9) return "multipack-2";
+  // Pack 2+ = total sessions purchased (completed + remaining) > 8
+  const sessionsRemaining = getSessionsRemaining(contact);
+  if (sessionsCompleted + sessionsRemaining > 8) return "multipack-2";
   if (seriesType !== "none" && sessionsCompleted >= 1) return "multipack-1";
   if (sessionsCompleted >= 1) return "first-session";
-  if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) return "discovery";
+  if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) {
+    const apptStatus = discoveryStatusMap[contact.id];
+    if (apptStatus === undefined) {
+      // Tag exists but no appointment record — fall through to touch columns
+    } else if (apptStatus === "noshow" || apptStatus === "cancelled" || tags.includes("discovery-no-show")) {
+      return "discovery-noshow";
+    } else {
+      return "discovery";
+    }
+  }
 
   // Touch columns — only show contacts active in last 6 months
   const lastActivity = getLastActivity(contact);
@@ -142,6 +156,30 @@ async function fetchByTag(ghlToken, tag) {
 
 // Paginated fetch of all contacts — needed to find clients who have no outreach tags.
 // Mirrors what staff-balances does. Capped at 10 pages (1000 contacts).
+async function fetchDiscoveryStatus(ghlToken) {
+  const start = new Date("2024-01-01").getTime();
+  const end = new Date("2028-01-01").getTime();
+  const calIds = ["USgPsktqRcuomdUgpShL", "ZEIGFHBi17SpZ3Ezi5DR"];
+  const statusMap = {};
+  await Promise.all(calIds.map(async (calId) => {
+    const res = await fetch(
+      `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
+      { headers: ghlHeaders(ghlToken) }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const appt of (data.appointments || data.events || [])) {
+      const cId = appt.contactId;
+      if (!cId) continue;
+      // "showed" wins over anything else; otherwise keep the most recent
+      if (!statusMap[cId] || appt.appointmentStatus === "showed") {
+        statusMap[cId] = appt.appointmentStatus;
+      }
+    }
+  }));
+  return statusMap;
+}
+
 async function fetchAllContacts(ghlToken) {
   const all = [];
   let page = 1;
@@ -201,22 +239,26 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
   }
 
-  // Two fetches in parallel:
+  // Three fetches in parallel:
   // 1. Outreach-tagged contacts (for touch/discovery columns)
   // 2. All contacts — filtered to those with sessions_completed > 0 (for session columns)
-  const [tagResults, allContacts] = await Promise.all([
+  // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
+  const [tagResults, allContacts, discoveryStatusMap] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
     fetchAllContacts(ghlToken).catch(() => []),
+    fetchDiscoveryStatus(ghlToken).catch(() => ({})),
   ]);
 
   // Merge: outreach contacts first, then anyone with sessions who wasn't already included
   const byId = new Map();
   for (const list of tagResults) {
     for (const c of list) {
+      if (EXCLUDED_EMAILS.has(c.email)) continue;
       if (!byId.has(c.id)) byId.set(c.id, c);
     }
   }
   for (const c of allContacts) {
+    if (EXCLUDED_EMAILS.has(c.email)) continue;
     if (byId.has(c.id)) continue;
     if (getSessionsCompleted(c) > 0 || getSeriesType(c) !== "none") byId.set(c.id, c);
   }
@@ -229,6 +271,7 @@ export async function onRequestGet(context) {
     "touch-4": [],
     "touch-5": [],
     "touch-6": [],
+    "discovery-noshow": [],
     discovery: [],
     "first-session": [],
     "multipack-1": [],
@@ -237,7 +280,7 @@ export async function onRequestGet(context) {
   };
 
   for (const contact of byId.values()) {
-    const col = assignColumn(contact);
+    const col = assignColumn(contact, discoveryStatusMap);
     if (!col) continue; // stale — outside 6-month window, no sessions
 
     const sessionsCompleted = getSessionsCompleted(contact);
@@ -253,6 +296,7 @@ export async function onRequestGet(context) {
       sessionsRemaining,
       seriesType,
       lastActivity: contact.lastActivity || contact.dateUpdated || null,
+      dateAdded: contact.dateAdded || null,
     });
   }
 
