@@ -31,7 +31,8 @@ const OUTREACH_TAGS = [
   "partner-prospect",
   "affiliate-partner",
   "ambassador-prospect",
-  "discovery call attended",
+  "booked discovery call - workflow 2",
+  "booked-discovery-call",
   "quiz submitted",
 ];
 
@@ -97,7 +98,7 @@ function assignColumn(contact) {
   if (sessionsCompleted >= 9) return "multipack-2";
   if (seriesType !== "none" && sessionsCompleted >= 1) return "multipack-1";
   if (sessionsCompleted >= 1) return "first-session";
-  if (tags.includes("discovery call attended")) return "discovery";
+  if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) return "discovery";
 
   // Touch columns — only show contacts active in last 6 months
   const lastActivity = getLastActivity(contact);
