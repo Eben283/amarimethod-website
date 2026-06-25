@@ -107,16 +107,17 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   if (attendance.showed > 8 || (sessionsCompleted + sessionsRemaining) > 8) return "multipack-2";
   if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
   if (attendance.showed >= 1) return "first-session";
-  if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) {
-    const apptStatus = discoveryStatusMap[contact.id];
-    if (apptStatus === undefined) {
-      // Tag exists but no appointment record — fall through to touch columns
-    } else if (apptStatus === "noshow" || apptStatus === "cancelled" || tags.includes("discovery-no-show")) {
+
+  // Discovery — driven by appointment data; no tag required
+  const discoveryApptStatus = discoveryStatusMap[contact.id];
+  if (discoveryApptStatus !== undefined) {
+    if (discoveryApptStatus === "noshow" || discoveryApptStatus === "cancelled" || tags.includes("discovery-no-show")) {
       return "discovery-noshow";
-    } else {
-      return "discovery";
     }
+    return "discovery";
   }
+  // Has booking tag but no appointment record → fall through to touch columns
+  // (e.g., clicked booking link but didn't complete the booking)
 
   // Touch columns — only show contacts active in last 6 months
   const lastActivity = getLastActivity(contact);
@@ -205,7 +206,11 @@ async function fetchSessionAttendance(ghlToken) {
 async function fetchDiscoveryStatus(ghlToken) {
   const start = new Date("2024-01-01").getTime();
   const end = new Date("2028-01-01").getTime();
-  const calIds = ["USgPsktqRcuomdUgpShL", "ZEIGFHBi17SpZ3Ezi5DR"];
+  const calIds = [
+    "USgPsktqRcuomdUgpShL", // Discovery Call — In Person
+    "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
+    "aVE54Qf4lrbYTB0zFqXy", // 15-Minute Pain Assessment / Ambassador Prospect Call
+  ];
   const statusMap = {};
   await Promise.all(calIds.map(async (calId) => {
     const res = await fetch(
