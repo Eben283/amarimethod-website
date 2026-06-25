@@ -3,7 +3,7 @@ import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
   Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil,
-  Users, CreditCard,
+  Check, X, Users, CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
