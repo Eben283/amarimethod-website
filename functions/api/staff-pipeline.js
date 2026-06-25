@@ -100,7 +100,8 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   if (tags.includes("referred-a-client")) return "referred";
 
   // Session columns — use real appointment attendance data
-  if (attendance.showed > 8) return "multipack-2";
+  const sessionsRemaining = getSessionsRemaining(contact);
+  if (attendance.showed > 8 || (attendance.showed + sessionsRemaining) > 8) return "multipack-2";
   if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
   if (attendance.showed >= 1) return "first-session";
   if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) {
