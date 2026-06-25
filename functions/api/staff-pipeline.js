@@ -112,7 +112,8 @@ function assignColumn(contact) {
   if (touchCount === 4) return "touch-4";
   if (touchCount === 3) return "touch-3";
   if (touchCount === 2) return "touch-2";
-  return "touch-1";
+  if (touchCount >= 1) return "touch-1";
+  return null; // never contacted — not on the board yet
 }
 
 async function fetchByTag(ghlToken, tag) {
