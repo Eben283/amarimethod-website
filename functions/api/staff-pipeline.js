@@ -166,10 +166,12 @@ const SESSION_CALENDARS = [
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
 ];
 
-// Package calendars — attending one means they bought a series
+// Any follow-up calendar = bought a series (follow-ups require a pack)
 const PACKAGE_CALENDAR_IDS = new Set([
-  "ZO1jlGfy01rsxVqicoSB",
-  "bJFkhVP35Ecwh4tLnSmy",
+  "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person
+  "ZO1jlGfy01rsxVqicoSB", // Follow-up Session — In Person (Package)
+  "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
+  "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
 ]);
 
 async function fetchSessionAttendance(ghlToken) {
