@@ -459,7 +459,10 @@ function deriveStageLabel(p, c) {
     if (state === "reply-waiting") return "Reply Waiting";
     if (state === "their-court") return "Their Court";
     if (state === "warm-stalled") return "Warm — Stalled";
-    if (state === "breakup") return "Breakup";
+    // "Breakup" only makes sense for cold contacts (who never engaged) — it signals the
+    // final outreach before we stop. For warm contacts (who replied or talked), the last
+    // step in their sequence is just another follow-up, not a breakup.
+    if (state === "breakup" && variant !== "warm") return "Breakup";
     if (state === "exhausted" || state === "call-exhausted") return "Exhausted";
     if (state === "drip-only" || state === "set-aside" || state === "skipped" || state === "booked") return null;
 
