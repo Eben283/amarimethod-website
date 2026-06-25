@@ -49,18 +49,24 @@ const PAYMENT_PILL: Record<PaymentStatus, { label: string; bg: string; fg: strin
   unknown: null,
 };
 
-// Derive a short "kind" chip from a note body's leading label.
-function noteKind(body: string): string {
+// Returns true for system-generated notes that should never surface in the client sheet.
+// Only Garrett's manually-written notes belong here.
+function isSystemNote(body: string): boolean {
   const t = body.trim();
-  if (/^migrat/i.test(t)) return 'Migration';
-  if (/^\[?reconciliation/i.test(t)) return 'Reconciliation';
-  if (/^outcome:/i.test(t)) return 'Outcome';
-  if (/^touch:/i.test(t)) return 'Touch';
-  if (/^skip:/i.test(t)) return 'Skip';
-  if (/^enrichment/i.test(t)) return 'Enrichment';
-  if (/^audit/i.test(t)) return 'Audit';
-  if (/^correction/i.test(t)) return 'Correction';
-  return 'Note';
+  return (
+    /^migrat/i.test(t) ||
+    /^\[?reconciliation/i.test(t) ||
+    /^outcome:/i.test(t) ||
+    /^touch:/i.test(t) ||
+    /^skip:/i.test(t) ||
+    /^enrichment/i.test(t) ||
+    /^audit/i.test(t) ||
+    /^correction/i.test(t) ||
+    /^ip:/i.test(t) ||
+    /^user.?agent:/i.test(t) ||
+    /captured at:/i.test(t) ||
+    /^next: customer redirected/i.test(t)
+  );
 }
 
 // A note body can carry an embedded signature as a base64 <img> (the policy-attestation
@@ -510,24 +516,27 @@ export default function ClientDetailPage() {
         {/* notes */}
         <section className="sa-card">
           <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
-          {client.notes.length === 0 ? (
-            <p className="sa-empty">No notes yet</p>
-          ) : (
-            <div className="sa-notes">
-              {client.notes.map((n) => {
-                const nb = splitNoteBody(n.body);
-                return (
-                  <div key={n.id} className="sa-note">
-                    <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
-                    {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
-                    {nb.signature && (
-                      <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {(() => {
+            const visible = client.notes.filter((n) => !isSystemNote(n.body));
+            return visible.length === 0 ? (
+              <p className="sa-empty">No notes yet</p>
+            ) : (
+              <div className="sa-notes">
+                {visible.map((n) => {
+                  const nb = splitNoteBody(n.body);
+                  return (
+                    <div key={n.id} className="sa-note">
+                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
+                      {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
+                      {nb.signature && (
+                        <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </section>
 
         {/* ============ IN SESSION (cont.) ============ */}
