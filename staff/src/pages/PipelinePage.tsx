@@ -14,8 +14,7 @@ const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'discovery', label: 'Discovery', sub: 'call attended' },
   { id: 'first-session', label: 'First Session', sub: 'session attended' },
   { id: 'multipack-1', label: 'Pack 1', sub: 'first series' },
-  { id: 'multipack-2', label: 'Pack 2', sub: 'repurchased' },
-  { id: 'multipack-3', label: 'Pack 3+', sub: '17+ sessions' },
+  { id: 'multipack-2', label: 'Pack 2+', sub: 'repurchased' },
   { id: 'referred', label: 'Referred', sub: 'sent us a client' },
 ];
 
@@ -31,7 +30,6 @@ const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot:
   'first-session': { bg: '#E4EEE6', ring: '#B4D3B9', dot: '#4A8C56' },
   'multipack-1': { bg: '#EBE8D8', ring: '#C8C09A', dot: '#8B7A3A' },
   'multipack-2': { bg: '#E8E0C8', ring: '#C4B880', dot: '#8A7020' },
-  'multipack-3': { bg: '#E5D8B8', ring: '#C0AE68', dot: '#896800' },
   referred: { bg: '#E8EEF0', ring: '#A8C4CC', dot: '#2E7D92' },
 };
 

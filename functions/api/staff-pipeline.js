@@ -98,7 +98,6 @@ function assignColumn(contact) {
   if (tags.includes("referred-a-client")) return "referred";
 
   // Session columns take priority over touch columns
-  if (sessionsCompleted >= 17) return "multipack-3";
   if (sessionsCompleted >= 9) return "multipack-2";
   if (seriesType !== "none" && sessionsCompleted >= 1) return "multipack-1";
   if (sessionsCompleted >= 1) return "first-session";
@@ -233,7 +232,6 @@ export async function onRequestGet(context) {
     "first-session": [],
     "multipack-1": [],
     "multipack-2": [],
-    "multipack-3": [],
     referred: [],
   };
 
@@ -259,7 +257,7 @@ export async function onRequestGet(context) {
 
   // Sort: session columns by sessions desc, touch columns by touchCount desc then name
   for (const col of Object.keys(columns)) {
-    if (["first-session", "multipack-1", "multipack-2", "multipack-3"].includes(col)) {
+    if (["first-session", "multipack-1", "multipack-2"].includes(col)) {
       columns[col].sort((a, b) => b.sessionsCompleted - a.sessionsCompleted);
     } else {
       columns[col].sort((a, b) => b.touchCount - a.touchCount || a.name.localeCompare(b.name));

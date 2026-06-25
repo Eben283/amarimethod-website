@@ -645,7 +645,6 @@ export interface PipelineColumns {
   'first-session': PipelineCard[];
   'multipack-1': PipelineCard[];
   'multipack-2': PipelineCard[];
-  'multipack-3': PipelineCard[];
   referred: PipelineCard[];
 }
 
