@@ -1033,7 +1033,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           <button
             type="button"
             onClick={() => setPaySheetOpen(true)}
-            className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand"
+            className="inline-flex items-center gap-1 rounded-lg bg-amari-accent-warm px-2.5 py-1.5 text-xs font-medium text-white"
           >
             <CreditCard className="h-3.5 w-3.5" /> Send link
           </button>
