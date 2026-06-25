@@ -100,8 +100,11 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   if (tags.includes("referred-a-client")) return "referred";
 
   // Session columns — use real appointment attendance data
+  // sc+sr = total sessions purchased across all packs (reliable); showed > 8 = hard attendance count
+  // Using sc+sr instead of showed+sr avoids false Pack 2+ for first-pack clients near the end of their pack
+  const sessionsCompleted = getSessionsCompleted(contact);
   const sessionsRemaining = getSessionsRemaining(contact);
-  if (attendance.showed > 8 || (attendance.showed + sessionsRemaining) > 8) return "multipack-2";
+  if (attendance.showed > 8 || (sessionsCompleted + sessionsRemaining) > 8) return "multipack-2";
   if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
   if (attendance.showed >= 1) return "first-session";
   if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) {
