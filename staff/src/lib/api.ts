@@ -598,6 +598,16 @@ export async function getCallCoach(contactId: string, date?: string): Promise<Ca
   }
 }
 
+// Triggers the call-coach Worker's /coach-one endpoint for a single contact
+// on-demand (after a call outcome is logged). Fire-and-forget — the caller
+// should `.catch(() => {})` and not await the result.
+export async function triggerCoachOne(contactId: string): Promise<{ triggered: boolean; contactId: string }> {
+  return fetchApi('/staff-coach-one', {
+    method: 'POST',
+    body: JSON.stringify({ contactId }),
+  });
+}
+
 // ── Outreach coach (local generator: cadence + thread + voice → who/why/message)
 export interface OutreachCoach {
   contactId: string;

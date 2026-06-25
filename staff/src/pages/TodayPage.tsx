@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getDayData, ApiError } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
+import SessionDocSheet from '../components/SessionDocSheet';
 import GarrettDay from '../components/GarrettDay';
 import MoneyMoments from '../components/MoneyMoments';
 import SharpenDeck from '../components/SharpenDeck';
@@ -46,6 +47,8 @@ export default function TodayPage() {
   const [weekData, setWeekData] = useState<Record<string, TodayAppointment[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [docContactId, setDocContactId] = useState<string | null>(null);
+  const [docClientName, setDocClientName] = useState('');
 
   // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
   // toggling fires overlapping requests; only the latest one is allowed to commit
@@ -203,12 +206,20 @@ export default function TodayPage() {
           appointments={dayAppointments}
           date={selectedDate}
           onTapAppointment={(appt) => navigate(`/client/${appt.contactId}?appointment=${appt.id}`)}
+          onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
         />
       ) : (
         <WeekView
           weekData={weekData}
           selectedDate={selectedDate}
           onSelectDay={(d) => { setSelectedDate(d); setView('day'); }}
+        />
+      )}
+      {docContactId && (
+        <SessionDocSheet
+          contactId={docContactId}
+          clientName={docClientName}
+          onClose={() => setDocContactId(null)}
         />
       )}
     </div>
@@ -264,10 +275,11 @@ function assignColumns(
   return result;
 }
 
-function DayView({ appointments, date, onTapAppointment }: {
+function DayView({ appointments, date, onTapAppointment, onDocSession }: {
   appointments: TodayAppointment[];
   date: Date;
   onTapAppointment: (appt: TodayAppointment) => void;
+  onDocSession: (appt: TodayAppointment) => void;
 }) {
   if (appointments.length === 0) {
     return (
@@ -380,6 +392,7 @@ function DayView({ appointments, date, onTapAppointment }: {
             key={appt.id}
             appointment={appt}
             onTap={() => onTapAppointment(appt)}
+            onDocSession={() => onDocSession(appt)}
           />
         ))}
       </div>

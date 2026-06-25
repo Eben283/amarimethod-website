@@ -11,7 +11,7 @@ import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach,
   getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker,
-  sendPayLink, ApiError,
+  sendPayLink, triggerCoachOne, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach, type PayLinkProduct,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
@@ -433,6 +433,11 @@ export default function FollowUpPage() {
         };
       }));
       markHandled(contactId); // you acted → drop the card now, don't wait for the cadence refresh
+      // Kick off on-demand call coaching after any call-type outcome so the
+      // coaching note is fresh the next time this card is opened.
+      if (signal === 'talked' || signal === 'voicemail' || signal === 'no-answer') {
+        triggerCoachOne(contactId).catch(() => {});
+      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to record');
