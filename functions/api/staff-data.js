@@ -240,6 +240,7 @@ export async function onRequestGet(context) {
           title: event.title || event.calendarName || "Session",
           calendarName: event.calendarName || "",
           appointmentStatus: (event.appointmentStatus || event.status || "").toLowerCase(),
+          meetingLocation: event.meetingLocation || null,
           sessionsRemaining,
           sessionsCompleted,
           seriesType,

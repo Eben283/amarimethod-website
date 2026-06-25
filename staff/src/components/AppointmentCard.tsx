@@ -1,10 +1,11 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Video } from 'lucide-react';
 import type { TodayAppointment } from '../types/staff';
 
 interface Props {
   appointment: TodayAppointment;
   onTap: () => void;
   onDocSession?: () => void;
+  onSellLink?: () => void;
 }
 
 const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
@@ -35,7 +36,7 @@ function sessionTypeLabel(calendarName: string): string {
   return calendarName.length > 20 ? calendarName.slice(0, 18) + '...' : calendarName;
 }
 
-export default function AppointmentCard({ appointment, onTap, onDocSession }: Props) {
+export default function AppointmentCard({ appointment, onTap, onDocSession, onSellLink }: Props) {
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
 
@@ -75,11 +76,21 @@ export default function AppointmentCard({ appointment, onTap, onDocSession }: Pr
                 {typeLabel}
               </span>
             )}
-            {appointment.seriesType !== 'none' && (
-              <span className="text-xs text-amari-text-muted">
-                {appointment.sessionsRemaining} left
-              </span>
-            )}
+            {appointment.seriesType !== 'none' && (() => {
+              const done = appointment.sessionsCompleted;
+              const remaining = appointment.sessionsRemaining;
+              const total = done + remaining;
+              if (total > 0) {
+                const current = done + 1;
+                const lowSessions = remaining <= 2 && remaining > 0;
+                return (
+                  <span className={`text-xs ${lowSessions ? 'text-amber-600 font-medium' : 'text-amari-text-muted'}`}>
+                    Session {current} of {total}
+                  </span>
+                );
+              }
+              return null;
+            })()}
             {appointment.sessionsCompleted <= 1 && (
               <span className="text-xs bg-amari-accent-warm-light text-amari-charcoal px-1.5 py-0.5 rounded">
                 {appointment.sessionsCompleted === 0 ? 'New' : '1st visit'}
@@ -108,14 +119,35 @@ export default function AppointmentCard({ appointment, onTap, onDocSession }: Pr
         <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
       </button>
 
-      {onDocSession && (
-        <div className="mt-3 pt-3 border-t border-amari-border flex justify-end">
-          <button
-            onClick={onDocSession}
-            className="text-xs text-amari-accent-warm font-medium px-2 py-1 rounded hover:bg-amari-light-sand min-h-[36px]"
-          >
-            Document session
-          </button>
+      {(onDocSession || onSellLink || (appointment.meetingLocation && !isPast)) && (
+        <div className="mt-3 pt-3 border-t border-amari-border flex items-center gap-2 justify-end">
+          {appointment.meetingLocation && !isPast && (
+            <a
+              href={appointment.meetingLocation}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-1 rounded-lg bg-amari-pine-teal px-2.5 py-1.5 text-xs font-medium text-white min-h-[36px]"
+            >
+              <Video className="w-3 h-3" /> Join
+            </a>
+          )}
+          {onSellLink && (
+            <button
+              onClick={onSellLink}
+              className="text-xs text-amari-pine-teal font-medium px-2 py-1 rounded hover:bg-amari-light-sand min-h-[36px]"
+            >
+              Send renewal link
+            </button>
+          )}
+          {onDocSession && (
+            <button
+              onClick={onDocSession}
+              className="text-xs text-amari-accent-warm font-medium px-2 py-1 rounded hover:bg-amari-light-sand min-h-[36px]"
+            >
+              Document session
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
-  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil, Check, X,
+  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil,
   Users, CreditCard,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,13 +10,14 @@ import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach,
   getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker,
-  sendPayLink, triggerCoachOne, ApiError,
-  type EditableFieldKey, type CallCoach, type OutreachCoach, type PayLinkProduct,
+  triggerCoachOne, ApiError,
+  type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
+import PayLinkSheet, { PARTNER_LINKS } from '../components/PayLinkSheet';
 
 // ── FOLLOW-UP / COMMUNICATION SURFACE ─────────────────────────────────────────
 // The single place for "who do I need to communicate with, and what's the next
@@ -362,14 +362,26 @@ export default function FollowUpPage() {
     // lead (warmth 0) sits a touch lower. Small on purpose — it breaks near-ties, it
     // never jumps a real urgency gap (so a due one-touch still beats a cooling warm one).
     const warmthBonus = (w?: number) => (w === 2 ? 10 : w === 0 ? -5 : 0);
+    // Stage bonus: reward contacts closer to a yes (warm, reply-waiting, invested)
+    // and gently deprioritize last-ditch breakup outreach. Small on purpose — never
+    // jumps a real urgency gap, just breaks near-ties in the right direction.
+    const stageBonus = (label?: string | null): number => {
+      if (!label) return 0;
+      if (label === 'Reply Waiting') return 20;
+      if (label === 'Their Court') return 8;
+      if (label === 'Breakup') return -8;
+      const m = label.match(/Touch (\d+) of/);
+      if (m) return Math.min(parseInt(m[1]), 3) * 3; // +3 to +9 for invested contacts
+      return 0;
+    };
     // "Discovery" = a business/venue we have no named person to reach ("call the front
     // desk and ask who handles partnerships"). Eben deprioritized these hard (2026-06-21):
     // a known-person follow-up always beats a cold no-contact venue. Sink them far below
     // the act-now cap so they don't crowd out real prospects. They stay in the data
     // (reachable via search), just off the daily worklist.
     const DISCOVERY_PENALTY = 1000;
-    const score = (d: Derived, weight: number) =>
-      d.urgency + weight + warmthBonus(d.warmth) -
+    const score = (d: Derived, weight: number, sl?: string | null) =>
+      d.urgency + weight + warmthBonus(d.warmth) + stageBonus(sl) -
       (d.action === 'discovery' ? DISCOVERY_PENALTY : 0);
     return derived
       .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
@@ -377,7 +389,7 @@ export default function FollowUpPage() {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
-      .sort((a, b) => score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0))
+      .sort((a, b) => score(b.d, b.weight ?? 0, b.p.stageLabel) - score(a.d, a.weight ?? 0, a.p.stageLabel))
       // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
       // options without the full backlog (hundreds) becoming a wall. Replies are
       // pinned above this and never capped. The rest stays in the data, not the screen.
@@ -758,131 +770,6 @@ function resolveDraft(
 }
 
 // ── unified row (reply or prospect), expandable ──────────────────────────────
-const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; primary: boolean }[] = [
-  { product: '8-session-series', label: '8-Pack', price: '$1,295', primary: true },
-  { product: '4-session-series', label: '4-Pack', price: '$720', primary: true },
-  { product: 'initial-in-person', label: 'Initial — In Person', price: '$225', primary: false },
-  { product: 'initial-virtual', label: 'Initial — Virtual', price: '$225', primary: false },
-  { product: 'upgrade-initial-to-4', label: 'Upgrade: Initial to 4', price: '$495', primary: false },
-  { product: 'upgrade-initial-to-8', label: 'Upgrade: Initial to 8', price: '$1,070', primary: false },
-  { product: 'upgrade-4-to-8', label: 'Upgrade: 4 to 8', price: '$575', primary: false },
-  { product: 'follow-up', label: 'Follow-up session', price: '$190', primary: false },
-  { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
-];
-
-const PARTNER_LINKS = [
-  { value: 'partnership-session', label: 'Partnership Session Link' },
-  { value: 'partnership-toolkit', label: 'Partnership Toolkit' },
-];
-
-function PayLinkSheet({
-  contactId,
-  onClose,
-  onLinkSent,
-}: {
-  contactId: string;
-  onClose: () => void;
-  onLinkSent?: (note: string) => void;
-}) {
-  const [status, setStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
-  const [showMore, setShowMore] = useState(false);
-  const visible = showMore ? PAY_PRODUCTS : PAY_PRODUCTS.filter((p) => p.primary);
-
-  async function handleSend(product: PayLinkProduct, label: string) {
-    if (status[product] === 'sending' || status[product] === 'sent') return;
-    setStatus((s) => ({ ...s, [product]: 'sending' }));
-    try {
-      await sendPayLink(contactId, product);
-      setStatus((s) => ({ ...s, [product]: 'sent' }));
-      onLinkSent?.(`Sent ${label} pay link`);
-    } catch {
-      setStatus((s) => ({ ...s, [product]: 'error' }));
-    }
-  }
-
-  function handlePartnerLink(label: string) {
-    onLinkSent?.(`Sent ${label}`);
-    onClose();
-  }
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative rounded-t-2xl bg-white px-4 pb-8 pt-4 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <span className="font-semibold text-amari-charcoal">Send link</span>
-          <button type="button" onClick={onClose} className="text-amari-text-muted">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Partnership links — record only (no in-app send) */}
-        <div className="space-y-2 mb-3">
-          {PARTNER_LINKS.map(({ value, label }) => (
-            <div
-              key={value}
-              className="flex items-center justify-between rounded-xl border border-amari-border px-3 py-2.5"
-            >
-              <span className="text-sm font-medium text-amari-charcoal">{label}</span>
-              <button
-                type="button"
-                onClick={() => handlePartnerLink(label)}
-                className="rounded-lg px-3 py-1.5 text-xs font-medium bg-amari-charcoal text-white"
-              >
-                Send
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="mb-3 border-t border-amari-border" />
-
-        {/* Payment links — sends via GHL */}
-        <div className="space-y-2">
-          {visible.map(({ product, label, price }) => {
-            const s = status[product] || 'idle';
-            return (
-              <div
-                key={product}
-                className="flex items-center justify-between rounded-xl border border-amari-border px-3 py-2.5"
-              >
-                <div>
-                  <span className="text-sm font-medium text-amari-charcoal">{label}</span>
-                  <span className="ml-2 text-sm text-amari-text-muted">{price}</span>
-                </div>
-                <button
-                  type="button"
-                  disabled={s === 'sending'}
-                  onClick={() => handleSend(product, label)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                    s === 'sent' ? 'bg-green-50 text-green-700' :
-                    s === 'error' ? 'bg-red-50 text-red-600' :
-                    'bg-amari-charcoal text-white'
-                  }`}
-                >
-                  {s === 'sending' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
-                   s === 'sent' ? <Check className="h-3.5 w-3.5" /> :
-                   s === 'error' ? 'Error' : 'Send'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowMore((v) => !v)}
-          className="mt-3 w-full text-center text-xs text-amari-text-muted"
-        >
-          {showMore ? 'Fewer options' : 'More options'}
-        </button>
-      </div>
-    </div>,
-    document.body,
-  );
-}
 
 interface ActRowProps {
   item: ActItem;

@@ -29,6 +29,8 @@ export interface TodayAppointment {
   paymentStatus?: PaymentStatus;
   paymentMethod?: string | null;
   paymentNote?: string | null;
+  /** Video conference URL from the GHL appointment (Zoom/Google Meet). Null for in-person. */
+  meetingLocation?: string | null;
 }
 
 export interface ContactListItem {
