@@ -1388,7 +1388,7 @@ function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading';
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        Call coach{coach.hasAudio ? ' · from recording' : ''} · {coach.date}
+        Call coach{notes.hasAudio ? ' · from recording' : ''} · {notes.date}
       </p>
       {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
       {/* Ready-to-send reply, grounded in the thread — editable + sendable in-app.
@@ -1396,7 +1396,7 @@ function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading';
       {c.suggestedReply && (
         <div className="mt-2">
           <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
-          <EditSendText contactId={contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
+          <EditSendText contactId={notes.contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
         </div>
       )}
       {c.whatWorked?.length > 0 && (
