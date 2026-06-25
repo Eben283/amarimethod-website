@@ -7,6 +7,7 @@ interface Props {
 interface State {
   hasError: boolean;
   errorMessage?: string;
+  componentStack?: string;
 }
 
 // Catches render-time crashes anywhere below it so a single thrown error shows a
@@ -21,6 +22,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('[ErrorBoundary]', error, info.componentStack);
+    this.setState({ componentStack: info.componentStack?.slice(0, 600) ?? '' });
   }
 
   render() {
@@ -48,6 +50,11 @@ export default class ErrorBoundary extends Component<Props, State> {
         {this.state.errorMessage && (
           <p style={{ maxWidth: '28rem', margin: 0, fontSize: '0.75rem', fontFamily: 'monospace', background: '#fff', padding: '0.5rem', borderRadius: '0.25rem', wordBreak: 'break-all' }}>
             {this.state.errorMessage}
+          </p>
+        )}
+        {this.state.componentStack && (
+          <p style={{ maxWidth: '28rem', margin: 0, fontSize: '0.65rem', fontFamily: 'monospace', background: '#fff', padding: '0.5rem', borderRadius: '0.25rem', wordBreak: 'break-all', textAlign: 'left', whiteSpace: 'pre-wrap' }}>
+            {this.state.componentStack}
           </p>
         )}
         <button
