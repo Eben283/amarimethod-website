@@ -414,6 +414,9 @@ export interface PartnerProspect {
   sheetStatus: string | null;
   sheetNotes: string | null;
   inGarrettSheet: boolean;
+  /** Human-readable stage badge computed server-side from cadence state + partner_stage.
+   *  Examples: "New", "Touch 2 of 6", "Warm · Touch 1 of 4", "Reply Waiting", "Breakup". */
+  stageLabel?: string | null;
 }
 
 export type PartnerStageFilter = 'all' | PartnerStage;

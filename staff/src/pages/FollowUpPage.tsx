@@ -243,6 +243,15 @@ type ActItem = ReplyItem | ProspectItem;
 const URGENCY_DOT: Record<ActionKind, string> = {
   reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500', linkedin: 'bg-sky-700', discovery: 'bg-violet-500',
 };
+
+function stageBadgeClass(label: string): string {
+  if (label === 'Reply Waiting') return 'bg-red-100 text-red-700';
+  if (label === 'New') return 'bg-amari-accent-warm/20 text-amari-charcoal';
+  if (label === 'Session Booked' || label === 'Partner') return 'bg-emerald-100 text-emerald-800';
+  if (label.startsWith('Warm')) return 'bg-amari-pine-teal/20 text-amari-charcoal';
+  if (label === 'Breakup') return 'bg-amber-100 text-amber-800';
+  return 'bg-amari-light-sand text-amari-text-muted';
+}
 const ACTION_LABEL: Record<ActionKind, string> = {
   reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide', linkedin: 'LinkedIn', discovery: 'Find contact',
 };
@@ -975,6 +984,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
             {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
           </div>
+          {item.kind === 'prospect' && item.p.stageLabel && (
+            <div className="mt-0.5">
+              <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${stageBadgeClass(item.p.stageLabel)}`}>
+                {item.p.stageLabel}
+              </span>
+            </div>
+          )}
           {isReply ? (
             <>
               <p className="mt-1 line-clamp-2 text-sm text-amari-charcoal">{item.conv.lastMessagePreview || 'Sent you a message'}</p>

@@ -444,6 +444,37 @@ export function finalizePlay(p, warmFacilities = new Set()) {
   return d;
 }
 
+// Derive a human-readable stage badge for a partner prospect card.
+// Combines the GHL partner_stage field with the conversation-engine cadence state
+// so the badge reflects where this person is in the outreach sequence right now.
+// Returns null for contacts that are suppressed (aside/converted) or have no useful label.
+function deriveStageLabel(p, c) {
+  if (p.isActivePartner || p.partnerStage === "partner") return "Partner";
+  if (p.partnerStage === "session-booked" || c?.hasBooking) return "Session Booked";
+  if (p.partnerStage === "dropped") return null;
+  if (p.partnerStage === "future-potential") return "Snoozed";
+
+  if (c) {
+    const { state, step, totalSteps, variant, landedTouches } = c;
+    if (state === "reply-waiting") return "Reply Waiting";
+    if (state === "their-court") return "Their Court";
+    if (state === "warm-stalled") return "Warm — Stalled";
+    if (state === "breakup") return "Breakup";
+    if (state === "exhausted" || state === "call-exhausted") return "Exhausted";
+    if (state === "drip-only" || state === "set-aside" || state === "skipped" || state === "booked") return null;
+
+    // Touch-progress badge: landedTouches = outbound events the contact actually perceived
+    // (dead calls excluded). `step` = next step = landedTouches + 1 (fallback for older cache).
+    const done = landedTouches ?? Math.max(0, (step || 1) - 1);
+    const total = totalSteps || (variant === "warm" ? 4 : 6);
+    if (done === 0) return variant === "warm" ? "Warm — New" : "New";
+    const prefix = variant === "warm" ? "Warm · " : "";
+    return `${prefix}Touch ${done} of ${total}`;
+  }
+
+  return p.touchCount === 0 ? "New" : null;
+}
+
 // Lookup Garrett's sheet row for a contact by phone or email match.
 function lookupSheetRow(contact) {
   const phoneNorm = normalizePhone(contact.phone);
@@ -708,6 +739,7 @@ export async function onRequestGet(context) {
       } else {
         p.derived = base;
       }
+      p.stageLabel = deriveStageLabel(p, c);
     }
 
     // Follow-Up = EVERYONE who needs follow-up, not just partner-tagged (Eben 2026-06-15:
@@ -753,6 +785,7 @@ export async function onRequestGet(context) {
         sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
         isLead: true,
         derived,
+        stageLabel: deriveStageLabel({ isActivePartner: false, partnerStage: null, touchCount: Number(c.outCount) || 0 }, c),
       });
     }
 
