@@ -91,21 +91,18 @@ function getLastActivity(contact) {
   return raw ? new Date(raw).getTime() : 0;
 }
 
-function assignColumn(contact, discoveryStatusMap) {
-  const sessionsCompleted = getSessionsCompleted(contact);
-  const seriesType = getSeriesType(contact);
+function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   const tags = getTags(contact);
   const touchCount = getTouchCount(contact);
+  const attendance = sessionAttendanceMap[contact.id] || { showed: 0, hasPackage: false };
 
   // Referred clients get their own column — highest priority
   if (tags.includes("referred-a-client")) return "referred";
 
-  // Session columns take priority over touch columns
-  // Pack 2+ = total sessions purchased (completed + remaining) > 8
-  const sessionsRemaining = getSessionsRemaining(contact);
-  if (sessionsCompleted + sessionsRemaining > 8) return "multipack-2";
-  if (seriesType !== "none" && sessionsCompleted >= 1) return "multipack-1";
-  if (sessionsCompleted >= 1) return "first-session";
+  // Session columns — use real appointment attendance data
+  if (attendance.showed > 8) return "multipack-2";
+  if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
+  if (attendance.showed >= 1) return "first-session";
   if (tags.includes("booked discovery call - workflow 2") || tags.includes("booked-discovery-call")) {
     const apptStatus = discoveryStatusMap[contact.id];
     if (apptStatus === undefined) {
@@ -156,6 +153,49 @@ async function fetchByTag(ghlToken, tag) {
 
 // Paginated fetch of all contacts — needed to find clients who have no outreach tags.
 // Mirrors what staff-balances does. Capped at 10 pages (1000 contacts).
+// All session calendars — initial + follow-up, in-person + virtual + partner
+const SESSION_CALENDARS = [
+  "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person
+  "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual
+  "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person
+  "ZO1jlGfy01rsxVqicoSB", // Follow-up Session — In Person (Package)
+  "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
+  "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
+];
+
+// Package calendars — attending one means they bought a series
+const PACKAGE_CALENDAR_IDS = new Set([
+  "ZO1jlGfy01rsxVqicoSB",
+  "bJFkhVP35Ecwh4tLnSmy",
+]);
+
+async function fetchSessionAttendance(ghlToken) {
+  const start = new Date("2024-01-01").getTime();
+  const end = new Date("2028-01-01").getTime();
+  // contactId → { showed: number, hasPackage: boolean }
+  const map = {};
+  await Promise.all(SESSION_CALENDARS.map(async (calId) => {
+    const res = await fetch(
+      `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
+      { headers: ghlHeaders(ghlToken) }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const appt of (data.appointments || data.events || [])) {
+      if (appt.appointmentStatus !== "showed") continue;
+      const cId = appt.contactId;
+      if (!cId) continue;
+      if (!map[cId]) map[cId] = { showed: 0, hasPackage: false };
+      map[cId].showed += 1;
+      if (PACKAGE_CALENDAR_IDS.has(calId)) map[cId].hasPackage = true;
+    }
+  }));
+  return map;
+}
+
 async function fetchDiscoveryStatus(ghlToken) {
   const start = new Date("2024-01-01").getTime();
   const end = new Date("2028-01-01").getTime();
@@ -239,14 +279,16 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
   }
 
-  // Three fetches in parallel:
+  // Four fetches in parallel:
   // 1. Outreach-tagged contacts (for touch/discovery columns)
-  // 2. All contacts — filtered to those with sessions_completed > 0 (for session columns)
+  // 2. All contacts — to catch clients with no outreach tags
   // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
-  const [tagResults, allContacts, discoveryStatusMap] = await Promise.all([
+  // 4. Session attendance from all session calendars — source of truth for column placement
+  const [tagResults, allContacts, discoveryStatusMap, sessionAttendanceMap] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
     fetchAllContacts(ghlToken).catch(() => []),
     fetchDiscoveryStatus(ghlToken).catch(() => ({})),
+    fetchSessionAttendance(ghlToken).catch(() => ({})),
   ]);
 
   // Merge: outreach contacts first, then anyone with sessions who wasn't already included
@@ -260,7 +302,8 @@ export async function onRequestGet(context) {
   for (const c of allContacts) {
     if (EXCLUDED_EMAILS.has(c.email)) continue;
     if (byId.has(c.id)) continue;
-    if (getSessionsCompleted(c) > 0 || getSeriesType(c) !== "none") byId.set(c.id, c);
+    // Include anyone with real session attendance, regardless of custom field state
+    if (sessionAttendanceMap[c.id]?.showed > 0) byId.set(c.id, c);
   }
 
   // Bucket into columns
@@ -280,21 +323,19 @@ export async function onRequestGet(context) {
   };
 
   for (const contact of byId.values()) {
-    const col = assignColumn(contact, discoveryStatusMap);
+    const col = assignColumn(contact, discoveryStatusMap, sessionAttendanceMap);
     if (!col) continue; // stale — outside 6-month window, no sessions
 
-    const sessionsCompleted = getSessionsCompleted(contact);
-    const sessionsRemaining = getSessionsRemaining(contact);
-    const seriesType = getSeriesType(contact);
+    const attendance = sessionAttendanceMap[contact.id] || { showed: 0, hasPackage: false };
     const touchCount = getTouchCount(contact);
 
     columns[col].push({
       id: contact.id,
       name: [contact.firstName, contact.lastName].filter(Boolean).join(" ") || "(no name)",
       touchCount,
-      sessionsCompleted,
-      sessionsRemaining,
-      seriesType,
+      sessionsCompleted: attendance.showed,
+      sessionsRemaining: getSessionsRemaining(contact),
+      seriesType: attendance.hasPackage ? "series" : "none",
       lastActivity: contact.lastActivity || contact.dateUpdated || null,
       dateAdded: contact.dateAdded || null,
     });
