@@ -859,6 +859,18 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     ? callNotes.coaching.summary.split(/\.\s+/)[0]?.trim() ?? null
     : null;
 
+  // For cold contacts with only deterministic card data (no coaching from any AI
+  // source), surface who the person IS rather than leaving a blank card below the
+  // generic headline. Each person's rundown is unique; the headline alone isn't.
+  const rundownPreview = !isReply
+    && !callNotePreview
+    && item.kind === 'prospect'
+    && resolved !== null && resolved !== 'loading'
+    && resolved.source === 'buildcard'
+    && item.p.rundown?.trim()
+    ? (item.p.rundown.trim().split(/\.\s+/)[0]?.trim() ?? null)
+    : null;
+
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
   // that are actually true. A solid card (real recorded call, verified person, full
@@ -904,6 +916,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               <p className="mt-1 text-sm text-amari-charcoal">{headlineWhy}</p>
               {callNotePreview && (
                 <p className="mt-0.5 line-clamp-1 text-[11px] italic text-amari-text-muted">&quot;{callNotePreview}&quot;</p>
+              )}
+              {!callNotePreview && rundownPreview && (
+                <p className="mt-0.5 line-clamp-1 text-[11px] text-amari-text-muted">{rundownPreview}</p>
               )}
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
