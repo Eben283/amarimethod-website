@@ -1132,6 +1132,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           )}
         </div>
       )}
+      {paySheetOpen && <PayLinkSheet contactId={contactId} onClose={() => setPaySheetOpen(false)} />}
     </div>
   );
 }
@@ -1179,7 +1180,6 @@ function Details({ p }: { p: PartnerProspect }) {
           ))}
         </div>
       )}
-      {paySheetOpen && <PayLinkSheet contactId={contactId} onClose={() => setPaySheetOpen(false)} />}
     </div>
   );
 }
