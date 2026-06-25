@@ -646,6 +646,7 @@ export interface PipelineColumns {
   'multipack-1': PipelineCard[];
   'multipack-2': PipelineCard[];
   'multipack-3': PipelineCard[];
+  referred: PipelineCard[];
 }
 
 export async function getPipeline(): Promise<PipelineColumns> {

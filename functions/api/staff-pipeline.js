@@ -34,6 +34,7 @@ const OUTREACH_TAGS = [
   "booked discovery call - workflow 2",
   "booked-discovery-call",
   "quiz submitted",
+  "referred-a-client",
 ];
 
 const ALLOWED_ORIGINS = [
@@ -92,6 +93,9 @@ function assignColumn(contact) {
   const seriesType = getSeriesType(contact);
   const tags = getTags(contact);
   const touchCount = getTouchCount(contact);
+
+  // Referred clients get their own column — highest priority
+  if (tags.includes("referred-a-client")) return "referred";
 
   // Session columns take priority over touch columns
   if (sessionsCompleted >= 17) return "multipack-3";
@@ -230,6 +234,7 @@ export async function onRequestGet(context) {
     "multipack-1": [],
     "multipack-2": [],
     "multipack-3": [],
+    referred: [],
   };
 
   for (const contact of byId.values()) {

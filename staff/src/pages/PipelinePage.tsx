@@ -16,6 +16,7 @@ const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'multipack-1', label: 'Pack 1', sub: 'first series' },
   { id: 'multipack-2', label: 'Pack 2', sub: 'repurchased' },
   { id: 'multipack-3', label: 'Pack 3+', sub: '17+ sessions' },
+  { id: 'referred', label: 'Referred', sub: 'sent us a client' },
 ];
 
 // Column accent colors — warm left→right gradient from cold → loyal client
@@ -31,6 +32,7 @@ const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot:
   'multipack-1': { bg: '#EBE8D8', ring: '#C8C09A', dot: '#8B7A3A' },
   'multipack-2': { bg: '#E8E0C8', ring: '#C4B880', dot: '#8A7020' },
   'multipack-3': { bg: '#E5D8B8', ring: '#C0AE68', dot: '#896800' },
+  referred: { bg: '#E8EEF0', ring: '#A8C4CC', dot: '#2E7D92' },
 };
 
 function sessionLabel(card: PipelineCard): string {
