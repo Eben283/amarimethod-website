@@ -699,6 +699,22 @@ interface ResolvedDraft {
   declineState?: DeclineState;
 }
 
+// Call coach doesn't know lineType. When it recommends texting a landline/VoIP/toll-free
+// contact, correct the verb in the headline so the card isn't self-contradictory.
+// The expanded CoachPanel still shows the full call coach analysis unchanged.
+function fixTextVerb(why: string | null): string | null {
+  if (!why) return null;
+  // "Send Jae a brief warm text offering..." → "Call Jae offering..."
+  let s = why.replace(/^Send\s+(\S+)(?:\s+a\s+(?:\w+\s+)*texts?\b)(.*)/i, (_, name, rest) => `Call ${name}${rest}`);
+  // "Text Jake a re-introduction..." → "Call Jake a re-introduction..."
+  s = s.replace(/^Texts?\s+/i, 'Call ');
+  // "follow up via text" → "follow up via phone"
+  s = s.replace(/\bvia texts?\b/gi, 'via phone');
+  // remaining bare "text" verb
+  s = s.replace(/\btexts?\b/gi, 'call');
+  return s.trim();
+}
+
 function headlineFromNextStep(nextStep: string): string {
   // Split on ". " but not on common abbreviations (e.g., i.e., Dr., Mr., etc.)
   // so "Dr. Garrett" and "(e.g. the gifted session)" don't false-split.
@@ -842,8 +858,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // Single synthesized headline driven by ALL data: resolved.why once both fetches
   // settle, displayWhy as placeholder while they're in-flight. One answer shown
   // everywhere — no "collapsed says X, expanded says Y" incoherence.
+  // For untextable contacts the call coach may still say "text" — fix the verb.
   const headlineWhy = !isReply
-    ? (resolved !== null && resolved !== 'loading' ? resolved.why : displayWhy)
+    ? (() => {
+        const base = resolved !== null && resolved !== 'loading' ? resolved.why : displayWhy;
+        return isUntextable ? fixTextVerb(base) : base;
+      })()
     : null;
 
   // Reflect hold state in the pill + quick-action row so the card doesn't look
@@ -1054,7 +1074,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           )}
 
-          <CoachPanel notes={callNotes} onHandled={onHandled} />
+          <CoachPanel notes={callNotes} isUntextable={isUntextable} onHandled={onHandled} />
 
           {/* activity timeline */}
           <div>
@@ -1369,7 +1389,7 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
   );
 }
 
-function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading'; onHandled?: () => void }) {
+function CoachPanel({ notes, isUntextable, onHandled }: { notes: CallCoach | null | 'loading'; isUntextable?: boolean; onHandled?: () => void }) {
   if (notes === 'loading' || !notes || !notes.coaching) return null;
   const c = notes.coaching;
   // Nothing left to show if all three are empty (summary + nextStep moved elsewhere).
@@ -1384,8 +1404,13 @@ function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading';
           This panel owns: coaching analysis + the ready-to-send reply. */}
       {c.suggestedReply && (
         <div className="mt-1">
-          <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
-          <EditSendText contactId={notes.contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
+          <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">
+            {isUntextable ? 'Call script' : 'Suggested reply'}
+          </p>
+          {isUntextable
+            ? <CopyText text={c.suggestedReply} channel="call" />
+            : <EditSendText contactId={notes.contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
+          }
         </div>
       )}
       {c.whatWorked?.length > 0 && (
