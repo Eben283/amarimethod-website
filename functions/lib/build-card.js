@@ -145,7 +145,7 @@ export function buildCard(dossier, now = Date.now()) {
       : `${verb} ${name} again, no response yet (last tried ${agoLabel(lastTouchDays)}).`;
   }
   if (channel === "call" && play === "pitch" && UNTEXTABLE.has(d.lineType)) {
-    why += ` (Number is a ${d.lineType.replace("_", "-")}, so call, a text won't reach it.)`;
+    why += ` (Text won't reach this ${d.lineType === 'voip' ? 'VoIP' : d.lineType.replace('_', '-')} number — call only.)`;
   }
 
   return {
