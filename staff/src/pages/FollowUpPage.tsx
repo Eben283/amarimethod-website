@@ -976,7 +976,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           )}
 
-          <CoachPanel notes={callNotes} onHandled={onHandled} />
+          <CoachPanel notes={callNotes} contactId={contactId} onHandled={onHandled} />
 
           {/* activity timeline */}
           <div>
@@ -1287,13 +1287,13 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
   );
 }
 
-function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading'; onHandled?: () => void }) {
+function CoachPanel({ notes, contactId, onHandled }: { notes: CallCoach | null | 'loading'; contactId: string; onHandled?: () => void }) {
   if (notes === 'loading' || !notes || !notes.coaching) return null;
   const c = notes.coaching;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        Call coach{coach.hasAudio ? ' · from recording' : ''} · {coach.date}
+        Call coach{notes.hasAudio ? ' · from recording' : ''} · {notes.date}
       </p>
       {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
       {/* Ready-to-send reply, grounded in the thread — editable + sendable in-app.
