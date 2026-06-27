@@ -14,7 +14,9 @@
 // computeSessionLedger() is the I/O wrapper that fetches data from GHL.
 
 import { ghlFetch } from "./ghl.js";
-import { getCustomField } from "../api/portal-data.js";
+// Import straight from the lib helper (not ../api/portal-data.js) — a lib file
+// reaching back into an api route created a circular import.
+import { getCustomField } from "./portal-helpers.js";
 import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
 import { hydrateOrders as hydrateOrdersShared } from "./ghl-orders.js";
 
@@ -67,6 +69,7 @@ export const NON_SERIES_CALENDAR_IDS = new Set([
   "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
   "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
   "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (free perk for partners)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual (same comp perk, Google Meet)
   "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner (partner POS, no order in GHL)
 ]);
 

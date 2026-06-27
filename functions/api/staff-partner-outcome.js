@@ -47,6 +47,11 @@ const VALID_SIGNALS = new Set([
   "voicemail",
   "talked",
   "link-sent",
+  // App-sent touches: Garrett composed + sent a text/email from the card. Behave
+  // like talked/link-sent — record signal + last_signal_at + touch_count, and
+  // promote a no-outreach contact to working (a send is real outreach).
+  "texted",
+  "emailed",
   "booked",
   "deferred",
   "not-interested",
@@ -75,6 +80,8 @@ const SIGNAL_TO_STAGE = {
   "voicemail":      null,
   "talked":         null,
   "link-sent":      null,
+  "texted":         null,
+  "emailed":        null,
   "booked":         "session-booked",
   "deferred":       "future-potential",
   "not-interested": "dropped",
@@ -102,6 +109,8 @@ const SIGNAL_NOTE_LABEL = {
   "voicemail":      "Voicemail",
   "talked":         "Talked",
   "link-sent":      "Sent link",
+  "texted":         "Texted",
+  "emailed":        "Emailed",
   "booked":         "Booked",
   "deferred":       "Future potential",
   "not-interested": "Not interested",
@@ -288,6 +297,15 @@ export async function onRequestPost(context) {
       // Note failure isn't fatal — log it but don't fail the request
       const text = await noteRes.text().catch(() => "");
       console.error(`[staff-partner-outcome] note write failed: ${noteRes.status} ${text.slice(0, 200)}`);
+    }
+
+    // Purge stale outreach-coach draft — a closed contact must not carry a stale
+    // "here's what to pitch" card that could leak through any display path. Fire-and-
+    // forget: KV delete failure must never block the outcome record from returning.
+    if ((newStage === "dropped" || newStage === "future-potential") && context.env.PORTAL_KV) {
+      context.env.PORTAL_KV.delete(`coach:${contactId}`).catch((err) => {
+        console.error("[staff-partner-outcome] KV coach delete failed:", err instanceof Error ? err.message : String(err));
+      });
     }
 
     return new Response(

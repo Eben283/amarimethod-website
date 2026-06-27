@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Utility/transactional page — keep out of search -->
+  <meta name="robots" content="noindex, nofollow">
+  <title>How was your session? | Amari Method</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <link rel="stylesheet" href="css/style-v5.css?v=37">
+
+  <!-- Microsoft Clarity -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+  </script>
+
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ');
+  </script>
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-primary, #FFFCF5);
+      color: var(--color-text, #252525);
+      font-family: 'Inter', system-ui, sans-serif;
+      padding: 32px 24px;
+    }
+    .gate { width: 100%; max-width: 480px; text-align: center; }
+    .gate .logo { height: 44px; width: auto; margin-bottom: 48px; }
+    .gate h1 {
+      font-family: var(--font-serif-primary, 'Bona Nova', serif);
+      font-weight: 400;
+      font-size: clamp(28px, 5vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 0 0 16px;
+    }
+    .gate .sub {
+      font-size: 16px;
+      color: var(--color-text-secondary, #484742);
+      margin: 0 0 36px;
+      line-height: 1.5;
+    }
+    /* one screen at a time */
+    .screen[hidden] { display: none; }
+
+    /* use the SITE buttons (.btn-primary / .btn-secondary from style-v5.css);
+       just stack them full-width for this single-column layout. */
+    .choices { display: flex; flex-direction: column; gap: 14px; margin-top: 40px; }
+    .choices .btn-primary,
+    .choices .btn-secondary { width: 100%; box-sizing: border-box; justify-content: center; }
+
+    .feedback-input {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 150px;
+      margin: 0 0 16px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid var(--color-border-dark, #C5CDD8);
+      background: var(--bg-card, #fff);
+      color: var(--color-text, #252525);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      resize: vertical;
+      text-align: left;
+    }
+    .feedback-input:focus { outline: none; border-color: var(--color-accent-warm, #C56B4E); }
+    .feedback-input::placeholder { color: var(--color-text-muted, #666); }
+    .back {
+      display: inline-block;
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--color-text-muted, #666);
+      background: none; border: none; cursor: pointer; text-decoration: underline;
+    }
+    .gate .footer {
+      margin-top: 48px;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--color-text-muted, #666);
+    }
+  </style>
+</head>
+<body>
+
+  <!--
+    ============================================================
+    FLOW (one screen at a time):
+    1. "How was your session?" -> It helped / Not really
+       - "It helped"  -> leaves straight to the Google review (g.page/r/Cd5GNnATe8p_EAE/review).
+         The Google page IS the next screen, no interstitial.
+       - "Not really" -> swaps to the feedback screen (#feedback).
+    2. Feedback screen -> textarea -> "Send to the team" (mailto hello@amarimethod.com).
+    Swap the mailto handler for a GHL form when ready.
+    ============================================================
+  -->
+
+  <main class="gate">
+    <img class="logo" src="images/AmariLogo.avif" alt="Amari Method" width="200" height="44">
+
+    <!-- Screen 1: the question -->
+    <section class="screen" id="ask">
+      <h1>How was your session?</h1>
+      <div class="choices">
+        <a class="btn-primary"
+           href="https://g.page/r/Cd5GNnATe8p_EAE/review"
+           onclick="gtag('event','review_gate_positive');">
+          <span class="btn-content"><span class="btn-text">It helped</span><span class="arrow">&rarr;</span></span>
+        </a>
+        <button type="button" class="btn-secondary" onclick="showFeedback();">
+          <span class="btn-content"><span class="btn-text">Not really</span></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Screen 2: private feedback (only on "Not really") -->
+    <section class="screen" id="feedback" hidden>
+      <h1>What could we have done better?</h1>
+      <p class="sub">Tell us straight. We read every note, and we'll make it right.</p>
+      <textarea class="feedback-input" id="feedbackText"
+        placeholder="What happened, what didn't land, what you'd want next time."></textarea>
+      <div class="choices">
+        <a class="btn-primary" id="feedbackSend" href="#">
+          <span class="btn-content"><span class="btn-text">Send to the team</span><span class="arrow">&rarr;</span></span>
+        </a>
+      </div>
+      <button type="button" class="back" onclick="showAsk();">&larr; Back</button>
+    </section>
+
+    <div class="footer">Amari Method &middot; San Francisco</div>
+  </main>
+
+  <script>
+    var ask = document.getElementById('ask');
+    var feedback = document.getElementById('feedback');
+    function showFeedback() {
+      gtag('event', 'review_gate_feedback');
+      ask.setAttribute('hidden', '');
+      feedback.removeAttribute('hidden');
+      document.getElementById('feedbackText').focus();
+    }
+    function showAsk() {
+      feedback.setAttribute('hidden', '');
+      ask.removeAttribute('hidden');
+    }
+    document.getElementById('feedbackSend').addEventListener('click', function (e) {
+      var text = document.getElementById('feedbackText').value.trim();
+      if (!text) {
+        e.preventDefault();
+        document.getElementById('feedbackText').focus();
+        return;
+      }
+      gtag('event', 'review_gate_feedback_sent');
+      this.href = 'mailto:hello@amarimethod.com'
+        + '?subject=' + encodeURIComponent('Feedback for the team')
+        + '&body=' + encodeURIComponent(text);
+    });
+  </script>
+
+</body>
+</html>

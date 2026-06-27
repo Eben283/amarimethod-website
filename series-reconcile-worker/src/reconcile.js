@@ -3,7 +3,7 @@
 // functions/api/ghl-purchase-webhook.js. Kept in sync manually — if the
 // workflow set of actions changes in GHL, update this file.
 
-import { getContact, patchContact, addContactNote } from "./ghl.js";
+import { getContact, patchContact, addContactNote, removeContactTags } from "./ghl.js";
 import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
 
 // Series + upgrade products. Derived from the single source of truth
@@ -27,6 +27,7 @@ export const FIELD_IDS = {
   sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
   portal_access: "O0xmwyRqeNK2EA1GGGye",
   living_practice_access: "1EnVtI70jC5MTshZjWvw",
+  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
 };
 
 // Tags the C-series workflows remove (idempotent — safe to "remove" tags the
@@ -131,6 +132,24 @@ export async function reconcileOrder(env, orderDetail) {
   if (!contact) {
     return { status: "errored", orderId, contactId, error: "contact not found" };
   }
+
+  // Hard lock: if `sessions_remaining_locked` is checked, Garrett's intent
+  // overrides any automated derivation (one-off comps, manual credits). The
+  // sync-sweep path (sync.js) already honors this; this order path must too,
+  // or a locked contact who makes a package purchase gets their pinned balance
+  // overwritten by the orphan-apply below (CRIT-B, 2026-06-11 review). Skip
+  // before any read/write — and do NOT write an idempotency record, so the
+  // order stays re-checkable if the lock is later lifted.
+  if (isCheckedCheckbox(readField(contact, FIELD_IDS.sessions_remaining_locked))) {
+    return {
+      status: "skip-locked",
+      orderId,
+      package: pkg.name,
+      contactId,
+      contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+    };
+  }
+
   const currentSeriesType = readField(contact, FIELD_IDS.series_type);
   const currentPortal = isCheckedCheckbox(readField(contact, FIELD_IDS.portal_access));
   const currentLP = isCheckedCheckbox(readField(contact, FIELD_IDS.living_practice_access));
@@ -183,10 +202,16 @@ export async function reconcileOrder(env, orderDetail) {
     customFields.push({ id: FIELD_IDS.living_practice_access, value: ["true"] });
   }
 
-  const newTags = (contact.tags || []).filter((t) => !REMOVE_TAGS.includes(t));
   const tagsRemoved = (contact.tags || []).filter((t) => REMOVE_TAGS.includes(t));
 
-  await patchContact(env, contactId, customFields, newTags);
+  // Write fields and remove tags as SEPARATE operations. patchContact must NOT
+  // receive a tags array here — a wholesale PUT replace would clobber any tag a
+  // concurrent GHL workflow set between our read and write (GHL triggers are
+  // tag-driven). removeContactTags deletes only the named tags additively.
+  await patchContact(env, contactId, customFields);
+  if (tagsRemoved.length) {
+    await removeContactTags(env, contactId, tagsRemoved);
+  }
 
   const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${pkg.sessionsToSet}, portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
   await addContactNote(env, contactId, noteBody);

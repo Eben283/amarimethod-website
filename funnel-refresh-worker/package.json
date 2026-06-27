@@ -1,0 +1,6 @@
+{
+  "name": "funnel-refresh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that regenerates the Amari staff funnel snapshot (cohort funnel: calls / gifted sessions / session-sales valued in sessions sold) from live GHL event data and writes it to PORTAL_KV. Cloud replacement for the local ~/.claude/ghl-mcp/funnel.mjs + LaunchAgent. STAGED: writes funnel:latest-test until cutover."
+}

@@ -16,7 +16,8 @@
  * Connect handles all the payment plumbing.
  */
 
-import { ghlFetch, ghlHeaders, getGhlToken } from "../../lib/ghl.js";
+import { ghlFetch, getGhlToken } from "../../lib/ghl.js";
+import { appointmentEndTime } from "../../lib/datetime.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -116,11 +117,11 @@ function validateBody(b) {
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }
-  // PMA + Missed Appointment Policy agreement is only required for paid
-  // bookings. Discovery call is free and has no PMA gate.
+  // Missed Appointment Policy agreement is only required for paid
+  // bookings. Discovery call is free and has no policy gate.
   // agreeCommunications is always optional.
   if (!booking.isFreeBooking && !b.agreePolicies) {
-    return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
+    return "Missed Appointment Policy must be agreed to";
   }
   return null;
 }
@@ -131,19 +132,24 @@ function validateBody(b) {
  * PUT/POST so the GHL purchase webhook has everything it needs once the
  * order lands.
  */
-async function upsertContact(context, GHL_API_KEY, locationId, payload, booking) {
+export async function upsertContact(context, GHL_API_KEY, locationId, payload, booking) {
   const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(payload.email)}`;
   let existingId = null;
   try {
-    const lookupRes = await fetch(lookupUrl, {
-      headers: ghlHeaders(GHL_API_KEY),
-    });
+    // Use ghlFetch (auth + 5xx/429 retry) and LOG a non-ok lookup. A silently
+    // ignored non-ok lookup used to fall straight through to contact-create,
+    // which GHL can reject as a duplicate → 422 ("couldn't start the secure
+    // payment") — the historical bug (H1, 2026-06-11 review).
+    const lookupRes = await ghlFetch(context, lookupUrl);
     if (lookupRes.ok) {
       const lookupData = await lookupRes.json();
       existingId =
         lookupData?.contact?.id ||
         (Array.isArray(lookupData?.contacts) && lookupData.contacts[0]?.id) ||
         null;
+    } else {
+      const errText = await lookupRes.text();
+      console.error(`[book/create-checkout] contact lookup ${lookupRes.status}: ${errText}`);
     }
   } catch (err) {
     console.error("[book/create-checkout] contact lookup failed:", err);
@@ -188,6 +194,16 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload, booking)
       console.error(
         `[book/create-checkout] contact update ${updateRes.status}: ${errText}`,
       );
+      // H1: for a PAID booking the requested_session_* slot fields written by
+      // this PUT are what the purchase webhook reads to book the appointment
+      // after payment. If the PUT failed, those fields aren't set — proceeding
+      // would charge the customer and book nothing, with no alert. Abort so the
+      // caller returns 422 and the customer is never charged for an un-bookable
+      // slot. Free bookings carry no slot fields (the appointment is booked
+      // directly in this handler) so a PUT failure there stays best-effort.
+      if (!booking.isFreeBooking) {
+        throw new Error(`GHL contact update failed (${updateRes.status}): ${errText}`);
+      }
     }
     return existingId;
   }
@@ -256,13 +272,12 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
     `Session: ${booking.title}`,
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
     isFree
-      ? `Free booking: no payment or PMA gate`
+      ? `Free booking: no payment or policy gate`
       : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
     ...(isFree
       ? []
       : [
-          `Practice Member Agreement: yes (clickwrap)`,
           `Missed Appointment Policy: yes (clickwrap)`,
         ]),
     `IP: ${ip || "unknown"}`,
@@ -300,15 +315,11 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
  * page that has nothing on the calendar.
  */
 async function bookFreeAppointment(context, locationId, contactId, payload, booking) {
-  // GHL requires endTime AND startTime/endTime to keep their timezone offset
-  // (e.g. "2026-05-21T10:00:00-07:00"). Stripping the offset, or omitting
-  // endTime, causes GHL to reject the slot as "not available" for many
-  // calendar configurations. See portal-book.js for the same pattern.
-  const offsetMatch = payload.startTime.match(/([+-]\d{2}:\d{2})$/);
-  const tzOffset = offsetMatch ? offsetMatch[1] : "";
-  const startMs = new Date(payload.startTime).getTime();
-  const endMs = startMs + booking.durationMinutes * 60 * 1000;
-  const endTime = new Date(endMs).toISOString().replace("Z", tzOffset || "Z");
+  // GHL requires startTime/endTime to keep their timezone offset
+  // (e.g. "2026-05-21T10:00:00-07:00"); stripping it makes GHL reject the slot
+  // as "not available". appointmentEndTime preserves both the instant and the
+  // offset (see functions/lib/datetime.js).
+  const endTime = appointmentEndTime(payload.startTime, booking.durationMinutes);
 
   const res = await ghlFetch(
     context,

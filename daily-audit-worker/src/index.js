@@ -6,6 +6,7 @@ import { ghlFetch, fetchAppointmentsForDate, todayPacific, LOCATION_ID, FIELD_ID
 import { auditAppointments, auditPurchases, auditTagConsistency, auditSeriesTypeDrops, auditCommunications, auditStateMismatches } from "./rules.js";
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
@@ -32,6 +33,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     // /run = main audit only (reads existing drift findings from KV).
@@ -83,7 +87,14 @@ function jsonResponse(data, status = 200) {
 async function runScheduledAudit(env) {
   try {
     if (env.SELF) {
-      const res = await env.SELF.fetch("https://daily-audit.internal/run-drift");
+      // The /run-drift route is auth-gated (requireWorkerAuth). This self-call
+      // must present the same secret, or the drift refresh 401s once the gate
+      // is active. env.WORKER_AUTH_SECRET is undefined until the secret is set,
+      // in which case the gate is a no-op and the empty header is fine.
+      const headers = env.WORKER_AUTH_SECRET
+        ? { Authorization: `Bearer ${env.WORKER_AUTH_SECRET}` }
+        : undefined;
+      const res = await env.SELF.fetch("https://daily-audit.internal/run-drift", { headers });
       await res.text();
       console.log(`[daily-audit] drift refresh (SELF binding) → ${res.status}`);
     } else {
@@ -361,6 +372,7 @@ async function checkPartnerActivityRefresh(env) {
 //   - Never run (KV key absent)
 //   - Last run >6h ago (Worker is hourly — even allowing for hiccups, >6h means broken)
 //   - Last run reported status="error" (worker errored fully)
+//   - Last run set orderPassError (order pass failed but the sweep still ran)
 //   - Last run had >0 errored orders (per-order failures — paid clients not getting their packages applied)
 //   - Last run applied >0 orphans (info — surface so we can investigate why they fell through)
 async function checkSeriesReconcile(env) {
@@ -420,6 +432,18 @@ async function checkSeriesReconcile(env) {
       area: "infra",
       kind: "series-reconcile-errored",
       message: `series-reconcile last run errored: ${summary.error || 'unknown error'}. ${summary.applied || 0} applied, ${summary.failed || 0} failed.`,
+      lastRun: summary.finishedAt,
+    });
+  } else if (summary.orderPassError) {
+    // The order pass now fails independently of the field-sync sweep (so a flaky
+    // orders-LIST fetch no longer skips the sweep). That resilience means the run
+    // reports status="partial-errors" with failed=0 — surface the order-pass
+    // failure here so it isn't silently buried in the summary.
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-order-pass-failed",
+      message: `series-reconcile order pass failed: ${summary.orderPassError}. The field-sync sweep still ran, but orphan package purchases in the window were NOT scanned — orphans would accumulate if this persists. Check Worker logs.`,
       lastRun: summary.finishedAt,
     });
   } else if (summary.failed > 0) {

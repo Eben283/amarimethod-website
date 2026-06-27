@@ -51,6 +51,26 @@ const NUMERIC_TYPE_MAP = {
   3: "email", 9: "email", 21: "email",
 };
 
+// Human label for a call's outcome — the "did he actually reach them?" signal that
+// was invisible before (Amanda's two May-27 calls both `failed`, but the card just
+// showed "call · outbound"). A duration is what proves a real conversation happened.
+function callOutcomeLabel(status, dur) {
+  if (dur > 0) { const mm = Math.floor(dur / 60), ss = dur % 60; return mm ? `${mm}m ${ss}s` : `${ss}s`; }
+  switch ((status || "").toLowerCase()) {
+    // "completed" with NO duration is NOT a connect — Twilio reports "completed" for any
+    // call that ended normally, incl. voicemail and rang-out. Without a duration we have no
+    // evidence anyone was reached, so don't claim "connected" (Luis Chirinos: a bare
+    // "completed" was showing as "connected"). Say "called" — a call went out, outcome unknown.
+    case "completed": return "called";
+    case "no-answer": case "noanswer": return "no answer";
+    case "voicemail": return "voicemail";
+    case "failed": return "failed";
+    case "busy": return "busy";
+    case "canceled": case "cancelled": return "canceled";
+    default: return status || "no outcome";
+  }
+}
+
 function mapMessageType(typeRaw) {
   if (typeRaw === null || typeRaw === undefined) return null;
   // Numeric: lookup in map
@@ -130,11 +150,18 @@ export async function onRequestGet(context) {
         for (const m of messages) {
           const chan = mapMessageType(m.type);
           if (!chan) continue;
+          const isCall = chan === "call";
+          const callStatus = isCall ? (m.status || "").toLowerCase() : undefined;
           events.push({
             date: m.dateAdded || m.date,
             type: chan,
             direction: m.direction === "inbound" ? "inbound" : "outbound",
-            body: typeof m.body === "string" ? m.body.replace(/<[^>]*>/g, "").slice(0, 200) : undefined,
+            // For a call, surface the OUTCOME (did he reach them?) instead of a body —
+            // failed/no-answer/voicemail never connected; a duration means a real talk.
+            body: isCall
+              ? callOutcomeLabel(callStatus, Number(m.meta?.call?.duration) || 0)
+              : (typeof m.body === "string" ? m.body.replace(/<[^>]*>/g, "").slice(0, 200) : undefined),
+            ...(isCall ? { callStatus } : {}),
           });
         }
       }

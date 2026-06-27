@@ -411,6 +411,7 @@ async function getGhlSummary(context) {
       "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
       "B5aGXLoS4kzAjZAMMXxk", // Entrainment
       "lfsnaiGiLNL2z12pLKDP", // Partner Initial
+      "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
       "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
       "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
       "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
@@ -1011,10 +1012,19 @@ export async function onRequestPost(context) {
     async function flushSafe() {
       const markerIdx = sendBuffer.lastIndexOf("<!--");
       if (markerIdx === -1) {
-        if (sendBuffer) {
-          await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: sendBuffer })}\n\n`));
-          sendBuffer = "";
+        // A delta boundary can split the 4-char "<!--" marker, leaving the buffer
+        // ending in "<", "<!", or "<!-". Flushing that would emit the partial prefix
+        // and then fail to match the marker once the rest arrives, leaking the whole
+        // internal <!--CONTEXT/ACTION/...--> block raw to the user. Hold back any
+        // trailing partial-marker prefix until the next delta completes it. (The
+        // final post-stream flush emits anything still held.)
+        const partial = sendBuffer.match(/<!?-?$/);
+        const holdFrom = partial ? partial.index : sendBuffer.length;
+        const safe = sendBuffer.slice(0, holdFrom);
+        if (safe) {
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: safe })}\n\n`));
         }
+        sendBuffer = sendBuffer.slice(holdFrom);
       } else {
         const afterMarker = sendBuffer.slice(markerIdx);
         const closeIdx = afterMarker.indexOf("-->");

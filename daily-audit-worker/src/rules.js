@@ -13,6 +13,85 @@ import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
 // should be >= increment".
 const PRODUCT_MAP = AUDIT_INCREMENT_MAP;
 
+// ── Paginated order fetch ──
+// GHL's /payments/orders caps at limit=100 per page. The location-wide scans below
+// pull the full order list and then filter it to a time window, so a single 100-row
+// page silently drops in-window orders once the practice has >100 total orders — a
+// false "clean" in the very safety net meant to catch missed credits. Walk offset
+// pages until a short (final) page or a hard cap, and report whether the cap was hit
+// so the caller surfaces a warning instead of going quietly blind. Steady state
+// (<100 total orders) still costs exactly one request.
+const ORDER_PAGE_LIMIT = 100;
+const ORDER_PAGE_CAP = 10; // 1000 orders — well under the worker's 1000-subrequest budget
+
+async function fetchAllOrders(env) {
+  const orders = [];
+  for (let page = 0; page < ORDER_PAGE_CAP; page++) {
+    const offset = page * ORDER_PAGE_LIMIT;
+    const data = await ghlFetch(
+      env,
+      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=${ORDER_PAGE_LIMIT}&offset=${offset}`
+    );
+    const batch = data.orders || data.data || [];
+    orders.push(...batch);
+    if (batch.length < ORDER_PAGE_LIMIT) return { orders, hitCap: false };
+  }
+  return { orders, hitCap: true }; // a full final page → more orders may exist beyond the cap
+}
+
+const ORDER_CAP_MSG = `Hit the ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}-order pagination cap — orders beyond it were not inspected`;
+
+// Resolve the audited package/product for an order. (R3 fix, 2026-06-08.)
+// GHL line items carry the product id NESTED at `item.product._id` (= productId)
+// and `item.price._id` (= priceId). The flat `item.productId` / `item.priceId`
+// fields are ABSENT on real orders — so the prior
+// `items[0]?.priceId || items[0]?.productId || order.productId` read came back
+// undefined and the audit `continue`d past EVERY order, silently blind to all
+// package purchases (it could report "clean" on a genuinely broken purchase).
+// This scans ALL line items (not just items[0], so a package at index 1+ isn't
+// missed) and reads the nested ids. PRODUCT_MAP is keyed by BOTH productId and
+// priceId, so either resolves.
+export function findAuditedProduct(order) {
+  const items = order?.items || order?.lineItems || [];
+  for (const item of items) {
+    const id = item?.product?._id || item?.price?._id;
+    const config = id ? PRODUCT_MAP[id] : null;
+    if (config) return config;
+  }
+  return null;
+}
+
+// Classify a GHL INVOICE's line items into an audited package, reusing findAuditedProduct.
+// Asymmetry (verified 2026-06-11): order items nest the ids (`item.product._id`) while
+// invoice items carry them FLAT (`item.productId` / `item.priceId`) — so we adapt the
+// shape. PRODUCT_MAP is keyed by both productId and priceId, so either resolves. Returns
+// the same config findAuditedProduct does, or null. Pure + exported for tests. Why it
+// exists: invoice-billed packages (e.g. Betsy's $1,295 8-pack) are ABSENT from
+// /payments/orders, so order-only scans can't see them — this lets the audit classify them.
+export function classifyInvoiceItems(items = []) {
+  const adapted = (items || []).map((i) => ({ product: { _id: i.productId }, price: { _id: i.priceId } }));
+  return findAuditedProduct({ items: adapted });
+}
+
+// Threshold for the unmapped-purchase alert. Set just below the cheapest package
+// (the $495 Initial→4 upgrade / $720 4-pack) but above every à-la-carte item
+// (initial $225, follow-up $190, entrainment $90, Living Practice $347) — so a
+// PAID order at/above this that maps to NO known product is almost certainly a
+// package product added in GHL but missing from the catalog (the Jenn POS
+// failure class), not a benign single-session no-op.
+const UNMAPPED_ALERT_MIN_AMOUNT = 400;
+
+// Pure: a paid order this size that resolves to no audited product is worth a
+// human look — it likely means a paid client was silently NOT credited because a
+// product is missing from functions/lib/ghl-products.js. Only PAID orders count;
+// pending/failed ones are ignored.
+export function isUnmappedHighValueOrder(order) {
+  const amount = Number(order?.amount ?? order?.total ?? 0);
+  if (!Number.isFinite(amount) || amount < UNMAPPED_ALERT_MIN_AMOUNT) return false;
+  const status = String(order?.status ?? order?.paymentStatus ?? "").toLowerCase();
+  return status === "paid" || status === "completed" || status === "succeeded";
+}
+
 // How many sessions a client can plausibly draw down within the audit window
 // (AUDIT_HOURS = 48). The session right before a package purchase is draw #1 of
 // that pack (the documented package-session-counting rule — Garrett runs the
@@ -41,6 +120,26 @@ const UPSELL_PATTERNS = [
 
 function issue(severity, category, contactId, contactName, rule, expected, actual, suggestion) {
   return { severity, category, contactId, contactName, rule, expected, actual, suggestion };
+}
+
+// Client Initial Session calendars — the ones that fire the G2 "Initial Session
+// Welcome" post-session flow. We detect the initial session DIRECTLY by calendar.
+// (Was previously inferred from the `sessions_completed` field — which is actually
+// labeled "Sessions Lifetime" and counts comps + FUTURE bookings, so a first-timer
+// who'd already booked their next session read >1 and got silently skipped.
+// Fixed 2026-06-12.) Excludes "Partner Initial Session" (gifted partner-prospect
+// session — its own flow, handled by the partner_session_verify check below).
+export const INITIAL_SESSION_CALENDAR_IDS = new Set([
+  "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person
+  "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner
+]);
+
+export function isClientInitialSession(appt) {
+  if (appt?.calendarId && INITIAL_SESSION_CALENDAR_IDS.has(appt.calendarId)) return true;
+  // Fallback by calendar name: client initials are "Initial Session — …".
+  // "Partner Initial Session" starts with "Partner", so it is NOT matched.
+  return /^\s*initial session\b/i.test(appt?.calendarName || "");
 }
 
 // ── Rule Set 1: Appointment-triggered automations ──
@@ -78,18 +177,15 @@ export async function auditAppointments({ cache, appointments }) {
       ));
     }
 
-    // Status "showed" — verify post-session message
-    // Scope: only flag for FIRST-EVER sessions (sessions_completed <= 1, where
-    // 1 = the just-completed initial). For returning clients no per-session
-    // workflow exists by design (E3/E4/E5 nurture flows handle ongoing touches
-    // via sessions_remaining triggers, not per-attendance), so flagging every
-    // follow-up generates false positives — see audit-triage 2026-05-31 +
-    // GHL-WORKFLOWS-MASTER.md I3/H2 sections. If a generic post-session
-    // workflow gets built later, widen this scope back out.
+    // Status "showed" — verify the post-session message after a client's INITIAL
+    // session (G2 "Initial Session Welcome" / equipment-list email). Scope to the
+    // initial session by CALENDAR (see isClientInitialSession), not by a session-
+    // count field. For returning clients no per-session workflow exists by design
+    // (E3/E4/E5 nurture flows handle ongoing touches via sessions_remaining
+    // triggers, not per-attendance), so flagging every follow-up generates false
+    // positives — see audit-triage 2026-05-31 + GHL-WORKFLOWS-MASTER.md G2/I3/H2.
     if (appt.appointmentStatus === "showed") {
-      const sessionsCompleted = parseInt(fields?.sessions_completed ?? "0", 10);
-      const isFirstSession = !Number.isFinite(sessionsCompleted) || sessionsCompleted <= 1;
-      if (isFirstSession) {
+      if (isClientInitialSession(appt)) {
         const conv = await cache.getConversations(appt.contactId);
         if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
           const allMsgs = conv.flatMap((t) => t.messages || []);
@@ -102,7 +198,7 @@ export async function auditAppointments({ cache, appointments }) {
             issues.push(issue(
               "warning", "appointment", appt.contactId, name,
               "no_post_session_message",
-              "Post-session email/SMS should send within 2h of FIRST-EVER session end (Initial intake → G2 equipment-list step)",
+              "Post-session email/SMS should send within 2h of the INITIAL session end (G2 'Initial Session Welcome' / equipment-list)",
               "No outbound message found in that window",
               "Check if G2 'Initial Session Welcome' workflow fired"
             ));
@@ -155,14 +251,20 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
 
   let orders = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
-    orders = (data.orders || data.data || []).filter((o) => {
+    const { orders: all, hitCap } = await fetchAllOrders(env);
+    orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(auditStart) && d <= new Date(auditEnd);
     });
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "purchase", "", "",
+        "orders_pagination_cap_hit",
+        `Should scan all orders, not just the first ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}`,
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch (err) {
     issues.push(issue(
       "warning", "purchase", "", "",
@@ -178,10 +280,25 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
     const contactId = order.contactId || order.contact?.id;
     if (!contactId) continue;
 
-    const items = order.items || order.lineItems || [];
-    const productId = items[0]?.priceId || items[0]?.productId || order.productId;
-    const productConfig = productId ? PRODUCT_MAP[productId] : null;
-    if (!productConfig) continue;
+    const productConfig = findAuditedProduct(order);
+    if (!productConfig) {
+      // A paid order ≥ $400 that maps to no known product = likely a package
+      // product added in GHL but missing from the catalog → a paid client
+      // silently not credited (Jenn POS class). Surface it; otherwise skip the
+      // benign à-la-carte / draw-down no-ops.
+      if (isUnmappedHighValueOrder(order)) {
+        const cached = await cache.getContact(contactId);
+        const amt = Number(order.amount ?? order.total ?? 0);
+        issues.push(issue(
+          "warning", "purchase", contactId, cached?.name || "Unknown",
+          "unmapped_high_value_purchase",
+          `A paid order ≥ $${UNMAPPED_ALERT_MIN_AMOUNT} should map to a known product`,
+          `Paid $${amt} order (${order._id || order.id || "?"}) has no recognized product`,
+          "Likely a package product added in GHL but missing from functions/lib/ghl-products.js — add it so it credits + audits"
+        ));
+      }
+      continue;
+    }
 
     purchasesChecked++;
     const cached = await cache.getContact(contactId);
@@ -288,6 +405,52 @@ export async function auditTagConsistency({ cache }) {
   return issues;
 }
 
+// Fetch succeeded, package-sized INVOICE-billed sales. These live ONLY in
+// /payments/transactions (entityType:invoice) + /invoices/ — never in /payments/orders —
+// so the order-only scans miss them entirely (Betsy's $1,295 8-pack invoice was invisible
+// to the audit, which then mis-flagged her against her smaller 4-pack ORDER). Returns:
+//   recognized: [{contactId, seriesType, productName}]  — maps to a known package
+//   unmapped:   [{contactId, amount, invoice}]          — paid invoice ≥ threshold, no known product
+// Hydration failures are SKIPPED (not flagged) so a transient API error can't masquerade
+// as a catalog gap.
+async function fetchInvoicePackages(env) {
+  const recognized = [];
+  const unmapped = [];
+  const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
+  for (let page = 0; page < ORDER_PAGE_CAP; page++) {
+    const offset = page * ORDER_PAGE_LIMIT;
+    const data = await ghlFetch(
+      env,
+      `/payments/transactions?altId=${LOCATION_ID}&altType=location&limit=${ORDER_PAGE_LIMIT}&offset=${offset}`
+    );
+    const batch = data.data || data.transactions || [];
+    if (batch.length === 0) break;
+    for (const t of batch) {
+      if (t.entityType !== "invoice") continue;
+      if (t.status !== "succeeded") continue;
+      if (Number(t.amount) < UNMAPPED_ALERT_MIN_AMOUNT) continue; // package-sized only
+      const created = new Date(t.createdAt || t.updatedAt).getTime();
+      if (Number.isFinite(created) && created < cutoff) continue;
+      const contactId = t.contactId || t.contactSnapshot?.id;
+      if (!contactId || !t.entityId) continue;
+      let inv;
+      try {
+        inv = await ghlFetch(env, `/invoices/${t.entityId}?altId=${LOCATION_ID}&altType=location`);
+      } catch {
+        continue; // hydration failed — skip rather than mis-flag as a catalog gap
+      }
+      const cfg = classifyInvoiceItems(inv?.invoiceItems || inv?.items || []);
+      if (cfg && cfg.seriesType) {
+        recognized.push({ contactId, seriesType: cfg.seriesType, productName: cfg.name });
+      } else {
+        unmapped.push({ contactId, amount: Number(t.amount), invoice: inv?.invoiceNumber || t.entitySourceName || t.entityId });
+      }
+    }
+    if (batch.length < ORDER_PAGE_LIMIT) break;
+  }
+  return { recognized, unmapped };
+}
+
 // ── Rule Set 3b: Historical series_type drop detection ──
 //
 // Flags contacts with sessions_completed > 0 but series_type null/empty ONLY IF
@@ -304,18 +467,23 @@ export async function auditSeriesTypeDrops({ env, cache }) {
   const issues = [];
 
   // Fetch a wider window of orders to catch pack purchases made months ago.
-  // limit=100 is the API cap; if more are needed later, add pagination.
   let orders = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
+    const { orders: all, hitCap } = await fetchAllOrders(env);
     const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
-    orders = (data.orders || data.data || []).filter((o) => {
+    orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d.getTime() >= cutoff;
     });
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "consistency", "", "",
+        "series_type_drop_orders_cap_hit",
+        "Should scan all orders for historical pack purchases",
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch (err) {
     issues.push(issue(
       "warning", "consistency", "", "",
@@ -327,19 +495,47 @@ export async function auditSeriesTypeDrops({ env, cache }) {
     return issues;
   }
 
-  // Build: contactId → expected seriesType from most recent pack order
+  // Build: contactId → expected seriesType from their pack purchases. 8-session is
+  // authoritative over 4-session when a contact has both (the upgrade/larger pack wins).
   const packBuyers = new Map();
+  const setPackBuyer = (contactId, expected, productName) => {
+    if (!contactId || !expected) return;
+    const existing = packBuyers.get(contactId);
+    if (existing && existing.expected === "8-session" && expected !== "8-session") return; // don't downgrade
+    packBuyers.set(contactId, { expected, productName });
+  };
   for (const order of orders) {
     const contactId = order.contactId || order.contact?.id;
-    if (!contactId) continue;
-    const items = order.items || order.lineItems || [];
-    const productId = items[0]?.priceId || items[0]?.productId || order.productId;
-    const productConfig = productId ? PRODUCT_MAP[productId] : null;
-    if (!productConfig || !productConfig.seriesType) continue;
-    packBuyers.set(contactId, {
-      expected: productConfig.seriesType,
-      productName: productConfig.name,
-    });
+    const productConfig = findAuditedProduct(order);
+    if (productConfig?.seriesType) setPackBuyer(contactId, productConfig.seriesType, productConfig.name);
+  }
+
+  // Merge in INVOICE-billed packages — absent from /payments/orders, so an invoice-pack
+  // buyer whose series_type got dropped is otherwise never caught here. Also surface any
+  // unmapped high-value invoice (a package product missing from the catalog — invisible
+  // to orders, the ledger's classifyInvoice, AND the funnel).
+  let invoicePkgs = { recognized: [], unmapped: [] };
+  try {
+    invoicePkgs = await fetchInvoicePackages(env);
+  } catch (err) {
+    issues.push(issue(
+      "warning", "consistency", "", "",
+      "invoice_package_scan_failed",
+      "Should be able to scan invoice-billed packages (payments/transactions + invoices)",
+      `Invoice scan error: ${err.message}`,
+      "Check payments/transactions + invoices read scope"
+    ));
+  }
+  for (const pkg of invoicePkgs.recognized) setPackBuyer(pkg.contactId, pkg.seriesType, pkg.productName);
+  for (const u of invoicePkgs.unmapped) {
+    const cached = await cache.getContact(u.contactId);
+    issues.push(issue(
+      "warning", "purchase", u.contactId, cached?.name || "Unknown",
+      "unmapped_high_value_invoice",
+      `A paid invoice ≥ $${UNMAPPED_ALERT_MIN_AMOUNT} should map to a known product`,
+      `Paid $${u.amount} invoice (${u.invoice}) maps to no recognized product`,
+      "Likely a package product missing from functions/lib/ghl-products.js — add it so it credits + audits"
+    ));
   }
 
   for (const [, cached] of cache.contacts) {
@@ -443,17 +639,23 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
   // Fetch recent purchasers (30-day window for catching stale workflows)
   let recentPurchaserIds = [];
   try {
-    const data = await ghlFetch(
-      env,
-      `/payments/orders?altId=${LOCATION_ID}&altType=location&limit=100`
-    );
-    const orders = (data.orders || data.data || []).filter((o) => {
+    const { orders: all, hitCap } = await fetchAllOrders(env);
+    const orders = all.filter((o) => {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     });
     recentPurchaserIds = orders
       .map((o) => o.contactId || o.contact?.id)
       .filter(Boolean);
+    if (hitCap) {
+      issues.push(issue(
+        "warning", "state_mismatch", "", "",
+        "state_mismatch_orders_cap_hit",
+        "Should scan all recent orders for stale-workflow detection",
+        ORDER_CAP_MSG,
+        "Raise ORDER_PAGE_CAP in daily-audit-worker/src/rules.js"
+      ));
+    }
   } catch {
     // Continue without purchase data
   }

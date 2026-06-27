@@ -10,6 +10,9 @@ const ON_DEMAND_DOCS = [
   { name: "website-rewrite-brief", trigger: /website|page|homepage|copy|positioning/i },
   { name: "ghl-flow-map", trigger: /workflow|automation|trigger|flow/i },
   { name: "trainer-outreach-talking-points", trigger: /trainer|outreach|partner.{0,4}(prospect|outreach)/i },
+  // Sales-closing knowledge behind Sharpen — the NotebookLM Q&A from 7 sales books.
+  // Fires on call/closing/objection coaching questions so CoS grounds in the books.
+  { name: "sales-closing", trigger: /\b(sell|selling|sales|clos(e|ing|er)|objection|discovery call|pitch|spin selling|gap selling|sharpen|too expensive|think about it|follow.?up|book (him|her|them|the call))\b/i },
   { name: "open-todos", trigger: /todo|open task|what.{0,3}left|priorit/i },
   { name: "condition-back", trigger: /\b(back|spine|lumbar|sciatic)/i },
   { name: "condition-neck", trigger: /\b(neck|cervical)/i },

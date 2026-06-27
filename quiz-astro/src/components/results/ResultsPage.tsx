@@ -565,7 +565,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           <div className="examiner-id">
             <div className="examiner-avatar" aria-hidden="true">G</div>
             <div className="role">§ From your examiner</div>
-            <div className="who"><b>Dr. Garrett Hewstan</b><br />Founder, Amari Method</div>
+            <div className="who"><b>Garrett Hewstan</b><br />Founder, Amari Method</div>
           </div>
           <div className="examiner-body">
             <p>
@@ -577,7 +577,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             <p>
               If session one doesn't help, we don't keep going. <em>That's the whole offer.</em>
             </p>
-            <p className="signoff">— Dr. Garrett</p>
+            <p className="signoff">— Garrett</p>
           </div>
         </div>
       </section>

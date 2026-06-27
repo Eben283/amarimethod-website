@@ -27,7 +27,8 @@
 import { listRecentCompletedOrders, getOrderDetail, fetchActiveSeriesContactIds } from "./ghl.js";
 import { reconcileOrder } from "./reconcile.js";
 import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
-import { nextChunk, isQueueStale, remainderAfterProcessing } from "./queue.js";
+import { nextChunk, isQueueStale, requeueAfterSweep } from "./queue.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 // Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
 // Kept small to stay under the 50-subrequest free-tier cap alongside the order
@@ -49,6 +50,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/status") {
@@ -64,7 +68,15 @@ export default {
     }
 
     if (url.pathname === "/backfill") {
-      const days = clampInt(url.searchParams.get("days"), 1, 180, 30);
+      // Cap at 90 days: the PURCHASE_KV idempotency record TTL is 90 * 86400
+      // (reconcile.js). Backfilling past that window means KV no longer
+      // remembers an order was processed, so the only thing stopping a re-apply
+      // is the field-state check (isReconcileAlreadyApplied) — which fails if
+      // any field was legitimately changed since (package finished, portal
+      // revoked), resetting sessions_remaining to full + re-granting access.
+      // Keeping days <= TTL means KV idempotency always covers the backfill
+      // window (CRIT-C, 2026-06-11 review).
+      const days = clampInt(url.searchParams.get("days"), 1, 90, 30);
       const result = await runReconcile(env, "backfill", days * 24);
       return jsonResponse(result);
     }
@@ -148,48 +160,63 @@ async function runReconcile(env, trigger, lookbackHours) {
 
   const results = {
     applied: [],
-    skipped: { alreadyProcessed: 0, alreadyApplied: 0, notPackage: 0, notPaid: 0, noContact: 0 },
+    skipped: { alreadyProcessed: 0, alreadyApplied: 0, notPackage: 0, notPaid: 0, noContact: 0, locked: 0 },
     errored: [],
   };
 
   try {
-    const orders = await listRecentCompletedOrders(env, sinceMs);
-    console.log(`[series-reconcile] fetched ${orders.length} completed orders in window`);
+    // Scope the order pass: a flaky orders-LIST fetch (or any throw before the
+    // per-order try) must NOT skip the field-sync sweep below — that's an
+    // independent data path (the active-series contact queue, not the orders
+    // window). Record the failure and fall through to the sweep.
+    let orders = [];
+    let orderPassError = null;
+    try {
+      orders = await listRecentCompletedOrders(env, sinceMs);
+      console.log(`[series-reconcile] fetched ${orders.length} completed orders in window`);
 
-    for (const o of orders) {
-      try {
-        const detail = await getOrderDetail(env, o._id);
-        const r = await reconcileOrder(env, detail);
-        switch (r.status) {
-          case "applied":
-            results.applied.push(r);
-            console.log(`[series-reconcile] APPLIED ${r.package} for ${r.contactName} (${r.contactId}), order=${r.orderId}`);
-            break;
-          case "skip-already-processed":
-            results.skipped.alreadyProcessed += 1;
-            break;
-          case "skip-already-applied":
-            results.skipped.alreadyApplied += 1;
-            break;
-          case "skip-not-package":
-            results.skipped.notPackage += 1;
-            break;
-          case "skip-not-paid":
-            results.skipped.notPaid += 1;
-            break;
-          case "skip-no-contact":
-            results.skipped.noContact += 1;
-            break;
-          case "errored":
-            results.errored.push(r);
-            break;
+      for (const o of orders) {
+        try {
+          const detail = await getOrderDetail(env, o._id);
+          const r = await reconcileOrder(env, detail);
+          switch (r.status) {
+            case "applied":
+              results.applied.push(r);
+              console.log(`[series-reconcile] APPLIED ${r.package} for ${r.contactName} (${r.contactId}), order=${r.orderId}`);
+              break;
+            case "skip-already-processed":
+              results.skipped.alreadyProcessed += 1;
+              break;
+            case "skip-already-applied":
+              results.skipped.alreadyApplied += 1;
+              break;
+            case "skip-not-package":
+              results.skipped.notPackage += 1;
+              break;
+            case "skip-not-paid":
+              results.skipped.notPaid += 1;
+              break;
+            case "skip-no-contact":
+              results.skipped.noContact += 1;
+              break;
+            case "skip-locked":
+              results.skipped.locked += 1;
+              console.log(`[series-reconcile] SKIP-LOCKED ${r.package} for ${r.contactName} (${r.contactId}) — sessions_remaining_locked, order=${r.orderId}`);
+              break;
+            case "errored":
+              results.errored.push(r);
+              break;
+          }
+        } catch (err) {
+          const msg = String(err.message || err).slice(0, 300);
+          console.error(`[series-reconcile] order ${o._id} failed: ${msg}`);
+          results.errored.push({ orderId: o._id, error: msg });
         }
-      } catch (err) {
-        const msg = String(err.message || err).slice(0, 300);
-        console.error(`[series-reconcile] order ${o._id} failed: ${msg}`);
-        results.errored.push({ orderId: o._id, error: msg });
+        await sleep(SLEEP_MS);
       }
-      await sleep(SLEEP_MS);
+    } catch (err) {
+      orderPassError = String(err.message || err).slice(0, 300);
+      console.error(`[series-reconcile] order pass failed (field-sync sweep still runs): ${orderPassError}`);
     }
 
     // ── Active-series field-sync sweep (mid-package drift fix) ──
@@ -212,12 +239,15 @@ async function runReconcile(env, trigger, lookbackHours) {
       } else {
         const { chunk, remaining } = nextChunk(queue, SYNC_SWEEP_CHUNK);
         const r = await syncContacts(env, chunk, {}, { maxPerRun: SYNC_SWEEP_CHUNK });
-        const newQueue = remainderAfterProcessing(chunk, chunk.length, remaining);
+        // Re-queue contacts that errored this run (transient GHL failures) to the
+        // back so they're retried, not dropped until the next ~daily rebuild.
+        const erroredIds = r.results.filter((x) => x.status === "errored").map((x) => x.contactId);
+        const newQueue = requeueAfterSweep(chunk, chunk.length, remaining, erroredIds);
         await env.PORTAL_KV.put(KV_QUEUE_KEY, JSON.stringify(newQueue));
         const synced = r.results.filter((x) => x.status === "synced");
-        syncSummary = { ...r, queueRemaining: newQueue.length, queueRebuilt: false };
+        syncSummary = { ...r, queueRemaining: newQueue.length, requeuedErrored: erroredIds.length, queueRebuilt: false };
         console.log(
-          `[series-reconcile] field-sync sweep: chunk of ${chunk.length} (${synced.length} written), ${newQueue.length} left in queue`
+          `[series-reconcile] field-sync sweep: chunk of ${chunk.length} (${synced.length} written, ${erroredIds.length} re-queued), ${newQueue.length} left in queue`
         );
       }
     } catch (syncErr) {
@@ -231,9 +261,10 @@ async function runReconcile(env, trigger, lookbackHours) {
       startedAt: startedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
       durationMs: finishedAt.getTime() - startMs,
-      status: results.errored.length > 0 ? "partial-errors" : "ok",
+      status: (orderPassError || results.errored.length > 0) ? "partial-errors" : "ok",
       lookbackHours,
       ordersScanned: orders.length,
+      orderPassError,
       applied: results.applied.length,
       appliedDetail: results.applied,
       skipped: results.skipped,

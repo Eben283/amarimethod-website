@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
@@ -16,6 +16,9 @@ import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
 import '../styles/session-a.css';
+
+// Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
+const PAY_BTN: CSSProperties = { padding: '9px 14px', borderRadius: 9, border: '1px solid #cbd5e1', background: '#fff', fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' };
 
 // ── small display helpers ─────────────────────────────────────────────────
 function fmtDate(iso: string): string {
@@ -46,18 +49,37 @@ const PAYMENT_PILL: Record<PaymentStatus, { label: string; bg: string; fg: strin
   unknown: null,
 };
 
-// Derive a short "kind" chip from a note body's leading label.
-function noteKind(body: string): string {
+// Returns true for system-generated notes that should never surface in the client sheet.
+// Only Garrett's manually-written notes belong here.
+function isSystemNote(body: string): boolean {
   const t = body.trim();
-  if (/^migrat/i.test(t)) return 'Migration';
-  if (/^\[?reconciliation/i.test(t)) return 'Reconciliation';
-  if (/^outcome:/i.test(t)) return 'Outcome';
-  if (/^touch:/i.test(t)) return 'Touch';
-  if (/^skip:/i.test(t)) return 'Skip';
-  if (/^enrichment/i.test(t)) return 'Enrichment';
-  if (/^audit/i.test(t)) return 'Audit';
-  if (/^correction/i.test(t)) return 'Correction';
-  return 'Note';
+  return (
+    /^migrat/i.test(t) ||
+    /^\[?reconciliation/i.test(t) ||
+    /^outcome:/i.test(t) ||
+    /^touch:/i.test(t) ||
+    /^skip:/i.test(t) ||
+    /^enrichment/i.test(t) ||
+    /^audit/i.test(t) ||
+    /^correction/i.test(t) ||
+    /^ip:/i.test(t) ||
+    /^user.?agent:/i.test(t) ||
+    /captured at:/i.test(t) ||
+    /^next: customer redirected/i.test(t)
+  );
+}
+
+// A note body can carry an embedded signature as a base64 <img> (the policy-attestation
+// flow does this). Pull the image out so it renders as an actual small image, and strip
+// the raw <img>/base64 markup from the text so we don't dump a wall of base64.
+function splitNoteBody(body: string): { text: string; signature: string | null } {
+  const img = body.match(/<img[^>]*\bsrc=["'](data:image\/[^"']+)["'][^>]*>/i);
+  const signature = img ? img[1] : null;
+  let text = body;
+  if (img) text = text.replace(img[0], '').replace(/Signature:\s*$/im, '').trimEnd();
+  // safety net: collapse any stray base64 image blob to a placeholder
+  text = text.replace(/data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/g, '[signature image]').trim();
+  return { text, signature };
 }
 
 export default function ClientDetailPage() {
@@ -494,18 +516,27 @@ export default function ClientDetailPage() {
         {/* notes */}
         <section className="sa-card">
           <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
-          {client.notes.length === 0 ? (
-            <p className="sa-empty">No notes yet</p>
-          ) : (
-            <div className="sa-notes">
-              {client.notes.map((n) => (
-                <div key={n.id} className="sa-note">
-                  <div className="sa-note-meta"><span className="sa-note-kind">{noteKind(n.body)}</span><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
-                  <p>{n.body}</p>
-                </div>
-              ))}
-            </div>
-          )}
+          {(() => {
+            const visible = client.notes.filter((n) => !isSystemNote(n.body));
+            return visible.length === 0 ? (
+              <p className="sa-empty">No notes yet</p>
+            ) : (
+              <div className="sa-notes">
+                {visible.map((n) => {
+                  const nb = splitNoteBody(n.body);
+                  return (
+                    <div key={n.id} className="sa-note">
+                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
+                      {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
+                      {nb.signature && (
+                        <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </section>
 
         {/* ============ IN SESSION (cont.) ============ */}
@@ -581,10 +612,15 @@ export default function ClientDetailPage() {
                 const date = new Date(appt.startTime);
                 const isPast = date < new Date();
                 const isAttended = appt.status === 'showed' || appt.status === 'completed';
-                const canMark = isPast && !isAttended && appt.status !== 'cancelled';
+                // Markable from 2h before the slot onward — so attendance can be
+                // marked when the client actually shows up (incl. early arrivals),
+                // not only strictly after the appointment time has passed.
+                const canMark = date.getTime() <= Date.now() + 2 * 60 * 60 * 1000 && !isAttended && appt.status !== 'cancelled';
                 const isMarking = markingAttended === appt.id;
                 const pill = appt.paymentStatus ? PAYMENT_PILL[appt.paymentStatus] : null;
                 const packageCovers = client.sessionsRemaining > 0 && client.seriesType !== 'none';
+                // Gifted partner sessions are always comp — one-tap mark, no "how was this paid?".
+                const isGift = /partner initial/i.test(appt.calendarName || '') || /partner initial/i.test(appt.title || '');
                 const choosing = payingApptId === appt.id;
                 return (
                   <div key={appt.id}>
@@ -607,9 +643,11 @@ export default function ClientDetailPage() {
                         <button
                           className="sa-att"
                           onClick={() => {
-                            // Package-covered → mark straight away (backend auto-records on-package).
-                            // Otherwise ask how it was paid before marking.
+                            // One clean tap when there's no payment decision: package-covered
+                            // (backend auto-records on-package) and gifted partner sessions (always comp).
+                            // Only pay-as-you-go opens the "how was this paid?" step.
                             if (packageCovers) handleMarkAttended(appt);
+                            else if (isGift) handleMarkAttended(appt, { paymentStatus: 'comped', compNote: 'Partner gift' });
                             else { setPayingApptId(appt.id); setCompNoteDraft(''); }
                           }}
                           disabled={isMarking}
@@ -623,22 +661,22 @@ export default function ClientDetailPage() {
                       )}
                     </div>
                     {choosing && (
-                      <div style={{ margin: '6px 0 12px', padding: 10, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: '#334155' }}>How was this paid?</div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'stripe' })}><span>Paid</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'cash' })}><span>Cash</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'pay-next-visit' })}><span>Pay next visit</span></button>
+                      <div style={{ margin: '6px 0 12px', padding: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, color: '#334155' }}>Marking attended — how was it paid?</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'stripe' })}>Paid (card)</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'paid', paymentMethod: 'cash' })}>Paid (cash)</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'pay-next-visit' })}>Owes — pay next visit</button>
+                          <button disabled={isMarking} style={PAY_BTN} onClick={() => handleMarkAttended(appt, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || 'Comp' })}>Comp / free</button>
                         </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                           <input
                             value={compNoteDraft}
                             onChange={(e) => setCompNoteDraft(e.target.value)}
                             placeholder="Comp reason (optional)"
-                            style={{ flex: 1, fontSize: 13, padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: 8 }}
+                            style={{ flex: 1, fontSize: 13, padding: '7px 9px', border: '1px solid #cbd5e1', borderRadius: 8 }}
                           />
-                          <button className="sa-att" disabled={isMarking} onClick={() => handleMarkAttended(appt, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || null })}><span>Comp</span></button>
-                          <button className="sa-att" disabled={isMarking} onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}><span>Cancel</span></button>
+                          <button disabled={isMarking} style={{ ...PAY_BTN, border: 'none', background: 'transparent', color: '#94a3b8', fontWeight: 500 }} onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}>Cancel</button>
                         </div>
                       </div>
                     )}

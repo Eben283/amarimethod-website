@@ -4,6 +4,7 @@
 
 import { scanGitHubReleases, scanCloudflareBlog, scanGHLChangelog } from "./sources.js";
 import { todayPacific, jsonResponse } from "./helpers.js";
+import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
 const SCAN_KV_PREFIX = "ops:ecosystem-scan:";
 
@@ -13,6 +14,9 @@ export default {
   },
 
   async fetch(request, env) {
+    const denied = requireWorkerAuth(request, env);
+    if (denied) return denied;
+
     const url = new URL(request.url);
 
     if (url.pathname === "/__scheduled" || url.pathname === "/run") {

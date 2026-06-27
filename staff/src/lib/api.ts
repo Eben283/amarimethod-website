@@ -63,10 +63,11 @@ export async function staffLogin(pin: string): Promise<{ token: string }> {
   });
 }
 
-export async function getDayData(date?: string, endDate?: string): Promise<import('../types/staff').TodayAppointment[]> {
+export async function getDayData(date?: string, endDate?: string, includeCancelled?: boolean): Promise<import('../types/staff').TodayAppointment[]> {
   const params = new URLSearchParams();
   if (date) params.set('date', date);
   if (endDate) params.set('endDate', endDate);
+  if (includeCancelled) params.set('includeCancelled', '1');
   const qs = params.toString();
   return fetchApi(`/staff-data${qs ? `?${qs}` : ''}`);
 }
@@ -211,6 +212,95 @@ export async function sendPayLink(
   });
 }
 
+// ── Garrett's Day tasks (Schedule tab directive list) ───────────────────────
+export interface StaffTask {
+  id: string;
+  text: string;
+  done: boolean;
+  addedBy: string;
+  createdAt: string;
+  doneAt?: string | null;
+}
+
+// The full Schedule-tab "Garrett's Day" state: the goal (why), the pinned rule,
+// and the checkable tasks. (Bookings are tracked in the funnel, not here.)
+export interface StaffDay {
+  goal: string;
+  rule: string;
+  tasks: StaffTask[];
+}
+
+export async function getTasks(): Promise<StaffDay> {
+  return fetchApi('/staff-tasks');
+}
+
+type TaskAction =
+  | { action: 'add'; text: string }
+  | { action: 'edit'; id: string; text: string }
+  | { action: 'toggle'; id: string }
+  | { action: 'delete'; id: string }
+  | { action: 'clear-done' }
+  | { action: 'set-goal'; text: string }
+  | { action: 'set-rule'; text: string };
+
+export async function mutateTask(input: TaskAction): Promise<StaffDay> {
+  return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
+}
+
+// One-tap post-call text (the "just left a voicemail" nudge). Sends the
+// staff-chosen pre-written body via GHL.
+export async function sendFollowupText(
+  contactId: string,
+  message: string,
+): Promise<{ success: boolean; deduped?: boolean; sentTo?: string }> {
+  return fetchApi('/staff-send-text', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, message }),
+  });
+}
+
+// One-tap custom email — sends a staff-composed subject + body THROUGH GHL, so it's
+// logged on the contact's timeline (traceable) exactly like the SMS path. Body is HTML.
+export async function sendFollowupEmail(
+  contactId: string,
+  subject: string,
+  html: string,
+): Promise<{ success: boolean; deduped?: boolean; sentTo?: string }> {
+  return fetchApi('/staff-send-email', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, subject, html }),
+  });
+}
+
+// ── Sharpen (call-craft card feed) ──────────────────────────────────────────
+export type SharpenCategory = 'frame' | 'objection' | 'discovery' | 'close' | 'real-call';
+// kind = what TYPE of card this is (orthogonal to topic/category): a data-derived
+// trend (bucket), a single replayable real-call win (move), or evergreen technique
+// (craft). Drives the card background colour. Defaults to 'craft' when absent.
+export type SharpenKind = 'bucket' | 'move' | 'craft';
+export interface SharpenCard {
+  id: string;
+  category: SharpenCategory;
+  kind?: SharpenKind;
+  title: string;
+  body: string;
+  addedBy?: string;
+  createdAt?: string;
+}
+
+export async function getSharpen(): Promise<{ cards: SharpenCard[] }> {
+  return fetchApi('/staff-sharpen');
+}
+
+type SharpenAction =
+  | { action: 'add'; category: SharpenCategory; title: string; body: string }
+  | { action: 'edit'; id: string; category: SharpenCategory; title: string; body: string }
+  | { action: 'delete'; id: string };
+
+export async function mutateSharpen(input: SharpenAction): Promise<{ cards: SharpenCard[] }> {
+  return fetchApi('/staff-sharpen', { method: 'POST', body: JSON.stringify(input) });
+}
+
 export async function staffCheckIn(
   contactId: string,
   payload: { typedName: string; signatureImage: string },
@@ -296,6 +386,19 @@ export async function recordPartnerOutcome(
   });
 }
 
+// Verification flywheel: a discovery call found the decision-maker. Tags the contact
+// dm-verified (→ play-decision flips discovery to pitch) and optionally repoints the
+// record to the real person (name / direct line).
+export async function verifyDecisionMaker(
+  contactId: string,
+  dm: { dmFirstName?: string; dmLastName?: string; dmPhone?: string },
+): Promise<{ success: boolean }> {
+  return fetchApi('/staff-partner-verify', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, ...dm }),
+  });
+}
+
 export async function toggleOutreachVerified(
   contactId: string,
   verified: boolean,
@@ -329,6 +432,237 @@ export async function updateContactField(
 // and writes its result to KV (surfaced as activityRefreshAt next reload).
 export async function triggerActivityRefresh(): Promise<{ triggered: boolean; message: string }> {
   return fetchApi('/staff-refresh-activity', { method: 'POST' });
+}
+
+// ── Funnel (sales funnel, v2 event-level snapshot) ────────────────────────
+// Snapshot is computed out-of-band by ~/.claude/ghl-mcp/funnel.mjs and cached
+// in KV; /staff-funnel just serves it. Events are sliced into date ranges
+// client-side. See functions/api/staff-funnel.js.
+export interface FunnelCallEvent {
+  d: string;                       // YYYY-MM-DD (Pacific)
+  o: 'none' | 'vm' | 'talk';       // no answer · voicemail left · talked
+  c: string;                       // cohort
+}
+export interface FunnelSessionEvent {
+  d: string;                       // booking date (when it was booked)
+  sessionDate?: string;            // the scheduled session date
+  showed: boolean;
+  c: string;
+}
+export interface FunnelSaleEvent {
+  d: string;
+  s: number;                       // sessions sold (8-pack=8, 4-pack=4, single=1…)
+  k: string;                       // kind label
+  c: string;
+  r: boolean;                      // repeat buyer
+  who: string;
+}
+export interface FunnelData {
+  v?: number;
+  generatedAt: string | null;
+  empty?: boolean;
+  windowDays?: number;
+  goal?: { packsPerMonth: number; sessionsPerPack: number };
+  calls?: FunnelCallEvent[];
+  texts?: { d: string }[];         // outbound SMS, one touch per contact-day
+  emails?: { d: string }[];        // outbound email, one touch per contact-day
+  sessions?: FunnelSessionEvent[];
+  sales?: FunnelSaleEvent[];
+  trailing90?: { calls: number; equivs: number; callsPerEquiv: number | null };
+  targets?: { calls: number; talk: number; booked: number; showed: number; sales: number; source?: string; asOf?: string };
+  paceLine?: string;
+}
+
+export async function getFunnel(): Promise<FunnelData> {
+  return fetchApi('/staff-funnel');
+}
+
+export interface FunnelRefreshResult {
+  triggered: boolean;
+  summary?: {
+    status?: string;
+    snapshotKey?: string;
+    durationMs?: number;
+    calls?: number;
+    sessions?: number;
+    sales?: number;
+    sessionsSold?: number;
+  };
+  error?: string;
+}
+
+// Triggers the funnel-refresh Worker and WAITS for it (the worker runs the full
+// GHL pull inline, ~45s, then writes funnel:latest). Unlike the shared fetchApi
+// (15s timeout) this uses a 90s ceiling so the inline run isn't cut off. The
+// caller should poll getFunnel() afterward until generatedAt advances.
+export async function triggerFunnelRefresh(): Promise<FunnelRefreshResult> {
+  const token = localStorage.getItem('staff_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 90000);
+  try {
+    const response = await fetch(`${API_BASE}/staff-funnel-refresh`, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({ triggered: false, error: 'Request failed' }));
+    if (!response.ok && response.status !== 202) {
+      throw new ApiError(data.error || 'Refresh failed', response.status);
+    }
+    return data as FunnelRefreshResult;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      // The worker keeps running server-side; treat as "triggered" so the
+      // caller polls for the new snapshot.
+      return { triggered: true, error: 'timed out — still refreshing' };
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ── Follow-Up brief (Claude-drafted: who they are + talking points + texts) ──
+export interface FollowupBrief {
+  summary: string;
+  talkingPoints: string[];
+  drafts: { channel: 'text' | 'call' | 'email'; text: string }[];
+}
+
+// Calls the Claude-backed brief endpoint. Uses its own 45s ceiling (the model
+// call exceeds fetchApi's 15s timeout). `contact` is the known card context.
+export async function buildFollowupBrief(
+  contactId: string,
+  contact: Record<string, unknown>,
+): Promise<FollowupBrief> {
+  const token = localStorage.getItem('staff_token');
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(`${API_BASE}/staff-followup-brief`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ contactId, contact }),
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => ({ error: 'Request failed' }));
+    if (!response.ok) throw new ApiError(data.error || 'Failed to build brief', response.status);
+    return data as FollowupBrief;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new ApiError('The brief took too long. Try again.', 408);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// ── Call-coach (daily worker: recording → Whisper → Claude coaching) ─────────
+export interface CallCoach {
+  contactId: string;
+  contactName?: string;
+  date: string;
+  hasAudio?: boolean;
+  callCount?: number;
+  textCount?: number;
+  coaching: {
+    summary: string;
+    whatWorked: string[];
+    whatToImprove: string[];
+    objections: string[];
+    nextStep: string;
+    actionLine?: string;
+    holdState?: 'active' | 'cool-off' | 'close-loop';
+    suggestedReply?: string;
+    signal?: string;
+  };
+}
+
+// Returns the contact's coaching for `date` (defaults to yesterday, the cron's
+// output day), or null if there's none — silent, not an error on the card.
+export async function getCallCoach(contactId: string, date?: string): Promise<CallCoach | null> {
+  try {
+    const qs = `contactId=${encodeURIComponent(contactId)}${date ? `&date=${date}` : ''}`;
+    // Reader returns 200 with coaching:null when there's none — treat as no coaching.
+    const r = await fetchApi<{ coaching?: unknown } & Record<string, unknown>>(`/call-coach?${qs}`);
+    return r && r.coaching ? (r as unknown as CallCoach) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Triggers the call-coach Worker's /coach-one endpoint for a single contact
+// on-demand (after a call outcome is logged). Fire-and-forget — the caller
+// should `.catch(() => {})` and not await the result.
+export async function triggerCoachOne(contactId: string): Promise<{ triggered: boolean; contactId: string }> {
+  return fetchApi('/staff-coach-one', {
+    method: 'POST',
+    body: JSON.stringify({ contactId }),
+  });
+}
+
+// ── Outreach coach (local generator: cadence + thread + voice → who/why/message)
+export interface OutreachCoach {
+  contactId: string;
+  name?: string;
+  bucket?: string;        // dropped-reply | gone-quiet | never-followed-up | referral
+  whyNow: string;         // why this person is surfaced right now
+  message: string;        // the ready-to-send draft in Garrett's voice
+  variations?: string[];  // 2-3 wordings to choose from (message is variations[0])
+  channel?: 'call' | 'text' | 'email';
+  generatedAt?: string;
+}
+
+// Returns the contact's outreach-coach record, or null if there's none — silent,
+// not an error on the card. Reader returns 200 with coach:null when absent.
+export async function getOutreachCoach(contactId: string): Promise<OutreachCoach | null> {
+  try {
+    const r = await fetchApi<{ coach?: OutreachCoach | null }>(
+      `/outreach-coach?contactId=${encodeURIComponent(contactId)}`,
+    );
+    return r && r.coach && (r.coach.message || r.coach.variations?.length) ? r.coach : null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Pipeline view (Eben's Kanban: Touch 1-6 → Discovery → First Session → Pack 1-3+)
+export interface PipelineCard {
+  id: string;
+  name: string;
+  touchCount: number;
+  sessionsCompleted: number;
+  sessionsRemaining: number;
+  seriesType: string;
+  lastActivity: string | null;
+  dateAdded: string | null;
+}
+
+export interface PipelineColumns {
+  'touch-1': PipelineCard[];
+  'touch-2': PipelineCard[];
+  'touch-3': PipelineCard[];
+  'touch-4': PipelineCard[];
+  'touch-5': PipelineCard[];
+  'touch-6': PipelineCard[];
+  'discovery-noshow': PipelineCard[];
+  discovery: PipelineCard[];
+  'first-session': PipelineCard[];
+  'multipack-1': PipelineCard[];
+  'multipack-2': PipelineCard[];
+  referred: PipelineCard[];
+}
+
+export async function getPipeline(): Promise<PipelineColumns> {
+  const r = await fetchApi<{ columns: PipelineColumns }>('/staff-pipeline');
+  return r.columns;
 }
 
 export { ApiError };

@@ -5,6 +5,8 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { isContactRevoked } from "../lib/session-guard.js";
+import { countsTowardLifetime } from "../lib/journey-classification.js";
+import { getCustomField, isChecked, computeHasLivingPractice } from "../lib/portal-helpers.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -27,34 +29,12 @@ function corsHeaders(origin) {
   return headers;
 }
 
-// Extract custom field value from GHL contact
-// fieldDefs is a map of { [key: string]: string } — field key (short) → field ID
-export function getCustomField(contact, fieldKey, fieldDefs = {}) {
-  if (!contact.customFields) return null;
-  const fieldId = fieldDefs[fieldKey];
-  const field = contact.customFields.find(
-    (f) =>
-      (fieldId && f.id === fieldId) ||
-      f.id === fieldKey ||
-      f.key === fieldKey ||
-      f.key === `contact.${fieldKey}`
-  );
-  return field ? field.value ?? field.field_value : null;
-}
-
-// GHL checkbox fields return either: true (bool), "true" (string), or ["true"] (array)
-export function isChecked(raw) {
-  if (!raw && raw !== 0) return false;
-  if (Array.isArray(raw)) return raw.some(v => ["true","yes","1"].includes(String(v).toLowerCase()));
-  return ["true","yes","1"].includes(String(raw).toLowerCase());
-}
-
-// 8-session series always includes Living Practice — don't require the field to be set
-export function computeHasLivingPractice(lpRaw, tags, seriesType) {
-  return isChecked(lpRaw) ||
-    (tags || []).includes("living-practice-access") ||
-    seriesType === "8-session";
-}
+// getCustomField / isChecked / computeHasLivingPractice now live in
+// ../lib/portal-helpers.js (imported above). Re-exported here so existing
+// importers (staff-*.js, session-ledger.js) keep their import path working.
+// This also breaks the portal-data ⇄ session-ledger circular import — those
+// helpers no longer have to be reached through this api file.
+export { getCustomField, isChecked, computeHasLivingPractice };
 
 // Lifetime "completed" count: appointments that effectively ran, minus
 // non-journey types. Extracted from the handler so it's testable; nowMs is
@@ -69,7 +49,7 @@ export function countLifetimeCompleted(appointments, nowMs) {
     const startMs = new Date(a.startTime || a.start_time || 0).getTime();
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = `${a.title || ""} ${a.calendarName || ""}`;
-    return !/pain assessment|discovery call|15-minute|15 minute|consultation/i.test(title);
+    return countsTowardLifetime(title);
   }).length;
 }
 
@@ -264,6 +244,12 @@ export async function onRequestGet(context) {
     const referralCount = Math.max(0, parseInt(referralCountRaw ?? "0", 10) || 0);
     const rewardCode = getCustomField(contact, "referral_reward_code", fieldDefs) || null;
 
+    // Reminder preference (all | some | none). Defaults to "all" — current
+    // behavior — until the client chooses otherwise in the settings drawer.
+    const reminderPreference = String(
+      getCustomField(contact, "reminder_preference", fieldDefs) || "all",
+    ).toLowerCase();
+
     // Sort appointments by date
     const nowMs = Date.now();
     // Pull the meeting URL out of whatever GHL field carries it for this
@@ -330,6 +316,7 @@ export async function onRequestGet(context) {
           isPartner,
           referralCount,
           rewardCode,
+          reminderPreference,
         },
         appointments: pastAppointments,
         upcomingAppointments,

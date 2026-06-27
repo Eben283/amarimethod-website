@@ -6,6 +6,10 @@ import EmbedCalendarModal, { type EmbedCalendarType } from './EmbedCalendarModal
 interface QuickActionsProps {
   client: ClientData;
   onBookSession: () => void;
+  /** Refresh dashboard data after the embedded calendar modal closes — the
+   *  iframe gives us no booking event, so we refetch on close to reflect any
+   *  session the user just booked. */
+  onBooked: () => void;
 }
 
 // Booking URLs. Initial sessions point to the native flow at /book/<variant>;
@@ -137,7 +141,7 @@ function ActionCard({ a }: { a: Action }) {
   );
 }
 
-export default function QuickActions({ client, onBookSession: _onBookSession }: QuickActionsProps) {
+export default function QuickActions({ client, onBookSession: _onBookSession, onBooked }: QuickActionsProps) {
   const navigate = useNavigate();
   const [showInitialChoice, setShowInitialChoice] = useState(false);
   const [showSeriesChoice, setShowSeriesChoice] = useState(false);
@@ -155,7 +159,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
     primaryCard = (
       <BookingCard
         label="Book your initial session"
-        description="60-minute assessment with Dr. Garrett."
+        description="60-minute assessment with Garrett."
         price="$225"
         open={showInitialChoice}
         onOpen={() => setShowInitialChoice(true)}
@@ -205,7 +209,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
   const livingPracticeAction: Action = client.hasLivingPractice
     ? {
         label: 'Continue Living Practice',
-        description: 'Your daily home-practice videos with Dr. Garrett.',
+        description: 'Your daily home-practice videos with Garrett.',
         onClick: () => navigate(LIVING_PRACTICE_ROUTE),
         testId: 'living-practice-card',
       }
@@ -245,7 +249,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
     : null;
 
   const contactAction: Action = {
-    label: 'Contact Dr. Garrett',
+    label: 'Contact Garrett',
     description: 'Questions, scheduling, or notes between sessions.',
     href: 'mailto:eben@amarimethod.com',
     muted: true,
@@ -279,6 +283,9 @@ export default function QuickActions({ client, onBookSession: _onBookSession }: 
             setEmbedCalendarType(null);
             setShowSeriesChoice(false);
             setShowFollowupChoice(false);
+            // Reflect any session booked inside the embed (no booking event
+            // crosses the iframe boundary, so refetch on close).
+            onBooked();
           }}
         />
       )}

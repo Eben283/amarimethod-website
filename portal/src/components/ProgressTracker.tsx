@@ -9,6 +9,10 @@ interface ProgressTrackerProps {
   allAppointments: Appointment[];
   onRefetch: () => void;
   onBookSession?: () => void;
+  /** Open the booking modal in reschedule mode for a follow-up appointment.
+   *  The modal books the new slot first, then cancels this one — so abandoning
+   *  it never leaves the client with zero sessions. */
+  onReschedule?: (appt: Appointment) => void;
 }
 
 // Cap on dot rendering — when packageSize > MAX_DOTS we still show MAX_DOTS
@@ -64,9 +68,9 @@ function buildGoogleCalendarUrl(apt: Appointment): string {
   const meet = apt.meetingUrl || '';
   const details = format === 'Virtual'
     ? (meet
-        ? `Virtual session with Dr. Garrett. Join: ${meet}`
-        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
-    : 'In-person session with Dr. Garrett at Amari Method.';
+        ? `Virtual session with Garrett. Join: ${meet}`
+        : 'Virtual session with Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Garrett at Amari Method.';
   const location = meet || (format === 'In-person' ? 'Amari Method' : '');
   const params = new URLSearchParams({
     action: 'TEMPLATE',
@@ -80,16 +84,27 @@ function buildGoogleCalendarUrl(apt: Appointment): string {
 
 // .ics file for Apple Calendar / Outlook / Yahoo / any non-Google calendar.
 // On iOS/macOS, tapping a text/calendar link opens Apple Calendar directly.
+// Escape a value for an RFC 5545 TEXT field: backslashes, semicolons, commas, and
+// newlines all carry meaning in iCalendar and must be escaped, or a title/location
+// containing a comma (e.g. "Initial Session, In Person") truncates or corrupts the event.
+function icsText(value: string): string {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
 function buildIcsUrl(apt: Appointment): string {
   const format = detectFormat(apt);
   const meet = apt.meetingUrl || '';
   const description = format === 'Virtual'
     ? (meet
-        ? `Virtual session with Dr. Garrett. Join here: ${meet}`
-        : 'Virtual session with Dr. Garrett. The Google Meet link is in your confirmation email from Amari Method.')
-    : 'In-person session with Dr. Garrett at Amari Method.';
+        ? `Virtual session with Garrett. Join here: ${meet}`
+        : 'Virtual session with Garrett. The Google Meet link is in your confirmation email from Amari Method.')
+    : 'In-person session with Garrett at Amari Method.';
   const locationLine = meet
-    ? `LOCATION:${meet}`
+    ? `LOCATION:${icsText(meet)}`
     : (format === 'In-person' ? 'LOCATION:Amari Method' : '');
   const lines = [
     'BEGIN:VCALENDAR',
@@ -100,8 +115,8 @@ function buildIcsUrl(apt: Appointment): string {
     `DTSTAMP:${toGcalDate(new Date().toISOString())}`,
     `DTSTART:${toGcalDate(apt.startTime)}`,
     `DTEND:${toGcalDate(apt.endTime)}`,
-    `SUMMARY:${apt.title || 'Amari Method session'}`,
-    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    `SUMMARY:${icsText(apt.title || 'Amari Method session')}`,
+    `DESCRIPTION:${icsText(description)}`,
     ...(locationLine ? [locationLine] : []),
     'END:VEVENT',
     'END:VCALENDAR',
@@ -109,12 +124,15 @@ function buildIcsUrl(apt: Appointment): string {
   return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.join('\r\n'));
 }
 
-export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession }: ProgressTrackerProps) {
+export default function ProgressTracker({ client, upcomingAppointments, allAppointments, onRefetch, onBookSession, onReschedule }: ProgressTrackerProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmMode, setConfirmMode] = useState<'cancel' | 'reschedule'>('cancel');
   const [cancelError, setCancelError] = useState<string | null>(null);
+  // Which appointment the cancelError belongs to — so the message renders under
+  // the row the user acted on, not always under the next-session card.
+  const [errorApptId, setErrorApptId] = useState<string | null>(null);
 
   // Lifetime journey counter — total past appointments that effectively ran.
   // Past 'confirmed' counts because Garrett doesn't always flip them to
@@ -167,6 +185,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
       onRefetch();
     } catch (err) {
       setCancelError(err instanceof Error ? err.message : 'Unable to cancel. Please try again.');
+      setErrorApptId(appointmentId);
     } finally {
       setCancellingId(null);
     }
@@ -180,23 +199,38 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
     return null; // follow-up — use modal
   }
 
-  async function handleReschedule(appointmentId: string, title: string) {
-    setReschedulingId(appointmentId);
-    setCancelError(null);
-    try {
-      await cancelAppointment(appointmentId, title);
-      setConfirmingId(null);
-      onRefetch();
-      const externalUrl = getRescheduleUrl(title);
-      if (externalUrl) {
+  async function handleReschedule(appt: Appointment) {
+    const title = appt.title || 'Session';
+    const externalUrl = getRescheduleUrl(title);
+
+    // Initial / discovery sessions are rebooked on dedicated pages, not the
+    // modal — there's no safe book-first-then-cancel there, so cancel this one
+    // then open the booking page.
+    if (externalUrl) {
+      setReschedulingId(appt.id);
+      setCancelError(null);
+      try {
+        await cancelAppointment(appt.id, title);
+        setConfirmingId(null);
+        onRefetch();
         window.open(externalUrl, '_blank', 'noopener,noreferrer');
-      } else if (onBookSession) {
-        onBookSession();
+      } catch (err) {
+        setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
+        setErrorApptId(appt.id);
+      } finally {
+        setReschedulingId(null);
       }
-    } catch (err) {
-      setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
-    } finally {
-      setReschedulingId(null);
+      return;
+    }
+
+    // Follow-up — hand off to the modal in reschedule mode. It books the new
+    // slot first and only then cancels this one, so abandoning the flow never
+    // drops the client to zero sessions.
+    setConfirmingId(null);
+    if (onReschedule) {
+      onReschedule(appt);
+    } else if (onBookSession) {
+      onBookSession();
     }
   }
 
@@ -361,7 +395,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                     <span className="cp-dot">·</span>
                     <span>{format}</span>
                     <span className="cp-dot">·</span>
-                    <span>with <b>Dr. Garrett</b></span>
+                    <span>with <b>Garrett</b></span>
                   </p>
                   {format === 'Virtual' && !nextApt.meetingUrl && (
                     <p className="cp-next-note">Google Meet link is in your confirmation email.</p>
@@ -379,7 +413,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                     <button
                       type="button"
                       onClick={() => confirmMode === 'reschedule'
-                        ? handleReschedule(nextApt.id, apptTitle)
+                        ? handleReschedule(nextApt)
                         : handleCancel(nextApt.id, apptTitle)
                       }
                       disabled={isCancelling || isRescheduling}
@@ -448,11 +482,11 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
               {tooSoon && !isConfirming && (
                 <p className="cp-locked">
                   <span className="cp-lock-dot"></span>
-                  Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Dr. Garrett</a> and we'll review it.
+                  Less than 24 hours away — rescheduling needs 24 hours' notice. If something urgent came up, <a href="mailto:hello@amarimethod.com?subject=Emergency%20reschedule%20request">email Garrett</a> and we'll review it.
                 </p>
               )}
 
-              {cancelError && (
+              {cancelError && errorApptId === nextApt.id && (
                 <p className="cp-locked" style={{ background: '#fbe6e1', borderLeftColor: 'var(--cp-err)' }}>
                   <span className="cp-lock-dot" style={{ background: 'var(--cp-err)' }}></span>
                   {cancelError}
@@ -514,7 +548,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                           type="button"
                           className="cp-btn cp-btn-row cp-btn-danger"
                           onClick={() => confirmMode === 'reschedule'
-                            ? handleReschedule(s.id, apptTitle)
+                            ? handleReschedule(s)
                             : handleCancel(s.id, apptTitle)
                           }
                           disabled={isCancelling || isRescheduling}
@@ -551,6 +585,12 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                       </>
                     )}
                   </div>
+                  {cancelError && errorApptId === s.id && (
+                    <p className="cp-locked" style={{ gridColumn: '1 / -1', background: '#fbe6e1', borderLeftColor: 'var(--cp-err)' }}>
+                      <span className="cp-lock-dot" style={{ background: 'var(--cp-err)' }}></span>
+                      {cancelError}
+                    </p>
+                  )}
                 </li>
               );
             })}

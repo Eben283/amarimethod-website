@@ -39,12 +39,16 @@
 // 11. Add tag: invoice-series-purchased (triggers downstream cleanup workflow)
 // 12. Store invoice id in KV for idempotency
 
-import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
+import { timingSafeEqual } from "../lib/safe-equal.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-const KV_TTL_SECONDS = 30 * 86400; // 30 days
+// 90 days — must cover the replay window. Was 30d (the short outlier vs the
+// reconcile worker's 90d); a package whose idempotency record expired at 30d
+// could be re-credited by a later non-package invoice event (H2, 2026-06-11).
+export const KV_TTL_SECONDS = 90 * 86400;
 
 // Product allowlist — only series/upgrade purchases trigger the post-purchase
 // automation. Shape: { [productId]: { name, sessionsRemaining, seriesType, livingPractice } }
@@ -125,7 +129,14 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
     if (match) {
       const pkg = findPackageInInvoice(match);
       if (pkg) return { invoice: match, pkg };
+      // H2 (2026-06-11 review): the webhook is about THIS invoice and it isn't a
+      // package (e.g. a $90 Entrainment). Do NOT fall through to the history
+      // scan — that re-credits an old package whose idempotency record has
+      // expired, resetting sessions_remaining to full. Credit nothing.
+      return null;
     }
+    // preferredInvoiceId was given but not found in the list (id-format mismatch
+    // / pagination) — fall through to the history scan as a resilience path.
   }
 
   // Otherwise scan all paid invoices most-recent-first looking for a series/upgrade.
@@ -179,7 +190,7 @@ export async function onRequestPost(context) {
       );
     }
     const providedSecret = context.request.headers.get("X-Webhook-Secret");
-    if (providedSecret !== expectedSecret) {
+    if (!timingSafeEqual(providedSecret || "", expectedSecret)) {
       console.warn("[ghl-invoice-webhook] Invalid webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
@@ -310,14 +321,11 @@ export async function onRequestPost(context) {
       fieldUpdates.push({ id: FIELD_IDS.livingPracticeAccess, field_value: true });
     }
 
-    // 7. PUT updated fields + tag changes to GHL
+    // 7. PUT updated custom fields to GHL.
+    //    IMPORTANT: never send a `tags` field on this PUT — GHL replaces the
+    //    whole tag array, which would clobber tags a concurrent workflow set
+    //    (and GHL triggers are tag-driven). Tags are applied additively in 7b.
     const token = await getGhlToken(context);
-    const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
-    const nextTags = [
-      ...existingTags.filter((t) => !TAGS_TO_REMOVE.includes(t)),
-      ...(existingTags.includes(DOWNSTREAM_TRIGGER_TAG) ? [] : [DOWNSTREAM_TRIGGER_TAG]),
-    ];
-
     const updateRes = await fetch(
       `${GHL_API_BASE}/contacts/${sanitizedContactId}`,
       {
@@ -325,7 +333,6 @@ export async function onRequestPost(context) {
         headers: ghlHeaders(token),
         body: JSON.stringify({
           customFields: fieldUpdates,
-          tags: nextTags,
         }),
       },
     );
@@ -337,6 +344,27 @@ export async function onRequestPost(context) {
       );
       return new Response(
         JSON.stringify({ error: "Failed to update contact" }),
+        { status: 500, headers },
+      );
+    }
+
+    // 7b. Apply tag changes additively (only the tags we own), so concurrent
+    //     workflow tag writes survive. Safe to retry: add of a present tag /
+    //     remove of an absent tag are no-ops.
+    const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
+    try {
+      await applyTagDelta(context, sanitizedContactId, {
+        add: existingTags.includes(DOWNSTREAM_TRIGGER_TAG)
+          ? []
+          : [DOWNSTREAM_TRIGGER_TAG],
+        remove: TAGS_TO_REMOVE.filter((t) => existingTags.includes(t)),
+      });
+    } catch (err) {
+      console.error(
+        `[ghl-invoice-webhook] tag delta failed for ${sanitizedContactId}: ${err.message}`,
+      );
+      return new Response(
+        JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
       );
     }

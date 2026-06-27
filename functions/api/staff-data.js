@@ -6,6 +6,7 @@ import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { readPaymentRecord } from "../lib/session-payment.js";
+import { countsTowardLifetime } from "../lib/journey-classification.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -65,6 +66,9 @@ export async function onRequestGet(context) {
     const url = new URL(context.request.url);
     const dateParam = url.searchParams.get('date');
     const endDateParam = url.searchParams.get('endDate');
+    // MoneyMoments needs today's CANCELLED sessions (to surface a reschedule+pitch
+    // recovery moment). The main Today schedule omits this param → cancelled stay hidden.
+    const includeCancelled = url.searchParams.get('includeCancelled') === '1';
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -121,8 +125,8 @@ export async function onRequestGet(context) {
     }
     const events = Array.from(eventMap.values());
 
-    // Filter to non-cancelled appointments
-    const todayEvents = events.filter(
+    // Filter to non-cancelled appointments (unless includeCancelled — MoneyMoments).
+    const todayEvents = includeCancelled ? events : events.filter(
       (e) => (e.appointmentStatus || e.status || "").toLowerCase() !== "cancelled"
     );
 
@@ -202,7 +206,6 @@ export async function onRequestGet(context) {
             // session-fields contract (was: ledger.attended which is
             // package-only). Matches portal-data.js semantic so the staff
             // app shows the same number the client sees.
-            const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
             const nowMs = Date.now();
             sessionsCompleted = appointments.filter((a) => {
               const status = (a.appointmentStatus || a.status || "").toLowerCase();
@@ -210,7 +213,7 @@ export async function onRequestGet(context) {
               const startMs = new Date(a.startTime || a.start_time || 0).getTime();
               if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
               const title = (a.title || "") + " " + (a.calendarName || "");
-              return !NON_JOURNEY.test(title);
+              return countsTowardLifetime(title);
             }).length;
             seriesType = ledger.display.seriesType;
             sessionPrepaid = sessionsRemaining > 0 || ledger.prepaidOverride;
@@ -236,6 +239,8 @@ export async function onRequestGet(context) {
           endTime: event.endTime || event.end_time,
           title: event.title || event.calendarName || "Session",
           calendarName: event.calendarName || "",
+          appointmentStatus: (event.appointmentStatus || event.status || "").toLowerCase(),
+          meetingLocation: event.meetingLocation || null,
           sessionsRemaining,
           sessionsCompleted,
           seriesType,

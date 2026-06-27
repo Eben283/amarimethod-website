@@ -41,7 +41,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <div className="offer-included">
               <span className="eyebrow">What's included</span>
               <ul className="offer-list">
-                <li>Full assessment with Dr. Garrett</li>
+                <li>Full assessment with Garrett</li>
                 <li>Your first guided protocol — most clients feel a shift</li>
                 <li>Take-home practice you can do tonight</li>
                 <li>Satisfaction guarantee</li>

@@ -4,10 +4,11 @@ import LoginPage from './pages/LoginPage';
 import TodayPage from './pages/TodayPage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
-import MessagesPage from './pages/MessagesPage';
 import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
-import PartnersPage from './pages/PartnersPage';
+import FollowUpPage from './pages/FollowUpPage';
+import FunnelPage from './pages/FunnelPage';
+import PipelinePage from './pages/PipelinePage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
 import StaffNav from './components/StaffNav';
@@ -84,16 +85,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/messages"
-        element={
-          <ProtectedRoute>
-            <LayoutWithNav>
-              <MessagesPage />
-            </LayoutWithNav>
-          </ProtectedRoute>
-        }
-      />
+      {/* Messages retired into Follow-Up (unanswered replies rank on top there) */}
+      <Route path="/messages" element={<Navigate to="/follow-up" replace />} />
       <Route
         path="/balances"
         element={
@@ -114,18 +107,41 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Sharpen moved onto the Today tab as a card deck; old URL → home */}
+      <Route path="/sharpen" element={<Navigate to="/" replace />} />
+      {/* Outreach retired into Follow-Up; old URLs redirect there */}
+      <Route path="/outreach" element={<Navigate to="/follow-up" replace />} />
+      <Route path="/partners" element={<Navigate to="/follow-up" replace />} />
       <Route
-        path="/outreach"
+        path="/follow-up"
         element={
           <ProtectedRoute>
             <LayoutWithNav>
-              <PartnersPage />
+              <FollowUpPage />
             </LayoutWithNav>
           </ProtectedRoute>
         }
       />
-      {/* Back-compat: old /partners URL still works */}
-      <Route path="/partners" element={<Navigate to="/outreach" replace />} />
+      <Route
+        path="/funnel"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <FunnelPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pipeline"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <PipelinePage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/client/:id"
         element={

@@ -5,6 +5,8 @@
 // Query params:
 //   ?date=YYYY-MM-DD  (optional, defaults to today Pacific Time)
 
+import { requireOpsReadKey } from "../lib/ops-auth.js";
+
 const PT = "America/Los_Angeles";
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 
@@ -13,9 +15,13 @@ function todayPacific() {
 }
 
 export async function onRequestGet(context) {
+  // PII gate — returns audit data with client names + session/payment state.
+  // No CORS: the only consumer is the /day skill (server-to-server), not a browser.
+  const denied = requireOpsReadKey(context.request, context.env);
+  if (denied) return denied;
+
   const headers = {
     "Content-Type": "application/json",
-    "Access-Control-Allow-Origin": "*",
   };
 
   const kv = context.env.PORTAL_KV;

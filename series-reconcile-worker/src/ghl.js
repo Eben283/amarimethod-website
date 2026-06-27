@@ -87,15 +87,27 @@ export const ghlPut = (env, path, body) => ghlRequest(env, "PUT", path, body);
 
 // ── Domain helpers ──
 
-// List completed orders, optionally limited to those updated after `sinceMs`.
-// GHL's /payments/orders endpoint doesn't accept a date filter directly — we
-// page through and stop when we cross the cutoff (orders come back sorted
-// most-recent-first per `updatedAt`).
+// List completed orders updated since `sinceMs`. GHL's /payments/orders endpoint
+// accepts no date filter, so we page and select in code.
+//
+// SORT ORDER (verified empirically 2026-06-11 against live data): GHL returns these
+// sorted by `createdAt` DESCENDING — NOT `updatedAt`, which the prior version assumed
+// when it early-broke on the first order older than the cutoff. That assumption is
+// unsound: because `updatedAt >= createdAt` always, a late-paid order (old createdAt,
+// recent updatedAt) sits DEEP in a createdAt-desc list, PAST the point where the scan
+// would already have broken — so it was silently skipped, the exact orphan class this
+// worker exists to catch. We therefore do NOT date-break on the non-sort key. Instead
+// we scan all completed orders up to MAX_PAGES and select any updated in window. This
+// stays cheap: the caller's per-order getOrderDetail work is gated to the selected
+// (in-window) orders, so only the list pages grow, and they terminate naturally at the
+// last (short) page — ceil(totalOrders/PAGE) fetches in steady state (~3 today). If the
+// order history ever exceeds the cap we warn rather than silently truncate.
 export async function listRecentCompletedOrders(env, sinceMs) {
   const orders = [];
   let offset = 0;
   const PAGE = 50;
-  const MAX_PAGES = 6; // 300 orders ceiling — typical activity << this
+  const MAX_PAGES = 6; // 300-order scan ceiling
+  let hitCap = false;
   for (let p = 0; p < MAX_PAGES; p++) {
     const data = await ghlGet(
       env,
@@ -103,15 +115,19 @@ export async function listRecentCompletedOrders(env, sinceMs) {
     );
     const batch = data.data || [];
     if (batch.length === 0) break;
-    let crossed = false;
     for (const o of batch) {
       const t = new Date(o.updatedAt || o.createdAt).getTime();
-      if (!Number.isFinite(t)) continue;
-      if (t < sinceMs) { crossed = true; continue; }
-      orders.push(o);
+      if (Number.isFinite(t) && t >= sinceMs) orders.push(o);
     }
-    if (crossed || batch.length < PAGE) break;
+    if (batch.length < PAGE) break; // reached the end of the order history
     offset += PAGE;
+    if (p === MAX_PAGES - 1) hitCap = true; // full page at the cap → more orders remain unscanned
+  }
+  if (hitCap) {
+    console.warn(
+      `[series-reconcile] listRecentCompletedOrders hit the ${MAX_PAGES * PAGE}-order scan cap; ` +
+      `older completed orders are unscanned this run. Raise MAX_PAGES in ghl.js.`
+    );
   }
   return orders;
 }
@@ -130,6 +146,18 @@ export async function patchContact(env, contactId, customFields, tags) {
   const body = { customFields };
   if (Array.isArray(tags)) body.tags = tags;
   return ghlPut(env, `/contacts/${contactId}`, body);
+}
+
+// Remove specific tags from a contact WITHOUT replacing its tag array.
+// patchContact's `tags` arg does a wholesale PUT replace, which clobbers tags a
+// concurrent GHL workflow set (and GHL triggers are tag-driven). The dedicated
+// DELETE /contacts/{id}/tags endpoint mutates only the named tags; removing an
+// absent tag is a harmless no-op, so this is safe to retry.
+export async function removeContactTags(env, contactId, tags) {
+  const list = [...new Set(tags || [])].filter(Boolean);
+  if (!list.length) return { removed: [] };
+  await ghlRequest(env, "DELETE", `/contacts/${contactId}/tags`, { tags: list });
+  return { removed: list };
 }
 
 export async function addContactNote(env, contactId, body) {
@@ -152,6 +180,7 @@ const SWEEP_FIELD = {
 export async function fetchActiveSeriesContactIds(env) {
   const ids = [];
   const PAGE_CAP = 10; // 1000 contacts (matches daily-audit)
+  let hitCap = false;
   for (let page = 1; page <= PAGE_CAP; page++) {
     const data = await ghlPost(env, "/contacts/search", {
       locationId: LOCATION_ID,
@@ -168,6 +197,17 @@ export async function fetchActiveSeriesContactIds(env) {
       if (seriesType !== "none" || remaining > 0 || prepaid) ids.push(c.id);
     }
     if (contacts.length < 100) break;
+    if (page === PAGE_CAP) hitCap = true; // full page AT the cap → more contacts remain
+  }
+  // Surface the cap so we widen the scan as the contact base grows past 1000,
+  // instead of silently dropping active-series contacts from the sweep queue.
+  // daily-audit-worker has the twin scan with the same warning.
+  if (hitCap) {
+    console.warn(
+      `[series-reconcile] fetchActiveSeriesContactIds hit the ${PAGE_CAP * 100}-contact ` +
+      `pagination cap; active-series contacts past that are unqueued this rebuild. ` +
+      `Raise PAGE_CAP in ghl.js.`
+    );
   }
   return ids;
 }

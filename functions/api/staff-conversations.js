@@ -66,6 +66,23 @@ function buildContactName(conv) {
   return conv.email || conv.phone || "Unknown";
 }
 
+// A last inbound message only "needs a reply" if it's an actual human message. Automated
+// texts (OTP / verification codes), email reply-delimiter artifacts, empty bodies, and bare
+// closers ("Im good", "Likewise, thanks!") are NOT replies — flagging them buries the real
+// ones, and because the UI dismiss is session-only they reappear on every reload. Exported
+// for tests.
+const CLOSER_WORD =
+  "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
+const CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
+export function isNonReply(text) {
+  const t = String(text || "").trim();
+  if (!t) return true;                                                              // empty / whitespace
+  if (/please type your reply above this line|^#{2}-|-#{2}$/i.test(t)) return true; // email reply delimiter
+  if (/\bverification code\b|\bis your\b[^.]*\bcode\b|\byour\b[^.]*\bcode is\b|\bone[- ]?time (code|password)\b|\bOTP\b|do not share/i.test(t)) return true; // OTP / automated
+  if (t.length <= 40 && CLOSER_RE.test(t)) return true;                             // bare closer
+  return false;
+}
+
 export async function onRequestGet(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
@@ -205,7 +222,7 @@ export async function onRequestGet(context) {
         // STRICT needs-reply: client's message must be the most recent one.
         // unreadCount alone is not enough — GHL's unreadCount semantics include
         // outbound-not-yet-seen in some cases, which would falsely flag sent messages.
-        needsReply: lastIsInbound,
+        needsReply: lastIsInbound && !isNonReply(lastBody),
         assignedTo: conv.assignedTo || null,
       };
     });
@@ -215,10 +232,10 @@ export async function onRequestGet(context) {
       if (c.isCall) return false; // calls belong in a different view
       if (filter === "all") return true;
       if (filter === "unread") return c.unreadCount > 0;
-      // needs_reply: the conversation-level lastMessageDirection is reliable
-      // (verified against raw GHL data). GHL's unreadCount includes outbound
-      // emails the recipient hasn't opened, so it over-counts. Use direction.
-      return c.lastMessageDirection === "inbound";
+      // needs_reply: a real inbound human message. Uses the content-aware needsReply
+      // (direction + isNonReply) so automated codes, email delimiters, and bare closers
+      // don't surface as reply cards.
+      return c.needsReply;
     });
 
     // Enrich with contact names — GHL's conversation/search response often

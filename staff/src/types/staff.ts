@@ -20,6 +20,7 @@ export interface TodayAppointment {
   endTime: string;
   title: string;
   calendarName: string;
+  appointmentStatus?: string;
   sessionsRemaining: number;
   sessionsCompleted: number;
   seriesType: string;
@@ -28,6 +29,8 @@ export interface TodayAppointment {
   paymentStatus?: PaymentStatus;
   paymentMethod?: string | null;
   paymentNote?: string | null;
+  /** Video conference URL from the GHL appointment (Zoom/Google Meet). Null for in-person. */
+  meetingLocation?: string | null;
 }
 
 export interface ContactListItem {
@@ -272,7 +275,7 @@ export interface BalancesResponse {
 // (created 2026-05-23 — see ops/ref/partner-custom-fields-2026-05-22.json).
 // Pipeline-stage-based kanban (v0) was abandoned per design doc.
 
-export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'business' | 'unknown';
+export type PartnerCategory = 'golf' | 'tennis' | 'trainer' | 'business' | 'therapist' | 'unknown';
 
 export type PartnerCategoryFilter = 'all' | PartnerCategory;
 
@@ -297,6 +300,11 @@ export type PartnerLastSignal =
   | 'voicemail'
   | 'talked'
   | 'link-sent'
+  // App-sent touches — Garrett composed + sent a text/email from the card.
+  // Recorded so the engine sees the send (bumps count + last_signal_at, promotes
+  // no-outreach→working). Only ever set from the in-app Send buttons.
+  | 'texted'
+  | 'emailed'
   | 'booked'
   | 'deferred'
   | 'not-interested'
@@ -345,6 +353,10 @@ export interface PartnerProspect {
   category: PartnerCategory;
   tags: string[];
   phone: string | null;
+  // Phone line type from the AbstractAPI sweep (KV contact:linetype) — "mobile" |
+  // "landline" | "voip" | "toll_free" | "unknown" | null (unclassified). The UI
+  // suppresses SMS to landline/toll_free/voip (switchboards that can't text).
+  phoneType?: string | null;
   email: string | null;
   website: string | null;
   /** Standard GHL contact fields populated from enrichment (May 2026) — were
@@ -387,10 +399,26 @@ export interface PartnerProspect {
   /** Number of outbound outreach actions for this contact (backfilled from /conversations,
    *  incremented on every recorded outcome). 0 if never touched or backfill hasn't run. */
   touchCount: number;
+  /** Server-computed Act-Now decision (engine-merge 2026-06-14). The UI prefers this
+   *  over its local derive() so there is ONE due-decision shared with the coach
+   *  pipeline. Optional during rollout — UI falls back to local derive() if absent. */
+  derived?: {
+    kind: 'act' | 'waiting' | 'aside' | 'converted';
+    urgency: number;
+    why: string;
+    action: 'call' | 'text' | 'reback' | 'decide' | 'discovery' | null;
+    channel?: string;
+    asideReason?: string;
+    state?: 'cold' | 'engaged' | 'talked';
+    play?: 'pitch' | 'discovery';
+  };
   // Joined from Garrett's SF Personal Trainers - Outreach sheet (cached server-side)
   sheetStatus: string | null;
   sheetNotes: string | null;
   inGarrettSheet: boolean;
+  /** Human-readable stage badge computed server-side from cadence state + partner_stage.
+   *  Examples: "New", "Touch 2 of 6", "Warm · Touch 1 of 4", "Reply Waiting", "Breakup". */
+  stageLabel?: string | null;
 }
 
 export type PartnerStageFilter = 'all' | PartnerStage;
@@ -403,6 +431,9 @@ export interface PartnerProspectsResponse {
   activityRefreshAt?: string | null;
   /** "ok" or "error" from the last Worker run. */
   activityRefreshStatus?: string | null;
+  /** When the coach worker last refreshed the eligibility overlay (ISO). The UI
+   *  shows a stale-data banner if this is old. Null if the worker never ran. */
+  coachDataAt?: string | null;
   total: number;
   verifiedCount: number;
   unverifiedCount: number;
@@ -421,6 +452,9 @@ export interface PartnerActivityEvent {
   body?: string;
   // For all:
   direction?: 'inbound' | 'outbound';
+  // For call events: raw outcome (failed / no-answer / completed / voicemail / …).
+  // `body` carries the human label ("failed", "2m 14s"); this lets the UI color a miss.
+  callStatus?: string;
 }
 
 // Outcome capture payload (POST to staff-partner-outcome)
@@ -429,12 +463,4 @@ export interface PartnerOutcomeRequest {
   signal: PartnerLastSignal;
   note?: string;
   followupAt?: string;  // for `deferred` only — when to revisit
-}
-
-export interface PartnerProspectsResponse {
-  generatedAt: string;
-  total: number;
-  countsByCategory: Record<PartnerCategory, number>;
-  stages: PartnerPipelineStage[];
-  prospects: PartnerProspect[];
 }

@@ -6,6 +6,7 @@ import { verifySessionToken } from "../lib/auth.js";
 import { getCustomField } from "./portal-data.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { listPaymentRecordsForContact } from "../lib/session-payment.js";
+import { countsTowardLifetime } from "../lib/journey-classification.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -428,7 +429,6 @@ export async function onRequestGet(context) {
     // excluded entrainments). Matches portal-data.js + staff-data.js.
     // The portal-derived ledger.attended is still useful — exposed as
     // attendedAgainstPackage below.
-    const NON_JOURNEY_LIFETIME = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     const nowMsLifetime = Date.now();
     const derivedSessionsCompleted = rawAppointments.filter((a) => {
       const status = (a.appointmentStatus || a.status || "").toLowerCase();
@@ -436,7 +436,7 @@ export async function onRequestGet(context) {
       const startMs = new Date(a.startTime || a.start_time || 0).getTime();
       if (!Number.isFinite(startMs) || startMs >= nowMsLifetime) return false;
       const title = (a.title || "") + " " + (a.calendarName || "");
-      return !NON_JOURNEY_LIFETIME.test(title);
+      return countsTowardLifetime(title);
     }).length;
 
     // Client progress — from custom fields in "Session Progress" folder

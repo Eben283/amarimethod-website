@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getDayData, ApiError } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
+import SessionDocSheet from '../components/SessionDocSheet';
+import PayLinkSheet from '../components/PayLinkSheet';
+import GarrettDay from '../components/GarrettDay';
+import MoneyMoments from '../components/MoneyMoments';
+import SharpenDeck from '../components/SharpenDeck';
 
 type ViewMode = 'day' | 'week';
 
@@ -43,22 +48,34 @@ export default function TodayPage() {
   const [weekData, setWeekData] = useState<Record<string, TodayAppointment[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [docContactId, setDocContactId] = useState<string | null>(null);
+  const [docClientName, setDocClientName] = useState('');
+  const [sellContactId, setSellContactId] = useState<string | null>(null);
+
+  // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
+  // toggling fires overlapping requests; only the latest one is allowed to commit
+  // state, so an older response landing late can't overwrite the current view.
+  const reqIdRef = useRef(0);
 
   const loadDay = useCallback(async (date: Date) => {
+    const reqId = ++reqIdRef.current;
     setIsLoading(true);
     setError('');
     try {
       const data = await getDayData(toDateStr(date));
+      if (reqId !== reqIdRef.current) return; // superseded by a newer request
       setDayAppointments(data);
     } catch (err) {
+      if (reqId !== reqIdRef.current) return;
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
-      setIsLoading(false);
+      if (reqId === reqIdRef.current) setIsLoading(false);
     }
   }, [logout]);
 
   const loadWeek = useCallback(async (date: Date) => {
+    const reqId = ++reqIdRef.current;
     setIsLoading(true);
     setError('');
     try {
@@ -67,6 +84,7 @@ export default function TodayPage() {
       const endStr = toDateStr(dates[6]);
       // Single API call for the full week range
       const allAppts = await getDayData(startStr, endStr);
+      if (reqId !== reqIdRef.current) return; // superseded by a newer request
       // Group by date
       const map: Record<string, TodayAppointment[]> = {};
       for (const d of dates) map[toDateStr(d)] = [];
@@ -80,10 +98,11 @@ export default function TodayPage() {
       }
       setWeekData(map);
     } catch (err) {
+      if (reqId !== reqIdRef.current) return;
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load');
     } finally {
-      setIsLoading(false);
+      if (reqId === reqIdRef.current) setIsLoading(false);
     }
   }, [logout]);
 
@@ -116,6 +135,16 @@ export default function TodayPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
+      {/* Garrett's Day — manual directive list, first thing on the tab. */}
+      <GarrettDay />
+
+      {/* Today's sell moments — 8-pack opportunities hiding in today's schedule
+          (renewals at last session + first-timers to pitch). */}
+      <MoneyMoments />
+
+      {/* Sharpen — shuffle-through call-craft card deck (downtime / instead-of-scrolling). */}
+      <SharpenDeck />
+
       {/* View toggle */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex bg-amari-light-sand rounded-lg p-0.5">
@@ -179,12 +208,28 @@ export default function TodayPage() {
           appointments={dayAppointments}
           date={selectedDate}
           onTapAppointment={(appt) => navigate(`/client/${appt.contactId}?appointment=${appt.id}`)}
+          onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
+          onSellLink={(appt) => setSellContactId(appt.contactId)}
         />
       ) : (
         <WeekView
           weekData={weekData}
           selectedDate={selectedDate}
           onSelectDay={(d) => { setSelectedDate(d); setView('day'); }}
+        />
+      )}
+      {docContactId && (
+        <SessionDocSheet
+          contactId={docContactId}
+          clientName={docClientName}
+          onClose={() => setDocContactId(null)}
+        />
+      )}
+      {sellContactId && (
+        <PayLinkSheet
+          contactId={sellContactId}
+          onClose={() => setSellContactId(null)}
+          hidePartnerLinks
         />
       )}
     </div>
@@ -240,10 +285,19 @@ function assignColumns(
   return result;
 }
 
-function DayView({ appointments, date, onTapAppointment }: {
+function isSellMoment(appt: TodayAppointment): boolean {
+  return new Date(appt.endTime) < new Date()
+    && appt.sessionsRemaining > 0
+    && appt.sessionsRemaining <= 2
+    && appt.seriesType !== 'none';
+}
+
+function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLink }: {
   appointments: TodayAppointment[];
   date: Date;
   onTapAppointment: (appt: TodayAppointment) => void;
+  onDocSession: (appt: TodayAppointment) => void;
+  onSellLink: (appt: TodayAppointment) => void;
 }) {
   if (appointments.length === 0) {
     return (
@@ -356,6 +410,8 @@ function DayView({ appointments, date, onTapAppointment }: {
             key={appt.id}
             appointment={appt}
             onTap={() => onTapAppointment(appt)}
+            onDocSession={() => onDocSession(appt)}
+            onSellLink={isSellMoment(appt) ? () => onSellLink(appt) : undefined}
           />
         ))}
       </div>

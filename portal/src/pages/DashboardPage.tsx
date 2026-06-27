@@ -1,6 +1,10 @@
 import { useState } from 'react';
+import type { Appointment } from '../types/portal';
 import PortalNav from '../components/PortalNav';
 import QuickActions from '../components/QuickActions';
+import BillingDocuments from '../components/BillingDocuments';
+import SettingsModal from '../components/SettingsModal';
+import ReviewCard from '../components/ReviewCard';
 import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
@@ -12,6 +16,8 @@ export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const firstName = data?.client?.firstName || data?.client?.lastName || email?.split('@')[0] || 'there';
 
@@ -52,7 +58,7 @@ export default function DashboardPage() {
             <button type="button" className="cp-btn cp-btn-primary" onClick={refetch}>
               <span>Try again</span><span className="cp-arrow">→</span>
             </button>
-            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Dr. Garrett</a>
+            <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">Contact Garrett</a>
           </div>
         </section>
       </div>
@@ -95,10 +101,30 @@ export default function DashboardPage() {
 
   return (
     <div className="cp-screen">
-      <PortalNav firstName={client.firstName || client.lastName} hasLivingPractice={client.hasLivingPractice} />
+      <PortalNav
+        firstName={client.firstName || client.lastName}
+        hasLivingPractice={client.hasLivingPractice}
+        onOpenSettings={() => setShowSettings(true)}
+      />
 
-      {showBookingModal && (
-        <BookingModal onClose={() => setShowBookingModal(false)} />
+      {(showBookingModal || rescheduleAppt) && (
+        <BookingModal
+          rescheduleFor={rescheduleAppt}
+          onClose={() => {
+            setShowBookingModal(false);
+            setRescheduleAppt(null);
+            // Reflect any new booking / reschedule in the dashboard.
+            refetch();
+          }}
+        />
+      )}
+
+      {showSettings && (
+        <SettingsModal
+          current={client.reminderPreference || 'all'}
+          onClose={() => setShowSettings(false)}
+          onSaved={refetch}
+        />
       )}
 
       <section className="cp-greet">
@@ -124,9 +150,12 @@ export default function DashboardPage() {
         // you-go, mid-package, low-confidence). Zero-left uses direct package
         // purchase links instead.
         onBookSession={() => setShowBookingModal(true)}
+        onReschedule={(appt) => setRescheduleAppt(appt)}
       />
 
-      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} />
+      <QuickActions client={client} onBookSession={() => setShowBookingModal(true)} onBooked={refetch} />
+
+      {hasHadInitial && <BillingDocuments />}
 
       {!client.isPartner && (
         <div style={{ margin: '22px 20px 0' }}>
@@ -140,12 +169,18 @@ export default function DashboardPage() {
 
       <SessionHistory appointments={appointments} />
 
+      {hasHadInitial && (
+        <div style={{ margin: '22px 20px 0' }}>
+          <ReviewCard />
+        </div>
+      )}
+
       <footer className="cp-foot">
         <span>amarimethod.com</span>
         <span className="cp-dot">·</span>
         <a href="mailto:hello@amarimethod.com">Help &amp; policies</a>
         <span className="cp-dot">·</span>
-        <a href="mailto:hello@amarimethod.com">Contact Dr. Garrett</a>
+        <a href="mailto:hello@amarimethod.com">Contact Garrett</a>
         <span className="cp-foot-r">© {new Date().getFullYear()} Amari Method</span>
       </footer>
     </div>
