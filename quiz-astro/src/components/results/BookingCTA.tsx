@@ -32,7 +32,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <div className="offer-price-num">$225</div>
             <div className="offer-price-lbl">One session · No package required</div>
             <p className="offer-price-meta">
-              HSA / FSA accepted. Pay for one session — your $225 carries forward if you continue.
+              Pay for one session — your $225 carries forward if you continue.
             </p>
           </div>
 
@@ -74,7 +74,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <span>Book your session</span>
             <span className="arrow">→</span>
           </a>
-          <span className="fine">In person or virtual · HSA / FSA accepted</span>
+          <span className="fine">In person or virtual</span>
           <p className="guarantee">
             <b>Satisfaction guaranteed.</b> If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.
           </p>
