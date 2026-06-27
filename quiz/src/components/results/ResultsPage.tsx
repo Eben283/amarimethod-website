@@ -173,7 +173,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
               </a>
             </div>
             <p className="text-sm text-amari-text-light mt-3 font-sans">
-              San Francisco in-person or virtual from anywhere · HSA/FSA accepted
+              San Francisco in-person or virtual from anywhere
             </p>
           </div>
         </div>

@@ -265,7 +265,6 @@ const ROWS: { key: 'calls' | 'talked' | 'booked' | 'showed' | 'sales'; y: number
   { key: 'sales',  y: 80.5, w: 16.5 },
 ];
 
-
 export default function FunnelPage() {
   const [data, setData] = useState<FunnelData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -273,9 +272,6 @@ export default function FunnelPage() {
   const [range, setRange] = useState<Range>({ unit: 'week', offset: 0 });
   const [boardOpen, setBoardOpen] = useState(false);
   const [stage, setStage] = useState<'calls' | 'talked' | 'booked' | 'showed' | 'sales'>('calls');
-  const [selectedBar, setSelectedBar] = useState<{ d: string; n: number } | null>(null);
-  // Reset selected bar whenever the pool or time range changes.
-  useEffect(() => { setSelectedBar(null); }, [stage, range]);
   const art = useArt();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -705,32 +701,11 @@ export default function FunnelPage() {
             )}
           </div>
           <div className="flex h-14 items-end gap-[3px]">
-            {sm.pulse.map((p) => {
-              const isSelected = selectedBar?.d === p.d;
-              const isToday = p.d === todayStr;
-              return (
-                <button
-                  key={p.d}
-                  type="button"
-                  title={`${p.d}: ${p.n}`}
-                  onClick={() => setSelectedBar(isSelected ? null : p)}
-                  className="flex-1 rounded-t-md transition-all active:scale-95"
-                  style={{
-                    height: `${Math.max(5, (p.n / smMax) * 100)}%`,
-                    background: isSelected ? sm.col : isToday ? `${sm.col}99` : '#EBE2D6',
-                    outline: isSelected ? `2px solid ${sm.col}` : 'none',
-                    outlineOffset: '2px',
-                  }}
-                />
-              );
-            })}
+            {sm.pulse.map((p) => <div key={p.d} title={`${p.d}: ${p.n}`} className="flex-1 rounded-t-md transition-all" style={{ height: `${Math.max(5, (p.n / smMax) * 100)}%`, background: p.d === todayStr ? sm.col : '#EBE2D6' }} />)}
           </div>
           <div className="mt-1 flex justify-between text-[10px]" style={{ color: COL.inkSoft }}>
             <span>{v.trendLabel}</span>
-            {selectedBar
-              ? <span>this day: <b style={{ color: COL.ink }}>{selectedBar.n}</b>{sm.target >= 1 && ` / ${sm.target}`}</span>
-              : <span>this {range.unit}: <b style={{ color: COL.ink }}>{sm.count}</b>{sm.target >= 1 && ` / ${sm.target}`}</span>
-            }
+            <span>this {range.unit}: <b style={{ color: COL.ink }}>{sm.count}</b>{sm.target >= 1 && ` / ${sm.target}`}</span>
           </div>
         </div>
 

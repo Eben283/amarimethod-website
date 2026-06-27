@@ -68,7 +68,7 @@ export default function BillingDocuments() {
         </div>
         <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8, maxWidth: 560 }}>
           A cover letter, a letter of services, and your paid invoices for the dates you choose —
-          ready to submit to your insurer or HSA/FSA.
+          ready to submit to your insurer.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'flex-end' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>

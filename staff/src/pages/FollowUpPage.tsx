@@ -2,22 +2,20 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
-  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil,
-  Check, X, Users, CreditCard,
+  Mail, StickyNote, Calendar, Globe, Reply, Send, Sparkles, Search, Pencil, Check, X,
+  Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach,
-  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker,
-  triggerCoachOne, ApiError,
+  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
 import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
-import PayLinkSheet, { PARTNER_LINKS } from '../components/PayLinkSheet';
 
 // ── FOLLOW-UP / COMMUNICATION SURFACE ─────────────────────────────────────────
 // The single place for "who do I need to communicate with, and what's the next
@@ -243,15 +241,6 @@ type ActItem = ReplyItem | ProspectItem;
 const URGENCY_DOT: Record<ActionKind, string> = {
   reback: 'bg-amari-accent-warm', call: 'bg-emerald-500', text: 'bg-amari-accent-warm', email: 'bg-sky-500', decide: 'bg-amber-500', linkedin: 'bg-sky-700', discovery: 'bg-violet-500',
 };
-
-function stageBadgeClass(label: string): string {
-  if (label === 'Reply Waiting') return 'bg-red-100 text-red-700';
-  if (label === 'New') return 'bg-amari-accent-warm/20 text-amari-charcoal';
-  if (label === 'Session Booked' || label === 'Partner') return 'bg-emerald-100 text-emerald-800';
-  if (label.startsWith('Warm')) return 'bg-amari-pine-teal/20 text-amari-charcoal';
-  if (label === 'Breakup') return 'bg-amber-100 text-amber-800';
-  return 'bg-amari-light-sand text-amari-text-muted';
-}
 const ACTION_LABEL: Record<ActionKind, string> = {
   reback: 'Re-reach', call: 'Call', text: 'Text', email: 'Email', decide: 'Decide', linkedin: 'LinkedIn', discovery: 'Find contact',
 };
@@ -362,26 +351,14 @@ export default function FollowUpPage() {
     // lead (warmth 0) sits a touch lower. Small on purpose — it breaks near-ties, it
     // never jumps a real urgency gap (so a due one-touch still beats a cooling warm one).
     const warmthBonus = (w?: number) => (w === 2 ? 10 : w === 0 ? -5 : 0);
-    // Stage bonus: reward contacts closer to a yes (warm, reply-waiting, invested)
-    // and gently deprioritize last-ditch breakup outreach. Small on purpose — never
-    // jumps a real urgency gap, just breaks near-ties in the right direction.
-    const stageBonus = (label?: string | null): number => {
-      if (!label) return 0;
-      if (label === 'Reply Waiting') return 20;
-      if (label === 'Their Court') return 8;
-      if (label === 'Breakup') return -8;
-      const m = label.match(/Touch (\d+) of/);
-      if (m) return Math.min(parseInt(m[1]), 3) * 3; // +3 to +9 for invested contacts
-      return 0;
-    };
     // "Discovery" = a business/venue we have no named person to reach ("call the front
     // desk and ask who handles partnerships"). Eben deprioritized these hard (2026-06-21):
     // a known-person follow-up always beats a cold no-contact venue. Sink them far below
     // the act-now cap so they don't crowd out real prospects. They stay in the data
     // (reachable via search), just off the daily worklist.
     const DISCOVERY_PENALTY = 1000;
-    const score = (d: Derived, weight: number, sl?: string | null) =>
-      d.urgency + weight + warmthBonus(d.warmth) + stageBonus(sl) -
+    const score = (d: Derived, weight: number) =>
+      d.urgency + weight + warmthBonus(d.warmth) -
       (d.action === 'discovery' ? DISCOVERY_PENALTY : 0);
     return derived
       .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
@@ -389,7 +366,7 @@ export default function FollowUpPage() {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
-      .sort((a, b) => score(b.d, b.weight ?? 0, b.p.stageLabel) - score(a.d, a.weight ?? 0, a.p.stageLabel))
+      .sort((a, b) => score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0))
       // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
       // options without the full backlog (hundreds) becoming a wall. Replies are
       // pinned above this and never capped. The rest stays in the data, not the screen.
@@ -454,11 +431,6 @@ export default function FollowUpPage() {
         };
       }));
       markHandled(contactId); // you acted → drop the card now, don't wait for the cadence refresh
-      // Kick off on-demand call coaching after any call-type outcome so the
-      // coaching note is fresh the next time this card is opened.
-      if (signal === 'talked' || signal === 'voicemail' || signal === 'no-answer') {
-        triggerCoachOne(contactId).catch(() => {});
-      }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to record');
@@ -699,22 +671,6 @@ interface ResolvedDraft {
   declineState?: DeclineState;
 }
 
-// Call coach doesn't know lineType. When it recommends texting a landline/VoIP/toll-free
-// contact, correct the verb in the headline so the card isn't self-contradictory.
-// The expanded CoachPanel still shows the full call coach analysis unchanged.
-function fixTextVerb(why: string | null): string | null {
-  if (!why) return null;
-  // "Send Jae a brief warm text offering..." → "Call Jae offering..."
-  let s = why.replace(/^Send\s+(\S+)(?:\s+a\s+(?:\w+\s+)*texts?\b)(.*)/i, (_, name, rest) => `Call ${name}${rest}`);
-  // "Text Jake a re-introduction..." → "Call Jake a re-introduction..."
-  s = s.replace(/^Texts?\s+/i, 'Call ');
-  // "follow up via text" → "follow up via phone"
-  s = s.replace(/\bvia texts?\b/gi, 'via phone');
-  // remaining bare "text" verb
-  s = s.replace(/\btexts?\b/gi, 'call');
-  return s.trim();
-}
-
 function headlineFromNextStep(nextStep: string): string {
   // Split on ". " but not on common abbreviations (e.g., i.e., Dr., Mr., etc.)
   // so "Dr. Garrett" and "(e.g. the gifted session)" don't false-split.
@@ -786,7 +742,6 @@ function resolveDraft(
 }
 
 // ── unified row (reply or prospect), expandable ──────────────────────────────
-
 interface ActRowProps {
   item: ActItem;
   expanded: boolean;
@@ -815,7 +770,6 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // drafts) for PROSPECT cards only. Reply cards don't use it — the proactive
   // draft is the wrong message for someone mid-conversation; they answer with the
   // call-coach's in-context Suggested reply instead (CoachPanel below).
-  const [paySheetOpen, setPaySheetOpen] = useState(false);
   const [coach, setCoach] = useState<OutreachCoach | null | 'loading'>('loading');
   useEffect(() => {
     if (isReply || isGated) { setCoach(null); return; }
@@ -849,47 +803,15 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     : isDiscovery ? 'discovery'
     : isUntextable ? 'call'
     : derivedAction;
+  // item.d.why is the deterministic buildCard headline (correct for all cases:
+  // untextable, discovery, cold, engaged, talked). No overrides needed.
   const displayWhy = item.kind !== 'prospect' ? null : item.d.why;
+  // Phase B: call-coach drives the expanded-card headline + decline suppression.
+  // Collapsed row keeps buildCard.why unchanged (expand-only).
   const resolved: ResolvedDraft | 'loading' | null =
     item.kind === 'prospect' && !isGated
       ? resolveDraft(item.d.why, callNotes, coach)
       : null;
-
-  // Single synthesized headline driven by ALL data: resolved.why once both fetches
-  // settle, displayWhy as placeholder while they're in-flight. One answer shown
-  // everywhere — no "collapsed says X, expanded says Y" incoherence.
-  // For untextable contacts the call coach may still say "text" — fix the verb.
-  const headlineWhy = !isReply
-    ? (() => {
-        const base = resolved !== null && resolved !== 'loading' ? resolved.why : displayWhy;
-        return isUntextable ? fixTextVerb(base) : base;
-      })()
-    : null;
-
-  // Reflect hold state in the pill + quick-action row so the card doesn't look
-  // actionable when call notes say to wait.
-  const isHoldState = !isReply && resolved !== 'loading' && resolved?.declineState === 'cool-off';
-
-  // One-liner from the last call — only shown when there's no call coach panel
-  // (which would show the full version in expanded). Avoids the same sentence
-  // appearing twice: once as a preview and again inside CallNotesPanel.
-  const callNotePreview = !isReply
-    && callNotes !== 'loading' && callNotes?.coaching?.summary
-    && (resolved === 'loading' || resolved?.source !== 'call-coach')
-    ? callNotes.coaching.summary.split(/\.\s+/)[0]?.trim() ?? null
-    : null;
-
-  // For cold contacts with only deterministic card data (no coaching from any AI
-  // source), surface who the person IS rather than leaving a blank card below the
-  // generic headline. Each person's rundown is unique; the headline alone isn't.
-  const rundownPreview = !isReply
-    && !callNotePreview
-    && item.kind === 'prospect'
-    && resolved !== null && resolved !== 'loading'
-    && resolved.source === 'buildcard'
-    && item.p.rundown?.trim()
-    ? (item.p.rundown.trim().split(/\.\s+/)[0]?.trim() ?? null)
-    : null;
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
   // rich one (a trustworthy card knows what it doesn't know). Prospects only; only gaps
@@ -919,13 +841,6 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
             {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
           </div>
-          {item.kind === 'prospect' && item.p.stageLabel && (
-            <div className="mt-0.5">
-              <span className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${stageBadgeClass(item.p.stageLabel)}`}>
-                {item.p.stageLabel}
-              </span>
-            </div>
-          )}
           {isReply ? (
             <>
               <p className="mt-1 line-clamp-2 text-sm text-amari-charcoal">{item.conv.lastMessagePreview || 'Sent you a message'}</p>
@@ -933,13 +848,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           ) : (
             <>
-              <p className="mt-1 text-sm text-amari-charcoal">{headlineWhy}</p>
-              {callNotePreview && (
-                <p className="mt-0.5 line-clamp-1 text-[11px] italic text-amari-text-muted">&quot;{callNotePreview}&quot;</p>
-              )}
-              {!callNotePreview && rundownPreview && (
-                <p className="mt-0.5 line-clamp-1 text-[11px] text-amari-text-muted">{rundownPreview}</p>
-              )}
+              <p className="mt-1 text-sm text-amari-charcoal">{displayWhy}</p>
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
               )}
@@ -948,11 +857,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {isHoldState
-            ? <span className="rounded-lg bg-amari-light-sand px-2.5 py-1 text-xs font-medium text-amari-text-muted">Hold</span>
-            : isReply
-              ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
-              : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
+          {isReply
+            ? <span className="rounded-lg bg-amari-accent-warm px-2.5 py-1 text-xs font-medium text-white">Reply</span>
+            : effAction && <span className="rounded-lg bg-amari-charcoal px-2.5 py-1 text-xs font-medium text-white">{ACTION_LABEL[effAction]}</span>}
           {expanded ? <ChevronUp className="h-4 w-4 text-amari-text-muted" /> : <ChevronDown className="h-4 w-4 text-amari-text-muted" />}
         </div>
       </button>
@@ -987,25 +894,14 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
           </a>
-          {/* Active outreach chips hidden when call notes say hold — expand to see why */}
-          {!isHoldState && (
-            <>
-              <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
-              <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
-              <button
-                type="button"
-                onClick={() => setPaySheetOpen(true)}
-                className="inline-flex items-center gap-1 rounded-lg bg-amari-accent-warm px-2.5 py-1.5 text-xs font-medium text-white"
-              >
-                <CreditCard className="h-3.5 w-3.5" /> Send link
-              </button>
-              <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
-                onPick={(v) => onOutcome(v as PartnerLastSignal)} />
-            </>
-          )}
-          {isHoldState && (
-            <p className="self-center text-[11px] italic text-amari-text-muted">Call notes say hold — expand to see why</p>
-          )}
+          <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
+          <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
+          {/* records which link Garrett sent (no send) — note shows in activity */}
+          <ActionSelect icon={MessageSquare} label="Sent link…" busy={busy} options={LINK_SENT_OPTIONS}
+            onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
+          {/* off-platform touches GHL can't see — one dropdown, record so the timeline + timer reflect them */}
+          <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
+            onPick={(v) => onOutcome(v as PartnerLastSignal)} />
           <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
             onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
           <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
@@ -1019,6 +915,12 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               Garrett sees what was already said before reaching out. Empty when no
               recorded/coached call exists (honest: no story yet). */}
           <CallNotesPanel notes={callNotes} />
+          {/* Phase B: call-coach action headline — shown in expanded view for contacts
+              where call-coach is the authority (not decline state: those get the notice
+              below). Collapsed row keeps buildCard.why (expand-only). */}
+          {!isReply && resolved !== 'loading' && resolved?.source === 'call-coach' && !resolved?.declineState && resolved?.why && (
+            <p className="text-sm font-semibold text-amari-charcoal">{resolved.why}</p>
+          )}
           {/* Prospects get the proactive outreach drafts; replies get only the
               in-context Suggested reply (in CoachPanel) — Reply in GHL already
               sits in the quick-action row above, so no duplicate here. */}
@@ -1074,7 +976,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </>
           )}
 
-          <CoachPanel notes={callNotes} isUntextable={isUntextable} onHandled={onHandled} />
+          <CoachPanel notes={callNotes} onHandled={onHandled} />
 
           {/* activity timeline */}
           <div>
@@ -1135,13 +1037,6 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             </p>
           )}
         </div>
-      )}
-      {paySheetOpen && (
-        <PayLinkSheet
-          contactId={contactId}
-          onClose={() => setPaySheetOpen(false)}
-          onLinkSent={(note) => onOutcome('link-sent', { note })}
-        />
       )}
     </div>
   );
@@ -1254,6 +1149,9 @@ function CallNotesPanel({ notes }: { notes: CallCoach | null | 'loading' }) {
             {c.objections.map((o, i) => <li key={i}>{o}</li>)}
           </ul>
         </div>
+      )}
+      {c.nextStep && (
+        <p className="mt-2 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>
       )}
     </div>
   );
@@ -1389,28 +1287,21 @@ function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCo
   );
 }
 
-function CoachPanel({ notes, isUntextable, onHandled }: { notes: CallCoach | null | 'loading'; isUntextable?: boolean; onHandled?: () => void }) {
+function CoachPanel({ notes, onHandled }: { notes: CallCoach | null | 'loading'; onHandled?: () => void }) {
   if (notes === 'loading' || !notes || !notes.coaching) return null;
   const c = notes.coaching;
-  // Nothing left to show if all three are empty (summary + nextStep moved elsewhere).
-  if (!c.suggestedReply && !(c.whatWorked?.length) && !(c.whatToImprove?.length)) return null;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        Call coach{notes.hasAudio ? ' · from recording' : ''} · {notes.date}
+        Call coach{coach.hasAudio ? ' · from recording' : ''} · {coach.date}
       </p>
-      {/* summary is already shown by CallNotesPanel above — skip it here.
-          nextStep is already the collapsed headline — skip it too.
-          This panel owns: coaching analysis + the ready-to-send reply. */}
+      {c.summary && <p className="text-sm text-amari-charcoal">{c.summary}</p>}
+      {/* Ready-to-send reply, grounded in the thread — editable + sendable in-app.
+          Surfaces when the contact's latest message needs an answer (esp. reply cards). */}
       {c.suggestedReply && (
-        <div className="mt-1">
-          <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">
-            {isUntextable ? 'Call script' : 'Suggested reply'}
-          </p>
-          {isUntextable
-            ? <CopyText text={c.suggestedReply} channel="call" />
-            : <EditSendText contactId={notes.contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
-          }
+        <div className="mt-2">
+          <p className="mb-1 text-[11px] font-medium text-amari-accent-warm">Suggested reply</p>
+          <EditSendText contactId={contactId} text={c.suggestedReply} channel="text" onSent={onHandled} />
         </div>
       )}
       {c.whatWorked?.length > 0 && (
@@ -1425,6 +1316,7 @@ function CoachPanel({ notes, isUntextable, onHandled }: { notes: CallCoach | nul
           <ul className="list-disc pl-4 text-xs text-amari-charcoal">{c.whatToImprove.map((x, i) => <li key={i}>{x}</li>)}</ul>
         </div>
       )}
+      {c.nextStep && <p className="mt-1.5 text-xs text-amari-charcoal"><span className="font-medium">Next:</span> {c.nextStep}</p>}
     </div>
   );
 }

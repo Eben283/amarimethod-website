@@ -144,8 +144,8 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
           </div>
           <p className="text-sm text-amari-text-light mt-3 text-center font-sans">
             {remotePreferred
-              ? 'Virtual from anywhere · In-person available if you visit SF · HSA/FSA accepted'
-              : 'San Francisco in-person or virtual from anywhere · HSA/FSA accepted'}
+              ? 'Virtual from anywhere · In-person available if you visit SF'
+              : 'San Francisco in-person or virtual from anywhere'}
           </p>
         </div>
 
