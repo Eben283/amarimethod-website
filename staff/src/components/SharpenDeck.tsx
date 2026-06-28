@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Zap, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
-import { getSharpen, mutateSharpen, ApiError, type SharpenCard, type SharpenCategory, type SharpenKind } from '../lib/api';
+import { getSharpen, mutateSharpen, trackSharpenSeen, ApiError, type SharpenCard, type SharpenCategory, type SharpenKind } from '../lib/api';
 
 // "Sharpen" — a shuffle-through card DECK on the Schedule/Today tab (not its own
 // tab, not a full-screen reel). One card faces up; Next to flick through
@@ -100,6 +100,7 @@ export default function SharpenDeck() {
       setCards(cards);
       reshuffle(cards);
       setError('');
+      trackSharpenSeen();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not load');
     } finally {
@@ -123,7 +124,12 @@ export default function SharpenDeck() {
     }
   }, [reshuffle]);
 
-  const next = () => { if (deck.length) setPos((p) => (p + 1) % deck.length); };
+  const next = () => {
+    if (deck.length) {
+      if (card) trackSharpenSeen(card.id);
+      setPos((p) => (p + 1) % deck.length);
+    }
+  };
 
   const addCard = async () => {
     if (!draft.title.trim() && !draft.body.trim()) return;

@@ -301,6 +301,17 @@ export async function mutateSharpen(input: SharpenAction): Promise<{ cards: Shar
   return fetchApi('/staff-sharpen', { method: 'POST', body: JSON.stringify(input) });
 }
 
+export async function trackSharpenSeen(cardId?: string): Promise<void> {
+  try {
+    await fetchApi('/staff-sharpen', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'seen', ...(cardId ? { cardId } : {}) }),
+    });
+  } catch {
+    // fire-and-forget — observability write, not user-visible
+  }
+}
+
 export async function staffCheckIn(
   contactId: string,
   payload: { typedName: string; signatureImage: string },

@@ -70,6 +70,17 @@ export async function onRequestPost(context) {
       cards = cards.filter((c) => c.id !== id);
       break;
     }
+    case "seen": {
+      const seenKey = "staff:sharpen-seen";
+      const current = (await context.env.PORTAL_KV.get(seenKey, "json")) || {};
+      current.lastOpenedAt = now;
+      if (body.cardId && typeof body.cardId === "string") {
+        if (!current.seen) current.seen = {};
+        current.seen[body.cardId] = now.slice(0, 10);
+      }
+      await context.env.PORTAL_KV.put(seenKey, JSON.stringify(current));
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers });
+    }
     default:
       return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers });
   }
