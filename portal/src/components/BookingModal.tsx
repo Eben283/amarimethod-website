@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAvailableSlots, bookAppointment, cancelAppointment } from '../lib/api';
 import type { Appointment } from '../types/portal';
 
@@ -69,6 +69,9 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+  // One key per confirm attempt — resets when the selected slot changes so
+  // picking a different slot can never replay a cached booking.
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [bookedTitle, setBookedTitle] = useState<string>('');
@@ -147,6 +150,12 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
     if (!selectedSlot) return;
     setStep('loading');
 
+    // Generate a key on the first attempt; reuse it on retries so duplicate
+    // submits return the already-created appointment instead of double-booking.
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = crypto.randomUUID();
+    }
+
     const calendarId = sessionType === 'in-person'
       ? CALENDARS.followup_inperson
       : CALENDARS.followup_virtual;
@@ -157,6 +166,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
         startTime: selectedSlot.datetime,
         timezone,
         sessionType,
+        idempotencyKey: idempotencyKeyRef.current,
       });
       // If this is a reschedule, cancel the original after the new one books.
       // Doing it in this order means a failed cancel still leaves the user
@@ -357,7 +367,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                           <button
                             key={slot.datetime}
                             type="button"
-                            onClick={() => setSelectedSlot(slot)}
+                            onClick={() => { setSelectedSlot(slot); idempotencyKeyRef.current = null; }}
                             className={'cp-slot' + (isSelected ? ' is-picked' : '')}
                           >
                             {formatTime(slot.hour, slot.minute)}

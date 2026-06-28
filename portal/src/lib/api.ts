@@ -104,6 +104,7 @@ export interface BookAppointmentPayload {
   startTime: string;
   timezone: string;
   sessionType: 'in-person' | 'virtual';
+  idempotencyKey?: string;
 }
 
 export async function bookAppointment(payload: BookAppointmentPayload): Promise<{

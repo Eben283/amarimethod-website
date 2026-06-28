@@ -94,10 +94,19 @@ export async function onRequestPost(context) {
     return json({ error: 'Invalid JSON body' }, 400, origin);
   }
 
-  const { startTime, timezone, sessionType } = body;
+  const { startTime, timezone, sessionType, idempotencyKey } = body;
 
   if (!startTime || !timezone || !sessionType) {
     return json({ error: 'startTime, timezone, and sessionType are required' }, 400, origin);
+  }
+
+  // Idempotency: if the client supplied a key and we've already processed it,
+  // return the cached result instead of double-booking. KV TTL = 1 hour (long
+  // enough to cover any retry storm; GHL booking slots don't move mid-session).
+  const kvKey = idempotencyKey ? `portal-book:${contactId}:${idempotencyKey}` : null;
+  if (kvKey && context.env.PORTAL_KV) {
+    const cached = await context.env.PORTAL_KV.get(kvKey, 'json').catch(() => null);
+    if (cached) return json(cached, 200, origin);
   }
 
   // B2: derive the calendar server-side from sessionType — never trust a
@@ -181,7 +190,7 @@ export async function onRequestPost(context) {
 
     const apptData = await bookRes.json();
 
-    return json({
+    const result = {
       success: true,
       appointment: {
         id: apptData.id,
@@ -189,7 +198,15 @@ export async function onRequestPost(context) {
         startTime,
         sessionType,
       },
-    }, 200, origin);
+    };
+
+    // Cache the successful result so duplicate confirms return the same
+    // appointment instead of creating a second one.
+    if (kvKey && context.env.PORTAL_KV) {
+      await context.env.PORTAL_KV.put(kvKey, JSON.stringify(result), { expirationTtl: 3600 }).catch(() => {});
+    }
+
+    return json(result, 200, origin);
   } catch (err) {
     console.error('portal-book error:', err);
     return json({ error: 'Internal server error' }, 500, origin);
