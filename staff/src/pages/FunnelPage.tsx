@@ -80,6 +80,13 @@ function agoLabel(iso: string | null | undefined): string {
   const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
   if (h < 1) return 'just now'; if (h < 24) return `${h}h ago`; return `${Math.floor(h / 24)}d ago`;
 }
+function agoColor(iso: string | null | undefined): string {
+  if (!iso) return COL.rust;
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (h >= 24) return COL.rust;
+  if (h >= 6) return COL.gold;
+  return COL.inkSoft;
+}
 
 // ── painted-art loader: probe /staff/funnel-art/<file>; fall back to SVG ────
 type ArtName = 'bear' | 'trunk' | 'bowl' | 'rabbitHop' | 'rabbitSit' | 'hedgehog' | 'radish' | 'leaf' | 'ground' | 'forest' | 'fgtree' | 'fgtree2' | 'bg';
@@ -507,7 +514,7 @@ export default function FunnelPage() {
         <div className="mb-3 flex items-end justify-between">
           <div>
             <h1 className="fn-story text-4xl font-semibold leading-none" style={{ color: COL.ink }}>The Funnel</h1>
-            <p className="mt-1 text-xs" style={{ color: COL.inkSoft }}>leads in the top, packs out the bottom · {refreshing ? 'refreshing…' : `updated ${agoLabel(data.generatedAt)}`}</p>
+            <p className="mt-1 text-xs" style={{ color: refreshing ? COL.inkSoft : agoColor(data.generatedAt) }}>leads in the top, packs out the bottom · {refreshing ? 'refreshing…' : `updated ${agoLabel(data.generatedAt)}`}</p>
           </div>
           <button onClick={runRefresh} disabled={refreshing} aria-label="Refresh from GHL" title="Pull fresh data from GHL (~45s)" className="rounded-full p-2.5 active:scale-90 disabled:opacity-60" style={{ border: `1px solid ${COL.line}`, color: COL.inkSoft, background: COL.card }}><RefreshCw className={`h-4 w-4${refreshing ? ' animate-spin' : ''}`} /></button>
         </div>
