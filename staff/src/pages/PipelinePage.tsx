@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getPipeline, ApiError, type PipelineCard, type PipelineColumns } from '../lib/api';
+import { getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
+import { useApiCall } from '../hooks/useApiCall';
 
 const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'touch-1', label: 'Touch 1', sub: '1 outreach' },
@@ -140,30 +140,9 @@ function KanbanColumn({
 }
 
 export default function PipelinePage() {
-  const { logout } = useAuth();
   const navigate = useNavigate();
-  const [columns, setColumns] = useState<PipelineColumns | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const cols = await getPipeline();
-      setColumns(cols);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        logout();
-        return;
-      }
-      setError('Failed to load pipeline.');
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, []);
+  const fetcher = useCallback(() => getPipeline(), []);
+  const { data: columns, isLoading, error, refetch } = useApiCall(fetcher);
 
   const total = columns
     ? Object.values(columns).reduce((s, arr) => s + arr.length, 0)
@@ -180,7 +159,7 @@ export default function PipelinePage() {
           )}
         </div>
         <button
-          onClick={load}
+          onClick={refetch}
           disabled={isLoading}
           className="p-2 rounded-full text-amari-text-muted disabled:opacity-40"
         >
@@ -197,7 +176,7 @@ export default function PipelinePage() {
         <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
           <AlertCircle className="w-6 h-6 text-red-400" />
           <p className="text-sm text-amari-text-muted">{error}</p>
-          <button onClick={load} className="text-sm text-amari-charcoal underline mt-1">
+          <button onClick={refetch} className="text-sm text-amari-charcoal underline mt-1">
             Try again
           </button>
         </div>
