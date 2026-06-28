@@ -409,7 +409,9 @@ export async function deriveCadence(env) {
   const rows = (await mapLimit(activeIds, 10, async (id) => {
     const rec = await kv.get(`conv:${id}`, "json");
     if (!rec || !rec.touches?.length) return null;
-    return buildRow(id, rec.name, rec.touches);
+    const row = buildRow(id, rec.name, rec.touches);
+    row.lineType = rec.lineType ?? null;
+    return row;
   })).filter(Boolean);
 
   const booked = await loadBookedSet(env);
