@@ -3,6 +3,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { requireOpsReadKey } from "../lib/ops-auth.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -96,29 +97,37 @@ export async function onRequestGet(context) {
       );
     }
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers,
-      });
-    }
+    // Internal service calls (e.g. /day skill) may authenticate with the ops read key
+    // instead of a staff JWT — same key used by /api/daily-audit and /api/ecosystem-scan.
+    const hasServiceKey = !!context.request.headers.get("X-Service-Key");
+    if (hasServiceKey) {
+      const denied = requireOpsReadKey(context.request, context.env);
+      if (denied) return denied;
+    } else {
+      const authHeader = context.request.headers.get("Authorization");
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return new Response(JSON.stringify({ error: "Not authenticated" }), {
+          status: 401,
+          headers,
+        });
+      }
 
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch {
-      return new Response(JSON.stringify({ error: "Session expired" }), {
-        status: 401,
-        headers,
-      });
-    }
+      let tokenPayload;
+      try {
+        tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
+      } catch {
+        return new Response(JSON.stringify({ error: "Session expired" }), {
+          status: 401,
+          headers,
+        });
+      }
 
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 403,
-        headers,
-      });
+      if (tokenPayload.role !== "staff") {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 403,
+          headers,
+        });
+      }
     }
 
     // Filters: ?filter=needs_reply (default) | all | unread
