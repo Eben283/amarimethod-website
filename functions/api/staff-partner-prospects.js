@@ -358,7 +358,11 @@ function cadenceVerdict(c) {
   return {
     kind: c.due ? "act" : "waiting",
     due: !!c.due,
-    urgency: Number(c.priority) || 0,             // one priority scale (0-127; reply-waiting tops it)
+    // reply-waiting (100+) must dominate — respond to a reply NOW beats everything.
+    // Regular cadence steps (60-100) grow with days overdue, but a "talked" local
+    // contact (76) is a hotter signal than a stale 27-day no-reply (cadence 85).
+    // Cap regular steps at 74 so local interaction quality wins the tiebreak.
+    urgency: c.state === "reply-waiting" ? (Number(c.priority) || 0) : Math.min(Number(c.priority) || 0, 74),
     warmth: engaged ? 2 : 1,
     action: c.due ? channel : null,               // pill fallback + day-weighting (call/text/email)
     why: c.action || "Needs follow-up",           // the cadence's human action sentence
