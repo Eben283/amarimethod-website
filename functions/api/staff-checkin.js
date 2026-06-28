@@ -13,7 +13,7 @@
 //      itself — pointer to the KV key only)
 
 import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
-import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const AGREEMENT_VERSION = "practice-member-v2026-04-17";
@@ -35,7 +35,11 @@ export async function onRequestPost(context) {
     if (error) return error;
 
 
-    const body = await context.request.json();
+    const { body, error: parseError } = await parseJsonBody(context.request, headers);
+
+
+
+    if (parseError) return parseError;
     const { contactId, typedName, signatureImage } = body;
 
     if (!contactId) {

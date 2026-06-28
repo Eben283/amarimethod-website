@@ -2,7 +2,7 @@
 // Add a note to a contact in GHL
 
 import { ghlFetch } from "../lib/ghl.js";
-import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -23,7 +23,11 @@ export async function onRequestPost(context) {
     if (error) return error;
 
 
-    const body = await context.request.json();
+    const { body, error: parseError } = await parseJsonBody(context.request, headers);
+
+
+
+    if (parseError) return parseError;
     const contactId = (body.contactId || "").trim();
     const noteBody = (body.body || "").trim();
 

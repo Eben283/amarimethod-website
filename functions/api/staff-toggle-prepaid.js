@@ -2,7 +2,7 @@
 // Toggles the session_prepaid custom field on a contact
 
 import { ghlFetch } from "../lib/ghl.js";
-import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const FIELD_ID_SESSION_PREPAID = "sgQ5EbJWhvTfGVhStaOO";
@@ -24,7 +24,11 @@ export async function onRequestPost(context) {
     if (error) return error;
 
 
-    const body = await context.request.json();
+    const { body, error: parseError } = await parseJsonBody(context.request, headers);
+
+
+
+    if (parseError) return parseError;
     const contactId = (body.contactId || "").trim();
     const prepaid = body.prepaid === true;
 

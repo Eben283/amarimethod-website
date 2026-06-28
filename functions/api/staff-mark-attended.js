@@ -6,7 +6,7 @@ import { getCustomField } from "../lib/portal-helpers.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
 import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classification.js";
-import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -74,7 +74,9 @@ export async function onRequestPost(context) {
 
 
     // Parse request
-    const body = await context.request.json();
+    const { body, error: parseError } = await parseJsonBody(context.request, headers);
+
+    if (parseError) return parseError;
     const appointmentId = (body.appointmentId || "").trim();
     const contactId = (body.contactId || "").trim();
 

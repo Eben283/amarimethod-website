@@ -58,6 +58,27 @@ export async function requireStaffAuth(context, headers) {
   return { payload };
 }
 
+// Parses the request body as JSON.
+//
+// Returns { body: object } on success, or { error: Response } with status 400
+// when the body is not valid JSON or not a plain object. Consistent with the
+// { error, payload } shape used by requireStaffAuth so callers can do:
+//   const { body, error: bodyError } = await parseJsonBody(request, headers);
+//   if (bodyError) return bodyError;
+//
+export async function parseJsonBody(request, headers) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return { error: new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers }) };
+  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return { error: new Response(JSON.stringify({ error: 'Invalid request body' }), { status: 400, headers }) };
+  }
+  return { body };
+}
+
 // Like requireStaffAuth, but also accepts internal service calls authenticated
 // with the ops read key (X-Service-Key header) — used by staff-balances and
 // staff-conversations when called from the /day skill.
