@@ -951,7 +951,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                       there's no flash of empty space. */}
                   {!isGated && (resolved === 'loading' || !resolved?.declineState) && (
                     <>
-                      <OutreachCoachPanel coach={coach} contactId={contactId} onHandled={onHandled} />
+                      <OutreachCoachPanel coach={coach} contactId={contactId} lastTouch={item.kind === 'prospect' ? (item.p.lastActivityAt ?? null) : null} onHandled={onHandled} />
                       {/* No cloud draft, but the recommended move is a text → fall back to a
                           static suggested draft so a "text" card is never a dead-end with
                           nothing to send (Eben 2026-06-17). Cloud-draft contacts already show
@@ -1266,13 +1266,22 @@ function UntextablePanel({ p, phoneType }: { p: PartnerProspect; phoneType: stri
   );
 }
 
-function OutreachCoachPanel({ coach, contactId, onHandled }: { coach: OutreachCoach | null | 'loading'; contactId: string; onHandled?: () => void }) {
+function OutreachCoachPanel({ coach, contactId, lastTouch, onHandled }: { coach: OutreachCoach | null | 'loading'; contactId: string; lastTouch?: string | null; onHandled?: () => void }) {
   if (coach === 'loading' || !coach) return null;
+  // Card is stale if the contact has been touched more recently than when the card was generated.
+  // coach.generatedAt is YYYY-MM-DD (PT); compare against lastTouch's PT date.
+  const isStale = !!(coach.generatedAt && lastTouch && (() => {
+    const touchDate = new Date(lastTouch).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+    return touchDate > coach.generatedAt;
+  })());
   return (
     <div className="rounded-lg border border-amari-accent-warm/40 bg-amari-accent-warm/5 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-accent-warm">
         <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
       </p>
+      {isStale && (
+        <p className="mb-2 text-[11px] text-amber-700">This draft was generated before the last touch — double-check it still fits.</p>
+      )}
       <div className="space-y-1.5">
         {coach.channel !== 'call' && (coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
           <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} onSent={onHandled} />
