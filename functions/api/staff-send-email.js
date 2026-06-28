@@ -5,14 +5,13 @@
 // exit-on-reply works). Staff-authed + length-capped + idempotent + logged.
 
 import { ghlFetch } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const MAX_SUBJECT = 200;
 const MAX_BODY = 8000; // an email body, generous but bounded
 const DEDUPE_TTL_S = 300;
 
-const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
 const VALID_CONTACT_ID = /^[A-Za-z0-9]+$/;
 // Block C0/C1 control chars (tab/newline/CR excepted) + Unicode bidi overrides.
 const BAD_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E]/; // control + bidi (tab/newline ok)
@@ -20,32 +19,16 @@ const VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function hashKey(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
 function maskEmail(e) { const [u, d] = String(e).split("@"); return `${u.slice(0, 2)}***@${d || ""}`; }
 
-function corsHeaders(origin) {
-  const headers = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-  if (ALLOWED_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
-  return headers;
-}
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 
 export async function onRequestPost(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
 
-  const JWT_SECRET = context.env.JWT_SECRET;
-  if (!JWT_SECRET) return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-
-  const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-  let tokenPayload;
-  try { tokenPayload = await verifySessionToken(auth.slice(7), JWT_SECRET); }
-  catch { return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }); }
-  if (tokenPayload.role !== "staff") return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
   let body;
   try { body = await context.request.json(); }

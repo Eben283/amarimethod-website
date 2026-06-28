@@ -16,6 +16,13 @@
 // given call has no recording (never recorded / too short), that call is still
 // coached on text only and flagged audio:false — no audio is NOT a global
 // fallback, it's per-call.
+//
+// CHUNKING: Whisper + Claude per-contact is I/O-heavy. On a full day the
+// sequential loop can exceed Cloudflare's CPU budget before finishing. We split
+// the work into batches of BATCH_SIZE contacts per invocation. The first batch
+// enumerates all contacts for the day and saves the list to KV; subsequent
+// batches read the list and fetch each contact individually. Each batch
+// self-requeues via ctx.waitUntil so no contact is skipped.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import {
@@ -25,26 +32,27 @@ import {
   fetchStoredTranscription,
   dateToRange,
   yesterdayPacific,
-  todayPacific,
 } from "./ghl.js";
 import { coachInteraction } from "./coach.js";
 
-const KV_CALL_PREFIX = "call-coach:";              // call-coach:{date}:{contactId}
-const KV_DAILY_PREFIX = "call-coach:daily:";       // call-coach:daily:{date}
-const KV_LATEST_PREFIX = "call-coach:latest:";     // call-coach:latest:{contactId} — persistent pointer
-const KV_LAST_RUN = "call-coach:status:lastRun";
-const RESULT_TTL_S = 30 * 86400;                   // 30-day retention
-const LATEST_TTL_S = 180 * 86400;                  // keep the last-call notes ~6 months so the card can show them
+const KV_CALL_PREFIX   = "call-coach:";          // call-coach:{date}:{contactId}
+const KV_DAILY_PREFIX  = "call-coach:daily:";    // call-coach:daily:{date}
+const KV_LATEST_PREFIX = "call-coach:latest:";   // call-coach:latest:{contactId}
+const KV_QUEUE_PREFIX  = "call-coach:queue:";    // call-coach:queue:{date} → [contactId, ...]
+const KV_LAST_RUN      = "call-coach:status:lastRun";
+const RESULT_TTL_S     = 30 * 86400;
+const LATEST_TTL_S     = 180 * 86400;
 
-// Cap how many contacts/calls we process per run so one heavy day can't blow the
-// subrequest budget or the Whisper quota. Tune as volume grows.
-const MAX_CONTACTS = 40;
+// How many contacts to process per Worker invocation. Each contact does a
+// recording download + Whisper + Claude call — keep this small so we stay
+// within the 30-second CPU budget even on heavy outreach days.
+const BATCH_SIZE = 8;
 const MAX_CALLS_PER_CONTACT = 3;
 const WHISPER_MODEL = "@cf/openai/whisper";
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runCoach(env, yesterdayPacific()));
+    ctx.waitUntil(runCoach(env, ctx, yesterdayPacific(), 0));
   },
 
   async fetch(request, env, ctx) {
@@ -53,20 +61,16 @@ export default {
 
     const url = new URL(request.url);
 
-    // /run?date=YYYY-MM-DD — coach a given Pacific date (defaults to yesterday).
-    // Fire-and-return: running inline exceeds the fetch request limit and gets cut
-    // before writing the digest/status. waitUntil lets it finish in the background
-    // (same as the cron). Poll /status or /latest after.
+    // /run?date=YYYY-MM-DD[&offset=N] — coach a given Pacific date.
+    // Fire-and-return; actual work runs in background via waitUntil.
     if (url.pathname === "/run") {
       const date = url.searchParams.get("date") || yesterdayPacific();
-      ctx.waitUntil(runCoach(env, date));
-      return json({ started: true, date, message: "Coaching run started — check /status or /latest." }, 202);
+      const offset = parseInt(url.searchParams.get("offset") || "0", 10);
+      ctx.waitUntil(runCoach(env, ctx, date, offset));
+      return json({ started: true, date, offset, message: "Coaching run started — check /status or /latest." }, 202);
     }
 
-    // /coach-one?contactId=X[&date=YYYY-MM-DD] — coach ONE contact's FULL
-    // relationship synchronously and return the result. The batch /run uses
-    // ctx.waitUntil, which CF cuts for a long multi-contact run; a single contact
-    // fits one request. Doubles as on-demand "regenerate this card" for the app.
+    // /coach-one?contactId=X[&date=YYYY-MM-DD] — coach ONE contact synchronously.
     if (url.pathname === "/coach-one") {
       const contactId = url.searchParams.get("contactId");
       if (!contactId) return json({ error: "contactId required" }, 400);
@@ -98,34 +102,14 @@ export default {
       }
     }
 
-    // /rebuild-digest?date=YYYY-MM-DD — reconstruct the daily digest from the
-    // per-contact call-coach:{date}:{contactId} cards. Use after /coach-one
-    // updates individual cards (which don't touch the batch digest), so /day
-    // stays consistent without waiting for the next full cron.
+    // /rebuild-digest?date=YYYY-MM-DD — reconstruct the daily digest from per-contact records.
     if (url.pathname === "/rebuild-digest") {
       const date = url.searchParams.get("date") || yesterdayPacific();
-      const prefix = `${KV_CALL_PREFIX}${date}:`; // matches call-coach:{date}:{contactId} only
-      const listed = await env.PORTAL_KV.list({ prefix });
-      const items = [];
-      for (const k of listed.keys) {
-        const rec = await env.PORTAL_KV.get(k.name, "json");
-        if (!rec?.coaching) continue;
-        items.push({
-          contactId: rec.contactId,
-          contactName: rec.contactName,
-          hasAudio: rec.hasAudio,
-          summary: rec.coaching.summary,
-          nextStep: rec.coaching.nextStep,
-          signal: rec.coaching.signal,
-          topImprovement: rec.coaching.whatToImprove?.[0] || null,
-        });
-      }
-      const digest = { date, generatedAt: new Date().toISOString(), count: items.length, items };
-      await safePut(env, `${KV_DAILY_PREFIX}${date}`, digest, RESULT_TTL_S);
+      const digest = await buildDigest(env, date);
       return json(digest);
     }
 
-    // /latest?date=YYYY-MM-DD — read the daily digest (defaults to yesterday).
+    // /latest?date=YYYY-MM-DD — read the daily digest.
     if (url.pathname === "/latest") {
       const date = url.searchParams.get("date") || yesterdayPacific();
       const digest = await env.PORTAL_KV.get(`${KV_DAILY_PREFIX}${date}`, "json");
@@ -138,9 +122,7 @@ export default {
       return json(last || { error: "never run" });
     }
 
-    // /backfill-latest — one-off: populate call-coach:latest:{contactId} from the existing
-    // dated records (newest per contact) so cards show notes for already-coached contacts
-    // without waiting for the next cron. Idempotent.
+    // /backfill-latest — populate call-coach:latest:{contactId} from existing dated records.
     if (url.pathname === "/backfill-latest") {
       const listed = await env.PORTAL_KV.list({ prefix: KV_CALL_PREFIX });
       const dateRe = /^call-coach:(\d{4}-\d{2}-\d{2}):(.+)$/;
@@ -170,24 +152,162 @@ function json(data, status = 200) {
   });
 }
 
-// Transcribe one recording via Workers AI Whisper. Tries GHL's stored
-// transcription first (free), then Whisper. Returns { transcript, source } or
-// { transcript: null, source, error }.
+// ── Batch entry point ─────────────────────────────────────────────────────────
+//
+// offset=0: enumerate today's contacts via the GHL fan-out, save the list to
+// KV, process the first BATCH_SIZE from the already-fetched bundles.
+//
+// offset>0: load the contact ID list from KV, fetch each contact individually
+// (fetchContactRelationship — same as /coach-one), process the next BATCH_SIZE.
+//
+// After every batch: if more contacts remain, ctx.waitUntil chains the next
+// batch; when done, the final batch rebuilds the digest.
+async function runCoach(env, ctx, dateStr, offset) {
+  const queueKey = `${KV_QUEUE_PREFIX}${dateStr}`;
+
+  // ── Load or build the queue ──
+  let allIds;
+  let firstBatchBundles = null; // pre-fetched on offset=0 — avoid re-fetching
+
+  if (offset === 0) {
+    console.log(`[call-coach] Starting ${dateStr} — enumerating contacts`);
+    let bundles;
+    try {
+      const { startMs, endMs } = dateToRange(dateStr);
+      bundles = await fetchRelationshipBundles(env, startMs, endMs);
+    } catch (err) {
+      const status = { date: dateStr, startedAt: new Date().toISOString(), status: "error", error: `enumerate failed: ${err.message}`, finishedAt: new Date().toISOString() };
+      await safePut(env, KV_LAST_RUN, status);
+      return;
+    }
+    allIds = bundles.map((b) => b.contactId);
+    await safePut(env, queueKey, allIds, RESULT_TTL_S);
+    // Initialise accumulated stats in KV so subsequent batches can update them.
+    const initial = {
+      date: dateStr, startedAt: new Date().toISOString(), status: "running",
+      total: allIds.length, batchSize: BATCH_SIZE,
+      contactsProcessed: 0, coached: 0, failed: 0,
+      callsTranscribed: 0, callsNoRecording: 0,
+    };
+    await safePut(env, KV_LAST_RUN, initial);
+    firstBatchBundles = bundles.slice(0, BATCH_SIZE);
+    console.log(`[call-coach] ${allIds.length} contacts queued; processing batch 0..${BATCH_SIZE - 1}`);
+  } else {
+    allIds = await env.PORTAL_KV.get(queueKey, "json");
+    if (!allIds) {
+      console.error(`[call-coach] Queue missing for ${dateStr} at offset ${offset} — aborting`);
+      return;
+    }
+    console.log(`[call-coach] Continuing ${dateStr} at offset ${offset}/${allIds.length}`);
+  }
+
+  // ── Fetch bundles for this batch (if not already fetched) ──
+  let bundles;
+  if (firstBatchBundles) {
+    bundles = firstBatchBundles;
+  } else {
+    const batchIds = allIds.slice(offset, offset + BATCH_SIZE);
+    bundles = (
+      await Promise.all(batchIds.map((id) => fetchContactRelationship(env, id).catch(() => null)))
+    ).filter(Boolean);
+  }
+
+  // ── Process this batch ──
+  const stats = { coached: 0, failed: 0, callsTranscribed: 0, callsNoRecording: 0 };
+  for (const bundle of bundles) {
+    try {
+      const { transcript, anyAudio } = await assembleCallTranscript(env, bundle.calls, stats);
+      const { coaching, error: coachErr } = await coachInteraction(env, {
+        contactName: bundle.contactName,
+        transcript,
+        thread: bundle.thread,
+      });
+      if (coachErr) {
+        if (!coachErr.startsWith("nothing to coach")) stats.failed++;
+        console.log(`[call-coach] ${bundle.contactId}: skip — ${coachErr}`);
+        continue;
+      }
+      const record = {
+        contactId: bundle.contactId,
+        contactName: bundle.contactName,
+        date: dateStr,
+        generatedAt: new Date().toISOString(),
+        hasAudio: anyAudio,
+        callCount: bundle.calls.length,
+        threadCount: bundle.thread.length,
+        coaching,
+      };
+      await safePut(env, `${KV_CALL_PREFIX}${dateStr}:${bundle.contactId}`, record, RESULT_TTL_S);
+      await safePut(env, `${KV_LATEST_PREFIX}${bundle.contactId}`, record, LATEST_TTL_S);
+      stats.coached++;
+    } catch (err) {
+      stats.failed++;
+      console.warn(`[call-coach] ${bundle.contactId} failed: ${err.message}`);
+    }
+  }
+
+  // ── Accumulate stats in KV ──
+  const lastRun = (await env.PORTAL_KV.get(KV_LAST_RUN, "json")) || {};
+  lastRun.contactsProcessed = (lastRun.contactsProcessed || 0) + bundles.length;
+  lastRun.coached            = (lastRun.coached || 0)            + stats.coached;
+  lastRun.failed             = (lastRun.failed || 0)             + stats.failed;
+  lastRun.callsTranscribed   = (lastRun.callsTranscribed || 0)   + stats.callsTranscribed;
+  lastRun.callsNoRecording   = (lastRun.callsNoRecording || 0)   + stats.callsNoRecording;
+
+  const nextOffset = offset + BATCH_SIZE;
+  if (nextOffset < allIds.length) {
+    // More batches to go — chain next batch and update status.
+    lastRun.offset = nextOffset;
+    await safePut(env, KV_LAST_RUN, lastRun);
+    console.log(`[call-coach] Batch done (offset ${offset}); queuing next at ${nextOffset}`);
+    ctx.waitUntil(runCoach(env, ctx, dateStr, nextOffset));
+  } else {
+    // All batches done — rebuild digest and finalise status.
+    lastRun.status = "ok";
+    lastRun.finishedAt = new Date().toISOString();
+    await safePut(env, KV_LAST_RUN, lastRun);
+    await buildDigest(env, dateStr);
+    console.log(
+      `[call-coach] Done ${dateStr}: coached=${lastRun.coached} transcribed=${lastRun.callsTranscribed} ` +
+      `noRecording=${lastRun.callsNoRecording} failed=${lastRun.failed}`,
+    );
+  }
+}
+
+// Build (or rebuild) the daily digest from the per-contact call-coach records.
+async function buildDigest(env, date) {
+  const prefix = `${KV_CALL_PREFIX}${date}:`;
+  const listed = await env.PORTAL_KV.list({ prefix });
+  const items = [];
+  for (const k of listed.keys) {
+    const rec = await env.PORTAL_KV.get(k.name, "json");
+    if (!rec?.coaching) continue;
+    items.push({
+      contactId: rec.contactId,
+      contactName: rec.contactName,
+      hasAudio: rec.hasAudio,
+      summary: rec.coaching.summary,
+      nextStep: rec.coaching.nextStep,
+      signal: rec.coaching.signal,
+      topImprovement: rec.coaching.whatToImprove?.[0] || null,
+    });
+  }
+  const digest = { date, generatedAt: new Date().toISOString(), count: items.length, items };
+  await safePut(env, `${KV_DAILY_PREFIX}${date}`, digest, RESULT_TTL_S);
+  return digest;
+}
+
+// Transcribe one recording via Workers AI Whisper.
 async function transcribeCall(env, messageId) {
-  // 1) GHL stored transcription (cheap if present — usually absent here).
   try {
     const stored = await fetchStoredTranscription(env, messageId);
     if (stored) return { transcript: stored, source: "ghl-stored" };
   } catch {
     // fall through to audio
   }
-
-  // 2) Download recording + Whisper.
   const rec = await fetchRecording(env, messageId);
   if (!rec) return { transcript: null, source: "none", error: "no recording" };
-
   try {
-    // @cf/openai/whisper expects an array of bytes (Uint8Array → [...]).
     const bytes = [...new Uint8Array(rec.buffer)];
     const out = await env.AI.run(WHISPER_MODEL, { audio: bytes });
     const text = (out?.text || "").trim();
@@ -199,10 +319,8 @@ async function transcribeCall(env, messageId) {
 }
 
 // Assemble the chronological call-transcript text for a relationship bundle.
-// Prior calls come free from the cached transcript:{messageId} the
-// conversation-cache pipeline produced; fresh trigger calls transcribe live
-// (bounded). lastRun is optional (counters only updated when present).
-async function assembleCallTranscript(env, calls, lastRun) {
+// stats is optional (only updated from the cron batch path, not /coach-one).
+async function assembleCallTranscript(env, calls, stats) {
   let freshTranscribed = 0;
   let anyAudio = false;
   const parts = [];
@@ -215,118 +333,23 @@ async function assembleCallTranscript(env, calls, lastRun) {
       source = "cached";
     } else if (call.isTrigger && freshTranscribed < MAX_CALLS_PER_CONTACT) {
       const r = await transcribeCall(env, call.messageId);
-      if (r.transcript) { text = r.transcript; source = r.source; freshTranscribed++; }
-      else if (r.error === "no recording" && lastRun) lastRun.callsNoRecording++;
+      if (r.transcript) {
+        text = r.transcript;
+        source = r.source;
+        freshTranscribed++;
+      } else if (r.error === "no recording" && stats) {
+        stats.callsNoRecording++;
+      }
     }
     if (text) {
       anyAudio = true;
-      if (source !== "cached" && lastRun) lastRun.callsTranscribed++;
+      if (source !== "cached" && stats) stats.callsTranscribed++;
       parts.push(`[call ${call.date} · ${call.direction} · ${call.duration}s · via ${source}]\n${text}`);
     } else {
-      // Tell the coach the call happened — relationship context even with no transcript.
       parts.push(`[call ${call.date} · ${call.direction} · ${call.duration}s · (no transcript on record)]`);
     }
   }
   return { transcript: parts.length ? parts.join("\n\n") : null, anyAudio };
-}
-
-async function runCoach(env, dateStr) {
-  const startedAt = new Date().toISOString();
-  console.log(`[call-coach] Coaching ${dateStr}`);
-
-  const lastRun = {
-    date: dateStr,
-    startedAt,
-    status: "running",
-    contactsProcessed: 0,
-    callsTranscribed: 0,
-    callsNoRecording: 0,
-    coached: 0,
-    failed: 0,
-  };
-
-  let bundles;
-  try {
-    const { startMs, endMs } = dateToRange(dateStr);
-    bundles = await fetchRelationshipBundles(env, startMs, endMs);
-  } catch (err) {
-    lastRun.status = "error";
-    lastRun.error = `enumerate failed: ${err.message}`;
-    lastRun.finishedAt = new Date().toISOString();
-    await safePut(env, KV_LAST_RUN, lastRun);
-    return lastRun;
-  }
-
-  bundles = bundles.slice(0, MAX_CONTACTS);
-  const digestItems = [];
-
-  for (const bundle of bundles) {
-    try {
-      const { transcript, anyAudio } = await assembleCallTranscript(env, bundle.calls, lastRun);
-
-      const { coaching, error: coachErr } = await coachInteraction(env, {
-        contactName: bundle.contactName,
-        transcript,
-        thread: bundle.thread,
-      });
-
-      if (coachErr) {
-        // Nothing-to-coach is a normal skip, not a failure.
-        if (!coachErr.startsWith("nothing to coach")) lastRun.failed++;
-        console.log(`[call-coach] ${bundle.contactId}: skip — ${coachErr}`);
-        continue;
-      }
-
-      const record = {
-        contactId: bundle.contactId,
-        contactName: bundle.contactName,
-        date: dateStr,
-        generatedAt: new Date().toISOString(),
-        hasAudio: anyAudio,
-        callCount: bundle.calls.length,
-        threadCount: bundle.thread.length,
-        coaching,
-      };
-
-      await safePut(env, `${KV_CALL_PREFIX}${dateStr}:${bundle.contactId}`, record, RESULT_TTL_S);
-      // Persistent per-contact pointer so the Follow-Up card can fetch "the last call's
-      // notes" by contactId alone (the dated record expires in 30d).
-      await safePut(env, `${KV_LATEST_PREFIX}${bundle.contactId}`, record, LATEST_TTL_S);
-      lastRun.coached++;
-      digestItems.push({
-        contactId: bundle.contactId,
-        contactName: bundle.contactName,
-        hasAudio: anyAudio,
-        summary: coaching.summary,
-        nextStep: coaching.nextStep,
-        signal: coaching.signal,
-        topImprovement: coaching.whatToImprove?.[0] || null,
-      });
-    } catch (err) {
-      lastRun.failed++;
-      console.warn(`[call-coach] ${bundle.contactId} failed: ${err.message}`);
-    }
-    lastRun.contactsProcessed++;
-  }
-
-  // Daily digest.
-  const digest = {
-    date: dateStr,
-    generatedAt: new Date().toISOString(),
-    count: digestItems.length,
-    items: digestItems,
-  };
-  await safePut(env, `${KV_DAILY_PREFIX}${dateStr}`, digest, RESULT_TTL_S);
-
-  lastRun.status = "ok";
-  lastRun.finishedAt = new Date().toISOString();
-  await safePut(env, KV_LAST_RUN, lastRun);
-
-  console.log(
-    `[call-coach] Done ${dateStr}: coached=${lastRun.coached} transcribed=${lastRun.callsTranscribed} ` +
-    `noRecording=${lastRun.callsNoRecording} failed=${lastRun.failed}`
-  );
-  return { ...lastRun, digest };
 }
 
 async function safePut(env, key, value, ttl) {

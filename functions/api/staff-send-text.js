@@ -7,7 +7,7 @@
 // the message the staff member would otherwise have copy-pasted into the thread.
 
 import { ghlFetch } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // The personalized coach drafts are warm + full (Garrett's voice, "never clipped") and run
@@ -16,8 +16,6 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // while still rejecting a runaway paste. (Generator targets ~70 words; tighten it separately.)
 const MAX_LEN = 720;
 const DEDUPE_TTL_S = 300; // 5 min — kills double-taps + retry-after-timeout dupes
-
-const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
 
 // GHL contact ids are alphanumeric — reject anything else (KV-key / path-segment safety).
 const VALID_CONTACT_ID = /^[A-Za-z0-9]+$/;
@@ -36,18 +34,9 @@ function normalizePhone(s) {
 // collision risk is irrelevant — this just has to be stable for the same text).
 function hashKey(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
 
-function corsHeaders(origin) {
-  const headers = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-  if (ALLOWED_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
-  return headers;
-}
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 
 export async function onRequestPost(context) {

@@ -8,41 +8,25 @@
 // Auth: JWT bearer (staff).
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
 const VERIFIED_TAG = "dm-verified";
 // GHL search index has a lag updating tags, so we also write the outreach_verified
 // custom field — it's read from the contact record directly and has no lag.
 const OUTREACH_VERIFIED_FIELD_ID = "PVftrxrmNRPmfdlQAwzl";
 
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 
 export async function onRequestPost(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
+  const headers = { ...corsHeaders(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    let payload;
-    try { payload = await verifySessionToken(authHeader.slice(7), JWT_SECRET); }
-    catch { return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers }); }
-    if (payload.role !== "staff") return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
+    const { error, payload } = await requireStaffAuth(context, headers);
+    if (error) return error;
 
     const body = await context.request.json().catch(() => null);
     if (!body || !body.contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers });
