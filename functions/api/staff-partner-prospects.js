@@ -637,6 +637,40 @@ export async function onRequestGet(context) {
       console.error("[staff-partner-prospects] conv batch read failed:", err);
     }
 
+    // Batch-read call-coach:latest per prospect — one-line "what happened on the last
+    // call" for the collapsed card row, so Garrett sees the coaching headline without
+    // expanding. Parallel reads; falls back to null per-contact on error.
+    let callCoachMap = new Map();
+    try {
+      if (context.env.PORTAL_KV) {
+        const coachEntries = await Promise.all(
+          prospects.map(async (p) => [
+            p.contactId,
+            await context.env.PORTAL_KV.get(`call-coach:latest:${p.contactId}`, "json").catch(() => null),
+          ])
+        );
+        for (const [id, rec] of coachEntries) {
+          if (rec?.coaching) {
+            callCoachMap.set(id, rec.coaching.actionLine || (rec.coaching.summary || "").slice(0, 100) || null);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[staff-partner-prospects] call-coach batch read failed:", err);
+    }
+
+    // Read persisted reply dismissals — { [contactId]: lastMessageDate } — so the
+    // "no reply needed" tap survives page reloads. A new message from the same contact
+    // auto-un-dismisses because lastMessageDate will no longer match.
+    let dismissedReplies = {};
+    try {
+      if (context.env.PORTAL_KV) {
+        dismissedReplies = (await context.env.PORTAL_KV.get("reply:dismissed", "json")) || {};
+      }
+    } catch {
+      // non-fatal — UI falls back to session-only dismissal
+    }
+
     for (const p of prospects) {
       const c = cadenceMap.get(p.contactId);
       const skipped = skipSet.has(p.contactId);
@@ -772,7 +806,8 @@ export async function onRequestGet(context) {
         unverifiedCount,
         countsByCategory,
         countsByStage,
-        prospects,
+        prospects: prospects.map((p) => ({ ...p, callCoachLine: callCoachMap.get(p.contactId) || null })),
+        dismissedReplies,
       }),
       { status: 200, headers },
     );
