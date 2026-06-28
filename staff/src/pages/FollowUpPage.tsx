@@ -366,7 +366,10 @@ export default function FollowUpPage() {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
-      .sort((a, b) => score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0))
+      .sort((a, b) => {
+        const d = score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0);
+        return d !== 0 ? d : a.p.contactId.localeCompare(b.p.contactId);
+      })
       // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
       // options without the full backlog (hundreds) becoming a wall. Replies are
       // pinned above this and never capped. The rest stays in the data, not the screen.

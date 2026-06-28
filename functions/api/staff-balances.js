@@ -6,6 +6,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { requireOpsReadKey } from "../lib/ops-auth.js";
 import { getCustomField } from "./portal-data.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";

@@ -135,7 +135,7 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
 async function fetchByTag(ghlToken, tag) {
   const all = [];
   let page = 1;
-  while (page <= 5) {
+  while (page <= 20) {
     const res = await fetch(`${GHL_API_BASE}/contacts/search`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },

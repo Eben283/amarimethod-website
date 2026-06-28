@@ -193,9 +193,15 @@ export async function reconcileOrder(env, orderDetail) {
   }
 
   // ── ORPHAN. Apply C-series workflow simulation ──
+  // Additive products (4→8 upgrade) add sessions to whatever the client already
+  // has rather than overwriting — the GHL workflow does the same. SET products
+  // (fresh 4-pack, fresh 8-pack) write the full package size absolutely.
+  const newRemaining = pkg.isAdditive
+    ? (parseInt(currentRemaining, 10) || 0) + pkg.sessionsToSet
+    : pkg.sessionsToSet;
   const customFields = [
     { id: FIELD_IDS.series_type, value: pkg.seriesType },
-    { id: FIELD_IDS.sessions_remaining, value: pkg.sessionsToSet },
+    { id: FIELD_IDS.sessions_remaining, value: newRemaining },
     { id: FIELD_IDS.portal_access, value: ["true"] },
   ];
   if (pkg.livingPractice) {
@@ -213,7 +219,7 @@ export async function reconcileOrder(env, orderDetail) {
     await removeContactTags(env, contactId, tagsRemoved);
   }
 
-  const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${pkg.sessionsToSet}, portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
+  const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${newRemaining}, portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
   await addContactNote(env, contactId, noteBody);
 
   await env.PURCHASE_KV.put(
@@ -224,7 +230,7 @@ export async function reconcileOrder(env, orderDetail) {
       action: "applied",
       package: pkg.name,
       seriesType: pkg.seriesType,
-      sessionsToSet: pkg.sessionsToSet,
+      sessionsRemaining: newRemaining,
       tagsRemoved,
     }),
     { expirationTtl: 90 * 86400 }
@@ -238,7 +244,7 @@ export async function reconcileOrder(env, orderDetail) {
     contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
     beforeSeriesType: currentSeriesType,
     afterSeriesType: pkg.seriesType,
-    sessionsRemaining: pkg.sessionsToSet,
+    sessionsRemaining: newRemaining,
     tagsRemoved,
   };
 }

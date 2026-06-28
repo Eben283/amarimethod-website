@@ -555,7 +555,6 @@ async function fetchByTag(ghlToken, tag, pageLimit = 100) {
     all.push(...contacts);
     if (contacts.length < pageLimit) break;
     pageOffset += pageLimit;
-    if (pageOffset >= 500) break;
   }
   return all;
 }

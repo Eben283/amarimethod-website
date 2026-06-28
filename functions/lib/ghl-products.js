@@ -70,6 +70,7 @@ export const GHL_PRODUCTS = {
     sessions: 4, // 4-pack already counted as +4; this adds 4
     seriesType: "8-session",
     sessionsRemaining: 4,
+    isAdditive: true, // reconcile: ADD to current balance, not SET — client may have unused 4-pack sessions
     livingPractice: true,
     isPackagePurchase: true,
   },
@@ -230,7 +231,7 @@ export const PACKAGE_MAP = Object.fromEntries(
     .filter(([, p]) => p.isPackagePurchase)
     .map(([id, p]) => [
       id,
-      { name: p.name, sessionsToSet: p.sessionsRemaining, seriesType: p.seriesType, livingPractice: !!p.livingPractice },
+      { name: p.name, sessionsToSet: p.sessionsRemaining, seriesType: p.seriesType, livingPractice: !!p.livingPractice, isAdditive: !!p.isAdditive },
     ]),
 );
 

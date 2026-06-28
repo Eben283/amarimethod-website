@@ -86,11 +86,12 @@ export async function runSync(env, trigger, full = false) {
   // 1. Collect conversations changed since the cutoff (newest first; stop early).
   const changed = [];
   let startAfterDate = null;
+  let hadPaginationError = false;
   for (let page = 0; page < 80; page++) {
     let p = `/conversations/search?limit=100&sortBy=last_message_date&sort=desc`;
     if (startAfterDate) p += `&startAfterDate=${startAfterDate}`;
     let data;
-    try { data = await ghlRetry(env, p); } catch (e) { break; }
+    try { data = await ghlRetry(env, p); } catch (e) { hadPaginationError = true; break; }
     const convs = data.conversations || [];
     if (!convs.length) break;
     let hitCutoff = false;
@@ -198,15 +199,27 @@ export async function runSync(env, trigger, full = false) {
     newTouches += added;
   });
 
-  // 3. Update the roster index.
+  // 3. Update the roster index, pruning entries not seen in TRIM_DAYS so it
+  // doesn't grow without bound (a contact who drops out of the 90d window
+  // would otherwise stay in the index forever and inflate its size).
   if (Object.keys(indexUpdates).length) {
     const index = (await kv.get("conv:index", "json")) || {};
     Object.assign(index, indexUpdates);
+    for (const [cid, ts] of Object.entries(index)) {
+      if (ts < trimCutoff) delete index[cid];
+    }
     await kv.put("conv:index", JSON.stringify(index));
   }
 
   // 4. Advance the high-water mark + write the run summary.
-  await kv.put("conv:sync:lastRun", String(start));
+  // Only advance if pagination completed without error. A partial pull (pagination broke
+  // mid-run) means some conversations in the window were never fetched — advancing would
+  // cause the next run to skip them. The weekly full=true reconcile will catch the gap.
+  if (!hadPaginationError) {
+    await kv.put("conv:sync:lastRun", String(start));
+  } else {
+    console.warn(`[sync] Pagination error on page scan — NOT advancing watermark. Will re-scan from previous cutoff on next run.`);
+  }
   const summary = {
     trigger,
     ranAt: new Date(start).toISOString(),
