@@ -8,7 +8,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, updateContactField, getCallCoach,
+  recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
   getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
@@ -70,6 +70,11 @@ const SETASIDE_OPTS: Record<string, { signal: PartnerLastSignal; note?: string; 
 // Signals that record an actual touch (bump last-signal + timer). skip / note /
 // deferred change stage/schedule but aren't "touches".
 const TOUCH_LIKE = new Set<PartnerLastSignal>(['no-answer', 'voicemail', 'talked', 'link-sent', 'linkedin-msg', 'linkedin-req', 'instagram-msg', 'in-person', 'texted', 'emailed']);
+
+// Module-level: prevent duplicate coach-one triggers per contact per page session.
+const coachOneTriggered = new Set<string>();
+// Signals that indicate a GHL call happened (recording may exist to transcribe).
+const CALL_SIGNALS = new Set<PartnerLastSignal>(['talked', 'no-answer', 'voicemail']);
 
 // "Sent link" dropdown — records WHICH link Garrett sent (no send happens). The
 // note lands in the activity timeline so the coach knows what's gone out.
@@ -791,6 +796,23 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     getCallCoach(contactId).then((c) => { if (live) setCallNotes(c); }).catch(() => { if (live) setCallNotes(null); });
     return () => { live = false; };
   }, [contactId, isReply]);
+
+  // Lazy-transcribe-on-view: when the card is expanded, callNotes is absent, and
+  // the contact's last signal was a call (recording may exist), fire the call-coach
+  // worker on-demand and re-poll once after 8s to pick up the fresh result.
+  const hasCallSignal = item.kind === 'prospect' && CALL_SIGNALS.has(item.p.partnerLastSignal as PartnerLastSignal);
+  useEffect(() => {
+    if (!expanded || callNotes !== null || !hasCallSignal || coachOneTriggered.has(contactId)) return;
+    coachOneTriggered.add(contactId);
+    triggerCoachOne(contactId);
+    let live = true;
+    const timer = setTimeout(() => {
+      if (!live) return;
+      getCallCoach(contactId).then((fresh) => { if (live && fresh) setCallNotes(fresh); }).catch(() => {});
+    }, 8000);
+    return () => { live = false; clearTimeout(timer); };
+  }, [expanded, callNotes, contactId, hasCallSignal]);
+
   const derivedAction: ActionKind | null = item.kind === 'prospect' ? item.d.action : null;
   const isLinkedIn = derivedAction === 'linkedin';
   // Discovery: buildCard set action="discovery" (unverified facility, DM unknown).

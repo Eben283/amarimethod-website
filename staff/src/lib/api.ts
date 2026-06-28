@@ -598,6 +598,16 @@ export async function getCallCoach(contactId: string, date?: string): Promise<Ca
   }
 }
 
+// Fire-and-forget: tells the call-coach worker to process a single contact
+// immediately. Returns without waiting for the worker to finish (returns 202).
+export async function triggerCoachOne(contactId: string): Promise<void> {
+  try {
+    await fetchApi('/staff-coach-one', { method: 'POST', body: JSON.stringify({ contactId }) });
+  } catch {
+    // fire-and-forget — ignore errors
+  }
+}
+
 // ── Outreach coach (local generator: cadence + thread + voice → who/why/message)
 export interface OutreachCoach {
   contactId: string;
