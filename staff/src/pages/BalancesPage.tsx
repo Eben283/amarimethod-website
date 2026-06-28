@@ -116,9 +116,9 @@ export default function BalancesPage() {
     const filtered = q
       ? rows.filter(
           (r) =>
-            r.name.toLowerCase().includes(q) ||
-            r.email.toLowerCase().includes(q) ||
-            r.phone.toLowerCase().includes(q),
+            (r.name ?? '').toLowerCase().includes(q) ||
+            (r.email ?? '').toLowerCase().includes(q) ||
+            (r.phone ?? '').toLowerCase().includes(q),
         )
       : rows;
 

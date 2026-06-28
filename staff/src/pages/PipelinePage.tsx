@@ -208,7 +208,7 @@ export default function PipelinePage() {
               <KanbanColumn
                 key={col.id}
                 col={col}
-                cards={columns[col.id]}
+                cards={columns[col.id] ?? []}
                 onCardClick={(id) => navigate(`/client/${id}`)}
               />
             ))}

@@ -310,8 +310,9 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
   }
 
   // Build timeline — show the day's shape
-  const firstStart = new Date(appointments[0].startTime);
-  const lastEnd = new Date(appointments[appointments.length - 1].endTime);
+  const sorted = [...appointments].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const firstStart = new Date(sorted[0].startTime);
+  const lastEnd = new Date(sorted[sorted.length - 1].endTime);
   const dayStartHour = Math.max(7, firstStart.getHours() - 1);
   const dayEndHour = Math.min(21, lastEnd.getHours() + 2);
 
