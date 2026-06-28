@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { CourseProgress, LessonProgress } from '../types/course';
 import { COURSE_MODULES, TOTAL_LESSONS, lessonKey } from '../data/course-data';
+import { fetchServerProgress, saveServerProgress } from '../lib/api';
 
 const COMPLETION_THRESHOLD = 0.9;
 
@@ -21,14 +22,66 @@ function loadProgress(contactId: string): CourseProgress {
   return { lessons: {}, lastLessonPath: null };
 }
 
-function saveProgress(contactId: string, progress: CourseProgress): void {
+function saveLocalProgress(contactId: string, progress: CourseProgress): void {
   localStorage.setItem(storageKey(contactId), JSON.stringify(progress));
+}
+
+// Merge server + local: completed lessons from either source are kept;
+// for watched-seconds, take the higher value so progress is never lost.
+function mergeProgress(local: CourseProgress, server: CourseProgress): CourseProgress {
+  const merged: CourseProgress['lessons'] = { ...local.lessons };
+  for (const [key, serverLesson] of Object.entries(server.lessons)) {
+    const localLesson = merged[key];
+    if (!localLesson) {
+      merged[key] = serverLesson;
+    } else {
+      merged[key] = {
+        completed: localLesson.completed || serverLesson.completed,
+        lastWatchedAt: Math.max(localLesson.lastWatchedAt ?? 0, serverLesson.lastWatchedAt ?? 0),
+        watchedSeconds: Math.max(localLesson.watchedSeconds ?? 0, serverLesson.watchedSeconds ?? 0),
+      };
+    }
+  }
+  return {
+    lessons: merged,
+    lastLessonPath: server.lastLessonPath || local.lastLessonPath,
+  };
 }
 
 export function useCourseProgress() {
   const { contactId } = useAuth();
   const [progress, setProgress] = useState<CourseProgress>(() =>
     contactId ? loadProgress(contactId) : { lessons: {}, lastLessonPath: null },
+  );
+  const syncedRef = useRef(false);
+
+  // On mount: pull server progress and merge with localStorage
+  useEffect(() => {
+    if (!contactId || syncedRef.current) return;
+    syncedRef.current = true;
+
+    fetchServerProgress()
+      .then(({ progress: serverProgress }) => {
+        if (!serverProgress) return;
+        setProgress((local) => {
+          const merged = mergeProgress(local, serverProgress);
+          saveLocalProgress(contactId, merged);
+          return merged;
+        });
+      })
+      .catch(() => {
+        // Server unavailable — localStorage is the source of truth
+      });
+  }, [contactId]);
+
+  const persistProgress = useCallback(
+    (contactId: string, updated: CourseProgress) => {
+      saveLocalProgress(contactId, updated);
+      saveServerProgress(updated).catch(() => {
+        // Fire-and-forget — localStorage already has the write
+      });
+    },
+    [],
   );
 
   const updateWatchedSeconds = useCallback(
@@ -52,11 +105,11 @@ export function useCourseProgress() {
           lastLessonPath: `${moduleSlug}/${lessonSlug}`,
         };
 
-        saveProgress(contactId, updated);
+        persistProgress(contactId, updated);
         return updated;
       });
     },
-    [contactId],
+    [contactId, persistProgress],
   );
 
   const markComplete = useCallback(
@@ -78,11 +131,11 @@ export function useCourseProgress() {
           lastLessonPath: `${moduleSlug}/${lessonSlug}`,
         };
 
-        saveProgress(contactId, updated);
+        persistProgress(contactId, updated);
         return updated;
       });
     },
-    [contactId],
+    [contactId, persistProgress],
   );
 
   const getLessonProgress = useCallback(

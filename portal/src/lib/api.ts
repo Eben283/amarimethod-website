@@ -145,4 +145,15 @@ export async function updateReminderPreference(
   });
 }
 
+export async function fetchServerProgress(): Promise<{ progress: import('../types/course').CourseProgress | null }> {
+  return fetchApi('/portal-progress');
+}
+
+export async function saveServerProgress(progress: import('../types/course').CourseProgress): Promise<{ success: boolean }> {
+  return fetchApi('/portal-progress', {
+    method: 'POST',
+    body: JSON.stringify(progress),
+  });
+}
+
 export { ApiError };
