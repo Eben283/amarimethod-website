@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
-  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, ApiError,
+  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, dismissReply, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts } from '../lib/followupCopy';
@@ -265,7 +265,9 @@ export default function FollowUpPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
-  const [dismissedReplies, setDismissedReplies] = useState<Set<string>>(new Set()); // session-only "no reply needed"
+  // { [contactId]: lastMessageDate } — persisted in KV; seeded from prospectsRes on load.
+  // A dismissal only hides the card when lastMessageDate still matches.
+  const [dismissedReplies, setDismissedReplies] = useState<Record<string, string | null>>({});
   // Session-only "I just handled this person" — a send or an outcome action drops
   // them from Act Now immediately, so you don't see ghosts of people you've worked
   // until the cadence snapshot catches up (≤3h). Cleared on reload.
@@ -286,6 +288,7 @@ export default function FollowUpPage() {
       setProspects(prospectsRes.prospects);
       setCoachDataAt(prospectsRes.coachDataAt ?? null);
       setConversations((convoRes as { conversations: ConversationSummary[] }).conversations || []);
+      if (prospectsRes.dismissedReplies) setDismissedReplies(prospectsRes.dismissedReplies);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
       setError(err instanceof Error ? err.message : 'Failed to load follow-ups');
@@ -313,7 +316,10 @@ export default function FollowUpPage() {
   const replyItems = useMemo<ReplyItem[]>(() => {
     return conversations
       .filter((c) => {
-        if (!c.needsReply || isCloser(c.lastMessagePreview) || dismissedReplies.has(c.contactId) || handledIds.has(c.contactId)) return false;
+        if (!c.needsReply || isCloser(c.lastMessagePreview) || handledIds.has(c.contactId)) return false;
+        // Dismissed only suppresses when the stored lastMessageDate still matches —
+        // a new inbound message un-dismisses automatically.
+        if (c.contactId in dismissedReplies && dismissedReplies[c.contactId] === c.lastMessageDate) return false;
         // Honor a PERSISTED disposition. A reply from someone you've already set
         // aside (not-a-fit / snoozed / future-potential) or who's already booked
         // shouldn't keep topping Act Now on a courtesy line ("Im good.").
@@ -447,8 +453,9 @@ export default function FollowUpPage() {
     }
   }, [logout, markHandled]);
 
-  const onDismissReply = useCallback((contactId: string) => {
-    setDismissedReplies((s) => { const next = new Set(s); next.add(contactId); return next; });
+  const onDismissReply = useCallback((contactId: string, lastMessageDate: string | null) => {
+    setDismissedReplies((s) => ({ ...s, [contactId]: lastMessageDate }));
+    dismissReply(contactId, lastMessageDate); // persist to KV; fire-and-forget
   }, []);
 
   const onSaveNote = useCallback(async (contactId: string) => {
@@ -561,7 +568,7 @@ export default function FollowUpPage() {
                   onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
                   onNoteChange={setNoteDraft}
                   onSaveNote={() => onSaveNote(item.p.contactId)}
-                  onDismiss={() => onDismissReply(item.p.contactId)}
+                  onDismiss={() => onDismissReply(item.p.contactId, null)}
                   onHandled={() => markHandled(item.p.contactId)}
                 />
               )
@@ -615,7 +622,7 @@ export default function FollowUpPage() {
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
-                      onDismiss={() => onDismissReply(contactId)}
+                      onDismiss={() => onDismissReply(contactId, item.kind === 'reply' ? (item.conv.lastMessageDate ?? null) : null)}
                       onHandled={() => markHandled(contactId)}
                     />
                   );
@@ -876,6 +883,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               <p className="mt-1 text-sm text-amari-charcoal">{displayWhy}</p>
               {item.kind === 'prospect' && item.hint && (
                 <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
+              )}
+              {!expanded && item.kind === 'prospect' && item.p.callCoachLine && (
+                <p className="mt-0.5 line-clamp-1 text-[11px] text-amari-text-muted">
+                  <Phone className="mr-0.5 inline h-3 w-3" />{item.p.callCoachLine}
+                </p>
               )}
               <p className="mt-0.5 text-[11px] text-amari-text-muted">Last touch: {ago(daysSince(lastTouchAt(item.p)))}</p>
             </>

@@ -419,6 +419,9 @@ export interface PartnerProspect {
   /** Human-readable stage badge computed server-side from cadence state + partner_stage.
    *  Examples: "New", "Touch 2 of 6", "Warm · Touch 1 of 4", "Reply Waiting", "Breakup". */
   stageLabel?: string | null;
+  /** One-line call-coach summary for the collapsed card row (actionLine or first 100 chars of summary).
+   *  Null if no coached call exists for this contact. */
+  callCoachLine?: string | null;
 }
 
 export type PartnerStageFilter = 'all' | PartnerStage;
@@ -440,6 +443,9 @@ export interface PartnerProspectsResponse {
   countsByCategory: Record<PartnerCategory, number>;
   countsByStage: Record<PartnerStage, number>;
   prospects: PartnerProspect[];
+  /** Persisted reply dismissals: { [contactId]: lastMessageDate }. A dismissal only hides
+   *  the reply card when lastMessageDate matches — new messages auto-un-dismiss. */
+  dismissedReplies?: Record<string, string | null>;
 }
 
 // Activity timeline event (returned by staff-partner-activity endpoint, lazy-loaded per contact)

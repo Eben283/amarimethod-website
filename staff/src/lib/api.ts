@@ -356,6 +356,16 @@ export async function getPartnerProspects(): Promise<import('../types/staff').Pa
   return fetchApi('/staff-partner-prospects');
 }
 
+// Persist a "no reply needed" dismissal so it survives page reloads.
+// lastMessageDate is stored so a new inbound message auto-un-dismisses.
+export async function dismissReply(contactId: string, lastMessageDate: string | null): Promise<void> {
+  try {
+    await fetchApi('/staff-reply-dismiss', { method: 'POST', body: JSON.stringify({ contactId, lastMessageDate }) });
+  } catch {
+    // fire-and-forget — UI already updated optimistically
+  }
+}
+
 export interface PartnerActivityResponse {
   contactId: string;
   generatedAt: string;
