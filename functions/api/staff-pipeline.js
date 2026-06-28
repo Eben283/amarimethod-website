@@ -4,7 +4,7 @@
 // Eben's private pipeline view — staff auth required.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -40,22 +40,6 @@ const OUTREACH_TAGS = [
   "referred-a-client",
 ];
 
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-  "http://localhost:5175",
-  "http://localhost:5174",
-  "http://localhost:5173",
-];
-
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  };
-}
 
 function readFieldById(contact, fieldId) {
   const arr = contact.customFields || [];
@@ -265,25 +249,9 @@ export async function onRequestGet(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
-  const JWT_SECRET = context.env.JWT_SECRET;
-  if (!JWT_SECRET) {
-    return new Response(JSON.stringify({ error: "Server misconfigured" }), { status: 500, headers });
-  }
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
-  const authHeader = context.request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-  }
-
-  let tokenPayload;
-  try {
-    tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid token" }), { status: 401, headers });
-  }
-  if (tokenPayload.role !== "staff") {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-  }
 
   const ghlToken = await getGhlToken(context);
   if (!ghlToken) {

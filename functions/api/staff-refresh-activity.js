@@ -8,26 +8,11 @@
 // is set in both the Pages env and the worker env, the worker gate is a no-op
 // and the missing header is harmless (CRIT-A rollout, 2026-06-11).
 
-import { verifySessionToken } from "../lib/auth.js";
 
 // Worker subdomain confirmed after first deploy 2026-05-25 — Eben's Cloudflare
 // account uses `eben-fa2` as the workers.dev subdomain, not `amari-method`.
 const WORKER_URL = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
 
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
-
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 export async function onRequestOptions(context) {
   return new Response(null, {
@@ -41,23 +26,9 @@ export async function onRequestPost(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    }
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    }
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers });
-    }
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
+
 
     // The worker takes ~10-15 minutes to run all ~412 contacts. The user-facing
     // CTA shouldn't wait that long, so we kick it off and return immediately —

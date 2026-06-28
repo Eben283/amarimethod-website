@@ -40,20 +40,10 @@ export async function onRequestOptions(context) {
 }
 
 export async function onRequestPost(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
 
-  const JWT_SECRET = context.env.JWT_SECRET;
-  if (!JWT_SECRET) return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-
-  const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-  let tokenPayload;
-  try {
-    tokenPayload = await verifySessionToken(auth.slice(7), JWT_SECRET);
-  } catch {
-    return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers });
-  }
-  if (tokenPayload.role !== "staff") return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
   let body;
   try { body = await context.request.json(); }

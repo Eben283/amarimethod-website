@@ -13,14 +13,9 @@
 // Auth: JWT bearer.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
 
 // Whitelist: which fields the staff app is allowed to inline-edit.
 // 'kind' = 'standard' (on contact root) or 'custom' (in customFields[id]).
@@ -42,15 +37,6 @@ const EDITABLE_FIELDS = {
   partnerRundown:      { kind: "custom",   id: "Yd3lsw6fAxl0HVCxr1cD", label: "Rundown" },
 };
 
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 export async function onRequestOptions(context) {
   return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
@@ -77,21 +63,9 @@ export async function onRequestPost(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    }
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch {
-      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers });
-    }
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
+
 
     const payload = await context.request.json().catch(() => null);
     if (!payload || typeof payload !== "object") {

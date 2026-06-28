@@ -2,26 +2,12 @@
 // Search contacts by name, email, or phone
 
 import { ghlFetch } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
-import { getCustomField } from "./portal-data.js";
+import { getCustomField } from "../lib/portal-helpers.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
-
-function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 export async function onRequestOptions(context) {
   return new Response(null, {
@@ -35,26 +21,9 @@ export async function onRequestGet(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch {
-      return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers });
-    }
-
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-    }
 
     const url = new URL(context.request.url);
     const query = (url.searchParams.get("query") || "").trim();

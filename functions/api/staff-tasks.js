@@ -10,7 +10,7 @@
 //     Garrett does what he's told, so this is the channel for telling him.
 // Both Garrett and Eben edit; last-write-wins (rare concurrent edits, low stakes).
 
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const TASKS_KEY = "staff:garrett-tasks";
 const MAX_TASKS = 50;
@@ -19,32 +19,9 @@ const MAX_TEXT_LEN = 280;
 const DEFAULT_GOAL = "Today: get people out of pain — every call is someone you could help.";
 const DEFAULT_RULE = "Every call ends with a text — tap VM + text or Talked + text.";
 
-const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
-
-function corsHeaders(origin) {
-  const headers = {
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-  if (ALLOWED_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
-  return headers;
-}
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
-}
-
-async function requireStaff(context, headers) {
-  const JWT_SECRET = context.env.JWT_SECRET;
-  if (!JWT_SECRET) return { error: new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers }) };
-  const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers }) };
-  let payload;
-  try { payload = await verifySessionToken(auth.slice(7), JWT_SECRET); }
-  catch { return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) }; }
-  if (payload.role !== "staff") return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers }) };
-  return { payload };
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 
 // Read the full state, applying defaults. (Bookings are tracked authoritatively
@@ -67,17 +44,17 @@ function publicView(state) {
 }
 
 export async function onRequestGet(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
-  const gate = await requireStaff(context, headers);
-  if (gate.error) return gate.error;
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers);
+  if (error) return error;
   const state = await readState(context.env);
   return new Response(JSON.stringify(publicView(state)), { status: 200, headers });
 }
 
 export async function onRequestPost(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
-  const gate = await requireStaff(context, headers);
-  if (gate.error) return gate.error;
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
   let body;
   try { body = await context.request.json(); }
@@ -93,7 +70,7 @@ export async function onRequestPost(context) {
     case "add": {
       if (!text) return new Response(JSON.stringify({ error: "Task text required" }), { status: 400, headers });
       if (state.tasks.length >= MAX_TASKS) return new Response(JSON.stringify({ error: "Too many tasks — clear some first" }), { status: 400, headers });
-      state.tasks = [...state.tasks, { id: crypto.randomUUID(), text, done: false, addedBy: gate.payload.user || "staff", createdAt: now }];
+      state.tasks = [...state.tasks, { id: crypto.randomUUID(), text, done: false, addedBy: payload.user || "staff", createdAt: now }];
       break;
     }
     case "edit": {

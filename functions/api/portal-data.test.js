@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getCustomField, isChecked, computeHasLivingPractice, countLifetimeCompleted } from './portal-data.js';
+import { getCustomField, isChecked, computeHasLivingPractice } from '../lib/portal-helpers.js';
+import { countLifetimeCompleted } from './portal-data.js';
 
 describe('countLifetimeCompleted', () => {
   const NOW = Date.parse('2026-06-06T12:00:00Z');

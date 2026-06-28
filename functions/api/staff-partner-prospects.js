@@ -10,17 +10,12 @@
 // Auth: JWT bearer, same pattern as other staff endpoints.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
 import sheetCache from "../lib/partner-sheet-cache.json";
 import { buildCard } from "../lib/build-card.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
 
 // Custom field IDs used by the Partners tab.
 // New partner_* fields created 2026-05-23.
@@ -93,15 +88,6 @@ const ALL_STAGES = [
   "dropped",
 ];
 
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 function deriveCategory(tags) {
   if (!Array.isArray(tags)) return "unknown";
@@ -571,36 +557,9 @@ export async function onRequestGet(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers },
-      );
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers },
-      );
-    }
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers },
-      );
-    }
-    if (tokenPayload.role !== "staff") {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 403, headers },
-      );
-    }
 
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {

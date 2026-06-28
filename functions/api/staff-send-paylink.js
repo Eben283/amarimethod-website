@@ -5,7 +5,7 @@
 // Server-side product map is the source of truth — never trust a client-provided URL.
 
 import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // GHL payment links are hosted on the GHL-managed subdomain, NOT the
@@ -60,20 +60,6 @@ const PRODUCTS = {
   },
 };
 
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
-
-function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 function buildMessage(product) {
   return `Here's your payment link for the ${product.name} (${product.price}):\n\n${BASE_URL}${product.path}`;
@@ -91,26 +77,9 @@ export async function onRequestPost(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch {
-      return new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers });
-    }
-
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-    }
 
     const body = await context.request.json();
     const { contactId, product: productKey } = body;

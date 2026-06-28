@@ -14,24 +14,9 @@
 //
 // Auth: staff JWT bearer.
 
-import { verifySessionToken } from "../lib/auth.js";
 
 const KV_KEY = "funnel:latest";
 
-const ALLOWED_ORIGINS = [
-  "https://www.amarimethod.com",
-  "https://amarimethod.com",
-];
-
-function corsHeaders(origin) {
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowed,
-    "Access-Control-Allow-Methods": "GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-}
 
 export async function onRequestOptions(context) {
   return new Response(null, {
@@ -45,23 +30,9 @@ export async function onRequestGet(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers });
-    }
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers });
-    }
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers });
-    }
-    if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers });
-    }
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
+    if (error) return error;
+
 
     const kv = context.env.PORTAL_KV;
     if (!kv) {

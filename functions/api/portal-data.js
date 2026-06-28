@@ -29,12 +29,6 @@ function corsHeaders(origin) {
   return headers;
 }
 
-// getCustomField / isChecked / computeHasLivingPractice now live in
-// ../lib/portal-helpers.js (imported above). Re-exported here so existing
-// importers (staff-*.js, session-ledger.js) keep their import path working.
-// This also breaks the portal-data ⇄ session-ledger circular import — those
-// helpers no longer have to be reached through this api file.
-export { getCustomField, isChecked, computeHasLivingPractice };
 
 // Lifetime "completed" count: appointments that effectively ran, minus
 // non-journey types. Extracted from the handler so it's testable; nowMs is

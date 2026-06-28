@@ -5,7 +5,7 @@
 // falls back to reading custom fields directly.
 
 import { ghlFetch } from "../lib/ghl.js";
-import { getCustomField } from "./portal-data.js";
+import { getCustomField } from "../lib/portal-helpers.js";
 import { requireStaffOrOpsAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";

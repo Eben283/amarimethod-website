@@ -9,39 +9,16 @@
 // don't fabricate his playbook (see feedback_prescriptive_vs_descriptive).
 // Editable so Eben/Garrett grow it from real calls in the morning loop.
 
-import { verifySessionToken } from "../lib/auth.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const CARDS_KEY = "staff:sharpen-cards";
 const MAX_CARDS = 200;
 const MAX_LEN = 600;
 const CATEGORIES = ["frame", "objection", "discovery", "close", "real-call"];
 
-const ALLOWED_ORIGINS = ["https://www.amarimethod.com", "https://amarimethod.com"];
-
-function corsHeaders(origin) {
-  const headers = {
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-  };
-  if (ALLOWED_ORIGINS.includes(origin)) headers["Access-Control-Allow-Origin"] = origin;
-  return headers;
-}
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin")) });
-}
-
-async function requireStaff(context, headers) {
-  const JWT_SECRET = context.env.JWT_SECRET;
-  if (!JWT_SECRET) return { error: new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers }) };
-  const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers }) };
-  let payload;
-  try { payload = await verifySessionToken(auth.slice(7), JWT_SECRET); }
-  catch { return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) }; }
-  if (payload.role !== "staff") return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers }) };
-  return { payload };
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 
 async function readCards(env) {
@@ -53,16 +30,16 @@ async function writeCards(env, cards) {
 }
 
 export async function onRequestGet(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
-  const gate = await requireStaff(context, headers);
-  if (gate.error) return gate.error;
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers);
+  if (error) return error;
   return new Response(JSON.stringify({ cards: await readCards(context.env) }), { status: 200, headers });
 }
 
 export async function onRequestPost(context) {
-  const headers = { ...corsHeaders(context.request.headers.get("Origin")), "Content-Type": "application/json" };
-  const gate = await requireStaff(context, headers);
-  if (gate.error) return gate.error;
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
   let body;
   try { body = await context.request.json(); }
@@ -80,7 +57,7 @@ export async function onRequestPost(context) {
     case "add": {
       if (!title && !text) return new Response(JSON.stringify({ error: "Card needs a title or body" }), { status: 400, headers });
       if (cards.length >= MAX_CARDS) return new Response(JSON.stringify({ error: "Too many cards" }), { status: 400, headers });
-      cards = [{ id: crypto.randomUUID(), category, title, body: text, addedBy: gate.payload.user || "staff", createdAt: now }, ...cards];
+      cards = [{ id: crypto.randomUUID(), category, title, body: text, addedBy: payload.user || "staff", createdAt: now }, ...cards];
       break;
     }
     case "edit": {
