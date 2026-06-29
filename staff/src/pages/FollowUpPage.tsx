@@ -828,7 +828,8 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // UntextablePanel renders correctly (buildCard.channel is "call" for these too, so
   // the pill already says "Call"; the panel gives Garrett the talking points).
   const phoneType = item.kind === 'prospect' ? (item.p.phoneType || null) : null;
-  const isUntextable = !isLinkedIn && !isDiscovery && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip');
+  const isTextDnd = item.kind === 'prospect' ? (item.p.textDnd === true) : false;
+  const isUntextable = !isLinkedIn && !isDiscovery && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip' || isTextDnd);
   // Phase 3: buildCard writes why + channel together from the same dossier, so they
   // never contradict. No more coachWhy/coachChannel override layers needed.
   const effAction: ActionKind | null = isLinkedIn ? 'linkedin'
@@ -854,6 +855,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     const pp = item.p;
     if (callNotes !== 'loading' && !(callNotes && callNotes.hasAudio)) gaps.push('no call transcript');
     if (!phoneType) gaps.push('line type unknown');
+    if (isTextDnd) gaps.push('text DND — GHL blocked a previous send');
     if (isDiscovery) gaps.push('who the decision-maker is');
     if (!pp.phone) gaps.push('no phone');
     if (!pp.email) gaps.push('no email');
@@ -973,9 +975,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
               ) : isUntextable ? (
-                /* Landline / toll-free / VoIP — a switchboard that can't receive SMS.
+                /* Landline / toll-free / VoIP / text DND — can't receive SMS.
                    Offer a call instead of a text box, with a talking point to use. */
-                <UntextablePanel p={item.p} phoneType={phoneType} />
+                <UntextablePanel p={item.p} phoneType={phoneType} textDnd={isTextDnd} />
               ) : (
                 <>
                   {/* Phase B: suppress cold-outreach panel when call-coach says hold.
@@ -1280,13 +1282,20 @@ function LinkedInPanel({ p }: { p: PartnerProspect }) {
 // Landline / toll-free / VoIP number (from the line-type sweep) — a switchboard
 // that can't receive SMS. No text box; offer a call (tap to dial) + a talking
 // point to use on the phone. Email still works via Open in GHL / the contact card.
-function UntextablePanel({ p, phoneType }: { p: PartnerProspect; phoneType: string | null }) {
+function UntextablePanel({ p, phoneType, textDnd }: { p: PartnerProspect; phoneType: string | null; textDnd?: boolean }) {
   const suggestion = suggestedTexts(p)[0] || '';
-  const label = phoneType === 'voip' ? 'VoIP — likely a switchboard' : phoneType === 'toll_free' ? 'Toll-free line' : 'Landline';
+  const label = textDnd && phoneType !== 'voip' && phoneType !== 'toll_free' && phoneType !== 'landline'
+    ? 'Text DND — GHL blocked a previous send'
+    : phoneType === 'voip' ? 'VoIP — likely a switchboard'
+    : phoneType === 'toll_free' ? 'Toll-free line'
+    : 'Landline';
+  const note = textDnd && phoneType !== 'voip' && phoneType !== 'toll_free' && phoneType !== 'landline'
+    ? 'call instead (texts are blocked)'
+    : 'call instead (texts won’t reach it)';
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        <Phone className="h-3 w-3" /> {label} — call instead (texts won&apos;t reach it)
+        <Phone className="h-3 w-3" /> {label} — {note}
       </p>
       {p.phone ? (
         <p className="mb-2 inline-flex items-center gap-1 text-xs text-amari-charcoal">

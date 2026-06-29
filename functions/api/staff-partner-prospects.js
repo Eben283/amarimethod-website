@@ -518,6 +518,7 @@ function toProspect(contact) {
     sheetStatus:          sheetRow?.status || null,
     sheetNotes:           sheetRow?.notes || null,
     inGarrettSheet:       !!sheetRow,
+    textDnd:              contact.dndSettings?.SMS?.status === 'active' || false,
   };
 }
 
@@ -747,6 +748,7 @@ export async function onRequestGet(context) {
         hasPtOnStaff: null, outreachVerified: false,
         touchCount: Number(c.outCount) || 0,
         sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
+        textDnd: false,
         isLead: true,
         derived,
       });

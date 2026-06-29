@@ -357,6 +357,9 @@ export interface PartnerProspect {
   // "landline" | "voip" | "toll_free" | "unknown" | null (unclassified). The UI
   // suppresses SMS to landline/toll_free/voip (switchboards that can't text).
   phoneType?: string | null;
+  // GHL marked this contact as SMS DND (dndSettings.SMS.status === 'active') —
+  // either they replied STOP or a previous text bounced (VoIP misclassified as mobile).
+  textDnd?: boolean;
   email: string | null;
   website: string | null;
   /** Standard GHL contact fields populated from enrichment (May 2026) — were
