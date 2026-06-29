@@ -1284,11 +1284,11 @@ function LinkedInPanel({ p }: { p: PartnerProspect }) {
 // point to use on the phone. Email still works via Open in GHL / the contact card.
 function UntextablePanel({ p, phoneType, textDnd }: { p: PartnerProspect; phoneType: string | null; textDnd?: boolean }) {
   const suggestion = suggestedTexts(p)[0] || '';
-  const label = textDnd && phoneType !== ‘voip’ && phoneType !== ‘toll_free’ && phoneType !== ‘landline’
-    ? ‘Texts blocked’
-    : phoneType === ‘voip’ ? ‘VoIP — likely a switchboard’
-    : phoneType === ‘toll_free’ ? ‘Toll-free line’
-    : ‘Landline’;
+  const label = textDnd && phoneType !== 'voip' && phoneType !== 'toll_free' && phoneType !== 'landline'
+    ? 'Texts blocked'
+    : phoneType === 'voip' ? 'VoIP — likely a switchboard'
+    : phoneType === 'toll_free' ? 'Toll-free line'
+    : 'Landline';
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">

@@ -372,6 +372,9 @@ document.addEventListener('click', function(e) {
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
       'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book/discovery-call"],' +
+      'a[href^="/book/initial-in-person"],' +
+      'a[href^="/book/initial-virtual"],' +
       'a[href^="/book-discovery-call"],' +
       'a[href^="/book-initial-in-person"],' +
       'a[href^="/book-initial-virtual"],' +
@@ -409,6 +412,9 @@ document.addEventListener('click', function(e) {
       'a[href*="introsessionvirtual.amarimethod.com"],' +
       'a[href*="discoverycall.amarimethod.com"],' +
       'a[href*="amarimethodfollowup.amarimethod.com"],' +
+      'a[href^="/book/discovery-call"],' +
+      'a[href^="/book/initial-in-person"],' +
+      'a[href^="/book/initial-virtual"],' +
       'a[href^="/book-discovery-call"],' +
       'a[href^="/book-initial-in-person"],' +
       'a[href^="/book-initial-virtual"],' +
@@ -539,3 +545,4 @@ document.addEventListener('click', function(e) {
   wrapper.addEventListener('touchend', resumeScroll, { passive: true });
   wrapper.addEventListener('touchcancel', resumeScroll, { passive: true });
 })();
+

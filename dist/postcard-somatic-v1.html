@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Amari Method — Postcard v1 (5×7, somatic)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F7F2E8; --paper-2:#F0E9D8; --ink:#1F1D1A; --ink-2:#3A3733;
+    --mute:#7A746B; --line:#E0D7C2; --line-2:#CCC1A8; --accent:#C56B4E;
+    --display:'Bona Nova',Georgia,serif;
+    --sans:'DM Sans',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  /* ---- screen staging ---- */
+  body{background:#2a2724;font-family:var(--sans);color:var(--ink);
+       display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:flex-start;padding:48px;}
+  .label{position:absolute;top:-22px;left:0;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+         text-transform:uppercase;color:#9a9088;}
+  .stage{position:relative;}
+
+  /* ---- the card: 5in x 7in ---- */
+  .card{width:5in;height:7in;background:var(--paper);position:relative;overflow:hidden;
+        box-shadow:0 24px 60px rgba(0,0,0,.45);
+        -webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+  /* safe area = 0.3in inset from trim */
+  .pad{position:absolute;inset:.34in;display:flex;flex-direction:column;}
+
+  .eyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;
+           color:var(--ink-2);display:inline-flex;align-items:center;gap:9px;}
+  .eyebrow::before{content:"";width:18px;height:1px;background:var(--accent);}
+
+  /* ================= FRONT ================= */
+  .front .pad{justify-content:space-between;}
+  .front .mark{display:flex;align-items:center;gap:12px;}
+  .front .mark img{height:34px;width:auto;}
+  .front .mark .wm{font-family:var(--mono);font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-2);}
+
+  .front h1{font-family:var(--display);font-weight:400;font-size:40px;line-height:1.04;
+            letter-spacing:-.02em;color:var(--ink);max-width:13ch;}
+  .front h1 em{font-style:italic;color:var(--accent);}
+  .front .lede{margin-top:18px;font-family:var(--display);font-size:16px;line-height:1.45;
+               color:var(--ink-2);max-width:30ch;}
+  .front .by{margin-top:14px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+             text-transform:uppercase;color:var(--mute);}
+  .front .photo{margin-top:22px;height:2.15in;border:1px solid var(--line-2);border-radius:3px;
+                overflow:hidden;background:#2a2520 url("images/Dr-Garrett-Headshot-2.avif") center 22%/cover no-repeat;}
+
+  /* ================= BACK ================= */
+  .back .pad{justify-content:flex-start;gap:0;}
+  .back .block{padding-bottom:16px;}
+  .back .body{font-family:var(--display);font-size:15px;line-height:1.5;color:var(--ink);margin-top:11px;}
+  .back .body em{font-style:italic;color:var(--accent);}
+  .back .rule{height:1px;background:var(--line);margin:4px 0 16px;}
+
+  .steps{margin-top:11px;display:flex;flex-direction:column;gap:11px;}
+  .step{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:baseline;}
+  .step .n{font-family:var(--display);font-style:italic;font-size:22px;line-height:1;color:var(--accent);}
+  .step p{font-size:13px;line-height:1.45;color:var(--ink-2);}
+
+  .felt{margin-top:18px;font-family:var(--display);font-style:italic;font-size:15px;color:var(--ink);}
+
+  .back .foot{margin-top:auto;border-top:1px solid var(--line);padding-top:14px;
+              display:flex;justify-content:space-between;align-items:flex-end;gap:14px;}
+  .foot .lines{font-size:11.5px;line-height:1.7;color:var(--ink-2);}
+  .foot .lines .site{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink);}
+  .foot .qr{width:.95in;height:.95in;flex:none;border:1px solid var(--line-2);border-radius:3px;
+            background:#fff center/contain no-repeat;}
+  .foot .qr img{width:100%;height:100%;display:block;}
+
+  @media print{
+    @page{size:5in 7in;margin:0;}
+    body{background:none;padding:0;gap:0;display:block;}
+    .label{display:none;}
+    .card{box-shadow:none;page-break-after:always;}
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ FRONT ============ -->
+  <div class="stage">
+    <span class="label">Front — 5×7</span>
+    <div class="card front">
+      <div class="pad">
+        <div class="mark">
+          <img src="images/AmariLogo.avif" alt="Amari Method">
+          <span class="wm">Amari&nbsp;Method</span>
+        </div>
+
+        <div>
+          <h1>Teaching you to <em>heal yourself.</em></h1>
+          <p class="lede">Hands-on work for a body that's holding too much.</p>
+          <p class="by">Garrett Hewstan · San Francisco</p>
+        </div>
+
+        <div class="photo" role="img" aria-label="Dr. Garrett Hewstan"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ BACK ============ -->
+  <div class="stage">
+    <span class="label">Back — 5×7</span>
+    <div class="card back">
+      <div class="pad">
+        <div class="block">
+          <span class="eyebrow">What it is</span>
+          <p class="body"><em>Your body keeps the score</em> of everything it carries: stress, strain, old injury. Amari Method is hands-on work that helps it settle and reorganize. Garrett Hewstan developed 8 core protocols over 25 years. You learn them in session and practice them at home.</p>
+        </div>
+
+        <div class="rule"></div>
+
+        <div class="block">
+          <span class="eyebrow">How it works</span>
+          <div class="steps">
+            <div class="step"><span class="n">1</span><p>We find where your body is out of balance.</p></div>
+            <div class="step"><span class="n">2</span><p>You learn the protocols: gentle, simple, yours to keep.</p></div>
+            <div class="step"><span class="n">3</span><p>You practice them at home, between visits.</p></div>
+          </div>
+          <p class="felt">Most people feel a difference in their first session.</p>
+        </div>
+
+        <div class="foot">
+          <div class="lines">
+            <div class="site">amarimethod.com</div>
+            <div>(628) 877-7673</div>
+            <div>662 8th Ave · Inner Richmond · San Francisco</div>
+          </div>
+          <div class="qr">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=https%3A%2F%2Fwww.amarimethod.com" alt="QR to amarimethod.com">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -17,8 +17,10 @@
 /staff/playbook /staff/ 200
 /staff/outreach /staff/ 200
 /staff/partners /staff/ 200
+/staff/follow-up /staff/ 200
 /staff/check-in/* /staff/ 200
 /staff/funnel /staff/ 200
+/staff/pipeline /staff/ 200
 /staff/login /staff/ 200
 
 # SPA fallback for chief of staff
@@ -26,6 +28,22 @@
 
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
+
+# === Booking redirects ===
+# Phase 1 cutover (commit-after this one): initial-in-person + initial-
+# virtual now route to the native booking flow at /book/<variant>. The
+# native flow uses GHL payment links for payment so cards still save to
+# the GHL contact's native Payment Methods panel.
+/book-initial-in-person /book/initial-in-person 301
+/book-initial-virtual /book/initial-virtual 301
+# Discovery call now uses the native flow at /book/discovery-call (free
+# booking — appointment created directly via GHL Calendar API, no Stripe).
+# Follow-ups are pre-purchased via 4/8-session packages, so legacy
+# /book-follow-up URLs land at the portal where series clients book their
+# pre-paid sessions via the in-portal BookingModal (no separate $190 path).
+/book-follow-up /portal/ 301
+/book-follow-up-virtual /portal/ 301
+/book-discovery-call /book/discovery-call 301
 
 # === SEO 301s — old URLs Google still indexes (recover crawl signals) ===
 # Old blog post structure: /blog/<long-slug> → topic match where possible, else /blog
@@ -45,3 +63,9 @@
 /journal /blog 301
 /experience /how-it-works 301
 /client-information /client-info 301
+
+# Modality "service" pages converted to question-form blog posts 2026-05-10
+# (we don't offer these modalities; question-keyword target is more aligned)
+/deep-tissue-bodywork-san-francisco /blog-why-deep-tissue-doesnt-last 301
+/myofascial-release-san-francisco /blog-why-myofascial-release-doesnt-work 301
+/psoas-release-san-francisco /blog-why-psoas-tightens-back 301
