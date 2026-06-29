@@ -5,6 +5,7 @@ import {
   INVOICE_PURCHASE_PRODUCTS,
   KV_TTL_SECONDS,
 } from './ghl-invoice-webhook.js';
+import { claimProcessedEvent } from '../lib/processed-events.js';
 
 // Real productIds kept in sync with ACTIVE_PRODUCTS in session-ledger.js
 const PID = {
@@ -259,5 +260,57 @@ describe('selectSeriesInvoice', () => {
     expect(result.invoice._id).toBe('inv-000030');
     expect(result.pkg.name).toBe('8-Session Series');
     expect(result.pkg.sessionsRemaining).toBe(8);
+  });
+});
+
+// ── D1 idempotency (duplicate-event dedup) ──
+// Mirrors the same tests in ghl-purchase-webhook.test.js to confirm both
+// handlers share the same dedup contract via processed-events.js.
+
+function makeD1Mock() {
+  const rows = new Map();
+  return {
+    prepare(sql) {
+      return {
+        _sql: sql,
+        _args: [],
+        bind(...args) { this._args = args; return this; },
+        async run() {
+          const eventId = this._args[0];
+          if (rows.has(eventId)) return { meta: { changes: 0 } };
+          rows.set(eventId, this._args[1]);
+          return { meta: { changes: 1 } };
+        },
+      };
+    },
+  };
+}
+
+describe('claimProcessedEvent (D1 duplicate-event dedup — invoice webhook)', () => {
+  it('returns null when db is not provided', async () => {
+    expect(await claimProcessedEvent(null, 'invoice:inv-1')).toBe(null);
+  });
+
+  it('returns null when eventId is missing', async () => {
+    expect(await claimProcessedEvent(makeD1Mock(), null)).toBe(null);
+    expect(await claimProcessedEvent(makeD1Mock(), '')).toBe(null);
+  });
+
+  it('returns { ok: true } on first call, { ok: false, duplicate: true } on second', async () => {
+    const db = makeD1Mock();
+    expect(await claimProcessedEvent(db, 'invoice:inv-abc')).toEqual({ ok: true });
+    expect(await claimProcessedEvent(db, 'invoice:inv-abc')).toEqual({ ok: false, duplicate: true });
+  });
+
+  it('concurrent race — exactly one winner per invoice ID', async () => {
+    const db = makeD1Mock();
+    const [r1, r2] = await Promise.all([
+      claimProcessedEvent(db, 'invoice:inv-race'),
+      claimProcessedEvent(db, 'invoice:inv-race'),
+    ]);
+    const winners = [r1, r2].filter((r) => r?.ok === true);
+    const losers  = [r1, r2].filter((r) => r?.ok === false && r?.duplicate === true);
+    expect(winners.length).toBe(1);
+    expect(losers.length).toBe(1);
   });
 });

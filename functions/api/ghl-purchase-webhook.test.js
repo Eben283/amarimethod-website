@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { PRODUCT_MAP, KV_TTL_SECONDS, resolveOrderProductId, isCreditableOrder } from './ghl-purchase-webhook.js';
+import { claimProcessedEvent } from '../lib/processed-events.js';
 
 const PID = {
   // package purchases (SET sessions_remaining)
@@ -122,5 +123,82 @@ describe('isCreditableOrder (H3 — gate the Orders-API fallback)', () => {
   it('is case-insensitive on status and sourceType', () => {
     expect(isCreditableOrder({ status: 'COMPLETED', amount: 720, sourceType: 'POINT_OF_SALE' })).toBe(true);
     expect(isCreditableOrder({ status: 'Completed', amount: 190, sourceType: 'Calendar' })).toBe(false);
+  });
+});
+
+// ── D1 idempotency (duplicate-event dedup) ──
+// These tests use an in-memory mock of the D1 binding to verify that two
+// concurrent requests for the same event ID cannot both proceed. The real D1
+// INSERT ON CONFLICT is atomic at the database level — the mock proves the
+// caller-side logic interprets changes=0 correctly.
+
+function makeD1Mock() {
+  const rows = new Map();
+  return {
+    prepare(sql) {
+      return {
+        _sql: sql,
+        _args: [],
+        bind(...args) { this._args = args; return this; },
+        async run() {
+          const eventId = this._args[0];
+          if (rows.has(eventId)) {
+            return { meta: { changes: 0 } };
+          }
+          rows.set(eventId, this._args[1]);
+          return { meta: { changes: 1 } };
+        },
+      };
+    },
+    _rows: rows,
+  };
+}
+
+describe('claimProcessedEvent (D1 duplicate-event dedup)', () => {
+  it('returns null when db is not provided (KV fallback path)', async () => {
+    expect(await claimProcessedEvent(null, 'order:abc')).toBe(null);
+    expect(await claimProcessedEvent(undefined, 'order:abc')).toBe(null);
+  });
+
+  it('returns null when eventId is missing (no key to claim)', async () => {
+    const db = makeD1Mock();
+    expect(await claimProcessedEvent(db, null)).toBe(null);
+    expect(await claimProcessedEvent(db, '')).toBe(null);
+  });
+
+  it('returns { ok: true } on first call for a new event', async () => {
+    const db = makeD1Mock();
+    const result = await claimProcessedEvent(db, 'order:ord-001');
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('returns { ok: false, duplicate: true } on a second call for the same event', async () => {
+    const db = makeD1Mock();
+    const first = await claimProcessedEvent(db, 'order:ord-002');
+    expect(first).toEqual({ ok: true });
+    const second = await claimProcessedEvent(db, 'order:ord-002');
+    expect(second).toEqual({ ok: false, duplicate: true });
+  });
+
+  it('distinct event IDs are independent — each wins its own claim', async () => {
+    const db = makeD1Mock();
+    expect(await claimProcessedEvent(db, 'order:ord-A')).toEqual({ ok: true });
+    expect(await claimProcessedEvent(db, 'order:ord-B')).toEqual({ ok: true });
+    expect(await claimProcessedEvent(db, 'order:ord-A')).toEqual({ ok: false, duplicate: true });
+    expect(await claimProcessedEvent(db, 'order:ord-B')).toEqual({ ok: false, duplicate: true });
+  });
+
+  it('simulates concurrent race: both calls read before either writes — only the INSERT winner proceeds', async () => {
+    // Simulate two concurrent requests: both observe changes=1 is impossible
+    // because the DB serialises INSERT ON CONFLICT. The mock serialises too.
+    const db = makeD1Mock();
+    const [r1, r2] = await Promise.all([
+      claimProcessedEvent(db, 'order:ord-race'),
+      claimProcessedEvent(db, 'order:ord-race'),
+    ]);
+    const winners = [r1, r2].filter((r) => r?.ok === true);
+    const losers  = [r1, r2].filter((r) => r?.ok === false && r?.duplicate === true);
+    expect(winners.length).toBe(1);
+    expect(losers.length).toBe(1);
   });
 });

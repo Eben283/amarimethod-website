@@ -24,6 +24,7 @@ import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { appointmentEndTime } from "../lib/datetime.js";
+import { claimProcessedEvent } from "../lib/processed-events.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -470,26 +471,52 @@ export async function onRequestPost(context) {
     const pkg = PRODUCT_MAP[resolvedProductId];
     console.log(`[ghl-purchase-webhook] Matched product: ${pkg.name} (add ${pkg.sessionsToAdd} sessions)`);
 
-    // ── 4. Idempotency check via KV ──
+    // ── 4. Idempotency check ──
+    // Primary: D1 atomic INSERT — race-safe (two concurrent requests can't both
+    // pass a KV read before either writes, but only one INSERT wins a PRIMARY KEY
+    // conflict). Fallback to KV read-then-write when D1 isn't bound (test envs,
+    // local dev). See functions/lib/processed-events.js.
     const kv = context.env.PURCHASE_KV;
     const idempotencyKey = resolvedOrderId ? `order:${resolvedOrderId}` : null;
+    let usedD1 = false;
 
-    if (kv && idempotencyKey) {
+    if (idempotencyKey) {
       try {
-        const existing = await kv.get(idempotencyKey);
-        if (existing) {
-          console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed — skipping`);
-          return new Response(
-            JSON.stringify({ success: true, alreadyProcessed: true }),
-            { status: 200, headers }
-          );
+        const claim = await claimProcessedEvent(context.env.ATTEND_DB, idempotencyKey);
+        if (claim !== null) {
+          // D1 is available — trust its atomic result exclusively.
+          usedD1 = true;
+          if (!claim.ok) {
+            console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed (D1) — skipping`);
+            return new Response(
+              JSON.stringify({ success: true, alreadyProcessed: true }),
+              { status: 200, headers }
+            );
+          }
+          console.log(`[ghl-purchase-webhook] D1 claim won for order ${resolvedOrderId}`);
         }
       } catch (err) {
-        // KV read failed — proceed anyway (better to double-process than miss)
-        console.warn(`[ghl-purchase-webhook] KV read failed: ${err.message} — proceeding without idempotency check`);
+        console.warn(`[ghl-purchase-webhook] D1 idempotency failed: ${err.message} — falling back to KV`);
       }
-    } else if (!kv) {
-      console.warn("[ghl-purchase-webhook] PURCHASE_KV not bound — no idempotency protection");
+    }
+
+    if (!usedD1) {
+      if (kv && idempotencyKey) {
+        try {
+          const existing = await kv.get(idempotencyKey);
+          if (existing) {
+            console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed (KV) — skipping`);
+            return new Response(
+              JSON.stringify({ success: true, alreadyProcessed: true }),
+              { status: 200, headers }
+            );
+          }
+        } catch (err) {
+          console.warn(`[ghl-purchase-webhook] KV read failed: ${err.message} — proceeding without idempotency check`);
+        }
+      } else if (!kv) {
+        console.warn("[ghl-purchase-webhook] No idempotency binding (ATTEND_DB or PURCHASE_KV) — no race protection");
+      }
     }
 
     // ── 5. Fetch contact from GHL ──
@@ -620,8 +647,8 @@ export async function onRequestPost(context) {
       }
     }
 
-    // ── 9. Store order ID in KV for idempotency ──
-    if (kv && idempotencyKey) {
+    // ── 9. KV write for idempotency (fallback only — D1 INSERT already claimed above) ──
+    if (!usedD1 && kv && idempotencyKey) {
       try {
         await kv.put(idempotencyKey, JSON.stringify({
           contactId: sanitizedContactId,

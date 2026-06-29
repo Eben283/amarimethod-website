@@ -42,6 +42,7 @@
 import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
+import { claimProcessedEvent } from "../lib/processed-events.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -267,26 +268,44 @@ export async function onRequestPost(context) {
       `[ghl-invoice-webhook] Matched invoice ${matchedInvoiceId}: ${pkg.name}`,
     );
 
-    // 4. Idempotency check via KV
+    // 4. Idempotency check
+    // Primary: D1 atomic INSERT — race-safe. Fallback to KV when D1 not bound
+    // (test environments, local dev). See functions/lib/processed-events.js.
     const kv = context.env.PURCHASE_KV;
     const idempotencyKey = matchedInvoiceId ? `invoice:${matchedInvoiceId}` : null;
+    let usedD1 = false;
 
-    if (kv && idempotencyKey) {
+    if (idempotencyKey) {
+      try {
+        const claim = await claimProcessedEvent(context.env.ATTEND_DB, idempotencyKey);
+        if (claim !== null) {
+          usedD1 = true;
+          if (!claim.ok) {
+            console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) — skipping`);
+            return new Response(
+              JSON.stringify({ success: true, alreadyProcessed: true }),
+              { status: 200, headers },
+            );
+          }
+          console.log(`[ghl-invoice-webhook] D1 claim won for invoice ${matchedInvoiceId}`);
+        }
+      } catch (err) {
+        console.warn(`[ghl-invoice-webhook] D1 idempotency failed: ${err.message} — falling back to KV`);
+      }
+    }
+
+    if (!usedD1 && kv && idempotencyKey) {
       try {
         const existing = await kv.get(idempotencyKey);
         if (existing) {
-          console.log(
-            `[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed — skipping`,
-          );
+          console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) — skipping`);
           return new Response(
             JSON.stringify({ success: true, alreadyProcessed: true }),
             { status: 200, headers },
           );
         }
       } catch (err) {
-        console.warn(
-          `[ghl-invoice-webhook] KV read failed: ${err.message} — proceeding without idempotency check`,
-        );
+        console.warn(`[ghl-invoice-webhook] KV read failed: ${err.message} — proceeding without idempotency check`);
       }
     }
 
@@ -373,8 +392,8 @@ export async function onRequestPost(context) {
       `[ghl-invoice-webhook] Updated ${sanitizedContactId}: ${pkg.name} — series_type=${pkg.seriesType}, sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}, series_type was ${currentSeriesType || "none"}`,
     );
 
-    // 8. Store invoice id in KV for idempotency
-    if (kv && idempotencyKey) {
+    // 8. KV write for idempotency (fallback only — D1 INSERT already claimed above)
+    if (!usedD1 && kv && idempotencyKey) {
       try {
         await kv.put(
           idempotencyKey,
