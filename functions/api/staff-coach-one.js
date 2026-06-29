@@ -30,13 +30,6 @@ export async function onRequestPost(context) {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers },
-      );
-    }
-
     const body = await context.request.json().catch(() => ({}));
     const { contactId } = body;
     if (!contactId || typeof contactId !== "string") {
