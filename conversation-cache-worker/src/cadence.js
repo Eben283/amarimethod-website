@@ -13,7 +13,7 @@ const SESSION_GAP_MS = 2 * 3_600_000;   // touches within 2h = one event
 const HIGH_VOLUME = 10;                  // 10+ outbound events = active client/hot thread, reviewed separately
 const ACTIVE_DAYS = 65;                  // only consider contacts touched this recently
 const DROPPED_MAX_DAYS = 30;
-const COLD_STALE_DAYS = 30;   // cold + quiet longer than this -> park (no endless "send step 2")
+const COLD_STALE_DAYS = 35;   // cold + quiet longer than this -> park (no endless "send step 2")
 // Both partner-initial calendars (in person + virtual) suppress booking nudges.
 const GIFTED_PARTNER_CALENDARS = [
   "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (in person)
@@ -43,9 +43,9 @@ const getField = (contact, id) => {
 // can compute the unified due-set server-side and DIFF it against the coach's
 // touch-count model BEFORE touching the front-end. Constants copied verbatim from
 // FollowUpPage.tsx. (engine-merge step 1 — shadow only, nothing consumes it yet.)
-const VM_FOLLOWUP_DAYS = 3, TALKED_FOLLOWUP_DAYS = 1, LINK_FOLLOWUP_DAYS = 3;
-const OFFPLATFORM_FOLLOWUP_DAYS = 3, NOANSWER_RETRY_DAYS = 1, QUIET_NUDGE_DAYS = 3;
-const END_OF_ROPE_TOUCHES = 6;
+const VM_FOLLOWUP_DAYS = 5, TALKED_FOLLOWUP_DAYS = 3, LINK_FOLLOWUP_DAYS = 5;
+const OFFPLATFORM_FOLLOWUP_DAYS = 5, NOANSWER_RETRY_DAYS = 5, QUIET_NUDGE_DAYS = 5;
+const END_OF_ROPE_TOUCHES = 5;
 const daysSinceISO = (iso) => { if (!iso) return null; const t = new Date(iso).getTime(); return Number.isNaN(t) ? null : Math.floor((Date.now() - t) / DAY); };
 
 // meta = { stage, lastSignal, lastSignalAt, followupAt, lastActivity, touchCount, sessionBookedTag }
@@ -81,7 +81,9 @@ function appDerive(meta) {
 
 // Cadence policy (amari/strategy/outreach-cadence-policy.md): days to wait after
 // the nth outbound touch before the next. Widens; the last step is the breakup.
-const WAIT_AFTER_TOUCH = [2, 2, 3, 4, 5, 7];
+// Updated 2026-06-29: wider spacing (5-7d) for local peer outreach — these are
+// SF fitness professionals Garrett may run into, not anonymous national leads.
+const WAIT_AFTER_TOUCH = [5, 5, 6, 7, 9, 9];
 const END_OF_ROPE = 6;
 const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) - 1] ?? 7;
 
@@ -91,7 +93,7 @@ const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) -
 //   COLD = never replied (no inbound). WARM = talked/replied (has inbound).
 // channel = the recommended next move per step; a "call" step is Garrett's Play
 // (call → voicemail that tees up the follow-up → the text/email that references it).
-const COLD_STEPS = 6;
+const COLD_STEPS = 5;
 const WARM_STEPS = 4;
 // A call this long (seconds) counts as a real conversation → the contact is warm.
 // Below this is a dial-and-miss or a short voicemail (verified: VMs ran ~15-150s,
@@ -107,7 +109,7 @@ const LANDED_CALL_SEC = 15;
 // number / not worth it. Switch to a text, then park. Counts OUR attempts, not their
 // awareness (a dead call is invisible to them, so it never makes the next touch a "follow-up").
 const DEAD_CALL_CAP = 3;
-const COLD_CHANNELS = ["call", "text", "call", "email", "call", "text"]; // step 1..6 (6 = breakup)
+const COLD_CHANNELS = ["call", "text", "call", "email", "text"]; // step 1..5 (5 = breakup)
 const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step 1..4 (4 = breakup)
 const channelForStep = (variant, step) =>
   (variant === "warm" ? WARM_CHANNELS : COLD_CHANNELS)[step - 1] || "text";

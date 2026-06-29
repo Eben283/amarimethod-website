@@ -995,6 +995,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                       {coach !== 'loading' && !coach && effAction === 'text' && (
                         <SuggestedDraftFallback p={item.p} onHandled={onHandled} />
                       )}
+                      {coach !== 'loading' && !coach && effAction === 'email' && (
+                        <EditSendEmail contactId={contactId} defaultSubject="" defaultBody="" onSent={onHandled} />
+                      )}
                     </>
                   )}
                   {!isGated && resolved !== 'loading' && resolved?.declineState === 'cool-off' && (
