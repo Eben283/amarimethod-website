@@ -855,7 +855,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     const pp = item.p;
     if (callNotes !== 'loading' && !(callNotes && callNotes.hasAudio)) gaps.push('no call transcript');
     if (!phoneType) gaps.push('line type unknown');
-    if (isTextDnd) gaps.push('text DND — GHL blocked a previous send');
+    if (isTextDnd) gaps.push('texts blocked');
     if (isDiscovery) gaps.push('who the decision-maker is');
     if (!pp.phone) gaps.push('no phone');
     if (!pp.email) gaps.push('no email');
@@ -1284,18 +1284,15 @@ function LinkedInPanel({ p }: { p: PartnerProspect }) {
 // point to use on the phone. Email still works via Open in GHL / the contact card.
 function UntextablePanel({ p, phoneType, textDnd }: { p: PartnerProspect; phoneType: string | null; textDnd?: boolean }) {
   const suggestion = suggestedTexts(p)[0] || '';
-  const label = textDnd && phoneType !== 'voip' && phoneType !== 'toll_free' && phoneType !== 'landline'
-    ? 'Text DND — GHL blocked a previous send'
-    : phoneType === 'voip' ? 'VoIP — likely a switchboard'
-    : phoneType === 'toll_free' ? 'Toll-free line'
-    : 'Landline';
-  const note = textDnd && phoneType !== 'voip' && phoneType !== 'toll_free' && phoneType !== 'landline'
-    ? 'call instead (texts are blocked)'
-    : 'call instead (texts won’t reach it)';
+  const label = textDnd && phoneType !== ‘voip’ && phoneType !== ‘toll_free’ && phoneType !== ‘landline’
+    ? ‘Texts blocked’
+    : phoneType === ‘voip’ ? ‘VoIP — likely a switchboard’
+    : phoneType === ‘toll_free’ ? ‘Toll-free line’
+    : ‘Landline’;
   return (
     <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
-        <Phone className="h-3 w-3" /> {label} — {note}
+        <Phone className="h-3 w-3" /> {label} — call instead
       </p>
       {p.phone ? (
         <p className="mb-2 inline-flex items-center gap-1 text-xs text-amari-charcoal">
