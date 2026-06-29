@@ -1,0 +1,18 @@
+name = "coach-daily"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+# Runs once daily at 7am PST (15:00 UTC) / 8am PDT.
+# ±1h across DST is acceptable for a non-time-critical briefing job.
+[triggers]
+crons = ["0 15 * * *"]
+
+# Same KV namespace as all other workers.
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Secrets (set via `npx wrangler secret put <KEY>` — pull values from Keychain):
+#   GHL_CLIENT_ID       am-ghl-client-id
+#   GHL_CLIENT_SECRET   am-ghl-client-secret
+#   WORKER_AUTH_SECRET  am-worker-auth-secret  (same secret as conversation-cache + call-coach)

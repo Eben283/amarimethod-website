@@ -131,7 +131,7 @@ export async function runSync(env, trigger, full = false) {
       // which both the cadence variant (talked → warm) and the truthful copy
       // ("tried to reach" vs "left a voicemail" vs "talked") key off.
       const t = { ts, kind: k, dir: touchDir(m, k) };
-      if (k === "call") t.dur = Number(m.meta?.call?.duration) || 0;
+      if (k === "call") { t.dur = Number(m.meta?.call?.duration) || 0; if (m.id) t.msgId = m.id; }
       else { const b = (m.body || "").trim(); if (b) t.text = b.slice(0, 280); } // last-message text → closer/autoresponder detection in cadence
       fresh.push(t);
     }
