@@ -20,7 +20,7 @@ export async function onRequestPost(context) {
   const origin = request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
 
-  const { error } = await requireStaffAuth(request, env, headers);
+  const { error } = await requireStaffAuth(context, headers);
   if (error) return error;
 
   let body;
