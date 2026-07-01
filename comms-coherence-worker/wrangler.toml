@@ -1,0 +1,22 @@
+name = "comms-coherence"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# Daily at 12:00 UTC — after conversation-cache-worker's 3-hourly sync has a
+# fresh conv:{contactId} cache, and after call-coach's 11:00 run. Exact minute
+# may need to shift once this is wired into /day's actual run time (deferred —
+# see plan: stop before /day integration).
+[triggers]
+crons = ["0 12 * * *"]
+
+# Same KV namespace as Pages + the other workers. Reads conv:index and
+# conv:{contactId} (written by conversation-cache-worker) — no GHL API calls
+# of its own, so no GHL_CLIENT_ID/SECRET needed here.
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+# Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
+#   ANTHROPIC_API_KEY   — Claude coherence calls (am-anthropic-api-key in Keychain)
+#   WORKER_AUTH_SECRET  — gates the /run, /status, /summary, /flags HTTP routes

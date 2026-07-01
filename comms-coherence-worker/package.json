@@ -1,0 +1,12 @@
+{
+  "name": "comms-coherence-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker cron that flags cross-channel comms incoherence (redundant/contradictory/confusing messaging, bad timing) per contact via Claude, complementing qa-audit.js's deterministic automation checks",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test"
+  }
+}
