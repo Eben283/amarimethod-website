@@ -318,25 +318,56 @@ export async function executeTool(context, toolName, input, user = "Eben") {
     }
 
     if (toolName === "list_calendar_events") {
+      // GHL's /calendars/events REQUIRES a calendarId — a locationId-only query
+      // silently returns {events:[]}, causing a 422 or an always-empty result.
+      // Sweep each active calendar in parallel and merge, same pattern as
+      // getGhlSummary() in cos-chat.js.
+      const CALENDAR_IDS = [
+        "G7OAnnJuFbMF6nQSlZVQ", // Initial — In Person
+        "ySmht5hx4uZGEpgZrlCw", // Initial — Virtual
+        "uUDFD0ZQEWtzGLS9aLq7", // Initial — Paid at Partner
+        "SKDVOL8wtUN6Ne0ppbC9", // Follow-up — In Person
+        "ZO1jlGfy01rsxVqicoSB", // Follow-up — In Person (Package)
+        "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
+        "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
+        "B5aGXLoS4kzAjZAMMXxk", // Entrainment
+        "lfsnaiGiLNL2z12pLKDP", // Partner Initial
+        "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
+        "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
+        "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
+        "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
+      ];
       const startOffset = pacificOffsetForDate(input.start_date);
       const endOffset = pacificOffsetForDate(input.end_date);
       const startMs = new Date(`${input.start_date}T00:00:00${startOffset}`).getTime();
       const endMs = new Date(`${input.end_date}T23:59:59${endOffset}`).getTime();
-      const url = `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&startTime=${startMs}&endTime=${endMs}`;
-      const resp = await ghlFetch(context, url);
-      if (!resp.ok) {
-        const errBody = await resp.text().catch(() => "");
-        console.error(`[cos-anthropic] ${toolName} → GHL ${resp.status} URL=${url} body=${errBody.slice(0, 300)}`);
-        return `Error: GHL ${resp.status} — ${errBody.slice(0, 200) || "(no body)"}`;
+      const eventsUrl = (calId) =>
+        `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&calendarId=${calId}&startTime=${startMs}&endTime=${endMs}`;
+
+      const calResps = await Promise.all(
+        CALENDAR_IDS.map((id) => ghlFetch(context, eventsUrl(id)).catch(() => null))
+      );
+
+      const eventsById = new Map();
+      for (const resp of calResps) {
+        if (!resp || !resp.ok) continue;
+        try {
+          const data = await resp.json();
+          for (const e of (data.events || [])) {
+            if (e && e.id && !eventsById.has(e.id)) eventsById.set(e.id, e);
+          }
+        } catch { /* skip a malformed calendar response */ }
       }
-      const data = await resp.json();
-      const events = (data.events || []).map(e => ({
-        title: e.title || null,
-        contact: e.contactName || null,
-        contact_id: e.contactId || null,
-        start: e.startTime || null,
-        status: e.appointmentStatus || null,
-      }));
+
+      const events = [...eventsById.values()]
+        .sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)))
+        .map(e => ({
+          title: e.title || null,
+          contact: e.contactName || null,
+          contact_id: e.contactId || null,
+          start: e.startTime || null,
+          status: e.appointmentStatus || null,
+        }));
       return JSON.stringify({ count: events.length, events }, null, 2);
     }
 

@@ -101,20 +101,16 @@ cd quiz && npx vite build   # Build quiz only
 - CSS utility classes: `portal-card`, `portal-btn-secondary`
 - Font: Serif for headings, sans-serif for body
 
-## Positioning & Brand (locked 2026-04-17)
+## Positioning & Brand
 
-### One-line position
-"A doctor who teaches you to heal yourself."
-
-### What it is
-Dr. Garrett Hewstan developed 8 core rebalancing protocols after 25 years of clinical practice. Clients learn them in sessions and do them at home. Most feel relief in their first session.
+> ⚠️ **SUPERSEDED (2026-07-01):** the "locked 2026-04-17" section below predates an ACTIVE California Board Accusation against Garrett (deadline July 16 — see `ops/open-todos.md` ⚖️ LEGAL and memory `legal_garrett_chiro_accusation.md`). It instructed "Dr. Garrett Hewstan," "A doctor who teaches you to heal yourself," and "let it work silently" — all now legally prohibited framing. **Do not use any Dr./doctor/chiropractor language when writing or editing copy for this site.** Current brand voice: somatic/movement/CMT educator, Garrett as founder (see memory `feedback_garrett_founder_framing.md`, `brand_amari_real_age_team_runway.md`). The terminology rules below for protocols/woo-language/Network Spinal are still current; only the Dr./doctor framing is retired.
 
 ### Terminology rules
 | Use | Don't use |
 |-----|-----------|
 | Protocols | Exercises |
 | 8 core protocols | 8-step protocol |
-| Dr. Garrett Hewstan (no suffix) | Chiropractor, DC, chiropractic |
+| Garrett Hewstan | Dr. Garrett Hewstan, Chiropractor, DC, chiropractic |
 | Out of balance / rebalancing | Muscle imbalances, compensation patterns |
 | Guide / coach | Healer (for Garrett) |
 | "Your body can heal you" | "Fix" |
@@ -122,12 +118,9 @@ Dr. Garrett Hewstan developed 8 core rebalancing protocols after 25 years of cli
 
 ### Don't mention
 - Network Spinal / NSA — Garrett doesn't want the association
-- Chiropractic / DC — use "Dr." only, let it work silently
+- Dr./doctor/chiropractor/DC framing in any form — active legal restriction, see warning above
 - Specific client counts (don't say "200+ clients") — let testimonials speak
 - Woo language (reorganizational healing, body-mind-spirit, energetic harmony)
-
-### Homepage structure (current, 2026-04-17)
-6 sections: Hero → Testimonials → Why → How It Works → Dr. Garrett → Booking ($225) → Waterfall CTA → FAQ (6 questions)
 
 ### Copy voice
 - Write like a person explaining something they care about
