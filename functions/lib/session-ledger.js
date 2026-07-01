@@ -312,13 +312,29 @@ export function deriveLedger({
   //
   // If the client has no package purchases (pay-as-you-go only), there's
   // no cutoff and all attended sessions count.
+  // order.createdAt / invoice.issueDate are UTC ISO timestamps (trailing Z);
+  // appointment.startTime is a naive-local string with no Z/offset — GHL
+  // returns it already in the location's wall-clock time. Comparing their
+  // raw slices mixes two different calendar-day references: a purchase made
+  // in the evening (Garrett's normal PDT hours) can roll to the next UTC day
+  // while the same-evening appointment's local string stays on the earlier
+  // day, so the appointment falls before cutoff and silently drops out of
+  // `attended` (Albert Yang, 2026-07-01 — see troubleshooting-log.md).
+  // Fix: convert the UTC side to Pacific before slicing; the naive-local
+  // side is already Pacific and needs no conversion.
   const toDay = (iso) => (typeof iso === "string" ? iso.slice(0, 10) : "");
+  const toDayPacific = (iso) => {
+    if (typeof iso !== "string" || !iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+  };
   const packageDates = classifications
     .filter((c) => PACKAGE_TYPES.has(c.type))
     .map((c) => c.date)
     .filter(Boolean)
     .sort();
-  const cutoffDay = toDay(packageDates[0] || "");
+  const cutoffDay = toDayPacific(packageDates[0] || "");
 
   // 3. Filter appointments → only attended series sessions, on or after cutoff day
   const attendedAllTime = appointments

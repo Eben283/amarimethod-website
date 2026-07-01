@@ -1007,25 +1007,54 @@ describe('deriveLedger — attended cutoff', () => {
   });
 
   it('session attended day BEFORE package purchase does NOT count', () => {
-    // Betsy-style: free initial a week before the series buy. Day comparison
-    // still excludes it cleanly.
+    // Betsy-style: free initial the day before the series buy, both in
+    // Pacific time (order.createdAt is UTC; appointment.startTime is a
+    // naive-local string, same as real GHL data — see toDayPacific()).
+    // Previous version of this test used a UTC-adjacent-but-same-Pacific-day
+    // pair (order at 2026-03-13T00:00:00Z = 2026-03-12 5pm PT, appointment at
+    // 2026-03-12T23:59:59Z = 2026-03-12 4pm PT — actually the SAME Pacific
+    // day) which happened to pass under the old naive-UTC-slice bug this
+    // test was meant to guard against. Fixed to a genuine day-before pair.
     const result = deriveLedger({
       contact: contact(),
       orders: [
         order({
           sourceName: '4-Session Series',
           amount: 720,
-          createdAt: '2026-03-13T00:00:00Z',
+          createdAt: '2026-03-13T20:00:00Z', // 2026-03-13 1pm PT
         }),
       ],
       invoices: [],
       appointments: [
-        appt({ calendarId: CAL.initial, startTime: '2026-03-12T23:59:59Z' }),
+        appt({ calendarId: CAL.initial, startTime: '2026-03-12T18:00:00' }), // naive-local 6pm PT, day before
       ],
       fieldDefs: FIELD_DEFS,
     });
     expect(result.attended).toBe(0);
     expect(result.remaining).toBe(4);
+  });
+
+  it("Albert Yang's real case: same-evening purchase crossing the UTC day boundary still counts the session (2026-07-01 bug)", () => {
+    // Initial session 2026-05-21 4:30pm PT (naive-local startTime, no Z —
+    // real GHL format). Package purchased that same evening at 5:46pm PT,
+    // which is 2026-05-22T00:46:21.918Z in UTC — the UTC calendar day rolls
+    // forward even though it's still the same Pacific evening. Before the
+    // toDayPacific() fix, cutoffDay derived as "2026-05-22" (UTC slice) while
+    // the appointment's naive slice stayed "2026-05-21", so the appointment
+    // fell before cutoff and was silently excluded from `attended`.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({ sourceName: '4 Session Series Link', amount: 720, createdAt: '2026-05-22T00:46:21.918Z' }),
+      ],
+      invoices: [],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-05-21T16:30:00' }), // naive-local, no Z
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
   });
 
   it('pay-as-you-go client with no package has no cutoff (all attendances count)', () => {
