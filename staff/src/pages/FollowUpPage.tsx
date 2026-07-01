@@ -200,6 +200,37 @@ function relTime(iso: string | null | undefined): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+// Same "updated Xh/Xd ago" color-tiering as BalancesPage/FunnelPage.
+function agoColorClass(iso: string | null | undefined): string {
+  if (!iso) return 'text-red-500';
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (h >= 24) return 'text-red-500';
+  if (h >= 6) return 'text-amber-600';
+  return 'text-amari-text-muted';
+}
+
+// This page reads 4 independently-aged KV sources (prospects snapshot, the
+// partner Sheet cache, partner-activity-refresh-worker, the coach overlay).
+// Before this, only coachDataAt had any indicator — a stale/broken activity
+// refresh was invisible. Flagged in the 2026-07-01 cron-job architecture audit.
+type FollowUpFreshness = {
+  generatedAt: string | null;
+  sheetCachedAt: string | null;
+  activityRefreshAt: string | null;
+  activityRefreshStatus: string | null;
+  coachDataAt: string | null;
+};
+function staleFreshnessMessage(f: FollowUpFreshness): string | null {
+  const STALE_MS = 12 * 60 * 60 * 1000;
+  const isOld = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() > STALE_MS;
+  const parts: string[] = [];
+  if (isOld(f.coachDataAt)) parts.push(`coach data (${relTime(f.coachDataAt)})`);
+  if (f.activityRefreshStatus === 'error') parts.push('partner activity refresh (errored)');
+  else if (isOld(f.activityRefreshAt)) parts.push(`partner activity (${relTime(f.activityRefreshAt)})`);
+  if (!parts.length) return null;
+  return `Heads up — ${parts.join(' and ')} may be stale. Who's booked, set aside, or last active could be out of date.`;
+}
+
 function displayName(s: string | null | undefined): string {
   if (!s) return '';
   const t = s.trim();
@@ -275,7 +306,9 @@ export default function FollowUpPage() {
   const markHandled = useCallback((id: string) => setHandledIds((s) => { const n = new Set(s); n.add(id); return n; }), []);
   const [query, setQuery] = useState('');
   const [showRubric, setShowRubric] = useState(false);
-  const [coachDataAt, setCoachDataAt] = useState<string | null>(null); // freshness stamp
+  const [freshness, setFreshness] = useState<FollowUpFreshness>({
+    generatedAt: null, sheetCachedAt: null, activityRefreshAt: null, activityRefreshStatus: null, coachDataAt: null,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -286,7 +319,13 @@ export default function FollowUpPage() {
         getConversations('needs_reply').catch(() => ({ conversations: [] as ConversationSummary[] })),
       ]);
       setProspects(prospectsRes.prospects);
-      setCoachDataAt(prospectsRes.coachDataAt ?? null);
+      setFreshness({
+        generatedAt: prospectsRes.generatedAt ?? null,
+        sheetCachedAt: prospectsRes.sheetCachedAt ?? null,
+        activityRefreshAt: prospectsRes.activityRefreshAt ?? null,
+        activityRefreshStatus: prospectsRes.activityRefreshStatus ?? null,
+        coachDataAt: prospectsRes.coachDataAt ?? null,
+      });
       setConversations((convoRes as { conversations: ConversationSummary[] }).conversations || []);
       if (prospectsRes.dismissedReplies) setDismissedReplies(prospectsRes.dismissedReplies);
     } catch (err) {
@@ -483,14 +522,34 @@ export default function FollowUpPage() {
             {counts.replies} to reply · {counts.act} to reach out · {counts.waiting} cooling off · {counts.total} in the funnel
           </p>
         </div>
-        <button
-          type="button" onClick={load} disabled={loading}
-          className="rounded-lg border border-amari-border p-2 text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40"
-          aria-label="Refresh"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {!loading && (
+            <span className={`text-[11px] ${agoColorClass(freshness.generatedAt)}`}>
+              {freshness.generatedAt ? `updated ${relTime(freshness.generatedAt)}` : 'no data yet'}
+            </span>
+          )}
+          <button
+            type="button" onClick={load} disabled={loading}
+            className="rounded-lg border border-amari-border p-2 text-amari-text-muted hover:bg-amari-light-sand disabled:opacity-40"
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
+
+      {/* Per-source freshness — the 4 KV sources feeding this page refresh on
+          different schedules; a glance here beats discovering one silently
+          stalled by working a contact off stale data. */}
+      {!loading && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          <span className={agoColorClass(freshness.sheetCachedAt)}>Sheet {freshness.sheetCachedAt ? relTime(freshness.sheetCachedAt) : 'never'}</span>
+          <span className={freshness.activityRefreshStatus === 'error' ? 'text-red-500' : agoColorClass(freshness.activityRefreshAt)}>
+            Activity {freshness.activityRefreshStatus === 'error' ? 'error' : freshness.activityRefreshAt ? relTime(freshness.activityRefreshAt) : 'never'}
+          </span>
+          <span className={agoColorClass(freshness.coachDataAt)}>Coach {freshness.coachDataAt ? relTime(freshness.coachDataAt) : 'never'}</span>
+        </div>
+      )}
 
       {/* Date bar — today + how the weekday is weighting calls/texts. The list
           below reorders by this; nothing is blocked. */}
@@ -502,11 +561,12 @@ export default function FollowUpPage() {
         </p>
       </div>
 
-      {/* Freshness — loud if the coach pipeline stalled, so stale-but-plausible data
-          doesn't pass as current. Only fires when the stamp is genuinely old (>12h). */}
-      {coachDataAt && (Date.now() - new Date(coachDataAt).getTime() > 12 * 60 * 60 * 1000) && (
+      {/* Freshness — loud if a pipeline stalled, so stale-but-plausible data
+          doesn't pass as current. Only fires when a source is genuinely old (>12h)
+          or the activity refresh errored. */}
+      {staleFreshnessMessage(freshness) && (
         <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-          Heads up — the coach data last refreshed {relTime(coachDataAt)}. The background refresh may have stalled, so who's booked or set aside could be out of date.
+          {staleFreshnessMessage(freshness)}
         </div>
       )}
 
