@@ -18,7 +18,8 @@
 //   comms:flags:summary       — today's flagged contacts, for /day to read
 //   comms:flags:status:lastRun
 //
-// NOT YET wired into /day — that's a deliberately separate step (see plan).
+// Wired into /day (2026-07-01) via functions/api/comms-summary.js →
+// claude-config/ghl-mcp/day-payload.js's commsSummary section.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { evaluateContact, windowTouches } from "./coherence.js";
