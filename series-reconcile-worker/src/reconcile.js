@@ -3,8 +3,10 @@
 // functions/api/ghl-purchase-webhook.js. Kept in sync manually — if the
 // workflow set of actions changes in GHL, update this file.
 
-import { getContact, patchContact, addContactNote, removeContactTags } from "./ghl.js";
+import { getContact, patchContact, addContactNote, removeContactTags, ghlGet, getOrderDetail, LOCATION_ID } from "./ghl.js";
 import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
+import { deriveLedger } from "../../functions/lib/session-ledger.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 
 // Series + upgrade products. Derived from the single source of truth
 // (functions/lib/ghl-products.js → PACKAGE_MAP) plus the per-package GHL
@@ -28,7 +30,16 @@ export const FIELD_IDS = {
   portal_access: "O0xmwyRqeNK2EA1GGGye",
   living_practice_access: "1EnVtI70jC5MTshZjWvw",
   sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+  // Same rationale as sync.js's LEDGER_FIELD_DEFS: without this, deriveLedger's
+  // prepaid-override guard can't fire, so a prepaid-flagged contact with no
+  // matching orders would derive purchased=0 at HIGH confidence instead of
+  // "unknown". Passed to deriveLedger below, same as sync.js.
+  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
 };
+
+// Same KV prefix + namespace (PORTAL_KV) sync.js uses for large-delta/
+// low-confidence flags — one shared review queue, not a second one.
+const KV_NEEDS_REVIEW_PREFIX = "field-sync:needsReview:";
 
 // Tags the C-series workflows remove (idempotent — safe to "remove" tags the
 // contact doesn't have).
@@ -193,12 +204,76 @@ export async function reconcileOrder(env, orderDetail) {
   }
 
   // ── ORPHAN. Apply C-series workflow simulation ──
-  // Additive products (4→8 upgrade) add sessions to whatever the client already
-  // has rather than overwriting — the GHL workflow does the same. SET products
-  // (fresh 4-pack, fresh 8-pack) write the full package size absolutely.
-  const newRemaining = pkg.isAdditive
+  // sessions_remaining: use the SAME deriveLedger() sync.js and daily-audit-worker
+  // use, not a local "current + delta" formula. The formula only ever sees THIS
+  // order — if the pre-purchase field value was already wrong (or this order's
+  // classification doesn't match what deriveLedger's classifyOrder would say),
+  // the formula faithfully propagates the wrong number forward. deriveLedger
+  // recomputes from the full order/invoice/appointment history every time, so
+  // it can't inherit a stale current-field error. Falls back to the formula
+  // (and flags for human review) only when deriveLedger itself isn't confident —
+  // keeps a paying client unblocked (portal access etc. still get set below)
+  // rather than stalling them on a human review queue.
+  const formulaRemaining = pkg.isAdditive
     ? (parseInt(currentRemaining, 10) || 0) + pkg.sessionsToSet
     : pkg.sessionsToSet;
+
+  let newRemaining = formulaRemaining;
+  let ledgerConfidence = null;
+  try {
+    const [ordersRes, invoicesRes, apptRes] = await Promise.all([
+      ghlGet(env, `/payments/orders?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`),
+      ghlGet(env, `/invoices/?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+      ghlGet(env, `/contacts/${contactId}/appointments`),
+    ]);
+    const ordersList = ordersRes.data || ordersRes.orders || [];
+    const invoices = invoicesRes.invoices || [];
+    const appointments = apptRes.appointments || apptRes.events || [];
+    const orders = await hydrateOrders((id) => getOrderDetail(env, id), ordersList);
+    const ledger = deriveLedger({
+      contact, orders, invoices, appointments,
+      fieldDefs: { session_prepaid: FIELD_IDS.session_prepaid },
+    });
+    ledgerConfidence = ledger.confidence;
+    if (ledger.confidence === "high") {
+      newRemaining = ledger.remaining;
+    } else {
+      await env.PORTAL_KV.put(
+        KV_NEEDS_REVIEW_PREFIX + contactId,
+        JSON.stringify({
+          at: new Date().toISOString(),
+          contactId,
+          contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+          reason: "series-reconcile-worker applied an orphan order using the fallback formula — deriveLedger confidence was not high",
+          orderId,
+          package: pkg.name,
+          formulaRemaining,
+          ledger: { remaining: ledger.remaining, purchased: ledger.purchased, attended: ledger.attended, ambiguities: ledger.ambiguities },
+        }),
+        { expirationTtl: 30 * 86400 },
+      );
+    }
+  } catch (err) {
+    // Full-history fetch/derivation failed (network, malformed data, etc.) —
+    // fall back to the formula rather than leaving a paying client unprovisioned.
+    // Flag it the same way as a low-confidence result, so a human knows the
+    // number came from the fallback path, not the authoritative derivation.
+    await env.PORTAL_KV.put(
+      KV_NEEDS_REVIEW_PREFIX + contactId,
+      JSON.stringify({
+        at: new Date().toISOString(),
+        contactId,
+        contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+        reason: "series-reconcile-worker applied an orphan order using the fallback formula — deriveLedger errored",
+        orderId,
+        package: pkg.name,
+        formulaRemaining,
+        error: String(err.message || err).slice(0, 300),
+      }),
+      { expirationTtl: 30 * 86400 },
+    );
+  }
+
   const customFields = [
     { id: FIELD_IDS.series_type, value: pkg.seriesType },
     { id: FIELD_IDS.sessions_remaining, value: newRemaining },
@@ -219,7 +294,8 @@ export async function reconcileOrder(env, orderDetail) {
     await removeContactTags(env, contactId, tagsRemoved);
   }
 
-  const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${newRemaining}, portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
+  const remainingSource = ledgerConfidence === "high" ? "ledger" : "formula (flagged for review)";
+  const noteBody = `[series-reconcile-worker ${new Date().toISOString().slice(0, 10)}] Auto-reconciled orphan ${pkg.name} purchase. Order ${orderId} (${orderDetail.source?.type || "unknown"}/${orderDetail.source?.id || "?"}) was paid but the ${pkg.workflowCode} workflow did not fire. Applied: series_type=${pkg.seriesType}, sessions_remaining=${newRemaining} (source: ${remainingSource}), portal_access=true${pkg.livingPractice ? ", living_practice_access=true" : ""}${tagsRemoved.length ? `, removed tags: ${tagsRemoved.join(", ")}` : ""}.`;
   await addContactNote(env, contactId, noteBody);
 
   await env.PURCHASE_KV.put(
@@ -231,6 +307,7 @@ export async function reconcileOrder(env, orderDetail) {
       package: pkg.name,
       seriesType: pkg.seriesType,
       sessionsRemaining: newRemaining,
+      remainingSource,
       tagsRemoved,
     }),
     { expirationTtl: 90 * 86400 }
@@ -245,6 +322,7 @@ export async function reconcileOrder(env, orderDetail) {
     beforeSeriesType: currentSeriesType,
     afterSeriesType: pkg.seriesType,
     sessionsRemaining: newRemaining,
+    remainingSource,
     tagsRemoved,
   };
 }
