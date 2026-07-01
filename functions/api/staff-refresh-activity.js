@@ -8,6 +8,7 @@
 // is set in both the Pages env and the worker env, the worker gate is a no-op
 // and the missing header is harmless (CRIT-A rollout, 2026-06-11).
 
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 // Worker subdomain confirmed after first deploy 2026-05-25 — Eben's Cloudflare
 // account uses `eben-fa2` as the workers.dev subdomain, not `amari-method`.

@@ -7,7 +7,7 @@
 // — typed name, signature image, signed-at, agreement version — instead of
 // presenting a blank signature pad to a client who has already signed.
 
-
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 export async function onRequestOptions(context) {
   return new Response(null, {

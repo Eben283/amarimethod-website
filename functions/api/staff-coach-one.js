@@ -10,6 +10,7 @@
 //
 // Auth: JWT staff bearer at this layer + WORKER_AUTH_SECRET forwarded to the worker.
 
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 // Account subdomain confirmed 2026-05-25 (same as partner-activity-refresh worker).
 const WORKER_URL = "https://call-coach.eben-fa2.workers.dev/coach-one";

@@ -11,6 +11,7 @@
 // (requireWorkerAuth) is satisfied by forwarding WORKER_AUTH_SECRET as a Bearer
 // token. Both must be set: the Pages env var + the worker secret (same value).
 
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const WORKER_URL = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
 

@@ -14,6 +14,7 @@
 //
 // Auth: staff JWT bearer.
 
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const KV_KEY = "funnel:latest";
 
