@@ -1,64 +1,16 @@
 // GHL API helpers for series-reconcile-worker.
-// Tokens managed in PORTAL_KV by ghl-token-refresh worker.
-// Pattern mirrors partner-activity-refresh-worker/src/ghl.js.
+// Tokens managed in PORTAL_KV by ghl-token-refresh worker. Token plumbing
+// itself lives in the shared functions/lib/ghl-worker-token.js (2026-07-01 —
+// this file used to carry its own byte-identical copy, same as 6 other
+// Workers; found + extracted during the cron-job architecture audit).
+
+import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+
+export { getAccessToken };
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
-const GHL_TOKEN_URL = `${GHL_BASE}/oauth/token`;
-const REFRESH_BUFFER_MS = 5 * 60 * 1000;
-
-const KV_ACCESS_TOKEN = "ghl_access_token";
-const KV_REFRESH_TOKEN = "ghl_refresh_token";
-const KV_TOKEN_EXPIRY = "ghl_token_expiry";
 
 export const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-
-async function refreshToken(env) {
-  const kv = env.PORTAL_KV;
-  const refreshTok = await kv.get(KV_REFRESH_TOKEN);
-  if (!refreshTok) throw new Error("No refresh token in KV");
-
-  const { GHL_CLIENT_ID: clientId, GHL_CLIENT_SECRET: clientSecret } = env;
-  if (!clientId || !clientSecret) throw new Error("Missing GHL_CLIENT_ID or GHL_CLIENT_SECRET");
-
-  const res = await fetch(GHL_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshTok,
-    }).toString(),
-  });
-
-  if (!res.ok) throw new Error(`Token refresh failed: ${res.status}`);
-
-  const data = await res.json();
-  const newExpiry = Date.now() + (data.expires_in || 86399) * 1000;
-
-  await Promise.all([
-    kv.put(KV_ACCESS_TOKEN, data.access_token),
-    kv.put(KV_REFRESH_TOKEN, data.refresh_token || refreshTok),
-    kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
-  ]);
-
-  return data.access_token;
-}
-
-export async function getAccessToken(env) {
-  const kv = env.PORTAL_KV;
-  if (!kv) throw new Error("PORTAL_KV binding not available");
-
-  const [accessToken, expiryStr] = await Promise.all([
-    kv.get(KV_ACCESS_TOKEN),
-    kv.get(KV_TOKEN_EXPIRY),
-  ]);
-  const expiry = Number(expiryStr || 0);
-  if (accessToken && expiry && Date.now() < expiry - REFRESH_BUFFER_MS) {
-    return accessToken;
-  }
-  return await refreshToken(env);
-}
 
 async function ghlRequest(env, method, path, body) {
   const token = await getAccessToken(env);
