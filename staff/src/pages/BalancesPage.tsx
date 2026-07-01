@@ -14,6 +14,27 @@ const SORTS: { id: SortKey; label: string }[] = [
   { id: 'name', label: 'Name' },
 ];
 
+// Freshness badge — same "updated Xh/Xd ago" pattern as FunnelPage, so a
+// broken/unloaded balances cache (staff:balances:v1, 5-min TTL — see
+// staff-balances.js) is visible instead of silently showing an old number
+// with no way to tell. This data shows literal money/session counts, so a
+// stale-with-no-indicator display was the highest-priority gap found in the
+// 2026-07-01 cron-job architecture audit.
+function agoLabel(iso: string | null | undefined): string {
+  if (!iso) return 'never';
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (h < 1) return 'just now';
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+function agoColorClass(iso: string | null | undefined): string {
+  if (!iso) return 'text-red-500';
+  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000);
+  if (h >= 24) return 'text-red-500';
+  if (h >= 6) return 'text-amber-600';
+  return 'text-amari-text-muted';
+}
+
 function relativeDate(iso: string | null): string {
   if (!iso) return 'never';
   const then = new Date(iso).getTime();
@@ -43,6 +64,7 @@ export default function BalancesPage() {
   const [rows, setRows] = useState<BalanceRow[]>([]);
   const [totalRemaining, setTotalRemaining] = useState(0);
   const [ledgerSource, setLedgerSource] = useState<string>('');
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [sort, setSort] = useState<SortKey>('remaining');
@@ -62,6 +84,7 @@ export default function BalancesPage() {
         setRows(data.rows);
         setTotalRemaining(data.totalRemaining);
         setLedgerSource(data.ledgerSource);
+        setGeneratedAt(data.generatedAt);
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           logout();
@@ -143,14 +166,21 @@ export default function BalancesPage() {
     <div className="px-4 pt-6 pb-4">
       <div className="staff-pagehead flex items-center justify-between">
         <h1 className="text-xl font-serif text-amari-charcoal">Balances</h1>
-        <button
-          onClick={() => load(true)}
-          disabled={isLoading}
-          className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
-          aria-label="Refresh"
-        >
-          <RefreshCw className={`w-4 h-4 text-amari-text-muted ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {!isLoading && (
+            <span className={`text-[11px] ${agoColorClass(generatedAt)}`}>
+              {generatedAt ? `updated ${agoLabel(generatedAt)}` : 'no data yet'}
+            </span>
+          )}
+          <button
+            onClick={() => load(true)}
+            disabled={isLoading}
+            className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
+            aria-label="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 text-amari-text-muted ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Summary card */}
