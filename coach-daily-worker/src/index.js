@@ -74,9 +74,13 @@ async function runCron(env) {
   // Freshness gate: conversation-cache rebuilds the due-list 3-hourly. If it
   // dies, this worker used to regenerate cards from a frozen snapshot forever
   // — day counts drifting further from reality daily — while reporting ok.
-  const snapshotAgeMs = dueSnapshot.generatedAt ? Date.now() - new Date(dueSnapshot.generatedAt).getTime() : Infinity;
+  // generatedAtISO, NOT generatedAt: the latter is a Pacific DATE string
+  // ("2026-07-02") that parses as UTC midnight — a 20-min-old snapshot would
+  // read ~15h old at the 15:20 UTC cron.
+  const snapshotStamp = dueSnapshot.generatedAtISO || null;
+  const snapshotAgeMs = snapshotStamp ? Date.now() - new Date(snapshotStamp).getTime() : Infinity;
   if (!Number.isFinite(snapshotAgeMs) || snapshotAgeMs > 26 * 3600 * 1000) {
-    log(`ABORT: coach:due:latest is stale (generatedAt=${dueSnapshot.generatedAt || "missing"}) — conversation-cache may be down; refusing to build cards from a frozen due-list`);
+    log(`ABORT: coach:due:latest is stale (generatedAtISO=${snapshotStamp || "missing"}) — conversation-cache may be down; refusing to build cards from a frozen due-list`);
     return;
   }
   if (snapshotAgeMs > 4 * 3600 * 1000) {

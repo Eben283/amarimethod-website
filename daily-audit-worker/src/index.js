@@ -512,6 +512,17 @@ async function checkSeriesReconcile(env) {
       message: `series-reconcile last run errored: ${summary.error || 'unknown error'}. ${summary.applied || 0} applied, ${summary.failed || 0} failed.`,
       lastRun: summary.finishedAt,
     });
+  } else if (summary.fieldSync?.error) {
+    // The order pass succeeded but the field-sync sweep died — drift
+    // correction is silently stopped even though the headline may only say
+    // partial-errors. Surfaced separately (2026-07-02 cold review).
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "series-reconcile-fieldsync-errored",
+      message: `series-reconcile's field-sync sweep is failing: ${summary.fieldSync.error}. Drift correction is stopped until this clears.`,
+      lastRun: summary.finishedAt,
+    });
   } else if (summary.orderPassError) {
     // The order pass now fails independently of the field-sync sweep (so a flaky
     // orders-LIST fetch no longer skips the sweep). That resilience means the run
@@ -558,15 +569,21 @@ async function checkSeriesReconcile(env) {
       const items = await Promise.all(
         list.keys.slice(0, 10).map(async (k) => env.PORTAL_KV.get(k.name, "json"))
       );
-      const names = items
-        .filter(Boolean)
-        .map((i) => `${i.contactName || i.contactId} (Δr=${i.delta?.sessions_remaining}, Δc=${i.delta?.sessions_completed})`)
+      // Two entry shapes share this queue: large-delta drift ({delta}) and
+      // owed signals ({reason: "attended exceeds purchased..."}). Render each
+      // appropriately — the owed one is uncollected revenue, not drift.
+      const entries = items.filter(Boolean);
+      const names = entries
+        .map((i) => i.reason
+          ? `${i.contactName || i.contactId} — ${i.reason}`
+          : `${i.contactName || i.contactId} (Δr=${i.delta?.sessions_remaining}, Δc=${i.delta?.sessions_completed})`)
         .join("; ");
+      const hasOwed = entries.some((i) => i.reason && /attended exceeds purchased/i.test(i.reason));
       issues.push({
-        severity: "warning",
+        severity: hasOwed ? "critical" : "warning",
         area: "data",
         kind: "session-fields-needs-review",
-        message: `${list.keys.length} contact(s) have session-field drift too large to auto-correct — needs human review: ${names}`,
+        message: `${list.keys.length} contact(s) need session-field review${hasOwed ? " (includes possible UNPAID SESSIONS — uncollected revenue)" : ""}: ${names}`,
       });
     }
   } catch (err) {

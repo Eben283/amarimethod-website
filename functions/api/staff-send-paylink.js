@@ -76,6 +76,13 @@ export async function onRequestPost(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
+  // Hoisted so the outer catch can release an unconsumed dedupe claim — a
+  // thrown ghlFetch (the 15s-timeout class the dedupe targets) otherwise left
+  // the key claimed, and the staff retry got a false "already sent".
+  let claimedDedupeKey = null;
+  let claimedDedupeKv = null;
+  let smsSent = false;
+
   try {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
@@ -114,7 +121,7 @@ export async function onRequestPost(context) {
     // re-send while the first POST is still completing server-side — the
     // client then gets the same payment link twice. Claim the key BEFORE
     // sending (released on failure) so the retry hits the marker.
-    const dedupeKey = `paylink-sent:${contactId}:${product}`;
+    const dedupeKey = `paylink-sent:${contactId}:${productKey}`;
     const dedupeKv = context.env.PURCHASE_KV || null;
     if (dedupeKv) {
       const recent = await dedupeKv.get(dedupeKey).catch(() => null);
@@ -126,6 +133,8 @@ export async function onRequestPost(context) {
         }), { status: 200, headers });
       }
       await dedupeKv.put(dedupeKey, new Date().toISOString(), { expirationTtl: 120 }).catch(() => {});
+      claimedDedupeKey = dedupeKey;
+      claimedDedupeKv = dedupeKv;
     }
 
     const smsRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/messages`, {
@@ -144,6 +153,7 @@ export async function onRequestPost(context) {
       if (dedupeKv) await dedupeKv.delete(dedupeKey).catch(() => {});
       return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers });
     }
+    smsSent = true;
 
     // Best-effort: tag the contact for outcome tracking. Don't block on failure.
     // Use the dedicated tag endpoint (additive) rather than a full-array PUT so
@@ -161,6 +171,9 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ success: true, product: productKey }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-send-paylink] Error:", err.message);
+    if (claimedDedupeKey && claimedDedupeKv && !smsSent) {
+      await claimedDedupeKv.delete(claimedDedupeKey).catch(() => {});
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

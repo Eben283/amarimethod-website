@@ -57,14 +57,26 @@ describe('portalBookingBlocked (derived-ledger gate, 2026-07-02 audit)', () => {
 
   it('allows booking when the ledger the dashboard shows says sessions remain — even if the cached field says 0', async () => {
     const { portalBookingBlocked } = await import('./portal-book.js');
-    const ledger = { source: 'orders+invoices+appointments', display: { remaining: 2 } };
+    const ledger = { source: 'orders+invoices+appointments', confidence: 'high', display: { remaining: 2 } };
     expect(portalBookingBlocked(ledger, contactWithField('0'))).toBe(false);
   });
 
   it('blocks booking when the displayed ledger is exhausted — even if the cached field says 2', async () => {
     const { portalBookingBlocked } = await import('./portal-book.js');
-    const ledger = { source: 'orders+invoices+appointments', display: { remaining: 0 } };
+    const ledger = { source: 'orders+invoices+appointments', confidence: 'high', display: { remaining: 0 } };
     expect(portalBookingBlocked(ledger, contactWithField('2'))).toBe(true);
+  });
+
+  it('fails open for an underivable balance: low confidence AND a never-written field (old behavior preserved)', async () => {
+    // A staff-booked package-calendar client with off-platform history has no
+    // derivable package and an empty field — blocking would break even
+    // RESCHEDULING (the modal books first).
+    const { portalBookingBlocked } = await import('./portal-book.js');
+    const ledger = { source: 'orders+invoices+appointments', confidence: 'low', display: { remaining: 0 } };
+    expect(portalBookingBlocked(ledger, { customFields: [] })).toBe(false);
+    // But a WRITTEN field at low confidence is still honored (display falls
+    // back to it inside deriveLedger, so this stays consistent).
+    expect(portalBookingBlocked(ledger, contactWithField('0'))).toBe(true);
   });
 
   it('falls back to the raw field when the ledger has no data (transient failure) — and fails open on a missing field', async () => {

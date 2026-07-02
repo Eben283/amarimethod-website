@@ -47,6 +47,15 @@ const SESSIONS_REMAINING_FIELD_ID = 'wrQSkx6BhXwDGIn1d0V4';
 // fallback when the ledger has no data at all (transient fetch failure).
 export function portalBookingBlocked(ledger, contact) {
   if (!ledger || ledger.source === 'empty') return portalBalanceExhausted(contact);
+  // Low-confidence derivation with a NEVER-WRITTEN field means the balance is
+  // genuinely underivable (off-platform history, staff-booked package client
+  // with no orders). The old gate failed open there by design — keep that,
+  // or such a client can't even RESCHEDULE (the modal books first).
+  const raw = getCustomField(contact, 'sessions_remaining', {
+    sessions_remaining: SESSIONS_REMAINING_FIELD_ID,
+  });
+  const fieldWritten = !(raw === null || raw === undefined || String(raw).trim() === '');
+  if (ledger.confidence !== 'high' && !fieldWritten) return false;
   const remaining = Number(ledger.display?.remaining);
   return Number.isFinite(remaining) ? remaining <= 0 : portalBalanceExhausted(contact);
 }

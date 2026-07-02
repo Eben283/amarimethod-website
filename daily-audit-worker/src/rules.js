@@ -672,7 +672,8 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
       d.setDate(d.getDate() + i);
       const dateStr = d.toISOString().split("T")[0];
       try {
-        const appts = await fetchAppointmentsForDate(env, dateStr);
+        // Return shape changed 2026-07-02: { appointments, failedCalendars }.
+        const { appointments: appts } = await fetchAppointmentsForDate(env, dateStr);
         for (const a of appts) {
           if (a.contactId) appointedContactIds.add(a.contactId);
         }
