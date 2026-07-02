@@ -1107,6 +1107,195 @@ describe('deriveLedger — upgrade orders', () => {
     expect(result.remaining).toBe(3);
   });
 
+  it('CROSS-DAY upgrade with matching initial order → attended initial still counts (remaining 3, not 4)', () => {
+    // The 2026-07-02 audit bug: initial purchased + attended on Mar 1,
+    // upgrade bought Mar 10. The cutoff used to sit on the upgrade day
+    // (earliest PACKAGE_TYPES date), dropping the Mar 1 attendance —
+    // deriving remaining=4 at high confidence, and the reconcile sweep then
+    // overwrote the webhook's correct 3 with 4. The initial→N upgrade prices
+    // in the already-paid initial, so the package effectively starts on the
+    // initial's purchase day.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
+    expect(result.confidence).toBe('high');
+  });
+
+  it('CROSS-DAY 8-upgrade with matching initial → remaining 7, not 8', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 8-Session',
+          amount: 1070,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(7);
+  });
+
+  it('cross-day upgrade also absorbs a paid one-off follow-up between initial and upgrade', () => {
+    // Initial Mar 1 (paid + attended), one-off follow-up Mar 5 (paid +
+    // attended), upgrade Mar 10. purchased = 1 + 1 + 3 = 5, attended = 2,
+    // remaining = 3 — the pre-upgrade sessions the client paid for are
+    // matched by their purchases, not silently dropped by the cutoff.
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Follow-up Session',
+          amount: 190,
+          createdAt: '2026-03-05T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+        appt({ calendarId: CAL.followup, startTime: '2026-03-05T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(5);
+    expect(result.attended).toBe(2);
+    expect(result.remaining).toBe(3);
+  });
+
+  it('multiple initials: extension uses the LATEST initial on-or-before the upgrade, not an ancient one', () => {
+    // Dirty-history guard (2026-07-02 cold review): a legacy pay-as-you-go
+    // initial from a year earlier must NOT drag the cutoff back and count
+    // old comped sessions against the new package. The upgrade credits the
+    // RECENT initial. (The old initial's +1 purchase still sums into
+    // `purchased` while its attendance falls before cutoff — that residual
+    // inflation is pre-existing cutoff design, surfaced by the sweep's
+    // delta>2 needs-review path, not this rule.)
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2025-01-10T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Initial Session',
+          amount: 225,
+          createdAt: '2026-03-01T14:00:00Z',
+        }),
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2025-01-10T15:00:00' }),
+        // comped follow-up in 2025 — must stay excluded
+        appt({ calendarId: CAL.followup, startTime: '2025-02-10T15:00:00' }),
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    // cutoff = 2026-03-01 (latest initial ≤ upgrade day): only the recent
+    // initial counts as attended. NOT 2025-01-10, which would also count
+    // the old initial + comp (attended 3 → remaining 2).
+    expect(result.purchased).toBe(5);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(4);
+  });
+
+  it('bare date-only issueDate on an invoice-sourced initial does not shift the cutoff a day early', () => {
+    // toDayPacific() must treat "YYYY-MM-DD" as already a calendar day.
+    // Parsing it through Date makes it UTC midnight = 4pm PT the PREVIOUS
+    // day, landing the cutoff on Feb 28 and pulling the comped Feb 28
+    // session into `attended` (remaining 2 instead of 3).
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      invoices: [
+        invoice({ productId: PID.initialInPerson, amountPaid: 225, issueDate: '2026-03-01' }),
+      ],
+      appointments: [
+        // comped session the day before the paid initial — must stay excluded
+        appt({ calendarId: CAL.followup, startTime: '2026-02-28T15:00:00' }),
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(4);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(3);
+  });
+
+  it('cross-day upgrade WITHOUT an initial order does NOT extend the cutoff', () => {
+    // Initial paid off-platform (no GHL order). The upgrade math is
+    // self-contained (purchased=3) and the off-platform initial attendance
+    // must stay excluded — extending the cutoff here would double-charge
+    // the client one session (remaining 2 instead of 3).
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [
+        order({
+          sourceName: 'Upgrade to 4-Session',
+          amount: 495,
+          createdAt: '2026-03-10T14:30:00Z',
+        }),
+      ],
+      appointments: [
+        appt({ calendarId: CAL.initial, startTime: '2026-03-01T15:00:00' }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(3);
+    expect(result.attended).toBe(0);
+    expect(result.remaining).toBe(3);
+  });
+
   it('upgrade without matching initial order → purchased 3 (upgrade only)', () => {
     // No initial order in system — upgrade gives 3 sessions.
     // The initial session was paid off-platform but the upgrade math

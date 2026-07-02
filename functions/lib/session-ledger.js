@@ -325,16 +325,46 @@ export function deriveLedger({
   const toDay = (iso) => (typeof iso === "string" ? iso.slice(0, 10) : "");
   const toDayPacific = (iso) => {
     if (typeof iso !== "string" || !iso) return "";
+    // Bare date strings ("2026-03-01", how some invoice issueDates arrive)
+    // are already a calendar day. Parsing them through Date makes them UTC
+    // midnight = 4/5pm PT the PREVIOUS day, shifting the cutoff a day early.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
     return d.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
   };
-  const packageDates = classifications
-    .filter((c) => PACKAGE_TYPES.has(c.type))
-    .map((c) => c.date)
-    .filter(Boolean)
-    .sort();
-  const cutoffDay = toDayPacific(packageDates[0] || "");
+  const packageClassifications = classifications
+    .filter((c) => PACKAGE_TYPES.has(c.type) && c.date)
+    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  const earliestPackage = packageClassifications[0] || null;
+  let cutoffDay = earliestPackage ? toDayPacific(earliestPackage.date) : "";
+
+  // Initial→N upgrades price in the already-paid initial session (the $225
+  // credit), so the package effectively began on the DAY THE INITIAL WAS
+  // PURCHASED — the attended initial is one of the package's sessions, as
+  // the comment above step 1 asserts. With the cutoff sitting on the
+  // upgrade day, a cross-day upgrade dropped that attendance and derived
+  // remaining one too high (e.g. 4 instead of 3) at high confidence, which
+  // the reconcile sweep then wrote over the webhook's correct value.
+  // Extend the cutoff back to the LATEST paid initial on or before the
+  // upgrade day — that's the initial the upgrade credits. Not the earliest
+  // ever: a legacy pay-as-you-go initial from a year back would drag the
+  // cutoff months early and count old comped sessions against the package.
+  // Only when an initial classification exists: with no initial order in
+  // GHL (paid off-platform) the upgrade math is self-contained
+  // (purchased=3/7) and the off-platform attendance must stay excluded.
+  const INITIAL_UPGRADE_TYPES = new Set(["4-upgrade", "8-upgrade"]);
+  if (earliestPackage && INITIAL_UPGRADE_TYPES.has(earliestPackage.type)) {
+    const initialDaysOnOrBefore = classifications
+      .filter((c) => c.type === "initial" && c.date)
+      .map((c) => toDayPacific(c.date))
+      .filter((d) => d && d <= cutoffDay)
+      .sort();
+    const creditedInitialDay = initialDaysOnOrBefore[initialDaysOnOrBefore.length - 1];
+    if (creditedInitialDay && creditedInitialDay < cutoffDay) {
+      cutoffDay = creditedInitialDay;
+    }
+  }
 
   // 3. Filter appointments → only attended series sessions, on or after cutoff day
   const attendedAllTime = appointments
