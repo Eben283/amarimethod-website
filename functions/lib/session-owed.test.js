@@ -67,3 +67,22 @@ describe('computeOwedStatus', () => {
     expect(computeOwedStatus({ sessionsPurchased: 0, unknownCount: 0, attendedBillable: 0 }).status).toBe('square');
   });
 });
+
+describe('countBillableSessionsAttended — comped exclusion (2026-07-02 P2)', () => {
+  const nowMs = Date.parse('2026-06-01T00:00:00Z');
+  const idAppt = (id) => ({ ...appt(), id, startTime: '2026-03-02T10:00:00' });
+
+  it('excludes appointments Garrett explicitly marked comped in the payment records', () => {
+    // A comped session on a normal follow-up calendar has no Stripe charge,
+    // so counting it as billable made attended > purchased and the owed
+    // machinery accused a comped client of not paying (the reason the
+    // hand-pinned isSettled list exists).
+    const appts = [idAppt('a1'), idAppt('a2'), idAppt('a3')];
+    expect(countBillableSessionsAttended(appts, nowMs)).toBe(3);
+    expect(countBillableSessionsAttended(appts, nowMs, new Set(['a2']))).toBe(2);
+  });
+
+  it('still counts everything when no exclusions are passed', () => {
+    expect(countBillableSessionsAttended([idAppt('a1')], nowMs)).toBe(1);
+  });
+});

@@ -20,10 +20,15 @@ const ATTENDED = new Set(['showed', 'completed']);
 // (comp) calendar and entrainment calendar are NOT in SERIES_CALENDAR_IDS, so
 // comps and entrainments are naturally excluded — apples-to-apples with the
 // `sessionsPurchased` side (entrainment/living-practice classify as 0 sessions).
-export function countBillableSessionsAttended(appointments, nowMs = Date.now()) {
+export function countBillableSessionsAttended(appointments, nowMs = Date.now(), excludeIds = null) {
   let n = 0;
   for (const a of (appointments || [])) {
     if (!SERIES_CALENDAR_IDS.has(a.calendarId)) continue;
+    // Sessions Garrett explicitly marked comped (per-appointment payment
+    // records in PURCHASE_KV) sit on normal follow-up calendars but leave no
+    // charge — counting them as billable false-flagged comped clients as
+    // owing (the reason the hand-pinned isSettled list kept growing).
+    if (excludeIds && a.id && excludeIds.has(a.id)) continue;
     const status = (a.appointmentStatus || a.status || '').toLowerCase();
     if (!ATTENDED.has(status)) continue;
     // parsePacificWallClock: GHL startTime is naive Pacific — a UTC parse

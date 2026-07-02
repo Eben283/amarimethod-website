@@ -110,6 +110,24 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers });
     }
 
+    // Short-window dedupe: the SPA's 15s fetch timeout + the retry button can
+    // re-send while the first POST is still completing server-side — the
+    // client then gets the same payment link twice. Claim the key BEFORE
+    // sending (released on failure) so the retry hits the marker.
+    const dedupeKey = `paylink-sent:${contactId}:${product}`;
+    const dedupeKv = context.env.PURCHASE_KV || null;
+    if (dedupeKv) {
+      const recent = await dedupeKv.get(dedupeKey).catch(() => null);
+      if (recent) {
+        return new Response(JSON.stringify({
+          success: true,
+          deduped: true,
+          message: "This link was already sent moments ago — not re-sending.",
+        }), { status: 200, headers });
+      }
+      await dedupeKv.put(dedupeKey, new Date().toISOString(), { expirationTtl: 120 }).catch(() => {});
+    }
+
     const smsRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
@@ -122,6 +140,8 @@ export async function onRequestPost(context) {
     if (!smsRes.ok) {
       const errText = await smsRes.text();
       console.error(`[staff-send-paylink] SMS send failed: ${smsRes.status} ${errText}`);
+      // Release the dedupe claim so a legitimate retry isn't blocked for 2min.
+      if (dedupeKv) await dedupeKv.delete(dedupeKey).catch(() => {});
       return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers });
     }
 

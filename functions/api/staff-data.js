@@ -114,8 +114,13 @@ export async function onRequestGet(context) {
     }
 
     // Enrich each appointment with contact details
-    const enriched = await Promise.all(
-      todayEvents.map(async (event) => {
+    // Chunked enrichment — each event fans out 4-5 GHL calls + order
+    // hydration. An unbounded Promise.all over a busy week view was the exact
+    // connection-cap incident class staff-balances fixed on 2026-06-03; when
+    // it blew up, every contact's catch returned zeros and paid clients
+    // rendered "Unpaid" with no error indication.
+    const ENRICH_CHUNK = 3;
+    const enrichOne = async (event) => {
         const contactId = event.contactId;
         let contactName = event.title || "Unknown";
         let sessionsRemaining = 0;
@@ -126,6 +131,7 @@ export async function onRequestGet(context) {
         let paymentStatus = "unknown";
         let paymentMethod = null;
         let paymentNote = null;
+        let enrichmentFailed = false;
 
         if (contactId) {
           try {
@@ -203,7 +209,10 @@ export async function onRequestGet(context) {
               paymentNote = payRec.note;
             }
           } catch (err) {
+            // Surfaced to the row (enrichmentFailed) — silent zeros here made
+            // paid clients read as "Unpaid" whenever enrichment blew up.
             console.error(`[staff-data] Contact enrich error for ${contactId}:`, err.message);
+            enrichmentFailed = true;
           }
         }
 
@@ -225,9 +234,15 @@ export async function onRequestGet(context) {
           paymentStatus,
           paymentMethod,
           paymentNote,
+          enrichmentFailed,
         };
-      })
-    );
+      };
+
+    const enriched = [];
+    for (let i = 0; i < todayEvents.length; i += ENRICH_CHUNK) {
+      const part = await Promise.all(todayEvents.slice(i, i + ENRICH_CHUNK).map(enrichOne));
+      enriched.push(...part);
+    }
 
     return new Response(JSON.stringify(enriched), { status: 200, headers });
   } catch (err) {

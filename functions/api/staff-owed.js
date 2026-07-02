@@ -12,6 +12,7 @@ import { ghlFetch } from "../lib/ghl.js";
 import { resolveContactCharges, summarizeCharges, classifyCharge, authoritativeCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
 import { isSettled, settledReason } from "../lib/owed-settled.js";
+import { listPaymentRecordsForContact } from "../lib/session-payment.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -95,7 +96,15 @@ export async function onRequestGet(context) {
         label: classifyCharge(c).label || c.description || "Payment",
       }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    const attendedBillable = countBillableSessionsAttended(appointments);
+    // Exclude explicitly-comped sessions from the billable count — see
+    // countBillableSessionsAttended. Fail-soft: {} when KV is unbound/errors.
+    const payRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId);
+    const compedIds = new Set(
+      Object.entries(payRecords)
+        .filter(([, r]) => r && r.status === "comped")
+        .map(([apptId]) => apptId),
+    );
+    const attendedBillable = countBillableSessionsAttended(appointments, Date.now(), compedIds);
     // Comps and off-platform payments leave no Stripe trace, so the owed math
     // can't see them and would false-flag these hand-verified clients. A pinned
     // settled override forces 'square' — see lib/owed-settled.js.

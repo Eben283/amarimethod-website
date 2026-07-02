@@ -62,7 +62,7 @@ function makeFakeD1(seed = []) {
 
 let captured;
 
-function setup({ apptStatus = 'confirmed', completed = '5', remaining = '3', kvStore = {}, attendDb = null, contactPutFails = false } = {}) {
+function setup({ apptStatus = 'confirmed', completed = '5', remaining = '3', kvStore = {}, attendDb = null, contactPutFails = false, calendarId = 'SKDVOL8wtUN6Ne0ppbC9' } = {}) {
   captured = { contactPut: null, apptPuts: [] };
   const contact = {
     id: 'c1',
@@ -71,7 +71,7 @@ function setup({ apptStatus = 'confirmed', completed = '5', remaining = '3', kvS
       { id: ID.remaining, value: remaining },
     ],
   };
-  const appt = { id: 'a1', appointmentStatus: apptStatus, calendarId: 'SKDVOL8wtUN6Ne0ppbC9', startTime: '2026-06-09T18:00:00Z' };
+  const appt = { id: 'a1', appointmentStatus: apptStatus, calendarId, startTime: '2026-06-09T18:00:00Z' };
 
   ghlFetch.mockImplementation(async (_ctx, url, opts) => {
     const method = opts?.method || 'GET';
@@ -126,7 +126,9 @@ describe('staff-mark-attended — write orchestration', () => {
   });
 
   it('discovery call → marks showed but does NOT touch the counts (no contact PUT)', async () => {
-    const ctx = setup();
+    // calendarId-first classification (2026-07-02): the fixture appointment
+    // must actually live on the discovery calendar, matching reality.
+    const ctx = setup({ calendarId: 'USgPsktqRcuomdUgpShL' });
     ctx.request = makeReq({ appointmentId: 'a1', contactId: 'c1', appointmentTitle: 'Discovery Call', calendarName: 'Discovery Call' });
     const res = await onRequestPost(ctx);
     expect(res.status).toBe(200);
@@ -193,7 +195,7 @@ describe('staff-mark-attended — audit guards (2026-07-02)', () => {
     // attended (lifetime-only, no package draw) must not wipe that override —
     // the old `newRemaining === 0` condition did, flipping the Today-view pill
     // to "Unpaid" for a session the client already paid for.
-    const ctx = setup({ completed: '5', remaining: '0' });
+    const ctx = setup({ completed: '5', remaining: '0', calendarId: 'B5aGXLoS4kzAjZAMMXxk' });
     ctx.request = makeReq({
       appointmentId: 'a1',
       contactId: 'c1',
@@ -236,5 +238,47 @@ describe('staff-mark-attended — audit guards (2026-07-02)', () => {
     expect(res.status).toBe(422);
     expect(captured.apptPuts.length).toBe(0); // nothing written
     expect(captured.contactPut).toBeNull();
+  });
+});
+
+describe('staff-mark-attended — calendarId-based classification (2026-07-02 P2)', () => {
+  it('classifies from the appointment calendarId even when the body carries no title/calendar', async () => {
+    // The appointment is on the ENTRAINMENT calendar, but the caller sent
+    // empty strings. String-based classification treated '' as counts+draws
+    // and decremented the package for a $90 individually-billed entrainment.
+    const ctx = setup({ completed: '5', remaining: '3' });
+    // Re-mock: same appointment but on the entrainment calendar.
+    ghlFetch.mockImplementation(async (_c, url, opts) => {
+      const method = opts?.method || 'GET';
+      if (url.includes('/calendars/events/appointments/')) { captured.apptPuts.push(url); return resp({}); }
+      if (url.includes('/appointments')) return resp({ appointments: [{ id: 'a1', appointmentStatus: 'confirmed', calendarId: 'B5aGXLoS4kzAjZAMMXxk', startTime: '2026-06-09T18:00:00Z' }] });
+      if (url.includes('/customFields')) return resp({ customFields: FIELD_DEFS });
+      if (url.endsWith('/contacts/c1') && method === 'PUT') { captured.contactPut = JSON.parse(opts.body); return resp({}); }
+      if (url.endsWith('/contacts/c1')) return resp({ contact: { id: 'c1', customFields: [{ id: ID.completed, value: '5' }, { id: ID.remaining, value: '3' }] } });
+      return resp({});
+    });
+    ctx.request = makeReq({ appointmentId: 'a1', contactId: 'c1' }); // no title, no calendarName
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(field(captured.contactPut, ID.completed)).toBe('6'); // entrainment counts lifetime
+    expect(field(captured.contactPut, ID.remaining)).toBeUndefined(); // but never draws the package
+  });
+
+  it('discovery-calendar appointment counts neither field regardless of body strings', async () => {
+    const ctx = setup();
+    ghlFetch.mockImplementation(async (_c, url, opts) => {
+      const method = opts?.method || 'GET';
+      if (url.includes('/calendars/events/appointments/')) { captured.apptPuts.push(url); return resp({}); }
+      if (url.includes('/appointments')) return resp({ appointments: [{ id: 'a1', appointmentStatus: 'confirmed', calendarId: 'USgPsktqRcuomdUgpShL', startTime: '2026-06-09T18:00:00Z' }] });
+      if (url.includes('/customFields')) return resp({ customFields: FIELD_DEFS });
+      if (url.endsWith('/contacts/c1') && method === 'PUT') { captured.contactPut = JSON.parse(opts.body); return resp({}); }
+      if (url.endsWith('/contacts/c1')) return resp({ contact: { id: 'c1', customFields: [] } });
+      return resp({});
+    });
+    ctx.request = makeReq({ appointmentId: 'a1', contactId: 'c1', appointmentTitle: 'Follow-up Session', calendarName: '' });
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(captured.apptPuts.length).toBe(1); // marked showed
+    expect(captured.contactPut).toBeNull();   // no counts touched
   });
 });

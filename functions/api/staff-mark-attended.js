@@ -6,6 +6,7 @@ import { getCustomField } from "../lib/portal-helpers.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
 import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classification.js";
+import { SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -42,6 +43,15 @@ const FOLLOWUP_CALENDAR_IDS = new Set([
   "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
 ]);
 const PAIR_WINDOW_MS = 90 * 60 * 1000;
+
+// Calendars that count NEITHER field (pre-session phone chats). Subset of
+// NON_SERIES_CALENDAR_IDS — the others there (entrainment, partner initials)
+// still count toward lifetime, just never draw from the package.
+const DISCOVERY_CALENDAR_IDS = new Set([
+  "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
+  "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
+  "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
+]);
 
 // Idempotency decision for mark-attended. "Already processed" = the appointment
 // is marked AND (it needs no count change, OR the count was already debited).
@@ -149,8 +159,22 @@ export async function onRequestPost(context) {
     const appointmentTitle = body.appointmentTitle || "";
     const calendarName = body.calendarName || "";
     const titleAndCal = `${appointmentTitle} ${calendarName}`;
-    const countsTowardLifetime = !NON_JOURNEY_PATTERN.test(titleAndCal);
-    const drawsFromPackage = !NON_PACKAGE_PATTERN.test(titleAndCal);
+    // Classify from the appointment's calendarId when we recognize it — the
+    // server already fetched the appointment, and client-supplied strings
+    // default to "" which classified as counts+draws (an entrainment sent
+    // with no calendarName decremented the package). String patterns remain
+    // the fallback for unknown calendars / appointment-not-in-list.
+    const knownCalendarId =
+      thisAppt?.calendarId &&
+      (SERIES_CALENDAR_IDS.has(thisAppt.calendarId) || NON_SERIES_CALENDAR_IDS.has(thisAppt.calendarId))
+        ? thisAppt.calendarId
+        : null;
+    const countsTowardLifetime = knownCalendarId
+      ? !DISCOVERY_CALENDAR_IDS.has(knownCalendarId)
+      : !NON_JOURNEY_PATTERN.test(titleAndCal);
+    const drawsFromPackage = knownCalendarId
+      ? SERIES_CALENDAR_IDS.has(knownCalendarId)
+      : !NON_PACKAGE_PATTERN.test(titleAndCal);
     const isSession = drawsFromPackage; // back-compat API field
     const needsFields = countsTowardLifetime || drawsFromPackage;
 
