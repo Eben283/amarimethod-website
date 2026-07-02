@@ -1639,3 +1639,77 @@ describe('SERIES_CALENDAR_IDS', () => {
     expect(SERIES_CALENDAR_IDS.has(CAL.initialPaidAtPartner)).toBe(false);
   });
 });
+
+// ── fetchFailures — partial GHL fetch failure must not derive confidently ──
+//
+// 2026-07-02 audit: if /payments/orders 500s while invoices/appointments
+// succeed, every caller silently passed orders=[] and a paid-but-unattended
+// client derived purchased=0/remaining=0 at HIGH confidence — staff could
+// chase a fully-paid client for money. Callers now report failed fetches
+// via fetchFailures, which forces an ambiguity → low confidence → field
+// fallback (same path as hydration failures).
+
+describe('deriveLedger — fetchFailures', () => {
+  it('orders-fetch failure forces low confidence + field fallback instead of a confident zero', () => {
+    const result = deriveLedger({
+      contact: contact({ customFields: [{ id: 'wrQSkx6BhXwDGIn1d0V4', value: '8' }] }),
+      orders: [],
+      invoices: [],
+      appointments: [],
+      fieldDefs: FIELD_DEFS,
+      fetchFailures: ['orders (500)'],
+    });
+    expect(result.confidence).toBe('low');
+    expect(result.ambiguities.join(' ')).toMatch(/orders \(500\)/);
+    expect(result.display.remaining).toBe(8);
+    expect(result.display.source).toBe('low-confidence-fallback');
+  });
+
+  it('appointments-fetch failure forces low confidence instead of a confident full balance', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [],
+      invoices: [
+        invoice({ productId: PID.eightSeries, amountPaid: 1295, issueDate: '2026-03-01T18:00:00Z' }),
+      ],
+      appointments: [], // fetch failed — the client has really attended sessions
+      fieldDefs: FIELD_DEFS,
+      fetchFailures: ['appointments (429)'],
+    });
+    expect(result.confidence).toBe('low');
+    expect(result.ambiguities.join(' ')).toMatch(/appointments \(429\)/);
+  });
+});
+
+describe('computeSessionLedger — partial fetch failure', () => {
+  it('orders 500 while invoices/appointments succeed → low confidence, ambiguity recorded', async () => {
+    ghlResponses.clear();
+    ghlResponses.set('/contacts/pf-1/appointments', { ok: true, json: async () => ({ appointments: [] }) });
+    ghlResponses.set('/contacts/pf-1', {
+      ok: true,
+      json: async () => ({ contact: { id: 'pf-1', customFields: [] } }),
+    });
+    ghlResponses.set('/payments/orders?', { ok: false, status: 500, json: async () => ({}) });
+    ghlResponses.set('/invoices/', {
+      ok: true,
+      json: async () => ({
+        invoices: [
+          {
+            name: 'New Invoice',
+            status: 'paid',
+            amountPaid: 1295,
+            total: 1295,
+            issueDate: '2026-03-01T18:00:00Z',
+            invoiceItems: [{ name: '8-Session Series', productId: '69987357c839790426996114', amount: 1295, qty: 1 }],
+          },
+        ],
+      }),
+    });
+    ghlResponses.set('/customFields', { ok: true, json: async () => ({ customFields: [] }) });
+
+    const ledger = await computeSessionLedger({}, 'pf-1');
+
+    expect(ledger.confidence).toBe('low');
+    expect(ledger.ambiguities.join(' ')).toMatch(/orders/);
+  });
+});

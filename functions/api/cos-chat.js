@@ -536,10 +536,13 @@ async function lookupContact(context, name) {
     ghlFetch(context, `https://services.leadconnectorhq.com/invoices/?altId=${locationIdForLedger}&altType=location&contactId=${contactId}&limit=100&offset=0`),
   ]);
 
+  const ledgerFetchFailures = [];
   let appointments = [];
   if (apptResp.ok) {
     const apptData = await apptResp.json();
     appointments = apptData.events || apptData.appointments || [];
+  } else {
+    ledgerFetchFailures.push(`appointments (${apptResp.status})`);
   }
   let orders = [];
   if (ordersResp.ok) {
@@ -549,15 +552,19 @@ async function lookupContact(context, name) {
     // hydrate via /payments/orders/{id} so classifyOrder can read
     // product._id. See session-ledger.js → hydrateOrders for details.
     orders = await hydrateOrders(context, ordersList);
+  } else {
+    ledgerFetchFailures.push(`orders (${ordersResp.status})`);
   }
   let invoices = [];
   if (invoicesResp.ok) {
     const iData = await invoicesResp.json();
     invoices = iData.invoices || [];
+  } else {
+    ledgerFetchFailures.push(`invoices (${invoicesResp.status})`);
   }
   // POS-source clients show as "low confidence" in the ledger, which is
   // honest signaling for chat answers.
-  const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: {} });
+  const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: {}, fetchFailures: ledgerFetchFailures });
 
   // Parse custom fields
   const customFields = contact.customFields || contact.customField || [];

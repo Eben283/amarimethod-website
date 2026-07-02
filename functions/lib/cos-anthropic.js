@@ -237,13 +237,17 @@ export async function executeTool(context, toolName, input, user = "Eben") {
       const fields = {};
       for (const f of (c.customFields || c.customField || [])) fields[f.id] = f.value;
 
+      const ledgerFetchFailures = [];
       let orders = [];
       if (ordersResp.ok) { const d = await ordersResp.json(); orders = d.data || d.orders || []; }
+      else ledgerFetchFailures.push(`orders (${ordersResp.status})`);
       let invoices = [];
       if (invoicesResp.ok) { const d = await invoicesResp.json(); invoices = d.invoices || []; }
+      else ledgerFetchFailures.push(`invoices (${invoicesResp.status})`);
       let appointments = [];
       if (apptResp.ok) { const d = await apptResp.json(); appointments = d.events || d.appointments || []; }
-      const ledger = deriveLedger({ contact: c, orders, invoices, appointments, fieldDefs: {} });
+      else ledgerFetchFailures.push(`appointments (${apptResp.status})`);
+      const ledger = deriveLedger({ contact: c, orders, invoices, appointments, fieldDefs: {}, fetchFailures: ledgerFetchFailures });
 
       return JSON.stringify({
         id: c.id,

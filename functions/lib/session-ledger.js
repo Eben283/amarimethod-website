@@ -237,6 +237,13 @@ function getCustomFieldInt(contact, key, fieldDefs) {
  * @param {object[]} params.invoices      GHL invoices (from /invoices/)
  * @param {object[]} params.appointments  GHL appointments (from /contacts/{id}/appointments)
  * @param {object} params.fieldDefs       map of short key → custom field id
+ * @param {string[]} params.fetchFailures labels of GHL fetches that failed upstream
+ *   (e.g. "orders (500)"). Callers that fall back to [] after a non-ok
+ *   response MUST report it here: deriving from partial data at high
+ *   confidence produced confident wrong zero balances (a paid-but-unattended
+ *   client whose orders fetch 500ed derived purchased=0/remaining=0 and
+ *   staff chased them for money — 2026-07-02 audit). Each entry becomes an
+ *   ambiguity → low confidence → field fallback.
  * @returns ledger object — see staff-balances.js BalanceRow shape
  */
 export function deriveLedger({
@@ -245,8 +252,12 @@ export function deriveLedger({
   invoices = [],
   appointments = [],
   fieldDefs = {},
+  fetchFailures = [],
 }) {
   const ambiguities = [];
+  for (const failure of fetchFailures) {
+    if (failure) ambiguities.push(`fetch failure: ${failure} — derived counts incomplete`);
+  }
 
   // 1. Classify orders + invoices → derive purchased session count.
   // Each classification carries a date so we can compute a cutoff for
@@ -597,23 +608,31 @@ export async function computeSessionLedger(context, contactId, options = {}) {
     const contactData = await contactRes.json();
     const contact = contactData.contact || {};
 
+    const fetchFailures = [];
+
     let orders = [];
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       const ordersList = ordersData.data || ordersData.orders || [];
       orders = await hydrateOrders(context, ordersList);
+    } else {
+      fetchFailures.push(`orders (${ordersRes.status})`);
     }
 
     let invoices = [];
     if (invoicesRes.ok) {
       const invoicesData = await invoicesRes.json();
       invoices = invoicesData.invoices || [];
+    } else {
+      fetchFailures.push(`invoices (${invoicesRes.status})`);
     }
 
     let appointments = [];
     if (apptRes.ok) {
       const apptData = await apptRes.json();
       appointments = apptData.appointments || apptData.events || [];
+    } else {
+      fetchFailures.push(`appointments (${apptRes.status})`);
     }
 
     if (!options.fieldDefs && fieldDefsRes && fieldDefsRes.ok) {
@@ -626,7 +645,7 @@ export async function computeSessionLedger(context, contactId, options = {}) {
       fieldDefs = map;
     }
 
-    return deriveLedger({ contact, orders, invoices, appointments, fieldDefs });
+    return deriveLedger({ contact, orders, invoices, appointments, fieldDefs, fetchFailures });
   } catch (err) {
     return emptyLedger(`ledger error: ${err.message}`);
   }

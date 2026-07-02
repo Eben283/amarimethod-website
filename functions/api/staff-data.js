@@ -147,6 +147,11 @@ export async function onRequestGet(context) {
               tags = contact.tags || [];
             }
 
+            const ledgerFetchFailures = [];
+            if (!contactRes.ok) ledgerFetchFailures.push(`contact (${contactRes.status})`);
+            if (!ordersRes.ok) ledgerFetchFailures.push(`orders (${ordersRes.status})`);
+            if (!invoicesRes.ok) ledgerFetchFailures.push(`invoices (${invoicesRes.status})`);
+            if (!apptRes.ok) ledgerFetchFailures.push(`appointments (${apptRes.status})`);
             const ordersList = ordersRes.ok ? ((await ordersRes.json()).data || []) : [];
             // POS orders need /payments/orders/{id} hydration — see
             // session-ledger.js → hydrateOrders. Without it POS package
@@ -165,6 +170,7 @@ export async function onRequestGet(context) {
               invoices,
               appointments,
               fieldDefs,
+              fetchFailures: ledgerFetchFailures,
             });
 
             // Use display values from deriveLedger — falls back to field

@@ -165,8 +165,12 @@ export async function onRequestGet(context) {
     }
 
     // Parse orders + invoices for the ledger derivation. Both are optional —
-    // if either fails the ledger downgrades confidence but the page still
-    // renders.
+    // if either fails, the failure is reported to deriveLedger so confidence
+    // drops to low (field fallback) but the page still renders. (This comment
+    // used to CLAIM the downgrade happened; it didn't until 2026-07-02 —
+    // silent [] fallbacks derived confident wrong zero balances.)
+    const ledgerFetchFailures = [];
+    if (!appointmentsResponse.ok) ledgerFetchFailures.push(`appointments (${appointmentsResponse.status})`);
     let orders = [];
     if (ordersResponse.ok) {
       const ordersData = await ordersResponse.json();
@@ -175,11 +179,15 @@ export async function onRequestGet(context) {
       // hydrate via /payments/orders/{id} so classifyOrder can read
       // product._id. See session-ledger.js → hydrateOrders for details.
       orders = await hydrateOrders(context, ordersList);
+    } else {
+      ledgerFetchFailures.push(`orders (${ordersResponse.status})`);
     }
     let invoices = [];
     if (invoicesResponse.ok) {
       const invoicesData = await invoicesResponse.json();
       invoices = invoicesData.invoices || [];
+    } else {
+      ledgerFetchFailures.push(`invoices (${invoicesResponse.status})`);
     }
 
     // Derive the prepaid balance from orders + invoices + appointments. This
@@ -195,6 +203,7 @@ export async function onRequestGet(context) {
       invoices,
       appointments: allAppointments,
       fieldDefs,
+      fetchFailures: ledgerFetchFailures,
     });
 
     // Use display values from deriveLedger — falls back to the GHL field

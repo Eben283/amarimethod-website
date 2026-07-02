@@ -326,6 +326,8 @@ export async function onRequestGet(context) {
     // Source-of-truth ledger from orders + invoices + appointments (excludes
     // entrainments, discovery calls, partner sessions, booking-generated
     // placeholder orders, and retired products from series counts).
+    const ledgerFetchFailures = [];
+    if (!appointmentsRes.ok) ledgerFetchFailures.push(`appointments (${appointmentsRes.status})`);
     let orders = [];
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
@@ -334,11 +336,15 @@ export async function onRequestGet(context) {
       // hydrate via /payments/orders/{id} so classifyOrder can read
       // product._id. See session-ledger.js → hydrateOrders for details.
       orders = await hydrateOrders(context, ordersList);
+    } else {
+      ledgerFetchFailures.push(`orders (${ordersRes.status})`);
     }
     let invoices = [];
     if (invoicesRes.ok) {
       const invoicesData = await invoicesRes.json();
       invoices = invoicesData.invoices || [];
+    } else {
+      ledgerFetchFailures.push(`invoices (${invoicesRes.status})`);
     }
     const ledger = deriveLedger({
       contact,
@@ -346,6 +352,7 @@ export async function onRequestGet(context) {
       invoices,
       appointments: rawAppointments,
       fieldDefs,
+      fetchFailures: ledgerFetchFailures,
     });
     // Use the display values from deriveLedger — falls back to the GHL
     // field when manualLock=true OR confidence="low". See session-ledger.js
