@@ -71,6 +71,17 @@ async function runCron(env) {
     log("ABORT: coach:cadence:latest or coach:due:latest missing from KV");
     return;
   }
+  // Freshness gate: conversation-cache rebuilds the due-list 3-hourly. If it
+  // dies, this worker used to regenerate cards from a frozen snapshot forever
+  // — day counts drifting further from reality daily — while reporting ok.
+  const snapshotAgeMs = dueSnapshot.generatedAt ? Date.now() - new Date(dueSnapshot.generatedAt).getTime() : Infinity;
+  if (!Number.isFinite(snapshotAgeMs) || snapshotAgeMs > 26 * 3600 * 1000) {
+    log(`ABORT: coach:due:latest is stale (generatedAt=${dueSnapshot.generatedAt || "missing"}) — conversation-cache may be down; refusing to build cards from a frozen due-list`);
+    return;
+  }
+  if (snapshotAgeMs > 4 * 3600 * 1000) {
+    log(`WARN: due snapshot is ${Math.round(snapshotAgeMs / 3600000)}h old — proceeding, but conversation-cache may be lagging`);
+  }
   const due = dueSnapshot.due || [];
   const dueMap = new Map(due.map((d) => [d.contactId, d]));
   const dueIds = new Set(due.map((d) => d.contactId).filter(Boolean));

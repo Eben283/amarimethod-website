@@ -133,12 +133,17 @@ async function runAudit(env) {
 
   // Fetch all appointments
   let allAppointments = [];
+  const appointmentFetchFailures = [];
   for (const dateStr of dates) {
     try {
-      const appts = await fetchAppointmentsForDate(env, dateStr);
+      const { appointments: appts, failedCalendars } = await fetchAppointmentsForDate(env, dateStr);
       allAppointments = [...allAppointments, ...appts];
+      if (failedCalendars.length > 0) {
+        appointmentFetchFailures.push({ dateStr, failedCalendars });
+      }
     } catch (err) {
       console.error(`[daily-audit] Appointments for ${dateStr}: ${err.message}`);
+      appointmentFetchFailures.push({ dateStr, failedCalendars: [{ calendarId: "*", name: "all", error: err.message }] });
     }
   }
 
@@ -149,6 +154,21 @@ async function runAudit(env) {
     seen.add(a.id);
     return true;
   });
+
+  // Surface appointment-fetch failures as a real issue — an empty appointment
+  // list from a GHL blip must read as "uninspected", never as "clean".
+  const appointmentFetchIssues = [];
+  if (appointmentFetchFailures.length > 0) {
+    const detail = appointmentFetchFailures
+      .map((f) => `${f.dateStr}: ${f.failedCalendars.map((c) => c.name || c.calendarId).join(", ")}`)
+      .join(" | ");
+    appointmentFetchIssues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "appointment-fetch-partial-failure",
+      message: `Some calendars could not be fetched for the audit window (${detail}) — appointment-side rules ran with partial coverage.`,
+    });
+  }
 
   // Pre-warm contact cache with appointment contacts
   const cache = new ContactCache(env);
@@ -182,6 +202,10 @@ async function runAudit(env) {
   // that talks to GHL. No other watchdog covers this.
   const tokenRefreshWatchdogIssues = await checkTokenRefresh(env);
 
+  // Same pattern for the call-coach sister Worker (daily coaching digest) —
+  // previously unwatched; a mid-batch death left status "running" silently.
+  const callCoachWatchdogIssues = await checkCallCoach(env);
+
   // Read the session-ledger drift findings produced by the separate drift cron
   // (runLedgerDriftScan, fired ~10 min earlier in its own invocation so the
   // heavy contact-walk doesn't compete for this invocation's subrequest cap).
@@ -201,8 +225,10 @@ async function runAudit(env) {
     ...refreshWatchdogIssues,
     ...seriesReconcileWatchdogIssues,
     ...tokenRefreshWatchdogIssues,
+    ...callCoachWatchdogIssues,
     ...ledgerDriftIssues,
     ...streamHealthIssues,
+    ...appointmentFetchIssues,
   ];
 
   const result = {
@@ -296,6 +322,58 @@ async function checkStreamSigningHealth(env) {
 //   - Last run >36h ago (cron skipped, schedule may be broken)
 //   - Last run reported status="error" (worker errored)
 //   - Last run failed >5 contacts (transient GHL issues — info, not warning)
+// Watchdog for the call-coach sister Worker (daily 11:07 cron). Two failure
+// shapes: never/stale lastRun (cron dead), and status stuck at "running"
+// (an invocation died mid-batch-chain — the 2026-07-02 audit's silent
+// half-death). No other watchdog covered this worker.
+async function checkCallCoach(env) {
+  const issues = [];
+  const KEY = "call-coach:status:lastRun";
+  let summary;
+  try {
+    summary = await env.PORTAL_KV.get(KEY, "json");
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "call-coach-kv-unreadable",
+      message: `call-coach lastRun KV read failed: ${err.message}`,
+    });
+    return issues;
+  }
+  if (!summary) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "call-coach-never-ran",
+      message: "call-coach Worker has never written a lastRun summary — cron may be dead or the KV binding wrong.",
+    });
+    return issues;
+  }
+  const ts = summary.finishedAt || summary.startedAt || null;
+  const ageH = ts ? (Date.now() - new Date(ts).getTime()) / 3_600_000 : null;
+  if (ageH === null || ageH > 30) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "call-coach-stale",
+      message: `call-coach last ran ${ageH ? Math.round(ageH) + "h ago" : "at an unknown time"} — the daily 11:07 UTC cron may be broken.`,
+    });
+  }
+  if (summary.status === "running" && summary.startedAt) {
+    const runH = (Date.now() - new Date(summary.startedAt).getTime()) / 3_600_000;
+    if (runH > 3) {
+      issues.push({
+        severity: "warning",
+        area: "infra",
+        kind: "call-coach-stuck-running",
+        message: `call-coach status has been "running" for ${Math.round(runH)}h — an invocation likely died mid-batch; digest for that day never built. Re-trigger via /run?date=...`,
+      });
+    }
+  }
+  return issues;
+}
+
 async function checkPartnerActivityRefresh(env) {
   const issues = [];
   const KEY = "ops:activity-refresh:lastRun";

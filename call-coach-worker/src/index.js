@@ -247,7 +247,8 @@ async function runCoach(env, ctx, dateStr, offset) {
   }
 
   // ── Accumulate stats in KV ──
-  const lastRun = (await env.PORTAL_KV.get(KV_LAST_RUN, "json")) || {};
+  // .catch: an unguarded KV read here broke the batch chain silently.
+  const lastRun = (await env.PORTAL_KV.get(KV_LAST_RUN, "json").catch(() => null)) || {};
   lastRun.contactsProcessed = (lastRun.contactsProcessed || 0) + bundles.length;
   lastRun.coached            = (lastRun.coached || 0)            + stats.coached;
   lastRun.failed             = (lastRun.failed || 0)             + stats.failed;
@@ -260,7 +261,24 @@ async function runCoach(env, ctx, dateStr, offset) {
     lastRun.offset = nextOffset;
     await safePut(env, KV_LAST_RUN, lastRun);
     console.log(`[call-coach] Batch done (offset ${offset}); queuing next at ${nextOffset}`);
-    ctx.waitUntil(runCoach(env, ctx, dateStr, nextOffset));
+    // Dispatch the next batch as a FRESH invocation via the SELF service
+    // binding (same pattern as daily-audit's /run-drift). ctx.waitUntil
+    // chaining ran every batch inside ONE invocation — same CPU/memory/
+    // subrequest budget it was supposed to escape — so a heavy day died
+    // mid-chain with status stuck at "running" and no digest.
+    if (env.SELF) {
+      const headers = env.WORKER_AUTH_SECRET
+        ? { Authorization: `Bearer ${env.WORKER_AUTH_SECRET}` }
+        : undefined;
+      ctx.waitUntil(
+        env.SELF.fetch(`https://call-coach.internal/run?date=${dateStr}&offset=${nextOffset}`, { headers })
+          .then((r) => r.text())
+          .catch((err) => console.error(`[call-coach] SELF dispatch failed: ${err.message}`)),
+      );
+    } else {
+      // Legacy fallback until the SELF binding is deployed.
+      ctx.waitUntil(runCoach(env, ctx, dateStr, nextOffset));
+    }
   } else {
     // All batches done — rebuild digest and finalise status.
     lastRun.status = "ok";
@@ -307,6 +325,13 @@ async function transcribeCall(env, messageId) {
   }
   const rec = await fetchRecording(env, messageId);
   if (!rec) return { transcript: null, source: "none", error: "no recording" };
+  // Spreading a WAV into a number[] costs ~10-16 bytes per audio byte; a
+  // ~10-minute call (~9.6MB at 8kHz/16-bit) approaches the 128MB isolate
+  // limit and killed the whole run. Cap rather than crash.
+  const MAX_TRANSCRIBE_BYTES = 6 * 1024 * 1024; // ~6 min of GHL call audio
+  if (rec.bytes > MAX_TRANSCRIBE_BYTES) {
+    return { transcript: null, source: "whisper", error: `recording too large to transcribe (${Math.round(rec.bytes / 1024)}KB)`, bytes: rec.bytes };
+  }
   try {
     const bytes = [...new Uint8Array(rec.buffer)];
     const out = await env.AI.run(WHISPER_MODEL, { audio: bytes });

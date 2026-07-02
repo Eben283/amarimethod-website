@@ -8,7 +8,9 @@ compatibility_flags = ["nodejs_compat"]
 # may need to shift once this is wired into /day's actual run time (deferred —
 # see plan: stop before /day integration).
 [triggers]
-crons = ["0 12 * * *"]
+# :30, not :00 — conversation-cache's 3-hourly sync STARTS at 12:00; running
+# at the same minute evaluated the 09:00 cache or a torn mid-sync mix.
+crons = ["30 12 * * *"]
 
 # Same KV namespace as Pages + the other workers. Reads conv:index and
 # conv:{contactId} (written by conversation-cache-worker) — no GHL API calls

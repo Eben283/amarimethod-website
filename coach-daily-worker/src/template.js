@@ -190,12 +190,31 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
   log(`personalized ${personalized.length} | needing write ${persToWrite.length}`);
 
   // Safety valve: skip deletes if the due-set collapsed (likely upstream truncation).
+  // RATCHET RELEASE (2026-07-02 audit): a LEGITIMATE shrink (a good week — many
+  // replies/bookings) tripped this forever: stale cards merged back into the
+  // snapshot, so existingCount never dropped and deletes never resumed —
+  // resolved contacts kept "text them now" cards indefinitely. Track a
+  // consecutive-collapse streak in KV; 3 runs of the same "collapse" means
+  // it's the new reality, not truncation — release the valve.
   const existingCount = existingTemplated.size;
-  const collapsed = existingCount > 0 && desired.size < existingCount * DELETE_FLOOR_RATIO;
-  const safeToDelete = desired.size > 0 && !collapsed;
-
+  const collapsed = existingCount > 0 && (desired.size === 0 || desired.size < existingCount * DELETE_FLOOR_RATIO);
+  const COLLAPSE_STREAK_KEY = "coach:deleteValve:collapseStreak";
+  let collapseStreak = 0;
   if (collapsed) {
-    log(`WARN: due-set collapsed (${desired.size} vs ${existingCount} prior) — skipping ${toDelete.length} deletes`);
+    const prior = parseInt((await kv.get(COLLAPSE_STREAK_KEY).catch(() => null)) || "0", 10) || 0;
+    collapseStreak = prior + 1;
+    await kv.put(COLLAPSE_STREAK_KEY, String(collapseStreak)).catch(() => {});
+  } else {
+    await kv.delete(COLLAPSE_STREAK_KEY).catch(() => {});
+  }
+  const forceRelease = collapsed && collapseStreak >= 3;
+  const safeToDelete = (desired.size > 0 && !collapsed) || forceRelease;
+
+  if (collapsed && !forceRelease) {
+    log(`WARN: due-set collapsed (${desired.size} vs ${existingCount} prior, streak ${collapseStreak}) — skipping ${toDelete.length} deletes`);
+  }
+  if (forceRelease) {
+    log(`collapse persisted ${collapseStreak} runs — treating the smaller due-set as real and releasing ${toDelete.length} deletes`);
   }
 
   // Track confirmed KV state — only update on success.

@@ -78,7 +78,10 @@ async function getOrBuildQueue(env) {
   const queue = await env.PORTAL_KV.get(KV_QUEUE_KEY, "json");
   const age = generatedAt ? Date.now() - Number(generatedAt) : Infinity;
 
-  if (queue && Array.isArray(queue) && queue.length > 0 && age < QUEUE_TTL_MS) {
+  if (queue && Array.isArray(queue) && age < QUEUE_TTL_MS) {
+    // Includes queue.length === 0: an EMPTY fresh queue means today's work is
+    // done. The old `length > 0` guard treated done-for-the-day as stale and
+    // rebuilt + re-processed ~150 contacts every night after the drain.
     return { queue, rebuilt: false };
   }
 

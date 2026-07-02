@@ -3,11 +3,19 @@ main = "src/index.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Daily at 11:00 UTC (4 AM PDT / 3 AM PST) — runs right after daily-audit's
-# own 11:00 cron. Both at 11:00 is fine: they're independent invocations on
-# separate Workers. Coaches yesterday's calls + outgoing texts.
+# Daily at 11:07 UTC (4 AM PDT / 3 AM PST) — staggered a few minutes after
+# daily-audit's 11:00 cron so the two never race an on-demand GHL token
+# refresh at the same second (2026-07-02 audit; the shared single-use
+# refresh token makes simultaneous refreshes destructive).
 [triggers]
-crons = ["0 11 * * *"]
+crons = ["7 11 * * *"]
+
+# Self service binding — dispatches each coaching batch as a FRESH invocation
+# (own CPU/memory/subrequest budget) instead of ctx.waitUntil-chaining them
+# inside one invocation. Same pattern as daily-audit's /run-drift.
+[[services]]
+binding = "SELF"
+service = "call-coach"
 
 # Same KV namespace as Pages + daily-audit + ghl-token-refresh. The
 # ghl-token-refresh worker keeps ghl_access_token / ghl_refresh_token /

@@ -138,6 +138,11 @@ async function evaluateOne(env, contactId, { nowMs, windowDays }) {
   if (record.flags.length) {
     await safePut(env, `${KV_FLAGS_PREFIX}${contactId}`, record, FLAG_TTL_S);
     await appendLedger(env, record);
+  } else {
+    // A clean re-evaluation must CLEAR any prior flag — otherwise a resolved
+    // contradiction kept surfacing for its full 30-day TTL.
+    try { await env.PORTAL_KV.delete(`${KV_FLAGS_PREFIX}${contactId}`); }
+    catch { /* best-effort — TTL still bounds a stale flag */ }
   }
 
   return record;

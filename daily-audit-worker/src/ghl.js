@@ -83,12 +83,17 @@ export function dateToRange(dateStr) {
 
 // ── Calendar & appointment fetching ──
 
+// Returns { appointments, failedCalendars } — per-calendar failures used to
+// be swallowed entirely, so a GHL outage at 4am produced an empty list that
+// audited as "clean" (2026-07-02 audit: the appointment-side rules reported
+// issuesFound: 0 with zero coverage and no trace beyond a log line).
 export async function fetchAppointmentsForDate(env, dateStr) {
   const { startTime, endTime } = dateToRange(dateStr);
   const calData = await ghlFetch(env, `/calendars/`);
   const calendars = calData.calendars || [];
 
   const appointmentMap = new Map();
+  const failedCalendars = [];
   for (const cal of calendars) {
     try {
       const params = new URLSearchParams({
@@ -103,11 +108,12 @@ export async function fetchAppointmentsForDate(env, dateStr) {
           appointmentMap.set(e.id, { ...e, calendarName: cal.name });
         }
       }
-    } catch {
-      // Individual calendar fetch failed — continue with others
+    } catch (err) {
+      // Individual calendar fetch failed — continue with others, but COUNT it.
+      failedCalendars.push({ calendarId: cal.id, name: cal.name, error: err.message });
     }
   }
-  return Array.from(appointmentMap.values());
+  return { appointments: Array.from(appointmentMap.values()), failedCalendars };
 }
 
 // ── Conversation fetching ──

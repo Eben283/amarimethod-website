@@ -55,6 +55,20 @@ export async function detectLinkStalls(env, dueMap) {
       const dueEntry = dueMap.get(id);
       if (!dueEntry) continue;
       if (dueEntry.sinceLastTouchDays < LINK_STALL_DAYS) continue;
+      // Purchase cross-check (2026-07-02 audit): a leftover paylink tag on
+      // someone who already BOUGHT must not produce a "they haven't booked
+      // after the link" card — Garrett would lead with the guarantee pitch
+      // to a paying client. Evidence: an active/assigned series or a
+      // converted cadence state.
+      const cf = c.customFields || [];
+      const remainingRaw = cf.find((f) => f.id === "wrQSkx6BhXwDGIn1d0V4")?.value;
+      const remaining = parseInt(remainingRaw ?? "", 10);
+      const seriesType = String(cf.find((f) => f.id === "3i93lTkmuAV49s9nh0q8")?.value || "");
+      const purchased =
+        (Number.isFinite(remaining) && remaining > 0) ||
+        seriesType === "4-session" || seriesType === "8-session" ||
+        dueEntry.state === "converted";
+      if (purchased) continue;
       stalls.set(id, {
         contactId: id,
         name: dueEntry.name || c.contactName || c.fullName || id,
