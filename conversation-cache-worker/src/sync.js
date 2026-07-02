@@ -30,6 +30,18 @@ const DOSSIER_FIELDS = {
   rundown:  "Yd3lsw6fAxl0HVCxr1cD",
 };
 
+// contact:linetype entries are shaped {phone, type, isVoip, carrier, valid,
+// checkedAt} (see ops/scripts/classify-line-type.mjs). The AbstractAPI path
+// computes isVoip SEPARATELY from type — a number can come back type
+// "mobile" with isVoip true (the carrier_type text just didn't literally say
+// "voip"). Reading only `.type` silently drops that signal and lets a real
+// VoIP number read as textable downstream. isVoip wins when true.
+export function resolveLineType(entry) {
+  if (!entry) return null;
+  if (entry.isVoip) return "voip";
+  return entry.type ?? null;
+}
+
 // Message-type codes — mirror outreach-cadence.mjs so the cache and the local
 // pipeline classify touches identically.
 const CALL = new Set([1, 8, 13, 22]);
@@ -188,8 +200,8 @@ export async function runSync(env, trigger, full = false) {
       role:             profile.role             ?? existing.role             ?? null,
       business:         profile.business         ?? existing.business         ?? null,
       rundown:          profile.rundown          ?? existing.rundown          ?? null,
-      // lineTypeMap values are objects {type, isVoip, ...}; buildCard expects the string.
-      lineType:         (lineTypeMap[c.contactId]?.type || existing.lineType)  ?? null,
+      // buildCard expects a plain string — resolveLineType folds in isVoip.
+      lineType:         (resolveLineType(lineTypeMap[c.contactId]) || existing.lineType) ?? null,
       dossierFetchedAt: profile.dossierFetchedAt ?? existing.dossierFetchedAt ?? null,
       lastMessageDate,
       touches:          merged,

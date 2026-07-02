@@ -56,16 +56,18 @@ function renderGift(ctx) {
   const biz = isBusiness(ctx.name) || isPhone(ctx.name);
   const fn = firstName(ctx.name);
   if (ctx.overlay && ctx.product) {
-    const gap = elapsedPhrase(ctx.days);
+    // No sent-at timestamp exists for link-stall overlays (link-stalls.js is
+    // tag-based), so this content deliberately does not date the link — see
+    // ops/drafts/fable-5-review-angle-ladder-2026-07-01.md section 1.
     return {
       sms: biz
         ? [
-            `Hi, it's Garrett with Amari Method! I sent over the ${ctx.product} link ${gap} and wanted to follow up. If you're wondering whether it's worth it: you come in, we find exactly what's going on in the body, and if there's no noticeable relief I keep working until there is, no extra charge. Want to find a time?`,
-            `Hi, it's Garrett with Amari Method! Reaching back out about the ${ctx.product} link I sent ${gap}. If the cost feels like a risk, that's exactly why I stand behind the work: you come in, we find what's causing the problem, and if there's no relief I keep going at no charge. Want to find a time?`,
+            `Hi, it's Garrett with Amari Method! I sent over the ${ctx.product} link and wanted to follow up. If you're wondering whether it's worth it: you come in, we find exactly what's going on in the body, and if there's no noticeable relief I keep working until there is, no extra charge. Want to find a time?`,
+            `Hi, it's Garrett with Amari Method! Reaching back out about the ${ctx.product} link I sent over. If the cost feels like a risk, that's exactly why I stand behind the work: you come in, we find what's causing the problem, and if there's no relief I keep going at no charge. Want to find a time?`,
           ]
         : [
-            `Hi ${fn}, it's Garrett! I sent you the ${ctx.product} link ${gap} and wanted to check in. If you're on the fence about whether it'll work, here's what I want you to know: we figure out what's actually going on with your body, and if you don't feel real relief I keep working with you until you do, no extra charge.`,
-            `Hey ${fn}, Garrett here! Following up on the ${ctx.product} link from ${gap}. If the investment feels risky, that's exactly why I guarantee the work: we find what's causing the pain, and if you don't feel noticeable relief we keep going at no charge. Want to find a time that works?`,
+            `Hi ${fn}, it's Garrett! I sent you the ${ctx.product} link and wanted to check in. If you're on the fence about whether it'll work, here's what I want you to know: we figure out what's actually going on with your body, and if you don't feel real relief I keep working with you until you do, no extra charge.`,
+            `Hey ${fn}, Garrett here! Following up on the ${ctx.product} link. If the investment feels risky, that's exactly why I guarantee the work: we find what's causing the pain, and if you don't feel noticeable relief we keep going at no charge. Want to find a time that works?`,
           ],
     };
   }
@@ -129,11 +131,11 @@ function renderSubstance(ctx) {
   let body;
   if (biz) {
     body = product
-      ? `Hi, it's Garrett with Amari Method. Following up on the ${product} link I sent ${elapsedPhrase(ctx.days)}. If cost is the hesitation, here's my answer to that: ${guarantee} That's the whole guarantee. Want to find a time?`
+      ? `Hi, it's Garrett with Amari Method. Following up on the ${product} link I sent over. If cost is the hesitation, here's my answer to that: ${guarantee} That's the whole guarantee. Want to find a time?`
       : `Hi, it's Garrett with Amari Method. I never properly explained what a session actually looks like: I check what's going on in the body, we work through it together, and ${guarantee} Happy to set up a time for one of your trainers whenever works.`;
   } else {
     body = product
-      ? `Hi ${fn}, it's Garrett! Following up on the ${product} link from ${elapsedPhrase(ctx.days)}. If the cost feels like a risk, here's my answer to that: ${guarantee} That's the whole guarantee. Want to find a time?`
+      ? `Hi ${fn}, it's Garrett! Following up on the ${product} link. If the cost feels like a risk, here's my answer to that: ${guarantee} That's the whole guarantee. Want to find a time?`
       : `Hi ${fn}, it's Garrett! I never properly explained what a session actually looks like: we find what's actually causing the pain, work through it together, and ${guarantee} Happy to find a time whenever's good.`;
   }
   return { email: { subject, body } };
@@ -183,21 +185,22 @@ export function renderAngle(variant, step, ctx) {
 
 // Fallback for contacts outside the cold ladder's scope — currently only
 // reachable for a warm-variant contact with a stalled link (template.js's
-// "gone-quiet" state only enters its targets filter via LINK_STALL_STATES,
-// which requires a stall to be present). Renders the same guarantee-flavored
-// angle as the ladder's overlay branch; channel is decided by the caller
-// (call for untextable numbers, else text) since this isn't step-indexed.
+// buildDesiredRecord only calls this when stall.product is present; a warm
+// contact with no stall gets no card at all instead). Renders the same
+// guarantee-flavored angle as the ladder's overlay branch; channel is
+// decided by the caller (call for untextable numbers, else text) since this
+// isn't step-indexed. No sent-at timestamp exists for the link (same as the
+// overlay branch above), so this content doesn't date it either.
 export function renderGuaranteeFallback(ctx) {
   const biz = isBusiness(ctx.name) || isPhone(ctx.name);
   const fn = firstName(ctx.name);
-  const gap = elapsedPhrase(ctx.days);
   return biz
     ? [
-        `Hi, it's Garrett with Amari Method! I sent over the ${ctx.product} link ${gap} and wanted to follow up. If you're wondering whether it's worth it: you come in, we find exactly what's going on in the body, and if there's no noticeable relief I keep working until there is, no extra charge. Want to find a time?`,
-        `Hi, it's Garrett with Amari Method! Reaching back out about the ${ctx.product} link I sent ${gap}. If the cost feels like a risk, that's exactly why I stand behind the work: you come in, we find what's causing the problem, and if there's no relief I keep going at no charge. Want to find a time?`,
+        `Hi, it's Garrett with Amari Method! I sent over the ${ctx.product} link and wanted to follow up. If you're wondering whether it's worth it: you come in, we find exactly what's going on in the body, and if there's no noticeable relief I keep working until there is, no extra charge. Want to find a time?`,
+        `Hi, it's Garrett with Amari Method! Reaching back out about the ${ctx.product} link I sent over. If the cost feels like a risk, that's exactly why I stand behind the work: you come in, we find what's causing the problem, and if there's no relief I keep going at no charge. Want to find a time?`,
       ]
     : [
-        `Hi ${fn}, it's Garrett! I sent you the ${ctx.product} link ${gap} and wanted to check in. If you're on the fence about whether it'll work, here's what I want you to know: we figure out what's actually going on with your body, and if you don't feel real relief I keep working with you until you do, no extra charge.`,
-        `Hey ${fn}, Garrett here! Following up on the ${ctx.product} link from ${gap}. If the investment feels risky, that's exactly why I guarantee the work: we find what's causing the pain, and if you don't feel noticeable relief we keep going at no charge. Want to find a time that works?`,
+        `Hi ${fn}, it's Garrett! I sent you the ${ctx.product} link and wanted to check in. If you're on the fence about whether it'll work, here's what I want you to know: we figure out what's actually going on with your body, and if you don't feel real relief I keep working with you until you do, no extra charge.`,
+        `Hey ${fn}, Garrett here! Following up on the ${ctx.product} link. If the investment feels risky, that's exactly why I guarantee the work: we find what's causing the pain, and if you don't feel noticeable relief we keep going at no charge. Want to find a time that works?`,
       ];
 }

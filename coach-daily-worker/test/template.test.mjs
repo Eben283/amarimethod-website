@@ -110,6 +110,14 @@ test('a warm-variant contact with a stalled link (the one way "gone-quiet" reach
   assert.ok(rec.angle, 'fallback must still be labeled with an angle, not silently unlabeled');
 });
 
+test('a warm-variant fallback with a stall never dates the link in its coaching whyNow — no sent-at timestamp exists to back the claim', () => {
+  const rec = buildDesiredRecord(
+    dueItem({ variant: 'warm', step: 3, state: 'gone-quiet', lineType: 'landline' }),
+    { stall: { product: '8-Session Series' } },
+  );
+  assert.doesNotMatch(rec.whyNow, /a week ago|a few weeks ago|the other day|a while back|over a month ago/i);
+});
+
 test('P1 regression: a warm-variant contact at their OWN breakup step with NO stall gets no card at all, never an "undefined link" card', () => {
   // Adding "breakup" to TARGET_STATES (needed for the cold gentle-no rung)
   // also admits warm contacts at their final step with no stall present —

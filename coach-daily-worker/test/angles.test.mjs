@@ -113,6 +113,16 @@ test('overlay swaps content, never step or channel', () => {
   assert.match(overlaid.sms.join(' '), /4-Session Series/);
 });
 
+test('link-stall overlay copy (step 2 and step 4) never dates the link — link-stalls.js has no sent-at timestamp, so "sent X ago" phrasing can be wrong if a later touch happened after the link went out', () => {
+  const step2 = renderAngle('cold', 2, ctx({ overlay: 'link-stall', product: '4-Session Series', days: 20 }));
+  const step4 = renderAngle('cold', 4, ctx({ overlay: 'link-stall', product: '4-Session Series', days: 20 }));
+  const fallback = renderGuaranteeFallback(ctx({ product: '4-Session Series', days: 20 }));
+  const datingPhrases = /a week ago|a few weeks ago|the other day|a while back|over a month ago|in the last few days|about a week ago/i;
+  assert.doesNotMatch(step2.sms.join(' '), datingPhrases);
+  assert.doesNotMatch(step4.email.body, datingPhrases);
+  assert.doesNotMatch(fallback.join(' '), datingPhrases);
+});
+
 test('the overlay text never asks "worth a quick call?" — that string becomes a call script for untextable link-stall contacts (via the untextable fallback in template.js), and is nonsensical read aloud on a call already in progress', () => {
   const overlaid = renderAngle('cold', 2, ctx({ overlay: 'link-stall', product: '4-Session Series' }));
   assert.doesNotMatch(overlaid.sms.join(' ').toLowerCase(), /worth a quick call/);

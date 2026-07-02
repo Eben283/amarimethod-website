@@ -73,9 +73,13 @@ export function buildDesiredRecord(d, overlays = {}) {
     if (!stall?.product) return null;
     const lines = renderGuaranteeFallback({ name: d.name, days, product: stall.product });
     const channel = untextable ? "call" : "text";
+    // No sent-at timestamp exists for the link (link-stalls.js is tag-based),
+    // so this doesn't date it — elapsedPhrase(days) measures time since the
+    // last TOUCH, not the link send, and could be wrong if a later touch
+    // happened after the link went out.
     const whyNow = untextable
-      ? `Call ${label} — this is a ${d.lineType} number. You sent the ${stall?.product} link ${elapsedPhrase(days)}. If they pick up, lead with the guarantee: come in, find what's causing the pain, no relief = keep working at no charge.`
-      : `Text ${label} now. You sent the ${stall?.product} link ${elapsedPhrase(days)} and they haven't booked. Lead with the guarantee — come in, find out what's causing the pain, if no noticeable relief keep working at no charge. This is the price-objection play.`;
+      ? `Call ${label} — this is a ${d.lineType} number. They haven't booked after the ${stall?.product} link. If they pick up, lead with the guarantee: come in, find what's causing the pain, no relief = keep working at no charge.`
+      : `Text ${label} now. They haven't booked after the ${stall?.product} link. Lead with the guarantee — come in, find out what's causing the pain, if no noticeable relief keep working at no charge. This is the price-objection play.`;
     return {
       contactId: d.contactId, name: d.name, bucket: "link-sent", channel, whyNow,
       message: lines[0], variations: lines,

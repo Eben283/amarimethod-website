@@ -84,7 +84,6 @@ function appDerive(meta) {
 // Updated 2026-06-29: wider spacing (5-7d) for local peer outreach — these are
 // SF fitness professionals Garrett may run into, not anonymous national leads.
 const WAIT_AFTER_TOUCH = [5, 5, 6, 7, 9, 9];
-const END_OF_ROPE = 6;
 const waitAfter = (n) => WAIT_AFTER_TOUCH[Math.min(n, WAIT_AFTER_TOUCH.length) - 1] ?? 7;
 
 // Named-sequence cadence (design: channel-aware-engine-design-2026-06-15.md).
