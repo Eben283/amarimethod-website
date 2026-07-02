@@ -109,16 +109,24 @@ export async function onRequestPost(context) {
     const contact = contactData.contact;
 
     // Check current appointment status — if already showed/completed, skip (idempotent)
+    // A failed list fetch is a HARD error: without the current status the
+    // idempotency decision below runs blind (marked=false), and a retry after
+    // a GHL blip would re-mark AND re-decrement. Nothing has been written yet,
+    // so 422 + retry is strictly safer than guessing.
+    if (!apptListRes.ok) {
+      const errText = await apptListRes.text();
+      console.error(`[staff-mark-attended] Appointment list fetch error: ${apptListRes.status} ${errText}`);
+      return new Response(
+        JSON.stringify({ error: "Failed to load appointment status — retry" }),
+        { status: 422, headers },
+      );
+    }
     let currentApptStatus = null;
-    let allAppts = [];
-    let thisAppt = null;
-    if (apptListRes.ok) {
-      const apptListData = await apptListRes.json();
-      allAppts = apptListData.appointments || apptListData.events || [];
-      thisAppt = allAppts.find((a) => a.id === appointmentId);
-      if (thisAppt) {
-        currentApptStatus = (thisAppt.appointmentStatus || thisAppt.status || "").toLowerCase();
-      }
+    const apptListData = await apptListRes.json();
+    const allAppts = apptListData.appointments || apptListData.events || [];
+    const thisAppt = allAppts.find((a) => a.id === appointmentId);
+    if (thisAppt) {
+      currentApptStatus = (thisAppt.appointmentStatus || thisAppt.status || "").toLowerCase();
     }
 
     // Build field defs map
@@ -248,6 +256,24 @@ export async function onRequestPost(context) {
     let newRemaining = currentRemaining;
 
     if (countsTowardLifetime || drawsFromPackage) {
+      // ── KV-fallback debit gate ──
+      // Without D1 there is no atomic claim below, so the flag read up front is
+      // the only thing standing between a reverted/stale appointment status and
+      // a second decrement of a prepaid session. The appointment still gets
+      // (re-)marked above; only the count is skipped. (With D1, the claim
+      // insert catches this same case as a lost claim.)
+      if (!debitDb && alreadyDebited) {
+        return new Response(JSON.stringify({
+          success: true,
+          alreadyAttended: true,
+          appointmentUpdated: !alreadyShowed,
+          sessionCountUpdated: false,
+          isSession,
+          sessionsCompleted: currentCompleted,
+          sessionsRemaining: currentRemaining,
+        }), { status: 200, headers });
+      }
+
       // ── Atomic claim (concurrency gate) ──
       // Before applying the count, atomically claim this appointment. With D1 two
       // concurrent requests race here: exactly one wins the claim and decrements; the
@@ -289,8 +315,14 @@ export async function onRequestPost(context) {
         customFields.push({ id: FIELD_IDS.sessions_remaining, field_value: String(newRemaining) });
       }
 
-      // Clear the single-session prepaid flag if this was a non-series session
-      if (newRemaining === 0) {
+      // Clear the single-session prepaid flag once a package-drawing session
+      // runs the balance to 0 (covers both the last pack session and an
+      // individually-prepaid follow-up at 0 remaining). Gated on
+      // drawsFromPackage: an entrainment or partner-initial marked while the
+      // balance sits at 0 must NOT wipe a manual override set for a future
+      // prepaid session — that flipped the Today-view pill to "Unpaid" for a
+      // session the client had already paid.
+      if (drawsFromPackage && newRemaining === 0) {
         customFields.push({ id: FIELD_IDS.session_prepaid, field_value: "no" });
       }
 

@@ -183,3 +183,58 @@ describe('staff-mark-attended — write orchestration', () => {
     expect(db.rows.has('a1')).toBe(false); // claim released — not permanently stuck
   });
 });
+
+// ── 2026-07-02 audit guards ─────────────────────────────────────────────────
+
+describe('staff-mark-attended — audit guards (2026-07-02)', () => {
+  it('entrainment with remaining=0 does NOT clear session_prepaid (manual override survives)', async () => {
+    // Client has 0 package sessions left but prepaid an individual session for
+    // next visit (session_prepaid=yes, set manually). Marking an ENTRAINMENT
+    // attended (lifetime-only, no package draw) must not wipe that override —
+    // the old `newRemaining === 0` condition did, flipping the Today-view pill
+    // to "Unpaid" for a session the client already paid for.
+    const ctx = setup({ completed: '5', remaining: '0' });
+    ctx.request = makeReq({
+      appointmentId: 'a1',
+      contactId: 'c1',
+      appointmentTitle: 'Entrainment',
+      calendarName: 'Entrainment',
+    });
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(captured.contactPut).toBeTruthy(); // lifetime +1 still writes
+    expect(field(captured.contactPut, ID.completed)).toBe('6');
+    expect(field(captured.contactPut, ID.remaining)).toBeUndefined(); // no draw
+    expect(field(captured.contactPut, ID.prepaid)).toBeUndefined(); // override untouched
+  });
+
+  it('KV fallback: an existing debit flag blocks a second decrement even when the appt reads unmarked', async () => {
+    // No D1 bound. The debit flag says the count was already applied, but the
+    // appointment reads "confirmed" (status reverted in GHL UI, or a stale
+    // list). Re-marking is fine; re-decrementing burns a prepaid session.
+    const kvStore = { 'attended-debited:a1': JSON.stringify({ at: '2026-07-01T00:00:00Z' }) };
+    const ctx = setup({ apptStatus: 'confirmed', kvStore });
+    const res = await onRequestPost(ctx);
+    const json = JSON.parse(await res.text());
+    expect(res.status).toBe(200);
+    expect(json.sessionCountUpdated).toBe(false);
+    expect(captured.apptPuts.length).toBe(1); // still marked showed
+    expect(captured.contactPut).toBeNull(); // but the count was NOT re-applied
+  });
+
+  it('a failed appointment-list fetch is a hard 422, not a blind proceed', async () => {
+    // With the list unavailable the endpoint can't evaluate idempotency —
+    // proceeding used to re-mark AND re-decrement on retry after a GHL blip.
+    const ctx = setup();
+    const base = ghlFetch.getMockImplementation();
+    ghlFetch.mockImplementation(async (c, url, opts) => {
+      if (url.includes('/calendars/events/appointments/')) return base(c, url, opts);
+      if (url.includes('/appointments')) return resp({ error: 'rate limited' }, false, 429);
+      return base(c, url, opts);
+    });
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(422);
+    expect(captured.apptPuts.length).toBe(0); // nothing written
+    expect(captured.contactPut).toBeNull();
+  });
+});
