@@ -12,6 +12,8 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { computeSessionLedger } from "../lib/session-ledger.js";
+import { isContactRevoked } from "../lib/session-guard.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { appointmentEndTime } from "../lib/datetime.js";
 
@@ -37,6 +39,18 @@ const SESSIONS_REMAINING_FIELD_ID = 'wrQSkx6BhXwDGIn1d0V4';
 // (sessions_remaining <= 0). Fails OPEN when the field is missing/unparseable —
 // the calendar allowlist is the primary guard, and we don't want to block a
 // legitimate client over a field we can't read.
+// Booking gate on the DERIVED ledger — the same number the dashboard shows
+// (ledger.display.remaining). Gating on the raw field alone (the old
+// behavior, kept below as portalBalanceExhausted) blocked clients whose
+// dashboard said "2 left" whenever the cached field lagged at 0 — and since
+// the reschedule flow books first, it blocked rescheduling too. Field-only
+// fallback when the ledger has no data at all (transient fetch failure).
+export function portalBookingBlocked(ledger, contact) {
+  if (!ledger || ledger.source === 'empty') return portalBalanceExhausted(contact);
+  const remaining = Number(ledger.display?.remaining);
+  return Number.isFinite(remaining) ? remaining <= 0 : portalBalanceExhausted(contact);
+}
+
 export function portalBalanceExhausted(contact) {
   const raw = getCustomField(contact, 'sessions_remaining', {
     sessions_remaining: SESSIONS_REMAINING_FIELD_ID,
@@ -87,6 +101,13 @@ export async function onRequestPost(context) {
     return json({ error: 'Unauthorized' }, 401, origin);
   }
 
+  // Per-contact kill switch — sessions are 30-day bearer tokens with no other
+  // revocation, and booking is one of the two highest-stakes actions. Same
+  // check portal-data runs; it was missing here (2026-07-02 audit).
+  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
+    return json({ error: 'Session expired. Please log in again.' }, 401, origin);
+  }
+
   let body;
   try {
     body = await request.json();
@@ -135,7 +156,10 @@ export async function onRequestPost(context) {
   }
 
   // B2: don't let a client with an exhausted package book a free follow-up.
-  if (portalBalanceExhausted(contact)) {
+  // Gate on the derived ledger (what the dashboard displays), not the raw
+  // cached field — see portalBookingBlocked.
+  const ledger = await computeSessionLedger(context, contactId);
+  if (portalBookingBlocked(ledger, contact)) {
     return json(
       { error: 'No sessions remaining in your package. Please purchase a new series to book another session.' },
       403,

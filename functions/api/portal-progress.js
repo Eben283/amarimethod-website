@@ -5,6 +5,7 @@
 // POST — writes a new progress object; client sends the full merged blob
 
 import { verifySessionToken } from "../lib/auth.js";
+import { isContactRevoked } from "../lib/session-guard.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -47,6 +48,11 @@ async function requirePortalAuth(context, headers) {
 
   if (!payload.contactId) {
     return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers }) };
+  }
+
+  // Per-contact kill switch (2026-07-02 audit — same check as portal-data).
+  if (await isContactRevoked(context.env.PORTAL_KV, payload.contactId)) {
+    return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) };
   }
 
   return { payload };

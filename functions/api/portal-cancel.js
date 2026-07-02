@@ -3,6 +3,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { isContactRevoked } from "../lib/session-guard.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -58,6 +59,15 @@ export async function onRequestPost(context) {
     try {
       tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
     } catch (err) {
+      return new Response(
+        JSON.stringify({ error: "Session expired. Please log in again." }),
+        { status: 401, headers }
+      );
+    }
+
+    // Per-contact kill switch — cancel is a high-stakes mutating action and
+    // was missing the revocation check portal-data has (2026-07-02 audit).
+    if (await isContactRevoked(context.env.PORTAL_KV, tokenPayload.contactId)) {
       return new Response(
         JSON.stringify({ error: "Session expired. Please log in again." }),
         { status: 401, headers }

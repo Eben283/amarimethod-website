@@ -213,7 +213,11 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
         await cancelAppointment(appt.id, title);
         setConfirmingId(null);
         onRefetch();
-        window.open(externalUrl, '_blank', 'noopener,noreferrer');
+        // Same-tab navigation, NOT window.open: a popup opened after an await
+        // is outside the user-gesture call stack, so Safari/iOS blocked it —
+        // the appointment was already cancelled and the client was left with
+        // no visible path to rebook.
+        window.location.assign(externalUrl);
       } catch (err) {
         setCancelError(err instanceof Error ? err.message : 'Unable to reschedule. Please try again.');
         setErrorApptId(appt.id);

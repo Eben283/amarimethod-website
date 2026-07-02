@@ -75,6 +75,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [bookedTitle, setBookedTitle] = useState<string>('');
+  const [rescheduleCancelFailed, setRescheduleCancelFailed] = useState(false);
 
   const timezone = getUserTimezone();
 
@@ -174,9 +175,17 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
       if (rescheduleFor) {
         try {
           await cancelAppointment(rescheduleFor.id, rescheduleFor.title || 'Session');
-        } catch (cancelErr) {
-          // Surface but don't block — the new booking succeeded.
-          console.warn('Failed to cancel original session during reschedule', cancelErr);
+        } catch {
+          // One retry — the 15s client timeout makes transient failures real.
+          try {
+            await cancelAppointment(rescheduleFor.id, rescheduleFor.title || 'Session');
+          } catch (cancelErr) {
+            // Don't block — the new booking succeeded — but SAY so: the old
+            // console.warn-only path showed a full success screen while the
+            // client was double-booked and the old slot kept firing reminders.
+            console.warn('Failed to cancel original session during reschedule', cancelErr);
+            setRescheduleCancelFailed(true);
+          }
         }
       }
       setBookedTitle(result.appointment.title);
@@ -249,6 +258,13 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                 {selectedSlot && formatDateDisplay(selectedSlot.date)} at {selectedSlot && formatTime(selectedSlot.hour, selectedSlot.minute)}
               </p>
               <p className="cp-bm-success-fine">A confirmation email is on its way.</p>
+              {rescheduleCancelFailed && (
+                <p className="cp-bm-success-fine" data-testid="reschedule-cancel-warning" style={{ color: 'var(--cp-accent, #b3541e)', marginTop: 8 }}>
+                  One thing: we couldn't release your original session, so it may
+                  still appear on your schedule. You can cancel it from the
+                  dashboard, or we'll take care of it.
+                </p>
+              )}
             </div>
           )}
 
