@@ -614,6 +614,9 @@ export async function computeSessionLedger(context, contactId, options = {}) {
     if (ordersRes.ok) {
       const ordersData = await ordersRes.json();
       const ordersList = ordersData.data || ordersData.orders || [];
+      // Page-full guard: limit=100 with no pagination — a full page means
+      // older rows (possibly the real package purchase) fell off.
+      if (ordersList.length >= 100) fetchFailures.push("orders page full at 100 — history may be truncated");
       orders = await hydrateOrders(context, ordersList);
     } else {
       fetchFailures.push(`orders (${ordersRes.status})`);
@@ -623,6 +626,7 @@ export async function computeSessionLedger(context, contactId, options = {}) {
     if (invoicesRes.ok) {
       const invoicesData = await invoicesRes.json();
       invoices = invoicesData.invoices || [];
+      if (invoices.length >= 100) fetchFailures.push("invoices page full at 100 — history may be truncated");
     } else {
       fetchFailures.push(`invoices (${invoicesRes.status})`);
     }

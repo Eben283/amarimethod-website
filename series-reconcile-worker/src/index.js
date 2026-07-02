@@ -261,7 +261,10 @@ async function runReconcile(env, trigger, lookbackHours) {
       startedAt: startedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
       durationMs: finishedAt.getTime() - startMs,
-      status: (orderPassError || results.errored.length > 0) ? "partial-errors" : "ok",
+      // syncSummary.error too: a fully-failed field-sync sweep (KV outage,
+      // contacts/search 401) used to hide inside the nested object while the
+      // headline stayed green "ok" indefinitely.
+      status: (orderPassError || results.errored.length > 0 || syncSummary?.error) ? "partial-errors" : "ok",
       lookbackHours,
       ordersScanned: orders.length,
       orderPassError,

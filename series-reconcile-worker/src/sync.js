@@ -188,9 +188,13 @@ export async function getContactCounts(env, contactId, fieldDefs = {}) {
     const lockedRaw = readField(contact, FIELD_IDS.sessions_remaining_locked);
     const isLocked = Array.isArray(lockedRaw) ? lockedRaw.includes("true") : (lockedRaw === "true" || lockedRaw === true);
 
+    const countsFetchFailures = [];
+    if (ordersList.length >= 100) countsFetchFailures.push("orders page full at 100 — history may be truncated");
+    if (invoices.length >= 100) countsFetchFailures.push("invoices page full at 100 — history may be truncated");
     const ledger = deriveLedger({
       contact, orders, invoices, appointments,
       fieldDefs: { ...LEDGER_FIELD_DEFS, ...fieldDefs }, // prepaid-only — see note at FIELD_IDS
+      fetchFailures: countsFetchFailures,
     });
     const lifetimeCount = computeLifetimeCount(appointments);
 
@@ -257,6 +261,15 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     const invoices = invoicesRes.invoices || [];
     const appointments = apptRes.appointments || apptRes.events || [];
 
+    // Page-full guard: these fetches are limit=100 with no pagination, and
+    // GHL auto-creates a placeholder order per booking — past 100 records
+    // the OLDEST rows (the real package purchase) silently fall off the page
+    // and purchased undercounts. A full page can't be trusted as complete;
+    // report it so deriveLedger drops confidence and the write is skipped.
+    const fetchFailures = [];
+    if (ordersList.length >= 100) fetchFailures.push("orders page full at 100 — history may be truncated");
+    if (invoices.length >= 100) fetchFailures.push("invoices page full at 100 — history may be truncated");
+
     // Hydrate orders via the shared helper. Same logic the Pages-side
     // read endpoints use — skips when items[] is already present,
     // chunks parallel fetches, and marks per-order failures so
@@ -313,15 +326,42 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     const ledger = deriveLedger({
       contact, orders, invoices, appointments,
       fieldDefs: { ...LEDGER_FIELD_DEFS, ...fieldDefs },
+      fetchFailures,
     });
 
     // Skip when confidence is low — likely an ambiguity that needs human
     // review (e.g. derived attended > purchased). Don't overwrite a manual
     // fix with a derivation we already know is uncertain.
     if (ledger.confidence !== "high") {
+      // OWED UNBURY (2026-07-02 audit §3 / the known buried-owed-signal):
+      // attended > purchased is the math detecting UNPAID SESSIONS —
+      // uncollected revenue. The plain low-confidence skip used to swallow
+      // it silently, run after run, so it never reached /needs-review or the
+      // /day briefing. Write a distinct needs-review entry; the in-sync path
+      // clears it once resolved.
+      const owedAmbiguity = ledger.ambiguities.find((a) => a.includes("attended exceeds purchased"));
+      if (owedAmbiguity) {
+        try {
+          await env.PORTAL_KV.put(
+            KV_NEEDS_REVIEW_PREFIX + contactId,
+            JSON.stringify({
+              at: new Date().toISOString(),
+              contactId,
+              contactName: `${contact.firstName || ""} ${contact.lastName || ""}`.trim(),
+              reason: `attended exceeds purchased — possible unpaid sessions (uncollected revenue): ${owedAmbiguity}`,
+              current: { sessions_remaining: readFieldInt(contact, FIELD_IDS.sessions_remaining) },
+              ledger: { purchased: ledger.purchased, attended: ledger.attended, remaining: ledger.remaining, ambiguities: ledger.ambiguities },
+            }),
+            { expirationTtl: 30 * 86400 },
+          );
+        } catch (err) {
+          console.warn(`[field-sync] owed needs-review write failed for ${contactId}: ${err.message}`);
+        }
+      }
       return {
         status: "skipped-low-confidence",
         contactId,
+        owedSignal: !!owedAmbiguity,
         ledger: { remaining: ledger.remaining, purchased: ledger.purchased, attended: ledger.attended, ambiguities: ledger.ambiguities },
       };
     }
@@ -399,6 +439,23 @@ export async function syncFieldsForContact(env, contactId, fieldDefs = {}) {
     if (customFields.length === 0) {
       await clearNeedsReview(env, contactId);
       return { status: "skipped-already-in-sync", contactId };
+    }
+
+    // Close the derive→write clobber window: the 5-min debounce above read
+    // dateUpdated from the PRE-derive snapshot, so a staff mark-attended
+    // landing during derivation (seconds, but the sweep touches every active
+    // contact 24×/day) got overwritten — restoring +1 to the client's
+    // balance until the queue cycled back. One cheap GET right before the
+    // PUT; if the contact moved, skip and let the next cycle re-derive.
+    const recheckRes = await ghlGet(env, `/contacts/${contactId}`);
+    const recheckUpdatedAt = recheckRes.contact?.dateUpdated || recheckRes.contact?.updatedAt || null;
+    if (recheckUpdatedAt && contactUpdatedAt && recheckUpdatedAt !== contactUpdatedAt) {
+      return {
+        status: "skipped-concurrent-edit",
+        contactId,
+        snapshotUpdatedAt: contactUpdatedAt,
+        recheckUpdatedAt,
+      };
     }
 
     await ghlPut(env, `/contacts/${contactId}`, { customFields });

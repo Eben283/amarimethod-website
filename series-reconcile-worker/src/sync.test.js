@@ -116,3 +116,122 @@ describe('syncFieldsForContact — guardrail short-circuits', () => {
     expect(res.status).toBe('skipped-low-confidence');
   });
 });
+
+describe('syncFieldsForContact — 2026-07-02 P2 guards', () => {
+  function env(portalStore = {}) {
+    return {
+      portalStore,
+      PORTAL_KV: {
+        get: async (k) =>
+          k === 'ghl_access_token' ? 't'
+            : k === 'ghl_token_expiry' ? String(Date.now() + 3_600_000)
+            : (k in portalStore ? portalStore[k] : null),
+        put: vi.fn(async (k, v) => { portalStore[k] = v; }),
+        delete: vi.fn(async (k) => { delete portalStore[k]; }),
+      },
+    };
+  }
+
+  // Like stubGhl above, but tracks PUTs and can vary the contact per read.
+  function stubGhl2({ contacts, orders = [], invoices = [], appointments = [] }) {
+    let contactReads = 0;
+    const puts = [];
+    vi.stubGlobal('fetch', vi.fn(async (url, opts) => {
+      const u = String(url);
+      const method = opts?.method || 'GET';
+      if (method === 'PUT') { puts.push({ url: u, body: opts.body }); return { ok: true, status: 200, text: async () => '{}' }; }
+      let payload;
+      if (u.includes('/appointments')) payload = { appointments };
+      else if (u.includes('/payments/orders')) payload = { data: orders };
+      else if (u.includes('/invoices/')) payload = { invoices };
+      else if (u.includes('/contacts/')) {
+        const c = contacts[Math.min(contactReads, contacts.length - 1)];
+        contactReads++;
+        payload = { contact: c };
+      } else payload = {};
+      return { ok: true, status: 200, text: async () => JSON.stringify(payload) };
+    }));
+    return { puts };
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  const oldDate = new Date(Date.now() - 60 * 60_000).toISOString(); // 1h ago — outside debounce
+
+  it('OWED UNBURY: attended > purchased writes a needs-review entry instead of vanishing into the low-confidence skip', async () => {
+    // 8-pack purchased, 9 attended — the math just detected owed money.
+    // The old behavior skipped silently, so uncollected revenue never
+    // reached /needs-review or the /day briefing (the known buried-owed
+    // signal from reference-package-session-counting-rule).
+    const contact = { firstName: 'Owey', lastName: 'Client', dateUpdated: oldDate, customFields: [{ id: 'wrQSkx6BhXwDGIn1d0V4', value: '0' }] };
+    const appointments = Array.from({ length: 9 }, (_, i) => ({
+      calendarId: 'SKDVOL8wtUN6Ne0ppbC9',
+      appointmentStatus: 'showed',
+      startTime: `2026-03-${String(2 + i).padStart(2, '0')}T10:00:00`,
+    }));
+    stubGhl2({
+      contacts: [contact],
+      orders: [{ status: 'completed', amount: 1295, sourceName: '8-Session Series', sourceType: 'payment_link', createdAt: '2026-03-01T18:00:00Z' }],
+      appointments,
+    });
+    const e = env();
+    const res = await syncFieldsForContact(e, 'c4', {});
+    expect(res.status).toBe('skipped-low-confidence');
+    const entry = e.portalStore['field-sync:needsReview:c4'];
+    expect(entry).toBeTruthy();
+    expect(JSON.parse(entry).reason).toMatch(/attended exceeds purchased/i);
+  });
+
+  it('CONCURRENT-EDIT GUARD: dateUpdated moving between derive and write skips the PUT (mark-attended clobber window)', async () => {
+    const base = {
+      firstName: 'Race', lastName: 'Case', dateUpdated: oldDate,
+      customFields: [
+        { id: 'wrQSkx6BhXwDGIn1d0V4', value: '4' }, // field says 4
+        { id: 'TE0udwVH1Km5RsKaN5H0', value: '5' },
+      ],
+    };
+    // Second contact read (the pre-write recheck) shows a NEW dateUpdated —
+    // Garrett just marked attendance mid-derive.
+    const edited = { ...base, dateUpdated: new Date().toISOString() };
+    const { puts } = stubGhl2({
+      contacts: [base, edited],
+      orders: [{ status: 'completed', amount: 720, sourceName: '4-Session Series', sourceType: 'payment_link', createdAt: '2026-03-01T18:00:00Z' }],
+      appointments: [{ calendarId: 'SKDVOL8wtUN6Ne0ppbC9', appointmentStatus: 'showed', startTime: '2026-03-02T10:00:00' }],
+    });
+    const res = await syncFieldsForContact(env(), 'c5', {});
+    expect(res.status).toBe('skipped-concurrent-edit');
+    expect(puts.length).toBe(0);
+  });
+
+  it('CONCURRENT-EDIT GUARD: unchanged dateUpdated still writes (synced)', async () => {
+    const base = {
+      firstName: 'Calm', lastName: 'Case', dateUpdated: oldDate,
+      customFields: [
+        { id: 'wrQSkx6BhXwDGIn1d0V4', value: '4' },
+        { id: 'TE0udwVH1Km5RsKaN5H0', value: '5' },
+      ],
+    };
+    const { puts } = stubGhl2({
+      contacts: [base, base],
+      orders: [{ status: 'completed', amount: 720, sourceName: '4-Session Series', sourceType: 'payment_link', createdAt: '2026-03-01T18:00:00Z' }],
+      appointments: [{ calendarId: 'SKDVOL8wtUN6Ne0ppbC9', appointmentStatus: 'showed', startTime: '2026-03-02T10:00:00' }],
+    });
+    const res = await syncFieldsForContact(env(), 'c6', {});
+    expect(res.status).toBe('synced');
+    expect(puts.length).toBe(1);
+  });
+
+  it('PAGE-FULL GUARD: exactly 100 orders returned drops confidence instead of deriving from truncated history', async () => {
+    // GHL auto-creates a placeholder order per booking; past 100 records the
+    // oldest (the real package purchase) silently falls off the page and
+    // purchased undercounts. A full page must not be trusted as complete.
+    const contact = { firstName: 'Busy', lastName: 'Client', dateUpdated: oldDate, customFields: [{ id: 'wrQSkx6BhXwDGIn1d0V4', value: '3' }] };
+    const orders = Array.from({ length: 100 }, () => ({
+      status: 'completed', amount: 190, sourceName: 'Follow-up Session', sourceType: 'calendar', createdAt: '2026-05-01T18:00:00Z',
+    }));
+    stubGhl2({ contacts: [contact], orders });
+    const res = await syncFieldsForContact(env(), 'c7', {});
+    expect(res.status).toBe('skipped-low-confidence');
+    expect(JSON.stringify(res.ledger.ambiguities)).toMatch(/page full|truncated/i);
+  });
+});

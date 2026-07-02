@@ -257,9 +257,15 @@ export async function reconcileOrder(env, orderDetail) {
     const invoices = invoicesRes.invoices || [];
     const appointments = apptRes.appointments || apptRes.events || [];
     const orders = await hydrateOrders((id) => getOrderDetail(env, id), ordersList);
+    // Page-full guard — a full limit=100 page means older history (possibly
+    // the real package purchase) fell off; don't trust the derived count.
+    const ledgerFetchFailures = [];
+    if (ordersList.length >= 100) ledgerFetchFailures.push("orders page full at 100 — history may be truncated");
+    if (invoices.length >= 100) ledgerFetchFailures.push("invoices page full at 100 — history may be truncated");
     const ledger = deriveLedger({
       contact, orders, invoices, appointments,
       fieldDefs: { session_prepaid: FIELD_IDS.session_prepaid },
+      fetchFailures: ledgerFetchFailures,
     });
     ledgerConfidence = ledger.confidence;
     if (ledger.confidence === "high") {
