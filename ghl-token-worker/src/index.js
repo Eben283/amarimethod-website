@@ -82,13 +82,19 @@ async function refreshTokens(env) {
     return { success: false, error: "No refresh token in KV" };
   }
 
-  // Check if token actually needs refreshing (skip if >6 hours remaining)
+  // Skip only when more than 13h remain. The threshold must exceed the 12h
+  // cron interval: GHL tokens live ~24h, so with the old 6h threshold the
+  // 12h-mark run always saw 12h remaining and skipped, pushing every real
+  // refresh to the ~0h mark — i.e. the token was refreshed already-expired,
+  // at exactly 00:00 UTC when three other workers' crons fire and race the
+  // single-use refresh token. At 13h, every 12h run refreshes with ~12h of
+  // margin and consumers essentially never need on-demand refresh.
   const expiryStr = await kv.get(KV_TOKEN_EXPIRY);
   const expiry = expiryStr ? parseInt(expiryStr, 10) : 0;
   const now = Date.now();
-  const sixHoursMs = 6 * 60 * 60 * 1000;
+  const skipThresholdMs = 13 * 60 * 60 * 1000;
 
-  if (expiry > now + sixHoursMs) {
+  if (expiry > now + skipThresholdMs) {
     const hoursLeft = ((expiry - now) / (60 * 60 * 1000)).toFixed(1);
     console.log(`[token-refresh] Token still valid for ${hoursLeft}h — skipping refresh`);
     return { success: true, skipped: true, hoursRemaining: parseFloat(hoursLeft) };
@@ -124,11 +130,39 @@ async function refreshTokens(env) {
 
     const newExpiry = Date.now() + expiresIn * 1000;
 
-    await Promise.all([
-      kv.put(KV_ACCESS_TOKEN, newAccessToken),
-      kv.put(KV_REFRESH_TOKEN, newRefreshToken || refreshToken),
-      kv.put(KV_TOKEN_EXPIRY, String(newExpiry)),
-    ]);
+    // The old refresh token died the moment GHL responded — if these puts
+    // fail, the new one is orphaned and auth is unrecoverable without a
+    // manual re-auth. Retry each put, and on final failure report a DISTINCT
+    // token-lost status so the daily-audit watchdog can tell "harmless
+    // failed attempt" from "rotation succeeded but the result was lost".
+    const putWithRetry = async (key, value, attempts = 3) => {
+      let lastErr;
+      for (let i = 0; i < attempts; i++) {
+        try {
+          await kv.put(key, value);
+          return true;
+        } catch (err) {
+          lastErr = err;
+          if (i < attempts - 1) await new Promise((r) => setTimeout(r, 250 * (i + 1)));
+        }
+      }
+      console.error(`[token-refresh] KV put failed after ${attempts} attempts (${key}): ${lastErr?.message}`);
+      return false;
+    };
+    // Sequential, expiry LAST: a fresh expiry over a stale access token
+    // would make consumers treat the dead token as valid for ~12h.
+    const okAccess = await putWithRetry(KV_ACCESS_TOKEN, newAccessToken);
+    const okRefresh = await putWithRetry(KV_REFRESH_TOKEN, newRefreshToken || refreshToken);
+    const okExpiry =
+      okAccess && okRefresh ? await putWithRetry(KV_TOKEN_EXPIRY, String(newExpiry)) : false;
+    if (!okAccess || !okRefresh || !okExpiry) {
+      console.error("[token-refresh] CRITICAL: rotation succeeded at GHL but KV persist failed — stored refresh token may be dead");
+      return {
+        success: false,
+        tokenLost: true,
+        error: "CRITICAL token-lost: GHL rotation succeeded but KV persist failed — manual re-auth likely required",
+      };
+    }
 
     const hoursUntilExpiry = (expiresIn / 3600).toFixed(1);
     console.log(`[token-refresh] Success — new token expires in ${hoursUntilExpiry}h`);

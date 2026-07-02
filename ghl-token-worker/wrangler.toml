@@ -2,9 +2,13 @@ name = "ghl-token-refresh"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
-# Proactive token refresh every 12 hours
+# Proactive token refresh every 12 hours. Minute 37 on purpose: the :00
+# minute is when funnel-refresh + series-reconcile (hourly) and
+# conversation-cache (3-hourly) all fire — refreshing the single-use token
+# in that window races their on-demand refreshes. See the 2026-07-02 audit
+# (ops/docs/2026-07-02-website-workers-bug-audit.md §3).
 [triggers]
-crons = ["0 */12 * * *"]
+crons = ["37 */12 * * *"]
 
 # Bind the same KV namespace used by Cloudflare Pages
 [[kv_namespaces]]
