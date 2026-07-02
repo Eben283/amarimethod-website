@@ -77,11 +77,15 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
               </span>
             )}
             {appointment.seriesType !== 'none' && (() => {
-              const done = appointment.sessionsCompleted;
+              // Series progress = package size − remaining (ClientDetailPage
+              // formula). done + remaining used the LIFETIME counter, which
+              // includes entrainments/comps/one-offs — an untouched 8-pack
+              // with 2 prior one-off sessions rendered "Session 3 of 10".
+              const total = appointment.seriesType === '8-session' ? 8
+                : appointment.seriesType === '4-session' ? 4 : 0;
               const remaining = appointment.sessionsRemaining;
-              const total = done + remaining;
-              if (total > 0) {
-                const current = done + 1;
+              if (total > 0 && remaining >= 0 && remaining <= total) {
+                const current = Math.min(total, total - remaining + 1);
                 const lowSessions = remaining <= 2 && remaining > 0;
                 return (
                   <span className={`text-xs ${lowSessions ? 'text-amber-600 font-medium' : 'text-amari-text-muted'}`}>

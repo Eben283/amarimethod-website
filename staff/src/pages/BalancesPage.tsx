@@ -102,6 +102,29 @@ export default function BalancesPage() {
     load(false);
   }, [load]);
 
+  // Refetch when the tab regains focus — a Balances tab left open overnight
+  // showed yesterday's money, and the freshness badge (computed at render)
+  // stayed frozen at whatever it said last. Same pattern ClientDetailPage uses.
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') load(false);
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [load]);
+
+  // Tick every 60s so the "updated Xm ago" badge keeps counting even when
+  // nothing else re-renders.
+  const [, setLabelTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setLabelTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {

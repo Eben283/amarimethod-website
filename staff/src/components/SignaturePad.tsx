@@ -134,6 +134,10 @@ export default function SignaturePad({ onChange, className = '' }: Props) {
       ctx.stroke();
     }
     pointsRef.current = [];
+    // Only accept the signature once an actual stroke happened (pointermove).
+    // A bare tap drew a dot and called onChange, producing a "valid" one-dot
+    // ESIGN consent record while the pad still showed "Sign here".
+    if (!hasSignature) return;
     const canvas = canvasRef.current;
     if (canvas) {
       onChange(canvas.toDataURL('image/png'));

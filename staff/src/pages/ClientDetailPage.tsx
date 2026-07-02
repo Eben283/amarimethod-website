@@ -136,10 +136,13 @@ export default function ClientDetailPage() {
     setAttendedError('');
     try {
       const result = await markAttended(appt.id, client.id, appt.title, appt.calendarName, payment);
+      // Optimistically update the appointment row only. The endpoint's
+      // sessionsCompleted/sessionsRemaining come from the RAW GHL fields,
+      // while this page displays ledger-derived numbers — splicing them in
+      // made the counts visibly jump basis until the next refetch. loadClient
+      // below re-derives everything from the same source the page renders.
       setClient({
         ...client,
-        sessionsCompleted: result.sessionsCompleted,
-        sessionsRemaining: result.sessionsRemaining,
         appointments: client.appointments.map((a) => {
           if (a.id !== appt.id) return a;
           // Optimistic per-session status: explicit choice wins; otherwise the
@@ -150,6 +153,9 @@ export default function ClientDetailPage() {
           return { ...a, status: 'showed', paymentStatus, paymentNote: payment?.compNote ?? a.paymentNote };
         }),
       });
+      // Re-derive counts from the server (ledger basis). The spinner only
+      // shows when no client is loaded, so this refresh is visually silent.
+      loadClient();
       if (result.alreadyAttended) {
         setAttendedError('Already marked as attended (SMS or workflow handled it)');
         setTimeout(() => setAttendedError(''), 3000);
