@@ -571,7 +571,20 @@ async function checkTokenRefresh(env) {
     });
   }
 
-  if (summary.status === "error") {
+  if (summary.tokenLost) {
+    // Distinct from a routine failed attempt: the rotation SUCCEEDED at GHL
+    // but the result was never persisted, so the stored refresh token is
+    // likely dead and every GHL consumer bricks at the next refresh. This
+    // needs a human (manual re-auth per reference-ghl-authclass-location-token),
+    // not a wait-for-next-cron.
+    issues.push({
+      severity: "critical",
+      area: "infra",
+      kind: "ghl-token-refresh-token-lost",
+      message: `ghl-token-refresh reported TOKEN-LOST: ${summary.error || "rotation succeeded but KV persist failed"}. The stored refresh token is likely dead — manual GHL re-auth will be required.`,
+      lastRun: summary.finishedAt,
+    });
+  } else if (summary.status === "error") {
     issues.push({
       severity: "warning",
       area: "infra",
@@ -717,7 +730,22 @@ async function runLedgerDriftScan(env) {
         },
         body: JSON.stringify({ locationId: LOCATION_ID, pageLimit: 100, page }),
       });
-      if (!res.ok) break;
+      if (!res.ok) {
+        // A non-ok response is a FAILED scan, not the end of the data. The old
+        // `break` here fell through with a truncated (page 1 failure: empty)
+        // candidate list, persisted a FRESH findings doc with zero issues, and
+        // the main audit read it as "all clean" — a 429 at 4am defeated the
+        // exact false-negative this watchdog exists to catch. Mirror the
+        // thrown-error path: surface + abort (also skips the locked-count
+        // persist, which the empty run used to reset to 0).
+        issues.push({
+          severity: "warning",
+          area: "infra",
+          kind: "ledger-drift-candidate-scan-failed",
+          message: `Contact enumeration for ledger drift check failed on page ${page}: HTTP ${res.status}. Candidates scanned so far (${candidates.length}) were NOT evaluated — treat this run as no-coverage, not clean.`,
+        });
+        return persist(candidates.length);
+      }
       const data = await res.json();
       const contacts = data.contacts || [];
       if (contacts.length === 0) break;
