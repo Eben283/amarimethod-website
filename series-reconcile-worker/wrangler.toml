@@ -26,3 +26,11 @@ id = "b8ef627521e04f5998a707d4a8f1935c"
 # Secrets (set via `npx wrangler secret put <KEY>`):
 #   GHL_CLIENT_ID     — same as ghl-token-refresh
 #   GHL_CLIENT_SECRET — same as ghl-token-refresh
+
+# amari-attendance D1 — the webhook's primary idempotency store (schema created
+# 2026-07-02). The worker reads webhook claims and claims its own applies so a
+# late webhook delivery can't double-credit.
+[[d1_databases]]
+binding = "ATTEND_DB"
+database_name = "amari-attendance"
+database_id = "8c66fe4c-bc3a-4a2d-905c-6f18f20f6faa"

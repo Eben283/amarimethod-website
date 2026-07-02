@@ -33,3 +33,22 @@ export async function claimProcessedEvent(db, eventId) {
     ? { ok: true }
     : { ok: false, duplicate: true };
 }
+
+/**
+ * Read-only existence check — has this event already been claimed?
+ * Returns true/false, or null when the db isn't available (caller falls back
+ * to its KV view). Never throws.
+ */
+export async function isProcessedEvent(db, eventId) {
+  if (!db || !eventId) return null;
+  try {
+    const row = await db
+      .prepare("SELECT 1 FROM processed_events WHERE event_id = ?")
+      .bind(eventId)
+      .first();
+    return row !== null;
+  } catch (err) {
+    console.warn(`[processed-events] read failed for ${eventId}: ${err.message}`);
+    return null;
+  }
+}

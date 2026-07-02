@@ -649,8 +649,12 @@ export async function onRequestPost(context) {
       }
     }
 
-    // ── 9. KV write for idempotency (fallback only — D1 INSERT already claimed above) ──
-    if (!usedD1 && kv && idempotencyKey) {
+    // ── 9. KV write for idempotency ──
+    // Written EVEN when D1 claimed above: the series-reconcile worker dedupes
+    // against this `order:` key (it has no D1 view of webhook-processed
+    // orders), so a D1-only claim would silently disable the cross-system
+    // dedup added 2026-07-02. Cheap, idempotent, 90-day TTL.
+    if (kv && idempotencyKey) {
       try {
         await kv.put(idempotencyKey, JSON.stringify({
           contactId: sanitizedContactId,

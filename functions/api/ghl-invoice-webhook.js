@@ -392,8 +392,9 @@ export async function onRequestPost(context) {
       `[ghl-invoice-webhook] Updated ${sanitizedContactId}: ${pkg.name} — series_type=${pkg.seriesType}, sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}, series_type was ${currentSeriesType || "none"}`,
     );
 
-    // 8. KV write for idempotency (fallback only — D1 INSERT already claimed above)
-    if (!usedD1 && kv && idempotencyKey) {
+    // 8. KV write for idempotency — written even on a D1 win, mirroring
+    // ghl-purchase-webhook (cross-system readers see KV, not D1).
+    if (kv && idempotencyKey) {
       try {
         await kv.put(
           idempotencyKey,

@@ -7,6 +7,7 @@ import { getContact, patchContact, addContactNote, removeContactTags, ghlGet, ge
 import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
+import { claimProcessedEvent, isProcessedEvent } from "../../functions/lib/processed-events.js";
 
 // Series + upgrade products. Derived from the single source of truth
 // (functions/lib/ghl-products.js → PACKAGE_MAP) plus the per-package GHL
@@ -144,7 +145,11 @@ export async function reconcileOrder(env, orderDetail) {
   if (existing) {
     return { status: "skip-already-processed", orderId, package: pkg.name, contactId, processedAt: existing };
   }
-  if (webhookExisting) {
+  // D1 view: once the amari-attendance schema is live (created 2026-07-02),
+  // the webhook's primary claim lives there. Read-only check; null (no
+  // binding / D1 error) just means the KV checks above were the whole story.
+  const webhookClaimedD1 = await isProcessedEvent(env.ATTEND_DB, webhookKey);
+  if (webhookExisting || webhookClaimedD1) {
     // The webhook applied this order. Back-fill our own marker so the next
     // hourly scan skips on the first read, then skip without touching the
     // contact — the field-state check below was the only guard here before,
@@ -155,11 +160,13 @@ export async function reconcileOrder(env, orderDetail) {
         reconciledAt: new Date().toISOString(),
         by: "series-reconcile-worker",
         action: "marked-idempotent",
-        reason: "already processed by the purchase webhook (order: key)",
+        reason: webhookExisting
+          ? "already processed by the purchase webhook (order: key)"
+          : "already processed by the purchase webhook (D1 claim)",
       }),
       { expirationTtl: 90 * 86400 }
     );
-    return { status: "skip-already-processed", orderId, package: pkg.name, contactId, processedAt: webhookExisting };
+    return { status: "skip-already-processed", orderId, package: pkg.name, contactId, processedAt: webhookExisting || "d1-claim" };
   }
 
   // Read the contact and check current state. If the field set already matches
@@ -357,6 +364,13 @@ export async function reconcileOrder(env, orderDetail) {
     }),
     { expirationTtl: 90 * 86400 }
   );
+  // And claim in D1 (best-effort) — the webhook trusts its D1 view first, so
+  // without this row a late webhook delivery would sail past the KV stamp.
+  try {
+    await claimProcessedEvent(env.ATTEND_DB, webhookKey);
+  } catch (err) {
+    console.warn(`[series-reconcile] D1 claim failed for ${orderId}: ${err.message}`);
+  }
 
   return {
     status: "applied",
