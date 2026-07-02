@@ -134,3 +134,23 @@ describe('computeHasLivingPractice', () => {
     expect(computeHasLivingPractice(null, undefined, '8-session')).toBe(true);
   });
 });
+
+describe('countLifetimeCompleted — naive-Pacific timestamps (2026-07-02 audit)', () => {
+  it('a confirmed session later TODAY (naive Pacific) does not count as completed', () => {
+    // GHL returns naive Pacific wall-clock strings. Parsed as UTC in a
+    // Worker, a 3pm PT session read as 8am PT — "past" from morning on —
+    // so it counted as completed hours before it happened (and vanished
+    // from "Up next" via the same shifted comparison in the handler).
+    const nowMs = Date.parse('2026-07-02T10:00:00-07:00'); // 10am PT
+    expect(countLifetimeCompleted([
+      { appointmentStatus: 'confirmed', startTime: '2026-07-02T15:00:00', title: 'Follow-up Session' },
+    ], nowMs)).toBe(0);
+  });
+
+  it('a naive-Pacific session that truly finished still counts', () => {
+    const nowMs = Date.parse('2026-07-02T18:00:00-07:00'); // 6pm PT
+    expect(countLifetimeCompleted([
+      { appointmentStatus: 'showed', startTime: '2026-07-02T15:00:00', title: 'Follow-up Session' },
+    ], nowMs)).toBe(1);
+  });
+});

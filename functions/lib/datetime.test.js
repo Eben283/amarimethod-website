@@ -53,3 +53,55 @@ describe('formatIsoAtOffset', () => {
     expect(formatIsoAtOffset(ms, '')).toBe('2026-05-21T18:00:00Z');
   });
 });
+
+// ── parsePacificWallClock / normalizeGhlTimestamp (2026-07-02 audit) ────────
+//
+// GHL returns appointment startTime as a NAIVE Pacific wall-clock string
+// ("2026-07-02T15:00:00", no Z/offset). Workers run in UTC and browsers run
+// in the client's zone, so parsing it directly shifts the instant by hours:
+// day-of sessions vanished from the portal's "Up next" from ~8am, and a New
+// York client's calendar export landed 3 hours early.
+
+import { parsePacificWallClock, normalizeGhlTimestamp } from './datetime.js';
+
+describe('parsePacificWallClock', () => {
+  it('interprets a naive string as Pacific wall-clock (PDT)', () => {
+    expect(parsePacificWallClock('2026-07-02T15:00:00')).toBe(Date.parse('2026-07-02T15:00:00-07:00'));
+  });
+
+  it('interprets a naive string as Pacific wall-clock (PST)', () => {
+    expect(parsePacificWallClock('2026-01-15T15:00:00')).toBe(Date.parse('2026-01-15T15:00:00-08:00'));
+  });
+
+  it('passes through offset-qualified and Z strings unchanged', () => {
+    expect(parsePacificWallClock('2026-05-21T10:00:00-07:00')).toBe(Date.parse('2026-05-21T10:00:00-07:00'));
+    expect(parsePacificWallClock('2026-05-21T17:00:00Z')).toBe(Date.parse('2026-05-21T17:00:00Z'));
+  });
+
+  it('handles both sides of the spring-forward boundary', () => {
+    expect(parsePacificWallClock('2026-03-08T01:59:00')).toBe(Date.parse('2026-03-08T01:59:00-08:00'));
+    expect(parsePacificWallClock('2026-03-08T03:00:00')).toBe(Date.parse('2026-03-08T03:00:00-07:00'));
+  });
+
+  it('returns NaN for garbage', () => {
+    expect(Number.isNaN(parsePacificWallClock('not-a-date'))).toBe(true);
+    expect(Number.isNaN(parsePacificWallClock(''))).toBe(true);
+  });
+});
+
+describe('normalizeGhlTimestamp', () => {
+  it('stamps the correct Pacific offset onto naive strings', () => {
+    expect(normalizeGhlTimestamp('2026-07-02T15:00:00')).toBe('2026-07-02T15:00:00-07:00');
+    expect(normalizeGhlTimestamp('2026-01-15T15:00:00')).toBe('2026-01-15T15:00:00-08:00');
+  });
+
+  it('leaves already-qualified strings alone', () => {
+    expect(normalizeGhlTimestamp('2026-05-21T10:00:00-07:00')).toBe('2026-05-21T10:00:00-07:00');
+    expect(normalizeGhlTimestamp('2026-05-21T17:00:00Z')).toBe('2026-05-21T17:00:00Z');
+  });
+
+  it('returns unparseable values unchanged', () => {
+    expect(normalizeGhlTimestamp('')).toBe('');
+    expect(normalizeGhlTimestamp(undefined)).toBe(undefined);
+  });
+});

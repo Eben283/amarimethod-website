@@ -7,6 +7,7 @@ import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { isContactRevoked } from "../lib/session-guard.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { getCustomField, isChecked, computeHasLivingPractice } from "../lib/portal-helpers.js";
+import { parsePacificWallClock, normalizeGhlTimestamp } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -40,7 +41,9 @@ export function countLifetimeCompleted(appointments, nowMs) {
     if (!(s === "completed" || s === "showed" || s === "confirmed")) return false;
     // Past-only: a future 'confirmed' booking hasn't happened yet, so it must
     // not count toward "how far have I come?". Mirrors sync.js computeLifetimeCount.
-    const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+    // parsePacificWallClock, not new Date(): GHL startTime is naive Pacific,
+    // and a UTC parse made every day-of session read as "past" from ~8am PT.
+    const startMs = parsePacificWallClock(a.startTime || a.start_time || "");
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = `${a.title || ""} ${a.calendarName || ""}`;
     return countsTowardLifetime(title);
@@ -271,12 +274,16 @@ export async function onRequestGet(context) {
       return null;
     }
 
+    // normalizeGhlTimestamp: GHL's naive-Pacific strings gain their real
+    // offset before they reach the SPA, so browser parsing, the "Up next"
+    // split below, formatTime, and the Google Calendar/.ics exports all
+    // resolve to the correct instant regardless of the client's timezone.
     const sortedAppointments = allAppointments
       .map((appt) => ({
         id: appt.id,
         title: appt.title || appt.calendarName || "Session",
-        startTime: appt.startTime || appt.start_time,
-        endTime: appt.endTime || appt.end_time,
+        startTime: normalizeGhlTimestamp(appt.startTime || appt.start_time),
+        endTime: normalizeGhlTimestamp(appt.endTime || appt.end_time),
         status: (appt.appointmentStatus || appt.status || "confirmed").toLowerCase(),
         appointmentType: appt.calendarName || appt.title || "Session",
         meetingUrl: extractMeetingUrl(appt),

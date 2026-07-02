@@ -16,6 +16,7 @@
 
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
+import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 import { ghlGet, ghlPut, getOrderDetail, LOCATION_ID } from "./ghl.js";
 
 const FIELD_IDS = {
@@ -125,7 +126,12 @@ function computeLifetimeCount(appointments) {
   return appointments.filter((a) => {
     const status = (a.appointmentStatus || a.status || "").toLowerCase();
     if (!LIFETIME_STATUSES.has(status)) return false;
-    const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+    // parsePacificWallClock, not new Date(): GHL startTime is naive Pacific
+    // and this worker runs in UTC — a raw parse made a same-day FUTURE
+    // confirmed appointment read as past from ~8am PT, and the monotonic
+    // never-decrement rule then baked the inflation in permanently if the
+    // appointment was later cancelled.
+    const startMs = parsePacificWallClock(a.startTime || a.start_time || "");
     // Past-only — drop future confirmed.
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = (a.title || "") + " " + (a.calendarName || "");
