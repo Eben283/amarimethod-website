@@ -5,93 +5,121 @@
 //   reads  coach:personalized      (hand-authored cards; never overwritten)
 //   writes coach:{contactId}       (individual cards read by the Follow-Up panel)
 //   writes coach:records:snapshot  (updated mirror after writes/deletes)
+//
+// Per-contact copy comes from the angle ladder (./angles.js) — see
+// ops/drafts/fable-5-review-2026-07-01.md. Cold-variant contacts get a
+// step-indexed angle (identity → gift → honest-why → substance → gentle-no);
+// this file owns only the KV read/write/diff orchestration around it.
 
-const TARGET_STATES = new Set(["one-touch-no-reply", "no-reply"]);
-const LINK_STALL_STATES = new Set(["one-touch-no-reply", "no-reply", "gone-quiet"]);
+import { getRung, renderAngle, renderGuaranteeFallback, elapsedPhrase, isPhone, firstName } from "./angles.js";
+
+// "breakup" (the final step's state) must stay in these sets — see
+// cadence.js: isBreakup ? "breakup" : ... — or the ladder's gentle-no rung
+// never reaches this filter at all.
+const TARGET_STATES = new Set(["one-touch-no-reply", "no-reply", "breakup"]);
+const LINK_STALL_STATES = new Set(["one-touch-no-reply", "no-reply", "gone-quiet", "breakup"]);
 const DELETE_FLOOR_RATIO = 0.5;
 
-const isPhone = (n) => /^\(?\d[\d\s().-]{6,}$/.test((n || "").trim());
-const isBusiness = (n) =>
-  /\b(fitness|gym|studio|training|crossfit|pilates|yoga|wellness|club|barre|strength|performance|athletic)\b/i.test(n || "");
-const firstName = (n) => (n || "").trim().split(/\s+/)[0];
 const UNTEXTABLE = new Set(["landline", "toll_free", "voip"]);
 const isUntextable = (lineType) => UNTEXTABLE.has(lineType);
 
-function recordsEqual(a, b) {
-  return !!a && !!b && a.message === b.message && a.whyNow === b.whyNow &&
-    JSON.stringify(a.variations || []) === JSON.stringify(b.variations || []);
+// Compares every field the ladder can change — a coincidental match on just
+// message/whyNow/variations must not hide a real angle/channel/email/
+// callScript change (that would leave stale content in KV with no write).
+export function recordsEqual(a, b) {
+  return !!a && !!b &&
+    a.message === b.message && a.whyNow === b.whyNow &&
+    JSON.stringify(a.variations || []) === JSON.stringify(b.variations || []) &&
+    a.angle === b.angle && a.channel === b.channel &&
+    JSON.stringify(a.email || null) === JSON.stringify(b.email || null) &&
+    JSON.stringify(a.callScript || null) === JSON.stringify(b.callScript || null);
 }
 
-function opener(name, days) {
-  const biz = isBusiness(name) || isPhone(name);
-  const who = biz ? "Hi, it's Garrett with Amari Method!" : `Hi ${firstName(name)}, it's Garrett!`;
-  let gap;
-  if (days <= 3)  gap = "I gave you a call earlier but didn't catch you.";
-  else if (days <= 14) gap = "I called a week or so back but didn't get to connect.";
-  else if (days <= 35) gap = "I reached out a few weeks ago and never properly followed up, my apologies.";
-  else gap = "It's been a while since I tried to reach you, and I dropped the ball on following up, sorry about that.";
-  return `${who} ${gap}`;
+// Only called with a rendered ladder rung, which today is always cold (5
+// steps) — getRung() returns null for 'warm', so buildDesiredRecord never
+// reaches here with anything else.
+function buildWhyNow(rendered, label, days, channel, untextableOverride, lineType) {
+  const verb = channel === "email" ? "Email" : channel === "call" ? "Call" : "Text";
+  let msg = `${verb} ${label} now — step ${rendered.step} of 5: ${rendered.angleLabel}. You reached out ${elapsedPhrase(days)}.`;
+  if (untextableOverride) msg += ` This is a ${lineType} number, so this step becomes a call instead of a text.`;
+  return msg;
 }
 
-function elapsedPhrase(days) {
-  if (days <= 3)  return "in the last few days";
-  if (days <= 14) return "about a week ago";
-  if (days <= 35) return "a few weeks ago";
-  return "over a month ago";
-}
+// Pure — no KV access. Builds everything about a contact's card EXCEPT
+// generatedAt (which depends on prior KV history, tracked by the caller).
+export function buildDesiredRecord(d, overlays = {}) {
+  const { stall, priceFlag } = overlays;
+  const days = Math.round(d.sinceLastTouchDays);
+  const untextable = isUntextable(d.lineType);
+  const label = isPhone(d.name) ? "this contact" : firstName(d.name);
 
-function bodies(name) {
-  if (isBusiness(name)) {
-    return [
-      "I teach at-home protocols that keep clients out of pain, and I partner with gyms to help keep members training pain free. I'd love to gift one of your trainers a session to feel the work. Who's the best person to talk to about it?",
-      "I partner with gyms to keep members healthy and training longer, with a nice incentive for the gym too. I'd love to set up a session for someone on your team to feel the work. Who's the best person to reach about it?",
-    ];
+  const rendered = renderAngle(d.variant, d.step, {
+    name: d.name,
+    days,
+    overlay: stall ? "link-stall" : null,
+    product: stall?.product,
+    untextable,
+  });
+
+  if (!rendered) {
+    // Outside the cold ladder's scope (any warm-variant contact — the warm
+    // ladder is a deferred fast-follow, see ops/drafts/fable-5-review-2026-07-01.md).
+    // TARGET_STATES now includes "breakup" (needed for the cold gentle-no
+    // rung), which also admits WARM contacts at their own breakup step with
+    // no stall at all — the fallback below has nothing to render without a
+    // product to reference (a real regression caught by a second-pass
+    // review: it rendered "I sent you the undefined link"). Bail out with no
+    // card rather than a broken one; the caller must skip null records.
+    if (!stall?.product) return null;
+    const lines = renderGuaranteeFallback({ name: d.name, days, product: stall.product });
+    const channel = untextable ? "call" : "text";
+    const whyNow = untextable
+      ? `Call ${label} — this is a ${d.lineType} number. You sent the ${stall?.product} link ${elapsedPhrase(days)}. If they pick up, lead with the guarantee: come in, find what's causing the pain, no relief = keep working at no charge.`
+      : `Text ${label} now. You sent the ${stall?.product} link ${elapsedPhrase(days)} and they haven't booked. Lead with the guarantee — come in, find out what's causing the pain, if no noticeable relief keep working at no charge. This is the price-objection play.`;
+    return {
+      contactId: d.contactId, name: d.name, bucket: "link-sent", channel, whyNow,
+      message: lines[0], variations: lines,
+      angle: "guarantee-fallback", angleLabel: "The guarantee (pre-ladder fallback)", step: d.step ?? null, variant: d.variant,
+      sms: channel === "text" ? lines : null, email: null, callScript: channel === "call" ? lines : null,
+    };
   }
-  return [
-    "I'm a body alignment specialist here in SF and I teach at-home protocols that are amazing for low back and joint pain. I'd love to gift you a session so you can feel the work for yourself. Feel free to call or text whenever's good!",
-    "I teach at-home protocols that get rid of low back and joint pain, and I'd love to gift you a session to try them. If you're inspired, we could even talk about partnering. Feel free to call or text when you have time.",
-  ];
-}
-const variationsFor = (name, days) => bodies(name).map((b) => `${opener(name, days)} ${b}`);
 
-function guaranteeVariations(name, product, days) {
-  const biz = isBusiness(name) || isPhone(name);
-  const fn = firstName(name);
-  let gap;
-  if (days <= 3)  gap = "the other day";
-  else if (days <= 14) gap = "last week";
-  else if (days <= 35) gap = "a few weeks ago";
-  else gap = "a while back";
-  if (biz) {
-    return [
-      `Hi, it's Garrett with Amari Method! I sent over the ${product} link ${gap} and wanted to follow up. If you're wondering whether it's worth it: the trainer comes in, we find exactly what's going on in their body, and if they don't feel real relief I keep working with them until they do — no extra charge. Want to find a time?`,
-      `Hi, it's Garrett with Amari Method! Reaching back out about the ${product} link I sent ${gap}. If the cost feels like a risk, I hear you — that's exactly why I stand behind the work: they come in, we find what's causing the problem, and if there's no noticeable relief I keep going at no charge. Worth a quick call?`,
-    ];
+  let { channel, sms, email, callScript } = rendered;
+  let untextableOverride = false;
+  // A text-shaped rung can't reach a landline/VoIP number — fall back to a
+  // call instead. Prefer the rung's own purpose-written callScript (some
+  // rungs, e.g. the gift, provide one distinct from the sms wording, since
+  // sms text can reference texting itself — "feel free to call or text" —
+  // which reads as nonsensical read aloud on a call already in progress).
+  // Fall back to reusing the sms content only if the rung has no dedicated
+  // call script (true today for the link-stall overlay and the breakup,
+  // both already channel-neutral wording). Email rungs are unaffected by
+  // line type.
+  if (channel === "text" && untextable) {
+    channel = "call";
+    callScript = callScript || sms;
+    sms = null;
+    untextableOverride = true;
   }
-  return [
-    `Hi ${fn}, it's Garrett! I sent you the ${product} link ${gap} and wanted to check in. If you're on the fence about whether it'll work, here's what I want you to know: come in, we figure out what's actually going on with your body, and if you don't feel real relief I keep working with you until you do — no extra charge. That's how confident I am in this.`,
-    `Hey ${fn}, Garrett here! Following up on the ${product} link from ${gap}. If the investment feels risky, that's exactly why I guarantee the work: you come in, find out what's causing the pain, and if you don't feel noticeable relief we keep going at no charge. Want to find a time that works?`,
-  ];
-}
 
-function callScripts(name, days) {
-  const biz = isBusiness(name) || isPhone(name);
-  const who = biz ? "it's Garrett with Amari Method" : "it's Garrett";
-  let gap;
-  if (days <= 3)  gap = "I tried you a little while ago but missed you.";
-  else if (days <= 14) gap = "I called last week but didn't get to connect.";
-  else if (days <= 35) gap = "I reached out a few weeks back — wanted to try again.";
-  else gap = "It's been a while — I dropped the ball on following up, sorry about that.";
-  if (biz) {
-    return [
-      `When you reach them: "Hi, ${who}! ${gap} I partner with gyms to help keep members training pain free. I'd love to gift one of your trainers a session so they can feel the work. Do you have 30 seconds?"`,
-      `When you reach them: "Hi, ${who}! ${gap} I teach at-home protocols that keep gym members out of pain and training longer. I'd love to gift a session to someone on your team. Who's the best person to reach?"`,
-    ];
+  let whyNow = buildWhyNow(rendered, label, days, channel, untextableOverride, d.lineType);
+  if (priceFlag) {
+    whyNow += ` Heads up: they raised cost or insurance on a call. If it comes up, lead with the relief guarantee. Come in, we find out what's actually causing your pain, and if you don't feel noticeable relief, we keep working until you do, at no extra charge.`;
   }
-  return [
-    `When you reach them: "Hi ${firstName(name)}, ${who}! ${gap} I'm a body alignment specialist here in SF and I teach at-home protocols that are incredible for low back and joint pain. I'd love to gift you a session so you can feel the work. Do you have 30 seconds?"`,
-    `When you reach them: "Hi ${firstName(name)}, ${who}! ${gap} I work with trainers here in SF on keeping their bodies pain free, and I'd love to gift you a session to try it. Got a quick minute?"`,
-  ];
+
+  const bucket = stall ? "link-sent" : "called-no-connect";
+  // message/variations mirror whichever content is the primary payload —
+  // matches historical behavior (these fields held call-script content for
+  // call-channel cards before this change too), so anything else reading
+  // them keeps working during rollout.
+  const primary = sms || callScript || (email ? [email.body] : []);
+
+  return {
+    contactId: d.contactId, name: d.name, bucket, channel, whyNow,
+    message: primary[0] || "", variations: primary,
+    angle: rendered.angle, angleLabel: rendered.angleLabel, step: rendered.step, variant: rendered.variant,
+    sms, email, callScript,
+  };
 }
 
 async function mapLimit(items, limit, fn) {
@@ -134,37 +162,16 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
 
   const desired = new Map();
   for (const d of targets) {
-    const days = Math.round(d.sinceLastTouchDays);
-    const untextable = isUntextable(d.lineType);
     const prev = existingTemplated.get(d.contactId);
-    const label = isPhone(d.name) ? "this contact" : firstName(d.name);
-    let vars, channel, whyNow, bucket;
-
-    const stall = linkStalls.get(d.contactId);
-    if (stall) {
-      channel = untextable ? "call" : "text";
-      vars = untextable ? callScripts(d.name, days) : guaranteeVariations(d.name, stall.product, days);
-      whyNow = untextable
-        ? `Call ${label} — this is a ${d.lineType} number. You sent the ${stall.product} link ${elapsedPhrase(days)}. If they pick up, lead with the guarantee: come in, find what's causing the pain, no relief = keep working at no charge.`
-        : `Text ${label} now. You sent the ${stall.product} link ${elapsedPhrase(days)} and they haven't booked. Lead with the guarantee — come in, find out what's causing the pain, if no noticeable relief keep working at no charge. This is the price-objection play.`;
-      bucket = "link-sent";
-    } else {
-      channel = untextable ? "call" : "text";
-      vars = untextable ? callScripts(d.name, days) : variationsFor(d.name, days);
-      whyNow = untextable
-        ? `Call ${label} — this is a ${d.lineType} number, texts won't reach it. You reached out ${elapsedPhrase(days)} and never connected. Try a call.`
-        : `Text ${label} now. You reached out ${elapsedPhrase(days)} and never connected or heard back. Send a time-aware re-attempt.`;
-      if (priceFlags.has(d.contactId)) {
-        whyNow += ` Heads up: they raised cost or insurance on a call. If it comes up, lead with the relief guarantee. Come in, we find out what's actually causing your pain, and if you don't feel noticeable relief, we keep working until you do, at no extra charge.`;
-      }
-      bucket = "called-no-connect";
-    }
-
-    desired.set(d.contactId, {
-      contactId: d.contactId, name: d.name, bucket, channel,
-      generatedAt: prev?.generatedAt || today,
-      whyNow, message: vars[0], variations: vars,
+    const rec = buildDesiredRecord(d, {
+      stall: linkStalls.get(d.contactId),
+      priceFlag: priceFlags.has(d.contactId),
     });
+    // null means: outside the ladder's scope with nothing safe to render
+    // (a warm contact at its breakup step with no stall) — no card, not a
+    // broken one.
+    if (!rec) continue;
+    desired.set(d.contactId, { ...rec, generatedAt: prev?.generatedAt || today });
   }
 
   const toWrite = [], unchanged = [];

@@ -638,6 +638,13 @@ export interface OutreachCoach {
   message: string;        // the ready-to-send draft in Garrett's voice
   variations?: string[];  // 2-3 wordings to choose from (message is variations[0])
   channel?: 'call' | 'text' | 'email';
+  email?: { subject: string; body: string }; // email-shaped draft — distinct from message (SMS-shaped), not a copy of it
+  sms?: string[];          // channel-explicit mirror of `variations` for text-shaped rungs
+  callScript?: string[];   // channel-explicit script(s) for call-shaped rungs (read-only, copy-to-clipboard)
+  angle?: string;          // which rung of the angle ladder this touch is (identity | gift | honest-why | substance | gentle-no | guarantee-fallback)
+  angleLabel?: string;     // human-readable version of `angle`, shown on the card so Garrett sees why this touch says what it says
+  step?: number;           // touch number in the cadence sequence
+  variant?: 'cold' | 'warm';
   generatedAt?: string;
 }
 

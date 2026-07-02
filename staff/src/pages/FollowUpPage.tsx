@@ -1382,18 +1382,32 @@ function OutreachCoachPanel({ coach, contactId, lastTouch, onHandled }: { coach:
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-accent-warm">
         <Sparkles className="h-3 w-3" /> Coach{coach.bucket ? ` · ${coach.bucket.replace(/-/g, ' ')}` : ''}
       </p>
+      {coach.angleLabel && (
+        // Garrett stays the visible author — this line is why this touch says what it
+        // says, so he can veto or rewrite it rather than send on faith.
+        <p className="mb-2 text-[11px] text-amari-text-muted">This touch: {coach.angleLabel}</p>
+      )}
       {isStale && (
         <p className="mb-2 text-[11px] text-amber-700">This draft was generated before the last touch — double-check it still fits.</p>
       )}
       <div className="space-y-1.5">
-        {coach.channel !== 'call' && (coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
+        {/* Explicit three-way branch on channel — a `!== 'call'` negation would also match
+            'email', which would let SMS-shaped content leak into EditSendText and send it as
+            a real text via the SMS API regardless of what the box displays. */}
+        {coach.channel === 'call' && (coach.callScript?.length ? coach.callScript : coach.message ? [coach.message] : []).map((t, i) => (
+          <CopyText key={i} text={t} channel="call" />
+        ))}
+        {coach.channel === 'text' && (coach.sms?.length ? coach.sms : coach.variations?.length ? coach.variations : [coach.message]).map((t, i) => (
           <EditSendText key={i} contactId={contactId} text={t} channel={coach.channel} onSent={onHandled} />
         ))}
-        {coach.channel !== 'call' && (
+        {coach.channel === 'email' && (
+          // No coach.email (server hasn't generated an email-shaped draft) → empty compose,
+          // not the SMS text under a generic subject. An empty box is more honest than a
+          // wrong-shaped draft — see ops/drafts/fable-5-review-2026-07-01.md §1.3 item 3.
           <EditSendEmail
             contactId={contactId}
-            defaultSubject="A note from Garrett"
-            defaultBody={coach.message || ''}
+            defaultSubject={coach.email?.subject ?? ''}
+            defaultBody={coach.email?.body ?? ''}
             onSent={onHandled}
           />
         )}
