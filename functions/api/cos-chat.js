@@ -10,6 +10,16 @@ import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyCo
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
 import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
 
+// Ledger-relevant custom field IDs (same constants as staff-mark-attended.js
+// FIELD_IDS / series-reconcile sync.js) — deriveLedger's field fallback needs
+// them to resolve the hand-typed values on low confidence.
+const LEDGER_FIELD_DEFS = {
+  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+  series_type: "3i93lTkmuAV49s9nh0q8",
+  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+};
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -564,7 +574,10 @@ async function lookupContact(context, name) {
   }
   // POS-source clients show as "low confidence" in the ledger, which is
   // honest signaling for chat answers.
-  const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: {}, fetchFailures: ledgerFetchFailures });
+  // Real fieldDefs, not {}: on low confidence the ledger's display block
+  // falls back to the hand-typed GHL field, and with an empty map that
+  // fallback silently resolved to the (incomplete) derived value instead.
+  const ledger = deriveLedger({ contact, orders, invoices, appointments, fieldDefs: LEDGER_FIELD_DEFS, fetchFailures: ledgerFetchFailures });
 
   // Parse custom fields
   const customFields = contact.customFields || contact.customField || [];

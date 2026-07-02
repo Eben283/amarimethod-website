@@ -48,8 +48,13 @@ function getSeriesActions(client: ClientData): Action[] {
   const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
   const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
 
-  // Exactly 1 pay-as-you-go session — credit upgrade beats buying full price
-  if (seriesType === 'none' && sessionsCompleted === 1 && !isPartner) {
+  // Exactly 1 pay-as-you-go session — credit upgrade beats buying full price.
+  // initialPurchaseCount gates on a PAID initial in the books (orders +
+  // invoices): the lifetime count alone also matched comped partner-initials
+  // and paid-at-partner sessions, offering "$225 already applied" to clients
+  // who never paid $225 through GHL. Undefined (cached pre-field response)
+  // fails the === 1 check, so the offer just doesn't show until refresh.
+  if (seriesType === 'none' && sessionsCompleted === 1 && client.initialPurchaseCount === 1 && !isPartner) {
     return [
       {
         label: 'Upgrade to a 4-session series',

@@ -29,6 +29,15 @@ export interface ClientData {
    */
   packageSize: number;
   /**
+   * Number of PAID initial-session purchases on the books (GHL orders +
+   * invoices classified as 'initial'). Gates the $225-credit upgrade offer:
+   * the lifetime appointment count also includes comped partner-initials and
+   * paid-at-partner sessions with no GHL order, which must NOT see
+   * "your $225 is already applied". Optional: absent on cached pre-2026-07-02
+   * responses, in which case the upgrade offer simply doesn't show.
+   */
+  initialPurchaseCount?: number;
+  /**
    * Sessions consumed from the package — only counts series-calendar
    * appointments since the earliest package purchase. Surfaces if the
    * UI wants to show "3 of 8 used" instead of "5 left."
@@ -60,7 +69,9 @@ export interface Appointment {
   title: string;
   startTime: string;
   endTime: string;
-  status: 'confirmed' | 'completed' | 'showed' | 'cancelled' | 'no_show';
+  // GHL's real no-show string is 'noshow' (no underscore) — 'no_show' kept
+  // for safety since old code/data used it.
+  status: 'confirmed' | 'completed' | 'showed' | 'cancelled' | 'noshow' | 'no_show';
   appointmentType: string;
   meetingUrl?: string | null;
 }

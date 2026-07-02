@@ -18,6 +18,7 @@ function statusLabel(s: Appointment['status']): { label: string; cls: string } {
       return { label: 'Completed', cls: 'cp-completed' };
     case 'cancelled':
       return { label: 'Cancelled', cls: 'cp-cancelled' };
+    case 'noshow': // GHL's real string — 'no_show' kept for safety
     case 'no_show':
       return { label: 'Missed', cls: 'cp-noshow' };
     case 'confirmed':
@@ -30,7 +31,9 @@ function statusLabel(s: Appointment['status']): { label: string; cls: string } {
 
 export default function SessionHistory({ appointments }: SessionHistoryProps) {
   // No-shows hidden from client view per Eben's decision (not punitive).
-  const visible = appointments.filter(a => a.status !== 'no_show');
+  // GHL sends 'noshow' (no underscore) — the old 'no_show'-only filter never
+  // matched, so no-shows rendered as "Completed" via the default case.
+  const visible = appointments.filter(a => a.status !== 'noshow' && a.status !== 'no_show');
   const completedCount = visible.filter(a => a.status === 'completed' || a.status === 'showed' || a.status === 'confirmed').length;
 
   return (

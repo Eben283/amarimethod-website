@@ -36,6 +36,7 @@ const BASE = {
   referralCount: 0,
   rewardCode: null,
   hasLivingPractice: false,
+  initialPurchaseCount: 0,
 };
 
 // 1. Brand new — 0 sessions, no series
@@ -48,7 +49,9 @@ export const S1_BRAND_NEW: PortalDataResponse = {
 // 2. After initial — 1 session done, no series → upgrade offer
 // NOTE: payAsYouGo depends on lifetimeCompleted from appointments array, so must include past appt
 export const S2_AFTER_INITIAL: PortalDataResponse = {
-  client: { ...BASE, seriesType: 'none', sessionsCompleted: 1, sessionsRemaining: 0 },
+  // initialPurchaseCount: 1 — a PAID initial in the books is what unlocks the
+  // $225-credit upgrade cards (comped/paid-at-partner sessions don't).
+  client: { ...BASE, seriesType: 'none', sessionsCompleted: 1, sessionsRemaining: 0, initialPurchaseCount: 1 },
   appointments: [appt('a1', 'completed', 14)],
   upcomingAppointments: [],
 };

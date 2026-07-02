@@ -3,7 +3,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
-import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
+import { deriveLedger, hydrateOrders, classifyOrder, classifyInvoice } from "../lib/session-ledger.js";
 import { isContactRevoked } from "../lib/session-guard.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { getCustomField, isChecked, computeHasLivingPractice } from "../lib/portal-helpers.js";
@@ -240,6 +240,16 @@ export async function onRequestGet(context) {
     const ledgerConfidence = ledger.confidence; // 'high' | 'low'
     const ledgerSource = ledger.source; // 'orders+invoices+appointments' | 'empty'
 
+    // Purchase-derived gate for the $225-credit upgrade offer. The lifetime
+    // appointment count (the old gate) also counts comped partner-initials
+    // and paid-at-partner sessions with no GHL order — clients who never
+    // paid $225 through the books were shown "your $225 is already applied"
+    // and could underpay for the 4-pack via the open payment link.
+    const initialPurchaseCount = [
+      ...orders.map((o) => classifyOrder(o)),
+      ...invoices.map((i) => classifyInvoice(i)),
+    ].filter((c) => c.type === "initial").length;
+
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
     const hasLivingPractice = computeHasLivingPractice(lpRaw, contact.tags || [], seriesType);
@@ -321,6 +331,7 @@ export async function onRequestGet(context) {
           attendedAgainstPackage,
           ledgerConfidence,
           ledgerSource,
+          initialPurchaseCount,
           hasLivingPractice,
           portalAccess,
           isPartner,

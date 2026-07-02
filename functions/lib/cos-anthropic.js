@@ -247,7 +247,18 @@ export async function executeTool(context, toolName, input, user = "Eben") {
       let appointments = [];
       if (apptResp.ok) { const d = await apptResp.json(); appointments = d.events || d.appointments || []; }
       else ledgerFetchFailures.push(`appointments (${apptResp.status})`);
-      const ledger = deriveLedger({ contact: c, orders, invoices, appointments, fieldDefs: {}, fetchFailures: ledgerFetchFailures });
+      // Real fieldDefs, not {}: the low-confidence field fallback is inert
+      // with an empty map (GHL contact customFields carry only {id, value}).
+      const ledger = deriveLedger({
+        contact: c, orders, invoices, appointments,
+        fieldDefs: {
+          sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+          series_type: "3i93lTkmuAV49s9nh0q8",
+          session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+          sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+        },
+        fetchFailures: ledgerFetchFailures,
+      });
 
       return JSON.stringify({
         id: c.id,
