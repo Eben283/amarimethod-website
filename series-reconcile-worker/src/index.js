@@ -101,7 +101,16 @@ export default {
       const ids = single ? [single] : (batch ? batch.split(",").map((s) => s.trim()).filter(Boolean) : []);
       if (ids.length === 0) return jsonResponse({ error: "contactId or contactIds param required" }, 400);
       if (ids.length > 20) return jsonResponse({ error: "max 20 contacts per request" }, 400);
-      const results = await Promise.all(ids.map((id) => getContactCounts(env, id, {})));
+      // Chunked: each getContactCounts fans out 4 GHL calls + hydration —
+      // 20 unbounded was the 2026-06-03 staff-balances connection-cap
+      // incident pattern (errors degraded gracefully, but chunking avoids
+      // the failure entirely).
+      const results = [];
+      const COUNTS_CHUNK = 3;
+      for (let i = 0; i < ids.length; i += COUNTS_CHUNK) {
+        const part = await Promise.all(ids.slice(i, i + COUNTS_CHUNK).map((id) => getContactCounts(env, id, {})));
+        results.push(...part);
+      }
       return jsonResponse(single ? results[0] : { count: results.length, results });
     }
 

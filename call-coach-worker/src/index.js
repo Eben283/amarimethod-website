@@ -317,6 +317,14 @@ async function buildDigest(env, date) {
 
 // Transcribe one recording via Workers AI Whisper.
 async function transcribeCall(env, messageId) {
+  // Shared cache first — conversation-cache-worker populates transcript:{id};
+  // re-transcribing what it already did doubled the Whisper spend.
+  try {
+    const cached = await env.PORTAL_KV.get(`transcript:${messageId}`, "json");
+    if (cached?.text) return { transcript: cached.text, source: "kv-cache" };
+  } catch {
+    // fall through
+  }
   try {
     const stored = await fetchStoredTranscription(env, messageId);
     if (stored) return { transcript: stored, source: "ghl-stored" };
@@ -337,6 +345,10 @@ async function transcribeCall(env, messageId) {
     const out = await env.AI.run(WHISPER_MODEL, { audio: bytes });
     const text = (out?.text || "").trim();
     if (!text) return { transcript: null, source: "whisper", error: "empty transcript", bytes: rec.bytes };
+    // Write back to the shared cache (same key/shape conversation-cache
+    // writes) so it doesn't re-transcribe this call on its next sweep and
+    // tomorrow's coaching of the same contact sees the transcript.
+    await safePut(env, `transcript:${messageId}`, { messageId, text, source: "call-coach-whisper", date: new Date().toISOString() });
     return { transcript: text, source: "whisper", bytes: rec.bytes };
   } catch (err) {
     return { transcript: null, source: "whisper", error: `whisper failed: ${err.message}`, bytes: rec.bytes };

@@ -323,7 +323,7 @@ export async function staffCheckIn(
 }
 
 export type StaffAttestation =
-  | { found: false }
+  | { found: false; lookupFailed?: boolean }
   | {
       found: true;
       typedName: string;

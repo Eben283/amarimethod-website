@@ -739,7 +739,10 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
     }
 
     // Check 2: Active client in lead nurture
-    const isActive = fields.series_type && parseInt(fields.sessions_remaining, 10) > 0;
+    // Same predicate shape as auditTagConsistency's hasActiveSeries — the old
+    // truthiness check passed for the literal string "none", so à-la-carte
+    // buyers with a leftover quiz tag fired "active client" false positives.
+    const isActive = fields.series_type && fields.series_type !== "none" && parseInt(fields.sessions_remaining, 10) > 0;
     if (isActive && tags.includes("quiz submitted") && !tags.includes("workflow 3")) {
       issues.push(issue(
         "warning", "state_mismatch", contactId, name,

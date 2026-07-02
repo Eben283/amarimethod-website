@@ -226,7 +226,6 @@ export default function TodayPage() {
         <PayLinkSheet
           contactId={sellContactId}
           onClose={() => setSellContactId(null)}
-          hidePartnerLinks
         />
       )}
     </div>

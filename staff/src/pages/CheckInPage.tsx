@@ -45,7 +45,10 @@ export default function CheckInPage() {
       try {
         const [data, att] = await Promise.all([
           getContactDetail(id, false),
-          getStaffAttestation(id).catch(() => ({ found: false }) as StaffAttestation),
+          // lookupFailed keeps a 500/network error from silently presenting
+          // the signing form to an already-signed client (a duplicate record
+          // isn't destructive, but staff should know the check didn't run).
+          getStaffAttestation(id).catch(() => ({ found: false, lookupFailed: true }) as StaffAttestation),
         ]);
         if (!cancelled) {
           setClient(data);
@@ -133,6 +136,7 @@ export default function CheckInPage() {
   }
 
   const alreadySigned = attestation?.found === true;
+  const attestationLookupFailed = attestation !== null && attestation.found === false && 'lookupFailed' in attestation && attestation.lookupFailed === true;
 
   return (
     <div className="min-h-screen bg-amari-light-sand">
@@ -152,6 +156,12 @@ export default function CheckInPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+        {attestationLookupFailed && (
+          <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Couldn't verify whether policies were already signed (connection issue).
+            If this client signed before, no need to sign again — otherwise proceed.
+          </div>
+        )}
         {alreadySigned && attestation.found ? (
           <SignedView attestation={attestation} client={client} />
         ) : (

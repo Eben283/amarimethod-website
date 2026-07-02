@@ -177,11 +177,15 @@ export async function runCoherence(env, { nowMs, windowDays = DEFAULT_WINDOW_DAY
 
   const index = (await env.PORTAL_KV.get("conv:index", "json")) || {};
   const cutoffMs = nowMs - windowDays * 86_400_000;
-  const candidates = Object.entries(index)
+  // Sort by recency before capping — the unsorted slice depended on JSON key
+  // order, so with >MAX_CONTACTS active the same tail could be silently
+  // excluded forever. Record the truncation so /status can't hide it.
+  const eligible = Object.entries(index)
     .filter(([, lastMessageDate]) => Number(lastMessageDate) >= cutoffMs)
-    .map(([contactId]) => contactId)
-    .slice(0, MAX_CONTACTS);
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  const candidates = eligible.slice(0, MAX_CONTACTS).map(([contactId]) => contactId);
   lastRun.candidates = candidates.length;
+  lastRun.truncated = Math.max(0, eligible.length - candidates.length);
 
   const summaryItems = [];
   await mapLimit(candidates, CONCURRENCY, async (contactId) => {

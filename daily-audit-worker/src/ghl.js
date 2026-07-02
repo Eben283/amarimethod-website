@@ -67,18 +67,26 @@ export function todayPacific() {
 }
 
 export function dateToRange(dateStr) {
+  // End = next day's Pacific midnight − 1ms, NOT start + 24h: the fall-back
+  // DST day is 25 hours, so a fixed 24h window left an uninspected 11pm-
+  // midnight PT hour between consecutive daily ranges (2026-07-02 audit).
+  const dayStartMs = (y, mo, d) => {
+    const probe = new Date(Date.UTC(y, mo - 1, d, 20, 0, 0));
+    const ptHour = Number(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: PT,
+        hour: "2-digit",
+        hour12: false,
+      }).format(probe)
+    );
+    return Date.UTC(y, mo - 1, d, 20 - ptHour, 0, 0);
+  };
   const [year, month, day] = dateStr.split("-").map(Number);
-  const probe = new Date(Date.UTC(year, month - 1, day, 20, 0, 0));
-  const ptHour = Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: PT,
-      hour: "2-digit",
-      hour12: false,
-    }).format(probe)
-  );
-  const utcHourForMidnight = 20 - ptHour;
-  const startMs = Date.UTC(year, month - 1, day, utcHourForMidnight, 0, 0);
-  return { startTime: startMs, endTime: startMs + 86_400_000 - 1 };
+  const startTime = dayStartMs(year, month, day);
+  const next = new Date(Date.UTC(year, month - 1, day));
+  next.setUTCDate(next.getUTCDate() + 1);
+  const endTime = dayStartMs(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()) - 1;
+  return { startTime, endTime };
 }
 
 // ── Calendar & appointment fetching ──

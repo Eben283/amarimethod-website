@@ -16,21 +16,14 @@ const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; pri
   { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
 ];
 
-export const PARTNER_LINKS = [
-  { value: 'partnership-session', label: 'Partnership Session Link' },
-  { value: 'partnership-toolkit', label: 'Partnership Toolkit' },
-];
-
 export default function PayLinkSheet({
   contactId,
   onClose,
   onLinkSent,
-  hidePartnerLinks = false,
 }: {
   contactId: string;
   onClose: () => void;
   onLinkSent?: (note: string) => void;
-  hidePartnerLinks?: boolean;
 }) {
   const [status, setStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [showMore, setShowMore] = useState(false);
@@ -48,11 +41,6 @@ export default function PayLinkSheet({
     }
   }
 
-  function handlePartnerLink(label: string) {
-    onLinkSent?.(`Sent ${label}`);
-    onClose();
-  }
-
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
@@ -66,29 +54,6 @@ export default function PayLinkSheet({
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        {!hidePartnerLinks && (
-          <>
-            <div className="space-y-2 mb-3">
-              {PARTNER_LINKS.map(({ value, label }) => (
-                <div
-                  key={value}
-                  className="flex items-center justify-between rounded-xl border border-amari-border px-3 py-2.5"
-                >
-                  <span className="text-sm font-medium text-amari-charcoal">{label}</span>
-                  <button
-                    type="button"
-                    onClick={() => handlePartnerLink(label)}
-                    className="rounded-lg px-3 py-1.5 text-xs font-medium bg-amari-charcoal text-white"
-                  >
-                    Send
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="mb-3 border-t border-amari-border" />
-          </>
-        )}
 
         <div className="space-y-2">
           {visible.map(({ product, label, price }) => {

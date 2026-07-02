@@ -92,14 +92,21 @@ export function yesterdayPacific() {
 
 // Convert a YYYY-MM-DD (Pacific) into a UTC epoch-ms day range.
 export function dateToRange(dateStr) {
+  // End = next day's Pacific midnight − 1ms (25h fall-back DST day — see
+  // daily-audit's copy of this fix, 2026-07-02 audit).
+  const dayStartMs = (y, mo, d) => {
+    const probe = new Date(Date.UTC(y, mo - 1, d, 20, 0, 0));
+    const ptHour = Number(
+      new Intl.DateTimeFormat("en-US", { timeZone: PT, hour: "2-digit", hour12: false }).format(probe)
+    );
+    return Date.UTC(y, mo - 1, d, 20 - ptHour, 0, 0);
+  };
   const [year, month, day] = dateStr.split("-").map(Number);
-  const probe = new Date(Date.UTC(year, month - 1, day, 20, 0, 0));
-  const ptHour = Number(
-    new Intl.DateTimeFormat("en-US", { timeZone: PT, hour: "2-digit", hour12: false }).format(probe)
-  );
-  const utcHourForMidnight = 20 - ptHour;
-  const startMs = Date.UTC(year, month - 1, day, utcHourForMidnight, 0, 0);
-  return { startMs, endMs: startMs + 86_400_000 - 1 };
+  const startMs = dayStartMs(year, month, day);
+  const next = new Date(Date.UTC(year, month - 1, day));
+  next.setUTCDate(next.getUTCDate() + 1);
+  const endMs = dayStartMs(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate()) - 1;
+  return { startMs, endMs };
 }
 
 // ── Conversation / message fetching ──
@@ -125,6 +132,13 @@ async function fetchMessages(env, conversationId, limit = 100) {
 export async function fetchRelationshipBundles(env, startMs, endMs, { minCallDuration = 10, maxConversations = 60, maxThread = 40, maxCalls = 6 } = {}) {
   const search = await ghlFetch(env, `/conversations/search?limit=${maxConversations}`);
   const conversations = search.conversations || [];
+  if (conversations.length >= maxConversations) {
+    // A full page means the window filter below ran over a TRUNCATED view —
+    // contacts with genuine yesterday activity may silently miss coaching.
+    // (conversation-cache paginates this endpoint properly; if this warning
+    // starts appearing, port its startAfterDate loop here.)
+    console.warn(`[call-coach] /conversations/search returned a full page (${conversations.length}) — enumeration may be truncated; some active contacts could be skipped`);
+  }
 
   // Pre-filter to conversations touched at/after the window start — those are the
   // ones with something new. We still read each one's full history below.
@@ -219,6 +233,10 @@ export async function fetchContactRelationship(env, contactId, { maxThread = 40,
       const outbound = isOutbound(m);
       if (isCallType(t)) {
         const dur = m.meta?.call?.duration || 0;
+        // Same min-duration filter batch 0 applies (fetchRelationshipBundles
+        // minCallDuration=10) — without it, a 0-second missed call could be
+        // the "latest call" that gets flagged as the transcription trigger.
+        if (dur < 10) continue;
         calls.push({ messageId: m.id, direction: outbound ? "outbound" : "inbound", duration: dur, date: m.dateAdded || m.date, isTrigger: false });
       } else if (isSmsType(t) || isEmailType(t)) {
         const body = (m.body || m.message || "").toString();

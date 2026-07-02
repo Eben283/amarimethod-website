@@ -56,6 +56,20 @@ export async function onRequestGet(context) {
     return json({ error: 'calendarId, startDate, and endDate are required' }, 400, origin);
   }
 
+  // Allow-list: the portal only books the two follow-up calendars (plus the
+  // two initial calendars used by the /book pages). Any authenticated client
+  // could previously enumerate free/busy for ANY calendar id (partner,
+  // entrainment, discovery) — availability data only, but no reason to allow it.
+  const SLOT_CALENDAR_ALLOWLIST = new Set([
+    'ZO1jlGfy01rsxVqicoSB', // Follow-up — In Person (Package)
+    'bJFkhVP35Ecwh4tLnSmy', // Follow-up — Virtual (Package)
+    'G7OAnnJuFbMF6nQSlZVQ', // Initial — In Person
+    'ySmht5hx4uZGEpgZrlCw', // Initial — Virtual
+  ]);
+  if (!SLOT_CALENDAR_ALLOWLIST.has(calendarId)) {
+    return json({ error: 'Unknown calendar' }, 400, origin);
+  }
+
   // Convert YYYY-MM-DD to epoch ms for GHL.
   // Cloudflare Workers run in UTC, so T00:00:00 parses as UTC midnight.
   // Extend endDate by 12 hours so that late-day slots in western timezones

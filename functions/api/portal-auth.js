@@ -210,16 +210,22 @@ export async function onRequestPost(context) {
       JWT_SECRET
     );
 
-    // Store nonce in KV for single-use validation (if KV is available)
+    // Store nonce in KV for single-use validation. This must SUCCEED before
+    // we send the link: portal-verify treats a missing nonce as a replay and
+    // rejects, so continuing past a failed put issued a link that always said
+    // "already been used" (2026-07-02 audit — the old comment claimed the
+    // check was optional; the verify side disagrees, correctly).
     if (context.env.PORTAL_KV) {
       try {
         await context.env.PORTAL_KV.put(`nonce:${nonce}`, "valid", {
           expirationTtl: 86400, // 24 hours
         });
-        console.log(`[portal-auth] Nonce stored in KV`);
       } catch (kvErr) {
-        console.error(`[portal-auth] KV put error: ${kvErr.message}`);
-        // Continue anyway — nonce check is optional
+        console.error(`[portal-auth] Nonce KV put failed — not sending a dead link: ${kvErr.message}`);
+        return new Response(
+          JSON.stringify({ error: "We couldn't create your sign-in link just now. Please try again in a minute." }),
+          { status: 500, headers },
+        );
       }
     }
 
