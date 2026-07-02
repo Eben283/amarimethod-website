@@ -45,10 +45,16 @@ const KV_NEEDS_REVIEW_PREFIX = "field-sync:needsReview:";
 // contact doesn't have).
 export const REMOVE_TAGS = ["discovery call attended", "quiz submitted", "ambassador-prospect"];
 
-// Idempotency key in PURCHASE_KV. Mirrors the key the Pages-function backup
-// webhook uses (functions/api/ghl-purchase-webhook.js), so the two systems
-// can't double-apply on the same order.
+// Idempotency keys in PURCHASE_KV. The worker's own records live under
+// `processed:<orderId>`; the Pages-function backup webhook
+// (functions/api/ghl-purchase-webhook.js) records under `order:<orderId>` —
+// a DIFFERENT prefix. A 2026-07-02 audit found the old comment here claimed
+// they shared a key; they never did, so the worker must read BOTH and write
+// BOTH for the two systems to actually dedupe each other. (The webhook's
+// D1-first path is currently inert — the amari-attendance database has no
+// tables — so its KV fallback key is the live signal.)
 export const purchaseKvKey = (orderId) => `processed:${orderId}`;
+export const webhookKvKey = (orderId) => `order:${orderId}`;
 
 function readField(contact, fieldId) {
   const cf = (contact.customFields || []).find((x) => x.id === fieldId);
@@ -127,12 +133,33 @@ export async function reconcileOrder(env, orderDetail) {
     return { status: "skip-no-contact", orderId };
   }
 
-  // Idempotency: have we processed this order before (either by us or by the
-  // Pages-function backup webhook)?
+  // Idempotency: have we processed this order before — by us (processed:) OR
+  // by the Pages-function backup webhook (order:)? Both keys, both systems.
   const kvKey = purchaseKvKey(orderId);
-  const existing = await env.PURCHASE_KV.get(kvKey);
+  const webhookKey = webhookKvKey(orderId);
+  const [existing, webhookExisting] = await Promise.all([
+    env.PURCHASE_KV.get(kvKey),
+    env.PURCHASE_KV.get(webhookKey),
+  ]);
   if (existing) {
     return { status: "skip-already-processed", orderId, package: pkg.name, contactId, processedAt: existing };
+  }
+  if (webhookExisting) {
+    // The webhook applied this order. Back-fill our own marker so the next
+    // hourly scan skips on the first read, then skip without touching the
+    // contact — the field-state check below was the only guard here before,
+    // and the additive 4→8 upgrade can race past it.
+    await env.PURCHASE_KV.put(
+      kvKey,
+      JSON.stringify({
+        reconciledAt: new Date().toISOString(),
+        by: "series-reconcile-worker",
+        action: "marked-idempotent",
+        reason: "already processed by the purchase webhook (order: key)",
+      }),
+      { expirationTtl: 90 * 86400 }
+    );
+    return { status: "skip-already-processed", orderId, package: pkg.name, contactId, processedAt: webhookExisting };
   }
 
   // Read the contact and check current state. If the field set already matches
@@ -309,6 +336,18 @@ export async function reconcileOrder(env, orderDetail) {
       sessionsRemaining: newRemaining,
       remainingSource,
       tagsRemoved,
+    }),
+    { expirationTtl: 90 * 86400 }
+  );
+  // Also stamp the WEBHOOK's key so its KV idempotency path skips this order
+  // if the (late) webhook delivery arrives after we applied — without this,
+  // only the webhook's field-state logic stood between a worker-applied
+  // additive upgrade and a second credit.
+  await env.PURCHASE_KV.put(
+    webhookKey,
+    JSON.stringify({
+      processedAt: new Date().toISOString(),
+      by: "series-reconcile-worker",
     }),
     { expirationTtl: 90 * 86400 }
   );

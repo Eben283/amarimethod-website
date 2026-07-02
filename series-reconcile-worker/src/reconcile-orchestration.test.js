@@ -133,10 +133,13 @@ describe('reconcileOrder — write orchestration', () => {
     ]));
     expect(res.remainingSource).toBe('ledger'); // came from deriveLedger, not the fallback formula
     expect(addContactNote).toHaveBeenCalledTimes(1);
-    // Idempotency lock written under the shared prefix so the webhook can't double-apply.
+    // BOTH idempotency keys written: the worker's own (processed:) AND the
+    // webhook's (order:). The two systems use different prefixes — the old
+    // comment claimed a shared prefix that never existed, so a worker-applied
+    // order left the webhook free to double-apply (2026-07-02 audit).
     expect(env.PURCHASE_KV.put).toHaveBeenCalled();
-    expect(env.PURCHASE_KV.put.mock.calls[0][0]).toBe('processed:order-1');
     expect(JSON.parse(env.store['processed:order-1']).action).toBe('applied');
+    expect(env.store['order:order-1']).toBeTruthy();
     // No review flag — deriveLedger was confident, nothing to surface.
     expect(env.PORTAL_KV.put).not.toHaveBeenCalled();
   });
@@ -195,6 +198,22 @@ describe('reconcileOrder — write orchestration', () => {
     expect(res.status).toBe('skip-already-processed');
     expect(patchContact).not.toHaveBeenCalled();
     expect(addContactNote).not.toHaveBeenCalled();
+  });
+
+  it("skips when the WEBHOOK already processed the order (order: prefix) and back-fills the worker's own marker", async () => {
+    // The purchase webhook records idempotency under `order:<id>`, not
+    // `processed:<id>`. Before 2026-07-02 the worker never read that key, so
+    // a webhook-processed order was only protected by the field-state check —
+    // which the additive 4→8 upgrade can race past.
+    const env = makeEnv({ 'order:order-1': JSON.stringify({ processedAt: '2026-07-02T10:00:00Z' }) });
+    const res = await reconcileOrder(env, order());
+
+    expect(res.status).toBe('skip-already-processed');
+    expect(patchContact).not.toHaveBeenCalled();
+    expect(addContactNote).not.toHaveBeenCalled();
+    // Own marker back-filled so next hour's scan skips on the first read.
+    expect(env.store['processed:order-1']).toBeTruthy();
+    expect(JSON.parse(env.store['processed:order-1']).reason).toMatch(/webhook/i);
   });
 
   it('skips a non-package order (e.g. a single initial) without touching the contact or KV', async () => {

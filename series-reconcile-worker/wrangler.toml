@@ -13,10 +13,12 @@ crons = ["0 * * * *"]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
 
-# PURCHASE_KV holds idempotency records (processed:<orderId>) — same namespace
-# the Pages-function backup webhook (functions/api/ghl-purchase-webhook.js)
-# already uses. Reconciler reads + writes the same keys so the two systems
-# can't double-apply.
+# PURCHASE_KV holds idempotency records — same namespace the Pages-function
+# backup webhook (functions/api/ghl-purchase-webhook.js) uses, but DIFFERENT
+# key prefixes: worker writes processed:<orderId>, webhook writes
+# order:<orderId>. Since 2026-07-02 the reconciler reads AND writes both
+# prefixes so the two systems actually dedupe each other (the old comment
+# claimed a shared key that never existed).
 [[kv_namespaces]]
 binding = "PURCHASE_KV"
 id = "b8ef627521e04f5998a707d4a8f1935c"
