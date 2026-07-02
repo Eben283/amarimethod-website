@@ -567,12 +567,12 @@ document.addEventListener('click', function(e) {
       'flex-wrap:wrap',
       'padding:10px 44px 10px 16px',
       'position:relative',
-      'background:var(--bg-secondary, #F6F3E9)',
-      'color:var(--color-text, #252525)',
+      'background:#252525',
+      'color:rgba(255,255,255,.92)',
       'font-family:var(--font-sans-primary, sans-serif)',
       'font-size:14px',
       'text-align:center',
-      'border-bottom:1px solid var(--color-border, #F0EADC)'
+      'border-bottom:none'
     ].join(';');
 
     var text = document.createElement('span');
@@ -581,12 +581,12 @@ document.addEventListener('click', function(e) {
     var link = document.createElement('a');
     link.href = '/elbow-study';
     link.textContent = 'Learn more';
-    link.style.cssText = 'color:var(--color-accent-warm, #C56B4E);font-weight:600;text-decoration:underline;white-space:nowrap;';
+    link.style.cssText = 'color:#EBA584;font-weight:600;text-decoration:underline;white-space:nowrap;';
 
     var close = document.createElement('button');
     close.setAttribute('aria-label', 'Dismiss');
     close.textContent = '×';
-    close.style.cssText = 'position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--color-text-muted, #666);padding:4px 8px;';
+    close.style.cssText = 'position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:rgba(255,255,255,.7);padding:4px 8px;';
     close.addEventListener('click', function() {
       banner.remove();
       localStorage.setItem(DISMISS_KEY, '1');
