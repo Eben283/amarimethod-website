@@ -571,7 +571,18 @@ async function checkTokenRefresh(env) {
     });
   }
 
-  if (summary.tokenLost) {
+  // Latched token-lost marker — checked SEPARATELY from lastRun because
+  // lastRun is overwritten every cron: a token-lost event followed by a
+  // routine failed attempt would otherwise downgrade to a generic error
+  // before this audit reads it. The token worker clears the latch only on a
+  // fully-persisted successful refresh.
+  let tokenLostLatch = null;
+  try {
+    const latchRaw = await env.PORTAL_KV.get("ops:ghl-token-refresh:tokenLost");
+    if (latchRaw) { try { tokenLostLatch = JSON.parse(latchRaw); } catch { tokenLostLatch = { at: "unknown" }; } }
+  } catch { /* non-fatal — the summary.tokenLost branch below still covers the freshest run */ }
+
+  if (tokenLostLatch || summary.tokenLost) {
     // Distinct from a routine failed attempt: the rotation SUCCEEDED at GHL
     // but the result was never persisted, so the stored refresh token is
     // likely dead and every GHL consumer bricks at the next refresh. This
@@ -581,7 +592,7 @@ async function checkTokenRefresh(env) {
       severity: "critical",
       area: "infra",
       kind: "ghl-token-refresh-token-lost",
-      message: `ghl-token-refresh reported TOKEN-LOST: ${summary.error || "rotation succeeded but KV persist failed"}. The stored refresh token is likely dead — manual GHL re-auth will be required.`,
+      message: `ghl-token-refresh reported TOKEN-LOST${tokenLostLatch?.at ? ` at ${tokenLostLatch.at}` : ""}: ${summary.error || tokenLostLatch?.detail || "rotation succeeded but KV persist failed"}. The stored refresh token is likely dead — manual GHL re-auth will be required.`,
       lastRun: summary.finishedAt,
     });
   } else if (summary.status === "error") {

@@ -10,6 +10,7 @@
 // endpoint) as separate requests — each within its own budget. Read-only.
 
 import { ghlFetch } from "../lib/ghl.js";
+import { parsePacificWallClock } from "../lib/datetime.js";
 import { SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
 import { clientNameFromTitle } from "../lib/owed-list.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
@@ -53,7 +54,9 @@ export async function onRequestGet(context) {
       for (const e of events) {
         const cid = e.contactId;
         if (!cid) continue;
-        const startMs = new Date(e.startTime || e.start_time || 0).getTime();
+        // Naive-Pacific parse (2026-07-02 audit) — raw UTC parse shifted
+        // same-day sessions into the past from ~8am PT.
+        const startMs = parsePacificWallClock(e.startTime || e.start_time || "");
         const status = (e.appointmentStatus || e.status || "").toLowerCase();
         const cur = byContact.get(cid) || { name: null, attended: 0, lastMs: 0 };
         if (ATTENDED.has(status) && Number.isFinite(startMs) && startMs < now) cur.attended += 1;

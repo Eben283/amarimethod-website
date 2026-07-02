@@ -7,6 +7,7 @@ import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { listPaymentRecordsForContact } from "../lib/session-payment.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { parsePacificWallClock } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -409,7 +410,9 @@ export async function onRequestGet(context) {
     const derivedSessionsCompleted = rawAppointments.filter((a) => {
       const status = (a.appointmentStatus || a.status || "").toLowerCase();
       if (!["completed", "showed", "confirmed"].includes(status)) return false;
-      const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+      // Naive-Pacific parse — a raw UTC parse counted same-day future
+      // sessions as completed from ~8am PT (2026-07-02 audit).
+      const startMs = parsePacificWallClock(a.startTime || a.start_time || "");
       if (!Number.isFinite(startMs) || startMs >= nowMsLifetime) return false;
       const title = (a.title || "") + " " + (a.calendarName || "");
       return countsTowardLifetime(title);

@@ -3,6 +3,7 @@
 
 import { ghlFetch, fetchAppointmentsForDate, LOCATION_ID } from "./ghl.js";
 import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
+import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 
 // ── Product mapping ──
 // Derived from the single source of truth (functions/lib/ghl-products.js →
@@ -580,7 +581,9 @@ export async function auditCommunications({ cache, appointments }) {
     if (!conv || conv === "scope_missing" || !Array.isArray(conv)) continue;
 
     const allMsgs = conv.flatMap((t) => t.messages || []);
-    const apptStart = new Date(appt.startTime);
+    // Naive-Pacific parse — message dates are real UTC instants, so the
+    // reminder window around a raw-UTC-parsed start was shifted 7-8h.
+    const apptStart = new Date(parsePacificWallClock(appt.startTime || ""));
 
     // Pre-session reminder check (12-48h before)
     const twoDaysBefore = new Date(apptStart.getTime() - 48 * 60 * 60 * 1000);

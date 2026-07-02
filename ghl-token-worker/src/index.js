@@ -9,6 +9,12 @@ const KV_ACCESS_TOKEN = "ghl_access_token";
 const KV_REFRESH_TOKEN = "ghl_refresh_token";
 const KV_TOKEN_EXPIRY = "ghl_token_expiry";
 const KV_LAST_RUN_KEY = "ops:ghl-token-refresh:lastRun";
+// Latched (NOT overwritten by later runs) token-lost marker. lastRun is
+// rewritten every cron, so a token-lost event followed by a routine failed
+// attempt would downgrade back to a generic error before the daily audit
+// reads it. This key persists until a refresh SUCCEEDS (which proves the
+// stored token chain is healthy again).
+const KV_TOKEN_LOST_KEY = "ops:ghl-token-refresh:tokenLost";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -157,12 +163,26 @@ async function refreshTokens(env) {
       okAccess && okRefresh ? await putWithRetry(KV_TOKEN_EXPIRY, String(newExpiry)) : false;
     if (!okAccess || !okRefresh || !okExpiry) {
       console.error("[token-refresh] CRITICAL: rotation succeeded at GHL but KV persist failed — stored refresh token may be dead");
+      // Latch the event (best-effort — KV is already misbehaving here, but a
+      // partial outage may still let this small put through).
+      try {
+        await kv.put(KV_TOKEN_LOST_KEY, JSON.stringify({
+          at: new Date().toISOString(),
+          detail: `persist results access=${okAccess} refresh=${okRefresh} expiry=${okExpiry}`,
+        }));
+      } catch (latchErr) {
+        console.error(`[token-refresh] token-lost latch write also failed: ${latchErr.message}`);
+      }
       return {
         success: false,
         tokenLost: true,
         error: "CRITICAL token-lost: GHL rotation succeeded but KV persist failed — manual re-auth likely required",
       };
     }
+
+    // A fully-persisted successful refresh proves the token chain is healthy —
+    // clear any latched token-lost marker from a previous incident.
+    try { await kv.delete(KV_TOKEN_LOST_KEY); } catch { /* non-fatal */ }
 
     const hoursUntilExpiry = (expiresIn / 3600).toFixed(1);
     console.log(`[token-refresh] Success — new token expires in ${hoursUntilExpiry}h`);

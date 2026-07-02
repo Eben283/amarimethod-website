@@ -23,7 +23,7 @@
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
-import { appointmentEndTime } from "../lib/datetime.js";
+import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -170,7 +170,9 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
       const now = Date.now();
       const existing = appointments.find((a) => {
         if (!INITIAL_CALENDAR_IDS.includes(a.calendarId)) return false;
-        const startMs = new Date(a.startTime).getTime();
+        // Naive-Pacific parse: a raw UTC parse made a later-today initial
+        // read as PAST from ~8am PT, so the future-booking check missed it.
+        const startMs = parsePacificWallClock(a.startTime || "");
         if (!Number.isFinite(startMs) || startMs < now) return false;
         const status = (a.appointmentStatus || "").toLowerCase();
         if (status === "cancelled" || status === "noshow") return false;

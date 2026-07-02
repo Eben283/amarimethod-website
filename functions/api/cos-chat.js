@@ -9,6 +9,7 @@ import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenue
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
 import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
+import { parsePacificWallClock } from "../lib/datetime.js";
 
 // Ledger-relevant custom field IDs (same constants as staff-mark-attended.js
 // FIELD_IDS / series-reconcile sync.js) — deriveLedger's field fallback needs
@@ -456,7 +457,10 @@ async function getGhlSummary(context) {
     if (upcoming.length > 0) {
       lines.push(`Today's appointments: ${upcoming.length}`);
       for (const e of upcoming.slice(0, 8)) {
-        const time = e.startTime ? new Date(e.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "TBD";
+        // parsePacificWallClock: GHL startTime is naive Pacific — a raw parse
+        // treated it as UTC and the LA re-format shifted every time 7-8h.
+        const eMs = parsePacificWallClock(String(e.startTime || ""));
+        const time = Number.isFinite(eMs) ? new Date(eMs).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "TBD";
         lines.push(`- ${time}: ${e.title || "Session"} — ${e.contactName || "Unknown"} (${e.appointmentStatus})`);
       }
     } else {
@@ -604,12 +608,15 @@ async function lookupContact(context, name) {
     const title = appt.title || appt.calendarName || "";
     const status = appt.appointmentStatus || appt.status || "unknown";
     const startTime = appt.startTime || appt.start_time || "";
+    // parsePacificWallClock: naive-Pacific startTime parsed raw shifted the
+    // LA-formatted date/time by 7-8h and broke isToday around day boundaries.
+    const startMsEntry = parsePacificWallClock(String(startTime || ""));
     const entry = {
-      date: startTime ? new Date(startTime).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" }) : "Unknown",
-      time: startTime ? new Date(startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "",
+      date: Number.isFinite(startMsEntry) ? new Date(startMsEntry).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" }) : "Unknown",
+      time: Number.isFinite(startMsEntry) ? new Date(startMsEntry).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "",
       title,
       status,
-      isToday: startTime && new Date(startTime).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }) === todayKey(),
+      isToday: Number.isFinite(startMsEntry) && new Date(startMsEntry).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" }) === todayKey(),
     };
 
     if (discoveryPatterns.test(title)) {

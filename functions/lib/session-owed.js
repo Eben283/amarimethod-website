@@ -12,6 +12,7 @@
 // constant, so there are no unknowns going forward and the count math is exact.
 
 import { SERIES_CALENDAR_IDS } from './session-ledger.js';
+import { parsePacificWallClock } from './datetime.js';
 
 const ATTENDED = new Set(['showed', 'completed']);
 
@@ -25,7 +26,9 @@ export function countBillableSessionsAttended(appointments, nowMs = Date.now()) 
     if (!SERIES_CALENDAR_IDS.has(a.calendarId)) continue;
     const status = (a.appointmentStatus || a.status || '').toLowerCase();
     if (!ATTENDED.has(status)) continue;
-    const startMs = new Date(a.startTime || a.start_time || 0).getTime();
+    // parsePacificWallClock: GHL startTime is naive Pacific — a UTC parse
+    // counted same-day FUTURE sessions as attended from ~8am PT.
+    const startMs = parsePacificWallClock(a.startTime || a.start_time || "");
     if (!Number.isFinite(startMs) || startMs >= nowMs) continue; // past only
     n += 1;
   }
