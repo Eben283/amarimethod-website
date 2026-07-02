@@ -15,12 +15,35 @@ export function formatDate(dateString: string): string {
   });
 }
 
+const PACIFIC_TZ = 'America/Los_Angeles';
+
+function viewerZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || PACIFIC_TZ;
+  } catch {
+    return PACIFIC_TZ;
+  }
+}
+
+/**
+ * Times render in the VIEWER's timezone (the correct instant — server
+ * timestamps carry real offsets since 2026-07-02). The studio runs on
+ * Pacific: for a viewer whose device is set to any other zone, append an
+ * explicit label ("6:00 PM EDT") so a converted time can't be misread as an
+ * unlabeled studio time. Pacific viewers see the same clean "3:00 PM" as
+ * always.
+ */
 export function formatTime(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
+  const time = date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
   });
+  if (viewerZone() === PACIFIC_TZ) return time;
+  const zone = new Intl.DateTimeFormat('en-US', { timeZoneName: 'short' })
+    .formatToParts(date)
+    .find((p) => p.type === 'timeZoneName')?.value;
+  return zone ? `${time} ${zone}` : time;
 }
 
 export function formatDateTime(dateString: string): string {
