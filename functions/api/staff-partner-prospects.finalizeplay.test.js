@@ -193,6 +193,23 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.phoneProvenance).toBe('proven');
   });
 
+  it('overlayCard: an enrichment-URL-only import (real email, no source) still routes to LinkedIn', () => {
+    // The grading-pass gap (2026-07-03): Dante Jeavon / James Fish / Rich Yokota /
+    // Daivya Allmond carry real-looking emails and an empty source — only the
+    // partner_linkedin_url enrichment field marks them as imports.
+    const urlOnly = buildCard({
+      firstName: 'James', lastName: 'Fish', role: 'Trainer', lineType: 'mobile',
+      email: 'james.fish@gmail.com', source: null,
+      linkedinUrl: 'https://linkedin.com/in/james-fish-sf',
+      thread: [],
+    }, NOW);
+    const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
+    const d = overlayCard(base, urlOnly);
+    expect(d.channel).toBe('linkedin');
+    expect(d.action).toBe('linkedin');
+    expect(d.phoneProvenance).toBe('unverified');
+  });
+
   it('finalizePlay: never rewrites a LinkedIn-routed card into a discovery call', () => {
     // An unverified facility contact would normally be forced onto discovery
     // ("call and ask who handles partnerships") — but the number is the thing

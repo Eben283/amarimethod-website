@@ -79,10 +79,17 @@ function provesPhone(m) {
 
 // 'verified' (explicit flag/tag) > 'proven' (engagement on the number) >
 // 'unverified' (import research, never touch it) > 'on-file' (normal contact).
+// Import signals, any one of which marks the phone as research (2026-07-03
+// grading pass: some imports carry a real-looking email and an empty source —
+// their ONLY LinkedIn signal is the enrichment URL, partner_linkedin_url):
+//   1. placeholder email  2. LinkedIn source  3. LinkedIn enrichment URL on file.
 function phoneProvenanceOf(d, thread) {
   if (d.outreachVerified || d.dmVerified || d.isSolo) return "verified";
   if (thread.some(provesPhone)) return "proven";
-  const imported = PLACEHOLDER_EMAIL_RE.test(d.email || "") || LINKEDIN_SOURCE_RE.test(d.source || "");
+  const imported =
+    PLACEHOLDER_EMAIL_RE.test(d.email || "") ||
+    LINKEDIN_SOURCE_RE.test(d.source || "") ||
+    !!String(d.linkedinUrl || "").trim();
   return imported ? "unverified" : "on-file";
 }
 const DAY_MS = 86_400_000;
@@ -109,7 +116,7 @@ function agoLabel(d) {
  *
  * dossier = {
  *   firstName, lastName, fullName, role, business, lineType, rundown,
- *   email, source,                        // provenance signals (placeholder / LinkedIn import)
+ *   email, source, linkedinUrl,           // provenance signals (placeholder / LinkedIn import)
  *   outreachVerified, dmVerified, isSolo, // verification overrides (spec §2)
  *   thread: [{ direction:'inbound'|'outbound', type:'SMS'|'CALL'|'EMAIL',
  *              body, callDuration, hasTranscript, date }],

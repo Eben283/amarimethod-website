@@ -274,11 +274,13 @@ function buildContactDossier(p, conv, lineTypeMap) {
     lineType:  lt,
     rundown:   p.rundown || conv?.rundown || null,
     thread:    conv ? (conv.touches || []).map(compactToThread) : [],
-    // Phone provenance signals: a placeholder email (*@amari-prospect.placeholder) or a
-    // LinkedIn partner_source marks the number as unverified import research — buildCard
-    // routes those to LinkedIn instead of trusting the phone (the 2026-07-02 wrong-number fix).
-    email:     p.email || conv?.email || null,
-    source:    p.partnerSource || null,
+    // Phone provenance signals: a placeholder email (*@amari-prospect.placeholder), a
+    // LinkedIn partner_source, or a LinkedIn enrichment URL on file marks the number as
+    // unverified import research — buildCard routes those to LinkedIn instead of trusting
+    // the phone (2026-07-02 wrong-number fix; URL-only gap closed 2026-07-03).
+    email:       p.email || conv?.email || null,
+    source:      p.partnerSource || null,
+    linkedinUrl: p.linkedinUrl || null,
     // Verification overrides (spec §2): an explicitly confirmed contact is trusted even
     // with a placeholder email. Solo trainers ARE the decision-maker — never discovery.
     outreachVerified: !!p.outreachVerified,

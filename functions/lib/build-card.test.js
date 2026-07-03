@@ -265,6 +265,65 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
     expect(c.why).not.toMatch(/^(Call|Text) /);
   });
 
+  // ── enrichment-URL-only imports (grading-pass gap, 2026-07-03) ──
+  // Some LinkedIn-sourced contacts carry a REAL-looking email and an empty source —
+  // their only LinkedIn signal is the enrichment URL (partner_linkedin_url, backfilled
+  // by ops/scripts/backfill-partner-linkedin-urls.mjs). Their phone still came from
+  // import research, so a URL with no verified/proven signal must route to LinkedIn
+  // exactly like the placeholder-email shape.
+  it.each([
+    ['Dante', 'Jeavon', 'dante@jeavonfitness.com', 'https://www.linkedin.com/in/dante-jeavon'],
+    ['James', 'Fish', 'james.fish@gmail.com', 'https://linkedin.com/in/james-fish-sf'],
+    ['Rich', 'Yokota', 'rich@yokotagolf.com', 'https://www.linkedin.com/in/rich-yokota'],
+    ['Daivya', 'Allmond', 'daivya.allmond@outlook.com', 'https://www.linkedin.com/in/daivya-allmond'],
+  ])('%s %s: LinkedIn URL + real email + no source → still unverified, LinkedIn route', (firstName, lastName, email, linkedinUrl) => {
+    const c = buildCard({
+      firstName, lastName, role: 'Trainer', lineType: 'mobile',
+      email, source: null, linkedinUrl,
+      thread: [
+        msg({ type: 'SMS', body: `Hi ${firstName}, Garrett here.`, date: '2026-06-15T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.channel).toBe('linkedin');
+    expect(c.facts.phoneProvenance).toBe('unverified');
+    expect(c.facts.phoneNote).toMatch(/phone unverified/i);
+    expect(c.why).not.toMatch(/^(Call|Text) /);
+  });
+
+  it('a LinkedIn URL does not lock out a PROVEN number (they replied on it)', () => {
+    const c = buildCard({
+      firstName: 'Dante', lastName: 'Jeavon', role: 'Trainer', lineType: 'mobile',
+      email: 'dante@jeavonfitness.com', linkedinUrl: 'https://www.linkedin.com/in/dante-jeavon',
+      thread: [
+        msg({ type: 'SMS', body: 'Hi Dante, Garrett here.', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Hey Garrett, yes tell me more', date: '2026-06-12T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.channel).toBe('text');
+    expect(c.facts.phoneProvenance).toBe('proven');
+  });
+
+  it('a LinkedIn URL does not lock out a VERIFIED contact (dm-verified beats the URL)', () => {
+    const c = buildCard({
+      firstName: 'Rich', lastName: 'Yokota', role: 'Owner', lineType: 'voip',
+      email: 'rich@yokotagolf.com', linkedinUrl: 'https://www.linkedin.com/in/rich-yokota',
+      dmVerified: true,
+      thread: [],
+    }, NOW);
+    expect(c.channel).toBe('call');
+    expect(c.facts.phoneProvenance).toBe('verified');
+  });
+
+  it('a blank/whitespace LinkedIn URL is NOT an import signal', () => {
+    const c = buildCard({
+      firstName: 'Mike', lastName: 'Lee', role: 'Owner', lineType: 'mobile',
+      email: 'mike@sfgym.com', linkedinUrl: '  ',
+      thread: [],
+    }, NOW);
+    expect(c.channel).toBe('text');
+    expect(c.facts.phoneProvenance).toBe('on-file');
+  });
+
   it('an OTP inbound does NOT prove the number (isNonReply still guards)', () => {
     const c = buildCard({
       firstName: 'Vic', lastName: 'Nash', role: 'Trainer', lineType: 'mobile',
