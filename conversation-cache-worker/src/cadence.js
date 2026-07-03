@@ -113,6 +113,19 @@ const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step
 const channelForStep = (variant, step) =>
   (variant === "warm" ? WARM_CHANNELS : COLD_CHANNELS)[step - 1] || "text";
 
+const UNTEXTABLE_LINES = new Set(["landline", "toll_free", "voip"]);
+// The step's channel, corrected for what the contact can actually RECEIVE (grading report §3):
+//   - an email step with no usable email on file is impossible → fall back to phone
+//     (Rory Marlow, Joe Wilson: cadence wanted an email, no address exists);
+//   - a text step on a switchboard line (landline/VoIP/toll-free) can't land an SMS → call.
+// This makes the DRAFT shape (call script vs text vs email) match reality, not just the pill.
+const resolveChannel = (variant, step, lineType, hasEmail) => {
+  let ch = channelForStep(variant, step);
+  if (ch === "email" && !hasEmail) ch = UNTEXTABLE_LINES.has(lineType) ? "call" : "text";
+  if (ch === "text" && UNTEXTABLE_LINES.has(lineType)) ch = "call";
+  return ch;
+};
+
 const INTERNAL = new Set(["garrett@amarimethod.com", "eben metivier", "eben", "garrett"]);
 const isInternal = (name) => {
   const n = (name || "").trim().toLowerCase();
@@ -313,7 +326,7 @@ function classify(p) {
   const wait = waitAfter(outN);
   const due = since >= wait;
   const isBreakup = nextStep === totalSteps;
-  const channel = channelForStep(variant, nextStep);
+  const channel = resolveChannel(variant, nextStep, p.lineType, p.hasEmail);
   const state = isBreakup ? "breakup"
               : (landed === 1 ? (warm ? "talked-no-next" : "one-touch-no-reply")
                             : (warm ? "gone-quiet" : "no-reply"));
@@ -412,6 +425,10 @@ export async function deriveCadence(env) {
     if (!rec || !rec.touches?.length) return null;
     const row = buildRow(id, rec.name, rec.touches);
     row.lineType = rec.lineType ?? null;
+    // A usable email address on file (NOT an *@amari-prospect.placeholder import stub) —
+    // gates the email cadence step so we never route to an impossible "email" with no address.
+    const email = String(rec.email || "").trim();
+    row.hasEmail = !!email && !/@amari-prospect\.placeholder$/i.test(email);
     return row;
   })).filter(Boolean);
 

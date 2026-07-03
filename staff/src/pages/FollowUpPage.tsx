@@ -1057,9 +1057,19 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
               ) : isUntextable ? (
-                /* Landline / toll-free / VoIP / text DND — can't receive SMS.
-                   Offer a call instead of a text box, with a talking point to use. */
-                <UntextablePanel p={item.p} phoneType={phoneType} textDnd={isTextDnd} />
+                /* Landline / toll-free / VoIP / text DND — can't receive SMS. Show the
+                   real coach CALL SCRIPT when there is one (grading report §3: the panel
+                   used to show only a static generic talking point and drop the card draft),
+                   then the phone number + static fallback. Only mount the coach panel when
+                   it's genuinely call-shaped, so a stale text-channel record can never leak
+                   an SMS send box onto a line that can't receive one. Decline holds suppress. */
+                <>
+                  {!isGated && !(resolved !== 'loading' && resolved?.declineState)
+                    && coach && coach !== 'loading' && coach.channel === 'call' && (
+                    <OutreachCoachPanel coach={coach} contactId={contactId} lastTouch={item.kind === 'prospect' ? (item.p.lastActivityAt ?? null) : null} onHandled={onHandled} />
+                  )}
+                  <UntextablePanel p={item.p} phoneType={phoneType} textDnd={isTextDnd} />
+                </>
               ) : (
                 <>
                   {/* Phase B: suppress cold-outreach panel when call-coach says hold.
