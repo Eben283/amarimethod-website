@@ -11,7 +11,7 @@ compatibility_date = "2024-01-01"
 # = a FULL reconcile (re-scan the whole window) as drift insurance. The first run
 # backfills ~90 days.
 [triggers]
-crons = ["0 */3 * * *", "0 2 * * 1"]
+crons = ["30 */3 * * *", "30 2 * * 1"]
 
 # Same KV namespace as Pages + the other workers.
 [[kv_namespaces]]

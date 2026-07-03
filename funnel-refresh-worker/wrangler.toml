@@ -5,7 +5,7 @@ compatibility_date = "2024-01-01"
 # Cron trigger — LIVE (cutover 2026-06-12). Hourly refresh of funnel:latest.
 # Workers PAID plan — no cron-count cap. scheduled() writes the live key.
 [triggers]
-crons = ["0 * * * *"]
+crons = ["45 * * * *"]
 
 # Same KV namespace as Pages + daily-audit + ghl-token-refresh + partner-activity-refresh.
 [[kv_namespaces]]

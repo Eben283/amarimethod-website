@@ -6,7 +6,7 @@ compatibility_date = "2024-01-01"
 # Each invocation processes typically 0-3 orders in the last 24h window, well
 # under the 50-subrequest free-tier cap.
 [triggers]
-crons = ["0 * * * *"]
+crons = ["15 * * * *"]
 
 # Same KV namespaces as Pages + daily-audit + ghl-token-refresh
 [[kv_namespaces]]

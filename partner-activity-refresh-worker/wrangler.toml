@@ -7,7 +7,7 @@ compatibility_date = "2024-01-01"
 # 4-5 AM PDT window (~12 invocations) — completes most of the queue per night,
 # stragglers picked up the next morning. Idle once queue is empty.
 [triggers]
-crons = ["*/5 11-12 * * *"]
+crons = ["*/5 6-7 * * *"]
 
 # Same KV namespace as Pages + daily-audit + ghl-token-refresh
 [[kv_namespaces]]

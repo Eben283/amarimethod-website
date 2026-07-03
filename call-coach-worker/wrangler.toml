@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 # refresh at the same second (2026-07-02 audit; the shared single-use
 # refresh token makes simultaneous refreshes destructive).
 [triggers]
-crons = ["7 11 * * *"]
+crons = ["0 10 * * *"]
 
 # Self service binding — dispatches each coaching batch as a FRESH invocation
 # (own CPU/memory/subrequest budget) instead of ctx.waitUntil-chaining them
