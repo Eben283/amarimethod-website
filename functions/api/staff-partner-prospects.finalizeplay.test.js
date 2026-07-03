@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { finalizePlay, manualTouchIsFresherThanCadence } from './staff-partner-prospects.js';
+import { finalizePlay, manualTouchIsFresherThanCadence, overlayCard } from './staff-partner-prospects.js';
+import { buildCard } from '../lib/build-card.js';
 
 describe('manualTouchIsFresherThanCadence — a just-marked touch beats the stale cadence', () => {
   const M = manualTouchIsFresherThanCadence;
@@ -129,5 +130,101 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
   it('leaves a non-actionable card untouched', () => {
     const aside = { derived: { kind: 'aside', action: null }, tags: [], category: 'trainer' };
     expect(finalizePlay({ ...card(), ...aside }).kind).toBe('aside');
+  });
+});
+
+// ── phone provenance through the overlay (the 2026-07-02 wrong-number fix) ──────────
+// buildCard makes an unverified import number a VERIFY-FIRST task (play=discovery + a
+// "verify the number before any outreach" headline) — LinkedIn was retired as a channel
+// (Eben 2026-06-20/07-03, zero engagement ever), so the move is the discovery one: confirm
+// the number reaches this person, then update it. That verdict must survive overlayCard
+// (which otherwise lets the cadence's call/text channel or an engaged-by-email mirror win)
+// AND finalizePlay (which otherwise reshapes discovery cards) — so the untrusted number is
+// never surfaced for outreach (the 2026-07-02 wrong-number incident).
+describe('overlayCard + finalizePlay — unverified import phones never become call/text', () => {
+  const NOW = Date.parse('2026-06-21T12:00:00Z');
+  const oxanaCard = (thread = []) => buildCard({
+    firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'voip',
+    email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
+    thread,
+  }, NOW);
+
+  it('overlayCard: an unverified number becomes a verify-first discovery task, not the cadence channel', () => {
+    const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
+    const d = overlayCard(base, oxanaCard());
+    expect(d.action).toBe('discovery');            // never call/text/linkedin on the number
+    expect(d.why).toMatch(/verify/i);              // the verify headline wins over the cadence why
+    expect(d.why).not.toMatch(/Call them again/);  // the dial-the-number cadence why does not win
+    expect(d.phoneProvenance).toBe('unverified');
+  });
+
+  it('overlayCard: engaged-by-EMAIL does not flip an unverified phone into a text on the number', () => {
+    const cardEngagedByEmail = buildCard({
+      firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'mobile',
+      email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
+      thread: [
+        { direction: 'outbound', type: 'EMAIL', body: 'Hi', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'EMAIL', body: 'Sounds interesting, tell me more?', callDuration: null, date: '2026-06-12T10:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 70, warmth: 2, action: 'text', channel: 'text', why: 'Text them back.' };
+    const d = overlayCard(base, cardEngagedByEmail);
+    expect(d.action).toBe('discovery');
+    expect(d.phoneProvenance).toBe('unverified');
+    expect(d.why).not.toMatch(/^Text /);           // reply-by-email headline, never "Text ..." the number
+  });
+
+  it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
+    const base = { kind: 'act', urgency: 50, warmth: 0, action: 'call', channel: 'call', why: 'x' };
+    const d = overlayCard(base, oxanaCard());
+    expect(d.phoneProvenance).toBe('unverified');
+    expect(d.phoneNote).toMatch(/phone unverified/i);
+  });
+
+  it('overlayCard: a PROVEN import number flows through normally (engagement upgraded trust)', () => {
+    const proven = buildCard({
+      firstName: 'TJ', lastName: '', role: 'Trainer', lineType: 'mobile',
+      email: 'tj.linkedin@amari-prospect.placeholder',
+      thread: [
+        { direction: 'outbound', type: 'SMS', body: 'Hi TJ', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'SMS', body: 'Sure, tell me more', callDuration: null, date: '2026-06-12T10:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 70, warmth: 2, action: 'text', channel: 'text', why: 'Text them back.' };
+    const d = overlayCard(base, proven);
+    expect(d.channel).toBe('text');
+    expect(d.phoneProvenance).toBe('proven');
+  });
+
+  it('overlayCard: an enrichment-URL-only import (real email, no source) still becomes a verify task', () => {
+    // The grading-pass gap (2026-07-03): Dante Jeavon / James Fish / Rich Yokota /
+    // Daivya Allmond carry real-looking emails and an empty source — only the
+    // partner_linkedin_url enrichment field marks them as imports.
+    const urlOnly = buildCard({
+      firstName: 'James', lastName: 'Fish', role: 'Trainer', lineType: 'mobile',
+      email: 'james.fish@gmail.com', source: null,
+      linkedinUrl: 'https://linkedin.com/in/james-fish-sf',
+      thread: [],
+    }, NOW);
+    const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
+    const d = overlayCard(base, urlOnly);
+    expect(d.action).toBe('discovery');
+    expect(d.why).toMatch(/verify/i);
+    expect(d.phoneProvenance).toBe('unverified');
+  });
+
+  it('finalizePlay: never reshapes an unverified verify-first card (guard preserves the headline)', () => {
+    // A facility contact with no named owner would normally be forced onto the generic
+    // "call and ask who handles partnerships" discovery card — but here the number is the
+    // thing we don't trust, so the verify-first headline and discovery action must stand.
+    const p = card({
+      firstName: 'oxana', lastName: 'petrova',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: "Verify Oxana's number before any outreach — it came from import research.",
+                 phoneProvenance: 'unverified' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('discovery');
+    expect(r.why).toMatch(/verify/i);              // not overwritten by the generic discovery why
   });
 });

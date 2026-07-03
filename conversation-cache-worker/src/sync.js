@@ -8,6 +8,7 @@
 //     contactId, name, firstName, lastName, lastMessageDate,
 //     touches: [{ts,kind,dir,dur?,text?}],
 //     role, business, rundown,     ← GHL custom fields (refreshed every 24h)
+//     email,                       ← provenance signal (placeholder = imported phone)
 //     lineType,                    ← from contact:linetype map
 //     dossierFetchedAt             ← ms of last profile fetch (gates the 24h refresh)
 //   }
@@ -67,6 +68,27 @@ const isOut = (m) => m.direction === 0 || m.direction === "outbound";
 // Treat a direction-less EMAIL as outbound; SMS/calls always carry a direction.
 export function touchDir(m, k) {
   return (isOut(m) || (m.direction == null && k === "email")) ? "out" : "in";
+}
+
+// Map a fetched GHL contact → the dossier profile persisted on conv:{id}.
+// Exported for tests. `email` matters for phone provenance: import-created contacts
+// carry *@amari-prospect.placeholder, which tells buildCard the phone on file is
+// unverified CSV research (never dial/text it — the 2026-07-02 wrong-number fix).
+export function profileFromContact(contact, fetchedAt) {
+  const gf = (id) => {
+    const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
+    const v = f ? (f.value ?? f.field_value) : null;
+    return (v === "" || v == null) ? null : v;
+  };
+  return {
+    firstName:        contact.firstName || "",
+    lastName:         contact.lastName  || "",
+    email:            contact.email     || null,
+    role:             gf(DOSSIER_FIELDS.role),
+    business:         gf(DOSSIER_FIELDS.business),
+    rundown:          gf(DOSSIER_FIELDS.rundown),
+    dossierFetchedAt: fetchedAt,
+  };
 }
 
 // limited-concurrency map (ported from funnel.mjs) — sequential message fetches
@@ -175,20 +197,7 @@ export async function runSync(env, trigger, full = false) {
     if (profileAge > PROFILE_TTL) {
       try {
         const cd = await ghlRetry(env, `/contacts/${c.contactId}`);
-        const contact = cd.contact || cd;
-        const gf = (id) => {
-          const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
-          const v = f ? (f.value ?? f.field_value) : null;
-          return (v === "" || v == null) ? null : v;
-        };
-        profile = {
-          firstName:        contact.firstName || "",
-          lastName:         contact.lastName  || "",
-          role:             gf(DOSSIER_FIELDS.role),
-          business:         gf(DOSSIER_FIELDS.business),
-          rundown:          gf(DOSSIER_FIELDS.rundown),
-          dossierFetchedAt: start,
-        };
+        profile = profileFromContact(cd.contact || cd, start);
       } catch { /* keep existing profile on error; will retry next run */ }
     }
 
@@ -197,6 +206,7 @@ export async function runSync(env, trigger, full = false) {
       name,
       firstName:        profile.firstName        ?? existing.firstName        ?? "",
       lastName:         profile.lastName         ?? existing.lastName         ?? "",
+      email:            profile.email            ?? existing.email            ?? null,
       role:             profile.role             ?? existing.role             ?? null,
       business:         profile.business         ?? existing.business         ?? null,
       rundown:          profile.rundown          ?? existing.rundown          ?? null,

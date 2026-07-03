@@ -54,6 +54,47 @@ function isPersonName(firstName, lastName, fullName) {
 }
 
 const UNTEXTABLE = new Set(["landline", "toll_free", "voip"]);
+
+// ── phone provenance: is the number on file real, or just import research? ──
+// LinkedIn/CSV imports get a placeholder email (see ops/scripts/import-prospects.mjs)
+// and their phone is UNVERIFIED research — dialing it cold sent Garrett to a wrong
+// number (2026-07-02). Until someone verifies the contact (outreach_verified /
+// trainer-solo / dm-verified, spec §2) or the number PROVES itself by engagement
+// (an inbound text/call, or a 120s+ connected call — it demonstrably reaches them),
+// the card is a VERIFY-FIRST task (Eben 2026-07-03): confirm the number reaches this
+// person before any outreach — never dial or text what's on file. (LinkedIn is a dead
+// channel — retired 2026-06-20, zero engagement ever — so the move is the discovery
+// one: check their site / the business's public line, confirm, write back the number.)
+const PLACEHOLDER_EMAIL_RE = /@amari-prospect\.placeholder$/i;
+const LINKEDIN_SOURCE_RE = /linkedin/i;
+const PHONE_UNVERIFIED_NOTE = "phone unverified, from import research, not confirmed";
+
+// The number is de-facto verified when engagement happened ON it: they texted back
+// (a real reply, not an OTP/artifact), they called us, or a call connected for real.
+// An EMAIL reply proves the person, not the phone — it does NOT count.
+function provesPhone(m) {
+  if (m.direction === "inbound") {
+    if (m.type === "CALL") return true;              // they called from the number
+    return m.type === "SMS" && !isNonReply(m.body);  // a real text reply landed on it
+  }
+  return isConnectedCall(m);                         // we talked to a human on it
+}
+
+// 'verified' (explicit flag/tag) > 'proven' (engagement on the number) >
+// 'unverified' (import research, never touch it) > 'on-file' (normal contact).
+// Import signals, any one of which marks the phone as research (2026-07-03
+// grading pass: some imports carry a real-looking email and an empty source —
+// their ONLY LinkedIn signal is the enrichment URL, partner_linkedin_url):
+//   1. placeholder email  2. LinkedIn source  3. LinkedIn enrichment URL on file.
+function phoneProvenanceOf(d, thread) {
+  if (d.outreachVerified || d.dmVerified || d.isSolo) return "verified";
+  if (thread.some(provesPhone)) return "proven";
+  const imported =
+    PLACEHOLDER_EMAIL_RE.test(d.email || "") ||
+    LINKEDIN_SOURCE_RE.test(d.source || "") ||
+    !!String(d.linkedinUrl || "").trim();
+  return imported ? "unverified" : "on-file";
+}
 const DAY_MS = 86_400_000;
 function daysSince(iso, now) {
   if (!iso) return null;
@@ -78,6 +119,8 @@ function agoLabel(d) {
  *
  * dossier = {
  *   firstName, lastName, fullName, role, business, lineType, rundown,
+ *   email, source, linkedinUrl,           // provenance signals (placeholder / LinkedIn import)
+ *   outreachVerified, dmVerified, isSolo, // verification overrides (spec §2)
  *   thread: [{ direction:'inbound'|'outbound', type:'SMS'|'CALL'|'EMAIL',
  *              body, callDuration, hasTranscript, date }],
  * }
@@ -110,7 +153,12 @@ export function buildCard(dossier, now = Date.now()) {
   else state = "cold";
   const engaged = state === "engaged";
 
-  // ── channel: line type decides, full stop ──
+  // ── channel: line type decides; provenance can override the PLAY (below) ──
+  // An unverified import number is never dialed OR texted, but that's enforced by the
+  // verify-first play (a discovery task suppresses outreach copy), not by the channel —
+  // so channel stays the honest line-type value and the number is simply never surfaced.
+  const phoneProvenance = phoneProvenanceOf(d, thread);
+  const phoneUnverified = phoneProvenance === "unverified";
   const channel = UNTEXTABLE.has(d.lineType) ? "call" : "text";
 
   // ── play: pitch when we can reach the right person directly; else discovery ──
@@ -123,7 +171,13 @@ export function buildCard(dossier, now = Date.now()) {
   const named = isPersonName(d.firstName, d.lastName, d.fullName);
   const ownerRole = /owner|sole|principal|founder/i.test(d.role || "");
   const reachableLine = !d.lineType || d.lineType === "mobile" || d.lineType === "unknown";
-  const play = (named && (ownerRole || reachableLine || d.isSolo)) ? "pitch" : "discovery";
+  // An unverified import number forces a verify-first task ahead of any pitch: we can't
+  // do outreach until someone confirms the number reaches this person. That IS the
+  // discovery move (confirm the person, write back the real number) — never a pitch on
+  // the number on file, even for a named "owner" (the name came from the same import).
+  const play = phoneUnverified ? "discovery"
+    : (named && (ownerRole || reachableLine || d.isSolo)) ? "pitch"
+    : "discovery";
 
   // ── the headline writes itself from the facts (action-first, never contradictory) ──
   const name = (d.firstName || (d.fullName || "").split(/\s+/)[0] || "there").trim();
@@ -132,11 +186,20 @@ export function buildCard(dossier, now = Date.now()) {
   // person — discovery (find the decision-maker) only applies to a COLD facility where no one
   // has engaged and we don't know who to reach.
   let why;
-  if (state === "engaged") {
+  if (state === "engaged" && phoneUnverified) {
+    // The only reach-back that leaves the phone unverified is an EMAIL reply — an inbound
+    // text or call would have PROVEN the number. So reply by email; the number on file is
+    // still import research and stays off-limits until it's confirmed.
+    why = `Reply to ${name}'s email, they wrote back ${agoLabel(daysSince(lastReachBack.date, now))}. The number on file is unverified import research, confirm it before any call or text.`;
+  } else if (state === "engaged") {
     const back = lastReachBack.type === "CALL" ? "called back" : "replied";
     why = `${verb} ${name} back, they ${back} ${agoLabel(daysSince(lastReachBack.date, now))}. Pick the thread up.`;
   } else if (state === "talked") {
     why = `${verb} ${name} back, you spoke ${agoLabel(daysSince(lastConnect.date, now))} but no follow-up since.`;
+  } else if (phoneUnverified) {
+    // Before the generic discovery branch on purpose: this is a verify-first task —
+    // the number on file is exactly the thing we don't trust, so say so specifically.
+    why = `Verify ${name}'s number before any outreach — it came from import research and was never confirmed. Check their site or the business's public line, confirm the person, then update the number. Don't dial or text what's on file.`;
   } else if (play === "discovery") {
     why = `Call and ask who handles partnerships, then get a name. It's a facility and we don't know the decision-maker yet.`;
   } else {
@@ -168,6 +231,11 @@ export function buildCard(dossier, now = Date.now()) {
       lastConnect: lastConnect ? { daysAgo: daysSince(lastConnect.date, now), hasTranscript: !!lastConnect.hasTranscript } : null,
       outboundOnly: reachBacks.length === 0,
       lastTouchDays,
+      // Phone provenance for the honesty layer: 'verified' | 'proven' | 'unverified'
+      // | 'on-file'. phoneNote is the ready-made "what we don't know" footnote line
+      // when the number is unverified import research.
+      phoneProvenance,
+      phoneNote: phoneUnverified ? PHONE_UNVERIFIED_NOTE : null,
     },
   };
 }

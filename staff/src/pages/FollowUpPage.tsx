@@ -110,6 +110,11 @@ interface Derived {
   // Phase 3: buildCard output — deterministic state + play computed from conv thread.
   state?: 'cold' | 'engaged' | 'talked';
   play?: 'pitch' | 'discovery';
+  // Phone provenance (2026-07-02 wrong-number fix): 'unverified' = the number on file
+  // is import research — the card becomes a verify-first discovery task (confirm the
+  // number before any outreach) and phoneNote carries the "what we don't know" footnote.
+  phoneProvenance?: 'verified' | 'proven' | 'unverified' | 'on-file';
+  phoneNote?: string | null;
 }
 
 // ── Day-of-week outreach weighting ──────────────────────────────────────────
@@ -916,7 +921,10 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     if (callNotes !== 'loading' && !(callNotes && callNotes.hasAudio)) gaps.push('no call transcript');
     if (!phoneType) gaps.push('line type unknown');
     if (isTextDnd) gaps.push('texts blocked');
-    if (isDiscovery) gaps.push('who the decision-maker is');
+    // A verify-first card is discovery too, but there we often DO know the person — the
+    // gap is the unverified number (shown by phoneNote below), not the decision-maker.
+    if (isDiscovery && item.d.phoneProvenance !== 'unverified') gaps.push('who the decision-maker is');
+    if (item.d.phoneNote) gaps.push(item.d.phoneNote); // "phone unverified, from import research, not confirmed"
     if (!pp.phone) gaps.push('no phone');
     if (!pp.email) gaps.push('no email');
     if (!pp.website) gaps.push('no website');

@@ -4,7 +4,7 @@
 // direction-less email as outbound, without ever flipping a real inbound.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { touchDir, resolveLineType } from '../src/sync.js';
+import { touchDir, resolveLineType, profileFromContact } from '../src/sync.js';
 
 test('direction-less EMAIL is outbound (our campaign email, not a phantom reply)', () => {
   assert.equal(touchDir({ direction: undefined }, 'email'), 'out');
@@ -44,4 +44,29 @@ test('resolveLineType handles a missing/undefined entry without throwing', () =>
   assert.equal(resolveLineType(undefined), null);
   assert.equal(resolveLineType(null), null);
   assert.equal(resolveLineType({}), null);
+});
+
+// Provenance fix (2026-07-02): buildCard needs the contact's EMAIL in the conv:{id}
+// dossier to detect placeholder-import contacts (*@amari-prospect.placeholder) whose
+// phone is unverified CSV research. profileFromContact maps a GHL contact fetch to
+// the stored dossier profile — it must carry email through, and stay null-safe.
+test('profileFromContact carries the contact email into the dossier profile', () => {
+  const profile = profileFromContact({
+    firstName: 'Oxana', lastName: 'Petrova',
+    email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
+    customFields: [{ id: 'FGakk9CgiRqeY0tleGQD', value: 'Trainer' }],
+  }, 1234);
+  assert.equal(profile.email, 'oxana.petrova.linkedin@amari-prospect.placeholder');
+  assert.equal(profile.firstName, 'Oxana');
+  assert.equal(profile.role, 'Trainer');
+  assert.equal(profile.dossierFetchedAt, 1234);
+});
+
+test('profileFromContact is null-safe: missing email/fields → nulls, not throws', () => {
+  const profile = profileFromContact({}, 99);
+  assert.equal(profile.email, null);
+  assert.equal(profile.role, null);
+  assert.equal(profile.business, null);
+  assert.equal(profile.rundown, null);
+  assert.equal(profile.firstName, '');
 });

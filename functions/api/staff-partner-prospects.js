@@ -274,8 +274,18 @@ function buildContactDossier(p, conv, lineTypeMap) {
     lineType:  lt,
     rundown:   p.rundown || conv?.rundown || null,
     thread:    conv ? (conv.touches || []).map(compactToThread) : [],
-    // Solo trainers ARE the decision-maker — never treat as discovery regardless of line type.
-    isSolo:    tags.includes("trainer-solo"),
+    // Phone provenance signals: a placeholder email (*@amari-prospect.placeholder), a
+    // LinkedIn partner_source, or a LinkedIn enrichment URL on file marks the number as
+    // unverified import research — buildCard routes those to LinkedIn instead of trusting
+    // the phone (2026-07-02 wrong-number fix; URL-only gap closed 2026-07-03).
+    email:       p.email || conv?.email || null,
+    source:      p.partnerSource || null,
+    linkedinUrl: p.linkedinUrl || null,
+    // Verification overrides (spec §2): an explicitly confirmed contact is trusted even
+    // with a placeholder email. Solo trainers ARE the decision-maker — never discovery.
+    outreachVerified: !!p.outreachVerified,
+    dmVerified:       tags.includes("dm-verified"),
+    isSolo:           tags.includes("trainer-solo"),
   };
 }
 
@@ -295,10 +305,18 @@ const FORCED_CALL_LINES = new Set(["landline", "toll_free", "voip"]);
 //
 // Why verb: MUST match the final channel. buildCard wrote "Text/Call [name]..." for
 // card.channel; when we preserve a different channel, rewrite the opening verb.
-function overlayCard(base, card) {
+export function overlayCard(base, card) {
   const lineType = card.facts?.lineType || null;
   const isDiscovery = card.play === "discovery";
   const lineForced = FORCED_CALL_LINES.has(lineType);
+
+  // Phone provenance is absolute: an unverified import number (placeholder email /
+  // LinkedIn source / enrichment URL, no verification, no engagement on the number)
+  // comes through as a discovery VERIFY-FIRST task — buildCard set play="discovery"
+  // and wrote the "verify the number" headline. The discovery branch below preserves
+  // that headline and forces action="discovery" (no cadence channel, engagement mirror,
+  // or line-type rule can route outreach back onto the untrusted number). phoneProvenance
+  // travels with the card either way, so the honesty footnote still shows it.
 
   // If the contact engaged via a specific channel, mirror it: they called → call back;
   // they texted/emailed → text back. Capability (untextable line) still wins over preference.
@@ -338,6 +356,10 @@ function overlayCard(base, card) {
     action:  isDiscovery ? "discovery" : finalChannel,
     state:   card.state,
     play:    card.play,
+    // Provenance travels with the card so the UI's "what we don't know" footnote
+    // can show it ('verified' | 'proven' | 'unverified' | 'on-file').
+    phoneProvenance: card.facts?.phoneProvenance || "on-file",
+    phoneNote: card.facts?.phoneNote || null,
     // Stash cadence's timing-aware why when discovery overwrites it, so finalizePlay
     // can restore it if the contact turns out to be trusted (outreach-verified / dm-verified).
     ...(isDiscovery && base.why ? { _cadenceWhy: base.why } : {}),
@@ -385,6 +407,12 @@ export function finalizePlay(p, warmFacilities = new Set()) {
       asideReason: "Has a physical therapist on staff — parked for a future campaign" };
   }
   if (!d || d.kind !== "act") return d;
+  // An unverified import number: the card is a verify-first task (confirm the number
+  // reaches this person before any outreach). Never reshape it — not into a pitch on
+  // the untrusted number, and not into the generic "who handles partnerships" discovery
+  // that would bury WHY the number is suspect (the 2026-07-02 wrong-number incident).
+  // The verify headline and discovery action stand until a verification flips provenance.
+  if (d.phoneProvenance === "unverified") return d;
   const tags = Array.isArray(p.tags) ? p.tags : [];
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
   // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
@@ -731,6 +759,7 @@ export async function onRequestGet(context) {
           business:  conv?.business || null,
           lineType:  conv?.lineType || null,
           rundown:   conv?.rundown  || null,
+          email:     conv?.email    || null,
           thread:    conv ? (conv.touches || []).map(compactToThread) : [],
         };
         derived = overlayCard(base, buildCard(dossier));
