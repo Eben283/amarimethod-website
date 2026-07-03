@@ -356,6 +356,10 @@ export function overlayCard(base, card) {
     action:  isDiscovery ? "discovery" : finalChannel,
     state:   card.state,
     play:    card.play,
+    // Engaged-loop disposition from message content: 'declined' (a written no → the UI
+    // holds, no pitch) | 'answered' (we already replied → their court) | null. Mirrors the
+    // call-coach cool-off, but derived from the thread (grading report §4). Travels to the app.
+    hold:    card.hold ?? null,
     // Provenance travels with the card so the UI's "what we don't know" footnote
     // can show it ('verified' | 'proven' | 'unverified' | 'on-file').
     phoneProvenance: card.facts?.phoneProvenance || "on-file",
@@ -391,6 +395,19 @@ function cadenceVerdict(c) {
     channel,
     source: "cadence",
   };
+}
+
+// Rewrite a stashed cadence action sentence so its leading verb AND its channel hint
+// match the FINAL channel. A trusted / known-owner flip can change the channel out from
+// under a cadence why like "Send step 2 of 5 now (text; last touch 31d ago)" — the old
+// rewrite only matched ^(Call|Text) and left "Send ..." under a Call pill on a landline
+// (LeRocman Hall / James Anderson / Glenn, grading report lines 91-96). Handle any leading
+// verb (Send/Call/Text/Email) and correct the "(text|call|email; ...)" hint too.
+export function retargetCadenceWhy(why, verb, channelWord) {
+  let out = String(why || "").trim();
+  out = out.replace(/^(Call|Text|Send|Email)\b/i, verb);
+  out = out.replace(/\((call|text|email)\b/i, `(${channelWord}`);
+  return out;
 }
 
 // Phase 3 note: landline channel correction moved to buildCard (overlayCard).
@@ -429,7 +446,7 @@ export function finalizePlay(p, warmFacilities = new Set()) {
     const name = (p.firstName || (p.fullName || "").split(/\s+/)[0] || "them").trim();
     const verb = ch === "call" ? "Call" : "Text";
     const why = d._cadenceWhy
-      ? d._cadenceWhy.replace(/^(Call|Text) /, `${verb} `)
+      ? retargetCadenceWhy(d._cadenceWhy, verb, ch)
       : `${verb} ${name}, pitch directly.`;
     return { ...d, action: ch, channel: ch, why };
   }
@@ -451,6 +468,21 @@ export function finalizePlay(p, warmFacilities = new Set()) {
     "\\b[^.]{0,60}\\b(owns?|runs?|founded|founder|owner|co-?owner|principal|sole)\\b",
     "i").test((p.rundown || "").trim());
   const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
+  // REVERSE buildCard's line-type discovery when the rundown/role names the owner (spec §2).
+  // buildCard sets play=discovery from the line type (a voip/landline switchboard) even for a
+  // named owner whose rundown opens "Michael Crammond runs Whole Body Solutions" — the spec's
+  // own example. Knowing the DM must not merely PREVENT forcing discovery; it must UNDO
+  // buildCard's discovery verdict, or the owner gets a "who handles partnerships" card for his
+  // own studio (report line 88). The verify-first guard above still wins for import numbers.
+  if (d.action === "discovery" && knownDecisionMaker) {
+    const ch = FORCED_CALL_LINES.has(p.phoneType) ? "call" : "text";
+    const name = (p.firstName || (p.fullName || "").split(/\s+/)[0] || "them").trim();
+    const verb = ch === "call" ? "Call" : "Text";
+    const why = d._cadenceWhy
+      ? retargetCadenceWhy(d._cadenceWhy, verb, ch)
+      : `${verb} ${name}, pitch directly — the rundown names them as the owner.`;
+    return { ...d, action: ch, channel: ch, why };
+  }
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     // Check if a person contact linked via trainer_facility is warm/trusted.
     // If so, we already know who to reach — let cadence drive instead of forcing discovery.

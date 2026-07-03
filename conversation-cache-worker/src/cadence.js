@@ -33,7 +33,12 @@ const FIELD = {
   followupAt: "stVYzQB4Xpi29cuyUYnA",
   lastRealActivity: "W7JoyJKPKhPI8hZ5EgUv",
   touchCount: "qKtPT2XZP61emgUDK7fd",
+  hasPtOnStaff: "YWglhoiMeTUPSpHA9322",
 };
+// Only the exact string "Yes" parks a contact — the field is null/"No"/"Unknown"/"Yes"
+// and "No"/"Unknown" are JS-truthy (spec §1). The app suppresses these in finalizePlay;
+// the pipeline must too, or the coach spends a due slot + a card on a parked contact.
+const hasPtOnStaff = (v) => /^yes$/i.test(String(v || "").trim());
 const getField = (contact, id) => {
   const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
   return f ? (f.value ?? f.field_value) : undefined;
@@ -112,6 +117,19 @@ const COLD_CHANNELS = ["call", "text", "call", "email", "text"]; // step 1..5 (5
 const WARM_CHANNELS = ["text", "call", "text", "text"];                  // step 1..4 (4 = breakup)
 const channelForStep = (variant, step) =>
   (variant === "warm" ? WARM_CHANNELS : COLD_CHANNELS)[step - 1] || "text";
+
+const UNTEXTABLE_LINES = new Set(["landline", "toll_free", "voip"]);
+// The step's channel, corrected for what the contact can actually RECEIVE (grading report §3):
+//   - an email step with no usable email on file is impossible → fall back to phone
+//     (Rory Marlow, Joe Wilson: cadence wanted an email, no address exists);
+//   - a text step on a switchboard line (landline/VoIP/toll-free) can't land an SMS → call.
+// This makes the DRAFT shape (call script vs text vs email) match reality, not just the pill.
+const resolveChannel = (variant, step, lineType, hasEmail) => {
+  let ch = channelForStep(variant, step);
+  if (ch === "email" && !hasEmail) ch = UNTEXTABLE_LINES.has(lineType) ? "call" : "text";
+  if (ch === "text" && UNTEXTABLE_LINES.has(lineType)) ch = "call";
+  return ch;
+};
 
 const INTERNAL = new Set(["garrett@amarimethod.com", "eben metivier", "eben", "garrett"]);
 const isInternal = (name) => {
@@ -248,6 +266,9 @@ function classify(p) {
   // in the app (partner_stage) stays out — so a human "no" sticks across cycles.
   if (p.skipped) return { state: "skipped", due: false, action: "Set aside (won't resurface until un-skipped)", priority: 0 };
   if (CLOSED_STAGES.has(p.partnerStage)) return { state: "set-aside", due: false, action: `Parked in the app (stage: ${p.partnerStage})`, priority: 0 };
+  // Trainers who already have a physical therapist on staff handle pain in-house — parked
+  // for a future campaign (spec §1). Suppress before the due math so the coach never cards them.
+  if (hasPtOnStaff(p.hasPtOnStaff)) return { state: "pt-on-staff", due: false, action: "Has a physical therapist on staff — parked for a future campaign", priority: 0 };
 
   if (p.hasBooking) return { state: "booked", due: false, action: "Already booked or just attended a session", priority: 0 };
   if (p.hasHumanTouch === false) return { state: "drip-only", due: false, action: "Email/quiz drip only, not a call or text target", priority: 0 };
@@ -313,7 +334,7 @@ function classify(p) {
   const wait = waitAfter(outN);
   const due = since >= wait;
   const isBreakup = nextStep === totalSteps;
-  const channel = channelForStep(variant, nextStep);
+  const channel = resolveChannel(variant, nextStep, p.lineType, p.hasEmail);
   const state = isBreakup ? "breakup"
               : (landed === 1 ? (warm ? "talked-no-next" : "one-touch-no-reply")
                             : (warm ? "gone-quiet" : "no-reply"));
@@ -388,6 +409,7 @@ export async function loadContactMeta(env) {
         followupAt: getField(c, FIELD.followupAt),
         lastActivity: getField(c, FIELD.lastRealActivity),
         touchCount: getField(c, FIELD.touchCount),
+        hasPtOnStaff: getField(c, FIELD.hasPtOnStaff),
       });
     }
     afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
@@ -412,6 +434,10 @@ export async function deriveCadence(env) {
     if (!rec || !rec.touches?.length) return null;
     const row = buildRow(id, rec.name, rec.touches);
     row.lineType = rec.lineType ?? null;
+    // A usable email address on file (NOT an *@amari-prospect.placeholder import stub) —
+    // gates the email cadence step so we never route to an impossible "email" with no address.
+    const email = String(rec.email || "").trim();
+    row.hasEmail = !!email && !/@amari-prospect\.placeholder$/i.test(email);
     return row;
   })).filter(Boolean);
 
@@ -438,6 +464,7 @@ export async function deriveCadence(env) {
   for (const r of rows) {
     r.hasBooking = booked.has(r.contactId);
     r.partnerStage = metaMap.get(r.contactId)?.stage;
+    r.hasPtOnStaff = metaMap.get(r.contactId)?.hasPtOnStaff;
     r.skipped = Boolean(skip[r.contactId]);
   }
 

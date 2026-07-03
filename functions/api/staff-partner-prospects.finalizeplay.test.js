@@ -112,6 +112,48 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
     })).action).not.toBe('discovery');
   });
 
+  // ── REVERSE buildCard's line-type discovery when the rundown names the owner (spec §2) ──
+  // The live bug: buildCard sets play=discovery from the line type (voip switchboard) for
+  // Michael Crammond even though his rundown opens "Michael Crammond runs Whole Body
+  // Solutions" (the spec's own example). finalizePlay knew he was a known DM but only used
+  // that to avoid FORCING discovery — it never REVERSED buildCard's discovery verdict, so he
+  // sat on a "call and ask who handles partnerships" card for his own studio (report line 88).
+  it('reverses a buildCard discovery verdict when the rundown names the owner', () => {
+    const p = card({
+      firstName: 'michael', lastName: 'crammond', partnerFacilityRole: 'Trainer',
+      phoneType: 'voip',
+      rundown: 'Michael Crammond runs Whole Body Solutions, a personal training and wellness studio in SF.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships, then get a name.',
+                 _cadenceWhy: 'Send step 2 of 5 now (call; last touch 9d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).not.toBe('discovery');        // flipped to a direct pitch
+    expect(r.why).not.toMatch(/who handles partnerships/);
+  });
+
+  it('reverses a buildCard discovery verdict for an explicit Owner role (first name only)', () => {
+    const p = card({
+      firstName: 'charlie', lastName: '', partnerFacilityRole: 'Owner', phoneType: 'landline',
+      rundown: 'Charlie is a certified fitness professional with 30 years experience.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships.' },
+    });
+    expect(finalizePlay(p).action).not.toBe('discovery');
+  });
+
+  it('does NOT reverse discovery when the owner is unverified import research', () => {
+    // The verify-first guard still wins: a named-owner rundown does not make an untrusted
+    // import number safe to dial.
+    const p = card({
+      firstName: 'michael', lastName: 'crammond', partnerFacilityRole: 'Owner',
+      rundown: 'Michael Crammond runs Whole Body Solutions.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: "Verify Michael's number before any outreach.", phoneProvenance: 'unverified' },
+    });
+    expect(finalizePlay(p).action).toBe('discovery');
+  });
+
   // ── guards on existing behavior ──
   it('never runs discovery on a trusted solo contact', () => {
     expect(finalizePlay(card({
@@ -174,6 +216,20 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.why).not.toMatch(/^Text /);           // reply-by-email headline, never "Text ..." the number
   });
 
+  it('overlayCard carries buildCard hold (declined/answered) onto derived for the UI', () => {
+    const declinedCard = buildCard({
+      firstName: 'Mark', lastName: "O'Keefe", role: 'Trainer', lineType: 'mobile',
+      thread: [
+        { direction: 'outbound', type: 'SMS', body: 'Garrett here, gift you a session', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'SMS', body: 'Appreciate it but I need to pass on it.', callDuration: null, date: '2026-06-15T10:00:00Z' },
+        { direction: 'outbound', type: 'SMS', body: 'Understood, take care!', callDuration: null, date: '2026-06-15T18:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 40, warmth: 2, action: 'text', channel: 'text', why: 'x' };
+    const d = overlayCard(base, declinedCard);
+    expect(d.hold).toBe('declined');
+  });
+
   it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
     const base = { kind: 'act', urgency: 50, warmth: 0, action: 'call', channel: 'call', why: 'x' };
     const d = overlayCard(base, oxanaCard());
@@ -211,6 +267,38 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.action).toBe('discovery');
     expect(d.why).toMatch(/verify/i);
     expect(d.phoneProvenance).toBe('unverified');
+  });
+
+  it('trusted-flip: a dm-verified discovery card restores a Send-leading cadence why with the FINAL verb + channel', () => {
+    // LeRocman Hall / James Anderson / Glenn: dm-verified flips discovery back to pitch, but
+    // the cadence why leads with "Send" (not Call/Text) and carries a "(text; ...)" hint —
+    // the old ^(Call|Text) rewrite left "Send step 2 of 5 now (text; ...)" under a Call pill
+    // on a landline. The verb AND the channel hint must match the final channel.
+    const p = card({
+      firstName: 'lerocman', lastName: 'hall', tags: ['trainer-facility', 'dm-verified'],
+      phoneType: 'landline',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships, then get a name.',
+                 _cadenceWhy: 'Send step 2 of 5 now (text; last touch 31d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('call');                 // landline → call
+    expect(r.why).toMatch(/^Call /);               // verb matches the pill
+    expect(r.why).not.toMatch(/^Send /);           // "Send"-leading is rewritten
+    expect(r.why).not.toMatch(/\(text;/);          // the channel hint no longer contradicts the call
+  });
+
+  it('trusted-flip: a textable line keeps the Text verb on a Send-leading cadence why', () => {
+    const p = card({
+      firstName: 'glenn', tags: ['trainer-solo'], phoneType: 'mobile',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships.',
+                 _cadenceWhy: 'Send step 3 of 5 now (call; last touch 12d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('text');
+    expect(r.why).toMatch(/^Text /);
+    expect(r.why).not.toMatch(/\(call;/);
   });
 
   it('finalizePlay: never reshapes an unverified verify-first card (guard preserves the headline)', () => {

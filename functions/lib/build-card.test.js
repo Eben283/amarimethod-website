@@ -56,6 +56,62 @@ describe('buildCard — one true view, no contradictions', () => {
     expect(c.why).toMatch(/Text Sara back, they replied/);
   });
 
+  // ── engaged, but the loop is CLOSED: a written decline, or we already answered ──
+  // grading report §4: buildCard fired 'engaged → pick the thread up' on ANY inbound,
+  // blind to whether we already responded or what they said.
+  it('Mark: a written decline is a HOLD, not "pick the thread up" (with a pitch behind it)', () => {
+    const c = buildCard({
+      firstName: 'Mark', lastName: "O'Keefe", role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here, would love to gift you a session', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Appreciate it but I need to pass on it.', date: '2026-06-15T10:00:00Z' }),
+        msg({ type: 'SMS', body: 'Totally understand, take care!', date: '2026-06-15T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('declined');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+    expect(c.why).toMatch(/pass|hold|declin/i);
+  });
+
+  it('Harriet: "not exploring outside partnerships" reads as a decline', () => {
+    const c = buildCard({
+      firstName: 'Harriet', lastName: 'Fajkowski', role: 'Owner', lineType: 'voip',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here, partnering with local trainers', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: "Thanks, we're not exploring outside partnerships right now.", date: '2026-06-24T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('declined');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+  });
+
+  it('Nicki: a question we already answered is their court, not "pick the thread up"', () => {
+    const c = buildCard({
+      firstName: 'Nicki', lastName: 'Clark', role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Do you have a website?', date: '2026-06-16T10:00:00Z' }),
+        msg({ type: 'SMS', body: 'Yes, amarimethod.com — take a look!', date: '2026-06-16T12:00:00Z' }),
+        msg({ type: 'SMS', body: 'Following up in case you missed it', date: '2026-06-19T12:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('answered');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+    expect(c.why).toMatch(/their court|already replied|answered/i);
+  });
+
+  it('GUARD: a real inbound question we have NOT answered still says pick the thread up', () => {
+    const c = buildCard({
+      firstName: 'Dana', lastName: 'Ito', role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Interesting, how long is a session?', date: '2026-06-18T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe(null);
+    expect(c.why).toMatch(/pick the thread up/i);
+  });
+
   it('an OTP / automated inbound does NOT count as engagement (this was the Jack-style bug)', () => {
     const c = buildCard({
       firstName: 'Pat', lastName: 'Jones', role: 'Trainer', lineType: 'mobile',
@@ -75,6 +131,35 @@ describe('buildCard — one true view, no contradictions', () => {
     }, NOW);
     expect(c.play).toBe('discovery');
     expect(c.why).toMatch(/^Call and ask who handles partnerships/);
+  });
+
+  // TOM REZENDES — real data shape: a 146s (real) connected call on 6/6, then texted by
+  // name. By grading day the call is >14d old, so the STATE is cold (recency gate), but the
+  // PLAY must still be a pitch — we already talked to him, we know who to reach. The 14-day
+  // talked window gates the headline, it must not erase engagement from the play decision.
+  it('Tom: an old (>14d) real connected call keeps the PLAY a pitch even after state falls to cold', () => {
+    const c = buildCard({
+      firstName: 'Tom', lastName: 'Rezendes', role: 'Trainer', lineType: 'landline',
+      thread: [
+        msg({ type: 'CALL', callDuration: 146, date: '2026-05-20T18:00:00Z' }), // ~32d before NOW
+        msg({ type: 'SMS', body: 'Great talking Tom, here is the link', date: '2026-05-21T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.state).toBe('cold');           // the connect is older than 14d
+    expect(c.play).toBe('pitch');           // but we already know who to reach — not discovery
+    expect(c.why).not.toMatch(/who handles partnerships/);
+  });
+
+  it('a cold facility with only dead calls (no connect, no reply) is still discovery', () => {
+    // Guard: everEngaged must require a REAL connect/reply, not just any call attempt.
+    const c = buildCard({
+      fullName: 'Iron House Gym', role: 'Owner', lineType: 'landline',
+      thread: [
+        msg({ type: 'CALL', callDuration: 20, date: '2026-06-01T18:00:00Z' }), // short = no connect
+        msg({ type: 'CALL', callDuration: null, date: '2026-06-10T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.play).toBe('discovery');
   });
 
   it('channel is line-type, full stop: a mobile owner is textable, a landline owner is not', () => {

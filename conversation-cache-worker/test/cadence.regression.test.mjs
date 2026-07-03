@@ -78,6 +78,23 @@ test('TARGET Abraham/Taylor: a 77-day-old single cold call should be parked, not
   assert.equal(v.due, false, 'an ancient one-touch cold call should exhaust/park, not stay due forever');
 });
 
+// ── has_pt_on_staff suppression at the PIPELINE layer (grading report line 134) ──
+// The app parks PT-on-staff contacts (finalizePlay), but the coach pipeline kept spending
+// a due slot + a card on them because cadence never read the field (Richard Hsu). Suppress
+// here too — matching EXACTLY "Yes" (spec §1: "No"/"Unknown" are JS-truthy, must not park).
+
+test('a has_pt_on_staff=Yes contact is parked, not due (pipeline-side suppress)', () => {
+  const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Richard Hsu', { hasPtOnStaff: 'Yes' });
+  assert.equal(v.due, false, 'a trainer with a PT on staff is parked for a future campaign');
+});
+
+test('has_pt_on_staff=No / Unknown / null do NOT park (only exact "Yes" suppresses)', () => {
+  for (const val of ['No', 'Unknown', null, undefined, '']) {
+    const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Normal', { hasPtOnStaff: val });
+    assert.equal(v.due, true, `hasPtOnStaff=${JSON.stringify(val)} must stay due`);
+  }
+});
+
 // ───────────────────────── GUARDS (green now, keep green) ────────────────────
 
 test('GUARD: a real unanswered question IS reply-waiting (do not over-suppress)', () => {
@@ -152,6 +169,55 @@ test('give-up cap: 3 dead calls, never reached → stop calling, switch to a tex
   ], 'Never Answers');
   assert.equal(v.state, 'call-exhausted', 'after 3 dead calls we stop dialing');
   assert.equal(v.channel, 'text', 'switch to a text instead of a 4th call');
+});
+
+// ── channel shape must respect the line type + email availability (grading report §3) ──
+// channelForStep was line-type-blind, so a "text" step surfaced on a landline/VoIP
+// switchboard (Garrett can't SMS it) and a step-4 "email" fired even with no email on file
+// (Rory Marlow, Joe Wilson — an impossible step).
+
+test('a text step on a landline becomes a call (a switchboard cannot receive SMS)', () => {
+  const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Landline Co', { lineType: 'landline' });
+  assert.equal(v.step, 2, 'cold step 2 (text step) after one landed touch');
+  assert.equal(v.channel, 'call', 'landline text step is corrected to a call');
+});
+
+test('a text step on a mobile stays a text (do not over-correct textable lines)', () => {
+  const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Mobile Person', { lineType: 'mobile' });
+  assert.equal(v.channel, 'text');
+});
+
+test('an email step with NO email on file falls back to a textable channel (impossible step guard)', () => {
+  // 3 landed touches → cold step 4 = email. No email + mobile line → text, not a dead email step.
+  const three = [
+    { ts: ago(20), kind: 'sms', dir: 'out', text: 'one' },
+    { ts: ago(13), kind: 'sms', dir: 'out', text: 'two' },
+    { ts: ago(6),  kind: 'sms', dir: 'out', text: 'three' },
+  ];
+  const v = verdict(three, 'No Email', { lineType: 'mobile', hasEmail: false });
+  assert.equal(v.step, 4, 'cold step 4 is the email step');
+  assert.notEqual(v.channel, 'email', 'no email on file → not an email step');
+  assert.equal(v.channel, 'text', 'textable line → fall back to text');
+});
+
+test('an email step with NO email on a landline falls back to a call', () => {
+  const three = [
+    { ts: ago(20), kind: 'sms', dir: 'out', text: 'one' },
+    { ts: ago(13), kind: 'sms', dir: 'out', text: 'two' },
+    { ts: ago(6),  kind: 'sms', dir: 'out', text: 'three' },
+  ];
+  const v = verdict(three, 'No Email Landline', { lineType: 'landline', hasEmail: false });
+  assert.equal(v.channel, 'call');
+});
+
+test('an email step WITH an email on file stays an email (even on a landline — email needs no phone)', () => {
+  const three = [
+    { ts: ago(20), kind: 'sms', dir: 'out', text: 'one' },
+    { ts: ago(13), kind: 'sms', dir: 'out', text: 'two' },
+    { ts: ago(6),  kind: 'sms', dir: 'out', text: 'three' },
+  ];
+  const v = verdict(three, 'Has Email', { lineType: 'landline', hasEmail: true });
+  assert.equal(v.channel, 'email');
 });
 
 test('give-up cap: a warm contact (they talked) is never call-exhausted', () => {

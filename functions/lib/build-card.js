@@ -27,6 +27,19 @@ export function isNonReply(text) {
   return false;
 }
 
+// Conservative written-decline detection on an inbound reply. Fires only on clear "no"
+// language, so a real question or a soft reply is NEVER suppressed. Mirrors the call-coach
+// cool-off, but for text content (Mark O'Keefe "I need to pass on it"; Harriet "not
+// exploring outside partnerships" — grading report §4). When in doubt DON'T flag it: a
+// missed decline just shows a normal follow-up, while a FALSE decline silences a live lead
+// (the worse error).
+const DECLINE_RE = /\b(?:i(?:'?m| am)? not (?:interested|looking|exploring)|not (?:interested|exploring|looking|a (?:good )?fit)|need to pass|gonna pass|going to pass|i'?ll pass|we'?ll pass|no thanks|no thank you|not (?:right now|at this time|for us|something we)|we'?re (?:all set|not (?:interested|exploring|looking))|already (?:have (?:someone|a (?:pt|trainer|therapist))|work with)|please (?:stop|remove|don'?t)|unsubscribe|take me off)\b/i;
+function looksLikeDecline(text) {
+  const t = String(text || "").trim();
+  if (!t) return false;
+  return DECLINE_RE.test(t);
+}
+
 // A call is a confirmed CONNECT (a real conversation) if it has a transcript, or it
 // ran long enough that it can't plausibly be a missed-call / short voicemail. A bare
 // short duration is NOT proof of a talk (it can be ring time or a brief voicemail).
@@ -153,6 +166,16 @@ export function buildCard(dossier, now = Date.now()) {
   else state = "cold";
   const engaged = state === "engaged";
 
+  // ── is the engaged loop actually CLOSED? ──
+  // 'declined': their last reach-back is a written "no" → hold, never pitch.
+  // 'answered': we already sent an outbound AFTER their last reach-back → we responded,
+  //             it's their court now, not "they replied, pick the thread up".
+  // (An inbound CALL has no body to read, so decline detection only applies to text.)
+  const declined = engaged && !!lastReachBack && lastReachBack.type !== "CALL" && looksLikeDecline(lastReachBack.body);
+  const repliedAfterReachBack = engaged && !!lastReachBack &&
+    thread.some((m) => m.direction === "outbound" && new Date(m.date) > new Date(lastReachBack.date));
+  const hold = declined ? "declined" : (repliedAfterReachBack ? "answered" : null);
+
   // ── channel: line type decides; provenance can override the PLAY (below) ──
   // An unverified import number is never dialed OR texted, but that's enforced by the
   // verify-first play (a discovery task suppresses outreach copy), not by the channel —
@@ -171,12 +194,19 @@ export function buildCard(dossier, now = Date.now()) {
   const named = isPersonName(d.firstName, d.lastName, d.fullName);
   const ownerRole = /owner|sole|principal|founder/i.test(d.role || "");
   const reachableLine = !d.lineType || d.lineType === "mobile" || d.lineType === "unknown";
+  // Genuine prior engagement — they reached back, or we had a real (120s+) connected call —
+  // means we already know who to reach, so the PLAY is a pitch even if that engagement is
+  // older than the "talked" recency window. Recency gates the STATE headline (talked vs
+  // cold); it must NOT erase engagement from the play (Tom Rezendes: a 2.5-min talk on 6/6
+  // was wrongly routed to discovery once it aged past 14 days — grading report lines 89-90).
+  const everEngaged = !!lastReachBack || !!lastConnect;
   // An unverified import number forces a verify-first task ahead of any pitch: we can't
   // do outreach until someone confirms the number reaches this person. That IS the
   // discovery move (confirm the person, write back the real number) — never a pitch on
   // the number on file, even for a named "owner" (the name came from the same import).
   const play = phoneUnverified ? "discovery"
     : (named && (ownerRole || reachableLine || d.isSolo)) ? "pitch"
+    : everEngaged ? "pitch"
     : "discovery";
 
   // ── the headline writes itself from the facts (action-first, never contradictory) ──
@@ -186,7 +216,14 @@ export function buildCard(dossier, now = Date.now()) {
   // person — discovery (find the decision-maker) only applies to a COLD facility where no one
   // has engaged and we don't know who to reach.
   let why;
-  if (state === "engaged" && phoneUnverified) {
+  if (state === "engaged" && declined) {
+    // A written "no" — mirror the call-coach cool-off: hold, don't pitch.
+    why = `${name} passed on it ${agoLabel(daysSince(lastReachBack.date, now))}. Hold off — they said no, don't re-pitch.`;
+  } else if (state === "engaged" && repliedAfterReachBack) {
+    // We already answered their reach-back — the ball is in their court, not "pick it up".
+    const lastOut = [...thread].reverse().find((m) => m.direction === "outbound");
+    why = `You already replied to ${name} (${agoLabel(daysSince(lastOut ? lastOut.date : lastTouch, now))}). It's their court now — wait, or send a light nudge if it's gone quiet.`;
+  } else if (state === "engaged" && phoneUnverified) {
     // The only reach-back that leaves the phone unverified is an EMAIL reply — an inbound
     // text or call would have PROVEN the number. So reply by email; the number on file is
     // still import research and stays off-limits until it's confirmed.
@@ -214,6 +251,9 @@ export function buildCard(dossier, now = Date.now()) {
   return {
     state,
     engaged,
+    // 'declined' → suppress outreach (hold); 'answered' → their court (we already replied);
+    // null → normal. Lets the display mirror the call-coach cool-off from message content.
+    hold,
     channel,
     play,
     lastTouch,
