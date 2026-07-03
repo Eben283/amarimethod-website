@@ -112,6 +112,48 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
     })).action).not.toBe('discovery');
   });
 
+  // ── REVERSE buildCard's line-type discovery when the rundown names the owner (spec §2) ──
+  // The live bug: buildCard sets play=discovery from the line type (voip switchboard) for
+  // Michael Crammond even though his rundown opens "Michael Crammond runs Whole Body
+  // Solutions" (the spec's own example). finalizePlay knew he was a known DM but only used
+  // that to avoid FORCING discovery — it never REVERSED buildCard's discovery verdict, so he
+  // sat on a "call and ask who handles partnerships" card for his own studio (report line 88).
+  it('reverses a buildCard discovery verdict when the rundown names the owner', () => {
+    const p = card({
+      firstName: 'michael', lastName: 'crammond', partnerFacilityRole: 'Trainer',
+      phoneType: 'voip',
+      rundown: 'Michael Crammond runs Whole Body Solutions, a personal training and wellness studio in SF.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships, then get a name.',
+                 _cadenceWhy: 'Send step 2 of 5 now (call; last touch 9d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).not.toBe('discovery');        // flipped to a direct pitch
+    expect(r.why).not.toMatch(/who handles partnerships/);
+  });
+
+  it('reverses a buildCard discovery verdict for an explicit Owner role (first name only)', () => {
+    const p = card({
+      firstName: 'charlie', lastName: '', partnerFacilityRole: 'Owner', phoneType: 'landline',
+      rundown: 'Charlie is a certified fitness professional with 30 years experience.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships.' },
+    });
+    expect(finalizePlay(p).action).not.toBe('discovery');
+  });
+
+  it('does NOT reverse discovery when the owner is unverified import research', () => {
+    // The verify-first guard still wins: a named-owner rundown does not make an untrusted
+    // import number safe to dial.
+    const p = card({
+      firstName: 'michael', lastName: 'crammond', partnerFacilityRole: 'Owner',
+      rundown: 'Michael Crammond runs Whole Body Solutions.',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: "Verify Michael's number before any outreach.", phoneProvenance: 'unverified' },
+    });
+    expect(finalizePlay(p).action).toBe('discovery');
+  });
+
   // ── guards on existing behavior ──
   it('never runs discovery on a trusted solo contact', () => {
     expect(finalizePlay(card({

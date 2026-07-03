@@ -464,6 +464,21 @@ export function finalizePlay(p, warmFacilities = new Set()) {
     "\\b[^.]{0,60}\\b(owns?|runs?|founded|founder|owner|co-?owner|principal|sole)\\b",
     "i").test((p.rundown || "").trim());
   const knownDecisionMaker = hasPersonFirstName && (isOwnerRole || ownerInRundown);
+  // REVERSE buildCard's line-type discovery when the rundown/role names the owner (spec §2).
+  // buildCard sets play=discovery from the line type (a voip/landline switchboard) even for a
+  // named owner whose rundown opens "Michael Crammond runs Whole Body Solutions" — the spec's
+  // own example. Knowing the DM must not merely PREVENT forcing discovery; it must UNDO
+  // buildCard's discovery verdict, or the owner gets a "who handles partnerships" card for his
+  // own studio (report line 88). The verify-first guard above still wins for import numbers.
+  if (d.action === "discovery" && knownDecisionMaker) {
+    const ch = FORCED_CALL_LINES.has(p.phoneType) ? "call" : "text";
+    const name = (p.firstName || (p.fullName || "").split(/\s+/)[0] || "them").trim();
+    const verb = ch === "call" ? "Call" : "Text";
+    const why = d._cadenceWhy
+      ? retargetCadenceWhy(d._cadenceWhy, verb, ch)
+      : `${verb} ${name}, pitch directly — the rundown names them as the owner.`;
+    return { ...d, action: ch, channel: ch, why };
+  }
   if (isFacility && !trusted && !engaged && !knownDecisionMaker) {
     // Check if a person contact linked via trainer_facility is warm/trusted.
     // If so, we already know who to reach — let cadence drive instead of forcing discovery.

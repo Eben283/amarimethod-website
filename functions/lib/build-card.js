@@ -171,12 +171,19 @@ export function buildCard(dossier, now = Date.now()) {
   const named = isPersonName(d.firstName, d.lastName, d.fullName);
   const ownerRole = /owner|sole|principal|founder/i.test(d.role || "");
   const reachableLine = !d.lineType || d.lineType === "mobile" || d.lineType === "unknown";
+  // Genuine prior engagement — they reached back, or we had a real (120s+) connected call —
+  // means we already know who to reach, so the PLAY is a pitch even if that engagement is
+  // older than the "talked" recency window. Recency gates the STATE headline (talked vs
+  // cold); it must NOT erase engagement from the play (Tom Rezendes: a 2.5-min talk on 6/6
+  // was wrongly routed to discovery once it aged past 14 days — grading report lines 89-90).
+  const everEngaged = !!lastReachBack || !!lastConnect;
   // An unverified import number forces a verify-first task ahead of any pitch: we can't
   // do outreach until someone confirms the number reaches this person. That IS the
   // discovery move (confirm the person, write back the real number) — never a pitch on
   // the number on file, even for a named "owner" (the name came from the same import).
   const play = phoneUnverified ? "discovery"
     : (named && (ownerRole || reachableLine || d.isSolo)) ? "pitch"
+    : everEngaged ? "pitch"
     : "discovery";
 
   // ── the headline writes itself from the facts (action-first, never contradictory) ──

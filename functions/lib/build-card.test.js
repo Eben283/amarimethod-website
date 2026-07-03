@@ -77,6 +77,35 @@ describe('buildCard — one true view, no contradictions', () => {
     expect(c.why).toMatch(/^Call and ask who handles partnerships/);
   });
 
+  // TOM REZENDES — real data shape: a 146s (real) connected call on 6/6, then texted by
+  // name. By grading day the call is >14d old, so the STATE is cold (recency gate), but the
+  // PLAY must still be a pitch — we already talked to him, we know who to reach. The 14-day
+  // talked window gates the headline, it must not erase engagement from the play decision.
+  it('Tom: an old (>14d) real connected call keeps the PLAY a pitch even after state falls to cold', () => {
+    const c = buildCard({
+      firstName: 'Tom', lastName: 'Rezendes', role: 'Trainer', lineType: 'landline',
+      thread: [
+        msg({ type: 'CALL', callDuration: 146, date: '2026-05-20T18:00:00Z' }), // ~32d before NOW
+        msg({ type: 'SMS', body: 'Great talking Tom, here is the link', date: '2026-05-21T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.state).toBe('cold');           // the connect is older than 14d
+    expect(c.play).toBe('pitch');           // but we already know who to reach — not discovery
+    expect(c.why).not.toMatch(/who handles partnerships/);
+  });
+
+  it('a cold facility with only dead calls (no connect, no reply) is still discovery', () => {
+    // Guard: everEngaged must require a REAL connect/reply, not just any call attempt.
+    const c = buildCard({
+      fullName: 'Iron House Gym', role: 'Owner', lineType: 'landline',
+      thread: [
+        msg({ type: 'CALL', callDuration: 20, date: '2026-06-01T18:00:00Z' }), // short = no connect
+        msg({ type: 'CALL', callDuration: null, date: '2026-06-10T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.play).toBe('discovery');
+  });
+
   it('channel is line-type, full stop: a mobile owner is textable, a landline owner is not', () => {
     const base = { firstName: 'Mike', lastName: 'Lee', role: 'Owner', thread: [] };
     expect(buildCard({ ...base, lineType: 'mobile' }, NOW).channel).toBe('text');
