@@ -23,6 +23,29 @@ const BACKFILL_DAYS = 90;          // first run reaches back this far
 const TRIM_DAYS = 90;              // keep only the last 90d of touches per contact
 const OVERLAP_MS = 30 * 60 * 1000; // re-scan a 30-min overlap so nothing slips the boundary
 const PROFILE_TTL = DAY_MS;        // re-fetch contact profile once per 24h per contact
+// Profile staleness reconciliation (2026-07-03): the changed-conversation pass only
+// re-pulls a profile for contacts with NEW messages, so a GHL rename/correction on a
+// QUIET contact never propagates (Mike Jigalin stayed "Jennifer"; Brendan Vu "Brandon").
+// Walk the roster on a rotating cursor and re-pull any profile older than the TTL even
+// with zero new messages, bounded so the extra GHL fetches never blow the wall-clock.
+const PROFILE_REFRESH_TTL = 7 * DAY_MS;   // re-pull an untouched contact's profile weekly
+const PROFILE_SCAN_WINDOW = 120;          // # of cached contacts checked per run (rotating)
+const PROFILE_REFRESH_CAP = 20;           // # of GHL profile fetches per run (rate-limit bound)
+
+// Pure: from a scanned window of cached records, pick the contacts whose dossier profile is
+// older than `ttl` (a never-fetched profile counts as stale), oldest-first, capped, skipping
+// any already refreshed by the changed-conversation pass this run. Exported for tests.
+export function staleProfileIds(records, alreadyRefreshed, now, ttl = PROFILE_REFRESH_TTL, cap = PROFILE_REFRESH_CAP) {
+  const skip = alreadyRefreshed || new Set();
+  const due = [];
+  for (const r of records || []) {
+    if (!r || !r.contactId || skip.has(r.contactId)) continue;
+    const age = r.dossierFetchedAt ? now - r.dossierFetchedAt : Infinity;
+    if (age > ttl) due.push({ contactId: r.contactId, at: r.dossierFetchedAt || 0 });
+  }
+  due.sort((a, b) => a.at - b.at); // oldest profile first — drain the backlog over runs
+  return due.slice(0, cap).map((d) => d.contactId);
+}
 
 // GHL custom-field IDs for partner-prospect dossier (mirrors card-brain-generate.mjs FID).
 const DOSSIER_FIELDS = {
@@ -233,6 +256,55 @@ export async function runSync(env, trigger, full = false) {
     await kv.put("conv:index", JSON.stringify(index));
   }
 
+  // 3b. Refresh a bounded, rotating window of UNTOUCHED contacts' dossier profiles on a TTL.
+  // The changed-conversation pass above only re-pulls profiles for contacts with new
+  // messages, so a GHL rename/correction on a quiet contact stays stale forever. Walk the
+  // roster on a persisted cursor so every contact's profile is re-pulled at least weekly,
+  // even with zero new messages — bounded GHL fetches (PROFILE_REFRESH_CAP) per run.
+  let profilesRefreshed = 0;
+  try {
+    const roster = (await kv.get("conv:index", "json")) || {};
+    const ids = Object.keys(roster).sort();
+    if (ids.length) {
+      const cursor = Number(await kv.get("conv:profile:cursor")) || 0;
+      const window = [];
+      for (let k = 0; k < Math.min(PROFILE_SCAN_WINDOW, ids.length); k++) {
+        window.push(ids[(cursor + k) % ids.length]);
+      }
+      const scanned = (await mapLimit(window, 5, async (id) => {
+        const rec = await kv.get(`conv:${id}`, "json");
+        return rec ? { contactId: id, dossierFetchedAt: rec.dossierFetchedAt, rec } : null;
+      })).filter(Boolean);
+      const recById = new Map(scanned.map((s) => [s.contactId, s.rec]));
+      const stale = staleProfileIds(
+        scanned.map(({ contactId, dossierFetchedAt }) => ({ contactId, dossierFetchedAt })),
+        new Set(Object.keys(indexUpdates)),
+        start,
+      );
+      await mapLimit(stale, 5, async (id) => {
+        const existing = recById.get(id);
+        if (!existing) return;
+        let profile;
+        try {
+          const cd = await ghlRetry(env, `/contacts/${id}`);
+          profile = profileFromContact(cd.contact || cd, start);
+        } catch { return; } // keep existing profile on error; next run retries
+        await kv.put(`conv:${id}`, JSON.stringify({
+          ...existing,
+          firstName:        profile.firstName        ?? existing.firstName        ?? "",
+          lastName:         profile.lastName         ?? existing.lastName         ?? "",
+          email:            profile.email            ?? existing.email            ?? null,
+          role:             profile.role             ?? existing.role             ?? null,
+          business:         profile.business         ?? existing.business         ?? null,
+          rundown:          profile.rundown          ?? existing.rundown          ?? null,
+          dossierFetchedAt: profile.dossierFetchedAt ?? start,
+        }));
+        profilesRefreshed++;
+      });
+      await kv.put("conv:profile:cursor", String((cursor + PROFILE_SCAN_WINDOW) % ids.length));
+    }
+  } catch { /* non-fatal: staleness reconcile is best-effort, never blocks the sync */ }
+
   // 4. Advance the high-water mark + write the run summary.
   // Only advance if pagination completed without error. A partial pull (pagination broke
   // mid-run) means some conversations in the window were never fetched — advancing would
@@ -250,6 +322,7 @@ export async function runSync(env, trigger, full = false) {
     changedConversations: changed.length,
     contactsUpdated,
     newTouches,
+    profilesRefreshed,
     durationMs: Date.now() - start,
   };
   await kv.put("ops:conversation-cache:lastRun", JSON.stringify(summary));

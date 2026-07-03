@@ -4,7 +4,7 @@
 // direction-less email as outbound, without ever flipping a real inbound.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { touchDir, resolveLineType, profileFromContact } from '../src/sync.js';
+import { touchDir, resolveLineType, profileFromContact, staleProfileIds } from '../src/sync.js';
 
 test('direction-less EMAIL is outbound (our campaign email, not a phantom reply)', () => {
   assert.equal(touchDir({ direction: undefined }, 'email'), 'out');
@@ -69,4 +69,43 @@ test('profileFromContact is null-safe: missing email/fields → nulls, not throw
   assert.equal(profile.business, null);
   assert.equal(profile.rundown, null);
   assert.equal(profile.firstName, '');
+});
+
+// Dossier-staleness fix (2026-07-03, grading report line 54): the changed-conversation
+// pass only refreshes a contact's profile (firstName/role/rundown) when it has NEW
+// messages, so a GHL rename on a quiet contact never propagates (Mike Jigalin stayed
+// "Jennifer"; Brendan Vu "Brandon"). staleProfileIds picks the contacts whose cached
+// profile is older than the TTL, oldest-first and capped, skipping any refreshed this run.
+const DAY = 86_400_000;
+const NOW = 1_000 * DAY; // arbitrary large "now"
+
+test('staleProfileIds picks profiles older than the TTL, oldest first', () => {
+  const recs = [
+    { contactId: 'fresh', dossierFetchedAt: NOW - 1 * DAY },   // within TTL
+    { contactId: 'old', dossierFetchedAt: NOW - 10 * DAY },    // stale
+    { contactId: 'oldest', dossierFetchedAt: NOW - 30 * DAY }, // stalest
+  ];
+  const ids = staleProfileIds(recs, new Set(), NOW, 7 * DAY, 10);
+  assert.deepEqual(ids, ['oldest', 'old'], 'stale ones only, oldest first, fresh excluded');
+});
+
+test('staleProfileIds treats a never-fetched profile (no dossierFetchedAt) as stale', () => {
+  const recs = [{ contactId: 'never', dossierFetchedAt: null }, { contactId: 'also', dossierFetchedAt: undefined }];
+  const ids = staleProfileIds(recs, new Set(), NOW, 7 * DAY, 10);
+  assert.ok(ids.includes('never') && ids.includes('also'), 'a profile never fetched must be refreshed');
+});
+
+test('staleProfileIds skips contacts already refreshed this run and honors the cap', () => {
+  const recs = [
+    { contactId: 'a', dossierFetchedAt: NOW - 30 * DAY },
+    { contactId: 'b', dossierFetchedAt: NOW - 20 * DAY },
+    { contactId: 'c', dossierFetchedAt: NOW - 10 * DAY },
+  ];
+  const ids = staleProfileIds(recs, new Set(['a']), NOW, 7 * DAY, 1);
+  assert.deepEqual(ids, ['b'], 'a excluded (already refreshed), cap=1 keeps only the oldest remaining');
+});
+
+test('staleProfileIds returns nothing when every profile is fresh', () => {
+  const recs = [{ contactId: 'a', dossierFetchedAt: NOW - 1 * DAY }];
+  assert.deepEqual(staleProfileIds(recs, new Set(), NOW, 7 * DAY, 10), []);
 });
