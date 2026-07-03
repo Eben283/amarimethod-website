@@ -54,6 +54,37 @@ function isPersonName(firstName, lastName, fullName) {
 }
 
 const UNTEXTABLE = new Set(["landline", "toll_free", "voip"]);
+
+// ── phone provenance: is the number on file real, or just import research? ──
+// LinkedIn/CSV imports get a placeholder email (see ops/scripts/import-prospects.mjs)
+// and their phone is UNVERIFIED research — dialing it cold sent Garrett to a wrong
+// number (2026-07-02). Until someone verifies the contact (outreach_verified /
+// trainer-solo / dm-verified, spec §2) or the number PROVES itself by engagement
+// (an inbound text/call, or a 120s+ connected call — it demonstrably reaches them),
+// the card must route to LinkedIn, never to the number.
+const PLACEHOLDER_EMAIL_RE = /@amari-prospect\.placeholder$/i;
+const LINKEDIN_SOURCE_RE = /linkedin/i;
+const PHONE_UNVERIFIED_NOTE = "phone unverified, from import research, not confirmed";
+
+// The number is de-facto verified when engagement happened ON it: they texted back
+// (a real reply, not an OTP/artifact), they called us, or a call connected for real.
+// An EMAIL reply proves the person, not the phone — it does NOT count.
+function provesPhone(m) {
+  if (m.direction === "inbound") {
+    if (m.type === "CALL") return true;              // they called from the number
+    return m.type === "SMS" && !isNonReply(m.body);  // a real text reply landed on it
+  }
+  return isConnectedCall(m);                         // we talked to a human on it
+}
+
+// 'verified' (explicit flag/tag) > 'proven' (engagement on the number) >
+// 'unverified' (import research, never touch it) > 'on-file' (normal contact).
+function phoneProvenanceOf(d, thread) {
+  if (d.outreachVerified || d.dmVerified || d.isSolo) return "verified";
+  if (thread.some(provesPhone)) return "proven";
+  const imported = PLACEHOLDER_EMAIL_RE.test(d.email || "") || LINKEDIN_SOURCE_RE.test(d.source || "");
+  return imported ? "unverified" : "on-file";
+}
 const DAY_MS = 86_400_000;
 function daysSince(iso, now) {
   if (!iso) return null;
@@ -78,6 +109,8 @@ function agoLabel(d) {
  *
  * dossier = {
  *   firstName, lastName, fullName, role, business, lineType, rundown,
+ *   email, source,                        // provenance signals (placeholder / LinkedIn import)
+ *   outreachVerified, dmVerified, isSolo, // verification overrides (spec §2)
  *   thread: [{ direction:'inbound'|'outbound', type:'SMS'|'CALL'|'EMAIL',
  *              body, callDuration, hasTranscript, date }],
  * }
@@ -110,8 +143,13 @@ export function buildCard(dossier, now = Date.now()) {
   else state = "cold";
   const engaged = state === "engaged";
 
-  // ── channel: line type decides, full stop ──
-  const channel = UNTEXTABLE.has(d.lineType) ? "call" : "text";
+  // ── channel: provenance first, then line type ──
+  // An unverified import number is never dialed OR texted — line type is irrelevant
+  // when the number itself is research. Route to LinkedIn (spec §3: LinkedIn-sourced
+  // contacts are reached on LinkedIn, never on the phone on file).
+  const phoneProvenance = phoneProvenanceOf(d, thread);
+  const phoneUnverified = phoneProvenance === "unverified";
+  const channel = phoneUnverified ? "linkedin" : UNTEXTABLE.has(d.lineType) ? "call" : "text";
 
   // ── play: pitch when we can reach the right person directly; else discovery ──
   // PITCH = a named owner (their place — call the line), OR a named person on a personal
@@ -127,7 +165,7 @@ export function buildCard(dossier, now = Date.now()) {
 
   // ── the headline writes itself from the facts (action-first, never contradictory) ──
   const name = (d.firstName || (d.fullName || "").split(/\s+/)[0] || "there").trim();
-  const verb = channel === "call" ? "Call" : "Text";
+  const verb = channel === "call" ? "Call" : channel === "linkedin" ? "Message" : "Text";
   // Engagement wins over the play: if they reached back or we just talked, respond to THAT
   // person — discovery (find the decision-maker) only applies to a COLD facility where no one
   // has engaged and we don't know who to reach.
@@ -135,8 +173,15 @@ export function buildCard(dossier, now = Date.now()) {
   if (state === "engaged") {
     const back = lastReachBack.type === "CALL" ? "called back" : "replied";
     why = `${verb} ${name} back, they ${back} ${agoLabel(daysSince(lastReachBack.date, now))}. Pick the thread up.`;
+    // Engaged by EMAIL with an unverified import number: the person is real, the
+    // number still isn't. Say where to reach them and why the phone stays off-limits.
+    if (phoneUnverified) why += ` (Reach them on LinkedIn, the number on file is unverified import research.)`;
   } else if (state === "talked") {
     why = `${verb} ${name} back, you spoke ${agoLabel(daysSince(lastConnect.date, now))} but no follow-up since.`;
+  } else if (phoneUnverified) {
+    // Before discovery on purpose: a discovery card says "call and ask", and the
+    // number on file is exactly the thing we don't trust here.
+    why = `Reach ${name} on LinkedIn. The number on file came from import research and was never verified, don't dial or text it.`;
   } else if (play === "discovery") {
     why = `Call and ask who handles partnerships, then get a name. It's a facility and we don't know the decision-maker yet.`;
   } else {
@@ -168,6 +213,11 @@ export function buildCard(dossier, now = Date.now()) {
       lastConnect: lastConnect ? { daysAgo: daysSince(lastConnect.date, now), hasTranscript: !!lastConnect.hasTranscript } : null,
       outboundOnly: reachBacks.length === 0,
       lastTouchDays,
+      // Phone provenance for the honesty layer: 'verified' | 'proven' | 'unverified'
+      // | 'on-file'. phoneNote is the ready-made "what we don't know" footnote line
+      // when the number is unverified import research.
+      phoneProvenance,
+      phoneNote: phoneUnverified ? PHONE_UNVERIFIED_NOTE : null,
     },
   };
 }

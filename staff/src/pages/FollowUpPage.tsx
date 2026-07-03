@@ -110,6 +110,11 @@ interface Derived {
   // Phase 3: buildCard output — deterministic state + play computed from conv thread.
   state?: 'cold' | 'engaged' | 'talked';
   play?: 'pitch' | 'discovery';
+  // Phone provenance (2026-07-02 wrong-number fix): 'unverified' = the number on file
+  // is import research — the card routes to LinkedIn and phoneNote carries the
+  // "what we don't know" footnote line.
+  phoneProvenance?: 'verified' | 'proven' | 'unverified' | 'on-file';
+  phoneNote?: string | null;
 }
 
 // ── Day-of-week outreach weighting ──────────────────────────────────────────
@@ -917,6 +922,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
     if (!phoneType) gaps.push('line type unknown');
     if (isTextDnd) gaps.push('texts blocked');
     if (isDiscovery) gaps.push('who the decision-maker is');
+    if (item.d.phoneNote) gaps.push(item.d.phoneNote); // "phone unverified, from import research, not confirmed"
     if (!pp.phone) gaps.push('no phone');
     if (!pp.email) gaps.push('no email');
     if (!pp.website) gaps.push('no website');

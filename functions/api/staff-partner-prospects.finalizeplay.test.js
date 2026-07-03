@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { finalizePlay, manualTouchIsFresherThanCadence } from './staff-partner-prospects.js';
+import { finalizePlay, manualTouchIsFresherThanCadence, overlayCard } from './staff-partner-prospects.js';
+import { buildCard } from '../lib/build-card.js';
 
 describe('manualTouchIsFresherThanCadence — a just-marked touch beats the stale cadence', () => {
   const M = manualTouchIsFresherThanCadence;
@@ -129,5 +130,80 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
   it('leaves a non-actionable card untouched', () => {
     const aside = { derived: { kind: 'aside', action: null }, tags: [], category: 'trainer' };
     expect(finalizePlay({ ...card(), ...aside }).kind).toBe('aside');
+  });
+});
+
+// ── phone provenance through the overlay (the 2026-07-02 wrong-number fix) ──────────
+// buildCard says "linkedin" when the number on file is unverified import research.
+// That verdict must survive overlayCard (which otherwise lets the cadence's call/text
+// channel or an engaged-by-email mirror win) AND finalizePlay (which otherwise forces
+// an unverified facility onto a discovery CALL card — dialing the very number we
+// don't trust).
+describe('overlayCard + finalizePlay — unverified import phones never become call/text', () => {
+  const NOW = Date.parse('2026-06-21T12:00:00Z');
+  const oxanaCard = (thread = []) => buildCard({
+    firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'voip',
+    email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
+    thread,
+  }, NOW);
+
+  it('overlayCard: the LinkedIn channel wins over the cadence base channel', () => {
+    const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
+    const d = overlayCard(base, oxanaCard());
+    expect(d.channel).toBe('linkedin');
+    expect(d.action).toBe('linkedin');
+    expect(d.why).toMatch(/LinkedIn/);
+    expect(d.why).not.toMatch(/^(Call|Text) /);
+  });
+
+  it('overlayCard: engaged-by-EMAIL does not flip an unverified phone back to text', () => {
+    const cardEngagedByEmail = buildCard({
+      firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'mobile',
+      email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
+      thread: [
+        { direction: 'outbound', type: 'EMAIL', body: 'Hi', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'EMAIL', body: 'Sounds interesting, tell me more?', callDuration: null, date: '2026-06-12T10:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 70, warmth: 2, action: 'text', channel: 'text', why: 'Text them back.' };
+    const d = overlayCard(base, cardEngagedByEmail);
+    expect(d.channel).toBe('linkedin');
+    expect(d.action).toBe('linkedin');
+  });
+
+  it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
+    const base = { kind: 'act', urgency: 50, warmth: 0, action: 'call', channel: 'call', why: 'x' };
+    const d = overlayCard(base, oxanaCard());
+    expect(d.phoneProvenance).toBe('unverified');
+    expect(d.phoneNote).toMatch(/phone unverified/i);
+  });
+
+  it('overlayCard: a PROVEN import number flows through normally (engagement upgraded trust)', () => {
+    const proven = buildCard({
+      firstName: 'TJ', lastName: '', role: 'Trainer', lineType: 'mobile',
+      email: 'tj.linkedin@amari-prospect.placeholder',
+      thread: [
+        { direction: 'outbound', type: 'SMS', body: 'Hi TJ', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'SMS', body: 'Sure, tell me more', callDuration: null, date: '2026-06-12T10:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 70, warmth: 2, action: 'text', channel: 'text', why: 'Text them back.' };
+    const d = overlayCard(base, proven);
+    expect(d.channel).toBe('text');
+    expect(d.phoneProvenance).toBe('proven');
+  });
+
+  it('finalizePlay: never rewrites a LinkedIn-routed card into a discovery call', () => {
+    // An unverified facility contact would normally be forced onto discovery
+    // ("call and ask who handles partnerships") — but the number is the thing
+    // we don't trust, so the LinkedIn route must stand.
+    const p = card({
+      firstName: 'oxana', lastName: 'petrova',
+      derived: { kind: 'act', action: 'linkedin', channel: 'linkedin', warmth: 0, urgency: 50,
+                 why: 'Reach Oxana on LinkedIn.', phoneProvenance: 'unverified' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('linkedin');
+    expect(r.channel).toBe('linkedin');
   });
 });
