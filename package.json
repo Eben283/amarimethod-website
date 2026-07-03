@@ -10,7 +10,7 @@
     "build:legacy-quiz": "cd quiz && vite build",
     "preview": "cd quiz-astro && npm run preview",
     "lint": "cd quiz && eslint .",
-    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js"
+    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
