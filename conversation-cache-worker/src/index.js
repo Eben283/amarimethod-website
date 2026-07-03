@@ -12,11 +12,14 @@
 //   /status               — last-run summary
 //   /conversations?contactId=  — read one contact's cached touch history
 //   /index                — the roster { contactId: lastMessageDate }
+//   /reconcile            — verify the due-list vs GHL, purge deleted ghost cards
 //
-// Cron: every 3 hours (see wrangler.toml).
+// Cron: every 3 hours (see wrangler.toml). Each run: sync → derive → reconcile
+//       ghost cards → transcribe a bounded batch of new call recordings.
 
 import { runSync } from "./sync.js";
 import { deriveCadence } from "./cadence.js";
+import { reconcileDeletions } from "./reconcile.js";
 import { getAccessToken, LOCATION_ID, ghlRetry } from "./ghl.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 
@@ -117,6 +120,12 @@ export default {
     ctx.waitUntil(
       runSync(env, full ? "cron-full" : "cron", full)
         .then(() => deriveCadence(env))
+        // Reconcile ghost cards: verify a bounded batch of the just-written due-list
+        // against GHL and purge any confirmed-deleted (404/410) contacts. Runs every
+        // cron so a deleted contact drops off within one cycle (~3h), never the ~day
+        // it took a human on 2026-07-02. Isolated so a reconcile hiccup can't abort
+        // the transcribe step (and vice-versa).
+        .then(() => reconcileDeletions(env).catch((e) => console.error("[cron] reconcile failed:", e.message)))
         .then(() => transcribePending(env, full ? 20 : 8))
         .catch((e) => console.error("[cron] transcribe failed:", e.message))
     );
@@ -142,6 +151,14 @@ export default {
       // Re-derive the due-list from the existing cache (no GHL conversation pull).
       const cadence = await deriveCadence(env);
       return json(cadence);
+    }
+
+    if (url.pathname === "/reconcile") {
+      // Verify the current due-list against GHL and purge confirmed-deleted (404/410)
+      // ghost cards now. ?batch=N overrides the per-run cap (default 40).
+      const batch = Number(url.searchParams.get("batch")) || undefined;
+      const result = await reconcileDeletions(env, batch ? { batch } : {});
+      return json(result);
     }
 
     if (url.pathname === "/due") {
@@ -184,7 +201,7 @@ export default {
       return json({ count: Object.keys(data).length, index: data });
     }
 
-    return new Response("Not found. Use /sync, /status, /conversations?contactId=, or /index.", { status: 404 });
+    return new Response("Not found. Use /sync, /cadence, /reconcile, /status, /conversations?contactId=, or /index.", { status: 404 });
   },
 };
 
