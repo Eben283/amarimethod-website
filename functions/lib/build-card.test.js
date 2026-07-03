@@ -91,20 +91,19 @@ describe('buildCard — one true view, no contradictions', () => {
 // number on file is import research, NOT a confirmed line. Until it's verified
 // (outreach_verified / trainer-solo / dm-verified) or PROVEN by engagement on that
 // number (an inbound text/call, or a 120s+ connected call), the card must never say
-// call or text — it routes to LinkedIn, and the facts carry the honesty footnote.
+// call or text — the card becomes a verify-first task, and the facts carry the honesty footnote.
 describe('buildCard — phone provenance (never trust an unverified import number)', () => {
   // OXANA — the wrong-number incident shape: LinkedIn import, placeholder email,
   // no verification tags, no engagement. Previously yielded a confident CALL card.
-  it('Oxana: placeholder email + no verification + no engagement → LinkedIn, never call', () => {
+  it('Oxana: placeholder email + no verification + no engagement → verify-first task, never dial the number', () => {
     const c = buildCard({
       firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'voip',
       email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
       thread: [],
     }, NOW);
-    expect(c.channel).toBe('linkedin');
-    expect(c.channel).not.toBe('call');
-    expect(c.why).toMatch(/LinkedIn/);
-    expect(c.why).not.toMatch(/^Call /);
+    expect(c.play).toBe('discovery');       // verify-first, not a pitch on the number
+    expect(c.why).toMatch(/verify/i);
+    expect(c.why).not.toMatch(/^Call /);    // headline never invites dialing the number
     expect(c.facts.phoneProvenance).toBe('unverified');
     expect(c.facts.phoneNote).toMatch(/phone unverified/i);
   });
@@ -115,7 +114,7 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
       email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
       thread: [],
     }, NOW);
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
     expect(c.why).not.toMatch(/^Text /);
   });
 
@@ -125,7 +124,7 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
       email: 'lena@realgym.com', source: 'LinkedIn import',
       thread: [],
     }, NOW);
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
     expect(c.facts.phoneProvenance).toBe('unverified');
   });
 
@@ -246,10 +245,10 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
       ],
     }, NOW);
     expect(c.facts.phoneProvenance).toBe('unverified');
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
   });
 
-  it('an EMAIL reply proves engagement but NOT the phone (still LinkedIn, still footnoted)', () => {
+  it('an EMAIL reply proves engagement but NOT the phone (reply by email, number still unverified)', () => {
     const c = buildCard({
       firstName: 'Nadia', lastName: 'Kim', role: 'Trainer', lineType: 'mobile',
       email: 'nadia.kim.linkedin@amari-prospect.placeholder',
@@ -259,7 +258,7 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
       ],
     }, NOW);
     expect(c.state).toBe('engaged');
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
     expect(c.facts.phoneProvenance).toBe('unverified');
     expect(c.facts.phoneNote).toMatch(/phone unverified/i);
     expect(c.why).not.toMatch(/^(Call|Text) /);
@@ -269,14 +268,14 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
   // Some LinkedIn-sourced contacts carry a REAL-looking email and an empty source —
   // their only LinkedIn signal is the enrichment URL (partner_linkedin_url, backfilled
   // by ops/scripts/backfill-partner-linkedin-urls.mjs). Their phone still came from
-  // import research, so a URL with no verified/proven signal must route to LinkedIn
+  // import research, so a URL with no verified/proven signal must become a verify-first task
   // exactly like the placeholder-email shape.
   it.each([
     ['Dante', 'Jeavon', 'dante@jeavonfitness.com', 'https://www.linkedin.com/in/dante-jeavon'],
     ['James', 'Fish', 'james.fish@gmail.com', 'https://linkedin.com/in/james-fish-sf'],
     ['Rich', 'Yokota', 'rich@yokotagolf.com', 'https://www.linkedin.com/in/rich-yokota'],
     ['Daivya', 'Allmond', 'daivya.allmond@outlook.com', 'https://www.linkedin.com/in/daivya-allmond'],
-  ])('%s %s: LinkedIn URL + real email + no source → still unverified, LinkedIn route', (firstName, lastName, email, linkedinUrl) => {
+  ])('%s %s: LinkedIn URL + real email + no source → still unverified, verify-first task', (firstName, lastName, email, linkedinUrl) => {
     const c = buildCard({
       firstName, lastName, role: 'Trainer', lineType: 'mobile',
       email, source: null, linkedinUrl,
@@ -284,7 +283,7 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
         msg({ type: 'SMS', body: `Hi ${firstName}, Garrett here.`, date: '2026-06-15T10:00:00Z' }),
       ],
     }, NOW);
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
     expect(c.facts.phoneProvenance).toBe('unverified');
     expect(c.facts.phoneNote).toMatch(/phone unverified/i);
     expect(c.why).not.toMatch(/^(Call|Text) /);
@@ -333,7 +332,7 @@ describe('buildCard — phone provenance (never trust an unverified import numbe
       ],
     }, NOW);
     expect(c.facts.phoneProvenance).toBe('unverified');
-    expect(c.channel).toBe('linkedin');
+    expect(c.play).toBe('discovery');
   });
 });
 

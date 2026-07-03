@@ -134,11 +134,13 @@ describe('finalizePlay — discovery vs known decision-maker', () => {
 });
 
 // ── phone provenance through the overlay (the 2026-07-02 wrong-number fix) ──────────
-// buildCard says "linkedin" when the number on file is unverified import research.
-// That verdict must survive overlayCard (which otherwise lets the cadence's call/text
-// channel or an engaged-by-email mirror win) AND finalizePlay (which otherwise forces
-// an unverified facility onto a discovery CALL card — dialing the very number we
-// don't trust).
+// buildCard makes an unverified import number a VERIFY-FIRST task (play=discovery + a
+// "verify the number before any outreach" headline) — LinkedIn was retired as a channel
+// (Eben 2026-06-20/07-03, zero engagement ever), so the move is the discovery one: confirm
+// the number reaches this person, then update it. That verdict must survive overlayCard
+// (which otherwise lets the cadence's call/text channel or an engaged-by-email mirror win)
+// AND finalizePlay (which otherwise reshapes discovery cards) — so the untrusted number is
+// never surfaced for outreach (the 2026-07-02 wrong-number incident).
 describe('overlayCard + finalizePlay — unverified import phones never become call/text', () => {
   const NOW = Date.parse('2026-06-21T12:00:00Z');
   const oxanaCard = (thread = []) => buildCard({
@@ -147,16 +149,16 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     thread,
   }, NOW);
 
-  it('overlayCard: the LinkedIn channel wins over the cadence base channel', () => {
+  it('overlayCard: an unverified number becomes a verify-first discovery task, not the cadence channel', () => {
     const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
     const d = overlayCard(base, oxanaCard());
-    expect(d.channel).toBe('linkedin');
-    expect(d.action).toBe('linkedin');
-    expect(d.why).toMatch(/LinkedIn/);
-    expect(d.why).not.toMatch(/^(Call|Text) /);
+    expect(d.action).toBe('discovery');            // never call/text/linkedin on the number
+    expect(d.why).toMatch(/verify/i);              // the verify headline wins over the cadence why
+    expect(d.why).not.toMatch(/Call them again/);  // the dial-the-number cadence why does not win
+    expect(d.phoneProvenance).toBe('unverified');
   });
 
-  it('overlayCard: engaged-by-EMAIL does not flip an unverified phone back to text', () => {
+  it('overlayCard: engaged-by-EMAIL does not flip an unverified phone into a text on the number', () => {
     const cardEngagedByEmail = buildCard({
       firstName: 'Oxana', lastName: 'Petrova', role: 'Trainer', lineType: 'mobile',
       email: 'oxana.petrova.linkedin@amari-prospect.placeholder',
@@ -167,8 +169,9 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     }, NOW);
     const base = { kind: 'act', urgency: 70, warmth: 2, action: 'text', channel: 'text', why: 'Text them back.' };
     const d = overlayCard(base, cardEngagedByEmail);
-    expect(d.channel).toBe('linkedin');
-    expect(d.action).toBe('linkedin');
+    expect(d.action).toBe('discovery');
+    expect(d.phoneProvenance).toBe('unverified');
+    expect(d.why).not.toMatch(/^Text /);           // reply-by-email headline, never "Text ..." the number
   });
 
   it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
@@ -193,7 +196,7 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.phoneProvenance).toBe('proven');
   });
 
-  it('overlayCard: an enrichment-URL-only import (real email, no source) still routes to LinkedIn', () => {
+  it('overlayCard: an enrichment-URL-only import (real email, no source) still becomes a verify task', () => {
     // The grading-pass gap (2026-07-03): Dante Jeavon / James Fish / Rich Yokota /
     // Daivya Allmond carry real-looking emails and an empty source — only the
     // partner_linkedin_url enrichment field marks them as imports.
@@ -205,22 +208,23 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     }, NOW);
     const base = { kind: 'act', urgency: 62, warmth: 1, action: 'call', channel: 'call', why: 'Call them again today.' };
     const d = overlayCard(base, urlOnly);
-    expect(d.channel).toBe('linkedin');
-    expect(d.action).toBe('linkedin');
+    expect(d.action).toBe('discovery');
+    expect(d.why).toMatch(/verify/i);
     expect(d.phoneProvenance).toBe('unverified');
   });
 
-  it('finalizePlay: never rewrites a LinkedIn-routed card into a discovery call', () => {
-    // An unverified facility contact would normally be forced onto discovery
-    // ("call and ask who handles partnerships") — but the number is the thing
-    // we don't trust, so the LinkedIn route must stand.
+  it('finalizePlay: never reshapes an unverified verify-first card (guard preserves the headline)', () => {
+    // A facility contact with no named owner would normally be forced onto the generic
+    // "call and ask who handles partnerships" discovery card — but here the number is the
+    // thing we don't trust, so the verify-first headline and discovery action must stand.
     const p = card({
       firstName: 'oxana', lastName: 'petrova',
-      derived: { kind: 'act', action: 'linkedin', channel: 'linkedin', warmth: 0, urgency: 50,
-                 why: 'Reach Oxana on LinkedIn.', phoneProvenance: 'unverified' },
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: "Verify Oxana's number before any outreach — it came from import research.",
+                 phoneProvenance: 'unverified' },
     });
     const r = finalizePlay(p);
-    expect(r.action).toBe('linkedin');
-    expect(r.channel).toBe('linkedin');
+    expect(r.action).toBe('discovery');
+    expect(r.why).toMatch(/verify/i);              // not overwritten by the generic discovery why
   });
 });

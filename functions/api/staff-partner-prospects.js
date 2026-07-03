@@ -310,22 +310,13 @@ export function overlayCard(base, card) {
   const isDiscovery = card.play === "discovery";
   const lineForced = FORCED_CALL_LINES.has(lineType);
 
-  // Phone provenance is absolute: buildCard said "linkedin" because the number on
-  // file is unverified import research (placeholder email / LinkedIn source, no
-  // verification, no engagement on the number). No cadence channel, engagement
-  // mirror, or line-type rule may route outreach back onto that number.
-  if (card.channel === "linkedin") {
-    return {
-      ...base,
-      why: card.why,
-      channel: "linkedin",
-      action: "linkedin",
-      state: card.state,
-      play: card.play,
-      phoneProvenance: card.facts?.phoneProvenance || "unverified",
-      phoneNote: card.facts?.phoneNote || null,
-    };
-  }
+  // Phone provenance is absolute: an unverified import number (placeholder email /
+  // LinkedIn source / enrichment URL, no verification, no engagement on the number)
+  // comes through as a discovery VERIFY-FIRST task — buildCard set play="discovery"
+  // and wrote the "verify the number" headline. The discovery branch below preserves
+  // that headline and forces action="discovery" (no cadence channel, engagement mirror,
+  // or line-type rule can route outreach back onto the untrusted number). phoneProvenance
+  // travels with the card either way, so the honesty footnote still shows it.
 
   // If the contact engaged via a specific channel, mirror it: they called → call back;
   // they texted/emailed → text back. Capability (untextable line) still wins over preference.
@@ -416,10 +407,12 @@ export function finalizePlay(p, warmFacilities = new Set()) {
       asideReason: "Has a physical therapist on staff — parked for a future campaign" };
   }
   if (!d || d.kind !== "act") return d;
-  // A LinkedIn-routed card means the number on file is unverified import research.
-  // Never rewrite it into a discovery CALL — that dials the very number we don't
-  // trust (the 2026-07-02 wrong-number incident). The LinkedIn route stands.
-  if (d.channel === "linkedin") return d;
+  // An unverified import number: the card is a verify-first task (confirm the number
+  // reaches this person before any outreach). Never reshape it — not into a pitch on
+  // the untrusted number, and not into the generic "who handles partnerships" discovery
+  // that would bury WHY the number is suspect (the 2026-07-02 wrong-number incident).
+  // The verify headline and discovery action stand until a verification flips provenance.
+  if (d.phoneProvenance === "unverified") return d;
   const tags = Array.isArray(p.tags) ? p.tags : [];
   const isFacility = tags.includes("trainer-facility") || p.category === "business";
   // "Trusted" = we've actually confirmed WHO to reach. NOT inGarrettSheet (that only
