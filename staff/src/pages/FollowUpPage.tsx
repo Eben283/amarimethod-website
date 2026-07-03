@@ -1039,7 +1039,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               {isDiscovery ? (
                 /* Unverified facility — we don't know who to reach. No pitch; call to
                    find the decision-maker first. (The Amanda/Flagship fix.) */
-                <DiscoveryPanel p={item.p} onHandled={onHandled} />
+                <DiscoveryPanel p={item.p} onHandled={onHandled} unverifiedNumber={item.d.phoneProvenance === 'unverified'} />
               ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
               ) : isUntextable ? (
@@ -1082,7 +1082,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                   )}
                 </>
               )}
-              <Details p={item.p} />
+              <Details p={item.p} unverifiedNumber={item.kind === 'prospect' && item.d.phoneProvenance === 'unverified'} />
             </>
           )}
 
@@ -1153,7 +1153,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
 }
 
 // Expanded prospect detail (replaces Outreach's modal info).
-function Details({ p }: { p: PartnerProspect }) {
+function Details({ p, unverifiedNumber = false }: { p: PartnerProspect; unverifiedNumber?: boolean }) {
   const socials = [
     p.linkedinUrl && { label: 'LinkedIn', url: p.linkedinUrl },
     p.instagram && { label: 'Instagram', url: p.instagram.startsWith('http') ? p.instagram : `https://instagram.com/${p.instagram.replace(/^@/, '')}` },
@@ -1164,7 +1164,9 @@ function Details({ p }: { p: PartnerProspect }) {
     <div className="space-y-2 text-sm text-amari-charcoal">
       <EditableField key={`${p.contactId}-rundown`} contactId={p.contactId} field="partnerRundown" label="story" value={p.rundown} multiline />
       <div className="flex flex-col gap-1">
-        {p.phone && <DetailLine icon={Phone} value={p.phone} href={`tel:${p.phone}`} />}
+        {p.phone && (unverifiedNumber
+          ? <DetailLine icon={Phone} value={`${p.phone} — unverified import number, confirm before dialing`} />
+          : <DetailLine icon={Phone} value={p.phone} href={`tel:${p.phone}`} />)}
         {p.email && <DetailLine icon={Mail} value={p.email} href={`mailto:${p.email}`} />}
         {p.website
           ? <DetailLine icon={Globe} value={p.website} href={p.website.startsWith('http') ? p.website : `https://${p.website}`} />
@@ -1267,7 +1269,7 @@ function CallNotesPanel({ notes }: { notes: CallCoach | null | 'loading' }) {
   );
 }
 
-function DiscoveryPanel({ p, onHandled }: { p: PartnerProspect; onHandled?: () => void }) {
+function DiscoveryPanel({ p, onHandled, unverifiedNumber = false }: { p: PartnerProspect; onHandled?: () => void; unverifiedNumber?: boolean }) {
   const where = p.companyName || p.partnerFacility || 'them';
   const ask = `Hi, this is Garrett from Amari Method — I do body-alignment work and partner with gyms so coaches have somewhere to send members with stubborn pain. Who's the best person to talk to about setting that up?`;
   const [open, setOpen] = useState(false);
@@ -1287,12 +1289,16 @@ function DiscoveryPanel({ p, onHandled }: { p: PartnerProspect; onHandled?: () =
   return (
     <div className="rounded-lg border border-violet-300 bg-violet-50/60 p-3">
       <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-violet-700">
-        <Phone className="h-3 w-3" /> Find the right person first
+        <Phone className="h-3 w-3" /> {unverifiedNumber ? 'Verify the number first' : 'Find the right person first'}
       </p>
       <p className="mb-2 text-xs text-amari-text-muted">
-        {where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then mark it verified.
+        {unverifiedNumber
+          ? <>The number on file for {where} came from import research and was never confirmed — don&apos;t dial or text it. Find the business&apos;s public line or website, confirm you&apos;re reaching the right person, then save the real number below.</>
+          : <>{where} is a facility and we haven&apos;t verified who handles partnerships — don&apos;t pitch yet. Call and get a name + a direct line, then mark it verified.</>}
       </p>
-      {p.phone ? (
+      {unverifiedNumber ? (
+        <p className="mb-2 text-xs text-amari-text-muted">Number on file is unverified — confirm it before using it.</p>
+      ) : p.phone ? (
         <p className="mb-2 inline-flex items-center gap-1 text-xs text-amari-charcoal">
           <Phone className="h-3.5 w-3.5 text-amari-text-muted" /> {p.phone}
         </p>
@@ -1682,9 +1688,9 @@ function EditableField({ contactId, field, label, value, multiline }: {
   );
 }
 
-function DetailLine({ icon: Icon, value, href }: { icon: typeof Phone; value: string; href: string }) {
-  const isExternal = href.startsWith('http');
-  const isTel = href.startsWith('tel:');
+function DetailLine({ icon: Icon, value, href }: { icon: typeof Phone; value: string; href?: string }) {
+  const isExternal = !!href && href.startsWith('http');
+  const isTel = !href || href.startsWith('tel:');
   if (isTel) {
     return (
       <span className="inline-flex items-center gap-2 text-amari-charcoal">

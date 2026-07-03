@@ -760,6 +760,11 @@ export async function onRequestGet(context) {
           lineType:  conv?.lineType || null,
           rundown:   conv?.rundown  || null,
           email:     conv?.email    || null,
+          // Full provenance signals, consistent with buildContactDossier — so a placeholder
+          // email / LinkedIn source / enrichment URL is caught here too (these rows carry
+          // phone:null so nothing leaks, but keep detection uniform).
+          source:      conv?.source      || null,
+          linkedinUrl: conv?.linkedinUrl || null,
           thread:    conv ? (conv.touches || []).map(compactToThread) : [],
         };
         derived = overlayCard(base, buildCard(dossier));

@@ -30,12 +30,16 @@ import { ghlRetry } from "./ghl.js";
 // whole list is usually checked every run; larger lists are swept via the cursor.
 const RECONCILE_BATCH = 40;
 
-// Circuit breaker: if a run's confirmed-deletions exceed BOTH an absolute floor and
-// a fraction of the batch, treat it as a systemic misfire (auth/path bug returning
-// 404 for everything) rather than a real purge, and refuse the destructive step —
-// leave it for a human. A real bulk deletion (e.g. the 23-contact incident) is well
-// under the floor and still auto-handled; only an implausibly large sweep is punted.
-const BREAKER_FLOOR = 50;
+// Circuit breaker: if a run's confirmed-deletions exceed BOTH a small absolute minimum
+// AND a high fraction of the batch, treat it as a systemic misfire (auth/path bug
+// returning 404 for everything) rather than a real purge, and refuse the destructive
+// step — leave it for a human. The fraction (0.8) is the real gate; BREAKER_MIN just
+// keeps a tiny batch (e.g. a 1-contact manual run) from ever tripping it.
+// IMPORTANT: BREAKER_MIN must stay well BELOW RECONCILE_BATCH or the breaker is dead
+// code on the cron path (an earlier floor of 50 > the batch of 40 could never fire).
+// A real bulk deletion like the 23-contact incident (23/40 = 58% < 80%) stays under the
+// fraction and is still auto-purged; only an implausible ~all-404 sweep is punted.
+const BREAKER_MIN = 5;
 const BREAKER_FRACTION = 0.8;
 
 // A fetch failure is a CONFIRMED deletion only on an explicit 404/410. Everything
@@ -111,7 +115,7 @@ export async function reconcileDeletions(env, { batch = RECONCILE_BATCH } = {}) 
 
   // Circuit breaker — refuse an implausible mass-deletion (systemic misfire).
   let skippedReason = null;
-  if (deletedIds.length >= BREAKER_FLOOR && deletedIds.length >= BREAKER_FRACTION * slice.length) {
+  if (deletedIds.length >= BREAKER_MIN && deletedIds.length >= BREAKER_FRACTION * slice.length) {
     skippedReason = `breaker: ${deletedIds.length}/${slice.length} of the batch returned 404 — treating as a systemic misfire, not a real purge; no keys touched. Investigate before re-running.`;
     console.error(`[reconcile] ${skippedReason}`);
     const summary = { ranAt: new Date(start).toISOString(), checked: slice.length, deletedCount: 0, errorCount, deletedIds: [], skippedReason, durationMs: Date.now() - start };

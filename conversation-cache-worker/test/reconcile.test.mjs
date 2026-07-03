@@ -218,3 +218,20 @@ test("reconcileDeletions: circuit breaker refuses a mass-deletion misfire", asyn
   assert.equal(kv.store.has("conv:x0"), true);
   assert.equal(JSON.parse(kv.store.get("coach:due:latest")).due.length, 60);
 });
+
+test("reconcileDeletions: circuit breaker fires on the DEFAULT cron batch (not just an oversized manual batch)", async () => {
+  // Regression for the dead-breaker bug (cold review 2026-07-03): the old floor of 50
+  // exceeded the default batch of 40, so on the real cron path the breaker could never
+  // fire and a mass-404 would strip the whole due-list. Here every contact in a full
+  // default-size batch 404s → the breaker must refuse the purge with NO batch override.
+  const ids = Array.from({ length: 40 }, (_, i) => `d${i}`);
+  const seed = { "coach:due:latest": seedDue(ids), "conv:index": JSON.stringify(Object.fromEntries(ids.map((id) => [id, 1]))) };
+  for (const id of ids) seed[`conv:${id}`] = "{}";
+  const kv = fakeKV(seed);
+  const env = fakeEnv(kv, Object.fromEntries(ids.map((id) => [id, "404"])));
+  const res = await reconcileDeletions(env); // DEFAULT batch — the shipped cron path
+  assert.equal(res.deletedCount, 0, "breaker must fire at the default batch, not only at batch:200");
+  assert.ok(res.skippedReason, "must record why it refused");
+  assert.equal(kv.store.has("conv:d0"), true, "no keys purged when the breaker trips");
+  assert.equal(JSON.parse(kv.store.get("coach:due:latest")).due.length, 40, "due-list untouched");
+});
