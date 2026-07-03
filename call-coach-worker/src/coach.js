@@ -52,7 +52,7 @@ VOICE (Garrett, always):
 - HARD RULES for any suggestedReply: never write "Dr." (legal). No em-dashes, no semicolons, no slop, no manufactured urgency, no "just checking in / circling back". Sound like Garrett texting a real person, not marketing copy.
 `;
 
-const SYSTEM = `You are a calls/texts coach for Garrett, the practitioner at Amari Method — a bodywork practice where Garrett guides and the client does the work ("teaching you to heal yourself"). Tone is warm, grounded, confident — never clinical, never woo, never high-pressure sales.
+export const SYSTEM = `You are a calls/texts coach for Garrett, the practitioner at Amari Method — a bodywork practice where Garrett guides and the client does the work ("teaching you to heal yourself"). Tone is warm, grounded, confident — never clinical, never woo, never high-pressure sales.
 
 You are given the FULL relationship with one contact: every call transcript we have AND the complete two-way message thread (both the contact's replies and Garrett's outgoing messages), in chronological order. Coach the MOST RECENT interaction, but always in the context of the whole relationship — what was said on earlier calls, what the contact has already replied, where things stand now. Rules:
 - The contact's OWN replies are included. Read them. Never say "no response" or "no prior context" when the thread shows otherwise — judge the relationship as it actually is.
@@ -62,6 +62,12 @@ You are given the FULL relationship with one contact: every call transcript we h
 - If a recent call was just a voicemail or a short logistics text, that's fine — coach the relationship it sits inside (e.g. an unanswered question the contact raised), not the 12 seconds in isolation.
 - If the interaction was good, say what specifically worked and why — don't manufacture criticism.
 - If there is genuinely too little across the whole relationship to coach, say so plainly rather than padding.
+
+NAMES — never fabricate one (hard rule, applies to every field, especially actionLine and suggestedReply):
+- Use ONLY names that literally appear in the contact data below (the contact's name line, the message thread, the call transcript). Do NOT invent, guess, complete, or "fill in" a person's surname, full name, or a business name that is not written there.
+- The practitioner is "Garrett" and ONLY "Garrett". Never attach a surname to him, never sign off as anything but "Garrett". If you catch yourself writing "Garrett <anything>", it is wrong.
+- The practice is "Amari Method". Never rename it or invent another business name.
+- If you do not know the contact's surname, address them by their first name only, or use no name at all. Never guess a last name. A wrong or invented name is worse than no name and can end the relationship.
 
 Below is how Amari actually sells, so you can name the right next move and the exact words to reach for (the guarantee, the off-insurance reframe, the re-up, his real voice). This is OUR playbook, not generic sales advice, and it does NOT change the grounding rule above: still quote what was actually said, still never invent a moment that did not happen. Use it to recognize what is happening in this thread and to point Garrett at the move that fits it.
 ${PLAYBOOK}
@@ -92,7 +98,36 @@ Emit exactly one of the three string values. No other values are valid.
 - No em-dashes, no semicolons. Plain imperative English.
 - Must make sense as a standalone one-liner: someone reading only this line should know exactly what move to make.
 
-"suggestedReply" rules: if the contact's MOST RECENT message is an inbound that warrants a response (a question, a reply, an objection left hanging), write the actual message Garrett should send back — ready to send as-is, in his warm grounded voice, grounded in what they actually said and the whole relationship. No placeholder brackets, no "[link]" unless you write a real instruction the app can't fill (prefer "the booking link" in words). 1-4 sentences. This is the ONE field Garrett may send as-is, so it must pass the outbound-copy bar: write it the way he texts a person, NOT written prose. NO em-dashes (use a period or comma), NO semicolons, no "—", no corporate polish, no filler like "honestly/genuinely". Warm, plain, grounded. If the latest interaction does NOT need a reply from Garrett (e.g. he left a voicemail, or the ball is genuinely in his court to act not reply), set "suggestedReply" to an empty string.`;
+"suggestedReply" rules: if the contact's MOST RECENT message is an inbound that warrants a response (a question, a reply, an objection left hanging), write the actual message Garrett should send back — ready to send as-is, in his warm grounded voice, grounded in what they actually said and the whole relationship. No placeholder brackets, no "[link]" unless you write a real instruction the app can't fill (prefer "the booking link" in words). 1-4 sentences. This is the ONE field Garrett may send as-is, so it must pass the outbound-copy bar: write it the way he texts a person, NOT written prose. NO em-dashes (use a period or comma), NO semicolons, no "—", no corporate polish, no filler like "honestly/genuinely". Warm, plain, grounded. NAMES: only use names that actually appear in the data — the contact by the first name shown (or no name), and Garrett signs off as just "Garrett" with no surname. Never invent a surname or full name for the contact, for Garrett, or for the practice. If the latest interaction does NOT need a reply from Garrett (e.g. he left a voicemail, or the ball is genuinely in his court to act not reply), set "suggestedReply" to an empty string.`;
+
+// Safety net for the prompt's NAMES rule. The model occasionally invents a
+// surname the data never contained (observed 2026-07-02: "Garrett Houston" in a
+// reply to contact "Tom Rezendes" — Garrett has no surname in his texts). This
+// strips an obviously-fabricated surname so a bad name never reaches Garrett to
+// send. The prompt is the primary fix; this only catches leaks.
+//
+// - Garrett is ALWAYS just "Garrett" in his outgoing texts, so any capitalized
+//   word directly after "Garrett" is a fabricated surname -> collapse to "Garrett".
+// - If we only know the contact's FIRST name (contactName is a single token),
+//   any capitalized word directly after that first name is a guessed surname
+//   -> collapse to the first name. When contactName already includes a surname
+//   we leave it alone (the real surname is known and legitimate).
+export function stripFabricatedNames(text, contactName) {
+  if (!text || typeof text !== "string") return text;
+  let out = text;
+  // Garrett never carries a surname in his texts.
+  out = out.replace(/\bGarrett\s+[A-Z][a-z]+\b/g, "Garrett");
+  // Contact: only guard when the surname is genuinely unknown (first name only).
+  const tokens = (contactName || "").trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 1) {
+    const first = tokens[0];
+    if (/^[A-Za-z][A-Za-z'’-]*$/.test(first)) {
+      const re = new RegExp(`\\b(${first})\\s+[A-Z][a-z]+\\b`, "g");
+      out = out.replace(re, "$1");
+    }
+  }
+  return out;
+}
 
 function buildUserContent({ contactName, transcript, thread }) {
   const who = contactName || "the contact";
@@ -184,5 +219,9 @@ export async function coachInteraction(env, { contactName, transcript, thread })
   const text = data?.content?.[0]?.text || "";
   const coaching = parseCoaching(text);
   if (!coaching) return { error: "could not parse coaching JSON", rawText: text.slice(0, 300) };
+  // Belt-and-suspenders on the NAMES rule: strip any fabricated surname that
+  // leaked into the two fields Garrett actually reads/sends.
+  coaching.suggestedReply = stripFabricatedNames(coaching.suggestedReply, contactName);
+  coaching.actionLine = stripFabricatedNames(coaching.actionLine, contactName);
   return { coaching };
 }
