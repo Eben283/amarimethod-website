@@ -12,6 +12,11 @@
 // this file owns only the KV read/write/diff orchestration around it.
 
 import { getRung, renderAngle, renderGuaranteeFallback, elapsedPhrase, isPhone, firstName } from "./angles.js";
+import { personalizedStaleReason } from "./personalized-staleness.js";
+
+// Where invalidated (but not deleted) hand-authored drafts are archived, so the
+// copy isn't lost and can be reviewed / regenerated later.
+const RETIRED_KEY = "coach:personalized:retired";
 
 // "breakup" (the final step's state) must stay in these sets — see
 // cadence.js: isBreakup ? "breakup" : ... — or the ladder's gentle-no rung
@@ -149,10 +154,55 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
     kv.get("coach:personalized", "json").then((v) => v || []),
   ]);
 
-  const protectedIds = new Set(personalized.map((p) => p.contactId));
+  // Frozen-draft invalidation: a hand-authored card loses protection this run
+  // when the facts moved past it (acted-on, replied, declined, or greeting
+  // mismatch — see personalized-staleness.js). Stale cards are retired to an
+  // archive so a fixed-in-place draft can't re-protect next run, and drop into
+  // the normal templated/angle-ladder path below. Read failures default to
+  // "not stale" — never invalidate a good draft on a transient KV/GHL hiccup.
+  const staleFlags = await mapLimit(personalized, 10, async (p) => {
+    try {
+      const [conv, cc] = await Promise.all([
+        kv.get(`conv:${p.contactId}`, "json").catch(() => null),
+        kv.get(`call-coach:latest:${p.contactId}`, "json").catch(() => null),
+      ]);
+      return personalizedStaleReason(p, conv, cc);
+    } catch {
+      return { stale: false, reason: null };
+    }
+  });
+  const freshPersonalized = [];
+  const retiredEntries = [];
+  personalized.forEach((p, i) => {
+    const flag = staleFlags[i] || { stale: false, reason: null };
+    if (flag.stale) {
+      retiredEntries.push({ ...p, retiredReason: flag.reason, retiredAt: new Date().toISOString() });
+    } else {
+      freshPersonalized.push(p);
+    }
+  });
+  const retiredIds = new Set(retiredEntries.map((p) => p.contactId));
+
+  if (retiredEntries.length > 0) {
+    const byReason = retiredEntries.reduce((acc, p) => {
+      acc[p.retiredReason] = (acc[p.retiredReason] || 0) + 1;
+      return acc;
+    }, {});
+    log(`invalidating ${retiredEntries.length}/${personalized.length} personalized drafts:`,
+        Object.entries(byReason).map(([k, v]) => `${k}=${v}`).join(" "));
+    try {
+      const priorRetired = (await kv.get(RETIRED_KEY, "json").catch(() => null)) || [];
+      await kv.put(RETIRED_KEY, JSON.stringify([...priorRetired, ...retiredEntries]));
+      await kv.put("coach:personalized", JSON.stringify(freshPersonalized));
+    } catch (e) {
+      log(`RETIRE PERSIST FAIL: ${e.message?.slice(0, 80)}`);
+    }
+  }
+
+  const protectedIds = new Set(freshPersonalized.map((p) => p.contactId));
 
   const existingTemplated = new Map(
-    recs.filter((r) => r.source !== "personalized" && !protectedIds.has(r.contactId))
+    recs.filter((r) => r.source !== "personalized" && !protectedIds.has(r.contactId) && !retiredIds.has(r.contactId))
         .map((r) => [r.contactId, r])
   );
   const existingById = new Map(recs.map((r) => [r.contactId, r]));
@@ -184,10 +234,10 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
     else toWrite.push(rec);
   }
   const toDelete = [...existingTemplated.keys()].filter((id) => !desired.has(id));
-  const persToWrite = personalized.filter((p) => !recordsEqual(existingById.get(p.contactId), p));
+  const persToWrite = freshPersonalized.filter((p) => !recordsEqual(existingById.get(p.contactId), p));
 
   log(`desired ${desired.size} | new/changed ${toWrite.length} | unchanged ${unchanged.length} | delete ${toDelete.length}`);
-  log(`personalized ${personalized.length} | needing write ${persToWrite.length}`);
+  log(`personalized ${freshPersonalized.length} (of ${personalized.length}) | needing write ${persToWrite.length}`);
 
   // Safety valve: skip deletes if the due-set collapsed (likely upstream truncation).
   // RATCHET RELEASE (2026-07-02 audit): a LEGITIMATE shrink (a good week — many
@@ -232,8 +282,11 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
   });
   const wrote = writeResults.filter(Boolean).length;
 
+  // Retired ids must leave the personalized side of the snapshot even though
+  // their snapshot rec still carries source:"personalized" — otherwise a
+  // just-invalidated draft would silently re-enter the mirror.
   const kvPers = new Map(
-    recs.filter((r) => r.source === "personalized" || protectedIds.has(r.contactId))
+    recs.filter((r) => (r.source === "personalized" || protectedIds.has(r.contactId)) && !retiredIds.has(r.contactId))
         .map((r) => [r.contactId, r])
   );
   const persResults = await mapLimit(persToWrite, 10, async (r) => {
@@ -263,8 +316,29 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
     deleted = delResults.filter(Boolean).length;
   }
 
+  // Clear the physical card the Follow-Up panel reads for a retired contact
+  // that the templated path did NOT regenerate this run (e.g. it dropped out of
+  // the due-set). If it WAS regenerated, coach:{id} was already overwritten with
+  // fresh templated copy above, so skip it. Independent of the delete valve —
+  // this is targeted retired-draft cleanup, not a due-set-collapse delete.
+  const retiredToClear = [...retiredIds].filter((id) => !desired.has(id));
+  let clearedRetired = 0;
+  if (retiredToClear.length > 0) {
+    const clearResults = await mapLimit(retiredToClear, 5, async (id) => {
+      try {
+        await kv.delete(`coach:${id}`);
+        return true;
+      } catch (e) {
+        log(`RETIRED CLEAR FAIL ${id}: ${e.message?.slice(0, 80)}`);
+        return false;
+      }
+    });
+    clearedRetired = clearResults.filter(Boolean).length;
+  }
+
   const merged = [...kvPers.values(), ...kvTemplated.values()];
   await kv.put("coach:records:snapshot", JSON.stringify(merged));
+  if (retiredEntries.length > 0) log(`retired ${retiredEntries.length}; cleared ${clearedRetired}/${retiredToClear.length} physical cards`);
   log(`wrote ${wrote}/${toWrite.length} templated + ${wroteP}/${persToWrite.length} personalized; deleted ${deleted}/${toDelete.length}. snapshot: ${merged.length} cards`);
   return merged;
 }
