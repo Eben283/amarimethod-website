@@ -17,6 +17,9 @@ import { personalizedStaleReason } from "./personalized-staleness.js";
 // Where invalidated (but not deleted) hand-authored drafts are archived, so the
 // copy isn't lost and can be reviewed / regenerated later.
 const RETIRED_KEY = "coach:personalized:retired";
+// Circuit breaker: refuse to retire more than this fraction of the protected
+// set in a single run (blast-radius guard — see R1 in runTemplate).
+const RETIREMENT_MAX_RATIO = 0.6;
 
 // "breakup" (the final step's state) must stay in these sets — see
 // cadence.js: isBreakup ? "breakup" : ... — or the ladder's gentle-no rung
@@ -171,17 +174,40 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
       return { stale: false, reason: null };
     }
   });
-  const freshPersonalized = [];
-  const retiredEntries = [];
+  const wouldRetire = [];
+  const wouldKeep = [];
   personalized.forEach((p, i) => {
     const flag = staleFlags[i] || { stale: false, reason: null };
-    if (flag.stale) {
-      retiredEntries.push({ ...p, retiredReason: flag.reason, retiredAt: new Date().toISOString() });
-    } else {
-      freshPersonalized.push(p);
-    }
+    if (flag.stale) wouldRetire.push({ ...p, retiredReason: flag.reason });
+    else wouldKeep.push(p);
   });
-  const retiredIds = new Set(retiredEntries.map((p) => p.contactId));
+
+  // R1 circuit breaker: the retirement path overwrites coach:personalized and
+  // clears physical coach:{id} cards, with no floor of its own (unlike the
+  // templated delete-valve below). If an implausible fraction would retire —
+  // bad upstream data, a KV-wide read failure, or a regression in the rule —
+  // refuse ALL destructive retirement this run and keep every card protected. A
+  // stale draft for one more day beats a mass wipe of the hand-authored set.
+  const retirementBreakerTripped =
+    personalized.length > 0 && wouldRetire.length > personalized.length * RETIREMENT_MAX_RATIO;
+
+  let freshPersonalized, retiredEntries, retiredIds;
+  if (retirementBreakerTripped) {
+    log(`RETIREMENT BREAKER TRIPPED: ${wouldRetire.length}/${personalized.length} would retire ` +
+        `(> ${Math.round(RETIREMENT_MAX_RATIO * 100)}%), refusing — investigate`);
+    await kv.put("coach:retireBreaker:lastTripped",
+      JSON.stringify({ at: new Date().toISOString(), would: wouldRetire.length, of: personalized.length })
+    ).catch(() => {});
+    freshPersonalized = personalized;   // everyone stays protected this run
+    retiredEntries = [];
+    retiredIds = new Set();
+  } else {
+    await kv.delete("coach:retireBreaker:lastTripped").catch(() => {});
+    const retiredAt = new Date().toISOString();
+    retiredEntries = wouldRetire.map((p) => ({ ...p, retiredAt }));
+    freshPersonalized = wouldKeep;
+    retiredIds = new Set(retiredEntries.map((p) => p.contactId));
+  }
 
   if (retiredEntries.length > 0) {
     const byReason = retiredEntries.reduce((acc, p) => {
@@ -191,9 +217,21 @@ export async function runTemplate(env, due, priceFlags, linkStalls) {
     log(`invalidating ${retiredEntries.length}/${personalized.length} personalized drafts:`,
         Object.entries(byReason).map(([k, v]) => `${k}=${v}`).join(" "));
     try {
+      // R4: re-read coach:personalized and trim from the CURRENT value, not the
+      // snapshot we read at the top of the run — an entry authored between our
+      // read and this write is preserved (only ids we CONFIRMED stale are
+      // removed). Guards the first-ever concurrent write to this key.
+      const current = (await kv.get("coach:personalized", "json").catch(() => null)) || freshPersonalized;
+      const trimmed = current.filter((p) => !retiredIds.has(p.contactId));
+
+      // Append to the archive de-duped by contactId, so a re-run after a partial
+      // persist can't bloat it (R6).
       const priorRetired = (await kv.get(RETIRED_KEY, "json").catch(() => null)) || [];
-      await kv.put(RETIRED_KEY, JSON.stringify([...priorRetired, ...retiredEntries]));
-      await kv.put("coach:personalized", JSON.stringify(freshPersonalized));
+      const archive = new Map(priorRetired.map((p) => [p.contactId, p]));
+      for (const p of retiredEntries) archive.set(p.contactId, p);
+
+      await kv.put(RETIRED_KEY, JSON.stringify([...archive.values()]));
+      await kv.put("coach:personalized", JSON.stringify(trimmed));
     } catch (e) {
       log(`RETIRE PERSIST FAIL: ${e.message?.slice(0, 80)}`);
     }

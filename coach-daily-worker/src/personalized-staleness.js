@@ -30,6 +30,13 @@ export function toMillis(v) {
   return Date.parse(s);
 }
 
+// R2: generatedAt is often DATE-ONLY ("2026-06-14"), which toMillis floors to
+// UTC midnight. A touch earlier that same authoring day — or a prior-evening
+// PACIFIC touch (UTC midnight is 5pm PT the day before) — would then falsely
+// count as "after generatedAt". Require the touch to land after the END of the
+// authoring day (next-day UTC boundary) before it invalidates.
+const DAY_MS = 86_400_000;
+
 // Common first-name ↔ nickname pairs. A pure prefix check (as the design sketch
 // suggested) is not enough on its own: "Mike" is not a prefix of "Michael" (they
 // diverge at the 3rd char), nor "Tom" of "Thomas". Rob/Robert IS a true prefix,
@@ -137,6 +144,14 @@ export function namesMatch(a, b) {
   const cy = NICK_TO_CANON.get(y);
   if (cx && cy && cx === cy) return true;
 
+  // R5: a 2-char nickname on the losing side of a NICK_TO_CANON collision (e.g.
+  // "al" resolves to albert, so it wouldn't nickname-match "alexander") would
+  // otherwise falsely mismatch. If the short greeting is a KNOWN nickname AND a
+  // prefix of the longer name, treat it as a match — conservative (only fires
+  // for recognized 2-char nicks that prefix the full name; "tj" is unknown so
+  // it still correctly mismatches "tyler").
+  if (shorter.length === 2 && NICK_TO_CANON.has(shorter) && longer.startsWith(shorter)) return true;
+
   return false;
 }
 
@@ -149,10 +164,21 @@ export function namesMatch(a, b) {
 // the MESSAGE body, never the card's `name` label field (which may be a note
 // like "Brian (Chad's referral)").
 const GREETING_RE = /(?:^|[:\n*]\s*)(?:hi|hey|hello)\s+([A-Za-z][A-Za-z'-]*)/i;
+// R3: generic salutation openers ("Hi there,", "Hey team,", "Hello all,") are
+// NOT names — treating "there"/"team"/"all" as the greeting name would falsely
+// mismatch every firstName. Return null for these so rule 4 stays quiet on a
+// non-personal greeting.
+const GREETING_STOPWORDS = new Set([
+  "there", "all", "everyone", "team", "friend", "friends", "folks", "coach",
+  "y'all", "yall", "guys", "hey", "hi", "hello", "again", "you",
+]);
 export function parseGreetingName(message) {
   if (!message || typeof message !== "string") return null;
   const m = message.match(GREETING_RE);
-  return m ? m[1] : null;
+  if (!m) return null;
+  const name = m[1];
+  if (GREETING_STOPWORDS.has(name.toLowerCase())) return null;
+  return name;
 }
 
 // True when the message greets a clearly different person than the contact's
@@ -176,16 +202,19 @@ export function personalizedStaleReason(card, conv, callCoach) {
   const gen = toMillis(card && card.generatedAt);
   const touches = (conv && Array.isArray(conv.touches) && conv.touches) || [];
 
-  // Rules 1 & 2 need a parseable authoring date to compare against.
+  // Rules 1 & 2 need a parseable authoring date to compare against. The touch
+  // must land after the END of the authoring day (gen + DAY_MS) — see R2 above —
+  // so a same-day or prior-evening-Pacific touch doesn't falsely invalidate.
   if (!Number.isNaN(gen)) {
+    const cutoff = gen + DAY_MS;
     // Rule 1 — acted-on: something went out after the draft was written, so the
     // draft (a proposed send) is now history.
-    if (touches.some((t) => t && t.dir === "out" && toMillis(t.ts) > gen)) {
+    if (touches.some((t) => t && t.dir === "out" && toMillis(t.ts) >= cutoff)) {
       return { stale: true, reason: "acted-on" };
     }
     // Rule 2 — overtaken by a reply: the thread moved; a pre-reply draft answers
     // a conversation that no longer exists.
-    if (touches.some((t) => t && t.dir === "in" && toMillis(t.ts) > gen)) {
+    if (touches.some((t) => t && t.dir === "in" && toMillis(t.ts) >= cutoff)) {
       return { stale: true, reason: "replied" };
     }
   }

@@ -223,3 +223,139 @@ test('with nothing stale, no retirement archive is created and protection is unc
   assert.equal(kv._store.has('coach:personalized:retired'), false, 'no archive when nothing is stale');
   assert.deepEqual(kv._store.get('coach:personalized').map((p) => p.contactId), ['fresh-1']);
 });
+
+// ---- R2: same-day / timezone boundary ---------------------------------------
+test('R2: a touch at 08:00 ON the authoring day does NOT invalidate (same-day / prior-evening-Pacific guard)', () => {
+  // generatedAt 2026-06-14 floors to UTC midnight; a touch at 08:00 that day is
+  // gen + 8h, inside the authoring day — must not count as "after".
+  const conv = { firstName: 'Alex', touches: [{ ts: Date.parse('2026-06-14T08:00:00Z'), dir: 'out', kind: 'sms' }] };
+  assert.equal(personalizedStaleReason(card(), conv, null).stale, false);
+});
+
+test('R2: a prior-evening PACIFIC touch (UTC-midnight boundary) does NOT invalidate', () => {
+  // 2026-06-13 22:00 PT == 2026-06-14T05:00Z — after the naive UTC-midnight
+  // anchor but still the authoring day / earlier. Must not invalidate.
+  const conv = { firstName: 'Alex', touches: [{ ts: Date.parse('2026-06-14T05:00:00Z'), dir: 'out', kind: 'call' }] };
+  assert.equal(personalizedStaleReason(card(), conv, null).stale, false);
+});
+
+test('R2: a touch the NEXT day still invalidates (acted-on)', () => {
+  const conv = { firstName: 'Alex', touches: [{ ts: Date.parse('2026-06-15T08:00:00Z'), dir: 'out', kind: 'sms' }] };
+  const r = personalizedStaleReason(card(), conv, null);
+  assert.equal(r.stale, true);
+  assert.equal(r.reason, 'acted-on');
+});
+
+// ---- R3: generic salutation openers -----------------------------------------
+test('R3: "Hi there," is not a name → NOT stale even against a real firstName', () => {
+  const c = card({ message: 'Hi there, just following up on your visit.', name: 'Michael' });
+  assert.equal(personalizedStaleReason(c, { firstName: 'Michael', touches: [] }, null).stale, false);
+});
+
+test('R3: generic salutations parse to null (not a greeting name)', () => {
+  for (const g of ['Hi there,', 'Hey team,', 'Hello all,', 'Hi friend,', 'Hi folks,', 'Hey everyone!', "Hi y'all,"]) {
+    assert.equal(parseGreetingName(g), null, `"${g}" must not yield a name`);
+  }
+  assert.equal(parseGreetingName('Hi Michael,'), 'Michael', 'a real name still parses');
+});
+
+// ---- R5: 2-char known-nickname collision ------------------------------------
+test('R5: "Al" matches "Alexander" despite the al→albert canonical collision', () => {
+  assert.equal(namesMatch('Al', 'Alexander'), true);
+  assert.equal(namesMatch('Al', 'Albert'), true);
+  assert.equal(namesMatch('TJ', 'Tyler'), false, 'an unknown 2-char token still mismatches');
+});
+
+// ---- R1: retirement circuit breaker -----------------------------------------
+test('R1: breaker trips when > 60% would retire — refuses ALL destructive retirement, keeps every card protected', async () => {
+  // 4 of 5 stale via greeting mismatch = 80% > 60% → breaker trips.
+  const mk = (n, greet, fn) => ({
+    contactId: n, source: 'personalized', generatedAt: '2026-06-14', name: fn,
+    message: `Hi ${greet}, checking in.`,
+  });
+  const pers = [
+    mk('c1', 'Zoltan', 'Alice'), mk('c2', 'Zoltan', 'Bob'),
+    mk('c3', 'Zoltan', 'Carol'), mk('c4', 'Zoltan', 'Dave'),
+    mk('c5', 'Alex', 'Alex'), // fresh (greeting matches)
+  ];
+  const seed = { 'coach:personalized': pers, 'coach:records:snapshot': pers.map((p) => ({ ...p, source: 'personalized' })) };
+  for (const p of pers) {
+    seed[`coach:${p.contactId}`] = { ...p, source: 'personalized' };
+    seed[`conv:${p.contactId}`] = { firstName: p.name, touches: [] };
+  }
+  const kv = fakeKv(seed);
+  await runTemplate({ PORTAL_KV: kv }, [], new Set(), new Map());
+
+  assert.equal(kv._store.get('coach:personalized').length, 5, 'coach:personalized is untouched when the breaker trips');
+  assert.equal(kv._store.has('coach:personalized:retired'), false, 'no archive written when the breaker trips');
+  for (const p of pers) {
+    assert.ok(kv._store.has(`coach:${p.contactId}`), `physical card ${p.contactId} preserved`);
+  }
+  const status = kv._store.get('coach:retireBreaker:lastTripped');
+  assert.ok(status && status.would === 4 && status.of === 5, 'the trip is recorded in status');
+});
+
+test('R1: at/below the 60% floor, retirement proceeds normally', async () => {
+  // 1 of 2 stale = 50% ≤ 60% → not tripped.
+  const stale = { contactId: 's', source: 'personalized', generatedAt: '2026-06-14', name: 'TJ', message: 'Hi Dana, hi.' };
+  const fresh = { contactId: 'f', source: 'personalized', generatedAt: '2026-06-14', name: 'Alex', message: 'Hi Alex, hi.' };
+  const kv = fakeKv({
+    'coach:personalized': [stale, fresh],
+    'coach:records:snapshot': [{ ...stale, source: 'personalized' }, { ...fresh, source: 'personalized' }],
+    'coach:s': { ...stale, source: 'personalized' }, 'coach:f': { ...fresh, source: 'personalized' },
+    'conv:s': { firstName: 'TJ', touches: [] }, 'conv:f': { firstName: 'Alex', touches: [] },
+  });
+  await runTemplate({ PORTAL_KV: kv }, [], new Set(), new Map());
+  assert.deepEqual(kv._store.get('coach:personalized').map((p) => p.contactId), ['f']);
+  assert.equal(kv._store.get('coach:personalized:retired').length, 1);
+  assert.equal(kv._store.has('coach:retireBreaker:lastTripped'), false, 'no trip status on a normal run');
+});
+
+// ---- R4: concurrent-write safety + archive de-dupe --------------------------
+test('R4: an entry authored between the read and the overwrite is preserved (re-read + merge, not clobber)', async () => {
+  const stale = { contactId: 's', source: 'personalized', generatedAt: '2026-06-14', name: 'TJ', message: 'Hi Dana, hi.' };
+  const fresh = { contactId: 'f', source: 'personalized', generatedAt: '2026-06-14', name: 'Alex', message: 'Hi Alex, hi.' };
+  const newcomer = { contactId: 'n', source: 'personalized', generatedAt: '2026-07-03', name: 'Newby', message: 'Hi Newby, hi.' };
+
+  const store = new Map(Object.entries({
+    'coach:records:snapshot': [{ ...stale, source: 'personalized' }, { ...fresh, source: 'personalized' }],
+    'coach:s': { ...stale, source: 'personalized' }, 'coach:f': { ...fresh, source: 'personalized' },
+    'conv:s': { firstName: 'TJ', touches: [] }, 'conv:f': { firstName: 'Alex', touches: [] },
+  }));
+  // coach:personalized read #1 = [stale, fresh]; a concurrent author adds
+  // `newcomer` before our re-read (read #2 = [stale, fresh, newcomer]).
+  let reads = 0;
+  const kv = {
+    get: async (key, type) => {
+      if (key === 'coach:personalized') {
+        reads++;
+        const val = reads === 1 ? [stale, fresh] : [stale, fresh, newcomer];
+        return JSON.parse(JSON.stringify(val));
+      }
+      return type === 'json' ? (store.has(key) ? JSON.parse(JSON.stringify(store.get(key))) : null) : store.get(key) ?? null;
+    },
+    put: async (key, value) => { store.set(key, JSON.parse(value)); },
+    delete: async (key) => { store.delete(key); },
+    _store: store,
+  };
+  await runTemplate({ PORTAL_KV: kv }, [], new Set(), new Map());
+  const ids = store.get('coach:personalized').map((p) => p.contactId).sort();
+  assert.deepEqual(ids, ['f', 'n'], 'the concurrently-added card survives; only the confirmed-stale one is removed');
+});
+
+test('R4/R6: the retired archive de-dupes by contactId (a re-run does not bloat it)', async () => {
+  const stale = { contactId: 's', source: 'personalized', generatedAt: '2026-06-14', name: 'TJ', message: 'Hi Dana, hi.' };
+  const fresh = { contactId: 'f', source: 'personalized', generatedAt: '2026-06-14', name: 'Alex', message: 'Hi Alex, hi.' };
+  const kv = fakeKv({
+    'coach:personalized': [stale, fresh],
+    'coach:records:snapshot': [{ ...stale, source: 'personalized' }, { ...fresh, source: 'personalized' }],
+    'coach:s': { ...stale, source: 'personalized' }, 'coach:f': { ...fresh, source: 'personalized' },
+    'conv:s': { firstName: 'TJ', touches: [] }, 'conv:f': { firstName: 'Alex', touches: [] },
+    // an older archive entry for the SAME contact from a prior partial run.
+    'coach:personalized:retired': [{ ...stale, retiredReason: 'acted-on', retiredAt: '2026-07-01T00:00:00Z' }],
+  });
+  await runTemplate({ PORTAL_KV: kv }, [], new Set(), new Map());
+  const retired = kv._store.get('coach:personalized:retired');
+  assert.equal(retired.length, 1, 'same contactId collapses to one archive entry');
+  assert.equal(retired[0].retiredReason, 'greeting-mismatch', 'the newer retirement wins');
+});
