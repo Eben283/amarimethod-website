@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Loader2, Check } from 'lucide-react';
-import { sendPayLink } from '../lib/api';
-import type { PayLinkProduct } from '../types/staff';
+import { sendPayLink, type PayLinkProduct } from '../lib/api';
 
 const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; primary: boolean }[] = [
   { product: '8-session-series', label: '8-Pack', price: '$1,295', primary: true },
