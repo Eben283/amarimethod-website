@@ -78,6 +78,23 @@ test('TARGET Abraham/Taylor: a 77-day-old single cold call should be parked, not
   assert.equal(v.due, false, 'an ancient one-touch cold call should exhaust/park, not stay due forever');
 });
 
+// ── has_pt_on_staff suppression at the PIPELINE layer (grading report line 134) ──
+// The app parks PT-on-staff contacts (finalizePlay), but the coach pipeline kept spending
+// a due slot + a card on them because cadence never read the field (Richard Hsu). Suppress
+// here too — matching EXACTLY "Yes" (spec §1: "No"/"Unknown" are JS-truthy, must not park).
+
+test('a has_pt_on_staff=Yes contact is parked, not due (pipeline-side suppress)', () => {
+  const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Richard Hsu', { hasPtOnStaff: 'Yes' });
+  assert.equal(v.due, false, 'a trainer with a PT on staff is parked for a future campaign');
+});
+
+test('has_pt_on_staff=No / Unknown / null do NOT park (only exact "Yes" suppresses)', () => {
+  for (const val of ['No', 'Unknown', null, undefined, '']) {
+    const v = verdict([{ ts: ago(6), kind: 'sms', dir: 'out', text: 'hi' }], 'Normal', { hasPtOnStaff: val });
+    assert.equal(v.due, true, `hasPtOnStaff=${JSON.stringify(val)} must stay due`);
+  }
+});
+
 // ───────────────────────── GUARDS (green now, keep green) ────────────────────
 
 test('GUARD: a real unanswered question IS reply-waiting (do not over-suppress)', () => {

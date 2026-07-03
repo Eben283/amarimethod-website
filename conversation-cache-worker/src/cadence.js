@@ -33,7 +33,12 @@ const FIELD = {
   followupAt: "stVYzQB4Xpi29cuyUYnA",
   lastRealActivity: "W7JoyJKPKhPI8hZ5EgUv",
   touchCount: "qKtPT2XZP61emgUDK7fd",
+  hasPtOnStaff: "YWglhoiMeTUPSpHA9322",
 };
+// Only the exact string "Yes" parks a contact — the field is null/"No"/"Unknown"/"Yes"
+// and "No"/"Unknown" are JS-truthy (spec §1). The app suppresses these in finalizePlay;
+// the pipeline must too, or the coach spends a due slot + a card on a parked contact.
+const hasPtOnStaff = (v) => /^yes$/i.test(String(v || "").trim());
 const getField = (contact, id) => {
   const f = (contact.customFields || contact.customField || []).find((x) => x.id === id);
   return f ? (f.value ?? f.field_value) : undefined;
@@ -261,6 +266,9 @@ function classify(p) {
   // in the app (partner_stage) stays out — so a human "no" sticks across cycles.
   if (p.skipped) return { state: "skipped", due: false, action: "Set aside (won't resurface until un-skipped)", priority: 0 };
   if (CLOSED_STAGES.has(p.partnerStage)) return { state: "set-aside", due: false, action: `Parked in the app (stage: ${p.partnerStage})`, priority: 0 };
+  // Trainers who already have a physical therapist on staff handle pain in-house — parked
+  // for a future campaign (spec §1). Suppress before the due math so the coach never cards them.
+  if (hasPtOnStaff(p.hasPtOnStaff)) return { state: "pt-on-staff", due: false, action: "Has a physical therapist on staff — parked for a future campaign", priority: 0 };
 
   if (p.hasBooking) return { state: "booked", due: false, action: "Already booked or just attended a session", priority: 0 };
   if (p.hasHumanTouch === false) return { state: "drip-only", due: false, action: "Email/quiz drip only, not a call or text target", priority: 0 };
@@ -401,6 +409,7 @@ export async function loadContactMeta(env) {
         followupAt: getField(c, FIELD.followupAt),
         lastActivity: getField(c, FIELD.lastRealActivity),
         touchCount: getField(c, FIELD.touchCount),
+        hasPtOnStaff: getField(c, FIELD.hasPtOnStaff),
       });
     }
     afterId = d.meta?.startAfterId; after = d.meta?.startAfter;
@@ -455,6 +464,7 @@ export async function deriveCadence(env) {
   for (const r of rows) {
     r.hasBooking = booked.has(r.contactId);
     r.partnerStage = metaMap.get(r.contactId)?.stage;
+    r.hasPtOnStaff = metaMap.get(r.contactId)?.hasPtOnStaff;
     r.skipped = Boolean(skip[r.contactId]);
   }
 
