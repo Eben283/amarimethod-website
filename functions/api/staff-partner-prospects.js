@@ -393,6 +393,19 @@ function cadenceVerdict(c) {
   };
 }
 
+// Rewrite a stashed cadence action sentence so its leading verb AND its channel hint
+// match the FINAL channel. A trusted / known-owner flip can change the channel out from
+// under a cadence why like "Send step 2 of 5 now (text; last touch 31d ago)" — the old
+// rewrite only matched ^(Call|Text) and left "Send ..." under a Call pill on a landline
+// (LeRocman Hall / James Anderson / Glenn, grading report lines 91-96). Handle any leading
+// verb (Send/Call/Text/Email) and correct the "(text|call|email; ...)" hint too.
+export function retargetCadenceWhy(why, verb, channelWord) {
+  let out = String(why || "").trim();
+  out = out.replace(/^(Call|Text|Send|Email)\b/i, verb);
+  out = out.replace(/\((call|text|email)\b/i, `(${channelWord}`);
+  return out;
+}
+
 // Phase 3 note: landline channel correction moved to buildCard (overlayCard).
 // Discovery + PT-on-staff remain here — they depend on GHL tags (trainer-facility,
 // trainer-solo, dm-verified) that buildCard's dossier doesn't carry.
@@ -429,7 +442,7 @@ export function finalizePlay(p, warmFacilities = new Set()) {
     const name = (p.firstName || (p.fullName || "").split(/\s+/)[0] || "them").trim();
     const verb = ch === "call" ? "Call" : "Text";
     const why = d._cadenceWhy
-      ? d._cadenceWhy.replace(/^(Call|Text) /, `${verb} `)
+      ? retargetCadenceWhy(d._cadenceWhy, verb, ch)
       : `${verb} ${name}, pitch directly.`;
     return { ...d, action: ch, channel: ch, why };
   }

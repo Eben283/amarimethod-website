@@ -213,6 +213,38 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.phoneProvenance).toBe('unverified');
   });
 
+  it('trusted-flip: a dm-verified discovery card restores a Send-leading cadence why with the FINAL verb + channel', () => {
+    // LeRocman Hall / James Anderson / Glenn: dm-verified flips discovery back to pitch, but
+    // the cadence why leads with "Send" (not Call/Text) and carries a "(text; ...)" hint —
+    // the old ^(Call|Text) rewrite left "Send step 2 of 5 now (text; ...)" under a Call pill
+    // on a landline. The verb AND the channel hint must match the final channel.
+    const p = card({
+      firstName: 'lerocman', lastName: 'hall', tags: ['trainer-facility', 'dm-verified'],
+      phoneType: 'landline',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships, then get a name.',
+                 _cadenceWhy: 'Send step 2 of 5 now (text; last touch 31d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('call');                 // landline → call
+    expect(r.why).toMatch(/^Call /);               // verb matches the pill
+    expect(r.why).not.toMatch(/^Send /);           // "Send"-leading is rewritten
+    expect(r.why).not.toMatch(/\(text;/);          // the channel hint no longer contradicts the call
+  });
+
+  it('trusted-flip: a textable line keeps the Text verb on a Send-leading cadence why', () => {
+    const p = card({
+      firstName: 'glenn', tags: ['trainer-solo'], phoneType: 'mobile',
+      derived: { kind: 'act', action: 'discovery', channel: 'call', warmth: 0, urgency: 50,
+                 why: 'Call and ask who handles partnerships.',
+                 _cadenceWhy: 'Send step 3 of 5 now (call; last touch 12d ago).' },
+    });
+    const r = finalizePlay(p);
+    expect(r.action).toBe('text');
+    expect(r.why).toMatch(/^Text /);
+    expect(r.why).not.toMatch(/\(call;/);
+  });
+
   it('finalizePlay: never reshapes an unverified verify-first card (guard preserves the headline)', () => {
     // A facility contact with no named owner would normally be forced onto the generic
     // "call and ask who handles partnerships" discovery card — but here the number is the
