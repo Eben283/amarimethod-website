@@ -115,6 +115,10 @@ interface Derived {
   // number before any outreach) and phoneNote carries the "what we don't know" footnote.
   phoneProvenance?: 'verified' | 'proven' | 'unverified' | 'on-file';
   phoneNote?: string | null;
+  // Engaged-loop disposition read from the thread (grading report §4): 'declined' (a written
+  // no → hold, mirror the call-coach cool-off) | 'answered' (we already replied → their court)
+  // | null. Lets the app suppress a pitch behind a decline even with no fresh call-coach record.
+  hold?: 'declined' | 'answered' | null;
 }
 
 // ── Day-of-week outreach weighting ──────────────────────────────────────────
@@ -784,6 +788,7 @@ function resolveDraft(
   why: string,
   callNotes: CallCoach | null | 'loading',
   coach: OutreachCoach | null | 'loading',
+  hold?: 'declined' | 'answered' | null,
 ): ResolvedDraft | 'loading' {
   if (callNotes === 'loading' || coach === 'loading') return 'loading';
   if (callNotes) {
@@ -805,6 +810,10 @@ function resolveDraft(
         else if (CLOSELOOP_PATTERNS.some((p) => p.test(nextStep))) decline = 'close-loop';
       }
     }
+    // Safety net: buildCard read a written decline in the thread that call-coach missed
+    // (the refresh cap starves the warm-stalled tail of fresh records — grading report §4).
+    // A text decline is strong evidence; suppress rather than re-pitch a contact who said no.
+    if (!decline && hold === 'declined') decline = 'cool-off';
 
     if (decline === 'cool-off') {
       return { why: headline, draft: null, source: 'call-coach', declineState: 'cool-off' };
@@ -817,6 +826,11 @@ function resolveDraft(
       draft: suggestedReply ?? (coach ? coach.message : null),
       source: 'call-coach',
     };
+  }
+  // No call-coach record: buildCard's own read of the thread governs. A written decline
+  // holds (no pitch); an already-answered loop keeps its corrected buildCard headline.
+  if (hold === 'declined') {
+    return { why, draft: null, source: 'buildcard', declineState: 'cool-off' };
   }
   return { why, draft: coach ? coach.message : null, source: 'buildcard' };
 }
@@ -908,7 +922,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   // Collapsed row keeps buildCard.why unchanged (expand-only).
   const resolved: ResolvedDraft | 'loading' | null =
     item.kind === 'prospect' && !isGated
-      ? resolveDraft(item.d.why, callNotes, coach)
+      ? resolveDraft(item.d.why, callNotes, coach, item.d.hold ?? null)
       : null;
 
   // What we DON'T know — explicit gaps, so a thin card doesn't look as confident as a
@@ -1071,7 +1085,9 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                   {!isGated && resolved !== 'loading' && resolved?.declineState === 'cool-off' && (
                     <div className="rounded-lg border border-amari-border bg-amari-light-sand/50 p-3">
                       <p className="text-xs font-medium text-amari-charcoal">Hold — no outreach yet</p>
-                      <p className="mt-1 text-xs text-amari-text-muted">Call notes say to let this breathe. Check back when the window opens.</p>
+                      <p className="mt-1 text-xs text-amari-text-muted">{item.kind === 'prospect' && item.d.hold === 'declined'
+                        ? 'They passed in writing — hold off, don’t re-pitch. Check back only if something changes.'
+                        : 'Call notes say to let this breathe. Check back when the window opens.'}</p>
                     </div>
                   )}
                   {!isGated && resolved !== 'loading' && resolved?.declineState === 'close-loop' && (

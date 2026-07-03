@@ -216,6 +216,20 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.why).not.toMatch(/^Text /);           // reply-by-email headline, never "Text ..." the number
   });
 
+  it('overlayCard carries buildCard hold (declined/answered) onto derived for the UI', () => {
+    const declinedCard = buildCard({
+      firstName: 'Mark', lastName: "O'Keefe", role: 'Trainer', lineType: 'mobile',
+      thread: [
+        { direction: 'outbound', type: 'SMS', body: 'Garrett here, gift you a session', callDuration: null, date: '2026-06-10T10:00:00Z' },
+        { direction: 'inbound', type: 'SMS', body: 'Appreciate it but I need to pass on it.', callDuration: null, date: '2026-06-15T10:00:00Z' },
+        { direction: 'outbound', type: 'SMS', body: 'Understood, take care!', callDuration: null, date: '2026-06-15T18:00:00Z' },
+      ],
+    }, NOW);
+    const base = { kind: 'act', urgency: 40, warmth: 2, action: 'text', channel: 'text', why: 'x' };
+    const d = overlayCard(base, declinedCard);
+    expect(d.hold).toBe('declined');
+  });
+
   it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
     const base = { kind: 'act', urgency: 50, warmth: 0, action: 'call', channel: 'call', why: 'x' };
     const d = overlayCard(base, oxanaCard());

@@ -56,6 +56,62 @@ describe('buildCard — one true view, no contradictions', () => {
     expect(c.why).toMatch(/Text Sara back, they replied/);
   });
 
+  // ── engaged, but the loop is CLOSED: a written decline, or we already answered ──
+  // grading report §4: buildCard fired 'engaged → pick the thread up' on ANY inbound,
+  // blind to whether we already responded or what they said.
+  it('Mark: a written decline is a HOLD, not "pick the thread up" (with a pitch behind it)', () => {
+    const c = buildCard({
+      firstName: 'Mark', lastName: "O'Keefe", role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here, would love to gift you a session', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Appreciate it but I need to pass on it.', date: '2026-06-15T10:00:00Z' }),
+        msg({ type: 'SMS', body: 'Totally understand, take care!', date: '2026-06-15T18:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('declined');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+    expect(c.why).toMatch(/pass|hold|declin/i);
+  });
+
+  it('Harriet: "not exploring outside partnerships" reads as a decline', () => {
+    const c = buildCard({
+      firstName: 'Harriet', lastName: 'Fajkowski', role: 'Owner', lineType: 'voip',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here, partnering with local trainers', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: "Thanks, we're not exploring outside partnerships right now.", date: '2026-06-24T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('declined');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+  });
+
+  it('Nicki: a question we already answered is their court, not "pick the thread up"', () => {
+    const c = buildCard({
+      firstName: 'Nicki', lastName: 'Clark', role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Do you have a website?', date: '2026-06-16T10:00:00Z' }),
+        msg({ type: 'SMS', body: 'Yes, amarimethod.com — take a look!', date: '2026-06-16T12:00:00Z' }),
+        msg({ type: 'SMS', body: 'Following up in case you missed it', date: '2026-06-19T12:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe('answered');
+    expect(c.why).not.toMatch(/pick the thread up/i);
+    expect(c.why).toMatch(/their court|already replied|answered/i);
+  });
+
+  it('GUARD: a real inbound question we have NOT answered still says pick the thread up', () => {
+    const c = buildCard({
+      firstName: 'Dana', lastName: 'Ito', role: 'Trainer', lineType: 'mobile',
+      thread: [
+        msg({ type: 'SMS', body: 'Garrett here', date: '2026-06-10T10:00:00Z' }),
+        msg({ direction: 'inbound', type: 'SMS', body: 'Interesting, how long is a session?', date: '2026-06-18T10:00:00Z' }),
+      ],
+    }, NOW);
+    expect(c.hold).toBe(null);
+    expect(c.why).toMatch(/pick the thread up/i);
+  });
+
   it('an OTP / automated inbound does NOT count as engagement (this was the Jack-style bug)', () => {
     const c = buildCard({
       firstName: 'Pat', lastName: 'Jones', role: 'Trainer', lineType: 'mobile',

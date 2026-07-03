@@ -25,7 +25,42 @@ import { runLearning } from "./learning.js";
 const CALL_COACH_WORKER = "https://call-coach.eben-fa2.workers.dev";
 const REFRESH_CONCURRENCY = 5;
 const REFRESH_MAX = 40;
+// Hard ceiling on the always-refresh engaged/warm tail, so a flood of warm contacts can't
+// blow the worker wall-clock (each refresh is an HTTP call with a 35s timeout).
+const REFRESH_ENGAGED_MAX = 40;
 const REFRESH_TIMEOUT_MS = 35_000;
+
+// A contact is part of the engaged/warm TAIL when they replied, we talked, or a reply is
+// waiting — regardless of priority. A written decline or an already-answered reply can only
+// hide behind engagement, and that's exactly the tail the old top-40 slice starved.
+const ENGAGED_STATES = new Set(["reply-waiting", "warm-stalled", "gone-quiet", "talked-no-next", "breakup"]);
+function isEngagedTail(d) {
+  return (Number(d.inCount) || 0) > 0 || d.talkedCall === true
+    || (Number(d.droppedReplies) || 0) > 0 || ENGAGED_STATES.has(d.state);
+}
+
+// Which contacts get a fresh call-coach record. The old code sliced the top REFRESH_MAX of
+// the priority-sorted due list, so warm-stalled contacts (priority 15, positions 68-74) were
+// never refreshed and their stale records re-pitched declines (grading report §4). Re-partition:
+// ALWAYS refresh the engaged/warm tail (capped), then fill the rest by priority up to REFRESH_MAX.
+export function selectRefreshContacts(due, max = REFRESH_MAX, engagedMax = REFRESH_ENGAGED_MAX) {
+  const list = Array.isArray(due) ? due : [];
+  const seen = new Set();
+  const pick = [];
+  const add = (id) => { if (id && !seen.has(id)) { seen.add(id); pick.push(id); return true; } return false; };
+  // 1. The engaged/warm tail is always covered (bounded by engagedMax).
+  let engagedCount = 0;
+  for (const d of list) {
+    if (engagedCount >= engagedMax) break;
+    if (isEngagedTail(d) && add(d.contactId)) engagedCount++;
+  }
+  // 2. Fill the rest by priority order (the due list is already priority-sorted).
+  for (const d of list) {
+    if (pick.length >= max + engagedCount) break;
+    add(d.contactId);
+  }
+  return pick;
+}
 
 async function refreshOne(contactId, auth) {
   const url = `${CALL_COACH_WORKER}/coach-one?contactId=${encodeURIComponent(contactId)}`;
@@ -45,8 +80,8 @@ async function refreshCallCards(env, due) {
   const auth = env.WORKER_AUTH_SECRET;
   if (!auth) { console.error("[refresh-cards] no WORKER_AUTH_SECRET — skipping"); return; }
 
-  const contacts = [...new Set(due.map((d) => d.contactId).filter(Boolean))].slice(0, REFRESH_MAX);
-  console.error(`[refresh-cards] refreshing ${contacts.length} contacts`);
+  const contacts = selectRefreshContacts(due);
+  console.error(`[refresh-cards] refreshing ${contacts.length} contacts (engaged tail always included)`);
 
   let ok = 0, failed = 0;
   for (let i = 0; i < contacts.length; i += REFRESH_CONCURRENCY) {

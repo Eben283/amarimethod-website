@@ -356,6 +356,10 @@ export function overlayCard(base, card) {
     action:  isDiscovery ? "discovery" : finalChannel,
     state:   card.state,
     play:    card.play,
+    // Engaged-loop disposition from message content: 'declined' (a written no → the UI
+    // holds, no pitch) | 'answered' (we already replied → their court) | null. Mirrors the
+    // call-coach cool-off, but derived from the thread (grading report §4). Travels to the app.
+    hold:    card.hold ?? null,
     // Provenance travels with the card so the UI's "what we don't know" footnote
     // can show it ('verified' | 'proven' | 'unverified' | 'on-file').
     phoneProvenance: card.facts?.phoneProvenance || "on-file",
