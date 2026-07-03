@@ -43,6 +43,21 @@ test("classifyFetchError: a network/transport error is NOT a deletion", () => {
   assert.equal(classifyFetchError(new TypeError("network error")), "error");
 });
 
+test("classifyFetchError: GHL 400 'Contact not found' IS a deletion (GHL uses 400, not 404)", () => {
+  // 2026-07-03: GHL returns 400 with this body for a deleted/invalid contact id.
+  assert.equal(
+    classifyFetchError(new Error('GHL API 400: {"message":"Contact not found for id:C6KYbobsL15perMfrg9j"}')),
+    "deleted"
+  );
+  assert.equal(classifyFetchError(new Error("GHL API 400: contact not found")), "deleted");
+});
+
+test("classifyFetchError: a generic 400 (real bad request) is NOT a deletion", () => {
+  // Only the not-found body counts — any other 400 stays an error, never a purge.
+  assert.equal(classifyFetchError(new Error('GHL API 400: {"message":"Invalid query parameter"}')), "error");
+  assert.equal(classifyFetchError(new Error("GHL API 400: bad request")), "error");
+});
+
 test("classifyFetchError: does NOT match '404' as a substring of a body/id", () => {
   // Guard the same class of bug isRetryable had: 404 inside a 400 body is not a delete.
   assert.equal(classifyFetchError(new Error('GHL API 400: {"message":"bad id abc404def"}')), "error");

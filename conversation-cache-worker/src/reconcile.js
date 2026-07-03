@@ -42,17 +42,21 @@ const RECONCILE_BATCH = 40;
 const BREAKER_MIN = 5;
 const BREAKER_FRACTION = 0.8;
 
-// A fetch failure is a CONFIRMED deletion only on an explicit 404/410. Everything
-// else — transient upstream (5xx/429/408), auth (401/403), transport (network),
-// or a status merely embedded in a body — is "error": do NOT treat it as a delete.
-// ghlRetry throws `GHL API <status>: <body>`; parse the status EXACTLY (anchored),
-// never a substring match (the bug isRetryable was hardened against).
+// A fetch failure is a CONFIRMED deletion only on an explicit 404/410, OR a 400 whose
+// body says "Contact not found" — GHL returns `400 {"message":"Contact not found for
+// id:X"}` for a deleted/invalid contact id, NOT a 404 (2026-07-03: this slipped past the
+// 404-only check and left deleted contacts stuck on the due list). Everything else —
+// transient upstream (5xx/429/408), auth (401/403), transport (network), or any OTHER
+// 400 (a genuine bad request) — is "error": do NOT treat it as a delete. Parse the status
+// EXACTLY (anchored), and gate the 400 case on the specific not-found body so a normal
+// bad-request never triggers a purge.
 export function classifyFetchError(err) {
   const msg = String(err?.message ?? err ?? "");
   const m = msg.match(/^GHL API (\d+):/);
   if (m) {
     const status = Number(m[1]);
     if (status === 404 || status === 410) return "deleted";
+    if (status === 400 && /contact not found/i.test(msg)) return "deleted";
   }
   return "error";
 }
