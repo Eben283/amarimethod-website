@@ -16,3 +16,10 @@ id = "79cff30d0e45419791b0d25cd81961df"
 #   GHL_CLIENT_ID       — same as ghl-token-refresh (for KV token refresh fallback)
 #   GHL_CLIENT_SECRET   — same as ghl-token-refresh
 #   WORKER_AUTH_SECRET  — optional; gates the HTTP /refresh + /status routes
+
+# Persist logs + metrics to the Workers dashboard so failures are searchable and
+# countable (previously console.error/warn only existed during a live `wrangler
+# tail` and vanished when the request/cron ended). head_sampling_rate=1 = keep all.
+[observability]
+enabled = true
+head_sampling_rate = 1

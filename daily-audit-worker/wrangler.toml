@@ -28,3 +28,10 @@ service = "daily-audit"
 # Secrets (set via `npx wrangler secret put <KEY>`):
 #   GHL_CLIENT_ID     — same as ghl-token-refresh
 #   GHL_CLIENT_SECRET — same as ghl-token-refresh
+
+# Persist logs + metrics to the Workers dashboard so failures are searchable and
+# countable (previously console.error/warn only existed during a live `wrangler
+# tail` and vanished when the request/cron ended). head_sampling_rate=1 = keep all.
+[observability]
+enabled = true
+head_sampling_rate = 1

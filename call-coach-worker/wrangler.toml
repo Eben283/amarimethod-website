@@ -36,3 +36,10 @@ binding = "AI"
 #   GHL_CLIENT_SECRET   — same as ghl-token-refresh / daily-audit
 #   ANTHROPIC_API_KEY   — Claude coaching calls (am-anthropic-api-key in Keychain)
 #   WORKER_AUTH_SECRET  — gates the /run, /latest HTTP routes (worker-auth.js)
+
+# Persist logs + metrics to the Workers dashboard so failures are searchable and
+# countable (previously console.error/warn only existed during a live `wrangler
+# tail` and vanished when the request/cron ended). head_sampling_rate=1 = keep all.
+[observability]
+enabled = true
+head_sampling_rate = 1
