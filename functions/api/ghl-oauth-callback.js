@@ -1,9 +1,32 @@
 // Cloudflare Pages Function: GET /api/ghl-oauth-callback
-// One-time OAuth2 callback — exchanges authorization code for tokens and stores in KV.
-// After initial setup, this endpoint is only needed if the refresh token expires (1 year).
-// Protected by GHL_OAUTH_SETUP_SECRET env var to prevent unauthorized use.
+// One-time OAuth2 callback — exchanges the GHL authorization code for tokens and
+// stores them in KV. After initial setup it is only needed if the refresh token
+// expires (~1 year) or the client pair is rotated.
+//
+// Reachable unauthenticated BY DESIGN: GHL redirects the browser here with ?code=,
+// so we cannot require a secret at the HTTP layer without breaking re-auth. Instead
+// we gate the damaging action — overwriting the production token store — by refusing
+// a token that is explicitly scoped to a DIFFERENT GHL location. An OAuth flow
+// completed for someone else's location can no longer clobber our tokens (F#1).
+//
+// Deliberately NOT strict: a GHL token exchange returns `locationId` for a
+// Location-class install, but a fresh app reinstall reliably yields an Agency-class
+// token with no locationId, which the documented recovery flow then upgrades via
+// /oauth/locationToken (see memory reference-ghl-authclass-location-token). We must
+// leave that path working, so an absent locationId is allowed through — only a
+// PRESENT-and-mismatched locationId is rejected.
 
 const GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
+
+// The Amari GHL location this token store belongs to.
+const EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+
+// True only when the exchange result is explicitly scoped to a location OTHER than
+// ours. Agency/company tokens (no locationId) return false so the existing reinstall
+// → /oauth/locationToken recovery flow is undisturbed.
+export function isForeignLocationToken(data, expectedLocationId = EXPECTED_LOCATION_ID) {
+  return Boolean(data && data.locationId && data.locationId !== expectedLocationId);
+}
 
 export async function onRequestGet(context) {
   try {
@@ -66,6 +89,18 @@ export async function onRequestGet(context) {
         status: 422,
         headers: { "Content-Type": "text/plain" },
       });
+    }
+
+    // Gate the token-store overwrite: refuse a token scoped to a DIFFERENT location.
+    // This stops an OAuth flow completed for someone else's location from clobbering
+    // our production tokens (F#1). Agency-class tokens (no locationId) pass through so
+    // the reinstall → /oauth/locationToken recovery flow keeps working.
+    if (isForeignLocationToken(data)) {
+      console.error(`[ghl-oauth] Refusing to store tokens — locationId '${data.locationId}' is not the Amari location`);
+      return new Response(
+        "This authorization is for a different GHL location. Tokens were not stored.",
+        { status: 403, headers: { "Content-Type": "text/plain" } }
+      );
     }
 
     const expiresIn = data.expires_in || 86399;
