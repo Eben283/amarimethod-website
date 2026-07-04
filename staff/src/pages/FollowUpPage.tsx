@@ -12,7 +12,7 @@ import {
   getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, dismissReply, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
-import { suggestedTexts } from '../lib/followupCopy';
+import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupCopy';
 import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
@@ -909,10 +909,15 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
   const phoneType = item.kind === 'prospect' ? (item.p.phoneType || null) : null;
   const isTextDnd = item.kind === 'prospect' ? (item.p.textDnd === true) : false;
   const isUntextable = !isLinkedIn && !isDiscovery && (phoneType === 'landline' || phoneType === 'toll_free' || phoneType === 'voip' || isTextDnd);
+  // No phone on file but a real email → reach them by email. A number-based action (text/call)
+  // is a dead end here, so route to a drafted, editable, one-tap email instead.
+  const emailOnly = item.kind === 'prospect' && !isLinkedIn && !isDiscovery
+    && !(item.p.phone && String(item.p.phone).trim()) && hasUsableEmail(item.p.email);
   // Phase 3: buildCard writes why + channel together from the same dossier, so they
   // never contradict. No more coachWhy/coachChannel override layers needed.
   const effAction: ActionKind | null = isLinkedIn ? 'linkedin'
     : isDiscovery ? 'discovery'
+    : emailOnly ? 'email'
     : isUntextable ? 'call'
     : derivedAction;
   // item.d.why is the deterministic buildCard headline (correct for all cases:
@@ -1056,6 +1061,11 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
                 <DiscoveryPanel p={item.p} onHandled={onHandled} unverifiedNumber={item.d.phoneProvenance === 'unverified'} />
               ) : isLinkedIn ? (
                 <LinkedInPanel p={item.p} />
+              ) : emailOnly ? (
+                /* No phone on file, but a real email → a drafted, editable, one-tap email
+                   right here (text/call would be a dead end). Prefer a coach-generated
+                   email draft if the server made one; otherwise the suggested draft. */
+                <SuggestedEmailPanel p={item.p} coach={coach} contactId={contactId} onHandled={onHandled} />
               ) : isUntextable ? (
                 /* Landline / toll-free / VoIP / text DND — can't receive SMS. Show the
                    real coach CALL SCRIPT when there is one (grading report §3: the panel
@@ -1243,6 +1253,22 @@ function Details({ p, unverifiedNumber = false }: { p: PartnerProspect; unverifi
 // Fallback draft for a "text" card with no cloud coach record — reuses the static
 // per-category suggested copy + the same editable Send box, so a "text" action
 // always has something to send instead of being a dead-end.
+// Email-only contact (no phone on file): a drafted, editable, one-tap email. Prefers a
+// server-generated email-shaped draft; otherwise the voice-approved suggested email.
+function SuggestedEmailPanel({ p, coach, contactId, onHandled }: { p: PartnerProspect; coach: OutreachCoach | null | 'loading'; contactId: string; onHandled?: () => void }) {
+  const coachEmail = coach && coach !== 'loading' && coach.channel === 'email' ? coach.email : null;
+  const draft = coachEmail && (coachEmail.subject || coachEmail.body) ? coachEmail : suggestedEmail(p);
+  if (!draft) return null;
+  return (
+    <div className="rounded-lg border border-amari-border bg-amari-light-sand/40 p-3">
+      <p className="mb-2 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-amari-text-muted">
+        <Mail className="h-3 w-3" /> Email — no phone on file
+      </p>
+      <EditSendEmail contactId={contactId} defaultSubject={draft.subject} defaultBody={draft.body} onSent={onHandled} />
+    </div>
+  );
+}
+
 function SuggestedDraftFallback({ p, onHandled }: { p: PartnerProspect; onHandled?: () => void }) {
   const texts = suggestedTexts(p);
   if (!texts.length) return null;

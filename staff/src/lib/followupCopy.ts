@@ -67,3 +67,23 @@ export function suggestedTexts(p: PartnerProspect): string[] {
   const set = BY_CATEGORY[(p.category as string) || ''];
   return (set && set.length ? set : GENERIC_FOLLOWUP).map(fill);
 }
+
+// A real, sendable email address on file — NOT an *@amari-prospect.placeholder import stub.
+export function hasUsableEmail(email?: string | null): boolean {
+  const e = String(email || '').trim();
+  return !!e && !/@amari-prospect\.placeholder$/i.test(e) && /^\S+@\S+\.\S+$/.test(e);
+}
+
+// A drafted, editable email for a contact we can only reach by email (no phone on file).
+// Reuses the voice-approved suggested text as the body so text and email stay consistent,
+// re-shaped for email: the SMS-style "Want me to send you the link?" close becomes a soft
+// reply prompt, plus a "Garrett" sign-off. Returns null if we have no draft basis.
+export function suggestedEmail(p: PartnerProspect): { subject: string; body: string } | null {
+  const text = suggestedTexts(p)[0];
+  if (!text) return null;
+  const core = text.replace(/\s*Want me to send you the link\?\s*$/i, '').trim();
+  return {
+    subject: 'A gift session from Amari Method',
+    body: `${core}\n\nIf you're open to it, just reply here and I'll send the details.\n\nGarrett`,
+  };
+}
