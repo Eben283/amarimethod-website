@@ -22,3 +22,10 @@ id = "79cff30d0e45419791b0d25cd81961df"
 # Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
 #   ANTHROPIC_API_KEY   — Claude coherence calls (am-anthropic-api-key in Keychain)
 #   WORKER_AUTH_SECRET  — gates the /run, /status, /summary, /flags HTTP routes
+
+# Persist logs + metrics to the Workers dashboard so failures are searchable and
+# countable (previously console.error/warn only existed during a live `wrangler
+# tail` and vanished when the request/cron ended). head_sampling_rate=1 = keep all.
+[observability]
+enabled = true
+head_sampling_rate = 1

@@ -34,3 +34,10 @@ id = "b8ef627521e04f5998a707d4a8f1935c"
 binding = "ATTEND_DB"
 database_name = "amari-attendance"
 database_id = "8c66fe4c-bc3a-4a2d-905c-6f18f20f6faa"
+
+# Persist logs + metrics to the Workers dashboard so failures are searchable and
+# countable (previously console.error/warn only existed during a live `wrangler
+# tail` and vanished when the request/cron ended). head_sampling_rate=1 = keep all.
+[observability]
+enabled = true
+head_sampling_rate = 1
