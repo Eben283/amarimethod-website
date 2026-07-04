@@ -43,6 +43,7 @@ import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js"
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
+import { recordOpsError } from "../lib/ops-alert.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -318,6 +319,9 @@ export async function onRequestPost(context) {
       console.error(
         `[ghl-invoice-webhook] Contact fetch failed: ${sanitizedContactId} (${contactRes.status})`,
       );
+      context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
+        "Contact fetch failed after invoice — sessions_remaining NOT updated",
+        { contactId: sanitizedContactId, status: contactRes.status, invoiceId: matchedInvoiceId }));
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
         { status: 404, headers },
@@ -361,6 +365,11 @@ export async function onRequestPost(context) {
       console.error(
         `[ghl-invoice-webhook] PUT failed for ${sanitizedContactId} (${updateRes.status}): ${errText}`,
       );
+      context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
+        "GHL field update failed — invoice paid, sessions_remaining NOT updated",
+        { contactId: sanitizedContactId, status: updateRes.status, product: pkg.name,
+          invoiceId: matchedInvoiceId, attemptedRemaining: pkg.sessionsRemaining,
+          ghlError: String(errText).slice(0, 300) }));
       return new Response(
         JSON.stringify({ error: "Failed to update contact" }),
         { status: 500, headers },
@@ -382,6 +391,10 @@ export async function onRequestPost(context) {
       console.error(
         `[ghl-invoice-webhook] tag delta failed for ${sanitizedContactId}: ${err.message}`,
       );
+      context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
+        "Tag delta failed — balance updated but downstream trigger tag NOT applied (workflows may not fire)",
+        { contactId: sanitizedContactId, invoiceId: matchedInvoiceId,
+          message: String(err && err.message).slice(0, 300) }));
       return new Response(
         JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
@@ -427,6 +440,9 @@ export async function onRequestPost(context) {
     );
   } catch (err) {
     console.error("[ghl-invoice-webhook] Unexpected error:", err);
+    context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
+      "Unhandled error processing an invoice webhook",
+      { message: String(err && err.message).slice(0, 300) }));
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers },
