@@ -8,6 +8,27 @@ import { verifySessionToken } from "../lib/auth.js";
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const REFERRAL_SOURCE_FIELD_ID = "htX3m1ba8ka7PU0OWISE";
+// Spoof-proof link: affiliate-refer.js stamps each referred contact with the
+// referring partner's GHL contact id in this field.
+const PARTNER_CONTACT_ID_FIELD_ID = "Un0VeGngkiUJrZ0mrgDa";
+
+// A referred contact belongs to a partner iff it carries that partner's GHL
+// contact id (spoof-proof), OR — for legacy referrals created before that field
+// existed — its free-text referral_source matches the partner's own name.
+// The contactId match is what closes the cross-partner IDOR (E#1); the name
+// fallback preserves historical referrals from before the id was stamped.
+export function partnerOwnsContact(contact, partnerContactId, partnerName) {
+  const customFields = (contact && contact.customFields) || [];
+  if (partnerContactId) {
+    const pidField = customFields.find((f) => f.id === PARTNER_CONTACT_ID_FIELD_ID);
+    if (pidField && String(pidField.value) === String(partnerContactId)) return true;
+  }
+  if (partnerName) {
+    const refField = customFields.find((f) => f.id === REFERRAL_SOURCE_FIELD_ID);
+    if (refField && String(refField.value).toLowerCase() === String(partnerName).toLowerCase()) return true;
+  }
+  return false;
+}
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -37,7 +58,7 @@ export async function onRequestGet(context) {
   headers["Content-Type"] = "application/json";
 
   try {
-    // Require partner session token
+    // Require a valid PARTNER session token.
     const JWT_SECRET = context.env.JWT_SECRET;
     const authHeader = context.request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ") || !JWT_SECRET) {
@@ -47,36 +68,31 @@ export async function onRequestGet(context) {
       );
     }
 
+    let tokenPayload;
     try {
-      const tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-      if (tokenPayload.type !== "partner") {
-        return new Response(
-          JSON.stringify({ error: "Partner access required" }),
-          { status: 403, headers }
-        );
-      }
+      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
     } catch (authErr) {
       return new Response(
         JSON.stringify({ error: "Session expired. Please log in again." }),
         { status: 401, headers }
       );
     }
-
-    const url = new URL(context.request.url);
-    const ref = url.searchParams.get("ref");
-
-    if (!ref || ref.trim().length === 0) {
+    if (tokenPayload.type !== "partner") {
       return new Response(
-        JSON.stringify({ error: "Missing ref parameter" }),
-        { status: 400, headers }
+        JSON.stringify({ error: "Partner access required" }),
+        { status: 403, headers }
       );
     }
 
-    const partnerName = ref.replace(/<[^>]*>/g, "").replace(/[^a-zA-Z\s\-']/g, "").trim();
-    if (!partnerName) {
+    // ── Authorization: a partner may only ever see THEIR OWN referrals. ──
+    // Identity comes from the signed token (contactId), NEVER from a client-
+    // supplied ?ref= name. Trusting ?ref= was an IDOR (E#1, 2026-07-04): any
+    // partner could read any other partner's referral list + referred-client PII.
+    const partnerContactId = tokenPayload.contactId;
+    if (!partnerContactId) {
       return new Response(
-        JSON.stringify({ error: "Invalid ref parameter" }),
-        { status: 400, headers }
+        JSON.stringify({ error: "Partner access required" }),
+        { status: 403, headers }
       );
     }
 
@@ -88,8 +104,43 @@ export async function onRequestGet(context) {
       );
     }
 
-    // Search for all contacts with this referral_source
-    // GHL search supports querying by custom field values
+    // Derive the partner's authoritative referral name from their OWN contact
+    // record (same resolution affiliate-refer.js uses when stamping referrals).
+    // Server-controlled, so it cannot be spoofed via the request.
+    let partnerName = null;
+    try {
+      const partnerResponse = await fetch(`${GHL_API_BASE}/contacts/${partnerContactId}`, {
+        method: "GET",
+        headers: ghlHeaders(GHL_API_KEY),
+      });
+      if (partnerResponse.ok) {
+        const partnerData = await partnerResponse.json();
+        const pc = partnerData.contact || {};
+        partnerName = pc.firstName
+          ? pc.firstName.charAt(0).toUpperCase() + pc.firstName.slice(1).toLowerCase()
+          : null;
+      }
+    } catch (err) {
+      console.error(`[partner-stats] Partner profile lookup error: ${err.message}`);
+    }
+
+    if (!partnerName) {
+      // Fail closed: without the partner's own name we cannot scope the search safely.
+      return new Response(
+        JSON.stringify({ error: "Could not load partner profile" }),
+        { status: 422, headers }
+      );
+    }
+
+    // Log (do not act on) a mismatched client-supplied ref — signals tampering.
+    const requestedRef = (new URL(context.request.url).searchParams.get("ref") || "")
+      .replace(/<[^>]*>/g, "").replace(/[^a-zA-Z\s\-']/g, "").trim();
+    if (requestedRef && requestedRef.toLowerCase() !== partnerName.toLowerCase()) {
+      console.warn(`[partner-stats] Ignoring ref='${requestedRef}' — scoping to authenticated partner ${partnerContactId} instead`);
+    }
+
+    // Search candidates by the trusted partner name, then authorize each contact
+    // by identity (partner contactId stamp) with a legacy name-match fallback.
     const searchUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(partnerName)}&limit=100`;
 
     const searchResponse = await fetch(searchUrl, {
@@ -108,15 +159,10 @@ export async function onRequestGet(context) {
     const searchData = await searchResponse.json();
     const allContacts = searchData.contacts || [];
 
-    // Filter to only contacts whose referral_source custom field matches this partner
-    const referrals = allContacts.filter((contact) => {
-      const customFields = contact.customFields || [];
-      const refField = customFields.find(
-        (f) => f.id === REFERRAL_SOURCE_FIELD_ID
-      );
-      if (!refField) return false;
-      return String(refField.value).toLowerCase() === partnerName.toLowerCase();
-    });
+    // Only contacts that belong to THIS partner (identity-scoped, not ref-scoped).
+    const referrals = allContacts.filter((contact) =>
+      partnerOwnsContact(contact, partnerContactId, partnerName)
+    );
 
     // Now get appointment data for each referred contact
     let booked = 0;
