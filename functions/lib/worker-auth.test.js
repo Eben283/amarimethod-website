@@ -12,10 +12,12 @@ describe("requireWorkerAuth", () => {
   });
   afterEach(() => warn.mockRestore());
 
-  it("ALLOWS (returns null) + warns when no secret is configured — rollout-safe no-op", () => {
-    expect(requireWorkerAuth(req(), {})).toBe(null);
-    expect(requireWorkerAuth(req(), { WORKER_AUTH_SECRET: "" })).toBe(null);
-    expect(warn).toHaveBeenCalled();
+  it("503s (fails CLOSED) + logs when no secret is configured — deny, don't expose", () => {
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(requireWorkerAuth(req(), {}).status).toBe(503);
+    expect(requireWorkerAuth(req(`Bearer whatever`), { WORKER_AUTH_SECRET: "" }).status).toBe(503);
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
   });
 
   it("ALLOWS a correct Bearer token when the secret is configured", () => {

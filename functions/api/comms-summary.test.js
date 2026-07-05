@@ -43,8 +43,16 @@ describe('GET /api/comms-summary', () => {
     expect(res.status).toBe(401);
   });
 
-  it('500s when PORTAL_KV is not bound', async () => {
+  it('503s when OPS_READ_KEY is not configured (fail closed, before the KV check)', async () => {
     const res = await onRequestGet(ctx({ env: {} }));
+    expect(res.status).toBe(503);
+  });
+
+  it('500s when authorized but PORTAL_KV is not bound', async () => {
+    const res = await onRequestGet(ctx({
+      env: { OPS_READ_KEY: 'secret' },
+      headers: { 'X-Service-Key': 'secret' },
+    }));
     expect(res.status).toBe(500);
   });
 });

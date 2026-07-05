@@ -5,32 +5,37 @@
 // /day skill (server-to-server fetch), so a shared service key is the right fit —
 // no browser, no CORS, no user session.
 //
-// ── Rollout-safe semantics ──
-// If OPS_READ_KEY is NOT configured, requests are ALLOWED and a warning is logged,
-// so DEPLOYING this code changes nothing until you ACTIVATE the gate by setting the
-// secret. Activate with:
+// ── Fail-CLOSED semantics ──
+// If OPS_READ_KEY is NOT configured, requests are DENIED with 503 (the endpoint
+// refuses to serve PII unauthenticated). Rollout-safe (fail-open) through
+// 2026-07-03; the key is now set in the Pages env, so as of 2026-07-04 it fails
+// closed — a future unset/rotation-gap can't silently expose the audit/scan PII.
+// The key must be set in the Pages env:
 //
-//   openssl rand -hex 32 | tee >(security add-generic-password -U -s am-ops-read-key -a "$USER" -w "$(cat)") \
-//     | npx wrangler pages secret put OPS_READ_KEY --project-name amarimethod-website
+//   openssl rand -hex 32 | npx wrangler pages secret put OPS_READ_KEY --project-name amarimethod-website
 //
-// (or set each side manually). Once set, every request must present either
+// and mirrored into Bitwarden (OPS_READ_KEY). Every request must then present either
 //   X-Service-Key: <OPS_READ_KEY>     or     Authorization: Bearer <OPS_READ_KEY>
-// The /day skill reads the value from Keychain (am-ops-read-key) and sends the header.
+// The /day skill reads OPS_READ_KEY from Bitwarden via bws (Keychain retired 2026-07-04).
 
 import { timingSafeEqual } from "./safe-equal.js";
 
-// Returns null when authorized (or auth not yet configured), or a 401 Response when
-// a configured key is missing/incorrect. Call at the very top of onRequestGet:
+// Returns null when authorized, or a Response when denied: 503 when the key is
+// unset (fail closed — misconfigured), or 401 when a configured key is
+// missing/incorrect. Call at the very top of onRequestGet:
 //   const denied = requireOpsReadKey(context.request, context.env);
 //   if (denied) return denied;
 export function requireOpsReadKey(request, env) {
   const key = env.OPS_READ_KEY;
   if (!key) {
-    console.warn(
-      "[ops-auth] OPS_READ_KEY not set — /api/daily-audit + /api/ecosystem-scan are " +
-        "UNAUTHENTICATED. Set the secret (wrangler pages secret put OPS_READ_KEY) to activate the gate."
+    console.error(
+      "[ops-auth] OPS_READ_KEY not set — DENYING /api/daily-audit + /api/ecosystem-scan (fail closed). " +
+        "Set the secret (wrangler pages secret put OPS_READ_KEY) to serve these endpoints."
     );
-    return null;
+    return new Response(JSON.stringify({ error: "auth not configured" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    });
   }
   const headerKey = request.headers.get("X-Service-Key") || "";
   const auth = request.headers.get("Authorization") || "";
@@ -43,4 +48,10 @@ export function requireOpsReadKey(request, env) {
     });
   }
   return null;
+}
+
+// True once the gate is active (key configured). Surface in /status-style payloads
+// so "is ops auth actually on?" is observable without reading logs.
+export function opsReadKeyActive(env) {
+  return Boolean(env.OPS_READ_KEY);
 }
