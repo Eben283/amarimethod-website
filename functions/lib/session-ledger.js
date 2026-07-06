@@ -74,11 +74,6 @@ export const NON_SERIES_CALENDAR_IDS = new Set([
 ]);
 
 const ATTENDED_STATUSES = new Set(["showed", "completed"]);
-// A session that is booked but hasn't happened yet. Distinct from attended:
-// these count toward a package's consumed slots only as "scheduled", not
-// "rendered", so the reimbursement packet never lists a future date as a
-// completed date of service.
-const SCHEDULED_STATUSES = new Set(["confirmed", "booked"]);
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
 
@@ -532,75 +527,8 @@ export function deriveLedger({
     source,
     confidence,
     ambiguities,
-    // The package-purchase cutoff day (YYYY-MM-DD, "" for pay-as-you-go). Exposed
-    // so deriveSessionSchedule can split sessions against the SAME cutoff the
-    // balance math used — no second, drift-prone re-derivation.
-    cutoffDay,
     display,
   };
-}
-
-/**
- * deriveSessionSchedule — pure. Splits a client's series sessions into the
- * three buckets the insurance reimbursement packet needs, using the same
- * cutoff + calendar + status rules as deriveLedger so the numbers agree:
- *
- *   rendered  — attended series sessions on/after cutoff (real dates of service)
- *   scheduled — future booked series sessions on/after cutoff (not yet attended)
- *   unscheduledCount — remaining package slots with no appointment booked yet
- *
- * rendered.length equals ledger.attended by construction. unscheduledCount is
- * derived from the ledger's remaining (purchased - attended) minus what's
- * already booked, so a package of 8 with 5 rendered + 1 scheduled shows 2
- * unscheduled — never a fabricated date.
- *
- * @param {object} params
- * @param {object[]} params.appointments  GHL appointments for the contact
- * @param {string} params.cutoffDay       ledger.cutoffDay ("" = no package cutoff)
- * @param {number} params.purchased       ledger.purchased
- * @param {number} params.attended        ledger.attended
- * @param {number} params.nowMs           current time (epoch ms) — passed in so
- *   the function stays pure/deterministic for tests, mirroring countLifetimeCompleted
- * @returns {{ rendered: string[], scheduled: string[], unscheduledCount: number }}
- */
-export function deriveSessionSchedule({
-  appointments = [],
-  cutoffDay = "",
-  purchased = 0,
-  attended = 0,
-  nowMs = Date.now(),
-}) {
-  const toDay = (iso) => (typeof iso === "string" ? iso.slice(0, 10) : "");
-  const todayDay = new Date(nowMs).toLocaleDateString("en-CA", {
-    timeZone: "America/Los_Angeles",
-  });
-  const series = appointments.filter((a) => SERIES_CALENDAR_IDS.has(a.calendarId));
-  const onOrAfterCutoff = (a) => {
-    const d = toDay(a.startTime || a.start_time || "");
-    return d && (!cutoffDay || d >= cutoffDay);
-  };
-  const statusOf = (a) => (a.appointmentStatus || a.status || "").toLowerCase();
-  const startOf = (a) => a.startTime || a.start_time || null;
-
-  const rendered = series
-    .filter((a) => ATTENDED_STATUSES.has(statusOf(a)))
-    .filter(onOrAfterCutoff)
-    .map(startOf)
-    .filter(Boolean)
-    .sort();
-
-  const scheduled = series
-    .filter((a) => SCHEDULED_STATUSES.has(statusOf(a)))
-    .filter(onOrAfterCutoff)
-    .filter((a) => toDay(startOf(a) || "") >= todayDay)
-    .map(startOf)
-    .filter(Boolean)
-    .sort();
-
-  const remaining = Math.max(0, purchased - attended);
-  const unscheduledCount = Math.max(0, remaining - scheduled.length);
-
-  return { rendered, scheduled, unscheduledCount };
 }
 
 // ── I/O wrapper ─────────────────────────────────────────────────────────────
@@ -624,7 +552,6 @@ function emptyLedger(reason) {
     source: "empty",
     confidence: "low",
     ambiguities: [reason],
-    cutoffDay: "",
     display: {
       seriesType: "none",
       remaining: 0,

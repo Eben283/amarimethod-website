@@ -49,45 +49,8 @@ export function formatPhone(p) {
   return p || "";
 }
 
-// Render the itemized "Dates of Service" block from a session schedule
-// (deriveSessionSchedule output). Each rendered session shows its real date
-// tagged "rendered"; each booked future session shows its date tagged
-// "scheduled"; remaining unbooked package slots collapse to a single count
-// line so the packet never invents a date for a session that hasn't happened.
-function renderDatesOfService(schedule, datesOfService) {
-  const hasSchedule =
-    schedule &&
-    (schedule.rendered.length || schedule.scheduled.length || schedule.unscheduledCount);
-  if (!hasSchedule) {
-    // Fallback: no appointment-derived schedule (e.g. pay-as-you-go with no
-    // series calendar match) — show the invoice-derived dates as before.
-    return `<div><strong>Dates of Service:</strong> ${esc(datesOfService.join("; "))}</div>`;
-  }
-  // Appointment startTimes are naive Pacific wall-clock strings
-  // ("2026-03-18 11:00:00"). formatDate parses via UTC (right for the ISO-Z
-  // invoice dates), which would slip a wall-clock time to the next/prev day.
-  // Take the calendar-day portion first — it's already the correct local day.
-  const dayLabel = (d) => formatDate(String(d).slice(0, 10));
-  const items = [];
-  for (const d of schedule.rendered) {
-    items.push(`<li>${esc(dayLabel(d))} <span class="dos-tag dos-rendered">Completed</span></li>`);
-  }
-  for (const d of schedule.scheduled) {
-    items.push(`<li>${esc(dayLabel(d))} <span class="dos-tag dos-scheduled">Scheduled</span></li>`);
-  }
-  if (schedule.unscheduledCount > 0) {
-    const n = schedule.unscheduledCount;
-    items.push(
-      `<li>${esc(n)} session${n === 1 ? "" : "s"} <span class="dos-tag dos-open">Not yet scheduled</span></li>`,
-    );
-  }
-  return `<div><strong>Dates of Service:</strong></div>
-      <ul class="dos-list">${items.join("")}</ul>`;
-}
-
-export function renderPacket({ patientName, patientPhone, datesOfService, paidInvoices, today, sessionSchedule }) {
+export function renderPacket({ patientName, patientPhone, datesOfService, paidInvoices, today }) {
   const addr = PRACTICE.addressLines.map(esc).join("<br>");
-  const datesOfServiceBlock = renderDatesOfService(sessionSchedule, datesOfService);
 
   const coverLetter = `
     <section class="page">
@@ -127,7 +90,7 @@ export function renderPacket({ patientName, patientPhone, datesOfService, paidIn
         <div><strong>Date:</strong> ${esc(today)}</div>
         <div style="margin-top:10px"><strong>Re:</strong> Letter of Medical Services</div>
         <div><strong>Patient:</strong> ${esc(patientName)}</div>
-        ${datesOfServiceBlock}
+        <div><strong>Dates of Service:</strong> ${esc(datesOfService.join("; "))}</div>
       </div>
       <p>To Whom It May Concern,</p>
       <p>This letter is provided to clarify the nature of services rendered to ${esc(patientName)} at
@@ -180,14 +143,6 @@ export function renderPacket({ patientName, patientPhone, datesOfService, paidIn
     border-bottom:1px solid var(--rule); padding-bottom:14px; margin:0 0 34px; }
   .meta { margin-bottom:26px; }
   .meta div { margin:2px 0; }
-  .dos-list { margin:8px 0 0; padding-left:22px; }
-  .dos-list li { margin:4px 0; font-size:14px; }
-  .dos-tag { font-family:system-ui,sans-serif; font-size:10px; font-weight:600;
-    letter-spacing:.04em; text-transform:uppercase; padding:2px 7px; border-radius:10px;
-    margin-left:8px; vertical-align:middle; }
-  .dos-rendered { background:#eef5ee; color:#2f6b3a; }
-  .dos-scheduled { background:#fdf2e6; color:#9a5b1f; }
-  .dos-open { background:#f0f0f0; color:#6b6b6b; }
   p { margin:0 0 16px; font-size:15px; }
   ul { margin:0 0 16px; padding-left:22px; }
   li { margin:3px 0; font-size:15px; }

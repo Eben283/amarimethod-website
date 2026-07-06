@@ -16,7 +16,6 @@ vi.mock('./ghl.js', () => ({
 
 import {
   deriveLedger,
-  deriveSessionSchedule,
   classifyOrder,
   classifyInvoice,
   computeSessionLedger,
@@ -1712,105 +1711,5 @@ describe('computeSessionLedger — partial fetch failure', () => {
 
     expect(ledger.confidence).toBe('low');
     expect(ledger.ambiguities.join(' ')).toMatch(/orders/);
-  });
-});
-
-// ── deriveSessionSchedule ────────────────────────────────────────────────────
-describe('deriveSessionSchedule', () => {
-  const SERIES_CAL = 'SKDVOL8wtUN6Ne0ppbC9'; // Follow-up Session — In Person
-  const DISCOVERY_CAL = 'USgPsktqRcuomdUgpShL'; // non-series
-  // Fixed "now" so scheduled/future classification is deterministic.
-  const NOW = Date.parse('2026-07-06T12:00:00-07:00');
-
-  // Danny's real shape: 8-pack purchased 2026-03-18, 5 rendered, 1 booked ahead.
-  const dannyAppts = [
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-02-05 10:00:00' }, // pre-cutoff, excluded
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-03-18 11:00:00' },
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-04-15 11:00:00' },
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-05-12 11:00:00' },
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-06-04 11:00:00' },
-    { calendarId: SERIES_CAL, appointmentStatus: 'showed', startTime: '2026-06-23 11:00:00' },
-    { calendarId: SERIES_CAL, appointmentStatus: 'confirmed', startTime: '2026-07-21 11:00:00' }, // booked ahead
-    { calendarId: SERIES_CAL, appointmentStatus: 'cancelled', startTime: '2026-07-28 11:00:00' }, // ignored
-    { calendarId: DISCOVERY_CAL, appointmentStatus: 'showed', startTime: '2026-03-18 09:00:00' }, // non-series, ignored
-  ];
-
-  it('splits the package into rendered dates, a scheduled date, and an unscheduled count', () => {
-    const s = deriveSessionSchedule({
-      appointments: dannyAppts,
-      cutoffDay: '2026-03-18',
-      purchased: 8,
-      attended: 5,
-      nowMs: NOW,
-    });
-    expect(s.rendered).toEqual([
-      '2026-03-18 11:00:00',
-      '2026-04-15 11:00:00',
-      '2026-05-12 11:00:00',
-      '2026-06-04 11:00:00',
-      '2026-06-23 11:00:00',
-    ]);
-    expect(s.scheduled).toEqual(['2026-07-21 11:00:00']);
-    expect(s.unscheduledCount).toBe(2); // (8 - 5) - 1 booked
-  });
-
-  it('rendered count equals ledger.attended by construction', () => {
-    const s = deriveSessionSchedule({
-      appointments: dannyAppts,
-      cutoffDay: '2026-03-18',
-      purchased: 8,
-      attended: 5,
-      nowMs: NOW,
-    });
-    expect(s.rendered.length).toBe(5);
-  });
-
-  it('excludes sessions before the package cutoff', () => {
-    const s = deriveSessionSchedule({
-      appointments: dannyAppts,
-      cutoffDay: '2026-03-18',
-      purchased: 8,
-      attended: 5,
-      nowMs: NOW,
-    });
-    expect(s.rendered).not.toContain('2026-02-05 10:00:00');
-  });
-
-  it('ignores non-series (discovery) calendars', () => {
-    const s = deriveSessionSchedule({
-      appointments: dannyAppts,
-      cutoffDay: '2026-03-18',
-      purchased: 8,
-      attended: 5,
-      nowMs: NOW,
-    });
-    expect(s.rendered).not.toContain('2026-03-18 09:00:00');
-  });
-
-  it('never reports negative unscheduled when bookings exceed remaining', () => {
-    const s = deriveSessionSchedule({
-      appointments: [
-        { calendarId: SERIES_CAL, appointmentStatus: 'confirmed', startTime: '2026-07-21 11:00:00' },
-        { calendarId: SERIES_CAL, appointmentStatus: 'confirmed', startTime: '2026-07-28 11:00:00' },
-      ],
-      cutoffDay: '2026-03-18',
-      purchased: 8,
-      attended: 8,
-      nowMs: NOW,
-    });
-    expect(s.unscheduledCount).toBe(0);
-  });
-
-  it('with no cutoff (pay-as-you-go) counts all attended series sessions', () => {
-    const s = deriveSessionSchedule({
-      appointments: dannyAppts,
-      cutoffDay: '',
-      purchased: 6,
-      attended: 6,
-      nowMs: NOW,
-    });
-    expect(s.rendered).toContain('2026-02-05 10:00:00'); // pre-cutoff now included
-    expect(s.rendered.length).toBe(6);
-    expect(s.unscheduledCount).toBe(0);
   });
 });
