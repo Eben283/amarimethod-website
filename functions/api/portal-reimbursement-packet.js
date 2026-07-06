@@ -12,6 +12,7 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { isContactRevoked } from "../lib/session-guard.js";
 import { renderPacket, formatDate, formatPhone } from "../lib/reimbursement-template.js";
+import { deriveLedger, deriveSessionSchedule, hydrateOrders } from "../lib/session-ledger.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -85,7 +86,17 @@ export async function onRequestGet(context) {
       return jsonError(401, "Session expired. Please log in again.");
     }
 
-    const [contactResponse, invoicesResponse] = await Promise.all([
+    // Fetch contact + invoices (money side) plus appointments, orders, and
+    // field defs (the session-ledger inputs). The ledger tells us how many
+    // sessions a package bought and how many are rendered/scheduled, so the
+    // packet can list real dates of service instead of the invoice date.
+    const [
+      contactResponse,
+      invoicesResponse,
+      appointmentsResponse,
+      ordersResponse,
+      fieldDefsResponse,
+    ] = await Promise.all([
       fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         headers: ghlHeaders(GHL_API_KEY),
       }),
@@ -93,6 +104,16 @@ export async function onRequestGet(context) {
         `${GHL_API_BASE}/invoices/?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`,
         { headers: ghlHeaders(GHL_API_KEY) },
       ),
+      fetch(`${GHL_API_BASE}/contacts/${contactId}/appointments`, {
+        headers: ghlHeaders(GHL_API_KEY),
+      }),
+      fetch(
+        `${GHL_API_BASE}/payments/orders?altId=${GHL_LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`,
+        { headers: ghlHeaders(GHL_API_KEY) },
+      ),
+      fetch(`${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`, {
+        headers: ghlHeaders(GHL_API_KEY),
+      }),
     ]);
 
     if (!contactResponse.ok) {
@@ -104,6 +125,33 @@ export async function onRequestGet(context) {
     let invoices = [];
     if (invoicesResponse.ok) {
       invoices = (await invoicesResponse.json()).invoices || [];
+    }
+
+    // Ledger inputs — all optional. If any fetch fails the ledger downgrades
+    // confidence and the packet falls back to invoice-derived dates, so a
+    // partial failure never blocks the money side of the packet.
+    const ledgerFetchFailures = [];
+    let appointments = [];
+    if (appointmentsResponse.ok) {
+      const apptData = await appointmentsResponse.json();
+      appointments = apptData.appointments || apptData.events || [];
+    } else {
+      ledgerFetchFailures.push(`appointments (${appointmentsResponse.status})`);
+    }
+    let orders = [];
+    if (ordersResponse.ok) {
+      const ordersData = await ordersResponse.json();
+      orders = await hydrateOrders(context, ordersData.data || ordersData.orders || []);
+    } else {
+      ledgerFetchFailures.push(`orders (${ordersResponse.status})`);
+    }
+    let fieldDefs = {};
+    if (fieldDefsResponse.ok) {
+      const fieldDefsData = await fieldDefsResponse.json();
+      for (const f of fieldDefsData.customFields || []) {
+        const shortKey = (f.fieldKey || f.key || "").replace(/^contact\./, "");
+        if (shortKey) fieldDefs[shortKey] = f.id;
+      }
     }
 
     // Optional date-range filter (?from=YYYY-MM-DD&to=YYYY-MM-DD) so the client
@@ -140,7 +188,35 @@ export async function onRequestGet(context) {
     const datesOfService = paidInvoices.map((inv) => formatDate(inv.issueDate)).filter(Boolean);
     const today = formatDate(new Date().toISOString());
 
-    const html = renderPacket({ patientName, patientPhone, datesOfService, paidInvoices, today });
+    // Derive the session schedule (rendered / scheduled / unscheduled) from the
+    // same ledger the portal + staff app use, so the packet's dates of service
+    // agree with the client's actual balance. On low confidence or missing
+    // package data the schedule buckets come back empty and the template falls
+    // back to invoice-derived dates.
+    const ledger = deriveLedger({
+      contact,
+      orders,
+      invoices,
+      appointments,
+      fieldDefs,
+      fetchFailures: ledgerFetchFailures,
+    });
+    const sessionSchedule = deriveSessionSchedule({
+      appointments,
+      cutoffDay: ledger.cutoffDay,
+      purchased: ledger.purchased,
+      attended: ledger.attended,
+      nowMs: Date.now(),
+    });
+
+    const html = renderPacket({
+      patientName,
+      patientPhone,
+      datesOfService,
+      paidInvoices,
+      today,
+      sessionSchedule,
+    });
 
     return new Response(html, {
       status: 200,
