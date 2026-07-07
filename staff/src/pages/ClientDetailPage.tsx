@@ -12,6 +12,7 @@ import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
+import ElbowStudyPanel from '../components/ElbowStudyPanel';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
@@ -299,6 +300,7 @@ export default function ClientDetailPage() {
 
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ') || 'Unknown';
   const isPartner = client.tags.includes('affiliate-partner');
+  const isElbowStudy = client.tags.includes('elbow-study-participant');
   const roleWord = isPartner ? 'Referral partner' : client.seriesType !== 'none' ? `${client.seriesType.replace('-session', '')}-session client` : 'Client';
 
   // session progress numbers (same math as SessionStats)
@@ -379,6 +381,9 @@ export default function ClientDetailPage() {
         {appointmentId && (
           <div className="sa-card"><Checklist appointmentId={appointmentId} client={client} /></div>
         )}
+
+        {/* Elbow Reset Study — intake + before/after pain, only for tagged participants */}
+        {isElbowStudy && <ElbowStudyPanel contactId={client.id} />}
 
         {/* partner toolkit — pinned near the top; mirrors the pay-link pattern:
             tap to reveal a confirm, then tap to actually send (it fires a real

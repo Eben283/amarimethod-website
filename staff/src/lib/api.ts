@@ -693,4 +693,25 @@ export async function getPipeline(): Promise<PipelineColumns> {
   return r.columns;
 }
 
+// ── Elbow Reset Study — per-participant intake + before/after pain capture
+export async function getElbowStudy(
+  contactId: string,
+): Promise<import('../types/staff').ElbowStudyRecord | null> {
+  const r = await fetchApi<{ record: import('../types/staff').ElbowStudyRecord | null }>(
+    `/staff-elbow-study?contactId=${encodeURIComponent(contactId)}`,
+  );
+  return r.record;
+}
+
+export async function saveElbowStudy(
+  contactId: string,
+  record: import('../types/staff').ElbowStudyRecord,
+): Promise<import('../types/staff').ElbowStudyRecord> {
+  const r = await fetchApi<{ record: import('../types/staff').ElbowStudyRecord }>('/staff-elbow-study', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, record }),
+  });
+  return r.record;
+}
+
 export { ApiError };

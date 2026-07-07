@@ -473,3 +473,31 @@ export interface PartnerOutcomeRequest {
   note?: string;
   followupAt?: string;  // for `deferred` only — when to revisit
 }
+
+// ── Elbow Reset Study — per-participant capture (staff-elbow-study endpoint).
+// Intake at session 1 + before/after 0-10 pain for each of 3 sessions + the
+// validated survey (PRTEE) at baseline and final — the primary published outcome.
+export interface ElbowStudySession {
+  before: number | null;
+  after: number | null;
+  notes: string;
+  at: string | null;
+}
+
+// One filling of the validated survey: a map of {instrument item id → 0-10}.
+// `baseline` is taken before session 1, `final` after session 3 (or 1-week
+// follow-up). This is the outcome the case series is published on.
+export interface InstrumentSnapshot {
+  responses: Record<string, number | null>;
+  at: string | null;
+}
+
+export interface ElbowStudyRecord {
+  arm: 'left' | 'right' | 'both' | null;
+  painWeeks: number | null;
+  gameImpact: string;
+  baseline: InstrumentSnapshot;
+  final: InstrumentSnapshot;
+  sessions: ElbowStudySession[];
+  updatedAt: string;
+}
