@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: POST /api/elbow-study-signup
 // Enrolls a tennis-court contact into the Elbow Reset Study (GHL contact upsert + tag).
-// Courts capture is sign-up only (name, phone, optional arm) — pain score and the
-// rest of the intake happen at session 1, not here. See
+// Courts capture is sign-up only (name, phone, email, optional arm) — pain score
+// and the rest of the intake happen at session 1, not here. See
 // ops/drafts/tennis-elbow-study-plan.md for the full plan.
 
 import { ghlFetch } from "../lib/ghl.js";
@@ -40,6 +40,12 @@ export function isValidPhone(phone) {
   return cleaned.length >= 10;
 }
 
+// Loose but real: one @, a dot in the domain, no whitespace. Enough to catch
+// courts-iPad typos without rejecting valid-but-unusual addresses.
+export function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -70,11 +76,11 @@ export async function onRequestPost(context) {
     }
 
     const body = await context.request.json();
-    const { name, phone, arm } = body;
+    const { name, phone, email, arm } = body;
 
-    if (!name || !phone) {
+    if (!name || !phone || !email) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: name, phone" }),
+        JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers },
       );
     }
@@ -86,6 +92,14 @@ export async function onRequestPost(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
+
+    if (!isValidEmail(email)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers },
+      );
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
 
     const { firstName, lastName } = splitName(name);
 
@@ -99,6 +113,7 @@ export async function onRequestPost(context) {
       firstName: firstName.slice(0, 100),
       lastName: lastName.slice(0, 100),
       phone: cleanPhone.slice(0, 20),
+      email: cleanEmail.slice(0, 254),
       locationId: GHL_LOCATION_ID,
       tags,
       source: "Tennis Elbow Study",
