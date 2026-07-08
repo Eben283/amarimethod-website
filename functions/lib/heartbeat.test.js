@@ -63,6 +63,50 @@ describe("judgeBeat", () => {
   });
 });
 
+// The two jobs added for the advisory system-health checkpoint. Both are judged
+// by the same judgeBeat, so these confirm they're wired into the registry with
+// the states /day relies on: fresh+ok+produced>0 green, ok:false red (stray
+// literal), missing red (checker/self-beat never ran).
+describe("field-id-check + heartbeat jobs", () => {
+  const FIELD = HEARTBEAT_JOBS.find((j) => j.job === "field-id-check");
+  const HB = HEARTBEAT_JOBS.find((j) => j.job === "heartbeat");
+
+  it("both jobs are registered", () => {
+    expect(isRegisteredJob("field-id-check")).toBe(true);
+    expect(isRegisteredJob("heartbeat")).toBe(true);
+  });
+
+  it("field-id-check: green when fresh, ok, and files were scanned", () => {
+    const r = judgeBeat(FIELD, makeBeat(FIELD.job, { producedN: 214, ok: true }, isoAgo(2 * HOUR)));
+    expect(r.state).toBe("green");
+    expect(r.note).toContain("214 files scanned");
+  });
+
+  it("field-id-check: RED when ok:false (a stray literal exists)", () => {
+    const r = judgeBeat(FIELD, makeBeat(FIELD.job, { producedN: 214, ok: false }, isoAgo(2 * HOUR)));
+    expect(r.state).toBe("red");
+    expect(r.note).toMatch(/failure/i);
+  });
+
+  it("field-id-check: RED when the beat is missing (checker never ran)", () => {
+    expect(judgeBeat(FIELD, null).state).toBe("red");
+  });
+
+  it("heartbeat: green when fresh, ok, and jobs were judged", () => {
+    const r = judgeBeat(HB, makeBeat(HB.job, { producedN: 5, ok: true }, isoAgo(2 * HOUR)));
+    expect(r.state).toBe("green");
+    expect(r.note).toContain("5 jobs judged");
+  });
+
+  it("heartbeat: RED when ok:false", () => {
+    expect(judgeBeat(HB, makeBeat(HB.job, { producedN: 5, ok: false }, isoAgo(2 * HOUR))).state).toBe("red");
+  });
+
+  it("heartbeat: RED when the self-beat is missing (judge path never ran)", () => {
+    expect(judgeBeat(HB, null).state).toBe("red");
+  });
+});
+
 describe("writeBeat + readAndJudgeBeats over a mock KV", () => {
   // Minimal in-memory KV: get(key,"json") parses, put(key,val) stores string.
   const makeKv = () => {

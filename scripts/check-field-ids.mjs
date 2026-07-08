@@ -83,11 +83,13 @@ function* walk(dir) {
 
 const idPattern = new RegExp(Object.keys(KNOWN_FIELD_IDS).join("|"), "g");
 const violations = [];
+let filesScanned = 0; // real source files we read (skippable ones don't count)
 
 for (const scanDir of SCAN_DIRS) {
   for (const file of walk(join(ROOT, scanDir))) {
     const rel = relative(ROOT, file);
     if (isSkippable(rel)) continue;
+    filesScanned += 1;
     const lines = readFileSync(file, "utf8").split("\n");
     lines.forEach((line, i) => {
       idPattern.lastIndex = 0;
@@ -102,6 +104,39 @@ for (const scanDir of SCAN_DIRS) {
       }
     });
   }
+}
+
+// --beat: advisory heartbeat POST so /day surfaces this check. It is strictly
+// additive — the scan result and exit code below are unchanged. producedN is the
+// count of source files scanned; ok is true only when zero stray literals were
+// found, so a stray literal is judged RED in /day and a stopped checker goes
+// stale → RED. If OPS_READ_KEY is not in the env, we warn and skip (never fail).
+// Any network/HTTP error is swallowed for the same reason: observability must not
+// gate the linter.
+async function postBeat(producedN, ok) {
+  const key = process.env.OPS_READ_KEY;
+  if (!key) {
+    console.warn("⚠ --beat: OPS_READ_KEY not in env, skipping heartbeat POST (scan result unaffected).");
+    return;
+  }
+  try {
+    const res = await fetch("https://www.amarimethod.com/api/heartbeats", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Service-Key": key },
+      body: JSON.stringify({ job: "field-id-check", producedN, ok }),
+    });
+    if (res.ok) {
+      console.log(`  beat sent: field-id-check producedN=${producedN} ok=${ok}`);
+    } else {
+      console.warn(`⚠ --beat: heartbeat POST returned HTTP ${res.status} (scan result unaffected).`);
+    }
+  } catch (err) {
+    console.warn(`⚠ --beat: heartbeat POST failed (${err?.message || err}), scan result unaffected.`);
+  }
+}
+
+if (process.argv.includes("--beat")) {
+  await postBeat(filesScanned, violations.length === 0);
 }
 
 if (violations.length === 0) {

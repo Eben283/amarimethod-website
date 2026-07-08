@@ -27,6 +27,17 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: JSON_HEADERS });
   }
   const result = await readAndJudgeBeats(kv);
+  // Self-watch: judge FIRST (so THIS response reflects the PREVIOUS run's self-beat),
+  // then write a fresh "heartbeat" beat. If the read/judge path was broken or never
+  // ran, yesterday's self-beat is missing/stale → the "heartbeat" job shows red today.
+  // producedN is the real count of jobs judged (the beat is written after judging, so
+  // it doesn't inflate its own count). Best-effort like the worker: a self-beat write
+  // failure must never break the GET response.
+  try {
+    await writeBeat(kv, "heartbeat", { producedN: result.checks.length, ok: true });
+  } catch (err) {
+    console.error("[heartbeats] self-beat write failed (non-fatal):", err?.message || err);
+  }
   return new Response(JSON.stringify(result), { status: 200, headers: JSON_HEADERS });
 }
 
