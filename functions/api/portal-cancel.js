@@ -2,8 +2,7 @@
 // Cancels an upcoming appointment via GHL API
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
-import { isContactRevoked } from "../lib/session-guard.js";
+import { requireOwner } from "../lib/owned-access.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -46,33 +45,13 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Verify auth token
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers }
-      );
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
-
-    // Per-contact kill switch — cancel is a high-stakes mutating action and
-    // was missing the revocation check portal-data has (2026-07-02 audit).
-    if (await isContactRevoked(context.env.PORTAL_KV, tokenPayload.contactId)) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
+    // Ownership gate: Bearer + verify + per-contact revoke, centralized in
+    // lib/owned-access.js. tokenPayload.contactId (below) comes from the
+    // verified JWT, never the request body — the appointment ownership check
+    // further down scopes the cancel to this contact's own appointments.
+    const gate = await requireOwner(context, headers);
+    if (gate.error) return gate.error;
+    const { tokenPayload } = gate;
 
     // Parse request body. We intentionally ignore any client-supplied `title`:
     // the PUT below echoes the appointment title back to GHL, so trusting client
