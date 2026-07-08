@@ -5,9 +5,17 @@
 // ops/drafts/tennis-elbow-study-plan.md for the full plan.
 
 import { ghlFetch } from "../lib/ghl.js";
+import { STUDIES } from "../lib/studies.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+
+// This endpoint enrolls into the tennis-elbow study specifically. The display
+// name written to the contact's Study Name field drives {{contact.study_name}}
+// in the confirmation email + appointment reminders, so one GHL workflow can
+// name whichever study the contact signed up for.
+const STUDY = STUDIES["tennis-elbow"];
+const STUDY_NAME_FIELD_ID = "1xhxStKyEN47shwjOKC0"; // GHL custom field "Study Name" (contact.study_name)
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -117,6 +125,7 @@ export async function onRequestPost(context) {
       locationId: GHL_LOCATION_ID,
       tags,
       source: "Tennis Elbow Study",
+      customFields: [{ id: STUDY_NAME_FIELD_ID, value: STUDY.shortName }],
     };
 
     const upsertResponse = await ghlFetch(context, `${GHL_API_BASE}/contacts/upsert`, {
