@@ -12,6 +12,14 @@
 // POST { contactId, record }         → normalizes server-side, writes, echoes back
 
 import { corsHeaders, requireStaffAuth, parseJsonBody } from "../lib/endpoint-guards.js";
+import { ghlFetch } from "../lib/ghl.js";
+
+const GHL_API_BASE = "https://services.leadconnectorhq.com";
+// GHL number field "Study Sessions Done" (contact.study_sessions_done). The
+// capture record lives in KV (own-infra, invisible to GHL), so we mirror the
+// completed-session count onto the contact here — that's what the rebooking-nudge
+// workflow triggers on. Best-effort: a GHL failure never blocks the capture save.
+const STUDY_SESSIONS_DONE_FIELD_ID = "Q9DqX2C4ml2TGW679UlM";
 
 const SESSION_COUNT = 3;
 const ARM_VALUES = new Set(["left", "right", "both"]);
@@ -168,6 +176,20 @@ export async function onRequestPost(context) {
 
   try {
     await env.PORTAL_KV.put(kvKey(contactId), JSON.stringify(normalized));
+
+    // Mirror the completed-session count to GHL so the rebooking-nudge workflow
+    // can fire. A session counts as done once its after-score is recorded.
+    // Best-effort: never fail the capture save if GHL is unreachable.
+    const sessionsDone = normalized.sessions.filter((s) => s.after !== null).length;
+    try {
+      await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`, {
+        method: "PUT",
+        body: JSON.stringify({ customFields: [{ id: STUDY_SESSIONS_DONE_FIELD_ID, value: sessionsDone }] }),
+      });
+    } catch (ghlErr) {
+      console.error("[staff-elbow-study] GHL sessions-done sync failed:", ghlErr.message);
+    }
+
     return new Response(JSON.stringify({ record: normalized }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-elbow-study] POST error:", err.message);
