@@ -104,10 +104,11 @@ export const STUDIES = {
   },
 };
 
-// The one free 15-minute calendar all studies book into. Its NAME must contain
+// The one free 15-minute calendar all studies book into. Its NAME contains
 // "15-minute" so journey-classification.js keeps these free sessions out of the
-// paid ledger. Filled once the GHL calendar exists.
-export const STUDY_CALENDAR_ID = null;
+// paid ledger. Created 2026-07-07 as "Amari Study 15-Minute Session" (slug
+// amari-study, Garrett sole provider, in-person 662 8th Ave).
+export const STUDY_CALENDAR_ID = "J1N09B6bRYPOGNyVAfmX";
 
 export function getStudyBySlug(slug) {
   return STUDIES[slug] || null;
