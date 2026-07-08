@@ -171,6 +171,31 @@ describe('PACKAGE_MAP (reconcile worker consumer)', () => {
   });
 });
 
+describe('Kristina 8-Session Series product identity (regression 2026-07-08)', () => {
+  // Kristina Schubert paid a real $1,295 8-Session Series. The qa-audit tool
+  // derived her balance wrong because it keyed on a RETIRED priceId. Pin both
+  // the productId classification AND that productIdForAnyId resolves the
+  // current price and the retired/historical price back to the same product,
+  // so any future map edit that drops a priceId trips this test.
+  it('productId 69987357c839790426996114 is the 8-Session Series (8 sessions, 8-session)', () => {
+    const p = GHL_PRODUCTS[ID.eightSeries];
+    expect(p.classification).toBe('8-series');
+    expect(p.sessions).toBe(8);
+    expect(p.seriesType).toBe('8-session');
+    expect(LEDGER_PRODUCT_MAP[ID.eightSeries]).toEqual({ type: '8-series', sessions: 8 });
+  });
+
+  it('resolves BOTH the current and the retired priceId back to the productId', () => {
+    // current priceId on Kristina's order
+    expect(productIdForAnyId(ID.eightSeriesPrice)).toBe(ID.eightSeries);
+    // historical priceId that also appeared on her order (the drift the audit hit)
+    expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
+    // and the product resolved from either id is the 8-Session Series
+    expect(productForAnyId(ID.eightSeriesPrice).name).toBe('8-Session Series');
+    expect(productForAnyId(ID.eightSeriesPriceOld).name).toBe('8-Session Series');
+  });
+});
+
 describe('AUDIT_INCREMENT_MAP (daily-audit consumer)', () => {
   it('is keyed by BOTH product and price ids (current + historical)', () => {
     expect(AUDIT_INCREMENT_MAP[ID.eightSeries]).toMatchObject({ increment: 8 });

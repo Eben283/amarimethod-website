@@ -27,6 +27,7 @@ import { timingSafeEqual } from "../lib/safe-equal.js";
 import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { checkPackageBalance } from "../lib/session-consistency.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -554,6 +555,41 @@ export async function onRequestPost(context) {
     const newRemaining = pkg.seriesType !== null
       ? pkg.sessionsToAdd
       : currentRemaining + pkg.sessionsToAdd;
+
+    // ── 6b. Consistency guard (advisory) ──
+    // Sanity-check the value we're about to SET against the package's own
+    // session count before writing. Package purchases SET the balance, so
+    // newRemaining should equal the credited amount and never exceed it or go
+    // negative. We only check the SET path (seriesType !== null): the ADD path
+    // (single follow-ups) legitimately pushes remaining above a single's "1"
+    // when a client already has a pack. attended is not cheaply available here
+    // (no ledger derivation on this hot path), so we pass null and only the
+    // bounds are checked — see session-consistency.js for why this is
+    // package-attended, never lifetime sessions_completed.
+    //
+    // FLAG, don't reject: the payment already succeeded. A blocked write on a
+    // real paid customer is worse than a flagged one, and the existing failure
+    // paths in this handler (contact fetch, PUT) treat a missed write as an
+    // ops alert, not a hard stop for the customer. So on violation we record an
+    // ops alert + console.error and continue to write.
+    if (pkg.seriesType !== null) {
+      const balanceCheck = checkPackageBalance({
+        remaining: newRemaining,
+        packageSize: pkg.sessionsToAdd,
+        attended: null,
+      });
+      if (!balanceCheck.ok) {
+        console.error(
+          `[ghl-purchase-webhook] Balance consistency violation for ${sanitizedContactId} ` +
+          `(${pkg.name}): ${balanceCheck.violation} — writing anyway (advisory)`,
+        );
+        context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+          "Session balance consistency violation on package purchase — value written anyway",
+          { contactId: sanitizedContactId, product: pkg.name,
+            attemptedRemaining: newRemaining, packageSize: pkg.sessionsToAdd,
+            violation: balanceCheck.violation }));
+      }
+    }
 
     // ── 7. Build field updates ──
     const fieldUpdates = [
