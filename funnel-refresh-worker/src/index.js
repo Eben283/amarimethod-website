@@ -18,6 +18,7 @@
 
 import { buildFunnelSnapshot } from "./funnel.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+import { writeBeat } from "../../functions/lib/heartbeat.js";
 
 // LIVE — cutover 2026-06-12. Writes the snapshot the dashboard actually reads.
 const KV_SNAPSHOT_KEY = "funnel:latest";
@@ -96,6 +97,16 @@ async function runRefresh(env, trigger) {
       paceLine: snapshot.paceLine,
     };
     await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));
+    // Heartbeat: producedN = total snapshot rows. 0 rows = a broken pull (an
+    // active practice always has calls/sessions/sales), so it flags red in /day.
+    try {
+      await writeBeat(env.PORTAL_KV, "funnel-refresh", {
+        producedN: summary.calls + summary.sessions + summary.sales,
+        ok: true,
+      });
+    } catch (beatErr) {
+      console.error("[funnel-refresh] beat write failed (non-fatal):", beatErr);
+    }
     console.log(`[funnel-refresh] done: ${summary.calls} calls, ${summary.sessions} sessions, ${summary.sales} sales (${summary.sessionsSold} sold), ${summary.bytes}b, ${summary.durationMs}ms`);
     return summary;
   } catch (e) {
@@ -112,6 +123,13 @@ async function runRefresh(env, trigger) {
       await env.PORTAL_KV.put(KV_LAST_RUN_KEY, JSON.stringify(summary));
     } catch (kvErr) {
       console.error("[funnel-refresh] failed to write summary to KV:", kvErr);
+    }
+    // Heartbeat: mark the run failed so /day flags it red instead of showing a
+    // stale-but-green last good run.
+    try {
+      await writeBeat(env.PORTAL_KV, "funnel-refresh", { producedN: 0, ok: false });
+    } catch (beatErr) {
+      console.error("[funnel-refresh] beat write failed (non-fatal):", beatErr);
     }
     console.error("[funnel-refresh] FAILED:", summary.error);
     return summary;

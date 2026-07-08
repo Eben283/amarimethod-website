@@ -4,6 +4,8 @@
 // The shared secret is set via:
 //   npx wrangler pages secret put OUTREACH_UPLOAD_SECRET --project-name amarimethod-website
 
+import { writeBeat } from "../lib/heartbeat.js";
+
 const KV_KEY = "outreach-snapshot:current";
 
 const ALLOWED_ORIGINS = [
@@ -82,6 +84,18 @@ export async function onRequestPost(context) {
     };
 
     await kv.put(KV_KEY, JSON.stringify(stored));
+
+    // Heartbeat for the outreach-snapshot job. This upload IS the outreach
+    // pipeline reaching KV, so the beat belongs here (the local generator writes
+    // a file; KV is the shared surface). producedN = cards. If the local cron
+    // dies before uploading, this endpoint is never called and no beat is
+    // written, so /day flags the job red — the exact silent-writer failure the
+    // system map calls out. Best-effort: never fail the upload over a beat.
+    try {
+      await writeBeat(kv, "outreach-snapshot", { producedN: snapshot.cards.length, ok: true });
+    } catch (beatErr) {
+      console.error("[staff-outreach-upload] beat write failed (non-fatal):", beatErr);
+    }
 
     return new Response(
       JSON.stringify({ ok: true, cardCount: snapshot.cards.length, uploadedAt: stored.uploadedAt }),

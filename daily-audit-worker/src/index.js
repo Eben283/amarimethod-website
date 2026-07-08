@@ -7,6 +7,7 @@ import { auditAppointments, auditPurchases, auditTagConsistency, auditSeriesType
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+import { writeBeat } from "../../functions/lib/heartbeat.js";
 
 const AUDIT_KV_PREFIX = "ops:daily-audit:";
 const AUDIT_HOURS = 48;
@@ -259,6 +260,18 @@ async function runAudit(env) {
   console.log(
     `[daily-audit] Done: ${allIssues.length} issues (${result.summary.critical} critical, ${result.summary.warnings} warnings)`
   );
+
+  // Heartbeat: producedN = contacts inspected. 0 means the audit fetched nothing
+  // (a broken run), which flags red in /day — distinct from "0 issues found" (a
+  // clean, healthy run still audits many contacts).
+  try {
+    await writeBeat(env.PORTAL_KV, "daily-audit", {
+      producedN: result.summary.contactsAudited,
+      ok: true,
+    });
+  } catch (beatErr) {
+    console.error("[daily-audit] beat write failed (non-fatal):", beatErr);
+  }
 
   return result;
 }
