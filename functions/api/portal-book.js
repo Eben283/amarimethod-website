@@ -16,6 +16,7 @@ import { computeSessionLedger } from "../lib/session-ledger.js";
 import { isContactRevoked } from "../lib/session-guard.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { appointmentEndTime } from "../lib/datetime.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -33,7 +34,7 @@ export function resolvePortalCalendar(sessionType) {
   return PORTAL_FOLLOWUP_CALENDARS[sessionType] || null;
 }
 
-const SESSIONS_REMAINING_FIELD_ID = 'wrQSkx6BhXwDGIn1d0V4';
+const SESSIONS_REMAINING_FIELD_ID = GHL_FIELD_IDS.sessions_remaining;
 
 // Block a follow-up booking when the package balance is clearly exhausted
 // (sessions_remaining <= 0). Fails OPEN when the field is missing/unparseable —

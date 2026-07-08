@@ -5,6 +5,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -12,12 +13,14 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // Internal contacts excluded from the pipeline view
 const EXCLUDED_EMAILS = new Set(["eben@ebenforrest.com"]);
 
-// GHL custom field IDs — hardcoded to avoid dynamic map lookup failures
+// GHL custom field IDs — hardcoded to avoid dynamic map lookup failures.
+// Money/session IDs single-sourced from lib/ghl-fields.js; touch_count is a
+// partner-CRM field not yet covered by the registry (follow-up).
 const FIELD_IDS = {
   touch_count:         "qKtPT2XZP61emgUDK7fd",
-  series_type:         "3i93lTkmuAV49s9nh0q8",
-  sessions_completed:  "TE0udwVH1Km5RsKaN5H0",
-  sessions_remaining:  "wrQSkx6BhXwDGIn1d0V4",
+  series_type:         GHL_FIELD_IDS.series_type,
+  sessions_completed:  GHL_FIELD_IDS.sessions_completed,
+  sessions_remaining:  GHL_FIELD_IDS.sessions_remaining,
 };
 
 // 6 months ago cutoff for touch columns — older contacts drop off

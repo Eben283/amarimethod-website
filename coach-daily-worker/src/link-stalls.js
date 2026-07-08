@@ -2,6 +2,7 @@
 // Takes (env, dueMap) in-memory instead of reading local files.
 
 import { ghlPostRetry, LOCATION_ID } from "./ghl.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 
 const LINK_STALL_DAYS = 3;
 
@@ -61,9 +62,9 @@ export async function detectLinkStalls(env, dueMap) {
       // to a paying client. Evidence: an active/assigned series or a
       // converted cadence state.
       const cf = c.customFields || [];
-      const remainingRaw = cf.find((f) => f.id === "wrQSkx6BhXwDGIn1d0V4")?.value;
+      const remainingRaw = cf.find((f) => f.id === GHL_FIELD_IDS.sessions_remaining)?.value;
       const remaining = parseInt(remainingRaw ?? "", 10);
-      const seriesType = String(cf.find((f) => f.id === "3i93lTkmuAV49s9nh0q8")?.value || "");
+      const seriesType = String(cf.find((f) => f.id === GHL_FIELD_IDS.series_type)?.value || "");
       const purchased =
         (Number.isFinite(remaining) && remaining > 0) ||
         seriesType === "4-session" || seriesType === "8-session" ||

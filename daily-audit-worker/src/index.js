@@ -864,7 +864,7 @@ async function runLedgerDriftScan(env) {
         // exactly the kind of drift this watchdog exists to surface.
         // Filter previously missed these (staff-balances.js:128-134 has
         // the inclusive filter; copy that pattern here for consistency).
-        const sessionPrepaid = (cf.find((f) => f.id === "sgQ5EbJWhvTfGVhStaOO")?.value || "").toString().toLowerCase() === "yes";
+        const sessionPrepaid = (cf.find((f) => f.id === FIELD_IDS.session_prepaid)?.value || "").toString().toLowerCase() === "yes";
         if (seriesType !== "none" || remaining > 0 || sessionPrepaid) {
           candidates.push(c.id);
         }

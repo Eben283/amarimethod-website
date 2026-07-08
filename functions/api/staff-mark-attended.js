@@ -8,15 +8,16 @@ import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/atten
 import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classification.js";
 import { SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
-// Custom field IDs (from TECHNICAL-REFERENCE.txt)
+// Custom field IDs (single-sourced from lib/ghl-fields.js)
 const FIELD_IDS = {
-  sessions_completed: "TE0udwVH1Km5RsKaN5H0",
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+  sessions_completed: GHL_FIELD_IDS.sessions_completed,
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
 };
 
 // Two distinct predicates per the 2026-05-29 session-fields contract

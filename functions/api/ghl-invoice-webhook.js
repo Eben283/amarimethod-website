@@ -41,6 +41,7 @@
 
 import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
@@ -60,12 +61,12 @@ export const KV_TTL_SECONDS = 90 * 86400;
 // custom line items with no productId) are a silent no-op in this webhook.
 export const INVOICE_PURCHASE_PRODUCTS = WEBHOOK_PURCHASE_MAP;
 
-// ── GHL custom field IDs (same as ghl-purchase-webhook.js) ──
+// ── GHL custom field IDs (single-sourced from lib/ghl-fields.js) ──
 const FIELD_IDS = {
-  sessionsRemaining: "wrQSkx6BhXwDGIn1d0V4",
-  seriesType: "3i93lTkmuAV49s9nh0q8",
-  portalAccess: "O0xmwyRqeNK2EA1GGGye",
-  livingPracticeAccess: "1EnVtI70jC5MTshZjWvw",
+  sessionsRemaining: GHL_FIELD_IDS.sessions_remaining,
+  seriesType: GHL_FIELD_IDS.series_type,
+  portalAccess: GHL_FIELD_IDS.portal_access,
+  livingPracticeAccess: GHL_FIELD_IDS.living_practice_access,
 };
 
 // Tags that get removed when a series is purchased (discovery/quiz/ambassador

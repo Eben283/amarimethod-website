@@ -5,6 +5,7 @@
 
 import { ghlFetch } from "./ghl.js";
 import { deriveLedger } from "./session-ledger.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "./ghl-fields.js";
 import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
 import {
   recordPark,
@@ -22,10 +23,10 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const MAX_TOOL_ROUNDS = 5;
 
-// GHL custom field IDs
-const FIELD_SESSIONS_REMAINING = "wrQSkx6BhXwDGIn1d0V4";
-const FIELD_SESSIONS_COMPLETED = "TE0udwVH1Km5RsKaN5H0";
-const FIELD_SERIES_TYPE = "3i93lTkmuAV49s9nh0q8";
+// GHL custom field IDs (single-sourced from lib/ghl-fields.js)
+const FIELD_SESSIONS_REMAINING = GHL_FIELD_IDS.sessions_remaining;
+const FIELD_SESSIONS_COMPLETED = GHL_FIELD_IDS.sessions_completed;
+const FIELD_SERIES_TYPE = GHL_FIELD_IDS.series_type;
 
 // Tool definitions exposed to Claude.
 export const TOOLS = [
@@ -252,10 +253,10 @@ export async function executeTool(context, toolName, input, user = "Eben") {
       const ledger = deriveLedger({
         contact: c, orders, invoices, appointments,
         fieldDefs: {
-          sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-          series_type: "3i93lTkmuAV49s9nh0q8",
-          session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
-          sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+          sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+          series_type: GHL_FIELD_IDS.series_type,
+          session_prepaid: GHL_FIELD_IDS.session_prepaid,
+          sessions_remaining_locked: GHL_FIELD_IDS.sessions_remaining_locked,
         },
         fetchFailures: ledgerFetchFailures,
       });

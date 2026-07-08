@@ -5,6 +5,7 @@
 // Workers; found + extracted during the cron-job architecture audit).
 
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 
 export { getAccessToken };
 
@@ -118,9 +119,9 @@ export async function addContactNote(env, contactId, body) {
 
 // Field IDs used to identify a contact who could hold a session balance.
 const SWEEP_FIELD = {
-  series_type: "3i93lTkmuAV49s9nh0q8",
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+  series_type: GHL_FIELD_IDS.series_type,
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
 };
 
 // Enumerate every contact who could hold a session balance — active series,

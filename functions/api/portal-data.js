@@ -137,7 +137,7 @@ export async function onRequestGet(context) {
       ),
     ]);
 
-    // Build a map of short field key → field ID (e.g. "sessions_completed" → "TE0udwVH1Km5RsKaN5H0")
+    // Build a map of short field key → field ID (e.g. "sessions_completed" → its GHL field ID)
     let fieldDefs = {};
     if (fieldDefsResponse.ok) {
       const fieldDefsData = await fieldDefsResponse.json();

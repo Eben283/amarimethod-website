@@ -5,6 +5,7 @@
 // cron-job architecture audit).
 
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 
 export { getAccessToken };
 
@@ -13,10 +14,11 @@ const GHL_BASE = "https://services.leadconnectorhq.com";
 export const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 export const FIELD_IDS = {
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-  sessions_completed: "TE0udwVH1Km5RsKaN5H0",
-  series_type: "3i93lTkmuAV49s9nh0q8",
-  portal_access: "O0xmwyRqeNK2EA1GGGye",
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+  sessions_completed: GHL_FIELD_IDS.sessions_completed,
+  series_type: GHL_FIELD_IDS.series_type,
+  portal_access: GHL_FIELD_IDS.portal_access,
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
 };
 
 // ── GHL API fetch ──

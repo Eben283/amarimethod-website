@@ -18,11 +18,12 @@ import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 import { ghlGet, ghlPut, getOrderDetail, LOCATION_ID } from "./ghl.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 
 const FIELD_IDS = {
-  series_type: "3i93lTkmuAV49s9nh0q8",
-  sessions_completed: "TE0udwVH1Km5RsKaN5H0",
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
+  series_type: GHL_FIELD_IDS.series_type,
+  sessions_completed: GHL_FIELD_IDS.sessions_completed,
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
   // Manual override lock. When checked, the worker skips this contact —
   // neither sessions_remaining nor sessions_completed get auto-corrected.
   // Used for one-off cases where derivation disagrees with intent (e.g.
@@ -30,10 +31,10 @@ const FIELD_IDS = {
   // still decrements on real attendance — the lock only blocks automated
   // sync, not user-initiated events. Field created 2026-05-29 (Albert Yang
   // case). See SESSION-FIELDS-AUDIT.md.
-  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+  sessions_remaining_locked: GHL_FIELD_IDS.sessions_remaining_locked,
   // Manual "this client has a prepaid balance" flag. Read so deriveLedger's
   // prepaid-override guard can fire — see LEDGER_FIELD_DEFS below.
-  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
 };
 
 // fieldDefs passed to deriveLedger. Intentionally ONLY session_prepaid.

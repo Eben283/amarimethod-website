@@ -10,15 +10,16 @@ import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyCo
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
 import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
-// Ledger-relevant custom field IDs (same constants as staff-mark-attended.js
-// FIELD_IDS / series-reconcile sync.js) — deriveLedger's field fallback needs
-// them to resolve the hand-typed values on low confidence.
+// Ledger-relevant custom field IDs (single-sourced from lib/ghl-fields.js) —
+// deriveLedger's field fallback needs them to resolve the values on low
+// confidence.
 const LEDGER_FIELD_DEFS = {
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-  series_type: "3i93lTkmuAV49s9nh0q8",
-  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
-  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+  series_type: GHL_FIELD_IDS.series_type,
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
+  sessions_remaining_locked: GHL_FIELD_IDS.sessions_remaining_locked,
 };
 
 const ALLOWED_ORIGINS = [
@@ -591,8 +592,8 @@ async function lookupContact(context, name) {
   }
 
   // Known field IDs (kept for diagnostic display only — see below)
-  const fieldSessionsRemaining = fieldMap["wrQSkx6BhXwDGIn1d0V4"] || contact.sessionsRemaining || null;
-  const fieldSessionsCompleted = fieldMap["TE0udwVH1Km5RsKaN5H0"] || contact.sessionsCompleted || null;
+  const fieldSessionsRemaining = fieldMap[GHL_FIELD_IDS.sessions_remaining] || contact.sessionsRemaining || null;
+  const fieldSessionsCompleted = fieldMap[GHL_FIELD_IDS.sessions_completed] || contact.sessionsCompleted || null;
   // Display values from deriveLedger — falls back to GHL field on lock
   // or low confidence. See session-ledger.js display block.
   const sessionsRemaining = ledger.display?.remaining ?? (fieldSessionsRemaining ?? "unknown");

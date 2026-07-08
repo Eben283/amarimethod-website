@@ -5,6 +5,7 @@
 
 import { getContact, patchContact, addContactNote, removeContactTags, ghlGet, getOrderDetail, LOCATION_ID } from "./ghl.js";
 import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { claimProcessedEvent, isProcessedEvent } from "../../functions/lib/processed-events.js";
@@ -26,16 +27,16 @@ export const PACKAGE_PRODUCTS = Object.fromEntries(
 );
 
 export const FIELD_IDS = {
-  series_type: "3i93lTkmuAV49s9nh0q8",
-  sessions_remaining: "wrQSkx6BhXwDGIn1d0V4",
-  portal_access: "O0xmwyRqeNK2EA1GGGye",
-  living_practice_access: "1EnVtI70jC5MTshZjWvw",
-  sessions_remaining_locked: "oDyLqIeq3yTkyhgXhAmk",
+  series_type: GHL_FIELD_IDS.series_type,
+  sessions_remaining: GHL_FIELD_IDS.sessions_remaining,
+  portal_access: GHL_FIELD_IDS.portal_access,
+  living_practice_access: GHL_FIELD_IDS.living_practice_access,
+  sessions_remaining_locked: GHL_FIELD_IDS.sessions_remaining_locked,
   // Same rationale as sync.js's LEDGER_FIELD_DEFS: without this, deriveLedger's
   // prepaid-override guard can't fire, so a prepaid-flagged contact with no
   // matching orders would derive purchased=0 at HIGH confidence instead of
   // "unknown". Passed to deriveLedger below, same as sync.js.
-  session_prepaid: "sgQ5EbJWhvTfGVhStaOO",
+  session_prepaid: GHL_FIELD_IDS.session_prepaid,
 };
 
 // Same KV prefix + namespace (PORTAL_KV) sync.js uses for large-delta/

@@ -22,6 +22,7 @@
 
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
@@ -282,12 +283,12 @@ async function recordInitialSessionPaid(context, contactId, pkg, appointment) {
   }
 }
 
-// ── GHL custom field IDs ──
+// ── GHL custom field IDs (single-sourced from lib/ghl-fields.js) ──
 const FIELD_IDS = {
-  sessionsRemaining: "wrQSkx6BhXwDGIn1d0V4",
-  seriesType: "3i93lTkmuAV49s9nh0q8",
-  portalAccess: "O0xmwyRqeNK2EA1GGGye",
-  livingPracticeAccess: "1EnVtI70jC5MTshZjWvw",
+  sessionsRemaining: GHL_FIELD_IDS.sessions_remaining,
+  seriesType: GHL_FIELD_IDS.series_type,
+  portalAccess: GHL_FIELD_IDS.portal_access,
+  livingPracticeAccess: GHL_FIELD_IDS.living_practice_access,
 };
 
 // 90 days — must outlive GHL's webhook retry window so a late re-delivery can't

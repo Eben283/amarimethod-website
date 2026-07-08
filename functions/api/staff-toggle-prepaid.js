@@ -3,9 +3,10 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const FIELD_ID_SESSION_PREPAID = "sgQ5EbJWhvTfGVhStaOO";
+const FIELD_ID_SESSION_PREPAID = GHL_FIELD_IDS.session_prepaid;
 
 
 export async function onRequestOptions(context) {
