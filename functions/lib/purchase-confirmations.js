@@ -6,13 +6,15 @@
 // The series branch runs on the RECONCILE RESULT passed in — never a re-read of the GHL
 // series_type field, which the whole cluster writes (the read-back race the brief flags).
 //
-// Copy: the two invoice-confirmation templates are carried VERBATIM from the twin spec
+// Copy: the two seriesType templates are carried VERBATIM from the twin spec
 // (invoice-series-purchase-notification.yaml, verified live 2026-05-04) — only the 8-session
 // email mentions Living Practice, matching the package mapping. A Single/unknown series type
-// gets cleanup but NO email (documented silent fall-through). The four Order-Submitted
-// workflows' own confirmation copy is a RESOLVE FIRST (channel/body disputed in the docs) —
-// until that one-look builder check happens, every source funnels through these templates in
-// SHADOW mode, which never sends anyway.
+// gets cleanup but NO email (documented silent fall-through). 2026-07-12 builder reads
+// (Eben) verified the Order-Submitted workflows use the SAME copy: the 4-series T4 email
+// body is word-for-word the "4-session" template below, and the upgrades get their own
+// classification variants (credit line) — so these templates now cover both the invoice and
+// Order-Submitted paths byte-exact, except the 8-series body (last unverified, presumed to
+// match the invoice 8-session template).
 //
 // Shadow is the default (MODE below): would_send is recorded on the purchase_confirmations
 // ledger + automation_events, the send adapter is never called. Missing AUTOMATION_DB binding
