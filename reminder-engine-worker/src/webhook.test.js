@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
+vi.mock("../../functions/lib/ghl-worker-token.js", () => ({ getAccessToken: vi.fn().mockResolvedValue("tok_test") }));
 
 import { handleWebhook } from "./webhook.js";
 
@@ -126,6 +127,49 @@ describe("handleWebhook — the GHL appointment ingest on the worker (no Pages n
     expect(res.status).toBe(200);
     expect(bindingFetch).toHaveBeenCalledTimes(1);
     expect(fetchMock).not.toHaveBeenCalled(); // global fetch bypassed
+  });
+
+  it("ENRICHES a deficient payload from the GHL API (the real GHL body: literal-null calendar/status, prose start_time)", async () => {
+    // Exactly what GHL sent on the first live test (2026-07-12): merge tags for calendar_id
+    // and status don't exist ("null"), start_time is human prose. Only the ids are usable.
+    const livePayload = {
+      contact_id: "cont_live1", appointment_id: "appt_live1",
+      calendar_id: "null", status: "null",
+      start_time: "Thursday, July 30, 2026 6:00 PM", source: "appointment-events-webhook",
+    };
+    const apiResponse = {
+      appointment: {
+        id: "appt_live1", calendarId: "G7OAnnJuFbMF6nQSlZVQ", contactId: "cont_live1",
+        appointmentStatus: "confirmed", startTime: "2026-07-30T18:00:00-07:00",
+      },
+    };
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("services.leadconnectorhq.com")) {
+        return new Response(JSON.stringify(apiResponse), { status: 200 });
+      }
+      return new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 });
+    });
+    const res = await handleWebhook(req(livePayload, SECRET), { ...env, PORTAL_KV: {} }, Date.now());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.actions).toContainEqual(expect.objectContaining({ engine: "reminder", action: "enroll" }));
+    expect(env.REMINDER_DB._enrollments.size).toBe(1);
+    expect(env.REMINDER_DB._events.some((e) => e.action === "ingest_enriched")).toBe(true);
+    // API call hit the appointment endpoint with the id from the payload
+    const apiCall = fetchMock.mock.calls.find(([u]) => String(u).includes("leadconnectorhq"));
+    expect(String(apiCall[0])).toContain("/calendars/events/appointments/appt_live1");
+  });
+
+  it("an API-lookup failure degrades to the raw capture, never a 5xx", async () => {
+    const livePayload = { contact_id: "c1", appointment_id: "appt_x", status: "null", calendar_id: "null" };
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("services.leadconnectorhq.com")) return new Response("upstream down", { status: 500 });
+      return new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 });
+    });
+    const res = await handleWebhook(req(livePayload, SECRET), { ...env, PORTAL_KV: {} }, Date.now());
+    expect(res.status).toBe(200);
+    expect((await res.json()).skipped).toBe("unrecognized");
+    expect(env.REMINDER_DB._events.some((e) => e.action === "ingest_unrecognized")).toBe(true);
   });
 
   it("a nurture-forward failure never fails the webhook (GHL must not retry-storm)", async () => {

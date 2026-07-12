@@ -17,6 +17,12 @@ binding = "REMINDER_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# Token cache for read-only GHL API lookups (webhook enrichment — the ghl-token-refresh
+# worker keeps the token fresh; same namespace as Pages + the other workers).
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
 # The /webhook ingest forwards typed appointment events to the nurture engine.
 # Cloudflare blocks worker→worker fetches via *.workers.dev on the same account, so the
 # forward rides this SERVICE BINDING; NURTURE_ENGINE_URL below just gates/addresses it.

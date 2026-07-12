@@ -82,10 +82,11 @@ export const FLOW_1_QUIZ = deepFreeze({
     { after: "+10d", kind: "email", template: "f1-email-6-when-ready" }, // label-derived wait
   ],
   exits: [
-    // "Remove from quiz submitted workflow" — booked either discovery calendar…
-    { kind: "appointment", statuses: ["booked"], calendarIds: [DISCOVERY, DISCOVERY_AMBASSADOR] },
-    // …or Garrett manually confirmed (User only — a client self-confirm must not double-count)
-    { kind: "appointment", statuses: ["confirmed"], calendarIds: [DISCOVERY, DISCOVERY_AMBASSADOR], modifiedBy: ["user"] },
+    // "Remove from quiz submitted workflow" — a discovery booking on either calendar. GHL
+    // auto-confirms, so the booking moment reads as "confirmed" (first live payload,
+    // 2026-07-12) — both statuses mean "booking happened", and this also covers the deleted
+    // workflow's manual-confirm trigger (a confirm only ever advances the funnel).
+    { kind: "appointment", statuses: ["booked", "confirmed"], calendarIds: [DISCOVERY, DISCOVERY_AMBASSADOR] },
     // "Remove from Workflow 1 if tagged workflow 2 or 3" + "remove from workflow 1 &2 if tagged w/3"
     { kind: "tag.added", tags: [TAG_WORKFLOW_2, TAG_WORKFLOW_3] },
   ],
@@ -111,7 +112,8 @@ export const FLOW_2_POST_DISCOVERY = deepFreeze({
   ],
   exits: [
     // "Remove from Pain consultation to first booking" — booked an initial session
-    { kind: "appointment", statuses: ["booked"], calendarIds: [INITIAL_IN_PERSON, INITIAL_VIRTUAL] },
+    // (booked|confirmed: GHL auto-confirms, see Flow 1 exit note)
+    { kind: "appointment", statuses: ["booked", "confirmed"], calendarIds: [INITIAL_IN_PERSON, INITIAL_VIRTUAL] },
     { kind: "tag.added", tags: [TAG_WORKFLOW_3] },
   ],
 });
@@ -138,7 +140,7 @@ export const FLOW_3_POST_INITIAL = deepFreeze({
     // "Remove from First session to followup" — 9 GHL triggers collapsed:
     { kind: "purchase", productIds: [PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8] },
     {
-      kind: "appointment", statuses: ["booked"],
+      kind: "appointment", statuses: ["booked", "confirmed"],
       calendarIds: [FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT],
     },
   ],

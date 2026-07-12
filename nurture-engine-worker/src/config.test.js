@@ -35,13 +35,14 @@ describe("Flow 1 — quiz nurture", () => {
     expect(FLOW_1_QUIZ.exits.some((x) => eventMatches(x, booked))).toBe(true);
   });
 
-  it("a manual confirm by a USER exits; a customer self-confirmation does not double-count", () => {
+  it("a confirmed discovery appointment exits regardless of actor (GHL auto-confirms — the booking moment reads as confirmed)", () => {
     const confirmed = (modifiedBy) => ({
       kind: "appointment", type: "confirmed", calendarId: "USgPsktqRcuomdUgpShL",
       contactId: "c1", appointmentId: "a1", modifiedBy,
     });
     expect(FLOW_1_QUIZ.exits.some((x) => eventMatches(x, confirmed("user")))).toBe(true);
-    expect(FLOW_1_QUIZ.exits.some((x) => eventMatches(x, confirmed("customer")))).toBe(false);
+    expect(FLOW_1_QUIZ.exits.some((x) => eventMatches(x, confirmed("customer")))).toBe(true);
+    expect(FLOW_1_QUIZ.exits.some((x) => eventMatches(x, confirmed(null)))).toBe(true);
   });
 
   it("both funnel-advance tags exit (replacing two deleted remove-from workflows)", () => {

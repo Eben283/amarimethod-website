@@ -22,7 +22,9 @@ const FOLLOWUP_VIRTUAL_PKG = "bJFkhVP35Ecwh4tLnSmy";
 const FOLLOWUP_IN_PERSON_PKG = "ZO1jlGfy01rsxVqicoSB";
 
 export const PIPELINE_RULES = Object.freeze([
-  { calendarIds: [DISCOVERY], onStatuses: ["booked"], ...LEAD_TO_CLIENT, stage: "Booked 15-min Consultation", stageId: null, mode: "shadow" },
+  // "booked" almost never arrives raw: GHL auto-confirms, so the booking moment reads as
+  // "confirmed" on API lookup (first live payload, 2026-07-12). Both mean "booking happened".
+  { calendarIds: [DISCOVERY], onStatuses: ["booked", "confirmed"], ...LEAD_TO_CLIENT, stage: "Booked 15-min Consultation", stageId: null, mode: "shadow" },
   { calendarIds: [DISCOVERY], onStatuses: ["showed"], ...LEAD_TO_CLIENT, stage: "Consultation Attended", stageId: null, mode: "shadow" },
   { calendarIds: [DISCOVERY], onStatuses: ["cancelled", "noshow"], ...LEAD_TO_CLIENT, stage: "Lost", stageId: null, markLost: true, mode: "shadow" },
   { calendarIds: [INITIAL_IN_PERSON, INITIAL_VIRTUAL], onStatuses: ["booked", "confirmed"], ...SINGLE_SESSION, stage: "Session Scheduled", stageId: null, mode: "shadow" },

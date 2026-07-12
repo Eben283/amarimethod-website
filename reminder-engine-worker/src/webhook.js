@@ -16,8 +16,11 @@
 import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
 import { normalizeAppointmentEvent } from "../../functions/lib/appointment-event.js";
 import { forwardEventToEngine } from "../../functions/lib/engine-forward.js";
+import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { handleEvent } from "./engine.js";
 import { appendEvent } from "./store.js";
+
+const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -29,6 +32,35 @@ function captureDetail(body) {
   return raw.length > RAW_CAPTURE_LIMIT
     ? { raw_truncated: raw.slice(0, RAW_CAPTURE_LIMIT) }
     : { raw: body };
+}
+
+function isDeficient(event) {
+  return !event.recognized || !event.contactId || !event.calendarId || !event.startAt;
+}
+
+/**
+ * The 2026-07-12 first-live-payload finding: GHL's webhook merge tags reliably carry the
+ * CONTACT and APPOINTMENT ids, but calendar/status arrive as the literal string "null" and
+ * start_time as human prose. So when a payload is deficient, look the appointment up in the
+ * GHL API (read-only — shadow-safe) and rebuild the typed event from canonical data. The API
+ * response is re-run through the same normalizer (its appointment.* aliases match).
+ */
+async function enrichFromApi(env, event, nowMs) {
+  const token = await getAccessToken(env);
+  const res = await fetch(`${GHL_API_BASE}/calendars/events/appointments/${event.appointmentId}`, {
+    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+  });
+  if (!res.ok) throw new Error(`appointment lookup ${res.status}`);
+  const data = await res.json();
+  const appt = data.appointment || data.event || data;
+  const enriched = normalizeAppointmentEvent({ appointment: appt });
+  return {
+    ...enriched,
+    // the webhook payload's ids are reliable — keep them when the API omits either
+    contactId: enriched.contactId || event.contactId,
+    appointmentId: enriched.appointmentId || event.appointmentId,
+    modifiedBy: enriched.modifiedBy ?? event.modifiedBy,
+  };
 }
 
 export async function handleWebhook(request, env, nowMs) {
@@ -46,7 +78,26 @@ export async function handleWebhook(request, env, nowMs) {
   }
 
   const db = env.REMINDER_DB;
-  const event = normalizeAppointmentEvent(body);
+  let event = normalizeAppointmentEvent(body);
+
+  // Deficient payload with a usable appointment id → rebuild from the GHL API.
+  if (isDeficient(event) && event.appointmentId && env.PORTAL_KV) {
+    try {
+      const enriched = await enrichFromApi(env, event, nowMs);
+      await appendEvent(db, {
+        ts: nowMs, engine: "ingest", contactId: enriched.contactId, appointmentId: enriched.appointmentId,
+        action: "ingest_enriched", outcome: "enriched",
+        detail: { ...captureDetail(body), enriched },
+      });
+      event = enriched;
+    } catch (err) {
+      await appendEvent(db, {
+        ts: nowMs, engine: "ingest", contactId: event.contactId, appointmentId: event.appointmentId,
+        action: "ingest_deficient", outcome: "captured",
+        detail: { ...captureDetail(body), normalized: event, enrichError: String((err && err.message) || err) },
+      });
+    }
+  }
 
   if (!event.recognized) {
     await appendEvent(db, {
@@ -56,9 +107,9 @@ export async function handleWebhook(request, env, nowMs) {
     return json(200, { success: true, skipped: "unrecognized" });
   }
 
-  // Recognized but missing a field the engines key on → capture for alias debugging, then
-  // still dispatch (the engines no-op safely on nulls).
-  if (!event.contactId || !event.calendarId || !event.appointmentId || !event.startAt) {
+  // Still missing a field the engines key on (and enrichment unavailable/failed) → capture
+  // for alias debugging, then still dispatch (the engines no-op safely on nulls).
+  if (!event.contactId || !event.calendarId || !event.startAt) {
     await appendEvent(db, {
       ts: nowMs, engine: "ingest", contactId: event.contactId, appointmentId: event.appointmentId,
       action: "ingest_deficient", outcome: "captured",
