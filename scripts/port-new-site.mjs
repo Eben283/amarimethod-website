@@ -185,6 +185,23 @@ function transform(html, target) {
   ];
   for (const [from, to] of CTA_FIXES) out = out.replaceAll(from, to);
 
+  // homepage "This Just In" cards are anchors with no href at all in the mockup
+  const JCARD_TARGETS = [
+    ['start to finish', '/first-visit'],
+    ['morning reset', '/blog-putting-it-all-together'],
+    ['tried everything', '/stories'],
+    ['deep tissue', '/blog-why-deep-tissue-doesnt-last'],
+  ];
+  out = out.replace(/<a class="jcard reveal"[^>]*>[\s\S]*?<\/a>/g, block => {
+    if (block.includes(' href=')) return block;
+    for (const [kw, url] of JCARD_TARGETS) {
+      if (block.toLowerCase().includes(kw)) {
+        return block.replace('<a class="jcard reveal"', `<a class="jcard reveal" href="${url}"`);
+      }
+    }
+    return block;
+  });
+
   // blog index lists every post already; the Load More button is decorative
   out = out.replace(/\s*<div class="load-more reveal">\s*<a href="#" class="btn">Load More Posts<\/a>\s*<\/div>/, '');
 
