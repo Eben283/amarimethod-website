@@ -208,3 +208,8 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
 /* Newsletter form states */
 .news-msg{margin:14px auto 0;font-size:13.5px;max-width:32ch}
 .news-msg:empty{display:none}
+
+/* Study banner offset: the banner publishes its height as --banner-h so the
+   absolute header sits below it; the fixed (scrolled) header returns to 0. */
+header.site{top:var(--banner-h,0px)}
+header.site.scrolled{top:0}

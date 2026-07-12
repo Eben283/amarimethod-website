@@ -16,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=3">
+<link rel="stylesheet" href="/css/site-v6.css?v=5">
 <style>
   /* ---------- Pricing-page-specific styles ---------- */
 
@@ -40,6 +40,8 @@
   .tier ul li{font-size:14px;color:var(--body);padding-left:16px;position:relative}
   .tier ul li::before{content:"";position:absolute;left:0;top:.65em;width:7px;height:1px;background:var(--ink)}
   .tier .btn{margin-top:auto;padding-top:22px;align-self:flex-start}
+  .tier .tier-note{margin-top:auto;padding-top:22px;font-size:13px;color:var(--body);max-width:38ch}
+  .tier.feat .tier-note{color:rgba(255,255,255,.78);margin-top:0;align-self:center;justify-self:start;max-width:22ch}
   .tier.feat{background:var(--ink);color:#fff;border-color:var(--ink);grid-column:span 3;display:grid;grid-template-columns:1.2fr 1fr auto;gap:32px;align-items:center;padding:40px clamp(32px,4vw,52px)}
   .tier.feat .cat{color:rgba(255,255,255,.65)}
   .tier.feat h3{color:#fff}
@@ -193,7 +195,7 @@
         <h3>4-Session Series</h3>
         <div class="price"><b>$720</b><span>total</span></div>
         <p class="desc">Initial session plus three follow-ups. A smaller commitment for people who want more than one visit.</p>
-        <a href="/book/initial-in-person" class="btn btn-outline">Start This Series</a>
+        <p class="tier-note">Starts with the $225 initial session. If you continue, that payment counts toward the series.</p>
       </div>
 
       <div class="tier reveal" style="transition-delay:.24s">
@@ -214,7 +216,7 @@
           <div class="price"><b>$1,295</b><span>includes Living Practice</span></div>
           <p class="desc">Initial session plus seven follow-ups, plus the Living Practice video program. The full path through all eight core protocols.</p>
         </div>
-        <a href="/book/initial-in-person" class="btn">Start This Series</a>
+        <p class="tier-note">Starts with the $225 initial session. If you continue, that payment counts toward the series.</p>
       </div>
 
     </div>
@@ -317,6 +319,6 @@
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=3" data-nav="sessions"></script>
+<script src="/js/site-v6.js?v=5" data-nav="sessions"></script>
 </body>
 </html>
