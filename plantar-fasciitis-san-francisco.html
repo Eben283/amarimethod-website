@@ -1,651 +1,259 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plantar Fasciitis Relief in San Francisco | Amari Method</title>
-  <meta name="description" content="Plantar fasciitis relief in San Francisco. Garrett finds why your foot is taking on more than its share — calf, ankle, and hip mechanics — and changes the pattern at the source.">
-  <meta name="keywords" content="plantar fasciitis relief San Francisco, plantar fasciitis San Francisco, foot pain San Francisco, heel pain SF, plantar fasciitis treatment alternative, foot care SF">
-  <meta name="author" content="Amari Method">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Plantar fasciitis relief in San Francisco. Garrett finds why your foot is taking on more than its share — calf, ankle, and hip mechanics — and changes the pattern at the source.">
+<link rel="canonical" href="https://www.amarimethod.com/plantar-fasciitis-san-francisco">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/plantar-fasciitis-san-francisco">
-  <meta property="og:title" content="Plantar Fasciitis Relief in San Francisco | Amari Method">
-  <meta property="og:description" content="Plantar fasciitis is the foot adapting to a load. Garrett finds why your foot is taking on more than its share — and changes the pattern at the source.">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Plantar Fasciitis Relief in San Francisco | Amari Method</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css">
+<style>
+  /* ---------- Condition-page-specific styles (single-condition template) ---------- */
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.amarimethod.com/plantar-fasciitis-san-francisco">
-  <meta property="twitter:title" content="Plantar Fasciitis Relief in San Francisco | Amari Method">
-  <meta property="twitter:description" content="Plantar fasciitis is the foot adapting to a load. Garrett finds why your foot is taking on more than its share — and changes the pattern at the source.">
-  <meta property="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  .hero-meta{display:flex;gap:18px;justify-content:center;align-items:center;margin-top:34px;flex-wrap:wrap;color:rgba(255,255,255,.78);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-family:var(--sans)}
+  .hero-meta .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.55)}
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/plantar-fasciitis-san-francisco">
+  .sec-head{text-align:center;margin-bottom:clamp(40px,4.6vw,58px)}
+  .sec-head .eyebrow{display:block;margin-bottom:16px}
+  .sec-head h2{font-size:clamp(2rem,3.7vw,3rem);font-weight:500}
+  .sec-head p{margin:20px auto 0;max-width:58ch}
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  /* Why it keeps hurting */
+  .why{padding:clamp(64px,8vw,108px) 0}
+  .why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
+  .why-item{padding:38px clamp(20px,2.4vw,36px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+  .why-item:last-child{border-right:none}
+  .why-item .num{font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px}
+  .why-item h3{font-size:clamp(1.22rem,1.9vw,1.5rem);font-weight:500;line-height:1.25}
+  .why-item p{margin-top:14px;font-size:14.5px;max-width:36ch}
+  .why-closer{margin-top:36px;max-width:74ch;font-size:1.05rem}
+  .why-closer strong{color:var(--ink);font-weight:500}
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
+  /* Single supporting photo band */
+  .single-photo{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:21/9;background-size:cover;background-position:center;border-radius:1px;overflow:hidden}
 
-  <!-- Service Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "Plantar Fasciitis Relief — Amari Method",
-    "description": "Plantar fasciitis relief in San Francisco. Garrett Hewstan addresses the calf, ankle, and hip mechanics that load the foot — so the fascia stops adapting and the pain stops returning. In-person San Francisco or virtual.",
-    "url": "https://www.amarimethod.com/plantar-fasciitis-san-francisco",
-    "provider": {
-      "@type": "MedicalBusiness",
-      "@id": "https://www.amarimethod.com/#business",
-      "name": "Amari Method",
-      "url": "https://www.amarimethod.com",
-      "image": "https://www.amarimethod.com/social-preview.png",
-      "telephone": "+1-628-877-7673",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "San Francisco",
-        "addressRegion": "CA",
-        "addressCountry": "US"
-      }
-    },
-    "areaServed": [
-      { "@type": "City", "name": "San Francisco" },
-      { "@type": "State", "name": "California" }
-    ],
-    "serviceType": "Plantar Fasciitis Relief",
-    "offers": {
-      "@type": "Offer",
-      "name": "Initial Session",
-      "price": "225.00",
-      "priceCurrency": "USD",
-      "description": "60-minute session including full assessment and first protocol with Garrett."
-    }
+  /* How Amari helps (four parts, method demoted) */
+  .fourparts{padding:clamp(64px,8vw,108px) 0;background:var(--cream-2)}
+  .fourparts-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)}
+  .fp{padding:40px clamp(24px,3vw,46px);border-bottom:1px solid var(--line)}
+  .fp:nth-child(odd){border-right:1px solid var(--line)}
+  .fp .num{font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px}
+  .fp h3{font-size:clamp(1.3rem,2vw,1.7rem);font-weight:500;max-width:20ch}
+  .fp p{margin-top:14px;max-width:46ch;font-size:14.5px}
+  .fp-virtual{margin-top:34px;padding:22px 28px;background:var(--cream);border-left:2px solid var(--peach);font-size:14.5px;color:var(--body);line-height:1.6;max-width:78ch}
+  .fp-virtual b{color:var(--ink);font-weight:500}
+
+  /* Editorial pull-quote (matches journal article .art-pq) */
+  .pq-editorial{position:relative;padding:clamp(72px,9vw,120px) 0;background-size:cover;background-position:center}
+  .pq-editorial::before{content:"";position:absolute;inset:0;background:rgba(248,241,232,.87)}
+  .pq-editorial .inner{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:0 40px}
+  .art-pq{position:relative;padding-left:clamp(44px,6vw,80px)}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.5rem,2.7vw,2.15rem);line-height:1.36;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
+  .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
+
+  /* FAQ accordion */
+  .faq{padding:clamp(64px,8vw,108px) 0}
+  .faq-list{max-width:940px;margin:0 auto}
+  .faq-list details{border-top:1px solid var(--line)}
+  .faq-list details:last-child{border-bottom:1px solid var(--line)}
+  .faq-list summary{padding:26px 0;cursor:pointer;display:grid;grid-template-columns:1fr 32px;gap:20px;align-items:start;list-style:none}
+  .faq-list summary::-webkit-details-marker{display:none}
+  .faq-list summary h3{font-size:clamp(1.15rem,1.8vw,1.45rem);font-weight:500;margin:0}
+  .faq-list summary .plus{font-family:var(--serif);font-size:1.7rem;font-weight:400;color:var(--peach);line-height:1;transition:transform .3s var(--ease);text-align:right;padding-top:2px}
+  .faq-list details[open] summary .plus{transform:rotate(45deg)}
+  .faq-list .ans{padding:0 0 26px;max-width:64ch;color:var(--body);font-size:15px}
+
+  /* Guarantee CTA extras */
+  .price-line{margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .price-line b{color:var(--ink);font-weight:600}
+
+  @media (max-width:1000px){
+    .why-grid{grid-template-columns:1fr}
+    .why-item{border-right:none;border-left:1px solid var(--line)}
+    .fourparts-grid{grid-template-columns:1fr}
+    .fp:nth-child(odd){border-right:none}
+    .single-photo{aspect-ratio:4/3}
   }
-  </script>
-
-  <!-- FAQPage Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "I've tried orthotics, night splints, and rolling a ball. What's different here?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "All three address the foot directly. They reduce symptoms without changing why the foot is being asked to absorb so much load. Orthotics support the arch but don't activate it. Night splints lengthen the fascia overnight but it tightens again the moment you weight-bear in the morning. Rolling helps in the moment. The Amari Method works on the calf, ankle, and hip mechanics that determine how force enters your foot — so the foot stops adapting in the first place."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Why is the pain worst in the morning?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "The fascia tightens overnight while you're not weight-bearing. The first steps of the morning ask that tight fascia to suddenly absorb your full body weight. That's why the pain is sharp at first then eases as you walk around — the fascia is being forcibly stretched by load. The morning sharpness is a signal of how loaded the fascia is overall."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Do I need imaging?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Usually no. Plantar fasciitis is typically a clinical diagnosis based on the pattern of pain and where it lives. Imaging matters if there's reason to suspect a stress fracture or significant heel spur changing the picture, but most plantar fasciitis is mechanical — and the Amari Method works on the mechanics."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "What about my running?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Running is one of the things that loads up plantar fasciitis. But stopping running rarely solves it because the underlying pattern is still there — your hip and ankle mechanics are still loading the foot the same way you walk around the house. Most runners can keep running once the pattern changes, often with adjustments to volume in the first few weeks."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does virtual work for foot pain?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. The work is in finding the upstream pattern — calf, ankle, hip — not in hands-on foot manipulation. Garrett assesses how you stand, walk, and load the foot via live video and guides you through positions that change the load. Most clients notice their morning sharpness reducing within the first few sessions."
-        }
-      }
-    ]
+  @media (max-width:640px){
+    .hero-meta{gap:12px}
   }
-  </script>
+</style>
 
-      <!-- BreadcrumbList Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Amari Method", "item": "https://www.amarimethod.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Conditions", "item": "https://www.amarimethod.com/conditions" },
-      { "@type": "ListItem", "position": 3, "name": "Plantar Fasciitis", "item": "https://www.amarimethod.com/plantar-fasciitis-san-francisco" }
-    ]
-  }
-  </script>
-
-  <!-- Microsoft Clarity -->
-  <script type="text/javascript">
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
-  </script>
-
-  <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
-
-  <!-- Page-scoped editorial styles -->
-  <style>
-    .cond { color: var(--color-text); background: var(--bg-primary); }
-    .cond .wrap { max-width: 1360px; margin: 0 auto; padding: 0 32px; }
-    .cond .eyebrow { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--color-text-secondary); display: inline-flex; align-items: center; gap: 10px; }
-    .cond .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--color-text-secondary); }
-    .cond h2 em, .cond h1 em { font-style: italic; color: var(--color-accent-warm); font-weight: 300; }
-
-    /* Breadcrumbs */
-    .cond-crumbs { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-text-muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 32px; }
-    .cond-crumbs a { color: var(--color-text-muted); text-decoration: none; }
-    .cond-crumbs a:hover { color: var(--color-text); }
-    .cond-crumbs .sep { opacity: .5; }
-    .cond-crumbs .current { color: var(--color-text-secondary); }
-
-    /* Hero */
-    .cond-hero { padding: 48px 32px 96px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; align-items: end; max-width: 1360px; margin: 0 auto; }
-    .cond-hero .kicker { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-accent-warm); margin-bottom: 24px; display: inline-flex; align-items: center; gap: 10px; }
-    .cond-hero .kicker::before { content: ""; width: 24px; height: 1px; background: var(--color-accent-warm); }
-    .cond-hero h1 { font-family: var(--font-serif-primary); font-size: clamp(44px, 6vw, 96px); font-weight: 300; letter-spacing: -0.035em; line-height: 0.98; max-width: 14ch; color: var(--color-text); }
-    .cond-hero .sub { font-family: var(--font-serif-primary); font-size: 22px; line-height: 1.5; color: var(--color-text-secondary); margin-top: 32px; max-width: 48ch; font-weight: 400; }
-    .cond-hero .actions { display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap; }
-    .cond-hero .meta { display: flex; gap: 24px; margin-top: 28px; align-items: center; font-size: 13px; color: var(--color-text-muted); flex-wrap: wrap; }
-    .cond-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-text-muted); }
-    .cond-hero .fig { position: relative; aspect-ratio: 4/5; background: #2a2520; overflow: hidden; border-radius: 2px; }
-    .cond-hero .fig img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; filter: saturate(.95); }
-    .cond-hero .caption { margin-top: 14px; font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .15em; text-transform: uppercase; color: var(--color-text-muted); display: flex; justify-content: space-between; gap: 16px; }
-
-    /* Section heads */
-    .cond-section-head { display: grid; grid-template-columns: 1fr 1.3fr; gap: 48px; align-items: end; margin-bottom: 72px; }
-    .cond-section-head h2 { font-family: var(--font-serif-primary); font-size: clamp(36px, 5vw, 76px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.02; color: var(--color-text); }
-    .cond-section-head .lead { font-size: 18px; color: var(--color-text-secondary); max-width: 56ch; line-height: 1.55; }
-
-    /* Why-keeps section */
-    .cond-why { padding: 120px 0; border-top: 1px solid var(--color-border); }
-    .cond-why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border-top: 1px solid var(--color-text); }
-    .cond-why-card { padding: 40px 32px 40px 0; border-right: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 16px; }
-    .cond-why-card:last-child { border-right: 0; }
-    .cond-why-card:not(:first-child) { padding-left: 32px; }
-    .cond-why-card .num { font-family: var(--font-serif-primary); font-size: 48px; font-weight: 300; font-style: italic; color: var(--color-accent-warm); line-height: 1; }
-    .cond-why-card h3 { font-family: var(--font-serif-primary); font-size: clamp(22px, 1.8vw, 28px); font-weight: 400; letter-spacing: -0.015em; line-height: 1.2; color: var(--color-text); }
-    .cond-why-card p { font-size: 15px; color: var(--color-text-secondary); line-height: 1.6; }
-
-    /* Chain section */
-    .cond-chain { padding: 140px 0; background: var(--bg-secondary); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-    .cond-chain-steps { display: grid; gap: 0; border-top: 1px solid var(--color-text); }
-    .cond-chain-steps.cols-3 { grid-template-columns: repeat(3, 1fr); }
-    .cond-chain-steps.cols-4 { grid-template-columns: repeat(4, 1fr); }
-    .cond-chain-step { padding: 40px 32px 40px 0; border-right: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 18px; }
-    .cond-chain-step:last-child { border-right: 0; }
-    .cond-chain-step:not(:first-child) { padding-left: 32px; }
-    .cond-chain-step .num { font-family: var(--font-serif-primary); font-size: 48px; font-weight: 300; font-style: italic; color: var(--color-accent-warm); line-height: 1; }
-    .cond-chain-step .flow { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--color-text-muted); }
-    .cond-chain-step .flow .ar { color: var(--color-accent-warm); margin: 0 4px; }
-    .cond-chain-step h3 { font-family: var(--font-serif-primary); font-size: clamp(20px, 1.6vw, 26px); font-weight: 400; letter-spacing: -0.015em; line-height: 1.25; min-height: 2.4em; color: var(--color-text); }
-    .cond-chain-step p { font-size: 15px; color: var(--color-text-secondary); line-height: 1.6; margin-top: auto; }
-
-    /* Method 2x2 */
-    .cond-method { padding: 140px 0; }
-    .cond-method-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-    .cond-method-item { padding: 48px 40px; border-top: 1px solid var(--color-border); display: grid; grid-template-columns: 56px 1fr; gap: 24px; align-items: start; }
-    .cond-method-item:nth-child(odd) { border-right: 1px solid var(--color-border); padding-left: 0; }
-    .cond-method-item:nth-child(even) { padding-right: 0; }
-    .cond-method-item:nth-last-child(-n+2) { border-bottom: 1px solid var(--color-border); }
-    .cond-method-item .num { font-family: var(--font-serif-primary); font-size: 32px; font-weight: 300; font-style: italic; color: var(--color-accent-warm); line-height: 1; }
-    .cond-method-item h3 { font-family: var(--font-serif-primary); font-size: 24px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 12px; line-height: 1.2; color: var(--color-text); }
-    .cond-method-item p { font-size: 15px; color: var(--color-text-secondary); line-height: 1.6; max-width: 46ch; }
-    .cond-method-virtual { margin-top: 40px; padding: 24px 32px; background: var(--bg-secondary); border-left: 2px solid var(--color-accent-warm); font-size: 15px; color: var(--color-text-secondary); line-height: 1.6; max-width: 80ch; }
-
-    /* Stories */
-    .cond-stories { padding: 140px 0; background: var(--bg-secondary); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-    .cond-stories-grid { display: grid; gap: 24px; }
-    .cond-stories-grid.three { grid-template-columns: 1.3fr 1fr 1fr; }
-    .cond-stories-grid.two { grid-template-columns: 1fr 1fr; max-width: 1000px; margin: 0 auto; }
-    .cond-story { background: var(--bg-primary); border: 1px solid var(--color-border); padding: 40px; display: flex; flex-direction: column; gap: 24px; }
-    .cond-story.big { padding: 48px; }
-    .cond-story .mark { font-family: var(--font-serif-primary); font-size: 72px; line-height: .3; color: var(--color-accent-warm); font-style: italic; font-weight: 300; height: 28px; }
-    .cond-story blockquote { font-family: var(--font-serif-primary); font-size: 19px; line-height: 1.45; font-weight: 400; color: var(--color-text); letter-spacing: -0.005em; margin: 0; }
-    .cond-story blockquote em { font-style: italic; color: var(--color-accent-warm); }
-    .cond-story .src { display: flex; align-items: center; gap: 14px; margin-top: auto; padding-top: 24px; border-top: 1px solid var(--color-border); }
-    .cond-story .pic { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: var(--bg-secondary); flex-shrink: 0; }
-    .cond-story .pic img { width: 100%; height: 100%; object-fit: cover; }
-    .cond-story .by { font-size: 13px; }
-    .cond-story .by b { display: block; font-family: var(--font-serif-primary); font-style: italic; font-size: 16px; font-weight: 400; color: var(--color-text); letter-spacing: 0; }
-    .cond-story .by span { color: var(--color-text-muted); }
-
-    /* Guarantee CTA */
-    .cond-guarantee { padding: 160px 0; background: var(--color-text); color: var(--bg-primary); text-align: center; position: relative; overflow: hidden; }
-    .cond-guarantee::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(197, 107, 78, 0.2), transparent 60%); }
-    .cond-guarantee .inner { position: relative; max-width: 1000px; margin: 0 auto; padding: 0 32px; }
-    .cond-guarantee .eyebrow { color: #C9BEA9; justify-content: center; margin: 0 auto 32px; display: inline-flex; }
-    .cond-guarantee .eyebrow::before { background: #C9BEA9; }
-    .cond-guarantee h2 { font-family: var(--font-serif-primary); color: var(--bg-primary); font-size: clamp(40px, 6vw, 80px); font-weight: 300; letter-spacing: -0.035em; line-height: 1.05; max-width: 22ch; margin: 0 auto; }
-    .cond-guarantee h2 em { font-style: italic; color: #E8A38A; }
-    .cond-guarantee .dek { color: #C9BEA9; font-size: 18px; margin-top: 32px; max-width: 60ch; margin-left: auto; margin-right: auto; line-height: 1.55; }
-    .cond-guarantee .actions { margin-top: 48px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .cond-guarantee .price-line { margin-top: 32px; font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: #C9BEA9; }
-    .cond-guarantee .price-line b { color: var(--bg-primary); font-weight: 500; }
-    .cond-guarantee-btn-light { display: inline-flex; align-items: center; gap: 10px; padding: 18px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; background: var(--bg-primary); color: var(--color-text); border: 1px solid transparent; text-decoration: none; transition: transform .25s, background .25s, color .25s; }
-    .cond-guarantee-btn-light:hover { background: var(--color-accent-warm); color: var(--bg-primary); transform: translateY(-1px); }
-    .cond-guarantee-btn-ghost { display: inline-flex; align-items: center; gap: 10px; padding: 18px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; border: 1px solid rgba(247, 242, 232, 0.3); color: var(--bg-primary); text-decoration: none; transition: all .25s; }
-    .cond-guarantee-btn-ghost:hover { border-color: var(--bg-primary); background: var(--bg-primary); color: var(--color-text); }
-
-    /* FAQ */
-    .cond-faq { padding: 140px 0; }
-    .cond-faq-list { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
-    .cond-faq-list details { border-top: 1px solid var(--color-border); padding: 0; }
-    .cond-faq-list details:last-child { border-bottom: 1px solid var(--color-border); }
-    .cond-faq-list summary { padding: 32px 0; cursor: pointer; display: grid; grid-template-columns: 1fr 32px; gap: 24px; align-items: start; list-style: none; }
-    .cond-faq-list summary::-webkit-details-marker { display: none; }
-    .cond-faq-list summary h3 { font-family: var(--font-serif-primary); font-size: clamp(20px, 2.2vw, 28px); font-weight: 400; letter-spacing: -0.02em; line-height: 1.25; color: var(--color-text); margin: 0; }
-    .cond-faq-list summary .plus { font-family: var(--font-serif-primary); font-size: 32px; font-weight: 300; color: var(--color-accent-warm); line-height: 1; transition: transform .3s; padding-top: 4px; text-align: right; }
-    .cond-faq-list details[open] summary .plus { transform: rotate(45deg); }
-    .cond-faq-list .ans { padding: 0 0 32px; font-size: 17px; color: var(--color-text-secondary); line-height: 1.65; max-width: 62ch; }
-
-    /* Related */
-    .cond-related { padding: 100px 0; background: var(--bg-secondary); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
-    .cond-related-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 16px; margin-bottom: 40px; }
-    .cond-related-head h3 { font-family: var(--font-serif-primary); font-size: 32px; font-weight: 300; font-style: italic; letter-spacing: -0.02em; color: var(--color-text); margin: 0; }
-    .cond-related-head span { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-text-muted); }
-    .cond-related-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .cond-related-grid a { padding: 28px; background: var(--bg-primary); border: 1px solid var(--color-border); transition: all .25s; display: flex; flex-direction: column; gap: 8px; min-height: 140px; justify-content: space-between; cursor: pointer; text-decoration: none; }
-    .cond-related-grid a:hover { border-color: var(--color-accent-warm); transform: translateY(-2px); }
-    .cond-related-grid .rcat { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-text-muted); }
-    .cond-related-grid h4 { font-family: var(--font-serif-primary); font-size: 22px; font-weight: 400; letter-spacing: -0.01em; line-height: 1.2; color: var(--color-text); margin: 0; }
-    .cond-related-grid .arr { font-family: var(--font-serif-primary); font-size: 20px; color: var(--color-accent-warm); margin-top: auto; }
-
-    /* Responsive */
-    @media (max-width: 960px) {
-      .cond-hero { grid-template-columns: 1fr; gap: 40px; padding: 32px 24px 56px; }
-      .cond-hero .fig { aspect-ratio: 4/3; }
-      .cond-section-head { grid-template-columns: 1fr; gap: 24px; margin-bottom: 48px; }
-      .cond-why-grid, .cond-chain-steps.cols-3, .cond-chain-steps.cols-4 { grid-template-columns: 1fr; border-top: 0; }
-      .cond-why-card, .cond-chain-step { border-right: 0; border-top: 1px solid var(--color-border); padding: 32px 0 !important; }
-      .cond-method-list { grid-template-columns: 1fr; }
-      .cond-method-item { padding: 32px 0 !important; border-right: 0 !important; }
-      .cond-stories-grid.three, .cond-stories-grid.two { grid-template-columns: 1fr; }
-      .cond-related-grid { grid-template-columns: 1fr 1fr; }
-      .cond-why, .cond-chain, .cond-method, .cond-stories, .cond-faq { padding: 80px 0; }
-      .cond-guarantee { padding: 100px 0; }
-    }
-  </style>
+</script>
 </head>
 <body>
 
-  <!-- ===== NAV (matches index.html) ===== -->
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg" style="background-image:url('/images/v6/real/active-bridge.jpg')"></div>
+  <div class="hero-inner">
+    <span class="eyebrow light">Plantar Fasciitis · San Francisco + Virtual</span>
+    <h1>That morning heel pain has <em>nothing to do with your heel.</em></h1>
+    <p>Plantar fasciitis is your foot adapting to a load it shouldn't be carrying. Stretching the fascia helps for an hour. Garrett finds why your foot is taking on more than its share, in your calf, ankle, or hip, and changes the load at the source.</p>
+    <div class="hero-meta">
+      <span>25+ years of hands-on practice</span>
+      <span class="dot"></span>
+      <span>First session guaranteed</span>
+      <span class="dot"></span>
+      <span>San Francisco + virtual</span>
+    </div>
+    <a href="#appt" class="btn btn-pale">Book your first session</a>
+  </div>
+</section>
+
+<!-- WHY IT KEEPS HURTING -->
+<section class="why">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Why your foot keeps tightening</span>
+      <h2>Your foot is the last stop. <em>The load started somewhere else.</em></h2>
+      <p>The plantar fascia is absorbing force that should be shared across your calf, ankle, and hip. When those parts stop doing their share, your foot ends up carrying weight it was never built to carry alone.</p>
+    </div>
+    <div class="why-grid reveal">
+      <div class="why-item">
+        <span class="num">01</span>
+        <h3>The fascia tightens because the load demands it</h3>
+        <p>Your plantar fascia isn't broken. It's tightening to handle force that should be shared across your calf, ankle, and hip. When the parts above stop doing their share, your foot takes on more than it was built for.</p>
+      </div>
+      <div class="why-item">
+        <span class="num">02</span>
+        <h3>Why orthotics, night splints, and rolling fade</h3>
+        <p>All three work on the foot itself. Orthotics support the arch without activating it. A night splint lengthens the fascia overnight, then it tightens again the moment you stand up. Rolling helps for as long as you're doing it. None of them change why the foot is carrying so much.</p>
+      </div>
+      <div class="why-item">
+        <span class="num">03</span>
+        <h3>Once the load moves off the foot, it stays off</h3>
+        <p>Once Garrett finds which parts of your calf, ankle, and hip have gone quiet and brings them back online, your foot stops taking the full load. The fascia softens because the demand has dropped.</p>
       </div>
     </div>
-  </nav>
+    <p class="why-closer reveal">The body wants balance, not pain relief. <strong>Once your calf, ankle, and hip are carrying their share again, your foot stops absorbing everything by itself.</strong></p>
+  </div>
+</section>
 
-<main class="cond">
+<!-- SINGLE SUPPORTING PHOTO -->
+<div class="single-photo reveal" style="background-image:url('/images/v6/real/foam-roller-v2.jpg')" onerror="this.remove()"></div>
 
-  <!-- ===== BREADCRUMBS ===== -->
+<!-- HOW AMARI HELPS -->
+<section class="fourparts">
   <div class="wrap">
-    <div class="cond-crumbs">
-      <a href="index.html">Amari Method</a>
-      <span class="sep">/</span>
-      <a href="index.html#conditions">Conditions</a>
-      <span class="sep">/</span>
-      <span class="current">Plantar Fasciitis</span>
-      <span class="sep">/</span>
-      <span class="current">San Francisco</span>
+    <div class="sec-head reveal">
+      <span class="eyebrow">How Amari helps</span>
+      <h2>What happens in your <em>first session.</em></h2>
+      <p>Full assessment, guided protocols, and a take-home practice. About 60 minutes, in San Francisco or over video.</p>
+    </div>
+    <div class="fourparts-grid reveal">
+      <div class="fp">
+        <span class="num">01</span>
+        <h3>Assessment</h3>
+        <p>Garrett assesses how your calf, ankle, and hip are loading your foot, not just where it hurts. That's usually the pattern behind chronic heel and arch pain.</p>
+      </div>
+      <div class="fp">
+        <span class="num">02</span>
+        <h3>Guided protocols</h3>
+        <p>Using a yoga block or foam roller, Garrett guides you through positions that change what's loading your foot from above.</p>
+      </div>
+      <div class="fp">
+        <span class="num">03</span>
+        <h3>What changes</h3>
+        <p>Most clients feel their calf and ankle loosen and the pressure through their arch ease before the session ends.</p>
+      </div>
+      <div class="fp">
+        <span class="num">04</span>
+        <h3>Take-home practice</h3>
+        <p>You leave with a short practice, about five minutes, that keeps the load off your foot between sessions.</p>
+      </div>
+    </div>
+    <p class="fp-virtual reveal"><b>Virtual sessions work well for plantar fasciitis.</b> The work is in changing what's loading your foot from above, not hands-on foot work, so Garrett can guide you through it over video.</p>
+  </div>
+</section>
+
+<!-- EDITORIAL PULL-QUOTE -->
+<section class="pq-editorial" style="background-image:url('/images/photos/materials/wood-floor-grain.jpg')">
+  <div class="inner reveal">
+    <div class="art-pq">
+      <blockquote>One visit with Garrett gave me better results than three months of physical therapy.</blockquote>
+      <cite>Katie · Runner</cite>
     </div>
   </div>
+</section>
 
-  <!-- ===== HERO ===== -->
-  <section class="cond-hero">
-    <div>
-      <div class="kicker">Plantar Fasciitis · San Francisco</div>
-      <h1>Plantar fasciitis relief in <em>San Francisco.</em></h1>
-      <p class="sub">Plantar fasciitis is the foot adapting to a load it shouldn't be carrying. Stretching the fascia helps for an hour. Garrett finds why your foot is taking on more than its share, calf, ankle, hip mechanics, and changes the load at the source.</p>
-      <p class="hero-quote" style="margin-top: 28px; max-width: 44ch; font-family: var(--font-serif-primary); font-size: 17px; font-style: italic; line-height: 1.5; color: var(--color-text);">"One visit with Garrett gave me better results than <em style="color: var(--color-accent-warm);">three months of physical therapy.</em>"<span style="display: block; margin-top: 8px; font-style: normal; font-size: 13px; color: var(--color-text-muted);">— Katie · Runner</span></p>
-      <div class="actions">
-        <a class="btn-primary" href="/book-initial-in-person"><span class="btn-content"><span class="btn-text">Book your first session</span><span class="arrow">→</span></span></a>
-        <a class="btn-secondary" href="/book/discovery-call"><span class="btn-content"><span class="btn-text">Free 15-min call with Garrett</span><span class="arrow">→</span></span></a>
-      </div>
-      <div class="meta">
-        <span>25+ years of hands-on practice</span>
-        <span class="dot"></span>
-        <span>First session guaranteed</span>
-        <span class="dot"></span>
-        <span>San Francisco + virtual</span>
-      </div>
+<!-- FAQ -->
+<section class="faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">FAQ</span>
+      <h2>Common <em>questions.</em></h2>
+      <p>If something isn't here, ask on a free discovery call. Garrett answers everything before you book a paid session.</p>
     </div>
-    <div>
-      <div class="fig">
-      </div>
-      <div class="caption">
-        <span>Garrett Hewstan</span>
-        <span>In session · San Francisco</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== WHY IT KEEPS HURTING ===== -->
-  <section class="cond-why">
-    <div class="wrap">
-      <div class="cond-section-head">
-        <span class="eyebrow">Why your foot keeps tightening</span>
-        <h2>The foot is where you feel it. <em>The load comes from above.</em></h2>
-      </div>
-      <div class="cond-why-grid">
-        <div class="cond-why-card">
-          <span class="num">01</span>
-          <h3>The fascia tightens because the load demands it</h3>
-          <p>Plantar fascia isn't broken. It's tightening to handle the forces moving through your foot, forces that should be distributed across your calf, ankle, and hip mechanics. When the parts above stop doing their share, the foot takes on more than its design.</p>
-        </div>
-        <div class="cond-why-card">
-          <span class="num">02</span>
-          <h3>Why orthotics, night splints, and rolling don't last</h3>
-          <p>All three address the foot. Orthotics support the arch without activating it. Night splints lengthen the fascia overnight, then it tightens again with the first weight-bearing step. Rolling helps in the moment. None of them change why the foot is being loaded so heavily.</p>
-        </div>
-        <div class="cond-why-card">
-          <span class="num">03</span>
-          <h3>The lasting fix is upstream</h3>
-          <p>Once Garrett identifies which parts of your calf, ankle, and hip have shut down and brings them back online, the foot no longer takes the full load. The fascia softens because the demand has dropped. The change holds.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Mid-page CTA — captures intent after the "why" section -->
-  <section style="padding: 64px 32px 80px; max-width: 720px; margin: 0 auto; text-align: center;">
-    <p style="font-family: var(--font-serif-primary); font-size: clamp(22px, 2.2vw, 30px); line-height: 1.3; color: var(--color-text); font-weight: 400; max-width: 28ch; margin: 0 auto 28px;">This is exactly what your <em style="color: var(--color-accent-warm);">first session</em> finds.</p>
-    <a class="btn-primary" href="/book-initial-in-person" style="display: inline-flex;"><span class="btn-content"><span class="btn-text">Book your first session — $225</span><span class="arrow">→</span></span></a>
-    <p style="margin-top: 18px; font-size: 13px; color: var(--color-text-muted); letter-spacing: .02em;">First session guaranteed · In person SF or virtual</p>
-    <p style="margin-top: 12px; font-size: 14px;"><a href="/book/discovery-call" style="color: var(--color-text-secondary); text-decoration: underline; text-underline-offset: 3px;">Or talk to Garrett first, free →</a></p>
-  </section>
-
-  <!-- ===== ROOT CAUSE — chain ===== -->
-  <section class="cond-chain">
-    <div class="wrap">
-      <div class="cond-section-head">
-        <span class="eyebrow">The pattern</span>
-        <h2>Where plantar fasciitis <em>actually comes from.</em></h2>
-      </div>
-      <p class="lead" style="font-size: 18px; color: var(--color-text-secondary); line-height: 1.55; max-width: 64ch; margin-bottom: 64px;">The foot is the bottom of a chain. The chain runs up through your calf, ankle, and hip.</p>
-      <div class="cond-chain-steps cols-3">
-        <div class="cond-chain-step">
-          <span class="num">01</span>
-          <span class="flow">HIP <span class="ar">→</span> OFFLINE</span>
-          <h3>Your hip mechanics have shifted.</h3>
-          <p>How your hip absorbs and produces force determines how much work goes to the structures below it. When the deep hip stabilizers stop engaging, more load travels down through the chain, past the knee, past the ankle, into the foot.</p>
-        </div>
-        <div class="cond-chain-step">
-          <span class="num">02</span>
-          <span class="flow">CALF + ANKLE <span class="ar">→</span> RIGID</span>
-          <h3>Your calf and ankle have stopped sharing the load.</h3>
-          <p>A healthy calf and ankle absorb impact and redistribute force as you walk. When they stiffen, from sitting, training imbalances, old injuries, the foot takes on what they should have handled. The fascia tightens to manage what comes through.</p>
-        </div>
-        <div class="cond-chain-step">
-          <span class="num">03</span>
-          <span class="flow">FASCIA <span class="ar">→</span> ADAPTS</span>
-          <h3>The plantar fascia is the receipt.</h3>
-          <p>The pain in your heel and arch is the body's way of saying the foot is doing more than it should. Change the load above and the fascia softens. The relief lasts because the demand has changed.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== METHOD 2x2 ===== -->
-  <section class="cond-method">
-    <div class="wrap">
-      <div class="cond-section-head">
-        <h2>What happens in your <em>first session.</em></h2>
-        <p class="lead" style="font-size: 18px; color: var(--color-text-secondary); max-width: 50ch; line-height: 1.55;">Full assessment, guided protocols, and a take-home practice. 60 minutes.</p>
-      </div>
-      <div class="cond-method-list">
-        <div class="cond-method-item">
-          <span class="num">01</span>
-          <div>
-            <h3>Assessment</h3>
-            <p>Garrett assesses how your body moves. Where it's overworking, where it's shut down. He's looking at your whole body, beyond the part that hurts.</p>
-          </div>
-        </div>
-        <div class="cond-method-item">
-          <span class="num">02</span>
-          <div>
-            <h3>Guided protocols</h3>
-            <p>Using simple props (yoga blocks, foam rollers, gymnastic rings), Garrett guides you through protocols adapted to your body in real time. You're not lying on a table. You're moving, finding positions where your body starts to rebalance itself.</p>
-          </div>
-        </div>
-        <div class="cond-method-item">
-          <span class="num">03</span>
-          <div>
-            <h3>What changes</h3>
-            <p>Most clients feel a noticeable shift during the first session. The overworked areas release. The underworked areas start to re-engage. You feel the difference before you leave.</p>
-          </div>
-        </div>
-        <div class="cond-method-item">
-          <span class="num">04</span>
-          <div>
-            <h3>Take-home practice</h3>
-            <p>You leave with a short practice for what was worked on that session. About five minutes. You do it on your living room floor. It maintains the changes and keeps your body moving in the right direction between sessions.</p>
-          </div>
-        </div>
-      </div>
-      <p class="cond-method-virtual"><b>Virtual sessions work well for plantar fasciitis.</b> The work is in finding the upstream mechanics, calf, ankle, hip, and changing the load. Garrett assesses how you stand and load the foot via live video and guides you through positions that change the chain. Most clients notice their morning sharpness reducing within the first few sessions.</p>
-    </div>
-  </section>
-
-  <!-- ===== STORIES ===== -->
-  <section class="cond-stories">
-    <div class="wrap">
-      <div class="cond-section-head">
-        <h2>People who came in with <em>the same thing.</em></h2>
-      </div>
-      <div class="cond-stories-grid three">
-        <div class="cond-story big">
-          <span class="mark">"</span>
-          <blockquote>One visit with Garrett gave me better results than <em>three months of physical therapy.</em></blockquote>
-          <div class="src">
-            <div class="pic"><img src="images/kate-testimonial.avif" alt="Katie" loading="lazy"></div>
-            <div class="by"><b>Katie</b> <span>Runner</span></div>
-          </div>
-        </div>
-        <div class="cond-story">
-          <span class="mark">"</span>
-          <blockquote>I thought pain was just part of getting older. <em>I wish I'd met Garrett ten years sooner.</em></blockquote>
-          <div class="src">
-            <div class="pic"><img src="images/terri-testimonial.avif" alt="Annie" loading="lazy"></div>
-            <div class="by"><b>Annie</b> <span>Renewed</span></div>
-          </div>
-        </div>
-        <div class="cond-story">
-          <span class="mark">"</span>
-          <blockquote>I really have tried <em>everything.</em> Nothing has ever come close to this.</blockquote>
-          <div class="src">
-            <div class="pic"><img src="images/danielle-testimonial.avif" alt="Pam" loading="lazy"></div>
-            <div class="by"><b>Pam</b> <span>Business Owner</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== GUARANTEE CTA ===== -->
-  <section class="cond-guarantee">
-    <div class="inner">
-      <span class="eyebrow">The guarantee</span>
-      <h2>Most clients feel a difference in <em>their first session.</em></h2>
-      <p class="dek">Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
-      <div class="actions">
-        <a class="cond-guarantee-btn-light" href="/book-initial-in-person"><span>Book your first session</span><span>→</span></a>
-        <a class="cond-guarantee-btn-ghost" href="/book/discovery-call"><span>Free 15-min call with Garrett</span><span>→</span></a>
-      </div>
-      <div class="price-line"><b>$225</b> · First session · San Francisco + virtual</div>
-      <div class="price-line">Affirm available · series as low as <b>$108/mo</b></div>
-    </div>
-  </section>
-
-  <!-- ===== FAQ ===== -->
-  <section class="cond-faq">
-    <div class="wrap">
-      <div class="cond-section-head">
-        <h2>Common <em>questions.</em></h2>
-        <p class="lead" style="font-size: 18px; color: var(--color-text-secondary); max-width: 50ch; line-height: 1.55;">If something isn't here, ask on a free discovery call. Garrett answers everything before you book a paid session.</p>
-      </div>
-    </div>
-    <div class="cond-faq-list">
+    <div class="faq-list reveal">
       <details>
-        <summary><h3>I've tried orthotics, night splints, and rolling a ball. What's different here?</h3><span class="plus">+</span></summary>
-        <div class="ans">All three address the foot directly. They reduce symptoms without changing why the foot is being asked to absorb so much load. Orthotics support the arch but don't activate it. Night splints lengthen the fascia overnight but it tightens again the moment you weight-bear in the morning. Rolling helps in the moment. The Amari Method works on the calf, ankle, and hip mechanics that determine how force enters your foot, so the foot stops adapting in the first place.</div>
+        <summary><h3>I've tried orthotics, a night splint, and rolling a ball. What's different here?</h3><span class="plus">+</span></summary>
+        <p class="ans">All three address the foot directly. They reduce symptoms without changing why the foot is being asked to absorb so much load. Orthotics support the arch but don't activate it. A night splint lengthens the fascia overnight but it tightens again the moment you weight-bear in the morning. Rolling helps for the moment. Garrett works on the calf, ankle, and hip mechanics that determine how force enters your foot, so the foot stops adapting in the first place.</p>
       </details>
       <details>
-        <summary><h3>Why is the pain worst in the morning?</h3><span class="plus">+</span></summary>
-        <div class="ans">The fascia tightens overnight while you're not weight-bearing. The first steps of the morning ask that tight fascia to suddenly absorb your full body weight. That's why the pain is sharp at first then eases as you walk around. The fascia is being forcibly stretched by load. The morning sharpness is a signal of how loaded the fascia is overall.</div>
+        <summary><h3>Why is the pain worst first thing in the morning?</h3><span class="plus">+</span></summary>
+        <p class="ans">Your fascia tightens overnight while you're not weight-bearing. The first steps of the morning ask that tight fascia to suddenly absorb your full body weight. That's why the pain is sharp at first and eases as you walk around. The morning sharpness is a signal of how loaded the fascia is overall.</p>
       </details>
       <details>
-        <summary><h3>Do I need imaging?</h3><span class="plus">+</span></summary>
-        <div class="ans">Usually no. Plantar fasciitis is typically a clinical diagnosis based on the pattern of pain and where it lives. Imaging matters if there's reason to suspect a stress fracture or significant heel spur changing the picture, but most plantar fasciitis is mechanical, and the Amari Method works on the mechanics.</div>
+        <summary><h3>Do I need imaging before starting?</h3><span class="plus">+</span></summary>
+        <p class="ans">Usually no. Plantar fasciitis is typically identified from the pattern of pain and where it lives. Imaging matters if there's reason to suspect a stress fracture or a heel spur changing the picture, but most plantar fasciitis is mechanical, and that's what Garrett works on.</p>
       </details>
       <details>
         <summary><h3>What about my running?</h3><span class="plus">+</span></summary>
-        <div class="ans">Running is one of the things that loads up plantar fasciitis. But stopping running rarely solves it because the underlying pattern is still there. Your hip and ankle mechanics are still loading the foot the same way you walk around the house. Most runners can keep running once the pattern changes, often with adjustments to volume in the first few weeks.</div>
+        <p class="ans">Running is one of the things that loads up plantar fasciitis. But stopping running rarely solves it because the underlying pattern is still there, your hip and ankle mechanics are still loading the foot the same way when you walk around the house. Most runners can keep running once the pattern changes, sometimes with a lighter volume for the first few weeks.</p>
       </details>
       <details>
         <summary><h3>Does virtual work for foot pain?</h3><span class="plus">+</span></summary>
-        <div class="ans">Yes. The work is in finding the upstream pattern, calf, ankle, hip, not in hands-on foot manipulation. Garrett assesses how you stand, walk, and load the foot via live video and guides you through positions that change the load. Most clients notice their morning sharpness reducing within the first few sessions.</div>
+        <p class="ans">Yes. The work is in finding the upstream pattern, calf, ankle, hip, not in hands-on foot manipulation. Garrett assesses how you stand, walk, and load your foot over live video and guides you through positions that change the load. Most clients notice their morning sharpness reducing within the first few sessions.</p>
       </details>
     </div>
-  </section>
-
-  <!-- ===== RELATED ===== -->
-  <section class="cond-related">
-    <div class="wrap">
-      <div class="cond-related-head">
-        <h3>Other conditions we work with</h3>
-        <span>Same method · Different pattern</span>
-      </div>
-      <div class="cond-related-grid">
-        <a href="neck-pain-san-francisco">
-          <span class="rcat">Neck</span>
-          <h4>Neck pain</h4>
-          <span class="arr">→</span>
-        </a>
-        <a href="shoulder-pain-san-francisco">
-          <span class="rcat">Shoulder</span>
-          <h4>Shoulder pain</h4>
-          <span class="arr">→</span>
-        </a>
-        <a href="hip-pain-san-francisco">
-          <span class="rcat">Hip</span>
-          <h4>Hip pain</h4>
-          <span class="arr">→</span>
-        </a>
-        <a href="knee-pain-san-francisco">
-          <span class="rcat">Knee</span>
-          <h4>Knee pain</h4>
-          <span class="arr">→</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<footer>
-  <!-- Footer Top: Logo + Contact -->
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-    <div style="display: flex; align-items: center; gap: 1.25rem;">
-      <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-      <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Your body can heal you.</p>
-    </div>
-    <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-      (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-    </p>
   </div>
-  <!-- Footer Links -->
-  <div class="footer-content" style="padding-top: 2.5rem;">
-    <div class="footer-section">
-      <h3>Services</h3>
-      <ul>
-        <li><a href="in-person-sessions">In-Person Sessions</a></li>
-        <li><a href="virtual-sessions">Virtual Sessions</a></li>
-        <li><a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd">Online Program</a></li>
-        <li><a href="ongoing-care">Ongoing Care</a></li>
-      </ul>
+</section>
+
+<!-- GUARANTEE CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <span class="eyebrow">The guarantee</span>
+    <h2>Most clients feel a difference in their <em>first session.</em></h2>
+    <p>Book a session with Garrett. If you don't experience noticeable relief, he keeps working with you until you do, at no additional charge.</p>
+    <div class="btn-row">
+      <a href="#" class="btn">Book your first session</a>
+      <a href="#" class="btn btn-outline">Take the free assessment</a>
     </div>
-    <div class="footer-section">
-      <h3>Conditions</h3>
-      <ul>
-        <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-        <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-        <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-        <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-        <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>About</h3>
-      <ul>
-        <li><a href="/#why">Why Amari Method</a></li>
-        <li><a href="about.html">About Garrett</a></li>
-        <li><a href="/how-it-works">How It Works</a></li>
-        <li><a href="/#testimonials">Results & Reviews</a></li>
-        <li><a href="affiliate">Partnership Program</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>Get Started</h3>
-      <ul>
-        <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-        <li><a href="client-info.html">Client Information</a></li>
-        <li><a href="booking">View Pricing & Packages</a></li>
-        <li><a href="/#services">Book Your Session</a></li>
-        <li><a href="/portal">Client Portal</a></li>
-        <li><a href="/#faq">FAQ</a></li>
-        <li><a href="tools.html">Tools</a></li>
-      </ul>
-    </div>
+    <p class="price-line"><b>$225</b> · First session · San Francisco + virtual</p>
   </div>
-  <div class="footer-bottom">
-    <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-  </div>
-</footer>
-<script src="js/main.js?v=5" defer></script>
+</section>
+
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js" data-nav="method"></script>
 </body>
 </html>

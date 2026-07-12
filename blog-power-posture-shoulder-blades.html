@@ -1,315 +1,364 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Power Posture: Undo the Damage From Sitting All Day</title>
-    <meta name="description" content="The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.">
-    <meta name="keywords" content="power posture, posture correction, forward head posture, shoulder blades, upper back pain, amari method">
-    <meta name="author" content="Garrett Hewstan">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.">
+<link rel="canonical" href="https://www.amarimethod.com/blog-power-posture-shoulder-blades">
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="article">
-    <meta property="og:url" content="https://www.amarimethod.com/blog-power-posture-shoulder-blades">
-    <meta property="og:title" content="Power Posture: Undo the Damage From Sitting All Day">
-    <meta property="og:description" content="The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.">
-    <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Power Posture: Undo the Damage From Sitting All Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css">
+<style>
+  /* ---------- Journal-article-page-specific styles ---------- */
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://www.amarimethod.com/blog-power-posture-shoulder-blades">
-    <meta property="twitter:title" content="Power Posture: Undo the Damage From Sitting All Day">
-    <meta property="twitter:description" content="The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.">
-    <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  /* No dark hero on this page, so the header renders "scrolled" (cream, fixed)
+     from load. Clear its height before the article header. */
+  .art-top{padding-top:150px}
 
-    <!-- Favicon & Icons -->
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-    <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  .art-crumbs{display:flex;justify-content:center;gap:10px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--body);margin-bottom:30px}
+  .art-crumbs .sep{opacity:.5}
 
-    <link rel="canonical" href="https://www.amarimethod.com/blog-power-posture-shoulder-blades">
-    <!-- Performance Optimizations -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-    <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  .art-header{text-align:center;max-width:900px;margin:0 auto}
+  .art-header h1{font-size:clamp(2.3rem,5vw,4rem);font-weight:500;line-height:1.1;margin:0 auto;max-width:19ch}
 
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-DGQM32BMYZ');
-    </script>
+  .art-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;align-items:center;margin-top:30px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--body);opacity:.5}
 
-    <!-- Article Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      "headline": "Power Posture: Undo the Damage From Sitting All Day",
-      "description": "The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.",
-      "image": "https://www.amarimethod.com/social-preview.png",
-      "author": {
-        "@type": "Person",
-        "name": "Garrett Hewstan",
-        "url": "https://www.amarimethod.com/about"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Amari Method",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://www.amarimethod.com/images/AmariLogo.avif"
-        }
-      },
-      "datePublished": "2026-02-01",
-      "dateModified": "2026-03-25",
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": "https://www.amarimethod.com/blog-power-posture-shoulder-blades"
-      }
-    }
-    </script>
+  .art-share{display:flex;justify-content:center;gap:12px;align-items:center;margin-top:26px}
+  .art-share span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-right:4px}
+  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--ink)}
 
-        <!-- External CSS -->
-    <link rel="stylesheet" href="css/style-v5.css?v=37">
+  .art-featured{padding:52px 0 0}
+  .art-featured .ph{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:16/9;background:var(--tan) center/cover no-repeat;border-radius:2px;overflow:hidden}
+  .art-featured .ph img{width:100%;height:100%;object-fit:cover;display:block}
 
-    <!-- BlogPosting Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BlogPosting",
-      "headline": "Power Posture: Undo the Damage From Sitting All Day",
-      "description": "The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.",
-      "image": "https://www.amarimethod.com/social-preview.png",
-      "url": "https://www.amarimethod.com/blog-power-posture-shoulder-blades",
-      "datePublished": "2026-02-01",
-      "dateModified": "2026-03-25",
-      "author": {
-        "@type": "Person",
-        "name": "Garrett Hewstan",
-        "url": "https://www.amarimethod.com/about"
-      },
-      "publisher": {
-        "@type": "Organization",
-        "name": "Amari Method",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://www.amarimethod.com/images/AmariLogo.avif"
-        }
-      },
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": "https://www.amarimethod.com/blog-power-posture-shoulder-blades"
-      }
-    }
-    </script>
-    <!-- Microsoft Clarity -->
-    <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "vuvx43xu8h");
-    </script>
+  .art-body{padding:clamp(60px,8vw,96px) 0}
+  .art-grid{display:grid;grid-template-columns:1fr 300px;gap:clamp(40px,6vw,86px);align-items:start;max-width:1080px;margin:0 auto}
+
+  .art-prose{max-width:66ch}
+  .art-prose p{font-size:1.05rem;line-height:1.75;margin-top:22px;color:var(--body)}
+  .art-prose p:first-child{margin-top:0}
+  .art-prose h2{font-size:clamp(1.4rem,2.6vw,2.05rem);font-weight:500;margin-top:52px;margin-bottom:4px;color:var(--ink)}
+  .art-prose .lead-item{margin-top:30px}
+  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:italic;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
+
+  .art-inline{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px 0;padding:26px;background:var(--cream-2);border-radius:2px}
+  .art-inline .lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body);grid-column:1/-1;margin-bottom:2px}
+  .art-inline a{display:block}
+  .art-inline .thumb{aspect-ratio:4/3;background:var(--peach);border-radius:1px;overflow:hidden;margin-bottom:12px}
+  .art-inline .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-inline .cat{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--peach)}
+  .art-inline h4{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-top:6px;line-height:1.25;color:var(--ink)}
+
+  .art-pq{position:relative;margin:clamp(52px,7vw,84px) 0;padding-left:clamp(44px,6vw,80px)}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
+  .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
+
+  .art-closer{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
+  .art-closer a{border-bottom:1px solid var(--ink);font-style:normal}
+
+  .art-bio{display:flex;gap:20px;align-items:flex-start;margin-top:56px;padding-top:36px;border-top:1px solid var(--line)}
+  .art-bio .av{width:56px;height:56px;border-radius:50%;background:var(--tan);flex-shrink:0;overflow:hidden}
+  .art-bio .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-bio .by b{display:block;font-family:var(--serif);font-size:1.1rem;font-weight:500;color:var(--ink)}
+  .art-bio .by span{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--body);margin-top:2px}
+  .art-bio p{margin-top:10px;font-size:14px;max-width:52ch}
+
+  /* sidebar */
+  .art-side{display:flex;flex-direction:column;gap:26px;position:sticky;top:140px}
+  .art-signup{background:var(--peach);padding:30px 26px;border-radius:2px}
+  .art-signup h4{font-family:var(--serif);font-size:1.28rem;font-weight:500;color:var(--ink);line-height:1.2}
+  .art-signup p{font-size:13px;color:rgba(33,29,25,.72);margin-top:10px;max-width:none}
+  .art-signup .news{margin-top:18px;border-color:rgba(33,29,25,.25);background:var(--cream);max-width:none}
+  .art-side-list{background:var(--cream-2);padding:24px 22px;border-radius:2px}
+  .art-side-list h5{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:14px}
+  .art-side-list a{display:block;padding:14px 0;border-top:1px solid var(--line)}
+  .art-side-list a:first-of-type{border-top:none;padding-top:0}
+  .art-side-list .cat{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--peach);display:block;margin-bottom:4px}
+  .art-side-list h6{font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--ink);line-height:1.3}
+
+  /* FAQ */
+  .art-faq{padding:clamp(50px,6vw,88px) 0;background:var(--cream-2)}
+  .art-faq .sec-head{text-align:center;max-width:820px;margin:0 auto clamp(36px,4vw,54px)}
+  .art-faq .sec-head h2{font-size:clamp(1.9rem,3.4vw,2.6rem);font-weight:500}
+  .art-faq-list{max-width:820px;margin:0 auto}
+  .art-faq-list details{border-top:1px solid var(--line)}
+  .art-faq-list details:last-child{border-bottom:1px solid var(--line)}
+  .art-faq-list summary{padding:24px 0;cursor:pointer;display:grid;grid-template-columns:1fr 28px;gap:18px;align-items:start;list-style:none}
+  .art-faq-list summary::-webkit-details-marker{display:none}
+  .art-faq-list summary h3{font-size:clamp(1.05rem,1.8vw,1.3rem);font-weight:500;margin:0;color:var(--ink)}
+  .art-faq-list summary .plus{font-family:var(--serif);font-size:1.5rem;color:var(--peach);line-height:1;transition:transform .3s var(--ease);text-align:right}
+  .art-faq-list details[open] summary .plus{transform:rotate(45deg)}
+  .art-faq-list .ans{padding:0 0 24px;max-width:64ch;color:var(--body);font-size:15px}
+
+  /* Explore More (related, 3-card) */
+  .art-related{padding:clamp(64px,8vw,98px) 0}
+  .art-related .rel-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;margin-bottom:36px}
+  .art-related h2{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:500}
+  .art-related .rel-head span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-rel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .art-rel-card .ph{aspect-ratio:4/3;border-radius:1px;overflow:hidden;margin-bottom:16px}
+  .art-rel-card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-rel-card .cat{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-rel-card h3{font-size:1.32rem;margin-top:10px;font-weight:500;line-height:1.2}
+
+  @media (max-width:900px){
+    .art-grid{grid-template-columns:1fr}
+    .art-side{position:static;flex-direction:row;flex-wrap:wrap}
+    .art-signup,.art-side-list{flex:1;min-width:260px}
+    .art-inline{grid-template-columns:1fr}
+    .art-rel-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:640px){
+    .art-top{padding-top:120px}
+    .art-side{flex-direction:column}
+  }
+</style>
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+</script>
 </head>
 <body>
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
+
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- ARTICLE HEADER -->
+<section class="art-top">
+  <div class="wrap">
+    <div class="art-crumbs reveal">
+      <span>Journal</span><span class="sep">/</span><span>Protocol</span>
+    </div>
+    <div class="art-header reveal">
+      <h1>Power Posture: undo the damage from <em>sitting all day.</em></h1>
+      <div class="art-meta">
+        <span>Garrett Hewstan</span>
+        <span class="dot"></span>
+        <span>July 9, 2026</span>
+        <span class="dot"></span>
+        <span>6 min read</span>
       </div>
     </div>
-  </nav>
-<article>
-        <h1>Power Posture: Undo the Damage From Sitting All Day</h1>
-        <p class="article-meta">6 min read • <time datetime="2026-03-25">Last updated: March 25, 2026</time> • By Garrett Hewstan</p>
+    <div class="art-share reveal">
+      <span>Share</span>
+      <a href="#" aria-label="Share on Facebook">f</a>
+      <a href="#" aria-label="Share on X">X</a>
+    </div>
+  </div>
+</section>
 
-        <img src="images/power-posture.webp?v=1" alt="Power posture protocol — squeezing shoulder blades together to correct forward-leaning posture" class="article-hero-image" width="1200" height="800">
+<!-- FEATURED IMAGE -->
+<section class="art-featured">
+  <div class="ph reveal" style="background:var(--sage)">
+    <img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()">
+  </div>
+</section>
 
-        <p>This is one of my absolute favorites. You can do it anywhere, it takes a minute or two, and it directly corrects the biggest postural problem I see in my practice.</p>
+<!-- ARTICLE BODY -->
+<section class="art-body">
+  <div class="wrap">
+    <div class="art-grid">
 
-        <p>We have a massive over-flexion problem in our culture. Almost everything we do all day pulls us forward: sitting at desks, looking at phones, driving, eating. Over years, your body adapts to that forward position. It becomes your default. And that's when the pain starts.</p>
+      <!-- Main column -->
+      <div class="art-prose reveal">
+        <p>This is one of my favorite protocols. You can do it anywhere, it takes a minute or two, and it directly corrects the biggest postural problem I see in my practice.</p>
 
-        <h2>The Imbalance Behind Your Pain</h2>
+        <p>We have a massive over-flexion problem in our culture. Almost everything we do all day pulls us forward: sitting at desks, looking at phones, driving, eating. Over years, your body adapts to that forward position. It becomes your default. That's when the pain starts.</p>
 
-        <p>Your head weighs 10 to 12 pounds. When it's sitting directly over your spinal column, your neck handles that weight easily. But when your head migrates forward, and for most people it's forward all day, all that weight is just pulling on the back muscles. They're working overtime.</p>
-
+        <h2>The imbalance behind your pain</h2>
+        <p>Your head weighs 10 to 12 pounds. When it's sitting directly over your spinal column, your neck handles that weight easily. But when your head migrates forward, and for most people it's forward all day, all that weight pulls on the back muscles. They're working overtime.</p>
         <p>Something is working too hard because something else isn't working enough. That's the imbalance. Your back muscles are overworking to hold your head up. The muscles in the front of your body aren't doing their share.</p>
-
         <p>This causes more than neck and upper back pain. It cascades down the spine. Forward head posture contributes to lower back pain, hip dysfunction, even shoulder problems. The whole body is connected.</p>
 
-        <h2>Why "Sit Up Straight" Doesn't Work</h2>
-
-        <p>You've heard the advice a thousand times. Sit up straight. Pull your shoulders back. Stand with good posture. But we often don't know how to create that good posture, and we think it has to be a chiropractor or massage therapist who's going to do it for us.</p>
-
+        <h2>Why "sit up straight" doesn't work</h2>
+        <p>You've heard the advice a thousand times. Sit up straight. Pull your shoulders back. Stand with good posture. But we often don't know how to create that good posture, and we think it has to be someone else, a massage therapist or a bodyworker, who does it for us.</p>
         <p>Telling yourself to sit straight requires constant conscious effort. You can hold it for five minutes, but as soon as you stop thinking about it, your body returns to its default collapsed position. You can't willpower your way through 16 hours of sitting.</p>
+        <p>What you need is to retrain your body so that proper alignment becomes comfortable again, so it becomes the position your body wants to be in.</p>
 
-        <p>What you need is to retrain your body so that proper alignment becomes comfortable again. So it becomes the position your body wants to be in.</p>
+        <div class="art-inline">
+          <span class="lbl">You may also like</span>
+          <a href="#">
+            <div class="thumb"><img src="/images/v6/real/foam-roller-v2.jpg" alt="" onerror="this.remove()"></div>
+            <span class="cat">Pain</span>
+            <h4>Neck pain is almost always a shoulder-blade problem</h4>
+          </a>
+          <a href="#">
+            <div class="thumb"><img src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
+            <span class="cat">Conditions</span>
+            <h4>Why your back hurts when you sit</h4>
+          </a>
+        </div>
 
-        <h2>How Power Posture Retrains Your Body</h2>
-
+        <h2>How Power Posture retrains your body</h2>
         <p>Power Posture targets the shoulder blades, the foundation of your upper body posture. When your shoulder blades are in the right position, everything else follows. Your chest opens. Your head comes back over your spine where it belongs. The back muscles that have been overworking all day finally get to relax.</p>
-
         <p>The protocol also involves specific breathing patterns. When your chest is collapsed from sitting all day, your diaphragm can't fully expand. The way Power Posture combines movement with breathing opens everything up, and that carries over even after you're done.</p>
+
+        <div class="lead-item">
+          <b>Reset the shoulder blades.</b>
+          <p style="margin-top:0">When your shoulder blades are in the right position, everything else follows: the chest opens, the head comes back over the spine, and the back muscles that have been overworking all day finally get to relax.</p>
+        </div>
+        <div class="lead-item">
+          <b>Retrain the breath.</b>
+          <p style="margin-top:0">A collapsed chest can't let the diaphragm fully expand. Power Posture combines the movement with a specific breathing pattern, and that opening carries over even after you're done.</p>
+        </div>
 
         <p>Every time you do this, you're retraining your body. You're telling it: this is the position we want to be in. Over days and weeks, your body's baseline shifts. What used to take effort starts to feel natural. The exact technique matters though, how you position your hands, how you engage the shoulder blades, when you breathe, which is why Garrett teaches it in person.</p>
 
-        <h2>Why It Works Where Other Things Don't</h2>
+        <div class="art-pq">
+          <blockquote>You can't willpower your way through 16 hours of sitting.</blockquote>
+          <cite>Garrett</cite>
+        </div>
 
-        <p>Most approaches to posture correction are passive. A chiropractor adjusts you, a massage therapist releases your muscles, but then you go back to sitting and the pattern returns. You're outsourcing your well-being.</p>
-
+        <h2>Why it works where other things don't</h2>
+        <p>Most approaches to posture correction are passive. Someone else adjusts you, someone else releases your muscles, but then you go back to sitting and the pattern returns. You're outsourcing your well-being.</p>
         <p>Power Posture is the opposite. You're doing it yourself. You're building the strength and the muscle memory that keeps you in alignment without anyone else's help. That's what makes the results last, because you own the protocol. It's yours for life.</p>
-
         <p>The protocol evolves with you too. As your body changes, the way you do Power Posture changes. It becomes more subtle, more nuanced. It's a world unto itself.</p>
 
-        <h2>What Clients Experience</h2>
-
-        <p>The first time, most people notice their upper back feels more open and their breathing feels deeper. Your head might feel lighter. That's because your neck muscles aren't straining to hold it forward anymore.</p>
-
+        <h2>What clients experience</h2>
+        <p>The first time, most people notice their upper back feels more open and their breathing feels deeper. Your head might feel lighter, because your neck muscles aren't straining to hold it forward anymore.</p>
         <p>After a couple weeks of daily practice, the neck tension starts dropping. Your shoulders feel less rounded. You'll catch yourself in forward posture during the day and naturally correct it without thinking about it.</p>
-
         <p>After a month, people tell me forward posture actually feels uncomfortable. That's when you know your body has retrained itself. The new baseline is aligned.</p>
 
-        <h2>Do It Anywhere, Anytime</h2>
-
+        <h2>Do it anywhere, anytime</h2>
         <p>Unlike some of the other Amari Method protocols that need rings or a specific setup, Power Posture needs nothing. Do it at your desk, in line at the store, watching TV, waiting for a meeting. That's what makes it one of the most practical protocols in the whole system.</p>
-
         <p>It only takes a minute or two. Some clients do it a few times throughout their workday as a reset. The key is consistency. Each time, your body gets a little easier to bring back into alignment.</p>
 
-        <div class="cta-box">
-            <h3>Learn the Full Power Posture Technique</h3>
-            <p>This article explains why Power Posture works and what it corrects. The specific technique is taught in your first session: exact hand positioning, shoulder blade engagement cues, breathing timing, and how to progress. Small differences in form make a big difference in results, which is why Garrett coaches it in real time.</p>
-            <a href="booking" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book a Session</span></span></a>
-            <a href="/book/discovery-call" class="btn-secondary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Free Discovery Call</span></span></a>
-        </div>
+        <p class="art-closer">If sitting all day has your shoulders rounding forward no matter what you try, we can help. <a href="#appt">See how the Amari Method finds the pattern behind it.</a></p>
 
-        <div class="related-articles">
-            <h2>Related Articles</h2>
-            <ul>
-                <li><a href="blog-suspension-squat-hanging-exercises" class="btn-tertiary">Suspension Squat: How Hanging Exercises Transform Your Alignment</a></li>
-                <li><a href="blog-hand-balancer-carpal-tunnel" class="btn-tertiary">Hand Balancer: Reverse Carpal Tunnel and Hand Pain</a></li>
-                <li><a href="blog-back-pain-from-sitting" class="btn-tertiary">Why Does My Back Hurt When I Sit?</a></li>
-                <li><a href="blog" class="btn-tertiary">Back to Free Resources</a></li>
-            </ul>
+        <div class="art-bio">
+          <div class="av"><img src="/images/v6/real/garrett-face-1200.jpg" alt="" onerror="this.remove()"></div>
+          <div class="by">
+            <b>Garrett Hewstan</b>
+            <span>Founder, Amari Method</span>
+            <p>Garrett has spent 25+ years in hands-on practice. He built the Amari Method after using its own protocols to resolve his own carpal tunnel and plantar fasciitis.</p>
+          </div>
         </div>
+      </div>
 
-        <div class="author-bio">
-          <p class="author-bio-name">Garrett Hewstan</p>
-          <p class="author-bio-desc">Garrett Hewstan is the founder of the Amari Method. After 25 years of hands-on practice, he developed a system that teaches people to address their own pain through simple, targeted protocols. He sees clients in San Francisco and offers virtual sessions nationwide.</p>
+      <!-- Sidebar -->
+      <aside class="art-side reveal">
+        <div class="art-signup">
+          <h4>Like what you're reading?</h4>
+          <p>Occasional notes on movement, pain, and the practice, straight to your inbox.</p>
+          <form class="news" onsubmit="return false">
+            <input type="email" placeholder="Email address" aria-label="Email address">
+            <button type="submit">Submit</button>
+          </form>
         </div>
-</article>
+        <div class="art-side-list">
+          <h5>Also in Protocol</h5>
+          <a href="#">
+            <span class="cat">Protocol</span>
+            <h6>The elbow reset: a fix for tennis elbow and golfer's elbow</h6>
+          </a>
+          <a href="#">
+            <span class="cat">Protocol</span>
+            <h6>The hand balancer: a fix for carpal tunnel the wrist brace can't reach</h6>
+          </a>
+          <a href="#">
+            <span class="cat">Protocol</span>
+            <h6>Suspension squat: hanging protocols that cascade through your chain</h6>
+          </a>
+        </div>
+      </aside>
 
-    <!-- Assessment Banner -->
-    <section class="section assessment-section">
-        <div class="container">
-            <div class="section-two-col assessment-content">
-                <div class="assessment-image-wrapper">
-                    <div class="assessment-image-frame">
-                        <img src="images/quiz-cover.webp" alt="Body Balance Assessment Quiz" loading="lazy" width="500" height="750">
-                    </div>
-                </div>
-                <div class="assessment-text">
-                    <span class="assessment-label">Quick Assessment</span>
-                    <h2>Discover What's Really Causing Your Pain</h2>
-                    <p>
-                        Answer 12 questions. Find out if the Amari Method is right for your pain, and what's likely causing it.
-                    </p>
-                    <div class="assessment-features">
-                        <div class="assessment-feature">
-                            <span class="checkmark-light">✓</span>
-                            <span>Takes just 2 minutes to complete</span>
-                        </div>
-                        <div class="assessment-feature">
-                            <span class="checkmark-light">✓</span>
-                            <span>Personalized report sent to your email</span>
-                        </div>
-                        <div class="assessment-feature">
-                            <span class="checkmark-light">✓</span>
-                            <span>No commitment, no sales call</span>
-                        </div>
-                    </div>
-                    <button class="btn-secondary" onclick="window.location.href='/quiz/'"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Start Your Assessment</span></span></button>
-                </div>
-            </div>
-        </div>
-    </section>
+    </div>
+  </div>
+</section>
 
-    <footer>
-        <!-- Footer Top: Logo + Contact -->
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Freedom From Pain. Results For Life.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
-        </div>
-        <!-- Footer Links -->
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/#why">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/#how">How It Works</a></li>
-                    <li><a href="/#results">Results & Reviews</a></li>
-                    <li><a href="affiliate">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/#services">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-        </div>
-    </footer>
-<script src="js/main.js?v=5" defer></script>
+<!-- FAQ -->
+<section class="art-faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>Common <em>questions.</em></h2>
+    </div>
+    <div class="art-faq-list reveal">
+      <details>
+        <summary><h3>Is this the same as just sitting up straight?</h3><span class="plus">+</span></summary>
+        <div class="ans">No. Sitting up straight through willpower requires constant conscious effort, and the moment your attention moves elsewhere, your body returns to its default collapsed position. Power Posture retrains the shoulder blades and the breath so the aligned position becomes the one your body wants to be in, not the one you have to force.</div>
+      </details>
+      <details>
+        <summary><h3>How often should I do it?</h3><span class="plus">+</span></summary>
+        <div class="ans">It takes a minute or two, and some clients do it a few times through the workday as a reset. Consistency matters more than duration. Each time you do it, your body gets a little easier to bring back into alignment.</div>
+      </details>
+      <details>
+        <summary><h3>Do I need any equipment?</h3><span class="plus">+</span></summary>
+        <div class="ans">No. Unlike some of the other Amari Method protocols that use rings or a specific setup, Power Posture needs nothing. You can do it at your desk, in line at the store, or waiting for a meeting.</div>
+      </details>
+      <details>
+        <summary><h3>How long before I notice a difference?</h3><span class="plus">+</span></summary>
+        <div class="ans">Most people feel their upper back open and their breathing deepen the first time. After a couple weeks of daily practice, the neck tension drops and the shoulders feel less rounded. After a month, forward posture starts to feel uncomfortable, which is when you know the new baseline has set in.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- EXPLORE MORE -->
+<section class="art-related">
+  <div class="wrap">
+    <div class="rel-head reveal">
+      <h2>Explore more</h2>
+      <span>Same method &middot; Different pattern</span>
+    </div>
+    <div class="art-rel-grid">
+      <a class="art-rel-card reveal">
+        <div class="ph" style="background:#D8BB86"><img src="/images/photos/journal-base/jh-vertical-drop.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">Protocol</span>
+        <h3>Vertical drop: decompress the spine in ninety seconds</h3>
+      </a>
+      <a class="art-rel-card reveal" style="transition-delay:.06s">
+        <div class="ph" style="background:#AFC1A9"><img src="/images/v6/real/gymnastic-rings.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">Mechanics</span>
+        <h3>Why deep tissue massage doesn't last</h3>
+      </a>
+      <a class="art-rel-card reveal" style="transition-delay:.12s">
+        <div class="ph" style="background:#E1A98B"><img src="/images/v6/real/passive-bridge.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">Protocol</span>
+        <h3>The Passive Bridge</h3>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- APPOINTMENT CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <span class="eyebrow">The guarantee</span>
+    <h2>Most clients feel a difference in their <em>first session.</em></h2>
+    <p>Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
+    <div class="btn-row">
+      <a href="#" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
+    </div>
+    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$225</b> &middot; First session &middot; San Francisco + virtual</p>
+  </div>
+</section>
+
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js" data-nav="journal"></script>
 </body>
 </html>

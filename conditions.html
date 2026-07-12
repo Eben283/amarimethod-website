@@ -1,354 +1,298 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Conditions We Work With | Pain Relief in San Francisco | Amari Method</title>
-  <meta name="description" content="Back, neck, shoulder, hip, knee, sciatica, TMJ, and plantar fasciitis pain. Garrett Hewstan finds the pattern behind your pain and teaches you to correct it yourself. In-person San Francisco or virtual.">
-  <meta name="keywords" content="pain relief San Francisco, chronic pain conditions, back pain, neck pain, shoulder pain, hip pain, knee pain, sciatica, TMJ, plantar fasciitis">
-  <meta name="author" content="Amari Method">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Back, neck, shoulder, hip, knee, sciatica, TMJ, and plantar fasciitis pain. Garrett Hewstan finds the pattern behind your pain and teaches you to correct it yourself. In-person San Francisco or virtual.">
+<link rel="canonical" href="https://www.amarimethod.com/conditions">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/conditions">
-  <meta property="og:title" content="Conditions We Work With | Pain Relief in San Francisco | Amari Method">
-  <meta property="og:description" content="One method, many patterns. The conditions Garrett works with, and how the Amari Method finds the cause behind each.">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Conditions We Work With | Pain Relief in San Francisco | Amari Method</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css">
+<style>
+  /* ---------- Conditions-page-specific styles ---------- */
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.amarimethod.com/conditions">
-  <meta property="twitter:title" content="Conditions We Work With | Pain Relief in San Francisco | Amari Method">
-  <meta property="twitter:description" content="One method, many patterns. The conditions Garrett works with, and how the Amari Method finds the cause behind each.">
-  <meta property="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  .hero-meta{display:flex;gap:18px;justify-content:center;align-items:center;margin-top:34px;flex-wrap:wrap;color:rgba(255,255,255,.78);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-family:var(--sans)}
+  .hero-meta .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.55)}
+  .hero .btn{margin-top:34px}
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/conditions">
+  .sec-head{text-align:center;margin-bottom:clamp(44px,5vw,64px)}
+  .sec-head .eyebrow{display:block;margin-bottom:16px}
+  .sec-head h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500}
+  .sec-head p{margin:20px auto 0;max-width:58ch}
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  /* Approach / what we work with */
+  .approach2{padding:clamp(70px,8.5vw,116px) 0 clamp(50px,6vw,80px)}
+  .cnd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(36px,4vw,48px) clamp(24px,3vw,36px);margin-top:8px}
+  .cnd-item{display:flex;flex-direction:column;gap:9px}
+  .cnd-item .cat{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--peach)}
+  .cnd-item h3{font-size:clamp(1.25rem,1.8vw,1.55rem);font-weight:500;line-height:1.2}
+  .cnd-item p{font-size:14px;line-height:1.6;max-width:32ch}
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
+  /* Two-photo band (no text, mirrors Yinova's back + court pairing) */
+  .dual-photo{display:grid;grid-template-columns:1fr 1fr;gap:0;width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:16px auto 0;min-height:440px;overflow:hidden;border-radius:1px}
+  .dual-photo .dp{background-size:cover;background-position:center;min-height:440px}
 
-  <!-- CollectionPage + ItemList Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "Conditions We Work With | Amari Method",
-    "description": "The conditions Garrett Hewstan works with at the Amari Method in San Francisco and virtually.",
-    "url": "https://www.amarimethod.com/conditions",
-    "mainEntity": {
-      "@type": "ItemList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Lower Back Pain", "url": "https://www.amarimethod.com/lower-back-pain-san-francisco" },
-        { "@type": "ListItem", "position": 2, "name": "Neck Pain", "url": "https://www.amarimethod.com/neck-pain-san-francisco" },
-        { "@type": "ListItem", "position": 3, "name": "Shoulder Pain", "url": "https://www.amarimethod.com/shoulder-pain-san-francisco" },
-        { "@type": "ListItem", "position": 4, "name": "Hip Pain", "url": "https://www.amarimethod.com/hip-pain-san-francisco" },
-        { "@type": "ListItem", "position": 5, "name": "Knee Pain", "url": "https://www.amarimethod.com/knee-pain-san-francisco" },
-        { "@type": "ListItem", "position": 6, "name": "Sciatica", "url": "https://www.amarimethod.com/sciatica-san-francisco" },
-        { "@type": "ListItem", "position": 7, "name": "TMJ", "url": "https://www.amarimethod.com/tmj-san-francisco" },
-        { "@type": "ListItem", "position": 8, "name": "Plantar Fasciitis", "url": "https://www.amarimethod.com/plantar-fasciitis-san-francisco" },
-        { "@type": "ListItem", "position": 9, "name": "Chronic Pain", "url": "https://www.amarimethod.com/chronic-pain-san-francisco" }
-      ]
-    }
+  /* Related resources grid */
+  .related{padding:clamp(70px,8.5vw,116px) 0}
+  .related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .rcard{background:var(--cream-2);display:flex;flex-direction:column;border-radius:1px;overflow:hidden;transition:transform .35s var(--ease)}
+  .rcard:hover{transform:translateY(-3px)}
+  .rcard .rimg{aspect-ratio:4/3;background-size:cover;background-position:center}
+  .rcard .rbody{padding:20px 22px 26px}
+  .rcard .rcat{font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);display:block;margin-bottom:9px}
+  .rcard h4{font-size:1.02rem;font-weight:500;line-height:1.32}
+
+  /* Guarantee / appointment CTA extras */
+  .price-line{margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .price-line b{color:var(--ink);font-weight:600}
+  .appt .see-all{display:block;margin-top:16px;font-size:12.5px;color:var(--body)}
+  .appt .see-all a{border-bottom:1px solid var(--ink);color:var(--ink);padding-bottom:1px}
+
+  @media (max-width:1000px){
+    .cnd-grid{grid-template-columns:1fr 1fr}
+    .related-grid{grid-template-columns:1fr 1fr}
+    .dual-photo{grid-template-columns:1fr;min-height:0}
+    .dual-photo .dp{min-height:300px}
   }
-  </script>
-
-  <!-- BreadcrumbList Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Amari Method", "item": "https://www.amarimethod.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Conditions", "item": "https://www.amarimethod.com/conditions" }
-    ]
+  @media (max-width:640px){
+    .cnd-grid{grid-template-columns:1fr}
+    .related-grid{grid-template-columns:1fr}
+    .hero-meta{gap:12px}
   }
-  </script>
+</style>
 
-  <!-- Microsoft Clarity -->
-  <script type="text/javascript">
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
-  </script>
-
-  <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
-
-  <!-- Page-scoped editorial styles (subset of the condition-page system) -->
-  <style>
-    .cond { color: var(--color-text); background: var(--bg-primary); }
-    .cond .wrap { max-width: 1360px; margin: 0 auto; padding: 0 32px; }
-    .cond .eyebrow { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--color-text-secondary); display: inline-flex; align-items: center; gap: 10px; }
-    .cond .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--color-text-secondary); }
-    .cond h2 em, .cond h1 em { font-style: italic; color: var(--color-accent-warm); font-weight: 300; }
-
-    /* Breadcrumbs */
-    .cond-crumbs { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--color-text-muted); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding-top: 32px; }
-    .cond-crumbs a { color: var(--color-text-muted); text-decoration: none; }
-    .cond-crumbs a:hover { color: var(--color-text); }
-    .cond-crumbs .sep { opacity: .5; }
-    .cond-crumbs .current { color: var(--color-text-secondary); }
-
-    /* Hero (single column) */
-    .hub-hero { padding: 48px 0 80px; max-width: 1360px; margin: 0 auto; }
-    .hub-hero .kicker { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-accent-warm); margin-bottom: 24px; display: inline-flex; align-items: center; gap: 10px; }
-    .hub-hero .kicker::before { content: ""; width: 24px; height: 1px; background: var(--color-accent-warm); }
-    .hub-hero h1 { font-family: var(--font-serif-primary); font-size: clamp(44px, 6vw, 92px); font-weight: 300; letter-spacing: -0.035em; line-height: 0.98; max-width: 16ch; color: var(--color-text); }
-    .hub-hero .sub { font-family: var(--font-serif-primary); font-size: 22px; line-height: 1.5; color: var(--color-text-secondary); margin-top: 32px; max-width: 60ch; font-weight: 400; }
-    .hub-hero .meta { display: flex; gap: 24px; margin-top: 28px; align-items: center; font-size: 13px; color: var(--color-text-muted); flex-wrap: wrap; }
-    .hub-hero .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--color-text-muted); }
-
-    /* Conditions grid */
-    .hub-grid-section { padding: 32px 0 120px; }
-    .hub-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .hub-grid a { padding: 36px 32px; background: var(--bg-primary); border: 1px solid var(--color-border); transition: all .25s; display: flex; flex-direction: column; gap: 12px; min-height: 200px; justify-content: space-between; text-decoration: none; }
-    .hub-grid a:hover { border-color: var(--color-accent-warm); transform: translateY(-2px); }
-    .hub-grid .rcat { font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--color-text-muted); }
-    .hub-grid h2 { font-family: var(--font-serif-primary); font-size: 28px; font-weight: 400; letter-spacing: -0.015em; line-height: 1.15; color: var(--color-text); margin: 0; }
-    .hub-grid p { font-size: 14px; color: var(--color-text-secondary); line-height: 1.55; margin: 0; }
-    .hub-grid .arr { font-family: var(--font-serif-primary); font-size: 22px; color: var(--color-accent-warm); margin-top: 4px; }
-    .hub-grid a.feature { background: var(--bg-secondary); }
-
-    /* Guarantee CTA */
-    .cond-guarantee { padding: 160px 0; background: var(--color-text); color: var(--bg-primary); text-align: center; position: relative; overflow: hidden; }
-    .cond-guarantee::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 40%, rgba(197, 107, 78, 0.2), transparent 60%); }
-    .cond-guarantee .inner { position: relative; max-width: 1000px; margin: 0 auto; padding: 0 32px; }
-    .cond-guarantee .eyebrow { color: #C9BEA9; justify-content: center; margin: 0 auto 32px; display: inline-flex; font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .18em; text-transform: uppercase; align-items: center; gap: 10px; }
-    .cond-guarantee .eyebrow::before { content: ""; width: 18px; height: 1px; background: #C9BEA9; }
-    .cond-guarantee h2 { font-family: var(--font-serif-primary); color: var(--bg-primary); font-size: clamp(40px, 6vw, 80px); font-weight: 300; letter-spacing: -0.035em; line-height: 1.05; max-width: 22ch; margin: 0 auto; }
-    .cond-guarantee h2 em { font-style: italic; color: #E8A38A; }
-    .cond-guarantee .dek { color: #C9BEA9; font-size: 18px; margin-top: 32px; max-width: 60ch; margin-left: auto; margin-right: auto; line-height: 1.55; }
-    .cond-guarantee .actions { margin-top: 48px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .cond-guarantee .price-line { margin-top: 32px; font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .15em; text-transform: uppercase; color: #C9BEA9; }
-    .cond-guarantee .price-line b { color: var(--bg-primary); font-weight: 500; }
-    .cond-guarantee-btn-light { display: inline-flex; align-items: center; gap: 10px; padding: 18px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; background: var(--bg-primary); color: var(--color-text); border: 1px solid transparent; text-decoration: none; transition: transform .25s, background .25s, color .25s; }
-    .cond-guarantee-btn-light:hover { background: var(--color-accent-warm); color: var(--bg-primary); transform: translateY(-1px); }
-    .cond-guarantee-btn-ghost { display: inline-flex; align-items: center; gap: 10px; padding: 18px 28px; border-radius: 999px; font-size: 15px; font-weight: 500; border: 1px solid rgba(247, 242, 232, 0.3); color: var(--bg-primary); text-decoration: none; transition: all .25s; }
-    .cond-guarantee-btn-ghost:hover { border-color: var(--bg-primary); background: var(--bg-primary); color: var(--color-text); }
-
-    @media (max-width: 960px) {
-      .hub-grid { grid-template-columns: 1fr; }
-      .hub-hero { padding: 32px 0 56px; }
-      .cond-guarantee { padding: 100px 0; }
-    }
-  </style>
+</script>
 </head>
 <body>
 
-  <!-- ===== NAV (matches index.html) ===== -->
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg" style="background-image:url('/images/photos/conditions-hub-man-blk49.jpg');background-position:right center"></div>
+  <div class="hero-inner">
+    <span class="eyebrow light">Conditions · San Francisco + virtual</span>
+    <h1>Wherever it lives, your body can come back to <em>balance.</em></h1>
+    <p>A back that won't settle, sciatica, tight shoulders, a jaw that holds all day. The pain shows up in different places, and Garrett finds where your body is out of balance and teaches you to bring it back yourself.</p>
+    <div class="hero-meta">
+      <span>25+ years of hands-on practice</span>
+      <span class="dot"></span>
+      <span>First session guaranteed</span>
+      <span class="dot"></span>
+      <span>San Francisco + virtual</span>
     </div>
-  </nav>
+    <a href="#appt" class="btn btn-pale">Book your first session</a>
+  </div>
+</section>
 
-<main class="cond">
-
-  <!-- ===== BREADCRUMBS ===== -->
+<!-- THE APPROACH / WHAT WE WORK WITH -->
+<section class="approach2">
   <div class="wrap">
-    <div class="cond-crumbs">
-      <a href="index.html">Amari Method</a>
-      <span class="sep">/</span>
-      <span class="current">Conditions</span>
+    <div class="sec-head reveal">
+      <span class="eyebrow">The approach</span>
+      <h2>Different pain. <em>The same way back.</em></h2>
+      <p>Every one of these shows up in a different place, but the principle underneath is the same: something is overworking because something else stopped doing its job. Garrett finds the pattern and teaches you to rebalance it yourself.</p>
     </div>
-  </div>
-
-  <!-- ===== HERO ===== -->
-  <section class="wrap">
-    <div class="hub-hero">
-      <div class="kicker">Conditions · San Francisco + virtual</div>
-      <h1>One method. <em>Many patterns.</em></h1>
-      <p class="sub">The pain shows up in different places, but the principle is the same: something is overworking because something else stopped doing its job. Garrett finds where your body is out of balance and teaches you how to correct it yourself. Choose what's troubling you.</p>
-      <div class="meta">
-        <span>25+ years of clinical practice</span>
-        <span class="dot"></span>
-        <span>First session guaranteed</span>
-        <span class="dot"></span>
-        <span>HSA / FSA accepted</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== CONDITIONS GRID ===== -->
-  <section class="wrap hub-grid-section">
-    <div class="hub-grid">
-      <a href="lower-back-pain-san-francisco">
-        <span class="rcat">Lower back</span>
-        <h2>Lower back pain</h2>
+    <div class="cnd-grid reveal">
+      <div class="cnd-item">
+        <span class="cat">Lower back</span>
+        <h3>Lower back pain</h3>
         <p>The most common pattern, and the most over-treated. Usually a compression and support problem from years of sitting, not a disc you have to live with.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="neck-pain-san-francisco">
-        <span class="rcat">Neck</span>
-        <h2>Neck pain</h2>
-        <p>The head drifts forward and the neck carries a load it was never built for. Relieve that load and most chronic neck pain and tension resolves.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="shoulder-pain-san-francisco">
-        <span class="rcat">Shoulder</span>
-        <h2>Shoulder pain</h2>
-        <p>Impingement, rotator cuff issues, and frozen shoulder are almost always a shoulder-blade and upper-back problem, not the joint itself.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="hip-pain-san-francisco">
-        <span class="rcat">Hip</span>
-        <h2>Hip pain</h2>
-        <p>Hip pain and tightness usually trace back to how the pelvis sits and how the surrounding muscles share the load. Rebalance them and the joint frees up.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="knee-pain-san-francisco">
-        <span class="rcat">Knee</span>
-        <h2>Knee pain</h2>
-        <p>The knee is where problems above and below it show up. Correct the hip and ankle mechanics and the abnormal load comes off the knee.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="sciatica-san-francisco">
-        <span class="rcat">Sciatica</span>
-        <h2>Sciatica</h2>
-        <p>Shooting leg pain is a compressed sciatic nerve: disc, piriformis, or general compression. Find where, then decompress the pathway at the source.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="tmj-san-francisco">
-        <span class="rcat">Jaw</span>
-        <h2>TMJ &amp; jaw pain</h2>
-        <p>Clenching, clicking, and jaw pain are usually driven by forward head posture and neck tension, not a damaged joint. Correct the posture and the jaw unloads.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="plantar-fasciitis-san-francisco">
-        <span class="rcat">Foot</span>
-        <h2>Plantar fasciitis</h2>
-        <p>Heel and arch pain that's worst on the first steps of the day. The foot is paying for what the hip and ankle above it stopped doing.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="chronic-pain-san-francisco">
-        <span class="rcat">Whole body</span>
-        <h2>Chronic pain</h2>
-        <p>Pain that has moved around, lingered for years, or never had a clear cause. The Amari Method looks at how force moves through the whole body.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="amari-method-vs-physical-therapy" class="feature">
-        <span class="rcat">Compare</span>
-        <h2>Amari Method vs. physical therapy</h2>
-        <p>How this approach differs from standard PT, and why people who've tried everything else often find it works when nothing else did.</p>
-        <span class="arr">→</span>
-      </a>
-      <a href="how-it-works" class="feature">
-        <span class="rcat">Start here</span>
-        <h2>Not sure where you fit?</h2>
-        <p>See how the method works, or take the free 2-minute assessment to find out what's likely driving your pain.</p>
-        <span class="arr">→</span>
-      </a>
-    </div>
-  </section>
-
-  <!-- ===== GUARANTEE CTA ===== -->
-  <section class="cond-guarantee">
-    <div class="inner">
-      <span class="eyebrow">The guarantee</span>
-      <h2>Most clients feel a difference in <em>their first session.</em></h2>
-      <p class="dek">Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
-      <div class="actions">
-        <a class="cond-guarantee-btn-light" href="/book-initial-in-person"><span>Book your first session</span><span>→</span></a>
-        <a class="cond-guarantee-btn-ghost" href="/quiz/"><span>Take the free assessment</span><span>→</span></a>
       </div>
-      <div class="price-line"><b>$225</b> · First session · San Francisco + virtual</div>
-      <div class="price-line">HSA / FSA accepted · Affirm available · series as low as <b>$108/mo</b></div>
+      <div class="cnd-item">
+        <span class="cat">Neck</span>
+        <h3>Neck pain</h3>
+        <p>The head drifts forward and the neck carries a load it was never built for. Relieve that load and most chronic neck pain resolves.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Shoulder</span>
+        <h3>Shoulder pain</h3>
+        <p>Impingement, rotator cuff pain, and frozen shoulder are almost always a shoulder blade and upper back problem, not the joint itself.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Hip</span>
+        <h3>Hip pain</h3>
+        <p>Hip pain and tightness usually trace back to how the pelvis sits and how the surrounding muscles share the load. Rebalance them and the joint frees up.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Knee</span>
+        <h3>Knee pain</h3>
+        <p>The knee is where problems above and below it show up. Correct the hip and ankle mechanics and the abnormal load comes off the knee.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Jaw</span>
+        <h3>Jaw &amp; TMJ tension</h3>
+        <p>Clenching, clicking, and jaw pain are usually driven by forward head posture and neck tension, not a damaged joint.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Sciatica</span>
+        <h3>Sciatica</h3>
+        <p>Shooting leg pain from a compressed sciatic nerve. Find where the compression starts, then decompress the pathway at the source.</p>
+      </div>
+      <div class="cnd-item">
+        <span class="cat">Foot</span>
+        <h3>Plantar fasciitis</h3>
+        <p>Heel and arch pain that's worst on the first steps of the day. The foot is paying for what the hip and ankle above it stopped doing.</p>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
-</main>
+<!-- TWO-PHOTO BAND -->
+<div class="dual-photo reveal">
+  <div class="dp" style="background-image:url('/images/v6/real/elbow-reset.jpg')"></div>
+  <div class="dp" style="background-image:url('/images/v6/real/hand-balancer.jpg')"></div>
+</div>
 
-<footer>
-  <!-- Footer Top: Logo + Contact -->
-  <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-    <div style="display: flex; align-items: center; gap: 1.25rem;">
-      <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-      <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Your body can heal you.</p>
+<!-- HOW THE METHOD ADDRESSES IT -->
+<section class="axis" style="padding:clamp(64px,8vw,110px) 0;background:var(--cream-2)">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">How the method addresses it</span>
+      <h2>Whatever brought you in, the <em>process is the same.</em></h2>
     </div>
-    <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-      (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-    </p>
-  </div>
-  <!-- Footer Links -->
-  <div class="footer-content" style="padding-top: 2.5rem;">
-    <div class="footer-section">
-      <h3>Services</h3>
-      <ul>
-        <li><a href="in-person-sessions">In-Person Sessions</a></li>
-        <li><a href="virtual-sessions">Virtual Sessions</a></li>
-        <li><a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd">Online Program</a></li>
-        <li><a href="ongoing-care">Ongoing Care</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>Conditions</h3>
-      <ul>
-        <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-        <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-        <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-        <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-        <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-        <li><a href="conditions">All conditions</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>About</h3>
-      <ul>
-        <li><a href="/#why">Why Amari Method</a></li>
-        <li><a href="about.html">About Garrett</a></li>
-        <li><a href="/how-it-works">How It Works</a></li>
-        <li><a href="/#testimonials">Results & Reviews</a></li>
-        <li><a href="affiliate">Partnership Program</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h3>Get Started</h3>
-      <ul>
-        <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-        <li><a href="client-info.html">Client Information</a></li>
-        <li><a href="booking">View Pricing & Packages</a></li>
-        <li><a href="/#services">Book Your Session</a></li>
-        <li><a href="/portal">Client Portal</a></li>
-        <li><a href="/#faq">FAQ</a></li>
-        <li><a href="tools.html">Tools</a></li>
-      </ul>
+    <div class="fourparts-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)">
+      <div class="fp reveal" style="padding:42px clamp(24px,3vw,48px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)">
+        <span class="num" style="font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px">01</span>
+        <h3 style="font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch">Assessment</h3>
+        <p style="margin-top:16px;max-width:48ch">Garrett assesses how your body moves, whatever condition brought you in. Where it's overworking, where it's shut down. He's looking at your whole body, beyond the part that hurts.</p>
+      </div>
+      <div class="fp reveal" style="padding:42px clamp(24px,3vw,48px);border-bottom:1px solid var(--line)">
+        <span class="num" style="font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px">02</span>
+        <h3 style="font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch">Guided protocols</h3>
+        <p style="margin-top:16px;max-width:48ch">Using simple props (yoga blocks, foam rollers, gymnastic rings), Garrett guides you through protocols matched to your specific pattern, not a generic routine for your diagnosis.</p>
+      </div>
+      <div class="fp reveal" style="padding:42px clamp(24px,3vw,48px);border-right:1px solid var(--line)">
+        <span class="num" style="font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px">03</span>
+        <h3 style="font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch">What changes</h3>
+        <p style="margin-top:16px;max-width:48ch">Most clients feel a noticeable shift during the first session. The overworked areas release. The underworked areas start to re-engage. You feel the difference before you leave.</p>
+      </div>
+      <div class="fp reveal" style="padding:42px clamp(24px,3vw,48px)">
+        <span class="num" style="font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px">04</span>
+        <h3 style="font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch">Take-home practice</h3>
+        <p style="margin-top:16px;max-width:48ch">You leave with a short practice for what was worked on that session, about five minutes on your living room floor. It keeps your body moving in the right direction between sessions.</p>
+      </div>
     </div>
   </div>
-  <div class="footer-bottom">
-    <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="pullquote" style="background-image:url('/images/photos/materials/jaw-neck-soft.jpg')">
+  <div class="wrap reveal">
+    <span class="mark">&ldquo;</span>
+    <blockquote>I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.</blockquote>
+    <cite>Tyler · Photographer</cite>
   </div>
-</footer>
-<script src="js/main.js?v=5" defer></script>
+</section>
+
+<!-- RELATED RESOURCES -->
+<section class="related">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Related resources</span>
+      <h2>Go deeper on <em>your pattern.</em></h2>
+    </div>
+    <div class="related-grid reveal">
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/jaw-align.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Neck</span>
+          <h4>Why stretching your neck doesn't last</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/back-pain-from-sitting.webp')"></div>
+        <div class="rbody">
+          <span class="rcat">Lower back</span>
+          <h4>The desk-job pattern behind low back pain</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/passive-bridge.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Sciatica</span>
+          <h4>Finding where the compression starts</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/pull-up-bar.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Knee</span>
+          <h4>Why runner's knee usually isn't a knee problem</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/active-bridge.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Hip</span>
+          <h4>What your pelvis is telling you</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/power-posture.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Shoulder</span>
+          <h4>Frozen shoulder, unfrozen</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/foam-roller-v2.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Foot</span>
+          <h4>Clearing plantar fasciitis from the ankle up</h4>
+        </div>
+      </a>
+      <a class="rcard" href="#">
+        <div class="rimg" style="background-image:url('/images/v6/real/putting-it-all-together.jpg')"></div>
+        <div class="rbody">
+          <span class="rcat">Compare</span>
+          <h4>Amari Method vs. physical therapy</h4>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- SCHEDULE / EMAIL CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <span class="eyebrow">Get started</span>
+    <h2>Schedule your appointment online, or take the <em>free assessment.</em></h2>
+    <p>Sessions run seven days a week, with same-day virtual slots often available. In-person sessions are in San Francisco. If you don't experience noticeable relief in your first session, we keep working with you until you do, at no additional charge.</p>
+    <div class="btn-row">
+      <a href="#" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
+    </div>
+    <p class="price-line"><b>$225</b> · First session · San Francisco + virtual</p>
+    <span class="see-all"><a href="#">See virtual + in-person options</a></span>
+  </div>
+</section>
+
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js"></script>
 </body>
 </html>
