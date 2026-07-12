@@ -84,8 +84,15 @@ export async function processStep({ enrollment, step, sequence }, deps, nowMs) {
     return { outcome: "failed" };
   }
 
-  const message = await deps.renderMessage(sequence, step, enrollment, template);
-  const res = await deps.send(message);
+  // A throwing render/send fails THIS step only — one bad template must never kill the
+  // whole sweep (spec-05 finding; reachable only in active mode).
+  let res;
+  try {
+    const message = await deps.renderMessage(sequence, step, enrollment, template);
+    res = await deps.send(message);
+  } catch (err) {
+    res = { success: false, error: String((err && err.message) || err) };
+  }
   const ok = !!(res && res.success);
   await deps.logEvent({
     ...base,

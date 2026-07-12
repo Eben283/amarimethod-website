@@ -62,14 +62,17 @@ export const FLOW_1_QUIZ = deepFreeze({
   steps: [
     { after: "0d", kind: "email", template: "f1-email-1-quiz-results" },
     {
-      after: "+3d", kind: "branch", field: "primary_pain_location", test: "filled_not_other",
+      // field = GHL custom-field ID for Primary Pain Location (send-to-ghl.js FIELD_IDS) —
+      // send-time contact reads key by ID, same as Flow 2 (spec-05 finding D6: the name
+      // string would silently misroute every contact to the chronic fallback).
+      after: "+3d", kind: "branch", field: "vKZTVAG7601lgV8413du", test: "filled_not_other",
       yes: "f1-email-2", no: "f1-email-2-chronic",
     },
     { after: "+4d", kind: "email", template: "f1-email-3-real-reason" },
     {
       // 5-way pain-location branch. Map keys are the brief's value groups; exact GHL filter
       // values are a RESOLVE FIRST — adjust here once captured.
-      after: "+3d", kind: "branch_map", field: "primary_pain_location",
+      after: "+3d", kind: "branch_map", field: "vKZTVAG7601lgV8413du", // Primary Pain Location (by ID — see branch note above)
       map: {
         "Lower back": "f1-email-4a-spinal-wave", Hips: "f1-email-4a-spinal-wave",
         Neck: "f1-email-4b-power-posture", Shoulders: "f1-email-4b-power-posture", "Upper back": "f1-email-4b-power-posture",

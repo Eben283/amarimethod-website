@@ -80,3 +80,21 @@ describe("processStep — guards", () => {
     expect(d.logEvent).not.toHaveBeenCalled();
   });
 });
+
+describe("processStep — active-mode render failures (spec-05 regression)", () => {
+  const activeFlow = { flowKey: "initial-in-person", mode: "active" };
+
+  it("a THROWING renderMessage fails the step and never escapes (one bad template must not kill the sweep)", async () => {
+    const d = deps({ renderMessage: vi.fn().mockRejectedValue(new Error("template not built: one-hour-sms")) });
+    const out = await processStep({ enrollment: enrollment(), step: step(), flow: activeFlow }, d, NOW);
+    expect(out.outcome).toBe("failed");
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "failed");
+  });
+
+  it("a THROWING send is contained the same way", async () => {
+    const d = deps({ send: vi.fn().mockRejectedValue(new Error("network")) });
+    const out = await processStep({ enrollment: enrollment(), step: step(), flow: activeFlow }, d, NOW);
+    expect(out.outcome).toBe("failed");
+  });
+});

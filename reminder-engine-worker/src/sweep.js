@@ -40,8 +40,15 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
     return { outcome: "would_send" };
   }
 
-  const message = await deps.renderMessage(flow, step, enrollment);
-  const res = await deps.send(message);
+  // A throwing render/send fails THIS step only — one bad template must never kill the
+  // whole sweep (spec-05 finding; reachable only in active mode).
+  let res;
+  try {
+    const message = await deps.renderMessage(flow, step, enrollment);
+    res = await deps.send(message);
+  } catch (err) {
+    res = { success: false, error: String((err && err.message) || err) };
+  }
   const ok = !!(res && res.success);
   await deps.logEvent({
     ...base,

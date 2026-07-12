@@ -12,7 +12,7 @@ function deps(over = {}) {
   return {
     logEvent: vi.fn().mockResolvedValue(undefined),
     markStep: vi.fn().mockResolvedValue(undefined),
-    getContactFields: vi.fn().mockResolvedValue({ primary_pain_location: "Hips" }),
+    getContactFields: vi.fn().mockResolvedValue({ vKZTVAG7601lgV8413du: "Hips" }),
     renderMessage: vi.fn().mockResolvedValue({ channel: "email", contactId: "cont_1", subject: "s", html: "<p>b</p>" }),
     send: vi.fn().mockResolvedValue({ success: true, messageId: "m_1" }),
     ...over,
@@ -30,16 +30,16 @@ describe("resolveTemplate — branch semantics against contact fields", () => {
   });
 
   it("filled_not_other: filled and not Other → yes; empty or Other → no (the chronic fallback)", () => {
-    expect(resolveTemplate(branchDef, { primary_pain_location: "Hips" })).toBe("f1-email-2");
-    expect(resolveTemplate(branchDef, { primary_pain_location: "Other" })).toBe("f1-email-2-chronic");
-    expect(resolveTemplate(branchDef, { primary_pain_location: "" })).toBe("f1-email-2-chronic");
+    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "Hips" })).toBe("f1-email-2");
+    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "Other" })).toBe("f1-email-2-chronic");
+    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "" })).toBe("f1-email-2-chronic");
     expect(resolveTemplate(branchDef, {})).toBe("f1-email-2-chronic");
   });
 
   it("branch_map: maps the field value, falls to default for unknown values", () => {
-    expect(resolveTemplate(mapDef, { primary_pain_location: "Lower back" })).toBe("f1-email-4a-spinal-wave");
-    expect(resolveTemplate(mapDef, { primary_pain_location: "Elbows" })).toBe("f1-email-4d-hand-balancer");
-    expect(resolveTemplate(mapDef, { primary_pain_location: "somewhere else" })).toBe("f1-email-4c-spring-step");
+    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Lower back" })).toBe("f1-email-4a-spinal-wave");
+    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Elbows" })).toBe("f1-email-4d-hand-balancer");
+    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "somewhere else" })).toBe("f1-email-4c-spring-step");
   });
 
   it("branch with UNKNOWN fields (null) resolves to null — the caller decides what that means", () => {
@@ -70,7 +70,7 @@ describe("processStep — shadow mode (the beside-GHL safety guarantee)", () => 
     expect(out.outcome).toBe("would_send");
     expect(d.getContactFields).not.toHaveBeenCalled();
     expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({
-      detail: expect.objectContaining({ template: null, branch: "primary_pain_location", variants: ["f1-email-2", "f1-email-2-chronic"] }),
+      detail: expect.objectContaining({ template: null, branch: "vKZTVAG7601lgV8413du", variants: ["f1-email-2", "f1-email-2-chronic"] }),
     }));
   });
 
@@ -103,7 +103,7 @@ describe("processStep — active mode", () => {
   });
 
   it("resolves a branch against a FRESH contact read at send time (brief RED test c)", async () => {
-    const d = deps({ getContactFields: vi.fn().mockResolvedValue({ primary_pain_location: "Other" }) });
+    const d = deps({ getContactFields: vi.fn().mockResolvedValue({ vKZTVAG7601lgV8413du: "Other" }) });
     await processStep({ enrollment: enrollment(), step: branchStep, sequence: activeSeq }, d, NOW);
     expect(d.getContactFields).toHaveBeenCalledWith("cont_1");
     expect(d.renderMessage).toHaveBeenCalledWith(activeSeq, expect.anything(), expect.anything(), "f1-email-2-chronic");
@@ -115,6 +115,15 @@ describe("processStep — active mode", () => {
     expect(out.outcome).toBe("failed");
     expect(d.send).not.toHaveBeenCalled();
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 1, "failed");
+  });
+
+  it("a THROWING renderMessage fails the step and never escapes (one bad template must not kill the sweep)", async () => {
+    const d = deps({ renderMessage: vi.fn().mockRejectedValue(new Error("template not built: f1-email-1-quiz-results")) });
+    const out = await processStep({ enrollment: enrollment(), step: emailStep, sequence: activeSeq }, d, NOW);
+    expect(out.outcome).toBe("failed");
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 0, "failed");
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ outcome: "failed", detail: expect.objectContaining({ error: expect.stringContaining("template not built") }) }));
   });
 
   it("a send failure logs failed and never throws", async () => {
