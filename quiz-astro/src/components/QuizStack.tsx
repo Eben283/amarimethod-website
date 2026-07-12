@@ -81,7 +81,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
     index: 7, type: 'multi',
     question: 'What activities make your pain worse?',
     description: 'Select all activities that tend to worsen your pain.',
-    options: ['Walking/Running', 'Sitting', 'Standing for long periods', 'Bending forward', 'Bending backward', 'Twisting or rotating', 'Lifting or carrying objects', 'Going up/down stairs', 'Repetitive movements', 'Specific exercise/sports', 'Nothing specific — pain is constant'],
+    options: ['Walking/Running', 'Sitting', 'Standing for long periods', 'Bending forward', 'Bending backward', 'Twisting or rotating', 'Lifting or carrying objects', 'Going up/down stairs', 'Repetitive movements', 'Specific exercise/sports', 'Nothing specific, pain is constant'],
     required: true, otherOption: true,
     category: 'Aggravating Factors', questionNum: 8,
   },

@@ -102,9 +102,9 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               How the path works
             </p>
             <ol className="space-y-2.5 text-sm text-amari-charcoal font-sans leading-relaxed">
-              <li><span className="font-semibold">Today:</span> Book your first session — $225.</li>
-              <li><span className="font-semibold">After session 1:</span> Decide whether to continue. No pressure.</li>
-              <li><span className="font-semibold">Before session 2:</span> If you continue, upgrade for the difference — your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</li>
+              <li><span className="font-semibold">Today:</span> Book your first session ($225).</li>
+              <li><span className="font-semibold">After session 1:</span> Decide whether to continue.</li>
+              <li><span className="font-semibold">Before session 2:</span> If you continue, upgrade for the difference. Your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</li>
             </ol>
           </div>
 
@@ -161,7 +161,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
               "{testimonial.quote}"
             </p>
             <p className="text-sm text-amari-text-light text-center font-medium font-sans">
-              — {testimonial.name} · {testimonial.attribution}
+              {testimonial.name} · {testimonial.attribution}
             </p>
           </div>
         ) : null}
@@ -178,7 +178,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             <span>Schedule Free 15-Min Discovery Call<span className="arrow">→</span></span>
           </a>
           <p className="text-sm text-amari-text-light mt-3 font-sans">
-            No pressure. Just answers to your questions.
+            You'll get straight answers to your questions.
           </p>
         </div>
 

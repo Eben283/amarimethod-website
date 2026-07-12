@@ -569,7 +569,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           </div>
           <div className="examiner-body">
             <p>
-              What stood out in your answers: <em>{patternSignature.toLowerCase()}</em>. That means your body has built a chain around the original site — but the chain is <em>identifiable</em>, and your system hasn't built deep compensations yet.
+              What stood out in your answers: <em>{patternSignature.toLowerCase()}</em>. That means your body has built a chain around the original site. But the chain is <em>identifiable</em>, and your system hasn't built deep compensations yet.
             </p>
             <p>
               What I'd do next is simple: <em>book one session.</em> Not a package. Not a commitment. One. We find the specific imbalance creating your pattern and I show you the protocol that addresses it.

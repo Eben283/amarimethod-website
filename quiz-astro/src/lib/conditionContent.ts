@@ -362,7 +362,7 @@ const fallback = (displayName: string, normalized: string): ConditionContent => 
     {
       num: '03', flow: 'PATTERN → PAIN',
       title: 'Your pattern is identifiable.',
-      body: 'Garrett assesses how force moves through your whole body — not just the area that hurts — and finds the specific imbalance creating your symptoms.',
+      body: 'Garrett assesses how force moves through your whole body, beyond the area that hurts, and finds the specific imbalance creating your symptoms.',
     },
   ],
 });

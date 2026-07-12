@@ -34,7 +34,7 @@ const ContactInfoForm = ({
   return (
     <div className="quiz-card">
       <h2 className="text-2xl font-serif mb-3">Your Pain Pattern Report Is Ready</h2>
-      <p className="mb-6 text-gray-600">One last step — enter your email to see your pattern signature, recovery score, and personalized insights.</p>
+      <p className="mb-6 text-gray-600">One last step: enter your email to see your pattern signature, recovery score, and personalized insights.</p>
       
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
