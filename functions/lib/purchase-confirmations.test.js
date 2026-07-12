@@ -72,6 +72,16 @@ describe("confirmationForSeries — verbatim invoice-confirmation copy, branch o
     expect(confirmationForSeries("")).toBeNull();
     expect(confirmationForSeries(null)).toBeNull();
   });
+
+  it("an 8-UPGRADE order gets the verified upgrade variant with the initial-credit line (MASTER C2b, confirmed live 2026-07-12)", () => {
+    const t = confirmationForSeries("8-session", "8-upgrade");
+    expect(t.key).toBe("confirm-8-upgrade");
+    expect(t.body).toContain("your initial session credit has been applied");
+    expect(t.body).toContain("Living Practice access is included");
+    // unknown/absent classification falls back to the seriesType template
+    expect(confirmationForSeries("8-session", "8-series").key).toBe("confirm-8-session");
+    expect(confirmationForSeries("8-session").key).toBe("confirm-8-session");
+  });
 });
 
 describe("recordSeriesPurchase — the one seam both webhooks call", () => {

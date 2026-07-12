@@ -63,12 +63,43 @@ Amari Method`,
   }),
 });
 
+// Classification-specific variants override the seriesType default. The 8-upgrade body is
+// VERBATIM from GHL-WORKFLOWS-MASTER.md C2b, confirmed live 2026-07-12 (builder AI read) —
+// the upgrade variant carries the initial-credit line the plain series email lacks. The live
+// body's em-dash is ported as-is; any de-slop is a separate copy change, never silent.
+// RESOLVE FIRST (ih09 / same builder pass): the 4-upgrade + both plain-series workflows'
+// live bodies — until then those sources fall back to the seriesType templates above.
+const CLASSIFICATION_TEMPLATES = Object.freeze({
+  "8-upgrade": Object.freeze({
+    key: "confirm-8-upgrade",
+    from: FROM,
+    subject: "Your 8-Session Series is Confirmed, {{contact.first_name}}",
+    preheader: "Here's what's next.",
+    body: `Hi {{contact.first_name}},
+
+You're all set. Your 8-Session Series is confirmed — your initial session credit has been applied, and your Living Practice access is included.
+
+Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
+
+[Access Your Portal]  → https://www.amarimethod.com/portal/
+
+If you have any questions, reply here or call us at (628) 877-7673.
+
+Amari Method`,
+  }),
+});
+
 /**
- * The confirmation template for a reconciled series type, or null (Single/unknown → the
- * documented silent fall-through). Pure.
+ * The confirmation template for a reconciled purchase: the classification variant when one
+ * exists, else the seriesType default, else null (Single/unknown → the documented silent
+ * fall-through). Pure.
  */
-export function confirmationForSeries(seriesType) {
-  return TEMPLATES[String(seriesType ?? "")] || null;
+export function confirmationForSeries(seriesType, classification) {
+  return (
+    CLASSIFICATION_TEMPLATES[String(classification ?? "")] ||
+    TEMPLATES[String(seriesType ?? "")] ||
+    null
+  );
 }
 
 function changesOf(res) {
@@ -84,7 +115,7 @@ function changesOf(res) {
  * @param {{contactId, seriesType, ref, source}} purchase - ref must be unique per order/invoice
  * @returns {{ok, skipped?, offerCancelled?, confirmation?, error?}}
  */
-export async function recordSeriesPurchase(context, { contactId, seriesType, ref, source }, nowMs) {
+export async function recordSeriesPurchase(context, { contactId, seriesType, classification, ref, source }, nowMs) {
   const db = context.env && context.env.AUTOMATION_DB;
   if (!db) return { ok: true, skipped: "no-binding" };
 
@@ -97,7 +128,7 @@ export async function recordSeriesPurchase(context, { contactId, seriesType, ref
       });
     }
 
-    const template = confirmationForSeries(seriesType);
+    const template = confirmationForSeries(seriesType, classification);
     const status = template ? (MODE === "active" ? "sent" : "would_send") : "no_template";
 
     // The ledger row IS the idempotency claim: one confirmation per ref, ever.

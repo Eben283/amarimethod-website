@@ -422,6 +422,7 @@ export async function onRequestPost(context) {
       const seam = await recordSeriesPurchase(context, {
         contactId: sanitizedContactId,
         seriesType: pkg.seriesType,
+        classification: pkg.classification,
         ref: `invoice:${matchedInvoiceId}`,
         source: "invoice-webhook",
       }, Date.now());
