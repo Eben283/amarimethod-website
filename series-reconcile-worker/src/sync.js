@@ -19,6 +19,7 @@ import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 import { ghlGet, ghlPut, getOrderDetail, LOCATION_ID } from "./ghl.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
+import { NON_JOURNEY_PATTERN } from "../../functions/lib/journey-classification.js";
 
 const FIELD_IDS = {
   series_type: GHL_FIELD_IDS.series_type,
@@ -53,17 +54,13 @@ const FIELD_IDS = {
 // sessions_remaining / series_type / lock by id itself (readField) instead.
 const LEDGER_FIELD_DEFS = { session_prepaid: FIELD_IDS.session_prepaid };
 
-// Lifetime journey patterns. Mirrors NON_JOURNEY_PATTERNS in
-// functions/api/staff-mark-attended.js (2026-05-29 contract).
-// Past appointments excluded from the lifetime counter:
-//   - Discovery / consultation calls (pre-session phone chats — not bodywork)
-//   - Pain assessment (quiz/intake — not bodywork)
-//   - 15-minute appointments (discovery variant)
-// Entrainments AND Partner Initial sessions DO count: per Eben's 2026-05-29
-// briefing the lifetime number is "real bodywork the client has done",
-// regardless of how it was billed (entrainment = $90 separate, partner-init
-// = comp). The package math (sessions_remaining) is what tracks billing.
-const NON_JOURNEY_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+// Lifetime journey exclusion pattern (discovery/consult calls, pain assessments,
+// 15-minute variants) is the single source in functions/lib/journey-classification.js,
+// imported above. Wrangler bundles it transitively, so this worker shares the exact
+// regex the portal, staff app, and mark-attended use — no hand-kept copy to drift.
+// Entrainments AND Partner Initial sessions DO count toward lifetime: per Eben's
+// 2026-05-29 briefing the number is "real bodywork the client has done", regardless
+// of how it was billed. The package math (sessions_remaining) is what tracks billing.
 const LIFETIME_STATUSES = new Set(["completed", "showed", "confirmed"]);
 
 const MANUAL_EDIT_DEBOUNCE_MS = 5 * 60 * 1000; // 5 minutes
@@ -136,7 +133,7 @@ function computeLifetimeCount(appointments) {
     // Past-only — drop future confirmed.
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = (a.title || "") + " " + (a.calendarName || "");
-    return !NON_JOURNEY_PATTERNS.test(title);
+    return !NON_JOURNEY_PATTERN.test(title);
   }).length;
 }
 
