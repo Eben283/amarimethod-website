@@ -1,0 +1,23 @@
+name = "reminder-engine"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Sweep every 5 minutes: fires (or shadow-logs) any step whose due_at has passed.
+[triggers]
+crons = ["*/5 * * * *"]
+
+# D1 spine (enrollments + steps + automation_events). Create + seed once:
+#   npx wrangler d1 create amari-reminder-engine   # paste the returned id below
+#   npx wrangler d1 execute amari-reminder-engine --remote --file=schema.sql
+[[d1_databases]]
+binding = "REMINDER_DB"
+database_name = "amari-reminder-engine"
+database_id = "REPLACE_AFTER_wrangler_d1_create"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+# Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
+#   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
+# Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for the send adapter's token access.

@@ -11,6 +11,7 @@ on:
       - 'functions/**'
       - 'series-reconcile-worker/**'
       - 'daily-audit-worker/**'
+      - 'reminder-engine-worker/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/tests.yml'
