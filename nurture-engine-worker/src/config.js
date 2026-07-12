@@ -70,19 +70,29 @@ export const FLOW_1_QUIZ = deepFreeze({
     },
     { after: "+4d", kind: "email", template: "f1-email-3-real-reason" },
     {
-      // 5-way pain-location branch. Map keys are the brief's value groups; exact GHL filter
-      // values are a RESOLVE FIRST — adjust here once captured.
-      after: "+3d", kind: "branch_map", field: "vKZTVAG7601lgV8413du", // Primary Pain Location (by ID — see branch note above)
+      // 5-way pain-location branch — filter values EXTRACTED LIVE 2026-07-12 (is-any-of):
+      // note "Ankles/Feet" and "Wrists/Hands" are single composite quiz values, and the
+      // fallback (None) branch sends its own 4c variant with a "chronic pain" subject.
+      after: "+3d", kind: "branch_map", field: "vKZTVAG7601lgV8413du", // Primary Pain Location (by ID)
       map: {
         "Lower back": "f1-email-4a-spinal-wave", Hips: "f1-email-4a-spinal-wave",
         Neck: "f1-email-4b-power-posture", Shoulders: "f1-email-4b-power-posture", "Upper back": "f1-email-4b-power-posture",
-        Knees: "f1-email-4c-spring-step", Ankles: "f1-email-4c-spring-step", Feet: "f1-email-4c-spring-step",
-        Wrists: "f1-email-4d-hand-balancer", Hands: "f1-email-4d-hand-balancer", Elbows: "f1-email-4d-hand-balancer",
+        Knees: "f1-email-4c-spring-step", "Ankles/Feet": "f1-email-4c-spring-step",
+        "Wrists/Hands": "f1-email-4d-hand-balancer", Elbows: "f1-email-4d-hand-balancer",
       },
-      default: "f1-email-4c-spring-step",
+      default: "f1-email-4c-chronic",
     },
-    { after: "+8d", kind: "email", template: "f1-email-5-skeptical" }, // label-derived wait
-    { after: "+10d", kind: "email", template: "f1-email-6-when-ready" }, // label-derived wait
+    // Emails 5 and 6 fire 2 DAYS apart (extracted live 2026-07-12 — the old +8d/+10d were
+    // stale label-derived guesses), and each has a located vs chronic SUBJECT variant
+    // matching the same filled_not_other split as Email 2.
+    {
+      after: "+2d", kind: "branch", field: "vKZTVAG7601lgV8413du", test: "filled_not_other",
+      yes: "f1-email-5-skeptical", no: "f1-email-5-chronic",
+    },
+    {
+      after: "+2d", kind: "branch", field: "vKZTVAG7601lgV8413du", test: "filled_not_other",
+      yes: "f1-email-6-when-ready", no: "f1-email-6-chronic",
+    },
   ],
   exits: [
     // "Remove from quiz submitted workflow" — a discovery booking on either calendar. GHL

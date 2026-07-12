@@ -39,7 +39,7 @@ describe("resolveTemplate — branch semantics against contact fields", () => {
   it("branch_map: maps the field value, falls to default for unknown values", () => {
     expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Lower back" })).toBe("f1-email-4a-spinal-wave");
     expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Elbows" })).toBe("f1-email-4d-hand-balancer");
-    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "somewhere else" })).toBe("f1-email-4c-spring-step");
+    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "somewhere else" })).toBe("f1-email-4c-chronic");
   });
 
   it("branch with UNKNOWN fields (null) resolves to null — the caller decides what that means", () => {

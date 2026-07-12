@@ -51,10 +51,15 @@ describe("Flow 1 — quiz nurture", () => {
     }
   });
 
-  it("has the 6-email step sequence with the two pain-location branches", () => {
+  it("has the 6-email step sequence: two pain-location branches plus located/chronic variants on 5 and 6", () => {
     expect(FLOW_1_QUIZ.steps).toHaveLength(6);
-    expect(FLOW_1_QUIZ.steps[1].kind).toBe("branch");
-    expect(FLOW_1_QUIZ.steps[3].kind).toBe("branch_map");
+    expect(FLOW_1_QUIZ.steps.map((s) => s.kind)).toEqual(["email", "branch", "email", "branch_map", "branch", "branch"]);
+    // extracted live 2026-07-12: composite quiz values are single map keys, waits are 2d
+    expect(FLOW_1_QUIZ.steps[3].map["Ankles/Feet"]).toBe("f1-email-4c-spring-step");
+    expect(FLOW_1_QUIZ.steps[3].map["Wrists/Hands"]).toBe("f1-email-4d-hand-balancer");
+    expect(FLOW_1_QUIZ.steps[3].default).toBe("f1-email-4c-chronic");
+    expect(FLOW_1_QUIZ.steps[4].after).toBe("+2d");
+    expect(FLOW_1_QUIZ.steps[5].after).toBe("+2d");
   });
 });
 

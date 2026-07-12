@@ -41,7 +41,7 @@ describe("enroll — scheduling is keyed off ENROLLMENT time, offsets cumulative
     expect(e.steps[1].template).toBeNull(); // branch
     expect(e.steps[3].template).toBeNull(); // branch_map
     expect(e.steps.map((s) => s.dueAt)).toEqual([
-      NOW, NOW + 3 * DAY, NOW + 7 * DAY, NOW + 10 * DAY, NOW + 18 * DAY, NOW + 28 * DAY,
+      NOW, NOW + 3 * DAY, NOW + 7 * DAY, NOW + 10 * DAY, NOW + 12 * DAY, NOW + 14 * DAY,
     ]);
   });
 
