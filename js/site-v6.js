@@ -30,7 +30,7 @@
      would type, not internal names. */
   var PAGES = [
     { t: 'Home', u: '/' },
-    { t: 'Our Method — how it works', u: '/how-it-works' },
+    { t: 'Our Method: How It Works', u: '/how-it-works' },
     { t: 'Your First Visit', u: '/first-visit' },
     { t: 'Sessions & Pricing', u: '/booking' },
     { t: 'Client Stories', u: '/stories' },
@@ -57,9 +57,9 @@
     { t: 'Journal', u: '/blog' },
     { t: 'Back Pain from Sitting', u: '/blog-back-pain-from-sitting' },
     { t: 'Sciatica Relief', u: '/blog-sciatica-relief' },
-    { t: 'Tennis Elbow — The Elbow Reset', u: '/blog-elbow-reset-tennis-elbow' },
-    { t: 'TMJ Relief — The Jaw Align', u: '/blog-jaw-align-tmj-relief' },
-    { t: 'Carpal Tunnel — The Hand Balancer', u: '/blog-hand-balancer-carpal-tunnel' },
+    { t: 'Tennis Elbow: The Elbow Reset', u: '/blog-elbow-reset-tennis-elbow' },
+    { t: 'TMJ Relief: The Jaw Align', u: '/blog-jaw-align-tmj-relief' },
+    { t: 'Carpal Tunnel: The Hand Balancer', u: '/blog-hand-balancer-carpal-tunnel' },
     { t: 'The Active Bridge', u: '/blog-active-bridge-strength' },
     { t: 'The Passive Bridge', u: '/blog-passive-bridge-mobility' },
     { t: 'The Power Posture', u: '/blog-power-posture-shoulder-blades' },

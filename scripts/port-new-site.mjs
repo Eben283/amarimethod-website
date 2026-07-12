@@ -142,8 +142,8 @@ function transform(html, target) {
   // 2. asset paths
   out = out.replaceAll('mockup-assets/', '/images/v6/');
   out = out.replaceAll('amari-photos/', '/images/photos/');
-  out = out.replace(/href="amari-mockup\.css"/g, 'href="/css/site-v6.css"');
-  out = out.replace(/src="amari-mockup\.js"/g, 'src="/js/site-v6.js"');
+  out = out.replace(/href="amari-mockup\.css"/g, 'href="/css/site-v6.css?v=3"');
+  out = out.replace(/src="amari-mockup\.js"/g, 'src="/js/site-v6.js?v=3"');
 
   // 3. absolute -> relative
   out = out.replaceAll('https://www.amarimethod.com/quiz/', '/quiz/');
