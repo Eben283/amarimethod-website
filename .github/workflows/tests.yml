@@ -12,6 +12,7 @@ on:
       - 'series-reconcile-worker/**'
       - 'daily-audit-worker/**'
       - 'reminder-engine-worker/**'
+      - 'nurture-engine-worker/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/tests.yml'

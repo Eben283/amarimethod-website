@@ -6,12 +6,15 @@ compatibility_date = "2024-09-23"
 [triggers]
 crons = ["*/5 * * * *"]
 
-# D1 spine (enrollments + steps + automation_events). Create + seed once:
-#   npx wrangler d1 create amari-reminder-engine   # paste the returned id below
-#   npx wrangler d1 execute amari-reminder-engine --remote --file=schema.sql
+# SHARED automation D1 spine (renamed from amari-reminder-engine before any deploy: the
+# nurture engine lives in the same database so automation_events is one log — DASHBOARD-PLAN).
+# Create ONCE (either worker dir), then apply BOTH workers' schema.sql:
+#   npx wrangler d1 create amari-automation   # paste the returned id here AND in
+#                                             # nurture-engine-worker/wrangler.toml
+#   npx wrangler d1 execute amari-automation --remote --file=schema.sql   (run in each worker dir)
 [[d1_databases]]
 binding = "REMINDER_DB"
-database_name = "amari-reminder-engine"
+database_name = "amari-automation"
 database_id = "REPLACE_AFTER_wrangler_d1_create"
 
 [observability]
