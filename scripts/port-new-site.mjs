@@ -163,7 +163,86 @@ function transform(html, target) {
     out = out.replace('/images/v6/real/putting-it-all-together.jpg', '/images/photos/firstvisit-doorway-woman-wht48.jpg');
   }
 
-  // 6. head: title / description / canonical from the replaced live page
+  // 6. wire the remaining CTA placeholders to their real targets
+  const CTA_FIXES = [
+    ['<a href="#" class="btn">Book your first session</a>', '<a href="/book/initial-in-person" class="btn">Book your first session</a>'],
+    ['<a href="#" class="btn btn-outline">Book your first session</a>', '<a href="/book/initial-in-person" class="btn btn-outline">Book your first session</a>'],
+    ['<a href="#" class="btn btn-outline">Take the free assessment</a>', '<a href="/quiz/" class="btn btn-outline">Take the free assessment</a>'],
+    ['<a href="#" class="btn">Book Your Virtual Session</a>', '<a href="/book/initial-virtual" class="btn">Book Your Virtual Session</a>'],
+    ['<a href="#" class="btn">Book Your In-Person Session</a>', '<a href="/book/initial-in-person" class="btn">Book Your In-Person Session</a>'],
+    ['<a href="#" class="btn">Book the free call</a>', '<a href="/book/discovery-call" class="btn">Book the free call</a>'],
+    ['<a href="#" class="btn">Book a free 15-minute call</a>', '<a href="/book/discovery-call" class="btn">Book a free 15-minute call</a>'],
+    ['<a href="#" class="btn">Explore the Practice</a>', '<a href="/living-practice" class="btn">Explore the Practice</a>'],
+    ['<a href="#" class="btn">Watch a Sample</a>', '<a href="/living-practice" class="btn">Watch a Sample</a>'],
+    ['<a href="#">See virtual + in-person options</a>', '<a href="/in-person-sessions">See virtual + in-person options</a>'],
+    // pricing tiers: go straight to the calendar instead of scrolling to the CTA band
+    ['<a href="#appt" class="btn btn-outline">Book the Call</a>', '<a href="/book/discovery-call" class="btn btn-outline">Book the Call</a>'],
+    ['<a href="#appt" class="btn btn-outline">Start This Series</a>', '<a href="/book/initial-in-person" class="btn btn-outline">Start This Series</a>'],
+    ['<a href="#appt" class="btn">Start This Series</a>', '<a href="/book/initial-in-person" class="btn">Start This Series</a>'],
+    ['<a href="#appt" class="btn btn-outline">Book from Portal</a>', '<a href="/portal/" class="btn btn-outline">Book from Portal</a>'],
+    ['<a href="#appt" class="btn">Book Now</a>', '<a href="/book/initial-in-person" class="btn">Book Now</a>'],
+    ['<a href="#appt" class="btn btn-outline">Explore the Practice</a>', '<a href="/living-practice" class="btn btn-outline">Explore the Practice</a>'],
+  ];
+  for (const [from, to] of CTA_FIXES) out = out.replaceAll(from, to);
+
+  // blog index lists every post already; the Load More button is decorative
+  out = out.replace(/\s*<div class="load-more reveal">\s*<a href="#" class="btn">Load More Posts<\/a>\s*<\/div>/, '');
+
+  // share buttons -> real share intents for this page's URL
+  const shareUrl = encodeURIComponent(`https://www.amarimethod.com${target.url === '/' ? '' : target.url}`);
+  out = out.replace(/<a href="#" aria-label="Share on X">/g,
+    `<a href="https://x.com/intent/post?url=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on X">`);
+  out = out.replace(/<a href="#" aria-label="Share on Facebook">/g,
+    `<a href="https://www.facebook.com/sharer/sharer.php?u=${shareUrl}" target="_blank" rel="noopener" aria-label="Share on Facebook">`);
+
+  // 7. related-content cards still on "#": resolve by the card's own title text.
+  // Order matters: more specific phrases first.
+  const KEYWORDS = [
+    // teaser cards for articles that don't exist yet -> nearest real page
+    ['when you sit', '/blog-back-pain-from-sitting'],
+    ['compression starts', '/blog-sciatica-relief'],
+    ['knee problem', '/knee-pain-san-francisco'],
+    ['pelvis', '/hip-pain-san-francisco'],
+    ['frozen shoulder', '/shoulder-pain-san-francisco'],
+    ['shoulder-blade problem', '/neck-pain-san-francisco'],
+    ['vertical drop', '/blog-vertical-drop-spine-decompression'],
+    ['passive bridge', '/blog-passive-bridge-mobility'],
+    ['active bridge', '/blog-active-bridge-strength'],
+    ['spinal wave', '/blog-spinal-wave-gentle-decompression'],
+    ['spring step', '/blog-spring-step-calf-ankle'],
+    ['power posture', '/blog-power-posture-shoulder-blades'],
+    ['suspension squat', '/blog-suspension-squat-hanging-exercises'],
+    ['hanging', '/blog-suspension-squat-hanging-exercises'],
+    ['hand balancer', '/blog-hand-balancer-carpal-tunnel'],
+    ['carpal', '/blog-hand-balancer-carpal-tunnel'],
+    ['elbow', '/blog-elbow-reset-tennis-elbow'],
+    ['jaw', '/blog-jaw-align-tmj-relief'],
+    ['tmj', '/blog-jaw-align-tmj-relief'],
+    ['psoas', '/blog-why-psoas-tightens-back'],
+    ['myofascial', '/blog-why-myofascial-release-doesnt-work'],
+    ['deep tissue', '/blog-why-deep-tissue-doesnt-last'],
+    ['stretching', '/blog-stretching-not-helping'],
+    ['physical therapy', '/amari-method-vs-physical-therapy'],
+    ['pt, bodywork', '/amari-method-vs-physical-therapy'],
+    ['sitting', '/blog-back-pain-from-sitting'],
+    ['desk', '/blog-back-pain-from-sitting'],
+    ['sciatica', '/blog-sciatica-relief'],
+    ['all together', '/blog-putting-it-all-together'],
+    ['plantar', '/blog-spring-step-calf-ankle'],
+  ];
+  const unresolved = [];
+  out = out.replace(/<a\b([^>]*)href="#"([^>]*)>([\s\S]*?)<\/a>/g, (whole, pre, post, inner) => {
+    const titleMatch = inner.match(/<h[3-6][^>]*>([\s\S]*?)<\/h[3-6]>/);
+    const text = (titleMatch ? titleMatch[1] : inner).replace(/<[^>]+>/g, ' ').toLowerCase();
+    for (const [kw, url] of KEYWORDS) {
+      if (text.includes(kw)) return `<a${pre}href="${url}"${post}>${inner}</a>`;
+    }
+    unresolved.push(text.trim().replace(/\s+/g, ' ').slice(0, 60));
+    return whole;
+  });
+  counts.unresolved = unresolved;
+
+  // 8. head: title / description / canonical from the replaced live page
   const oldPath = join(REPO, target.file);
   const old = existsSync(oldPath) ? extractMeta(readFileSync(oldPath, 'utf8')) : {};
   const fallback = NEW_PAGE_META[target.file] || {};
@@ -199,5 +278,6 @@ for (const [basename, target] of Object.entries(PAGES)) {
   totalPlaceholders += counts.placeholders;
   const flag = counts.placeholders ? `  <-- ${counts.placeholders} href="#" left` : '';
   console.log(`${target.file}${flag}`);
+  for (const u of counts.unresolved) console.log(`    UNRESOLVED: "${u}"`);
 }
 console.log(`\n${Object.keys(PAGES).length} pages written; ${totalPlaceholders} placeholder links remain for the manual pass.`);
