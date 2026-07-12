@@ -3,6 +3,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { shouldScheduleUpgradeOffer, scheduleUpgradeOffer, appendAutomationEvent } from "../lib/upgrade-offer.js";
+import { maybeSendLpOnboarding } from "../lib/lp-onboarding.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
@@ -418,6 +419,23 @@ export async function onRequestPost(context) {
         }
       } catch (e) {
         console.error(`[staff-mark-attended] upgrade-offer schedule failed (non-fatal): ${e.message}`);
+      }
+    }
+
+    // ── Living Practice Onboarding listener (NON-BLOCKING — GHL exit Unit C) ──
+    // This decrement is the only sessions_remaining writer that can produce 3→2, the GHL
+    // workflow's fire condition (8-session clients only). Send-once per contact is enforced
+    // inside the lib; shadow mode logs would_send and nothing leaves. Never affects the
+    // attendance result.
+    if (drawsFromPackage && context.env.AUTOMATION_DB) {
+      try {
+        await maybeSendLpOnboarding(context, {
+          contactId,
+          seriesType: getCustomField(contact, "series_type", fieldDefs),
+          newRemaining,
+        }, Date.now());
+      } catch (e) {
+        console.error(`[staff-mark-attended] lp-onboarding listener failed (non-fatal): ${e.message}`);
       }
     }
 

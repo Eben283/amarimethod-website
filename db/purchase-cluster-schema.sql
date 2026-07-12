@@ -14,6 +14,14 @@ CREATE TABLE IF NOT EXISTS upgrade_offer_timers (
 );
 CREATE INDEX IF NOT EXISTS idx_offer_due ON upgrade_offer_timers (status, due_at);
 
+-- Living Practice Onboarding send-once ledger — one send per CONTACT ever (the reconcile
+-- worker self-heals sessions_remaining, so the value can pass through 2 more than once).
+CREATE TABLE IF NOT EXISTS lp_onboarding_sends (
+  contact_id TEXT PRIMARY KEY,
+  status     TEXT NOT NULL DEFAULT 'would_send', -- would_send | sending | sent | failed
+  ts         INTEGER NOT NULL
+);
+
 -- Purchase confirmation ledger — doubles as the idempotency claim (PK ref: one confirmation
 -- per order/invoice, webhook retries can't double-send) and the observability row.
 CREATE TABLE IF NOT EXISTS purchase_confirmations (
