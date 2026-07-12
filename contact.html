@@ -155,14 +155,14 @@
         <span class="label">Send a note</span>
         <h2>Tell us what's going on.</h2>
         <p class="lead">A line about what brought you here helps Garrett point you in the right direction before your first session. Fill in what you like and we'll take it from there.</p>
-        <form class="cf" onsubmit="return false">
+        <form class="cf" id="contactform">
           <div class="field">
             <label for="cf-name">Name</label>
-            <input id="cf-name" type="text" name="name" placeholder="Your name" autocomplete="name">
+            <input id="cf-name" type="text" name="name" required placeholder="Your name" autocomplete="name">
           </div>
           <div class="field">
             <label for="cf-email">Email</label>
-            <input id="cf-email" type="email" name="email" placeholder="you@example.com" autocomplete="email">
+            <input id="cf-email" type="email" name="email" required placeholder="you@example.com" autocomplete="email">
           </div>
           <div class="field">
             <label for="cf-phone">Phone <span class="opt">(optional)</span></label>
@@ -170,11 +170,43 @@
           </div>
           <div class="field">
             <label for="cf-msg">Message</label>
-            <textarea id="cf-msg" name="message" placeholder="What's bothering you, and what you're hoping to work on."></textarea>
+            <textarea id="cf-msg" name="message" required placeholder="What's bothering you, and what you're hoping to work on."></textarea>
           </div>
           <button type="submit" class="btn">Send message</button>
-          <p class="note">This is a preview form and does not send yet. To reach us today, book a session or the free call above.</p>
+          <p class="note" id="cf-status" aria-live="polite"></p>
         </form>
+        <script>
+          document.getElementById('contactform').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var form = e.target;
+            var status = document.getElementById('cf-status');
+            var btn = form.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            status.textContent = '';
+            fetch('/api/contact-message', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: form.name.value,
+                email: form.email.value,
+                phone: form.phone.value,
+                message: form.message.value
+              })
+            }).then(function (res) {
+              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            }).then(function (r) {
+              if (!r.ok) throw new Error(r.data && r.data.error);
+              form.reset();
+              btn.disabled = false;
+              status.textContent = 'Thanks, your message came through. If it’s time-sensitive, the free 15-minute call above is the fastest route.';
+            }).catch(function (err) {
+              btn.disabled = false;
+              status.textContent = (err && err.message && err.message !== 'undefined')
+                ? err.message
+                : 'That didn’t send. Email hello@amarimethod.com and it will reach us directly.';
+            });
+          });
+        </script>
       </div>
 
       <aside class="panel reveal">
