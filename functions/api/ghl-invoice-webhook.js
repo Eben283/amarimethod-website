@@ -40,6 +40,7 @@
 // 12. Store invoice id in KV for idempotency
 
 import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
+import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
@@ -400,6 +401,23 @@ export async function onRequestPost(context) {
         JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
       );
+    }
+
+    // ── 7c. Purchase-cluster seam (NON-BLOCKING — GHL exit Unit C) ──
+    // Invoice-based series purchases historically left the Post-Initial Upgrade Offer wait
+    // running (the KNOWN GAP the invoice-series-purchased tag round-trip was built to close);
+    // the code-side timer cancels here directly, plus the confirmation record (shadow:
+    // would_send only). No-ops without AUTOMATION_DB; never throws.
+    if (pkg.seriesType) {
+      const seam = await recordSeriesPurchase(context, {
+        contactId: sanitizedContactId,
+        seriesType: pkg.seriesType,
+        ref: `invoice:${matchedInvoiceId}`,
+        source: "invoice-webhook",
+      }, Date.now());
+      if (!seam.ok) {
+        console.error(`[ghl-invoice-webhook] purchase-cluster seam failed (non-fatal): ${seam.error}`);
+      }
     }
 
     console.log(

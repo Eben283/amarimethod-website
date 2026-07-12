@@ -2,6 +2,7 @@
 // Marks an appointment as "showed" and updates session counts in GHL
 
 import { ghlFetch } from "../lib/ghl.js";
+import { shouldScheduleUpgradeOffer, scheduleUpgradeOffer, appendAutomationEvent } from "../lib/upgrade-offer.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
@@ -391,6 +392,32 @@ export async function onRequestPost(context) {
         } catch (e) {
           console.error(`[staff-mark-attended] debit-flag write failed: ${e.message}`);
         }
+      }
+    }
+
+    // ── Post-Initial Upgrade Offer schedule (NON-BLOCKING — GHL exit Unit C) ──
+    // sessions_completed crossing 0→1 is the GHL workflow's trigger; the code-side timer
+    // shadows it (3-day wait in the shared automation D1, swept hourly by the reconcile
+    // worker, cancelled by any series/upgrade purchase). Guard evaluated on the contact we
+    // already fetched. No-ops without the AUTOMATION_DB binding; any failure is logged and
+    // swallowed — it must NEVER affect the attendance result.
+    if (countsTowardLifetime && currentCompleted === 0 && newCompleted === 1 && context.env.AUTOMATION_DB) {
+      try {
+        const eligible = shouldScheduleUpgradeOffer({
+          seriesType: getCustomField(contact, "series_type", fieldDefs),
+          tags: contact.tags || [],
+        });
+        if (eligible) {
+          const { created } = await scheduleUpgradeOffer(context.env.AUTOMATION_DB, contactId, Date.now());
+          if (created) {
+            await appendAutomationEvent(context.env.AUTOMATION_DB, {
+              ts: Date.now(), flowKey: "upgrade-offer", contactId,
+              action: "scheduled", outcome: "scheduled", detail: { via: "staff-mark-attended" },
+            });
+          }
+        }
+      } catch (e) {
+        console.error(`[staff-mark-attended] upgrade-offer schedule failed (non-fatal): ${e.message}`);
       }
     }
 
