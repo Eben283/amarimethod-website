@@ -82,6 +82,14 @@ describe("confirmationForSeries — verbatim invoice-confirmation copy, branch o
     expect(confirmationForSeries("8-session", "8-series").key).toBe("confirm-8-session");
     expect(confirmationForSeries("8-session").key).toBe("confirm-8-session");
   });
+
+  it("a 4-UPGRADE order gets its verified variant: credit line present, NO Living Practice (MASTER C1b, confirmed live 2026-07-12)", () => {
+    const t = confirmationForSeries("4-session", "4-upgrade");
+    expect(t.key).toBe("confirm-4-upgrade");
+    expect(t.subject).toBe("Your 4-Session Series is confirmed, {{contact.first_name}}");
+    expect(t.body).toContain("your initial session credit has been applied");
+    expect(t.body).not.toMatch(/Living Practice/);
+  });
 });
 
 describe("recordSeriesPurchase — the one seam both webhooks call", () => {

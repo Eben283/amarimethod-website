@@ -67,9 +67,26 @@ Amari Method`,
 // VERBATIM from GHL-WORKFLOWS-MASTER.md C2b, confirmed live 2026-07-12 (builder AI read) —
 // the upgrade variant carries the initial-credit line the plain series email lacks. The live
 // body's em-dash is ported as-is; any de-slop is a separate copy change, never silent.
-// RESOLVE FIRST (ih09 / same builder pass): the 4-upgrade + both plain-series workflows'
-// live bodies — until then those sources fall back to the seriesType templates above.
+// RESOLVE FIRST (same builder pass): both plain-series workflows' live bodies — until then
+// those sources fall back to the seriesType templates above.
 const CLASSIFICATION_TEMPLATES = Object.freeze({
+  "4-upgrade": Object.freeze({
+    key: "confirm-4-upgrade",
+    from: FROM,
+    subject: "Your 4-Session Series is confirmed, {{contact.first_name}}",
+    preheader: "Here's what's next.",
+    body: `Hi {{contact.first_name}},
+
+You're all set. Your 4-Session Series is confirmed — your initial session credit has been applied.
+
+Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
+
+[Access Your Portal]  → https://www.amarimethod.com/portal/
+
+If you have any questions, reply here or call us at (628) 877-7673.
+
+Amari Method`,
+  }),
   "8-upgrade": Object.freeze({
     key: "confirm-8-upgrade",
     from: FROM,
