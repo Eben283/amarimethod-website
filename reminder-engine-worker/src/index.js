@@ -15,6 +15,7 @@
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
 import { handleWebhook } from "./webhook.js";
+import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -26,6 +27,16 @@ export default {
 
   async fetch(request, env) {
     const url0 = new URL(request.url);
+    // The watch dashboard: a public shell (no data) + a data route gated by its own
+    // read-only DASHBOARD_KEY — not the worker bearer (that secret gates GHL-write routes
+    // elsewhere and doesn't belong in a browser).
+    if (request.method === "GET" && url0.pathname === "/dashboard") {
+      return handleDashboardPage();
+    }
+    if (request.method === "GET" && url0.pathname === "/dashboard-data") {
+      return handleDashboardData(request, env);
+    }
+
     // GHL appointment ingest — its own auth scheme (X-Webhook-Secret, checked inside),
     // NOT the bearer gate: GHL webhook actions can't send Authorization headers.
     if (request.method === "POST" && url0.pathname === "/webhook") {
