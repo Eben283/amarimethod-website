@@ -38,12 +38,11 @@ database_id = "8c66fe4c-bc3a-4a2d-905c-6f18f20f6faa"
 # SHARED automation D1 — upgrade-offer timers swept hourly by this worker (GHL exit
 # Unit C; schedule/cancel side lives in functions/lib/upgrade-offer.js). Same database as
 # reminder-engine-worker + nurture-engine-worker. Until `wrangler d1 create amari-automation`
-# runs and the id is pasted here (and in both engine wrangler.tomls), leave this block
-# COMMENTED OUT — the sweep no-ops gracefully when the binding is absent.
-# [[d1_databases]]
-# binding = "AUTOMATION_DB"
-# database_name = "amari-automation"
-# database_id = "REPLACE_AFTER_wrangler_d1_create"
+# created 2026-07-12 (id below); the sweep no-ops gracefully if the binding is ever absent.
+[[d1_databases]]
+binding = "AUTOMATION_DB"
+database_name = "amari-automation"
+database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
 # Persist logs + metrics to the Workers dashboard so failures are searchable and
 # countable (previously console.error/warn only existed during a live `wrangler

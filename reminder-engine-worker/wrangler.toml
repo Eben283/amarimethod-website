@@ -15,7 +15,7 @@ crons = ["*/5 * * * *"]
 [[d1_databases]]
 binding = "REMINDER_DB"
 database_name = "amari-automation"
-database_id = "REPLACE_AFTER_wrangler_d1_create"
+database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
 [observability]
 enabled = true
