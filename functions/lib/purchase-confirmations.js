@@ -13,8 +13,8 @@
 // (Eben) verified the Order-Submitted workflows use the SAME copy: the 4-series T4 email
 // body is word-for-word the "4-session" template below, and the upgrades get their own
 // classification variants (credit line) — so these templates now cover both the invoice and
-// Order-Submitted paths byte-exact, except the 8-series body (last unverified, presumed to
-// match the invoice 8-session template).
+// Order-Submitted paths byte-exact — the 8-series body was the last gap, verified identical
+// 2026-07-12 (email-editor paste). All four Order-Submitted confirmations are now covered.
 //
 // Shadow is the default (MODE below): would_send is recorded on the purchase_confirmations
 // ledger + automation_events, the send adapter is never called. Missing AUTOMATION_DB binding
@@ -65,12 +65,12 @@ Amari Method`,
   }),
 });
 
-// Classification-specific variants override the seriesType default. The 8-upgrade body is
-// VERBATIM from GHL-WORKFLOWS-MASTER.md C2b, confirmed live 2026-07-12 (builder AI read) —
-// the upgrade variant carries the initial-credit line the plain series email lacks. The live
-// body's em-dash is ported as-is; any de-slop is a separate copy change, never silent.
-// RESOLVE FIRST (same builder pass): both plain-series workflows' live bodies — until then
-// those sources fall back to the seriesType templates above.
+// Classification-specific variants override the seriesType default. Both upgrade bodies are
+// VERBATIM from GHL-WORKFLOWS-MASTER.md C1b/C2b, confirmed live 2026-07-12 (builder AI
+// reads) — the upgrade variants carry the initial-credit line the plain series emails lack.
+// The live bodies' em-dashes are ported as-is; any de-slop is a separate copy change, never
+// silent. Plain series orders fall back to the seriesType templates above, which the same
+// builder pass verified word-for-word against the live T4 emails.
 const CLASSIFICATION_TEMPLATES = Object.freeze({
   "4-upgrade": Object.freeze({
     key: "confirm-4-upgrade",
