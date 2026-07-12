@@ -47,3 +47,50 @@ describe("dispatchAppointmentEvent (stub seam)", () => {
     expect(a.errors).not.toBe(b.errors);
   });
 });
+
+// ── Wired behavior (added with the engine-forward plumbing) ──
+import { vi, beforeEach, afterEach } from "vitest";
+
+describe("dispatchAppointmentEvent (wired to the engine workers)", () => {
+  const env = {
+    REMINDER_ENGINE_URL: "https://reminder-engine.example.workers.dev",
+    NURTURE_ENGINE_URL: "https://nurture-engine.example.workers.dev",
+    WORKER_AUTH_SECRET: "s3cret",
+  };
+  let fetchMock;
+  beforeEach(() => {
+    fetchMock = vi.fn().mockImplementation(async () =>
+      new Response(JSON.stringify({ success: true, actions: [{ engine: "reminder", action: "enroll" }] }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("forwards a recognized event to BOTH engines' /event routes and merges their actions", async () => {
+    const out = await dispatchAppointmentEvent({ env }, confirmedEvent);
+    expect(out.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const urls = fetchMock.mock.calls.map(([u]) => u).sort();
+    expect(urls).toEqual([
+      "https://nurture-engine.example.workers.dev/event",
+      "https://reminder-engine.example.workers.dev/event",
+    ]);
+    expect(out.actions).toHaveLength(2);
+  });
+
+  it("one engine failing lands in errors[] without blocking the other", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("{}", { status: 500 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 }));
+    const out = await dispatchAppointmentEvent({ env }, confirmedEvent);
+    expect(out.ok).toBe(false);
+    expect(out.errors).toEqual(["reminder: engine responded 500"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays a silent no-op when the worker URLs aren't configured (pre-deploy)", async () => {
+    const out = await dispatchAppointmentEvent({ env: { WORKER_AUTH_SECRET: "s" } }, confirmedEvent);
+    expect(out).toEqual({ ok: true, actions: [], errors: [] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

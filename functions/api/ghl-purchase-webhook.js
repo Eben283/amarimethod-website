@@ -29,6 +29,7 @@ import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { checkPackageBalance } from "../lib/session-consistency.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
+import { emitNurtureEvent } from "../lib/engine-forward.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -637,6 +638,11 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} → ${newRemaining} (${pkg.name})`);
+
+    // Purchase event → nurture engine (Flow 3 exit fan-in matches the 4 series/upgrade
+    // productIds; other products are ignored engine-side). Fire-and-forget, dormant until
+    // the worker URL exists.
+    emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: resolvedProductId });
 
     // ── 8c. Purchase-cluster seam (NON-BLOCKING — GHL exit Unit C) ──
     // Series/upgrade purchases cancel any pending Post-Initial Upgrade Offer timer and

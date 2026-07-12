@@ -41,7 +41,8 @@
 
 import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
-import { WEBHOOK_PURCHASE_MAP } from "../lib/ghl-products.js";
+import { WEBHOOK_PURCHASE_MAP, GHL_PRODUCTS } from "../lib/ghl-products.js";
+import { emitNurtureEvent } from "../lib/engine-forward.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
@@ -401,6 +402,15 @@ export async function onRequestPost(context) {
         JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
       );
+    }
+
+    // Purchase event → nurture engine (Flow 3 exit). The invoice item may carry a price-id
+    // alias, so emit the CANONICAL product id derived from the package classification.
+    // Fire-and-forget, dormant until the worker URL exists.
+    const canonicalProductId = Object.keys(GHL_PRODUCTS)
+      .find((id) => GHL_PRODUCTS[id].classification === pkg.classification) || null;
+    if (canonicalProductId) {
+      emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: canonicalProductId });
     }
 
     // ── 7c. Purchase-cluster seam (NON-BLOCKING — GHL exit Unit C) ──
