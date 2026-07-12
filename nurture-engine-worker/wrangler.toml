@@ -18,10 +18,17 @@ binding = "NURTURE_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# Token cache for read-only GHL API lookups (tag bridge + entry-guard tag reads; the
+# ghl-token-refresh worker keeps the token fresh).
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
 [observability]
 enabled = true
 head_sampling_rate = 1
 
 # Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
 #   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
-# Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for send/contact-read/tag-write.
+# GHL_WEBHOOK_SECRET (same value as the Pages purchase webhooks — the /tag-webhook gate).
+# Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for send/tag-write.

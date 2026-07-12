@@ -34,8 +34,55 @@ export const INITIAL_IN_PERSON = Object.freeze({
   ]),
 });
 
+// Initial -Virtual Session Welcome / reminder email flow — virtual mirror of the in-person
+// flow (twin: initial-virtual-session-welcome-reminder-email-flow.yaml, 95%, copy captured
+// 2026-06-17 de-slopped; templates resolve at the active-mode brick).
+export const INITIAL_VIRTUAL = Object.freeze({
+  flowKey: "initial-virtual",
+  calendarIds: Object.freeze(["ySmht5hx4uZGEpgZrlCw"]), // Initial Session - Virtual
+  enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
+  cancelOn: Object.freeze(["cancelled"]),
+  mode: "shadow",
+  steps: Object.freeze([
+    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
+    { at: "enroll", type: "email", template: "welcome", skipIfPast: false },
+    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
+    { at: "start-60m", type: "email", template: "one-hour-email", skipIfPast: true },
+    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
+    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
+  ]),
+});
+
+// Discovery Call — Confirmation & Reminder Flow (twin: discovery-call-confirmation-reminder-
+// flow.yaml, published, 3 calendars). GHL trigger is `confirmed` only — with auto-confirm that
+// IS the booking moment (2026-07-12 calibration), so booked|confirmed both enroll.
+export const DISCOVERY_CALL = Object.freeze({
+  flowKey: "discovery-call",
+  calendarIds: Object.freeze([
+    "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
+    "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
+    "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
+  ]),
+  enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
+  cancelOn: Object.freeze(["cancelled"]),
+  mode: "shadow",
+  steps: Object.freeze([
+    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
+    { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
+    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
+    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
+    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
+    { at: "start-15m", type: "sms", template: "fifteen-min-sms", skipIfPast: true },
+    { at: "start-15m", type: "internal_sms", template: "fifteen-min-internal", skipIfPast: true },
+  ]),
+});
+
 // Registry the engine iterates to find the flow(s) a calendar enrolls into.
-export const FLOWS = Object.freeze([INITIAL_IN_PERSON]);
+// NOT yet configured (deliberately): follow-up confirmation (drives the `gate` feature — port
+// LAST per the brief, and its Entrainment-calendar overlap with the draft entrainment flows
+// must be resolved first), partner session flows, post-session review request (needs the
+// wait_for_link_click extension).
+export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL]);
 
 export function flowsForCalendar(calendarId) {
   return FLOWS.filter((f) => f.calendarIds.includes(calendarId));
