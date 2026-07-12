@@ -63,6 +63,14 @@ describe("staff-automations — views", () => {
     }));
   });
 
+  it("activity view: serves the today/yesterday feed with a 48h default window", async () => {
+    const res = await onRequestGet(makeContext("view=activity", { AUTOMATION_DB: emptyDb }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.sinceHours).toBe(48);
+    expect(body.events).toEqual([]);
+  });
+
   it("failures view: serves the window with a clamped sinceHours", async () => {
     const res = await onRequestGet(makeContext("view=failures&sinceHours=99999", { AUTOMATION_DB: emptyDb }));
     expect(res.status).toBe(200);

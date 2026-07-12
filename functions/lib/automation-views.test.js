@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { contactAutomationView, failuresView } from "./automation-views.js";
+import { contactAutomationView, failuresView, activityView } from "./automation-views.js";
 
 const NOW = Date.parse("2026-07-12T10:00:00-07:00");
 const DAY = 86400000;
@@ -53,6 +53,15 @@ function fakeD1(seed = {}) {
         return {
           results: t.automation_events
             .filter((e) => e.contact_id === contactId)
+            .sort((x, y) => y.ts - x.ts)
+            .slice(0, limit),
+        };
+      }
+      if (/FROM automation_events WHERE ts >= \?/.test(sql)) {
+        const [sinceMs, limit] = a;
+        return {
+          results: t.automation_events
+            .filter((e) => e.ts >= sinceMs)
             .sort((x, y) => y.ts - x.ts)
             .slice(0, limit),
         };
@@ -136,6 +145,20 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.enrollments).toHaveLength(0);
     expect(v.events).toHaveLength(0);
     expect(v.upgradeOffer).toBeNull();
+  });
+});
+
+describe("activityView — what happened today/yesterday, across ALL contacts (Eben's v1 ask)", () => {
+  it("returns every event since the cutoff, newest first, all contacts, detail parsed", async () => {
+    const rows = await activityView(db, { sinceMs: NOW - 3 * DAY });
+    expect(rows.map((e) => e.action)).toEqual(["would_send", "enrolled", "send"]);
+    expect(new Set(rows.map((e) => e.contactId))).toEqual(new Set(["cont_1", "cont_2"]));
+    expect(rows[0].detail).toEqual({ template: "confirmation" });
+  });
+
+  it("respects the cutoff (yesterday-only slice)", async () => {
+    const rows = await activityView(db, { sinceMs: NOW - DAY });
+    expect(rows.map((e) => e.action)).toEqual(["would_send", "enrolled"]);
   });
 });
 

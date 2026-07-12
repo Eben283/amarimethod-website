@@ -112,6 +112,21 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
 }
 
 /**
+ * The activity feed: EVERY automation event since the cutoff, all contacts, newest first —
+ * "what is happening today / yesterday" (Eben's v1 ask, 2026-07-12). This is the shadow-watch
+ * instrument: during the beside-GHL period the feed is the log you compare against what GHL
+ * actually sent.
+ */
+export async function activityView(db, { sinceMs = 0, limit = 500 } = {}) {
+  const res = await rows(
+    db,
+    `SELECT * FROM automation_events WHERE ts >= ? ORDER BY ts DESC LIMIT ?`,
+    sinceMs, limit,
+  );
+  return res.map(normalizeEvent);
+}
+
+/**
  * The failures table: every failed/bounced/error event since the cutoff, newest first.
  */
 export async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
