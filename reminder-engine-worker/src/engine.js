@@ -7,6 +7,7 @@
 import { FLOWS, flowsForCalendar } from "./config.js";
 import { enroll } from "./enroll.js";
 import { processStep } from "./sweep.js";
+import { resolvePipelineMoves } from "./pipeline.js";
 import { saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 
@@ -49,6 +50,22 @@ export async function handleEvent(env, event, nowMs) {
       actions.push({ engine: "reminder", action: "cancel", detail: { flowKey: flow.flowKey, cancelledSteps } });
     }
   }
+
+  // Pipeline moves (stateless consumer). Shadow-safe: log would_move, never touch GHL. Active-mode
+  // GHL create_or_update_opportunity is a later brick (needs stage UUIDs — see pipeline.js).
+  for (const move of resolvePipelineMoves(event)) {
+    if (move.mode !== "active") {
+      await appendEvent(db, {
+        ts: nowMs, engine: "pipeline", flowKey: null, contactId: event.contactId,
+        appointmentId: event.appointmentId, action: "move", outcome: "would_move",
+        detail: { pipeline: move.pipeline, stage: move.stage, markLost: move.markLost },
+      });
+      actions.push({ engine: "pipeline", action: "would_move", detail: { pipeline: move.pipeline, stage: move.stage } });
+    } else {
+      actions.push({ engine: "pipeline", action: "move", detail: { pipeline: move.pipeline, stage: move.stage } });
+    }
+  }
+
   return { actions };
 }
 

@@ -127,3 +127,19 @@ describe("runSweep — shadow (default)", () => {
     expect(env.REMINDER_DB._events.filter((e) => e.outcome === "would_send")).toHaveLength(2);
   });
 });
+
+describe("handleEvent — pipeline moves (shadow)", () => {
+  it("logs a would_move for a booked discovery call and never sends", async () => {
+    const { actions } = await handleEvent(env, event({ calendarId: "USgPsktqRcuomdUgpShL", type: "booked" }), NOW);
+    expect(actions).toContainEqual(expect.objectContaining({ engine: "pipeline", action: "would_move", detail: expect.objectContaining({ stage: "Booked 15-min Consultation" }) }));
+    const moveEvents = env.REMINDER_DB._events.filter((e) => e.engine === "pipeline" && e.outcome === "would_move");
+    expect(moveEvents).toHaveLength(1);
+    expect(sendConversationMessage).not.toHaveBeenCalled();
+  });
+
+  it("an initial in-person booking both enrolls the reminder flow AND logs a pipeline move", async () => {
+    const { actions } = await handleEvent(env, event({ calendarId: "G7OAnnJuFbMF6nQSlZVQ", type: "confirmed" }), NOW);
+    expect(actions).toContainEqual(expect.objectContaining({ engine: "reminder", action: "enroll" }));
+    expect(actions).toContainEqual(expect.objectContaining({ engine: "pipeline", action: "would_move", detail: expect.objectContaining({ stage: "Session Scheduled" }) }));
+  });
+});
