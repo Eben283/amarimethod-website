@@ -16,6 +16,7 @@ import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
 import { handleWebhook } from "./webhook.js";
 import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
+import { handleGhlEvent } from "./ghl-events.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -35,6 +36,15 @@ export default {
     }
     if (request.method === "GET" && url0.pathname === "/dashboard-data") {
       return handleDashboardData(request, env);
+    }
+
+    // GHL field/order events (order, sessions_completed, sessions_remaining) — X-Webhook-Secret.
+    if (request.method === "POST" && url0.pathname === "/ghl-event") {
+      try {
+        return await handleGhlEvent(request, env, Date.now());
+      } catch (err) {
+        return json(500, { error: String((err && err.message) || err) });
+      }
     }
 
     // GHL appointment ingest — its own auth scheme (X-Webhook-Secret, checked inside),
