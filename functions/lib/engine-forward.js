@@ -11,16 +11,20 @@
 
 /**
  * POST a typed event to a worker's /event route. Returns { ok, actions?, skipped?, error? }.
- * @param {object} env - Pages env (context.env)
- * @param {{urlVar: string, event: object}} opts - urlVar names the env var holding the worker URL
+ * @param {object} env - Pages/Worker env (context.env)
+ * @param {{urlVar: string, event: object, fetcher?: Function}} opts - urlVar names the env var
+ *   holding the worker URL. Pass `fetcher` (e.g. a service binding's fetch) for worker→worker
+ *   calls: Cloudflare blocks same-account *.workers.dev subrequests, so a plain fetch only
+ *   works from Pages Functions.
  */
-export async function forwardEventToEngine(env, { urlVar, event }) {
+export async function forwardEventToEngine(env, { urlVar, event, fetcher }) {
   const base = env && env[urlVar];
   const secret = env && env.WORKER_AUTH_SECRET;
   if (!base || !secret) return { ok: true, skipped: "unconfigured" };
+  const doFetch = fetcher || fetch;
 
   try {
-    const res = await fetch(`${String(base).replace(/\/$/, "")}/event`, {
+    const res = await doFetch(`${String(base).replace(/\/$/, "")}/event`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
       body: JSON.stringify(event),

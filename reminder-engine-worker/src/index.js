@@ -14,6 +14,7 @@
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
+import { handleWebhook } from "./webhook.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -24,6 +25,17 @@ export default {
   },
 
   async fetch(request, env) {
+    const url0 = new URL(request.url);
+    // GHL appointment ingest — its own auth scheme (X-Webhook-Secret, checked inside),
+    // NOT the bearer gate: GHL webhook actions can't send Authorization headers.
+    if (request.method === "POST" && url0.pathname === "/webhook") {
+      try {
+        return await handleWebhook(request, env, Date.now());
+      } catch (err) {
+        return json(500, { error: String((err && err.message) || err) });
+      }
+    }
+
     const denied = requireWorkerAuth(request, env);
     if (denied) return denied;
 

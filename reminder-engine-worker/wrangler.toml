@@ -17,10 +17,21 @@ binding = "REMINDER_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# The /webhook ingest forwards typed appointment events to the nurture engine.
+# Cloudflare blocks worker→worker fetches via *.workers.dev on the same account, so the
+# forward rides this SERVICE BINDING; NURTURE_ENGINE_URL below just gates/addresses it.
+[[services]]
+binding = "NURTURE"
+service = "nurture-engine"
+
+[vars]
+NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
+
 [observability]
 enabled = true
 head_sampling_rate = 1
 
 # Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
 #   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
+# GHL_WEBHOOK_SECRET (same value as the Pages purchase webhooks — the /webhook ingest gate).
 # Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for the send adapter's token access.
