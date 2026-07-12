@@ -36,7 +36,7 @@ describe("flow shapes vs the twin specs", () => {
 
   it("discovery-call: 7 steps including the 15-minute pair the twin documents", () => {
     expect(DISCOVERY_CALL.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
-      "enroll:internal_email", "enroll:email", "start-1440m:email",
+      "enroll:internal_sms", "enroll:email", "start-1440m:email",
       "start-60m:sms", "start-60m:internal_sms", "start-15m:sms", "start-15m:internal_sms",
     ]);
     // timed steps never back-fire on short-notice bookings

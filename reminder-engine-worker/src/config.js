@@ -67,7 +67,8 @@ export const DISCOVERY_CALL = Object.freeze({
   cancelOn: Object.freeze(["cancelled"]),
   mode: "shadow",
   steps: Object.freeze([
-    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
+    // step 1 is an internal SMS, not email — Eben verified live 2026-07-12 (twin was right)
+    { at: "enroll", type: "internal_sms", template: "booked-internal", skipIfPast: false },
     { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
     { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
     { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
