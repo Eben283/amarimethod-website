@@ -32,7 +32,8 @@
   .lp-inside .txt ul{list-style:none;margin-top:26px}
   .lp-inside .txt li{position:relative;padding-left:26px;margin-top:14px;color:var(--body);max-width:48ch}
   .lp-inside .txt li::before{content:"";position:absolute;left:0;top:10px;width:8px;height:8px;border-radius:50%;background:var(--peach)}
-  .lp-poster{position:relative;aspect-ratio:4/5;background-size:cover;background-position:center;background-color:var(--cream-2);border-radius:1px;overflow:hidden}
+  .lp-poster{position:relative;aspect-ratio:4/5;background-size:cover;background-position:center;background-color:var(--cream-2);border-radius:1px;overflow:hidden;cursor:pointer}
+  .lp-poster iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .lp-poster .play{position:absolute;inset:0;margin:auto;width:74px;height:74px;border-radius:50%;background:rgba(248,241,232,.92);display:flex;align-items:center;justify-content:center}
   .lp-poster .play::after{content:"";margin-left:5px;border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent var(--ink)}
   .lp-poster .tag{position:absolute;left:20px;bottom:18px;font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
@@ -148,9 +149,9 @@
           <li>Watch on your phone or laptop, on your own living room floor</li>
         </ul>
       </div>
-      <div class="lp-poster reveal" style="background-image:url('/images/v6/real/putting-it-all-together.jpg')">
+      <div class="lp-poster reveal" id="lp-preview" role="button" tabindex="0" aria-label="Play a preview lesson: Why This Is So Important, 2 minutes" style="background-image:url('/images/v6/real/putting-it-all-together.jpg')">
         <div class="play" aria-hidden="true"></div>
-        <span class="tag">Putting it all together</span>
+        <span class="tag">Preview a lesson · Why This Is So Important · 2 min</span>
       </div>
     </div>
   </div>
@@ -244,5 +245,26 @@
 
 <!-- Footer is injected by amari-mockup.js -->
 <script src="/js/site-v6.js?v=5" data-nav=""></script>
+<script>
+(function(){
+  var poster=document.getElementById('lp-preview');
+  if(!poster)return;
+  var loaded=false;
+  function play(){
+    if(loaded)return;
+    loaded=true;
+    var f=document.createElement('iframe');
+    f.src='https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/8e8d1092cfa166678fe53f2e2101f853/iframe?autoplay=true&preload=metadata';
+    f.allow='accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
+    f.allowFullscreen=true;
+    f.title='Living Practice preview lesson: Why This Is So Important';
+    poster.innerHTML='';
+    poster.appendChild(f);
+    poster.style.cursor='default';
+  }
+  poster.addEventListener('click',play);
+  poster.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}});
+})();
+</script>
 </body>
 </html>
