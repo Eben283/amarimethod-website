@@ -117,7 +117,7 @@ header.site.on-dark .btn.hdr-book:hover{background:#fff}
 .divider-strip{width:100%;height:clamp(150px,20vw,240px);background-size:cover;background-position:center}
 
 /* ---------- Appointment CTA (curved) ---------- */
-.appt{position:relative;padding:clamp(90px,12vw,150px) 0;text-align:center;background:var(--cream);overflow:hidden}
+.appt{position:relative;padding:clamp(140px,15vw,210px) 0 clamp(90px,12vw,150px);text-align:center;background:var(--cream);overflow:hidden}
 .appt::before{content:"";position:absolute;inset:0;background:var(--cream-2);clip-path:ellipse(120% 78% at 50% 100%);z-index:0}
 .appt .wrap{position:relative;z-index:1}
 .appt h2{font-size:clamp(2.2rem,3.9vw,3.3rem);font-weight:500}

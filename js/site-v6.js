@@ -153,28 +153,39 @@
   }
 
   function initNewsletter() {
-    var form = document.getElementById('newsform');
-    if (!form) return;
-    var msg = form.parentElement.querySelector('.news-msg');
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      var email = (form.email.value || '').trim();
-      if (!email) return;
-      var btn = form.querySelector('button');
-      btn.disabled = true;
-      fetch('/api/newsletter-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email })
-      }).then(function (res) {
-        if (!res.ok) throw new Error('bad status ' + res.status);
-        return res.json();
-      }).then(function () {
-        form.hidden = true;
-        msg.textContent = 'You’re on the list.';
-      }).catch(function () {
-        btn.disabled = false;
-        msg.textContent = 'That didn’t go through. Try again, or write to hello@amarimethod.com.';
+    // Wire EVERY newsletter form (footer + the per-article "Like what you're
+    // reading?" blocks), not just the footer one.
+    document.querySelectorAll('form.news').forEach(function (form) {
+      var input = form.querySelector('input[type=email]');
+      if (!input) return;
+      form.removeAttribute('onsubmit'); // some markup had onsubmit="return false" (dead)
+      var msg = form.parentElement.querySelector('.news-msg');
+      if (!msg) {
+        msg = document.createElement('p');
+        msg.className = 'news-msg';
+        msg.setAttribute('aria-live', 'polite');
+        form.parentElement.appendChild(msg);
+      }
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = (input.value || '').trim();
+        if (!email) return;
+        var btn = form.querySelector('button');
+        if (btn) btn.disabled = true;
+        fetch('/api/newsletter-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email })
+        }).then(function (res) {
+          if (!res.ok) throw new Error('bad status ' + res.status);
+          return res.json();
+        }).then(function () {
+          form.hidden = true;
+          msg.textContent = 'You’re on the list.';
+        }).catch(function () {
+          if (btn) btn.disabled = false;
+          msg.textContent = 'That didn’t go through. Try again, or write to hello@amarimethod.com.';
+        });
       });
     });
   }

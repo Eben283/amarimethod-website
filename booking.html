@@ -77,8 +77,9 @@
 
   /* Thin CTA strip (Yinova's peach ribbon) */
   .cta-strip{background:var(--peach);padding:26px 0;text-align:center}
-  .cta-strip p{margin:0;color:var(--ink);font-family:var(--sans);font-size:15px;font-weight:500}
+  .cta-strip p{margin:0;color:var(--ink);font-family:var(--sans);font-size:15px;font-weight:500;white-space:nowrap}
   .cta-strip a{border-bottom:1.5px solid var(--ink);padding-bottom:2px;font-weight:600}
+  @media(max-width:680px){.cta-strip p{white-space:normal}}
 
   /* Feature split: Living Practice video program */
   .feature{padding:clamp(70px,9vw,110px) 0}
