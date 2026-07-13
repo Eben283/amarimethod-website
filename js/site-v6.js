@@ -292,13 +292,28 @@
     document.body.insertAdjacentHTML('afterbegin', headerHTML());
     document.body.insertAdjacentHTML('beforeend', footerHTML());
 
-    // Reveal-on-scroll (elements are per-page, so query after DOM is ready)
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-      });
-    }, { threshold: .14, rootMargin: '0px 0px -6% 0px' });
-    document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+    // Reveal-on-scroll. Fail open: content is visible by default (CSS), and we only
+    // opt into the hidden-then-animate state once JS is confirmed running. If anything
+    // goes wrong, show everything — a JS hiccup must never hide the pricing.
+    try {
+      document.documentElement.classList.add('js-reveal');
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+        });
+      }, { threshold: .14, rootMargin: '0px 0px -6% 0px' });
+      document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      // Safety net: if a .reveal in the viewport has not been marked visible within
+      // 2.5s (observer mis-fire, backgrounded tab), force it in.
+      setTimeout(function () {
+        document.querySelectorAll('.reveal:not(.in)').forEach(function (el) {
+          if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
+        });
+      }, 2500);
+    } catch (err) {
+      document.documentElement.classList.remove('js-reveal');
+      document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+    }
 
     // Header: white over the dark hero, cream once scrolled past it.
     // Scroll-position based, not an IntersectionObserver ratio: a ratio
