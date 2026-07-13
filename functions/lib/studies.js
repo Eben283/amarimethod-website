@@ -54,7 +54,7 @@ export const STUDIES = {
     condition: "hand / finger tendon pain (climbers)",
     shortName: "Hand Pain Study",
     bodyQuestion: { key: "hand", label: "Which hand?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "QuickDASH", name: "QuickDASH", recall: "past week", license: "free-clinical + Intent-to-Use (IWH)" },
+    instrument: { abbr: "PRWHE", name: "Patient-Rated Wrist/Hand Evaluation", recall: "past week", license: "free-attribution (MacDermid)" },
     venues: ["Climbing gyms"],
     status: "live",
   },

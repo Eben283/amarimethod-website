@@ -29,7 +29,7 @@ export interface InstrumentSubscale {
 /** Sentinel stored in responses when the respondent marks N/A (FAAM). */
 export const RESPONSE_NA = -1;
 
-export type ScoringMethod = 'prtee' | 'mean' | 'percent' | 'quickdash';
+export type ScoringMethod = 'prtee' | 'mean' | 'percent';
 
 export interface InstrumentScoring {
   method: ScoringMethod;
@@ -240,58 +240,74 @@ const FAAM: Instrument = {
   ready: true,
 };
 
-// QuickDASH — © Institute for Work & Health 2006. Free for clinician /
-// non-commercial research if unmodified + credit; submit free Intent to Use at
-// dash.iwh.on.ca. Score = ((sum/n) − 1) × 25; need ≥10 of 11. Higher = worse.
-const QuickDASH: Instrument = {
-  abbr: 'QuickDASH',
-  name: 'QuickDASH',
-  attribution: '© Institute for Work & Health 2006. Free for clinical / non-commercial research use with credit; Intent to Use at dash.iwh.on.ca.',
-  recall: 'in the last week',
+// PRWHE — Patient-Rated Wrist/Hand Evaluation © Joy MacDermid 2009. Same
+// family / license posture as PRTEE (free for clinical/research with
+// attribution). Replaces QuickDASH after IWH quoted commercial software fees.
+// Pain 5×0–10 (/50) + function 10×0–10 ÷ 2 (/50) = total /100; higher = worse.
+const PRWHE: Instrument = {
+  abbr: 'PRWHE',
+  name: 'Patient-Rated Wrist/Hand Evaluation',
+  attribution: '© Joy MacDermid 2009. Free for clinical/research use with attribution.',
+  recall: 'over the past week',
   subscales: [
     {
-      key: 'disability',
-      title: 'Disability / symptoms',
+      key: 'pain',
+      title: 'Pain',
       instruction:
-        'Please rate your ability to perform the following activities in the last week. Answer based on your ability regardless of which hand or arm you use.',
-      anchorLow: 'No difficulty / none',
-      anchorHigh: 'Unable / extreme',
+        'Rate the amount of pain in your wrist/hand. 0 = no pain, 10 = worst possible pain. For “how often,” 0 = never and 10 = always.',
+      anchorLow: 'No pain / never',
+      anchorHigh: 'Worst possible / always',
       items: [
-        { id: 'q1', text: 'Open a tight or new jar' },
-        { id: 'q2', text: 'Do heavy household chores (e.g., wash walls, wash floors)' },
-        { id: 'q3', text: 'Carry a shopping bag or briefcase' },
-        { id: 'q4', text: 'Wash your back' },
-        { id: 'q5', text: 'Use a knife to cut food' },
-        {
-          id: 'q6',
-          text: 'Recreational activities in which you take some force or impact through your arm, shoulder or hand (e.g., golf, hammering, tennis, etc.)',
-        },
-        {
-          id: 'q7',
-          text: 'During the past week, to what extent has your arm, shoulder or hand problem interfered with your normal social activities with family, friends, neighbours or groups?',
-        },
-        {
-          id: 'q8',
-          text: 'During the past week, were you limited in your work or other regular daily activities as a result of your arm, shoulder or hand problem?',
-        },
-        { id: 'q9', text: 'Arm, shoulder or hand pain' },
-        { id: 'q10', text: 'Tingling (pins and needles) in your arm, shoulder or hand' },
-        {
-          id: 'q11',
-          text: 'During the past week, how much difficulty have you had sleeping because of the pain in your arm, shoulder or hand?',
-        },
+        { id: 'p1', text: 'At rest' },
+        { id: 'p2', text: 'Doing a task with a repeated wrist/hand movement' },
+        { id: 'p3', text: 'Lifting a heavy object' },
+        { id: 'p4', text: 'At its worst' },
+        { id: 'p5', text: 'How often do you have pain?' },
+      ],
+    },
+    {
+      key: 'specific',
+      title: 'Specific activities',
+      instruction:
+        'Rate how difficult it was doing the things listed below this week. 0 = not difficult, 10 = unable to do.',
+      anchorLow: 'Not difficult',
+      anchorHigh: 'Unable to do',
+      items: [
+        { id: 's1', text: 'Fasten buttons on your shirt' },
+        { id: 's2', text: 'Cut meat (or vegetables) using a knife' },
+        { id: 's3', text: 'Turn a door knob with your affected hand' },
+        { id: 's4', text: 'Use your affected hand to push up from a chair' },
+        { id: 's5', text: 'Carry a heavy object in your affected hand' },
+        { id: 's6', text: 'Use bathroom tissue with your affected hand' },
+      ],
+    },
+    {
+      key: 'usual',
+      title: 'Usual activities',
+      instruction:
+        'Rate how difficult it was doing your usual activities this week — what you did before you started having a problem with your wrist/hand.',
+      anchorLow: 'Not difficult',
+      anchorHigh: 'Unable to do',
+      items: [
+        { id: 'u1', text: 'Personal activities (like dressing/washing)' },
+        { id: 'u2', text: 'Household work (like cleaning or maintenance)' },
+        { id: 'u3', text: 'Work (your job or other work)' },
+        { id: 'u4', text: 'Recreational activities' },
       ],
     },
   ],
   scoring: {
-    method: 'quickdash',
+    method: 'prtee',
     max: 100,
-    minScale: 1,
-    maxScale: 5,
-    minAnswered: 10,
+    minScale: 0,
+    maxScale: 10,
+    minAnswered: 15,
     allowNa: false,
     higherIsBetter: false,
-    note: '((sum/n) − 1) × 25 → 0–100. Need ≥10 of 11 items. Higher = greater disability.',
+    painKeys: ['pain'],
+    functionKeys: ['specific', 'usual'],
+    functionHalved: true,
+    note: 'Pain = sum of 5 items (/50). Function = sum of 10 items ÷ 2 (/50). Total /100, higher = worse.',
   },
   ready: true,
 };
@@ -322,10 +338,10 @@ function pending(abbr: string, name: string, recall: string): Instrument {
 
 export const INSTRUMENTS: Record<string, Instrument> = {
   PRTEE,
+  PRWHE,
   BCTQ: pending('BCTQ', 'Boston Carpal Tunnel Questionnaire', 'over the past 2 weeks'),
   'JFLS-8': JFLS8,
   FAAM,
-  QuickDASH,
   NDI: pending('NDI', 'Neck Disability Index', 'today'),
   SPADI: pending('SPADI', 'Shoulder Pain & Disability Index', 'over the past week'),
   ODI: pending('ODI', 'Oswestry Disability Index', 'today'),
@@ -344,7 +360,7 @@ export const STUDIES: Record<string, StudyConfig> = {
   'elbow-study-participant': { key: 'tennis-elbow', tag: 'elbow-study-participant', module: 'elbow-reset', condition: 'tennis elbow', shortName: 'Elbow Pain Study', bodyQuestion: ARM, impactLabel: 'How it affects their game', instrumentAbbr: 'PRTEE', status: 'live' },
   'carpal-study-participant': { key: 'carpal-tunnel', tag: 'carpal-study-participant', module: 'hand-balancer', condition: 'carpal tunnel', shortName: 'Carpal Tunnel Study', bodyQuestion: HAND, impactLabel: 'How it affects typing or gripping', instrumentAbbr: 'BCTQ', status: 'draft' },
   'tmj-study-participant': { key: 'tmj', tag: 'tmj-study-participant', module: 'jaw-align', condition: 'TMJ / jaw pain', shortName: 'Jaw Tension Study', bodyQuestion: SIDE, impactLabel: 'How it affects eating, talking, or sleep', instrumentAbbr: 'JFLS-8', status: 'live' },
-  'hand-study-participant': { key: 'hand', tag: 'hand-study-participant', module: 'hand-balancer', condition: 'hand / finger tendon pain', shortName: 'Hand Pain Study', bodyQuestion: HAND, impactLabel: 'How it affects climbing or gripping', instrumentAbbr: 'QuickDASH', status: 'live' },
+  'hand-study-participant': { key: 'hand', tag: 'hand-study-participant', module: 'hand-balancer', condition: 'hand / finger tendon pain', shortName: 'Hand Pain Study', bodyQuestion: HAND, impactLabel: 'How it affects climbing or gripping', instrumentAbbr: 'PRWHE', status: 'live' },
   'lowerleg-study-participant': { key: 'runners-lower-leg', tag: 'lowerleg-study-participant', module: 'spring-step', condition: 'plantar fasciitis / heel & foot pain', shortName: 'Foot Pain Study', bodyQuestion: LEG, impactLabel: 'How it affects running or being on their feet', instrumentAbbr: 'FAAM', status: 'live' },
   'neck-study-participant': { key: 'tech-neck', tag: 'neck-study-participant', module: 'spinal-wave', condition: 'neck & upper-back pain', shortName: 'Tech Neck Study', bodyQuestion: null, impactLabel: 'How it affects desk work or looking down', instrumentAbbr: 'NDI', status: 'draft' },
   'shoulder-study-participant': { key: 'desk-shoulders', tag: 'shoulder-study-participant', module: 'power-posture', condition: 'shoulder pain', shortName: 'Desk Shoulders Study', bodyQuestion: SHOULDER, impactLabel: 'How it affects reaching or desk work', instrumentAbbr: 'SPADI', status: 'draft' },
@@ -420,12 +436,6 @@ export function scoreInstrument(
   if (method === 'percent') {
     const sum = values.reduce((a, b) => a + b, 0);
     return Math.round((sum / (values.length * maxScale)) * 1000) / 10;
-  }
-
-  if (method === 'quickdash') {
-    const sum = values.reduce((a, b) => a + b, 0);
-    const avg = sum / values.length;
-    return Math.round((avg - 1) * 250) / 10;
   }
 
   return null;
