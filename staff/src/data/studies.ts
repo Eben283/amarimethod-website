@@ -46,6 +46,8 @@ export interface StudyConfig {
   condition: string;
   shortName: string;
   bodyQuestion: BodyQuestion | null;
+  /** Intake free-text label for how the condition affects their activity. */
+  impactLabel: string;
   instrumentAbbr: string;
   status: 'live' | 'draft';
 }
@@ -130,6 +132,7 @@ export const INSTRUMENTS: Record<string, Instrument> = {
   BCTQ: pending('BCTQ', 'Boston Carpal Tunnel Questionnaire', 'over the past 2 weeks'),
   'JFLS-8': pending('JFLS-8', 'Jaw Functional Limitation Scale (8-item)', 'over the past month'),
   FAAM: pending('FAAM', 'Foot & Ankle Ability Measure (ADL)', 'over the past week'),
+  QuickDASH: pending('QuickDASH', 'QuickDASH', 'over the past week'),
   NDI: pending('NDI', 'Neck Disability Index', 'today'),
   SPADI: pending('SPADI', 'Shoulder Pain & Disability Index', 'over the past week'),
   ODI: pending('ODI', 'Oswestry Disability Index', 'today'),
@@ -145,14 +148,15 @@ const LEG = { key: 'leg', label: 'Which leg?', options: ['Left', 'Right', 'Both'
 const SHOULDER = { key: 'shoulder', label: 'Which shoulder?', options: ['Left', 'Right', 'Both'] };
 
 export const STUDIES: Record<string, StudyConfig> = {
-  'elbow-study-participant': { key: 'tennis-elbow', tag: 'elbow-study-participant', module: 'elbow-reset', condition: 'tennis elbow', shortName: 'Elbow Reset Study', bodyQuestion: ARM, instrumentAbbr: 'PRTEE', status: 'live' },
-  'carpal-study-participant': { key: 'carpal-tunnel', tag: 'carpal-study-participant', module: 'hand-balancer', condition: 'carpal tunnel', shortName: 'Carpal Tunnel Study', bodyQuestion: HAND, instrumentAbbr: 'BCTQ', status: 'draft' },
-  'tmj-study-participant': { key: 'tmj', tag: 'tmj-study-participant', module: 'jaw-align', condition: 'TMJ / jaw pain', shortName: 'Jaw Reset Study', bodyQuestion: SIDE, instrumentAbbr: 'JFLS-8', status: 'draft' },
-  'lowerleg-study-participant': { key: 'runners-lower-leg', tag: 'lowerleg-study-participant', module: 'spring-step', condition: 'calf / ankle / shin pain', shortName: "Runner's Lower Leg Study", bodyQuestion: LEG, instrumentAbbr: 'FAAM', status: 'draft' },
-  'neck-study-participant': { key: 'tech-neck', tag: 'neck-study-participant', module: 'spinal-wave', condition: 'neck & upper-back pain', shortName: 'Tech Neck Study', bodyQuestion: null, instrumentAbbr: 'NDI', status: 'draft' },
-  'shoulder-study-participant': { key: 'desk-shoulders', tag: 'shoulder-study-participant', module: 'power-posture', condition: 'shoulder pain', shortName: 'Desk Shoulders Study', bodyQuestion: SHOULDER, instrumentAbbr: 'SPADI', status: 'draft' },
-  'lowback-study-participant': { key: 'lower-back', tag: 'lowback-study-participant', module: 'vertical-drop', condition: 'lower-back pain', shortName: 'Lower Back Study', bodyQuestion: null, instrumentAbbr: 'ODI', status: 'draft' },
-  'sciatica-study-participant': { key: 'sciatica', tag: 'sciatica-study-participant', module: 'suspension-squat', condition: 'sciatica', shortName: 'Sciatica Study', bodyQuestion: LEG, instrumentAbbr: 'SBI', status: 'draft' },
+  'elbow-study-participant': { key: 'tennis-elbow', tag: 'elbow-study-participant', module: 'elbow-reset', condition: 'tennis elbow', shortName: 'Elbow Pain Study', bodyQuestion: ARM, impactLabel: 'How it affects their game', instrumentAbbr: 'PRTEE', status: 'live' },
+  'carpal-study-participant': { key: 'carpal-tunnel', tag: 'carpal-study-participant', module: 'hand-balancer', condition: 'carpal tunnel', shortName: 'Carpal Tunnel Study', bodyQuestion: HAND, impactLabel: 'How it affects typing or gripping', instrumentAbbr: 'BCTQ', status: 'draft' },
+  'tmj-study-participant': { key: 'tmj', tag: 'tmj-study-participant', module: 'jaw-align', condition: 'TMJ / jaw pain', shortName: 'Jaw Tension Study', bodyQuestion: SIDE, impactLabel: 'How it affects eating, talking, or sleep', instrumentAbbr: 'JFLS-8', status: 'live' },
+  'hand-study-participant': { key: 'hand', tag: 'hand-study-participant', module: 'hand-balancer', condition: 'hand / finger tendon pain', shortName: 'Hand Pain Study', bodyQuestion: HAND, impactLabel: 'How it affects climbing or gripping', instrumentAbbr: 'QuickDASH', status: 'live' },
+  'lowerleg-study-participant': { key: 'runners-lower-leg', tag: 'lowerleg-study-participant', module: 'spring-step', condition: 'plantar fasciitis / heel & foot pain', shortName: 'Foot Pain Study', bodyQuestion: LEG, impactLabel: 'How it affects running or being on their feet', instrumentAbbr: 'FAAM', status: 'live' },
+  'neck-study-participant': { key: 'tech-neck', tag: 'neck-study-participant', module: 'spinal-wave', condition: 'neck & upper-back pain', shortName: 'Tech Neck Study', bodyQuestion: null, impactLabel: 'How it affects desk work or looking down', instrumentAbbr: 'NDI', status: 'draft' },
+  'shoulder-study-participant': { key: 'desk-shoulders', tag: 'shoulder-study-participant', module: 'power-posture', condition: 'shoulder pain', shortName: 'Desk Shoulders Study', bodyQuestion: SHOULDER, impactLabel: 'How it affects reaching or desk work', instrumentAbbr: 'SPADI', status: 'draft' },
+  'lowback-study-participant': { key: 'lower-back', tag: 'lowback-study-participant', module: 'vertical-drop', condition: 'lower-back pain', shortName: 'Lower Back Study', bodyQuestion: null, impactLabel: 'How it affects sitting or standing', instrumentAbbr: 'ODI', status: 'draft' },
+  'sciatica-study-participant': { key: 'sciatica', tag: 'sciatica-study-participant', module: 'suspension-squat', condition: 'sciatica', shortName: 'Sciatica Study', bodyQuestion: LEG, impactLabel: 'How it affects walking or sitting', instrumentAbbr: 'SBI', status: 'draft' },
 };
 
 // Find which study (if any) a contact's tags put them in.

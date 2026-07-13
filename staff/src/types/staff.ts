@@ -474,9 +474,9 @@ export interface PartnerOutcomeRequest {
   followupAt?: string;  // for `deferred` only — when to revisit
 }
 
-// ── Elbow Reset Study — per-participant capture (staff-elbow-study endpoint).
-// Intake at session 1 + before/after 0-10 pain for each of 3 sessions + the
-// validated survey (PRTEE) at baseline and final — the primary published outcome.
+// ── Study capture — per-participant intake + before/after pain (staff-study).
+// Shared shape across elbow / jaw / foot / hand. Field names `arm` + `gameImpact`
+// are legacy (elbow KV); the staff UI labels them per study via the registry.
 export interface ElbowStudySession {
   before: number | null;
   after: number | null;
@@ -501,3 +501,7 @@ export interface ElbowStudyRecord {
   sessions: ElbowStudySession[];
   updatedAt: string;
 }
+
+/** Alias — same record shape for all studies. */
+export type StudyCaptureRecord = ElbowStudyRecord;
+export type StudyCaptureSession = ElbowStudySession;

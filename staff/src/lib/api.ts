@@ -693,25 +693,42 @@ export async function getPipeline(): Promise<PipelineColumns> {
   return r.columns;
 }
 
-// ── Elbow Reset Study — per-participant intake + before/after pain capture
-export async function getElbowStudy(
+// ── Study capture — intake + before/after pain (elbow / jaw / foot / hand)
+export async function getStudyCapture(
   contactId: string,
+  studySlug: string,
 ): Promise<import('../types/staff').ElbowStudyRecord | null> {
   const r = await fetchApi<{ record: import('../types/staff').ElbowStudyRecord | null }>(
-    `/staff-elbow-study?contactId=${encodeURIComponent(contactId)}`,
+    `/staff-study?contactId=${encodeURIComponent(contactId)}&studySlug=${encodeURIComponent(studySlug)}`,
   );
   return r.record;
 }
 
+export async function saveStudyCapture(
+  contactId: string,
+  studySlug: string,
+  record: import('../types/staff').ElbowStudyRecord,
+): Promise<import('../types/staff').ElbowStudyRecord> {
+  const r = await fetchApi<{ record: import('../types/staff').ElbowStudyRecord }>('/staff-study', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, studySlug, record }),
+  });
+  return r.record;
+}
+
+/** @deprecated Use getStudyCapture(contactId, 'tennis-elbow') */
+export async function getElbowStudy(
+  contactId: string,
+): Promise<import('../types/staff').ElbowStudyRecord | null> {
+  return getStudyCapture(contactId, 'tennis-elbow');
+}
+
+/** @deprecated Use saveStudyCapture(contactId, 'tennis-elbow', record) */
 export async function saveElbowStudy(
   contactId: string,
   record: import('../types/staff').ElbowStudyRecord,
 ): Promise<import('../types/staff').ElbowStudyRecord> {
-  const r = await fetchApi<{ record: import('../types/staff').ElbowStudyRecord }>('/staff-elbow-study', {
-    method: 'POST',
-    body: JSON.stringify({ contactId, record }),
-  });
-  return r.record;
+  return saveStudyCapture(contactId, 'tennis-elbow', record);
 }
 
 export { ApiError };
