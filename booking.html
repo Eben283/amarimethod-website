@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Book your first session with Garrett Hewstan. Every series starts with the $225 initial session — upgrade before your second session for just the difference. San Francisco + virtual.">
+<meta name="description" content="Book your first session with Garrett Hewstan. Every series starts with the $225 initial session, and if you continue that payment counts toward the series. San Francisco and virtual.">
 <link rel="canonical" href="https://www.amarimethod.com/booking">
 
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
@@ -28,8 +28,13 @@
 
   /* Pricing cards grid */
   .tiers{padding:0 0 clamp(60px,6vw,88px)}
-  .tiers-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-  .tier{background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:36px 30px;display:flex;flex-direction:column;gap:14px;text-align:left}
+  /* 6-col base so the five standard cards read 3-up + a centered 2-up, and the featured tier spans full width. No orphan slot. */
+  .tiers-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:22px}
+  .tier{grid-column:span 2;background:var(--paper);border:1px solid rgba(33,29,25,.07);border-radius:4px;padding:36px 30px;display:flex;flex-direction:column;gap:14px;text-align:left;box-shadow:0 1px 2px rgba(33,29,25,.03),0 12px 32px -14px rgba(33,29,25,.16);transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
+  .tier:hover{transform:translateY(-4px);box-shadow:0 4px 10px -4px rgba(33,29,25,.10),0 22px 48px -18px rgba(33,29,25,.22)}
+  /* centered middle row */
+  .tier.mid-left{grid-column:2 / span 2}
+  .tier.mid-right{grid-column:4 / span 2}
   .tier .cat{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--body)}
   .tier h3{font-size:1.55rem;font-weight:500;line-height:1.2}
   .tier .price{display:flex;align-items:baseline;gap:8px;margin-top:2px}
@@ -40,28 +45,24 @@
   .tier ul li{font-size:14px;color:var(--body);padding-left:16px;position:relative}
   .tier ul li::before{content:"";position:absolute;left:0;top:.65em;width:7px;height:1px;background:var(--ink)}
   .tier .btn{margin-top:auto;padding-top:22px;align-self:flex-start}
-  .tier .tier-note{margin-top:auto;padding-top:22px;font-size:13px;color:var(--body);max-width:38ch}
-  .tier.feat .tier-note{color:rgba(255,255,255,.78);margin-top:0;align-self:center;justify-self:start;max-width:22ch}
-  .tier.feat{background:var(--ink);color:#fff;border-color:var(--ink);grid-column:span 3;display:grid;grid-template-columns:1.2fr 1fr auto;gap:32px;align-items:center;padding:40px clamp(32px,4vw,52px)}
-  .tier.feat .cat{color:rgba(255,255,255,.65)}
-  .tier.feat h3{color:#fff}
-  .tier.feat .price b{color:#fff}
-  .tier.feat .price span{color:rgba(255,255,255,.65)}
-  .tier.feat p.desc{color:rgba(255,255,255,.78);max-width:44ch}
-  .tier.feat ul li{color:rgba(255,255,255,.78)}
-  .tier.feat ul li::before{background:#fff}
-  .tier.feat .ribbon{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--peach);margin-bottom:4px;display:block}
-  .tier.feat .btn{background:#fff;color:var(--ink);margin-top:0;justify-self:start}
-  .tier.feat .btn:hover{background:var(--cream)}
+  /* Recommended tier: warm tinted full-width banner, distinguished by a badge and lift rather than a black slab */
+  .tier.feat{grid-column:1 / -1;background:linear-gradient(180deg,#F7E9DC 0%,#F1DBC7 100%);border:1px solid rgba(178,106,67,.34);box-shadow:0 2px 5px rgba(33,29,25,.05),0 20px 50px -20px rgba(160,92,54,.34);display:grid;grid-template-columns:1.2fr 1fr auto;gap:32px;align-items:center;padding:40px clamp(32px,4vw,52px)}
+  .tier.feat:hover{transform:translateY(-4px);box-shadow:0 6px 14px -6px rgba(160,92,54,.24),0 28px 60px -22px rgba(160,92,54,.40)}
+  .tier.feat p.desc{max-width:44ch}
+  .tier.feat .ribbon{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);background:var(--peach);padding:6px 13px;border-radius:100px;margin-bottom:12px}
+  .tier.feat .btn{margin-top:0;justify-self:start}
 
   @media (max-width:1000px){
-    .tiers-grid{grid-template-columns:1fr 1fr}
-    .tier.feat{grid-column:span 2;grid-template-columns:1fr;text-align:left;gap:18px}
+    .tiers-grid{grid-template-columns:repeat(4,1fr)}
+    .tier{grid-column:span 2}
+    .tier.mid-left{grid-column:span 2}
+    .tier.mid-right{grid-column:2 / span 2}
+    .tier.feat{grid-column:1 / -1;grid-template-columns:1fr;text-align:left;gap:18px}
     .tier.feat .btn{justify-self:flex-start}
   }
   @media (max-width:640px){
     .tiers-grid{grid-template-columns:1fr}
-    .tier.feat{grid-column:span 1}
+    .tier,.tier.mid-left,.tier.mid-right,.tier.feat{grid-column:auto}
   }
 
   /* Trust strip (Affirm / experience / guarantee) */
@@ -69,9 +70,10 @@
   .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   .tr{padding:34px clamp(20px,2.4vw,40px);border-right:1px solid var(--line)}
   .tr:last-child{border-right:none}
-  .tr .lab{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--body);display:block;margin-bottom:14px}
-  .tr h4{font-size:1.3rem;font-weight:500}
-  .tr p{margin-top:10px;font-size:14.5px}
+  .tr .lab{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--peach);display:block;margin-bottom:14px;position:relative;padding-top:18px}
+  .tr .lab::before{content:"";position:absolute;top:0;left:0;width:26px;height:2px;background:var(--peach)}
+  .tr h4{font-size:1.3rem;font-weight:500;color:var(--ink)}
+  .tr p{margin-top:10px;font-size:14.5px;color:var(--body)}
 
   /* Thin CTA strip (Yinova's peach ribbon) */
   .cta-strip{background:var(--peach);padding:26px 0;text-align:center}
@@ -143,7 +145,7 @@
   <div class="hero-inner">
     <span class="eyebrow light">Pricing &amp; Sessions</span>
     <h1>Pay for one session. Keep only what's working.</h1>
-    <p>Every path starts the same way, with Garrett, in the room. From there you decide how far you want to take it.</p>
+    <p>Every path starts the same way, one on one, in the room. From there you decide how far you want to take it.</p>
     <a href="#tiers" class="btn btn-pale">See Sessions &amp; Pricing</a>
   </div>
 </section>
@@ -152,7 +154,7 @@
 <section class="p-intro">
   <div class="wrap reveal">
     <h2 class="kicker">Sessions &amp; Series</h2>
-    <p>Most people don't know what they need until they've spent an hour with Garrett. That's why this isn't six tiers to sort through before you've even met him. You book one session, feel what your body does with it, and decide from there how deep you want to go.</p>
+    <p>Most people don't know what they need until they've spent an hour in a session. That's why this isn't six tiers to sort through before you've even begun. You book one session, feel what your body does with it, and decide from there how deep you want to go.</p>
   </div>
 </section>
 
@@ -165,7 +167,7 @@
         <span class="cat">Before You Book</span>
         <h3>Discovery Call</h3>
         <div class="price"><b>Free</b><span>15 min</span></div>
-        <p class="desc">A short call with Garrett before you commit to anything. Ask what a session looks like and whether it fits what you're dealing with.</p>
+        <p class="desc">A short call before you commit to anything. Ask what a session looks like and whether it fits what you're dealing with.</p>
         <a href="/book/discovery-call" class="btn btn-outline">Book the Call</a>
       </div>
 
@@ -173,7 +175,7 @@
         <span class="cat">Entry Point</span>
         <h3>Initial Session</h3>
         <div class="price"><b>$225</b><span>60 min</span></div>
-        <p class="desc">Your first session with Garrett. Full history, a movement assessment, and your first protocol.</p>
+        <p class="desc">Your first session. Full history, a movement assessment, and your first protocol.</p>
         <ul>
           <li>Full history and assessment</li>
           <li>First guided protocol</li>
@@ -186,23 +188,23 @@
         <span class="cat">Continuing Care</span>
         <h3>Follow-up Session</h3>
         <div class="price"><b>$190</b><span>50 min</span></div>
-        <p class="desc">For clients already working with Garrett. A progress check-in, protocol refinement, and the next stage of the work.</p>
+        <p class="desc">For clients already in the work. A progress check-in, protocol refinement, and the next stage of the work.</p>
         <a href="/portal/" class="btn btn-outline">Book from Portal</a>
       </div>
 
-      <div class="tier reveal" style="transition-delay:.18s">
+      <div class="tier mid-left reveal" style="transition-delay:.18s">
         <span class="cat">Series</span>
         <h3>4-Session Series</h3>
         <div class="price"><b>$720</b><span>total</span></div>
-        <p class="desc">Initial session plus three follow-ups. A smaller commitment for people who want more than one visit.</p>
-        <p class="tier-note">Starts with the $225 initial session. If you continue, that payment counts toward the series.</p>
+        <p class="desc">Initial session plus three follow-ups. Starts with the $225 initial session, and that payment counts toward the series if you continue.</p>
+        <a href="/book/initial-in-person" class="btn btn-outline">Book Your First Session</a>
       </div>
 
-      <div class="tier reveal" style="transition-delay:.24s">
+      <div class="tier mid-right reveal" style="transition-delay:.24s">
         <span class="cat">Take It Home</span>
         <h3>Living Practice</h3>
         <div class="price"><b>$347</b><span>video program</span></div>
-        <p class="desc">The home practice on its own. Every protocol Garrett teaches in session, recorded so you can keep going between visits.</p>
+        <p class="desc">The home practice on its own. Every protocol taught in session, recorded so you can keep going between visits.</p>
         <a href="/living-practice" class="btn btn-outline">Explore the Practice</a>
       </div>
 
@@ -214,9 +216,9 @@
         </div>
         <div>
           <div class="price"><b>$1,295</b><span>includes Living Practice</span></div>
-          <p class="desc">Initial session plus seven follow-ups, plus the Living Practice video program. The full path through all eight core protocols.</p>
+          <p class="desc">Initial session plus seven follow-ups, plus the Living Practice video program. Starts with the $225 initial session, which counts toward the series if you continue.</p>
         </div>
-        <p class="tier-note">Starts with the $225 initial session. If you continue, that payment counts toward the series.</p>
+        <a href="/book/initial-in-person" class="btn">Book Your First Session</a>
       </div>
 
     </div>
@@ -249,7 +251,7 @@
 <!-- CTA STRIP -->
 <section class="cta-strip">
   <div class="wrap reveal">
-    <p>Have a question about pricing? Email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> or book a free call.</p>
+    <p>Have a question about pricing? Email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> or <a href="/book/discovery-call">book a free call</a>.</p>
   </div>
 </section>
 
@@ -263,7 +265,7 @@
         <p>The Living Practice is the same home practice every client leaves with, recorded so you can see how a protocol works before your first session, or keep going between visits after. Fifty-three videos, five minutes each, yours to keep.</p>
         <a href="/living-practice" class="btn">Watch a Sample</a>
       </div>
-      <div class="feature-video" style="background-image:url('/images/v6/real/garrett-session-img-3348.jpg')">
+      <div class="feature-video" style="background-image:url('/images/photos/living-practice-woman-asn35.jpg');background-position:68% center">
         <div class="play"></div>
       </div>
     </div>

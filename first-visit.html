@@ -33,8 +33,7 @@
   .trio{padding:clamp(60px,7vw,96px) 0 clamp(20px,4vw,40px)}
   .trio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(28px,4vw,56px);max-width:1080px;margin:0 auto}
   .trio-item{text-align:center;padding:0 12px}
-  .trio-item .icon{width:64px;height:64px;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--line)}
-  .trio-item .icon svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:1.3}
+  .trio-item .tnum{font-family:var(--serif);font-weight:500;font-size:clamp(2.6rem,4vw,3.4rem);line-height:1;color:var(--peach);margin:0 0 14px;letter-spacing:.02em}
   .trio-item h3{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
   .trio-item p{margin:12px auto 0;max-width:30ch;font-size:14px}
 
@@ -77,15 +76,6 @@
     .vcol .val p{margin:0 auto!important}
   }
 
-  /* OBJECTIONS (Q/A list) */
-  .obj{padding:clamp(64px,8vw,110px) 0;background:var(--cream-2)}
-  .obj-list{max-width:980px;margin:0 auto}
-  .obj-item{padding:30px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1.5fr;gap:40px;align-items:start}
-  .obj-item:last-child{border-bottom:1px solid var(--line)}
-  .obj-item .q{font-family:var(--serif);font-size:clamp(1.25rem,1.9vw,1.5rem);font-weight:500;line-height:1.3;color:var(--ink)}
-  .obj-item .q em{font-style:italic}
-  .obj-item .a{font-size:15.5px;color:var(--body);line-height:1.6}
-
   /* FAQ accordion */
   .faq{padding:clamp(64px,8vw,110px) 0}
   .faq-list{max-width:980px;margin:0 auto}
@@ -105,7 +95,6 @@
   @media (max-width:1000px){
     .steps-grid{grid-template-columns:1fr}
     .step:nth-child(odd){border-right:none}
-    .obj-item{grid-template-columns:1fr;gap:14px}
     .trio-grid{grid-template-columns:1fr;gap:40px}
   }
   @media (max-width:640px){
@@ -141,15 +130,15 @@
   <div class="hero-inner">
     <span class="eyebrow light">First Visit · The Amari Method</span>
     <h1>Know what you're walking into.</h1>
-    <p>Sixty minutes with Garrett. A full assessment, your first protocol, and something most people don't expect: you feel a difference before you leave. Here's the whole session, step by step, so nothing on the day is a surprise.</p>
+    <p>Sixty minutes, one on one. A full assessment, your first protocol, and something most people don't expect: you feel a difference before you leave. Here's the whole session, step by step, so nothing on the day is a surprise.</p>
     <div class="hero-meta">
-      <span>60 minutes with Garrett</span>
+      <span>60 minutes, one on one</span>
       <span class="dot"></span>
       <span>First session guaranteed</span>
       <span class="dot"></span>
       <span>San Francisco + virtual</span>
     </div>
-    <a href="#appt" class="btn btn-pale">Book your first session</a>
+    <a href="/book/initial-in-person" class="btn btn-pale">Book your first session</a>
   </div>
 </section>
 
@@ -162,17 +151,17 @@
     </div>
     <div class="trio-grid">
       <div class="trio-item reveal">
-        <div class="icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3.2 2"/></svg></div>
+        <div class="tnum">01</div>
         <h3>A full assessment</h3>
-        <p>Garrett watches how you move and finds where your body is overworking and where it's gone quiet. About twenty minutes, no guesswork.</p>
+        <p>The first twenty minutes read how you move, where your body is overworking and where it's gone quiet. No guesswork.</p>
       </div>
       <div class="trio-item reveal" style="transition-delay:.06s">
-        <div class="icon"><svg viewBox="0 0 24 24"><path d="M6 13V6a2 2 0 1 1 4 0v5"/><path d="M10 11V4a2 2 0 1 1 4 0v7"/><path d="M14 11V6a2 2 0 1 1 4 0v7c0 4-2.5 7-6 7s-6-2-7-5l-1.5-3a1.6 1.6 0 0 1 2.6-1.8L6 13"/></svg></div>
+        <div class="tnum">02</div>
         <h3>Your first protocol</h3>
-        <p>Garrett guides you through it in real time, adjusted to your body as you go. Most people feel it before the session ends.</p>
+        <p>You're guided through it in real time, adjusted to your body as you go. Most people feel it before the session ends.</p>
       </div>
       <div class="trio-item reveal" style="transition-delay:.12s">
-        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 12 12 5l8 7"/><path d="M6 11v8h12v-8"/></svg></div>
+        <div class="tnum">03</div>
         <h3>A take-home practice</h3>
         <p>You leave with about five minutes of practice for what you worked on. Enough to keep it moving until you're back.</p>
       </div>
@@ -193,19 +182,19 @@
         <span class="num">01</span>
         <span class="when">Before you arrive</span>
         <h3>Wear something you can move in</h3>
-        <p>Stretchy pants or shorts, a t-shirt or athletic top. Pants without belt loops if you can help it. Nothing else to prepare. Garrett provides every prop you'll need.</p>
+        <p>Stretchy pants or shorts, a t-shirt or athletic top. Pants without belt loops if you can help it. Nothing else to prepare. Every prop you'll need is here.</p>
       </div>
       <div class="step reveal">
         <span class="num">02</span>
         <span class="when">About 20 minutes</span>
         <h3>The assessment</h3>
-        <p>Garrett watches how you stand, move, and hold yourself. He's not looking at the part that hurts. He's looking for the pattern behind it, what's overworking, what's gone quiet. Two simple tools, a suspension squat and a bridge on a yoga block, usually reveal it in minutes.</p>
+        <p>The assessment reads how you stand, move, and hold yourself. The focus isn't the part that hurts. It's the pattern behind it, what's overworking, what's gone quiet. Two simple tools, a suspension squat and a bridge on a yoga block, usually reveal it in minutes.</p>
       </div>
       <div class="step reveal">
         <span class="num">03</span>
         <span class="when">About 30 minutes</span>
         <h3>Your first protocol</h3>
-        <p>Using a yoga block, a foam roller, or the rings, Garrett guides you through the protocol your body is asking for. You're moving, not lying still while someone works on you. He adjusts it in real time as your body responds.</p>
+        <p>Using a yoga block, a foam roller, or the rings, you're guided through the protocol your body is asking for. You're moving, not lying still while someone works on you. It's adjusted in real time as your body responds.</p>
       </div>
       <div class="step reveal">
         <span class="num">04</span>
@@ -227,7 +216,7 @@
       <div class="band-list">
         <div class="row"><span class="lbl">What to wear</span><span class="val">Comfortable clothes you can move in. Stretchy pants or shorts, a t-shirt or athletic top.</span></div>
         <div class="row"><span class="lbl">Payment</span><span class="val">Due before the session. $225 for the first hour. Affirm is available if you'd rather spread it out.</span></div>
-        <div class="row"><span class="lbl">Location</span><span class="val">Our San Francisco office, or over video. Garrett will tell you which fits your body on the discovery call.</span></div>
+        <div class="row"><span class="lbl">Location</span><span class="val">Our San Francisco office, or over video. Your discovery call will tell you which fits your body.</span></div>
       </div>
     </div>
     <div class="band-photo" style="background-image:url('/images/v6/real/hand-balancer.jpg')"></div>
@@ -245,7 +234,7 @@
       <div class="vcol left reveal">
         <div class="val">
           <h4>The guarantee</h4>
-          <p>If you don't feel noticeable relief by the end of your first session, Garrett keeps working with you at no additional charge until you do.</p>
+          <p>If you don't feel noticeable relief by the end of your first session, we keep working with you at no additional charge until you do.</p>
         </div>
         <div class="val">
           <h4>The investment</h4>
@@ -262,36 +251,8 @@
         </div>
         <div class="val">
           <h4>What's next</h4>
-          <p>After your first session, Garrett tells you how many more you're likely to need. There's no series you're required to buy on day one.</p>
+          <p>After your first session, you'll hear how many more you're likely to need. There's no series you're required to buy on day one.</p>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- OBJECTIONS -->
-<section class="obj">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">What people ask before they book</span>
-      <h2>The questions before <em>the first session.</em></h2>
-    </div>
-    <div class="obj-list">
-      <div class="obj-item reveal">
-        <div class="q">I'm not in good shape. <em>Can I still do this?</em></div>
-        <div class="a">Yes. You're not being tested on fitness. Garrett is watching your movement pattern, not your conditioning. Stiff, out of shape, mid-injury, all of that is normal on day one.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">What if <em>nothing happens?</em></div>
-        <div class="a">Most people feel something in the first session. If you don't, Garrett keeps working with you at no additional charge until you do. That's the guarantee, not a hope.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">Do I need to be <em>flexible?</em></div>
-        <div class="a">No. Flexibility isn't the goal, balance is. Some of the fastest changes happen in bodies that are tight or stiff, because what's out of balance is obvious.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">What should I <em>bring?</em></div>
-        <div class="a">Just yourself, dressed to move. Garrett provides every prop: yoga blocks, foam rollers, rings. Nothing to buy before you come in.</div>
       </div>
     </div>
   </div>
@@ -310,14 +271,14 @@
           <h3>How long is the first session, and what does it cost?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">Sixty minutes, $225. That covers your full movement assessment and your first protocol with Garrett, whether you come to our San Francisco office or meet over video.</p>
+        <p class="ans">Sixty minutes, $225. That covers your full movement assessment and your first protocol, whether you come to our San Francisco office or meet over video.</p>
       </details>
       <details>
         <summary>
           <h3>Can my first session be virtual?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">Yes. Garrett watches your movement over video and guides you through the same assessment and protocol. Some bodies, usually ones that need more direct hands-on cuing, do better in person. He'll tell you which fits you on your discovery call.</p>
+        <p class="ans">Yes. Your movement is read over video and you're guided through the same assessment and protocol. Some bodies, usually ones that need more direct hands-on cuing, do better in person. Your discovery call will tell you which fits you.</p>
       </details>
       <details>
         <summary>
@@ -346,6 +307,20 @@
           <span class="plus">+</span>
         </summary>
         <p class="ans">If you don't experience noticeable relief by the end of your first session, Garrett keeps working with you at no additional charge until you do. This guarantee is rarely needed because the protocols are built to create an immediate, tangible change.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>I'm not in good shape. Can I still do this?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">Yes. You're not being tested on fitness. What's read is your movement pattern, not your conditioning. Stiff, out of shape, mid-injury, all of that is normal on day one.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>Do I need to be flexible?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">No. Flexibility isn't the goal, balance is. Some of the fastest changes happen in bodies that are tight or stiff, because what's out of balance is obvious.</p>
       </details>
     </div>
   </div>

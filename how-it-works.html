@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="The Amari Method inverts the relationship. You do the healing, Garrett guides. Eight core rebalancing protocols, body-led order, most clients feel a shift in their first session.">
+<meta name="description" content="The Amari Method inverts the relationship. You do the healing, guided every step. Eight core rebalancing protocols, body-led order, most clients feel a shift in their first session.">
 <link rel="canonical" href="https://www.amarimethod.com/how-it-works">
 
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
@@ -69,9 +69,11 @@
   .protocols-panel{background:var(--tan);border-radius:2px;padding:clamp(40px,5vw,72px) clamp(28px,4vw,64px)}
   .protocols-panel .sec-head{margin-bottom:clamp(32px,4vw,48px)}
   .protocols-panel .sec-head p{color:rgba(33,29,25,.75)}
-  .proto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  .proto{background:var(--cream);padding:26px 22px;display:flex;flex-direction:column;gap:10px;min-height:150px;border-radius:1px}
-  .proto .pname{font-family:var(--serif);font-size:1.35rem;font-weight:500;line-height:1.15;color:var(--ink)}
+  .proto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(16px,1.7vw,22px)}
+  .proto{position:relative;background:var(--cream);padding:30px 24px 28px;display:flex;flex-direction:column;gap:12px;min-height:196px;border-radius:2px;border-top:2px solid var(--peach);transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+  .proto:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(33,29,25,.10)}
+  .proto .pnum{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--peach);letter-spacing:.06em;line-height:1}
+  .proto .pname{font-family:var(--serif);font-size:1.42rem;font-weight:500;line-height:1.15;color:var(--ink)}
   .proto .pdesc{font-size:13.5px;color:var(--body);line-height:1.55;margin-top:auto}
   .proto-closer{position:relative;margin-top:44px;padding-left:clamp(40px,5vw,68px);max-width:72ch}
   .proto-closer::before{content:"\201C";position:absolute;left:-.04em;top:-.32em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(3.6rem,7vw,5.5rem);line-height:1;color:var(--peach);opacity:.4;pointer-events:none}
@@ -119,7 +121,9 @@
   .faq-list details:last-child{border-bottom:1px solid var(--line)}
   .faq-list summary{padding:26px 0;cursor:pointer;display:grid;grid-template-columns:1fr 32px;gap:20px;align-items:start;list-style:none}
   .faq-list summary::-webkit-details-marker{display:none}
-  .faq-list summary h3{font-size:clamp(1.25rem,2vw,1.6rem);font-weight:500;margin:0}
+  .faq-list summary h3{font-size:clamp(1.25rem,2vw,1.6rem);font-weight:500;margin:0;transition:color .3s var(--ease)}
+  .faq-list summary:hover h3{color:var(--peach)}
+  .faq-list details[open] summary h3{color:var(--ink)}
   .faq-list summary .plus{font-family:var(--serif);font-size:1.8rem;font-weight:400;color:var(--peach);line-height:1;transition:transform .3s var(--ease);text-align:right;padding-top:2px}
   .faq-list details[open] summary .plus{transform:rotate(45deg)}
   .faq-list .ans{padding:0 0 26px;max-width:62ch;color:var(--body);font-size:15.5px}
@@ -127,6 +131,11 @@
   /* Guarantee CTA extras */
   .price-line{margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
   .price-line b{color:var(--ink);font-weight:600}
+
+  /* Practice photo band (sage) */
+  .band.sage{background:var(--sage)}
+  .band.sage .band-copy h2{max-width:18ch}
+  .band.sage .band-copy p{color:rgba(33,29,25,.78)}
 
   /* Values band (peach field, cutout person) — Yinova "Taking your health in hand" */
   .values{background:var(--peach);padding:clamp(64px,8vw,104px) 0 0;overflow:hidden}
@@ -191,7 +200,7 @@
   <div class="hero-inner">
     <span class="eyebrow light">How It Works · The Amari Method</span>
     <h1>Your body can heal <em>you.</em></h1>
-    <p>Most people in chronic pain have spent years being told their body is broken and someone else needs to fix it. The Amari Method starts from the opposite premise: your body is already trying to rebalance itself, and the work is teaching you to listen. Garrett is the guide. You do the work.</p>
+    <p>Most people in chronic pain have spent years being told their body is broken and someone else needs to fix it. The Amari Method starts from the opposite premise: your body is already trying to rebalance itself, and the work is teaching you to listen. You're guided through it, and you do the healing.</p>
     <div class="hero-meta">
       <span>25+ years of hands-on practice</span>
       <span class="dot"></span>
@@ -199,7 +208,7 @@
       <span class="dot"></span>
       <span>San Francisco + virtual</span>
     </div>
-    <a href="#appt" class="btn btn-pale">Book your first session</a>
+    <a href="/book/initial-in-person" class="btn btn-pale">Book your first session</a>
   </div>
 </section>
 
@@ -228,7 +237,7 @@
   <div class="wrap">
     <div class="vhead reveal">
       <h2>Taking your body back into your own hands.</h2>
-      <p>Garrett's role is to guide. The healing is yours.</p>
+      <p>You're guided through it. The healing is yours.</p>
     </div>
     <div class="values-grid">
       <div class="vcol left reveal">
@@ -242,7 +251,7 @@
         </div>
         <div class="val">
           <h4>Individual</h4>
-          <p>Two bodies, two opposite paths. Garrett matches the work to yours, not a generic protocol.</p>
+          <p>Two bodies, two opposite paths. The work is matched to yours, not a generic protocol.</p>
         </div>
       </div>
       <div class="vfig reveal">
@@ -272,7 +281,7 @@
     <div class="sec-head reveal">
       <span class="eyebrow">The assessment</span>
       <h2>Two kinds of bodies. Two <em>opposite paths.</em></h2>
-      <p>In your first session, Garrett figures out which one you are. Most people are some combination of both.</p>
+      <p>Your first session figures out where you sit. Most people are <em>a combination of both</em>, and the work is matched to your mix.</p>
     </div>
     <div class="axis-grid">
       <div class="axis-card reveal">
@@ -286,7 +295,7 @@
         <p>Your joints move easily but your muscles aren't engaging. You feel heavy, slack, loaded into your bones. After a session, you say <em>&ldquo;I feel lighter.&rdquo;</em> Your work is in waking up the muscles that stopped doing their job. The protocols look active: bridges, hand presses, micro-engagements you can feel.</p>
       </div>
     </div>
-    <p class="axis-closer reveal">Giving an active person more activation makes them worse. Giving a passive person more release makes them worse. Most clinicians don't make this distinction. <strong>Garrett's first session figures out where you are and matches the work to your body, not a generic protocol.</strong></p>
+    <p class="axis-closer reveal">Giving an active person more activation makes them worse. Giving a passive person more release makes them worse. Most clinicians don't make this distinction. <strong>The first session figures out where you are and matches the work to your body, not a generic protocol.</strong></p>
   </div>
 </section>
 
@@ -300,24 +309,20 @@
     </div>
     <div class="fourparts-grid">
       <div class="fp reveal">
-        <span class="num">01</span>
         <h3>Assessment</h3>
-        <p>Garrett assesses how your body moves. Where it's overworking, where it's shut down. He's looking at your whole body, beyond the part that hurts. The suspension squat on gymnastic rings and the bridge pose on a yoga block are his two primary tools. Simple, but they reveal the pattern in minutes.</p>
+        <p>The first minutes are spent watching how your whole body moves, where it's overworking and where it's shut down, well beyond the part that hurts. Two simple tools, the suspension squat on rings and the bridge on a yoga block, reveal the pattern in minutes.</p>
       </div>
       <div class="fp reveal">
-        <span class="num">02</span>
         <h3>Guided protocols</h3>
-        <p>Using simple props (yoga blocks, foam rollers, gymnastic rings), Garrett guides you through protocols adapted to your body in real time. You're not lying on a table while someone works on you. You're moving, finding positions where your body starts to rebalance itself.</p>
+        <p>Using simple props (yoga blocks, foam rollers, gymnastic rings), you're guided through protocols adapted to your body in real time. You're not lying on a table while someone works on you. You're moving, finding positions where your body starts to rebalance itself.</p>
       </div>
       <div class="fp reveal">
-        <span class="num">03</span>
         <h3>What changes</h3>
         <p>Most clients feel a noticeable shift during the first session. The overworked areas release. The underworked areas start to re-engage. Walking out, people say things like &ldquo;I feel taller,&rdquo; &ldquo;my hips have reset,&rdquo; &ldquo;I'm not efforting.&rdquo; You feel the difference before you leave.</p>
       </div>
       <div class="fp reveal">
-        <span class="num">04</span>
         <h3>Take-home practice</h3>
-        <p>You leave with a short practice for what was worked on that session. About five minutes. You do it on your living room floor. It maintains the changes and keeps your body moving in the right direction between sessions.</p>
+        <p>You leave with a short practice for what was worked that session. About five minutes on your living room floor. It holds the changes and keeps your body moving in the right direction between sessions.</p>
       </div>
     </div>
   </div>
@@ -334,36 +339,44 @@
       </div>
       <div class="proto-grid">
         <div class="proto">
+          <span class="pnum">01</span>
           <div class="pname">Suspension squat</div>
           <div class="pdesc">When you hang, your hands become the top of your body. Everything below drops into place, your hands as the first domino in the chain.</div>
         </div>
         <div class="proto">
+          <span class="pnum">02</span>
           <div class="pname">Hand balancer</div>
-          <div class="pdesc">Wakes up the hand. Balances the front of the hand against the back. Garrett eliminated his own carpal tunnel doing this.</div>
+          <div class="pdesc">Wakes up the hand. Balances the front of the hand against the back. It cleared a stubborn case of carpal tunnel.</div>
         </div>
         <div class="proto">
+          <span class="pnum">03</span>
           <div class="pname">Power posture</div>
           <div class="pdesc">&ldquo;We have a huge over-flexion problem in the culture.&rdquo; Pulls the head back over the spinal column. Shoulder blades home.</div>
         </div>
         <div class="proto">
+          <span class="pnum">04</span>
           <div class="pname">Vertical drop</div>
           <div class="pdesc">&ldquo;Most people wear their shoulders as earrings.&rdquo; Lets the neck, upper back, and arms melt from the top down.</div>
         </div>
         <div class="proto">
+          <span class="pnum">05</span>
           <div class="pname">Active bridge</div>
           <div class="pdesc">The protocol that makes the biggest change in most clients' bodies. Holding the bridge yourself, a full-body balance.</div>
         </div>
         <div class="proto">
+          <span class="pnum">06</span>
           <div class="pname">Passive bridge</div>
           <div class="pdesc">Yoga block under your sacrum, full weight resting. Your pelvis, hips, and low back find neutral on their own.</div>
         </div>
         <div class="proto">
+          <span class="pnum">07</span>
           <div class="pname">Spinal wave</div>
           <div class="pdesc">&ldquo;The exact opposite of force.&rdquo; Foam roller as leverage. Spontaneous, organic micro-movements that let the body find itself.</div>
         </div>
         <div class="proto">
+          <span class="pnum">08</span>
           <div class="pname">Spring step</div>
-          <div class="pdesc">Turns your Achilles, calf, foot, and ankle from stuck into spring-like. Garrett cleared his own plantar fasciitis with this one.</div>
+          <div class="pdesc">Turns your Achilles, calf, foot, and ankle from stuck into spring-like. It cleared a case of plantar fasciitis.</div>
         </div>
       </div>
       <div class="proto-closer">
@@ -412,7 +425,7 @@
       <div class="phase reveal">
         <span class="ltag">Phase 01</span>
         <h3>Discovery</h3>
-        <p>Pure experience. First sessions are about Garrett guiding you and you feeling what's possible. No curriculum. No homework you don't want. <em>&ldquo;Let me just walk you through it.&rdquo;</em></p>
+        <p>Pure experience. First sessions are about being guided and feeling what's possible. No curriculum. No homework you don't want. <em>&ldquo;Let me just walk you through it.&rdquo;</em></p>
       </div>
       <div class="phase reveal" style="transition-delay:.06s">
         <span class="ltag">Phase 02</span>
@@ -422,7 +435,7 @@
       <div class="phase reveal" style="transition-delay:.12s">
         <span class="ltag">Phase 03</span>
         <h3>Awaken</h3>
-        <p>Mastery. Garrett trains alongside you. Sessions become deeper: emotional release, full-body reorganization, the kind of work that's hard to describe to someone who hasn't experienced it. People stay in this phase for years.</p>
+        <p>Mastery. The two of you train together. Sessions become deeper: emotional release, full-body reorganization, the kind of work that's hard to describe to someone who hasn't experienced it. People stay in this phase for years.</p>
       </div>
     </div>
   </div>
@@ -442,32 +455,14 @@
   </div>
 </section>
 
-<!-- OBJECTIONS -->
-<section class="obj">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">What you might be wondering</span>
-      <h2>It sounds <em>too simple.</em></h2>
-    </div>
-    <div class="obj-list">
-      <div class="obj-item reveal">
-        <div class="q">A yoga block and a foam roller. <em>That's it?</em></div>
-        <div class="a">The tools are simple. What Garrett sees in your body isn't. Twenty-five years of hands-on training is the difference between a block under your sacrum and a gateway opening. The simplicity is the point.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">How is this different from <em>physical therapy?</em></div>
-        <div class="a">PT is a prescription: here are exercises, do them. The Amari Method is a scaffolding for discovery: here's how to listen to your body and find what it's asking for. PT can rebuild a torn ACL. Amari rebuilds the relationship between you and your own body. Different jobs.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">I've tried everything. <em>Why would this be different?</em></div>
-        <div class="a">Most things you've tried address the place that hurts. The Amari Method addresses the pattern that's loading the place that hurts. That's a different problem. It's why people who've been managing chronic pain for ten or twenty years often feel a shift in their first session.</div>
-      </div>
-      <div class="obj-item reveal">
-        <div class="q">Do I have to do something <em>at home?</em></div>
-        <div class="a">Yes. About five minutes a day. If you won't do five minutes a day, this isn't for you and we'll tell you that on the discovery call. The whole method is built on the home practice. The sessions deepen what you're already doing.</div>
-      </div>
-    </div>
+<!-- PHOTO BAND — home practice breather -->
+<section class="band sage">
+  <div class="band-copy reveal">
+    <span class="eyebrow">Between sessions</span>
+    <h2>Five minutes on your floor is where most of the change happens.</h2>
+    <p>The session opens the door. Your daily practice is what walks you through it.</p>
   </div>
+  <div class="band-photo" style="background-image:url('/images/photos/living-practice-woman-asn35.jpg');background-position:center 18%"></div>
 </section>
 
 <!-- FAQ -->
@@ -490,35 +485,63 @@
           <h3>Can I do this virtually?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">Yes. Virtual sessions work well for most conditions. Garrett assesses your posture and movement patterns via live video and guides you through protocols in real time. Most clients notice the same kind of shift virtually as in-person. Some bodies, usually very passive ones who need direct hands-on cuing, get more out of in-person. Garrett will tell you on your discovery call which is right for you.</p>
+        <p class="ans">Yes. Virtual sessions work well for most conditions. Your posture and movement patterns are assessed via live video, and you're guided through protocols in real time. Most clients notice the same kind of shift virtually as in-person. Some bodies, usually very passive ones who need direct hands-on cuing, get more out of in-person. Your discovery call will tell you which is right for you.</p>
       </details>
       <details>
         <summary>
           <h3>I'm not flexible. Can I still do this?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">Yes. Flexibility isn't the goal. Balance is. Many of Garrett's clients are tight, stiff, or have lost mobility. Those bodies often respond fastest because what's out of balance is obvious and correctable.</p>
+        <p class="ans">Yes. Flexibility isn't the goal. Balance is. Many clients are tight, stiff, or have lost mobility. Those bodies often respond fastest because what's out of balance is obvious and correctable.</p>
       </details>
       <details>
         <summary>
           <h3>I've had surgery or have a serious diagnosis. Is this safe?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">In most cases, yes. The Amari Method is permission-based: you never push through pain, never force a position. If something doesn't feel right, you stop. Garrett adapts every protocol to your specific situation. For serious post-surgical or acute injury cases, a discovery call first lets him understand what's appropriate.</p>
+        <p class="ans">In most cases, yes. The Amari Method is permission-based: you never push through pain, never force a position. If something doesn't feel right, you stop. Every protocol is adapted to your specific situation. For serious post-surgical or acute injury cases, a discovery call first makes sure the work is appropriate.</p>
       </details>
       <details>
         <summary>
           <h3>How is this different from yoga or Pilates?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">Yoga and Pilates teach you to do specific shapes well. The Amari Method teaches you to find what your body is asking for in the moment, then bring it into balance. Many of Garrett's clients are long-time yoga practitioners who plateaued. What was missing was the assessment of where they were overworking versus underworking, and protocols matched to their specific pattern.</p>
+        <p class="ans">Yoga and Pilates teach you to do specific shapes well. The Amari Method teaches you to find what your body is asking for in the moment, then bring it into balance. Many clients are long-time yoga practitioners who plateaued. What was missing was the assessment of where they were overworking versus underworking, and protocols matched to their specific pattern.</p>
       </details>
       <details>
         <summary>
           <h3>What if it doesn't work for me?</h3>
           <span class="plus">+</span>
         </summary>
-        <p class="ans">If you don't feel a noticeable shift in your first session, Garrett keeps working with you at no additional charge until you do. That's the guarantee.</p>
+        <p class="ans">If you don't feel a noticeable shift in your first session, we keep working with you at no additional charge until you do. That's the guarantee.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>A yoga block and a foam roller. That's it?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">The tools are simple. The trained eye reading your body isn't. Twenty-five years of hands-on practice is the difference between a block under your sacrum and a gateway opening. The simplicity is the point.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>How is this different from physical therapy?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">PT is a prescription: here are exercises, do them. The Amari Method is a scaffolding for discovery: here's how to listen to your body and find what it's asking for. PT can rebuild a torn ACL. Amari rebuilds the relationship between you and your own body. Different jobs.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>I've tried everything. Why would this be different?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">Most things you've tried address the place that hurts. The Amari Method addresses the pattern that's loading the place that hurts. That's a different problem. It's why people who've been managing chronic pain for ten or twenty years often feel a shift in their first session.</p>
+      </details>
+      <details>
+        <summary>
+          <h3>Do I have to do something at home?</h3>
+          <span class="plus">+</span>
+        </summary>
+        <p class="ans">Yes. About five minutes a day. If you won't do five minutes a day, this isn't for you and we'll tell you that on the discovery call. The whole method is built on the home practice. The sessions deepen what you're already doing.</p>
       </details>
     </div>
   </div>

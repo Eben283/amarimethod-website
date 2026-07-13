@@ -20,6 +20,17 @@
 <style>
   /* ---------- About-page-specific styles ---------- */
 
+  /* About hero: split portrait (face never covered) */
+  .hero.hero-about{min-height:86vh;display:block;padding:0;text-align:left;background:var(--ink);overflow:hidden}
+  .hero-about-grid{display:grid;grid-template-columns:1.02fr .98fr;min-height:86vh}
+  .hero-about-copy{align-self:center;padding:clamp(130px,15vh,180px) clamp(30px,4.5vw,76px) clamp(56px,8vh,80px);color:#fff;max-width:none}
+  .hero-about-copy .eyebrow{display:block;margin-bottom:22px}
+  .hero-about-copy h1{color:#fff;font-size:clamp(2.4rem,4.4vw,4rem);font-weight:500;line-height:1.1;max-width:15ch;margin:0}
+  .hero-about-copy p{color:rgba(255,255,255,.84);max-width:46ch;margin:26px 0 0;font-size:clamp(1.02rem,1.3vw,1.15rem)}
+  .hero-about-copy .btn{margin-top:36px}
+  .hero-about-portrait{position:relative;background-size:cover;background-position:center 22%;background-color:#2b2723;min-height:86vh}
+  .hero-about-portrait::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(33,29,25,.42),rgba(33,29,25,0) 26%),linear-gradient(90deg,rgba(33,29,25,.42),rgba(33,29,25,0) 20%)}
+
   /* In a session (two column text + photo) */
   .split{padding:clamp(64px,8vw,110px) 0}
   .split-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,90px);align-items:center}
@@ -48,27 +59,37 @@
   .origin .photo{aspect-ratio:3/4;background-size:cover;background-position:center;background-color:var(--tan);border-radius:1px}
   .origin figcaption{font-family:var(--sans);font-size:12px;letter-spacing:.06em;color:var(--body);margin-top:14px;text-align:center;font-style:normal}
 
-  /* Approach (numbered) */
+  /* Approach (numbered) — editorial sticky rail + tightened list */
   .approach{padding:clamp(64px,8vw,110px) 0}
-  .approach .head{text-align:center;margin-bottom:clamp(44px,5vw,64px)}
-  .approach .head h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500}
-  .approach .head p{margin:20px auto 0;max-width:52ch}
-  .approach-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)}
-  .ap{padding:42px clamp(24px,3vw,48px);border-bottom:1px solid var(--line)}
-  .ap:nth-child(odd){border-right:1px solid var(--line)}
-  .ap .num{font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px}
-  .ap h3{font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch}
-  .ap p{margin-top:16px;max-width:48ch}
+  .approach-inner{display:grid;grid-template-columns:.82fr 1.18fr;gap:clamp(40px,5.5vw,80px);align-items:start}
+  .approach-rail{position:sticky;top:96px}
+  .approach-rail h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:500;max-width:13ch}
+  .approach-rail p{margin:20px 0 30px;max-width:40ch}
+  .approach-photo{aspect-ratio:4/5;background-size:cover;background-position:center 32%;background-color:var(--peach);border-radius:1px}
+  .approach-list{list-style:none;border-top:1px solid var(--line)}
+  .approach-list .ap{padding:clamp(30px,3.4vw,42px) 0;border-bottom:1px solid var(--line)}
+  .ap .num{font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:14px}
+  .ap h3{font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:24ch}
+  .ap p{margin-top:14px;max-width:56ch}
 
   @media (max-width:1000px){
     .split-inner,.origin-grid{grid-template-columns:1fr}
     .split .photo{order:-1;max-width:520px}
     .origin figure{max-width:420px;margin:0 auto}
     .creds-grid{grid-template-columns:1fr 1fr}
+    .approach-inner{grid-template-columns:1fr;gap:clamp(30px,5vw,48px)}
+    .approach-rail{position:static}
+    .approach-photo{max-width:440px}
+  }
+  @media (max-width:900px){
+    .hero.hero-about{min-height:0}
+    .hero-about-grid{grid-template-columns:1fr;min-height:0}
+    .hero-about-portrait{min-height:54vh;order:-1;background-position:center 20%}
+    .hero-about-portrait::after{background:linear-gradient(180deg,rgba(33,29,25,.5),rgba(33,29,25,0) 34%)}
+    .hero-about-copy{padding:clamp(48px,7vh,64px) clamp(22px,6vw,44px) clamp(56px,9vh,72px)}
   }
   @media (max-width:640px){
-    .creds-grid,.approach-grid{grid-template-columns:1fr}
-    .ap:nth-child(odd){border-right:none}
+    .creds-grid{grid-template-columns:1fr}
     .cred{border-left:1px solid var(--line)}
   }
 </style>
@@ -94,14 +115,16 @@
 
 <!-- Header is injected by amari-mockup.js -->
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-bg" style="background-image:url('/images/v6/real/pull-up-bar.jpg')"></div>
-  <div class="hero-inner">
-    <span class="eyebrow light">Creator of the Amari Method</span>
-    <h1>Garrett guides. Your body does the <em>work.</em></h1>
-    <p>Sessions are guided movement. You're on your feet with props, and Garrett guides you toward what your body is ready to release. Most clients come in for pain and feel relief in the first session. The deeper work, the part people stay for, starts after that.</p>
-    <a href="#appt" class="btn btn-pale">Book your first session</a>
+<!-- HERO — split: portrait beside the copy, so Garrett's face is never covered -->
+<section class="hero hero-about">
+  <div class="hero-about-grid">
+    <div class="hero-about-copy">
+      <span class="eyebrow light">Creator of the Amari Method</span>
+      <h1>You move. Your body does the <em>work.</em></h1>
+      <p>Sessions are guided movement. You're on your feet with props, guided toward what your body is ready to release. Most clients come in for pain and feel relief in the first session. The deeper work, the part people stay for, starts after that.</p>
+      <a href="/book/initial-in-person" class="btn btn-pale">Book your first session</a>
+    </div>
+    <div class="hero-about-portrait" style="background-image:url('/images/v6/real/garrett-face-1200.jpg')"></div>
   </div>
 </section>
 
@@ -113,7 +136,7 @@
     <h2>Every approach I trained in had the client lying still while someone else did the work. I built this so you're the one <em>moving.</em> I guide, and you move into your own breakthrough.</h2>
     <cite>Garrett Hewstan · Creator of the Amari Method</cite>
   </div>
-  <div class="band-photo" style="background-image:url('/images/v6/real/garrett-face-1200.jpg')"></div>
+  <div class="band-photo" style="background-image:url('/images/v6/real/garrett-session-img-3348.jpg')"></div>
 </section>
 
 <!-- IN A SESSION -->
@@ -123,10 +146,10 @@
       <div class="txt reveal">
         <span class="label">In a session</span>
         <h2>He watches how your body <em>responds.</em></h2>
-        <p>You spend the session on your feet. Garrett sets up props, gymnastic rings to hold, blocks to move over, positions where you hang and let your body open, and guides you through them while he watches how you respond. He isn't doing the work to you. He's showing you where your body is holding, and you're the one who moves into the release.</p>
-        <p>The work usually starts with pain. A neck that won't turn, a back that keeps flaring. That part tends to shift fast. What comes after is the deeper part of the method. Your nervous system settles, your breath drops lower, and things your body has been holding for years start to move. Sessions can get emotional, and Garrett treats that as part of the work rather than a detour from it.</p>
+        <p>You spend the session on your feet. Props are set up for you, gymnastic rings to hold, blocks to move over, positions where you hang and let your body open, and you're guided through them while your responses are read closely. Nobody is doing the work to you. You're shown where your body is holding, and you're the one who moves into the release.</p>
+        <p>The work usually starts with pain. A neck that won't turn, a back that keeps flaring. That part tends to shift fast. What comes after is the deeper part of the method. Your nervous system settles, your breath drops lower, and things your body has been holding for years start to move. Sessions can get emotional, and that's treated as part of the work rather than a detour from it.</p>
       </div>
-      <div class="photo reveal" style="background-image:url('/images/v6/real/gymnastic-rings.jpg')"></div>
+      <div class="photo reveal" style="background-image:url('/images/photos/detail-crops/shoulder-forearm-gym.jpg')"></div>
     </div>
   </div>
 </section>
@@ -153,7 +176,7 @@
       <div class="cred">
         <b>You</b>
         <div class="h">Do the work</div>
-        <p>Garrett guides and watches how your body responds. You are the one who moves into the release.</p>
+        <p>You're guided through it while your body's responses are read closely. You are the one who moves into the release.</p>
       </div>
     </div>
   </div>
@@ -200,31 +223,34 @@
 <!-- WHAT MAKES THE METHOD DIFFERENT -->
 <section class="approach">
   <div class="wrap">
-    <div class="head reveal">
-      <h2>What makes the method <em>different.</em></h2>
-      <p>Four things about how sessions work, and why Garrett set them up that way after 25 years inside other approaches.</p>
-    </div>
-    <div class="approach-grid">
-      <div class="ap reveal">
-        <span class="num">01</span>
-        <h3>You learn to change your own state.</h3>
-        <p>The pain quieting down is the front door. The method underneath is about access: you learn to reach the places where your body braces, and to shift your own state instead of waiting for it to change. It takes longer than the first-session relief, and it is what the series is built around.</p>
+    <div class="approach-inner">
+      <div class="approach-rail reveal">
+        <h2>What makes the method <em>different.</em></h2>
+        <p>Four things about how sessions work, and why Garrett set them up that way after 25 years inside other approaches.</p>
+        <div class="approach-photo" style="background-image:url('/images/photos/detail-crops/hand-reaching-open.jpg')"></div>
       </div>
-      <div class="ap reveal">
-        <span class="num">02</span>
-        <h3>The work happens off the table, on your feet.</h3>
-        <p>Garrett spent years guiding gateway work with clients lying down. He kept seeing that the real shift happened when the client moved, so he rebuilt the work standing up. You hold rings or hang, you move over blocks, and Garrett guides you through what he sees in how you respond.</p>
-      </div>
-      <div class="ap reveal">
-        <span class="num">03</span>
-        <h3>Nothing gets cracked or adjusted.</h3>
-        <p>There are no drugs and no surgery. Your own movement does the reorganizing. You don't come back forever, and the home practice is about five minutes a day on your living room floor.</p>
-      </div>
-      <div class="ap reveal">
-        <span class="num">04</span>
-        <h3>If you don't feel a difference, we keep working.</h3>
-        <p>If you don't experience noticeable relief after your first session, we keep working with you until you do, at no additional charge.</p>
-      </div>
+      <ol class="approach-list reveal">
+        <li class="ap">
+          <span class="num">01</span>
+          <h3>You learn to change your own state.</h3>
+          <p>The pain quieting down is the front door. The method underneath is about access: you learn to reach the places where your body braces, and to shift your own state instead of waiting for it to change. It takes longer than the first-session relief, and it is what the series is built around.</p>
+        </li>
+        <li class="ap">
+          <span class="num">02</span>
+          <h3>The work happens off the table, on your feet.</h3>
+          <p>Garrett spent years guiding gateway work with clients lying down. He kept seeing that the real shift happened when the client moved, so he rebuilt the work standing up. You hold rings or hang, you move over blocks, and you're guided through what shows up in how you respond.</p>
+        </li>
+        <li class="ap">
+          <span class="num">03</span>
+          <h3>Nothing gets cracked or adjusted.</h3>
+          <p>There are no drugs and no surgery. Your own movement does the reorganizing. You don't come back forever, and the home practice is about five minutes a day on your living room floor.</p>
+        </li>
+        <li class="ap">
+          <span class="num">04</span>
+          <h3>If you don't feel a difference, we keep working.</h3>
+          <p>If you don't experience noticeable relief after your first session, we keep working with you until you do, at no additional charge.</p>
+        </li>
+      </ol>
     </div>
   </div>
 </section>

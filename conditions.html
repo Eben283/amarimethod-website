@@ -29,27 +29,24 @@
   .sec-head h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500}
   .sec-head p{margin:20px auto 0;max-width:58ch}
 
-  /* Approach / what we work with */
-  .approach2{padding:clamp(70px,8.5vw,116px) 0 clamp(50px,6vw,80px)}
-  .cnd-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(36px,4vw,48px) clamp(24px,3vw,36px);margin-top:8px}
-  .cnd-item{display:flex;flex-direction:column;gap:9px}
-  .cnd-item .cat{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--peach)}
-  .cnd-item h3{font-size:clamp(1.25rem,1.8vw,1.55rem);font-weight:500;line-height:1.2}
-  .cnd-item p{font-size:14px;line-height:1.6;max-width:32ch}
+  /* Conditions — the centerpiece card grid */
+  .approach2{padding:clamp(70px,8.5vw,116px) 0 clamp(56px,6.5vw,90px)}
+  .cond-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(22px,2.4vw,34px) clamp(18px,2vw,28px);margin-top:8px}
+  .ccard{display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:transform .4s var(--ease)}
+  .ccard:hover{transform:translateY(-4px)}
+  .ccard .cimg{aspect-ratio:4/5;border-radius:2px;overflow:hidden;background:var(--cream-2)}
+  .ccard .cimg span{display:block;width:100%;height:100%;background-size:cover;background-position:center top;transition:transform .7s var(--ease)}
+  .ccard:hover .cimg span{transform:scale(1.045)}
+  .ccard .cbody{padding-top:16px;display:flex;flex-direction:column;flex:1}
+  .ccard h3{font-size:clamp(1.18rem,1.7vw,1.42rem);font-weight:500;line-height:1.18}
+  .ccard .cline{font-size:13.5px;line-height:1.55;color:var(--body);margin-top:8px;max-width:31ch}
+  .ccard .cgo{display:inline-flex;align-items:center;gap:7px;margin-top:auto;padding-top:14px;font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);opacity:0;transform:translateX(-4px);transition:opacity .35s var(--ease),transform .35s var(--ease)}
+  .ccard .cgo svg{width:15px;height:9px}
+  .ccard:hover .cgo{opacity:1;transform:none}
 
-  /* Two-photo band (no text, mirrors Yinova's back + court pairing) */
+  /* Two-photo band (no text, mirrors the back + court pairing) */
   .dual-photo{display:grid;grid-template-columns:1fr 1fr;gap:0;width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:16px auto 0;min-height:440px;overflow:hidden;border-radius:1px}
   .dual-photo .dp{background-size:cover;background-position:center;min-height:440px}
-
-  /* Related resources grid */
-  .related{padding:clamp(70px,8.5vw,116px) 0}
-  .related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  .rcard{background:var(--cream-2);display:flex;flex-direction:column;border-radius:1px;overflow:hidden;transition:transform .35s var(--ease)}
-  .rcard:hover{transform:translateY(-3px)}
-  .rcard .rimg{aspect-ratio:4/3;background-size:cover;background-position:center}
-  .rcard .rbody{padding:20px 22px 26px}
-  .rcard .rcat{font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);display:block;margin-bottom:9px}
-  .rcard h4{font-size:1.02rem;font-weight:500;line-height:1.32}
 
   /* Guarantee / appointment CTA extras */
   .price-line{margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
@@ -58,15 +55,15 @@
   .appt .see-all a{border-bottom:1px solid var(--ink);color:var(--ink);padding-bottom:1px}
 
   @media (max-width:1000px){
-    .cnd-grid{grid-template-columns:1fr 1fr}
-    .related-grid{grid-template-columns:1fr 1fr}
+    .cond-cards{grid-template-columns:1fr 1fr}
     .dual-photo{grid-template-columns:1fr;min-height:0}
     .dual-photo .dp{min-height:300px}
+    .ccard .cgo{opacity:1;transform:none}
   }
   @media (max-width:640px){
-    .cnd-grid{grid-template-columns:1fr}
-    .related-grid{grid-template-columns:1fr}
-    .hero-meta{gap:12px}
+    .cond-cards{grid-template-columns:1fr 1fr;gap:20px 16px}
+    .hero-meta{flex-direction:column;gap:9px}
+    .hero-meta .dot{display:none}
   }
 </style>
 
@@ -97,7 +94,7 @@
   <div class="hero-inner">
     <span class="eyebrow light">Conditions · San Francisco + virtual</span>
     <h1>Wherever it lives, your body can come back to <em>balance.</em></h1>
-    <p>A back that won't settle, sciatica, tight shoulders, a jaw that holds all day. The pain shows up in different places, and Garrett finds where your body is out of balance and teaches you to bring it back yourself.</p>
+    <p>A back that won't settle, sciatica, tight shoulders, a jaw that holds all day. The pain shows up in different places. The work finds where your body is out of balance and teaches you to bring it back yourself.</p>
     <div class="hero-meta">
       <span>25+ years of hands-on practice</span>
       <span class="dot"></span>
@@ -115,49 +112,73 @@
     <div class="sec-head reveal">
       <span class="eyebrow">The approach</span>
       <h2>Different pain. <em>The same way back.</em></h2>
-      <p>Every one of these shows up in a different place, but the principle underneath is the same: something is overworking because something else stopped doing its job. Garrett finds the pattern and teaches you to rebalance it yourself.</p>
+      <p>Every one of these shows up in a different place, but the principle underneath is the same: something is overworking because something else stopped doing its job. The assessment finds the pattern and teaches you to rebalance it yourself.</p>
     </div>
-    <div class="cnd-grid reveal">
-      <div class="cnd-item">
-        <span class="cat">Lower back</span>
-        <h3>Lower back pain</h3>
-        <p>The most common pattern, and the most over-treated. Usually a compression and support problem from years of sitting, not a disc you have to live with.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Neck</span>
-        <h3>Neck pain</h3>
-        <p>The head drifts forward and the neck carries a load it was never built for. Relieve that load and most chronic neck pain resolves.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Shoulder</span>
-        <h3>Shoulder pain</h3>
-        <p>Impingement, rotator cuff pain, and frozen shoulder are almost always a shoulder blade and upper back problem, not the joint itself.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Hip</span>
-        <h3>Hip pain</h3>
-        <p>Hip pain and tightness usually trace back to how the pelvis sits and how the surrounding muscles share the load. Rebalance them and the joint frees up.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Knee</span>
-        <h3>Knee pain</h3>
-        <p>The knee is where problems above and below it show up. Correct the hip and ankle mechanics and the abnormal load comes off the knee.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Jaw</span>
-        <h3>Jaw &amp; TMJ tension</h3>
-        <p>Clenching, clicking, and jaw pain are usually driven by forward head posture and neck tension, not a damaged joint.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Sciatica</span>
-        <h3>Sciatica</h3>
-        <p>Shooting leg pain from a compressed sciatic nerve. Find where the compression starts, then decompress the pathway at the source.</p>
-      </div>
-      <div class="cnd-item">
-        <span class="cat">Foot</span>
-        <h3>Plantar fasciitis</h3>
-        <p>Heel and arch pain that's worst on the first steps of the day. The foot is paying for what the hip and ankle above it stopped doing.</p>
-      </div>
+    <div class="cond-cards reveal">
+      <a class="ccard" href="/lower-back-pain-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/condition-base/lower-back-refined.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Lower back pain</h3>
+          <p class="cline">Usually a compression problem from years of sitting, not a disc you have to live with.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/neck-pain-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/neck-man-asn47.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Neck pain</h3>
+          <p class="cline">The head drifts forward and the neck carries a load it was never built for. Relieve that load and it settles.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/shoulder-pain-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/condition-base/shoulder-refined.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Shoulder pain</h3>
+          <p class="cline">Impingement, rotator cuff pain, and frozen shoulder are almost always a shoulder blade problem, not the joint.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/hip-pain-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/hip-woman-wht60.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Hip pain</h3>
+          <p class="cline">It traces back to how the pelvis sits and shares the load. Rebalance it and the joint frees up.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/knee-pain-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/knee-man-his44.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Knee pain</h3>
+          <p class="cline">The knee is where problems above and below it show up. Correct the hip and ankle and the load comes off.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/tmj-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/tmj-woman-asn39.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Jaw &amp; TMJ tension</h3>
+          <p class="cline">Clenching, clicking, and jaw pain are usually driven by forward head posture and neck tension, not a damaged joint.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/sciatica-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/sciatica-man-wht50.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Sciatica</h3>
+          <p class="cline">Shooting leg pain from a compressed nerve. Find where the compression starts, then decompress the pathway at the source.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
+      <a class="ccard" href="/plantar-fasciitis-san-francisco">
+        <div class="cimg"><span style="background-image:url('/images/photos/plantar-woman-multi41.jpg')"></span></div>
+        <div class="cbody">
+          <h3>Plantar fasciitis</h3>
+          <p class="cline">Heel and arch pain that's worst on the first steps of the day. The foot pays for what the hip and ankle stopped doing.</p>
+          <span class="cgo">Explore <svg viewBox="0 0 15 9" fill="none"><path d="M0 4.5h13M9.5 1 13 4.5 9.5 8" stroke="currentColor" stroke-width="1.2"/></svg></span>
+        </div>
+      </a>
     </div>
   </div>
 </section>
@@ -206,74 +227,6 @@
     <span class="mark">&ldquo;</span>
     <blockquote>I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.</blockquote>
     <cite>Tyler · Photographer</cite>
-  </div>
-</section>
-
-<!-- RELATED RESOURCES -->
-<section class="related">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">Related resources</span>
-      <h2>Go deeper on <em>your pattern.</em></h2>
-    </div>
-    <div class="related-grid reveal">
-      <a class="rcard" href="/blog-stretching-not-helping">
-        <div class="rimg" style="background-image:url('/images/v6/real/jaw-align.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Neck</span>
-          <h4>Why stretching your neck doesn't last</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/blog-back-pain-from-sitting">
-        <div class="rimg" style="background-image:url('/images/v6/real/back-pain-from-sitting.webp')"></div>
-        <div class="rbody">
-          <span class="rcat">Lower back</span>
-          <h4>The desk-job pattern behind low back pain</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/blog-sciatica-relief">
-        <div class="rimg" style="background-image:url('/images/v6/real/passive-bridge.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Sciatica</span>
-          <h4>Finding where the compression starts</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/knee-pain-san-francisco">
-        <div class="rimg" style="background-image:url('/images/v6/real/pull-up-bar.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Knee</span>
-          <h4>Why runner's knee usually isn't a knee problem</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/hip-pain-san-francisco">
-        <div class="rimg" style="background-image:url('/images/v6/real/active-bridge.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Hip</span>
-          <h4>What your pelvis is telling you</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/shoulder-pain-san-francisco">
-        <div class="rimg" style="background-image:url('/images/v6/real/power-posture.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Shoulder</span>
-          <h4>Frozen shoulder, unfrozen</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/blog-spring-step-calf-ankle">
-        <div class="rimg" style="background-image:url('/images/v6/real/foam-roller-v2.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Foot</span>
-          <h4>Clearing plantar fasciitis from the ankle up</h4>
-        </div>
-      </a>
-      <a class="rcard" href="/amari-method-vs-physical-therapy">
-        <div class="rimg" style="background-image:url('/images/v6/real/putting-it-all-together.jpg')"></div>
-        <div class="rbody">
-          <span class="rcat">Compare</span>
-          <h4>Amari Method vs. physical therapy</h4>
-        </div>
-      </a>
-    </div>
   </div>
 </section>
 

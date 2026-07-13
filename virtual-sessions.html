@@ -33,8 +33,7 @@
   .trio{padding:clamp(60px,7vw,96px) 0 clamp(20px,4vw,40px)}
   .trio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(28px,4vw,56px);max-width:1080px;margin:0 auto}
   .trio-item{text-align:center;padding:0 12px}
-  .trio-item .icon{width:64px;height:64px;margin:0 auto 22px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--line)}
-  .trio-item .icon svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:1.3}
+  .trio-item .tnum{font-family:var(--serif);font-weight:500;font-size:clamp(2.6rem,4vw,3.4rem);line-height:1;color:var(--peach);margin:0 0 14px;letter-spacing:.02em}
   .trio-item h3{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
   .trio-item p{margin:12px auto 0;max-width:30ch;font-size:14px}
 
@@ -129,13 +128,13 @@
     <h1>The work travels. You don't have to.</h1>
     <p>Sixty minutes with Garrett over live video. He watches your movement on camera, guides your protocol in real time, and most clients feel the same shift they would in the room.</p>
     <div class="hero-meta">
-      <span>60 minutes with Garrett</span>
+      <span>60 minutes, one on one</span>
       <span class="dot"></span>
       <span>Live video, anywhere</span>
       <span class="dot"></span>
       <span>$225 first session</span>
     </div>
-    <a href="#appt" class="btn btn-pale">Book Your Virtual Session</a>
+    <a href="/book/initial-virtual" class="btn btn-pale">Book Your Virtual Session</a>
   </div>
 </section>
 
@@ -148,19 +147,19 @@
     </div>
     <div class="trio-grid">
       <div class="trio-item reveal">
-        <div class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="12" height="10" rx="1.5"/><path d="M15 10l6-3v10l-6-3z"/></svg></div>
+        <div class="tnum">01</div>
         <h3>Live, not recorded</h3>
         <p>Garrett is on the call with you the whole hour, watching and adjusting as you move. Not a video course you follow alone.</p>
       </div>
       <div class="trio-item reveal" style="transition-delay:.06s">
-        <div class="icon"><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg></div>
+        <div class="tnum">02</div>
         <h3>Your own space</h3>
         <p>Wherever you've got a few feet of floor and a stable connection. Living room, bedroom, hotel room.</p>
       </div>
       <div class="trio-item reveal" style="transition-delay:.12s">
-        <div class="icon"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10" rx="1"/><path d="M5 11h14"/></svg></div>
+        <div class="tnum">03</div>
         <h3>One thing to grab</h3>
-        <p>A yoga block. Garrett walks you through everything else, camera angle included, before you begin.</p>
+        <p>A yoga block. You're walked through everything else, camera angle included, before you begin.</p>
       </div>
     </div>
   </div>
@@ -173,7 +172,7 @@
       <div class="howvirtual-copy">
         <span class="eyebrow">How virtual works</span>
         <h2>The same assessment, through a camera.</h2>
-        <p>Before your session, get a yoga block and clear a few feet of floor. Prop your phone or laptop so Garrett can see your full body, and he'll help you adjust the angle once the call starts.</p>
+        <p>Before your session, get a yoga block and clear a few feet of floor. Prop your phone or laptop so your full body is in frame, and you'll get help adjusting the angle once the call starts.</p>
         <p>From there it runs the same as in-person: he watches how you stand and move, finds what's overworking and what's gone quiet, and guides you through the protocol your body is asking for. You leave with the same five-minute take-home practice as anyone in the studio.</p>
         <a href="#logistics" class="btn">See What You'll Need</a>
       </div>
@@ -205,7 +204,7 @@
     <div class="sec-head reveal">
       <span class="eyebrow">Two ways in</span>
       <h2>Virtual or in person, <em>the work is the same.</em></h2>
-      <p>Garrett teaches the same protocols either way. The difference is where you do them.</p>
+      <p>The same protocols are taught either way. The difference is where you do them.</p>
     </div>
     <div class="modes-grid">
       <div class="mode-card current reveal">
@@ -216,7 +215,7 @@
       <a href="/in-person-sessions" class="mode-card reveal" style="transition-delay:.06s">
         <span class="tag">Also available</span>
         <h3>In-Person</h3>
-        <p>Garrett in the room with you, hands-on cues, every prop already set up in our San Francisco studio.</p>
+        <p>In the room with you, hands-on cues, every prop already set up in our San Francisco studio.</p>
         <span class="go">See in-person sessions &rsaquo;</span>
       </a>
     </div>
@@ -229,7 +228,7 @@
     <h2>Come back into balance, wherever you are.</h2>
     <p>Most clients feel a shift by the end of the call. If you don't, Garrett keeps working with you until you do, at no additional charge.</p>
     <div class="btn-row">
-      <a href="#appt" class="btn">Book Your Virtual Session</a>
+      <a href="/book/initial-virtual" class="btn">Book Your Virtual Session</a>
       <a href="/in-person-sessions" class="btn btn-outline">See In-Person Sessions</a>
     </div>
     <p class="price-line"><b>$225</b> &middot; First session &middot; Live video, anywhere</p>
@@ -246,11 +245,11 @@
     <div class="faq-list reveal">
       <details open>
         <summary><span>Does this actually work over video?</span><span class="plus">+</span></summary>
-        <div class="ans">Yes. You do the movement in every session, in person or virtual, and Garrett guides you either way. Most clients get the same shift virtually that they would in the studio.</div>
+        <div class="ans">Yes. You do the movement in every session, in person or virtual, and you're guided either way. Most clients get the same shift virtually that they would in the studio.</div>
       </details>
       <details>
         <summary><span>What do I need for a virtual session?</span><span class="plus">+</span></summary>
-        <div class="ans">A yoga block, a phone or laptop you can prop up, and a few feet of open floor. Garrett helps you set the angle once the call starts.</div>
+        <div class="ans">A yoga block, a phone or laptop you can prop up, and a few feet of open floor. You'll get help setting the angle once the call starts.</div>
       </details>
       <details>
         <summary><span>What if my connection drops?</span><span class="plus">+</span></summary>
@@ -262,7 +261,7 @@
       </details>
       <details>
         <summary><span>What if the session doesn't work for me?</span><span class="plus">+</span></summary>
-        <div class="ans">If you don't feel noticeable relief by the end of your first session, Garrett keeps working with you at no additional charge until you do.</div>
+        <div class="ans">If you don't feel noticeable relief by the end of your first session, we keep working with you at no additional charge until you do.</div>
       </details>
     </div>
   </div>
@@ -272,7 +271,7 @@
 <section class="appt" id="appt">
   <div class="wrap">
     <h2>Log on and feel what changes</h2>
-    <p>Live video, one on one with Garrett, from wherever you are. Not ready yet? <a href="/book/discovery-call" class="txt">Book a free 15-minute call.</a></p>
+    <p>Live video, one on one, from wherever you are. Not ready yet? <a href="/book/discovery-call" class="txt">Book a free 15-minute call.</a></p>
     <a href="/book/initial-virtual" class="btn">Book Your Virtual Session</a>
   </div>
 </section>

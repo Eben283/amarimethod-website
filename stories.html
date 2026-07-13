@@ -28,7 +28,7 @@
   .stories-hero h1{font-size:clamp(2.3rem,4.6vw,3.7rem);font-weight:500;max-width:17ch;margin:0 auto}
   .stories-hero p{margin:22px auto 0;max-width:58ch}
 
-  .filter-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:clamp(34px,4vw,46px)}
+  .filter-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:clamp(14px,2vw,22px) 0 clamp(34px,4vw,44px)}
   .filter-pill{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);background:transparent;border:1px solid var(--line);padding:10px 22px;border-radius:999px;cursor:pointer;transition:background .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease)}
   .filter-pill.active,.filter-pill:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
 
@@ -40,20 +40,32 @@
 
   /* Story grid — the Yinova team-grid shape, repurposed as client-result cards */
   .stories-grid-section{padding:clamp(64px,8vw,96px) 0}
-  .stories-grid-section .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);text-align:center;margin-bottom:clamp(40px,5vw,56px)}
-  .story-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(30px,3.2vw,42px) clamp(22px,2.4vw,32px)}
+  .stories-grid-section .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);text-align:center;margin-bottom:clamp(20px,2.4vw,28px)}
+  /* Fewer, larger cells so each portrait and quote can breathe, instead of
+     twelve small thumbnails reading as a stock bucket. */
+  .story-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(42px,4vw,58px) clamp(30px,3vw,44px)}
   .story-card{text-align:center;transition:opacity .3s var(--ease)}
-  .story-avatar{aspect-ratio:1/1;border-radius:1px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;overflow:hidden}
-  .story-avatar span{font-family:var(--serif);font-size:2.5rem;font-weight:500;color:rgba(255,255,255,.94)}
-  .story-name{font-family:var(--serif);font-weight:500;font-size:1.05rem;letter-spacing:.01em;color:var(--ink)}
-  .story-tag{font-family:var(--sans);font-weight:600;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin:5px 0 14px}
-  .story-quote{font-size:14px;line-height:1.55;color:var(--body);max-width:none}
+  /* Uniform photo frame: same ratio, rounded corners, hairline inset border,
+     plus a warm duotone-style filter + overlay that pulls the mismatched
+     source grades into one cohesive earth-toned set. */
+  .story-avatar{position:relative;aspect-ratio:4/5;border-radius:5px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;overflow:hidden;border:1px solid var(--line)}
+  .story-avatar span{font-family:var(--serif);font-size:2.9rem;font-weight:500;color:rgba(255,255,255,.94);z-index:0}
+  /* object-position biases the crop toward faces (heads sit high); the filter
+     desaturates and warms every source toward a common tone. */
+  .story-avatar img{z-index:1;object-position:center 28%;filter:grayscale(.2) sepia(.14) contrast(1.05) brightness(1);transition:filter .6s var(--ease),transform .9s var(--ease)}
+  .story-avatar::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(178deg,rgba(216,187,134,.12),rgba(94,85,77,.13));mix-blend-mode:multiply}
+  .story-card:hover .story-avatar img{filter:grayscale(0) sepia(0) contrast(1.02);transform:scale(1.035)}
+  .story-name{font-family:var(--serif);font-weight:500;font-size:1.32rem;letter-spacing:.01em;color:var(--ink)}
+  .story-tag{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:7px 0 14px}
+  /* min-height evens out the row baselines when quotes run 1–3 lines */
+  .story-quote{font-size:15.5px;line-height:1.62;color:var(--body);max-width:34ch;margin:0 auto;min-height:3.24em}
 
   @media (max-width:1000px){
     .story-grid{grid-template-columns:1fr 1fr}
   }
   @media (max-width:640px){
     .story-grid{grid-template-columns:1fr}
+    .story-card{max-width:360px;margin:0 auto}
     .guide-band .band-copy .stat-row{gap:36px}
   }
 </style>
@@ -84,14 +96,7 @@
   <div class="wrap reveal">
     <span class="eyebrow">Stories</span>
     <h1>The results, in their own <em>words.</em></h1>
-    <p>Twelve Amari clients, in their own words. Every quote below is verbatim, and every session happened in the same room, guided by Garrett using the Amari Method.</p>
-    <div class="filter-row">
-      <button class="filter-pill active" data-filter="all">All</button>
-      <button class="filter-pill" data-filter="pain-relief">Pain Relief</button>
-      <button class="filter-pill" data-filter="mobility">Mobility &amp; Movement</button>
-      <button class="filter-pill" data-filter="chronic-pain">Chronic Pain</button>
-      <button class="filter-pill" data-filter="recovery-aging">Recovery &amp; Aging</button>
-    </div>
+    <p>Twelve Amari clients, in their own words. Every quote below is verbatim, and every session happened in the same room, using the Amari Method.</p>
   </div>
 </section>
 
@@ -100,7 +105,7 @@
   <div class="band-copy reveal">
     <span class="eyebrow">Your Guide</span>
     <h2>One person in the room, for every story <em>here.</em></h2>
-    <p>Garrett Hewstan built the Amari Method after 25 years of hands-on practice. He isn't doing the work to you. He's showing you where your body is out of balance, and how to correct it yourself.</p>
+    <p>Garrett Hewstan built the Amari Method after 25 years of hands-on practice. Nobody is doing the work to you. You're shown where your body is out of balance, and how to correct it yourself.</p>
     <div class="stat-row">
       <div><b>25+</b><span>Years in practice</span></div>
       <div><b>8</b><span>Core protocols</span></div>
@@ -115,77 +120,84 @@
 <section class="stories-grid-section">
   <div class="wrap">
     <h2 class="kicker reveal">Twelve Clients, Twelve Results</h2>
+    <div class="filter-row reveal">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="pain-relief">Pain Relief</button>
+      <button class="filter-pill" data-filter="mobility">Mobility &amp; Movement</button>
+      <button class="filter-pill" data-filter="chronic-pain">Chronic Pain</button>
+      <button class="filter-pill" data-filter="recovery-aging">Recovery &amp; Aging</button>
+    </div>
     <div class="story-grid">
       <div class="story-card reveal" data-cat="pain-relief">
-        <div class="story-avatar" style="background:#D8BB86;position:relative"><span>S</span><img src="/images/v6/real/Sarah.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#D8BB86"><span>S</span><img src="/images/Sarah.webp" alt="Sara" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Sara</div>
         <div class="story-tag">Low Back Relief</div>
         <p class="story-quote">&ldquo;I thought the best I could hope for was less pain. I've never felt this at home in my body.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.04s" data-cat="mobility">
-        <div class="story-avatar" style="background:#E1A98B;position:relative"><span>K</span><img src="/images/v6/real/kate-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#E1A98B"><span>K</span><img src="/images/kate-testimonial.avif" alt="Katie" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Katie</div>
         <div class="story-tag">Runner</div>
         <p class="story-quote">&ldquo;One visit with Garrett gave me better results than three months of physical therapy.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.08s" data-cat="pain-relief">
-        <div class="story-avatar" style="background:#AFC1A9;position:relative"><span>M</span><img src="/images/v6/real/Maria.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#AFC1A9"><span>M</span><img src="/images/Maria.webp" alt="Marisol" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Marisol</div>
         <div class="story-tag">Teacher</div>
         <p class="story-quote">&ldquo;I follow his protocol every day. 8 months no pain.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.12s" data-cat="mobility">
-        <div class="story-avatar" style="background:#B98E63;position:relative"><span>P</span><img src="/images/v6/real/dan-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#B98E63"><span>P</span><img src="/images/dan-testimonial.webp" alt="Paul" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Paul</div>
         <div class="story-tag">Weightlifter</div>
         <p class="story-quote">&ldquo;My shoulder was just the weakest link. Huge a-ha moment.&rdquo;</p>
       </div>
 
       <div class="story-card reveal" data-cat="recovery-aging">
-        <div class="story-avatar" style="background:#C98F71;position:relative"><span>A</span><img src="/images/v6/real/amy-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#C98F71"><span>A</span><img src="/images/terri-testimonial.avif" alt="Annie" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Annie</div>
         <div class="story-tag">Renewed</div>
         <p class="story-quote">&ldquo;I thought pain was just part of getting older. I wish I'd met Garrett ten years sooner.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.04s" data-cat="recovery-aging">
-        <div class="story-avatar" style="background:#8E9F82;position:relative"><span>B</span><img src="/images/v6/real/danielle-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#8E9F82"><span>B</span><img src="/images/amy-testimonial.webp" alt="Becca" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Becca</div>
         <div class="story-tag">Hip Pain</div>
         <p class="story-quote">&ldquo;I went from barely walking to six-mile hikes. I didn't think that was possible for me again after my accident.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.08s" data-cat="chronic-pain">
-        <div class="story-avatar" style="background:#A88F73;position:relative"><span>J</span><img src="/images/v6/real/gregg-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#A88F73"><span>J</span><img src="/images/Justin.webp" alt="Julian" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Julian</div>
         <div class="story-tag">Avoided Surgery</div>
         <p class="story-quote">&ldquo;I always thought a herniated disc meant surgery. Everything's changed. Huge relief.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.12s" data-cat="chronic-pain">
-        <div class="story-avatar" style="background:#D8BB86;position:relative"><span>B</span><img src="/images/v6/real/nina-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#D8BB86"><span>B</span><img src="/images/samantha-testimonial.avif" alt="Barbara" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Barbara</div>
         <div class="story-tag">Chronic Pain Relief</div>
         <p class="story-quote">&ldquo;Three different doctors told me to just live with the pain. I'm 78 years old. Never felt better.&rdquo;</p>
       </div>
 
       <div class="story-card reveal" data-cat="recovery-aging">
-        <div class="story-avatar" style="background:#E1A98B;position:relative"><span>V</span><img src="/images/v6/real/Justin.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#E1A98B"><span>V</span><img src="/images/gregg-testimonial.webp" alt="Victor" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Victor</div>
         <div class="story-tag">Newly Retired</div>
         <p class="story-quote">&ldquo;I've spent decades not listening to my body. Retirement gave me the time. Garrett showed me how.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.04s" data-cat="chronic-pain">
-        <div class="story-avatar" style="background:#AFC1A9;position:relative"><span>P</span><img src="/images/v6/real/samantha-testimonial.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-avatar" style="background:#AFC1A9"><span>P</span><img src="/images/danielle-testimonial.avif" alt="Pam" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Pam</div>
         <div class="story-tag">Business Owner</div>
         <p class="story-quote">&ldquo;I really have tried everything. Nothing has ever come close to this.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.08s" data-cat="pain-relief">
-        <div class="story-avatar" style="background:#B98E63"><span>E</span></div>
+        <div class="story-avatar" style="background:#B98E63"><span>E</span><img src="/images/nina-testimonial.avif" alt="Elise" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Elise</div>
         <div class="story-tag">Young Professional</div>
         <p class="story-quote">&ldquo;I came in for back pain. I didn't expect to sleep better and stop grinding my teeth too. At 24, I didn't think I needed this kind of care.&rdquo;</p>
       </div>
       <div class="story-card reveal" style="transition-delay:.12s" data-cat="pain-relief">
-        <div class="story-avatar" style="background:#C98F71"><span>T</span></div>
+        <div class="story-avatar" style="background:#C98F71"><span>T</span><img src="/images/tyler-testimonial.avif" alt="Tyler" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
         <div class="story-name">Tyler</div>
         <div class="story-tag">Photographer</div>
         <p class="story-quote">&ldquo;I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.&rdquo;</p>
