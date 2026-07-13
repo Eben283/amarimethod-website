@@ -11,8 +11,8 @@
 // series of what PARTICIPANTS REPORTED with Amari rebalancing PROTOCOLS. No
 // medical claims, no "Dr.", the practitioner teaches and guides.
 
-// Instrument fields are the proposed picks from the rigor spine. `license` is
-// intentionally "verify" until each one's permission terms are confirmed.
+// Instrument fields are the picks from the rigor spine. Live instruments have
+// confirmed terms; draft ones stay "verify" until transcribed + cleared.
 export const STUDIES = {
   "tennis-elbow": {
     slug: "tennis-elbow",
@@ -21,7 +21,7 @@ export const STUDIES = {
     condition: "tennis elbow",
     shortName: "Elbow Pain Study",
     bodyQuestion: { key: "arm", label: "Which arm?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "PRTEE", name: "Patient-Rated Tennis Elbow Evaluation", recall: "past week", license: "verify" },
+    instrument: { abbr: "PRTEE", name: "Patient-Rated Tennis Elbow Evaluation", recall: "past week", license: "free-attribution (MacDermid)" },
     venues: ["Tennis courts", "Pickleball courts"],
     status: "live", // already recruiting
   },
@@ -43,7 +43,7 @@ export const STUDIES = {
     condition: "TMJ / jaw pain",
     shortName: "Jaw Tension Study",
     bodyQuestion: { key: "side", label: "Which side?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "JFLS-8", name: "Jaw Functional Limitation Scale (8-item)", recall: "past month", license: "verify" },
+    instrument: { abbr: "JFLS-8", name: "Jaw Functional Limitation Scale (8-item)", recall: "past month", license: "no-permission-required (Ohrbach)" },
     venues: ["Yoga studios", "Dentist / orthodontist referral"],
     status: "live",
   },
@@ -54,7 +54,7 @@ export const STUDIES = {
     condition: "hand / finger tendon pain (climbers)",
     shortName: "Hand Pain Study",
     bodyQuestion: { key: "hand", label: "Which hand?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "QuickDASH", name: "QuickDASH", recall: "past week", license: "verify" },
+    instrument: { abbr: "QuickDASH", name: "QuickDASH", recall: "past week", license: "free-clinical + Intent-to-Use (IWH)" },
     venues: ["Climbing gyms"],
     status: "live",
   },
@@ -65,7 +65,7 @@ export const STUDIES = {
     condition: "plantar fasciitis / heel & foot pain",
     shortName: "Foot Pain Study",
     bodyQuestion: { key: "leg", label: "Which leg?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "FAAM", name: "Foot & Ankle Ability Measure (ADL)", recall: "past week", license: "verify" },
+    instrument: { abbr: "FAAM", name: "Foot & Ankle Ability Measure (ADL)", recall: "past week", license: "free-clinical-research (Martin)" },
     venues: ["Running clubs", "Run-specialty stores", "Park trailheads"],
     status: "live",
   },

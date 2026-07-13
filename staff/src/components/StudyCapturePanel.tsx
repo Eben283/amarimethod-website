@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Activity, Check, Loader2 } from 'lucide-react';
 import { getStudyCapture, saveStudyCapture } from '../lib/api';
 import type { ElbowStudyRecord, ElbowStudySession, InstrumentSnapshot } from '../types/staff';
 import {
+  RESPONSE_NA,
+  countAnswered,
+  formatInstrumentScore,
   instrumentFor,
+  itemCount,
   scoreInstrument,
   type Instrument,
   type StudyConfig,
@@ -29,8 +33,6 @@ const BODY_OPTIONS: Array<{ value: 'left' | 'right' | 'both'; label: string }> =
   { value: 'both', label: 'Both' },
 ];
 
-const PAIN_SCALE = Array.from({ length: 11 }, (_, i) => i); // 0..10
-
 function emptyRecord(): StudyRecord {
   return {
     arm: null,
@@ -45,52 +47,63 @@ function emptyRecord(): StudyRecord {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-function PainScale({
+const scaleBtnStyle = (on: boolean): CSSProperties => ({
+  minWidth: 34,
+  minHeight: 34,
+  borderRadius: 8,
+  fontFamily: 'var(--mono)',
+  fontSize: 13,
+  cursor: 'pointer',
+  border: '1px solid var(--line)',
+  background: on ? 'var(--accent)' : 'var(--surface)',
+  color: on ? '#fff' : 'var(--ink2)',
+});
+
+/** Numeric Likert for session pain (always 0–10) or instrument items. */
+function ItemScale({
   value,
   onChange,
+  min = 0,
+  max = 10,
+  allowNa = false,
 }: {
   value: number | null;
   onChange: (v: number | null) => void;
+  min?: number;
+  max?: number;
+  allowNa?: boolean;
 }) {
+  const nums = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  const isNa = value === RESPONSE_NA;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-      {PAIN_SCALE.map((n) => {
-        const on = value === n;
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+      {nums.map((n) => {
+        const on = !isNa && value === n;
         return (
           <button
             key={n}
             type="button"
             onClick={() => onChange(on ? null : n)}
             aria-pressed={on}
-            style={{
-              minWidth: 34,
-              minHeight: 34,
-              borderRadius: 8,
-              fontFamily: 'var(--mono)',
-              fontSize: 13,
-              cursor: 'pointer',
-              border: '1px solid var(--line)',
-              background: on ? 'var(--accent)' : 'var(--surface)',
-              color: on ? '#fff' : 'var(--ink2)',
-            }}
+            style={scaleBtnStyle(on)}
           >
             {n}
           </button>
         );
       })}
+      {allowNa && (
+        <button
+          type="button"
+          onClick={() => onChange(isNa ? null : RESPONSE_NA)}
+          aria-pressed={isNa}
+          title="Not applicable"
+          style={{ ...scaleBtnStyle(isNa), minWidth: 44, fontSize: 12 }}
+        >
+          N/A
+        </button>
+      )}
     </div>
   );
-}
-
-function countAnswered(survey: Instrument, responses: Record<string, number | null>): number {
-  let n = 0;
-  for (const sub of survey.subscales) {
-    for (const it of sub.items) {
-      const v = responses[it.id];
-      if (v !== null && v !== undefined) n += 1;
-    }
-  }
-  return n;
 }
 
 function SurveySection({
@@ -109,9 +122,11 @@ function SurveySection({
   defaultOpen: boolean;
 }) {
   const responses = snapshot.responses;
-  const answered = countAnswered(survey, responses);
+  const { answered, na } = countAnswered(survey, responses);
   const total = scoreInstrument(survey, responses);
-  const itemCount = survey.subscales.reduce((n, s) => n + s.items.length, 0);
+  const totalItems = itemCount(survey);
+  const { minScale, maxScale, allowNa, higherIsBetter } = survey.scoring;
+  const direction = higherIsBetter ? 'Higher score = better function.' : 'Higher score = worse.';
 
   return (
     <details open={defaultOpen} style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
@@ -119,13 +134,13 @@ function SurveySection({
         <span className="lbl">{title}</span>
         <span className="sa-chip" style={{ fontSize: 12 }}>
           {total !== null
-            ? `score ${total}/${survey.scoring.max}`
-            : `${answered}/${itemCount} answered`}
+            ? `score ${formatInstrumentScore(survey, total)}`
+            : `${answered + na}/${totalItems} answered`}
         </span>
       </summary>
 
       <p style={{ fontSize: 12, color: 'var(--muted)', margin: '8px 0 4px' }}>
-        {hint} Survey asks about the {survey.recall}. Higher score = worse.
+        {hint} Survey asks about the {survey.recall}. {direction}
       </p>
 
       {survey.subscales.map((sub) => (
@@ -137,7 +152,8 @@ function SurveySection({
             {sub.instruction}
           </span>
           <span style={{ display: 'block', fontSize: 11, color: 'var(--muted)', marginBottom: 8 }}>
-            0 = {sub.anchorLow} · 10 = {sub.anchorHigh}
+            {minScale} = {sub.anchorLow} · {maxScale} = {sub.anchorHigh}
+            {allowNa ? ' · N/A when limited by something else' : ''}
           </span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {sub.items.map((it) => (
@@ -145,9 +161,12 @@ function SurveySection({
                 <span style={{ display: 'block', marginBottom: 4, fontSize: 13, color: 'var(--ink2)' }}>
                   {it.text}
                 </span>
-                <PainScale
+                <ItemScale
                   value={responses[it.id] ?? null}
                   onChange={(v) => onChange(it.id, v)}
+                  min={minScale}
+                  max={maxScale}
+                  allowNa={allowNa}
                 />
               </div>
             ))}
@@ -156,6 +175,7 @@ function SurveySection({
       ))}
 
       <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>{survey.attribution}</p>
+      <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{survey.scoring.note}</p>
     </details>
   );
 }
@@ -392,7 +412,7 @@ export default function StudyCapturePanel({ contactId, study }: Props) {
                     >
                       Before (0–10)
                     </span>
-                    <PainScale value={s.before} onChange={(v) => updateSession(i, { before: v })} />
+                    <ItemScale value={s.before} onChange={(v) => updateSession(i, { before: v })} />
                   </div>
 
                   <div>
@@ -401,7 +421,7 @@ export default function StudyCapturePanel({ contactId, study }: Props) {
                     >
                       After (0–10)
                     </span>
-                    <PainScale value={s.after} onChange={(v) => updateSession(i, { after: v })} />
+                    <ItemScale value={s.after} onChange={(v) => updateSession(i, { after: v })} />
                   </div>
 
                   <input

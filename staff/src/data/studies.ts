@@ -26,16 +26,37 @@ export interface InstrumentSubscale {
   items: InstrumentItem[];
 }
 
+/** Sentinel stored in responses when the respondent marks N/A (FAAM). */
+export const RESPONSE_NA = -1;
+
+export type ScoringMethod = 'prtee' | 'mean' | 'percent' | 'quickdash';
+
+export interface InstrumentScoring {
+  method: ScoringMethod;
+  /** Display / ceiling for the computed total (e.g. 100, 10). */
+  max: number;
+  /** Inclusive Likert bounds for each item. */
+  minScale: number;
+  maxScale: number;
+  /** Minimum scored (non-NA) answers required before a total is shown. */
+  minAnswered: number;
+  /** Allow N/A responses (excluded from scoring). */
+  allowNa: boolean;
+  higherIsBetter: boolean;
+  note: string;
+  /** PRTEE only — subscale keys for pain vs function. */
+  painKeys?: string[];
+  functionKeys?: string[];
+  functionHalved?: boolean;
+}
+
 export interface Instrument {
   abbr: string;
   name: string;
   attribution: string;
   recall: string; // e.g. "over the past week"
   subscales: InstrumentSubscale[];
-  // Total-score spec. `functionHalved` follows the PRTEE convention where the
-  // function items are summed then divided by 2 so pain and function weigh
-  // equally out of 100. Higher = worse; 0 = no disability.
-  scoring: { max: number; painKeys: string[]; functionKeys: string[]; functionHalved: boolean; note: string };
+  scoring: InstrumentScoring;
   ready: boolean; // false until the items below are verified & transcribed
 }
 
@@ -106,11 +127,171 @@ const PRTEE: Instrument = {
     },
   ],
   scoring: {
+    method: 'prtee',
     max: 100,
+    minScale: 0,
+    maxScale: 10,
+    minAnswered: 15,
+    allowNa: false,
+    higherIsBetter: false,
     painKeys: ['pain'],
     functionKeys: ['specific', 'usual'],
     functionHalved: true,
     note: 'Pain = sum of 5 pain items (/50). Function = sum of 10 items ÷ 2 (/50). Total /100, higher = worse.',
+  },
+  ready: true,
+};
+
+// JFLS-8 — Ohrbach R., version 12 May 2013. Official form: "No permission
+// required to reproduce, translate, display, or distribute." Available at
+// rdc-tmdinternational.org. Score = mean of answered items (≤2 missing).
+const JFLS8: Instrument = {
+  abbr: 'JFLS-8',
+  name: 'Jaw Functional Limitation Scale (8-item)',
+  attribution: '© Richard Ohrbach. Available at rdc-tmdinternational.org. No permission required.',
+  recall: 'during the last month',
+  subscales: [
+    {
+      key: 'limitation',
+      title: 'Jaw function',
+      instruction:
+        'Indicate the level of limitation during the last month. If the activity has been completely avoided because it is too difficult, circle 10. If you avoid an activity for reasons other than pain or difficulty, leave the item blank.',
+      anchorLow: 'No limitation',
+      anchorHigh: 'Severe limitation',
+      items: [
+        { id: 'j1', text: 'Chew tough food' },
+        { id: 'j2', text: 'Chew chicken (e.g., prepared in oven)' },
+        {
+          id: 'j3',
+          text: 'Eat soft food requiring no chewing (e.g., mashed potatoes, apple sauce, pudding, pureed food)',
+        },
+        { id: 'j4', text: 'Open wide enough to drink from a cup' },
+        { id: 'j5', text: 'Swallow' },
+        { id: 'j6', text: 'Yawn' },
+        { id: 'j7', text: 'Talk' },
+        { id: 'j8', text: 'Smile' },
+      ],
+    },
+  ],
+  scoring: {
+    method: 'mean',
+    max: 10,
+    minScale: 0,
+    maxScale: 10,
+    minAnswered: 6,
+    allowNa: false,
+    higherIsBetter: false,
+    note: 'Mean of answered items (/10). Up to 2 items may be blank. Higher = greater limitation.',
+  },
+  ready: true,
+};
+
+// FAAM ADL — Martin et al. Free for clinical/research use. Response options
+// 4 = no difficulty … 0 = unable; N/A excluded. Score = % of max possible
+// among answered items; need ≥19 of 21. Higher = better function.
+const FAAM: Instrument = {
+  abbr: 'FAAM',
+  name: 'Foot & Ankle Ability Measure (ADL)',
+  attribution: 'Foot and Ankle Ability Measure (FAAM) — Martin et al. Free for clinical/research use.',
+  recall: 'within the past week',
+  subscales: [
+    {
+      key: 'adl',
+      title: 'Activities of daily living',
+      instruction:
+        'Because of your foot and ankle, how much difficulty do you have with each of the items listed below? If limited by something other than your foot or ankle, mark N/A.',
+      anchorLow: 'Unable to do',
+      anchorHigh: 'No difficulty',
+      items: [
+        { id: 'f1', text: 'Standing' },
+        { id: 'f2', text: 'Walking on even ground' },
+        { id: 'f3', text: 'Walking on even ground without shoes' },
+        { id: 'f4', text: 'Walking up hills' },
+        { id: 'f5', text: 'Walking down hills' },
+        { id: 'f6', text: 'Going up stairs' },
+        { id: 'f7', text: 'Going down stairs' },
+        { id: 'f8', text: 'Walking on uneven ground' },
+        { id: 'f9', text: 'Stepping up and down curbs' },
+        { id: 'f10', text: 'Squatting' },
+        { id: 'f11', text: 'Coming up on your toes' },
+        { id: 'f12', text: 'Walking initially' },
+        { id: 'f13', text: 'Walking 5 minutes or less' },
+        { id: 'f14', text: 'Walking approximately 10 minutes' },
+        { id: 'f15', text: 'Walking 15 minutes or greater' },
+        { id: 'f16', text: 'Home responsibilities' },
+        { id: 'f17', text: 'Activities of daily living' },
+        { id: 'f18', text: 'Personal care' },
+        { id: 'f19', text: 'Light to moderate work (standing, walking)' },
+        { id: 'f20', text: 'Heavy work (pushing/pulling, climbing, carrying)' },
+        { id: 'f21', text: 'Recreational activities' },
+      ],
+    },
+  ],
+  scoring: {
+    method: 'percent',
+    max: 100,
+    minScale: 0,
+    maxScale: 4,
+    minAnswered: 19,
+    allowNa: true,
+    higherIsBetter: true,
+    note: 'ADL % = (sum of answered items) / (n × 4) × 100. Need ≥19 of 21 non-N/A. Higher = better function.',
+  },
+  ready: true,
+};
+
+// QuickDASH — © Institute for Work & Health 2006. Free for clinician /
+// non-commercial research if unmodified + credit; submit free Intent to Use at
+// dash.iwh.on.ca. Score = ((sum/n) − 1) × 25; need ≥10 of 11. Higher = worse.
+const QuickDASH: Instrument = {
+  abbr: 'QuickDASH',
+  name: 'QuickDASH',
+  attribution: '© Institute for Work & Health 2006. Free for clinical / non-commercial research use with credit; Intent to Use at dash.iwh.on.ca.',
+  recall: 'in the last week',
+  subscales: [
+    {
+      key: 'disability',
+      title: 'Disability / symptoms',
+      instruction:
+        'Please rate your ability to perform the following activities in the last week. Answer based on your ability regardless of which hand or arm you use.',
+      anchorLow: 'No difficulty / none',
+      anchorHigh: 'Unable / extreme',
+      items: [
+        { id: 'q1', text: 'Open a tight or new jar' },
+        { id: 'q2', text: 'Do heavy household chores (e.g., wash walls, wash floors)' },
+        { id: 'q3', text: 'Carry a shopping bag or briefcase' },
+        { id: 'q4', text: 'Wash your back' },
+        { id: 'q5', text: 'Use a knife to cut food' },
+        {
+          id: 'q6',
+          text: 'Recreational activities in which you take some force or impact through your arm, shoulder or hand (e.g., golf, hammering, tennis, etc.)',
+        },
+        {
+          id: 'q7',
+          text: 'During the past week, to what extent has your arm, shoulder or hand problem interfered with your normal social activities with family, friends, neighbours or groups?',
+        },
+        {
+          id: 'q8',
+          text: 'During the past week, were you limited in your work or other regular daily activities as a result of your arm, shoulder or hand problem?',
+        },
+        { id: 'q9', text: 'Arm, shoulder or hand pain' },
+        { id: 'q10', text: 'Tingling (pins and needles) in your arm, shoulder or hand' },
+        {
+          id: 'q11',
+          text: 'During the past week, how much difficulty have you had sleeping because of the pain in your arm, shoulder or hand?',
+        },
+      ],
+    },
+  ],
+  scoring: {
+    method: 'quickdash',
+    max: 100,
+    minScale: 1,
+    maxScale: 5,
+    minAnswered: 10,
+    allowNa: false,
+    higherIsBetter: false,
+    note: '((sum/n) − 1) × 25 → 0–100. Need ≥10 of 11 items. Higher = greater disability.',
   },
   ready: true,
 };
@@ -120,9 +301,21 @@ const PRTEE: Instrument = {
 // the panel captures pain + intake and shows the questionnaire as pending.
 function pending(abbr: string, name: string, recall: string): Instrument {
   return {
-    abbr, name, attribution: 'verify license before use', recall,
+    abbr,
+    name,
+    attribution: 'verify license before use',
+    recall,
     subscales: [],
-    scoring: { max: 100, painKeys: [], functionKeys: [], functionHalved: false, note: 'items pending verification' },
+    scoring: {
+      method: 'mean',
+      max: 100,
+      minScale: 0,
+      maxScale: 10,
+      minAnswered: 1,
+      allowNa: false,
+      higherIsBetter: false,
+      note: 'items pending verification',
+    },
     ready: false,
   };
 }
@@ -130,9 +323,9 @@ function pending(abbr: string, name: string, recall: string): Instrument {
 export const INSTRUMENTS: Record<string, Instrument> = {
   PRTEE,
   BCTQ: pending('BCTQ', 'Boston Carpal Tunnel Questionnaire', 'over the past 2 weeks'),
-  'JFLS-8': pending('JFLS-8', 'Jaw Functional Limitation Scale (8-item)', 'over the past month'),
-  FAAM: pending('FAAM', 'Foot & Ankle Ability Measure (ADL)', 'over the past week'),
-  QuickDASH: pending('QuickDASH', 'QuickDASH', 'over the past week'),
+  'JFLS-8': JFLS8,
+  FAAM,
+  QuickDASH,
   NDI: pending('NDI', 'Neck Disability Index', 'today'),
   SPADI: pending('SPADI', 'Shoulder Pain & Disability Index', 'over the past week'),
   ODI: pending('ODI', 'Oswestry Disability Index', 'today'),
@@ -171,11 +364,24 @@ export function instrumentFor(study: StudyConfig): Instrument {
   return INSTRUMENTS[study.instrumentAbbr];
 }
 
-// Total score from a responses map {itemId: 0-10|null}. Returns null unless
-// every item is answered (missing-data handling is a reporting concern, not a
-// live-capture one). Higher = worse.
-export function scoreInstrument(inst: Instrument, responses: Record<string, number | null>): number | null {
-  if (!inst.ready) return null;
+function collectValues(
+  inst: Instrument,
+  responses: Record<string, number | null>,
+): number[] | null {
+  const values: number[] = [];
+  for (const sub of inst.subscales) {
+    for (const it of sub.items) {
+      const v = responses[it.id];
+      if (v === null || v === undefined) continue;
+      if (v === RESPONSE_NA) continue;
+      if (v < inst.scoring.minScale || v > inst.scoring.maxScale) return null;
+      values.push(v);
+    }
+  }
+  return values;
+}
+
+function scorePrtee(inst: Instrument, responses: Record<string, number | null>): number | null {
   const sub = (keys: string[]) => {
     let sum = 0;
     for (const s of inst.subscales.filter((x) => keys.includes(x.key))) {
@@ -187,8 +393,66 @@ export function scoreInstrument(inst: Instrument, responses: Record<string, numb
     }
     return sum;
   };
-  const pain = sub(inst.scoring.painKeys);
-  const fn = sub(inst.scoring.functionKeys);
+  const pain = sub(inst.scoring.painKeys ?? []);
+  const fn = sub(inst.scoring.functionKeys ?? []);
   if (pain === null || fn === null) return null;
   return pain + (inst.scoring.functionHalved ? fn / 2 : fn);
+}
+
+/** Computed total, or null until enough items are answered. */
+export function scoreInstrument(
+  inst: Instrument,
+  responses: Record<string, number | null>,
+): number | null {
+  if (!inst.ready) return null;
+  const { method, minAnswered, maxScale } = inst.scoring;
+
+  if (method === 'prtee') return scorePrtee(inst, responses);
+
+  const values = collectValues(inst, responses);
+  if (!values || values.length < minAnswered) return null;
+
+  if (method === 'mean') {
+    const sum = values.reduce((a, b) => a + b, 0);
+    return Math.round((sum / values.length) * 10) / 10;
+  }
+
+  if (method === 'percent') {
+    const sum = values.reduce((a, b) => a + b, 0);
+    return Math.round((sum / (values.length * maxScale)) * 1000) / 10;
+  }
+
+  if (method === 'quickdash') {
+    const sum = values.reduce((a, b) => a + b, 0);
+    const avg = sum / values.length;
+    return Math.round((avg - 1) * 250) / 10;
+  }
+
+  return null;
+}
+
+export function formatInstrumentScore(inst: Instrument, total: number): string {
+  const rounded =
+    Number.isInteger(total) ? String(total) : total.toFixed(1);
+  return `${rounded}/${inst.scoring.max}`;
+}
+
+export function itemCount(inst: Instrument): number {
+  return inst.subscales.reduce((n, s) => n + s.items.length, 0);
+}
+
+export function countAnswered(
+  inst: Instrument,
+  responses: Record<string, number | null>,
+): { answered: number; na: number } {
+  let answered = 0;
+  let na = 0;
+  for (const sub of inst.subscales) {
+    for (const it of sub.items) {
+      const v = responses[it.id];
+      if (v === RESPONSE_NA) na += 1;
+      else if (v !== null && v !== undefined) answered += 1;
+    }
+  }
+  return { answered, na };
 }
