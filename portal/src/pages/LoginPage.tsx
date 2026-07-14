@@ -1,27 +1,35 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { requestMagicLink, ApiError } from '../lib/api';
+import { useState, useEffect, useRef } from 'react';
+import { requestMagicLink, verifyLoginCode, ApiError } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, ArrowRight, CheckCircle, AlertCircle, Monitor } from 'lucide-react';
+
+type Status = 'idle' | 'loading' | 'sent' | 'verifying' | 'error';
 
 export default function LoginPage() {
-  const { sessionEvicted } = useAuth();
-  const [searchParams] = useSearchParams();
+  const { sessionEvicted, login } = useAuth();
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'sent' | 'error'>('idle');
+  const [code, setCode] = useState('');
+  const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  // Server cooldown is 5 minutes — match the UI so "resend" doesn't 429.
   const [countdown, setCountdown] = useState<number | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!countdown) return;
     const timer = setTimeout(
-      () => setCountdown(c => (c !== null && c > 1 ? c - 1 : null)),
-      1000
+      () => setCountdown((c) => (c !== null && c > 1 ? c - 1 : null)),
+      1000,
     );
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  async function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (status === 'sent') {
+      codeRef.current?.focus();
+    }
+  }, [status]);
+
+  async function handleRequestCode(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
 
@@ -31,21 +39,47 @@ export default function LoginPage() {
     try {
       await requestMagicLink(email.trim().toLowerCase());
       setStatus('sent');
-      setCountdown(60);
+      setCode('');
+      setCountdown(300);
     } catch (err) {
-      // Do not reveal whether an account exists for this email (account
-      // enumeration). A 404 ("no such contact") is shown as the same neutral
-      // "check your email" state as a real send — the only observable
-      // difference a caller can probe for is removed.
+      // Anti-enumeration: unknown emails look the same as a real send.
       if (err instanceof ApiError && err.status === 404) {
         setStatus('sent');
-        setCountdown(60);
+        setCode('');
+        setCountdown(300);
         return;
       }
       setStatus('error');
       if (err instanceof ApiError && err.status === 429) {
-        setErrorMessage('Please wait before requesting another link.');
-        setCountdown(60);
+        setErrorMessage('Please wait a few minutes before requesting another code.');
+        setCountdown(300);
+      } else {
+        setErrorMessage('Something went wrong. Please try again.');
+      }
+    }
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = code.replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(trimmed)) {
+      setErrorMessage('Enter the 6-digit code from your email.');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('verifying');
+    setErrorMessage('');
+
+    try {
+      const result = await verifyLoginCode(email.trim().toLowerCase(), trimmed);
+      login(result.sessionToken, result.contactId, result.email);
+      window.location.assign('/portal/');
+    } catch (err) {
+      setStatus('sent');
+      if (err instanceof ApiError) {
+        setErrorMessage(err.message || 'That code did not work. Try again.');
+        if (err.status === 429) setCountdown(300);
       } else {
         setErrorMessage('Something went wrong. Please try again.');
       }
@@ -53,135 +87,212 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md animate-fade-in">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <a href="/" className="inline-block">
-            <img
-              src="/images/AmariLogo.avif"
-              alt="Amari Method"
-              className="h-10 mx-auto mb-6"
-              style={{ height: '40px', width: 'auto' }}
-            />
+    <div className="cp-screen" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '40px 20px' }}>
+      <main style={{ maxWidth: 460, width: '100%', padding: '48px 8px 64px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <a href="/" className="cp-seal" style={{ justifyContent: 'center', marginBottom: 28, display: 'inline-flex' }}>
+            <span className="cp-mark" aria-hidden="true" />
+            <span>Amari Method</span>
           </a>
-          <h1 className="font-serif text-3xl font-bold text-amari-charcoal mb-2">
-            Client Portal
+          <span className="cp-mono cp-accent" style={{ display: 'block', marginBottom: 10 }}>
+            Client portal
+          </span>
+          <h1
+            style={{
+              fontFamily: 'var(--cp-display)',
+              fontSize: 'clamp(34px, 6vw, 44px)',
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+              textWrap: 'balance',
+            }}
+          >
+            {status === 'sent' || status === 'verifying' ? (
+              <>Enter your <em>code.</em></>
+            ) : (
+              <>Sign <em>in.</em></>
+            )}
           </h1>
-          <p className="text-amari-text-muted">
-            See where you are in your healing journey — progress, sessions, and next steps.
+          <p
+            style={{
+              fontFamily: 'var(--cp-display)',
+              fontStyle: 'italic',
+              fontSize: 18,
+              color: 'var(--cp-ink-2)',
+              marginTop: 12,
+              maxWidth: '34ch',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              lineHeight: 1.45,
+            }}
+          >
+            {status === 'sent' || status === 'verifying'
+              ? 'We emailed a 6-digit code. Enter it here — no need to hunt for a link.'
+              : 'Use the email from your booking confirmation. We\'ll email a one-time code.'}
           </p>
         </div>
 
-        {/* Session evicted notice */}
         {sessionEvicted && (
-          <div className="flex items-start gap-3 mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200">
-            <Monitor className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">Session expired</p>
-              <p className="text-sm text-amber-700 mt-0.5">
-                You've logged in on another device. Please sign in again to continue.
-              </p>
-            </div>
+          <div
+            style={{
+              marginBottom: 20,
+              padding: '14px 16px',
+              border: '1px solid var(--cp-line-2)',
+              background: 'var(--cp-paper-2)',
+              textAlign: 'left',
+            }}
+          >
+            <p className="cp-mono" style={{ color: 'var(--cp-warn)', marginBottom: 6 }}>Session ended</p>
+            <p style={{ fontSize: 14, color: 'var(--cp-ink-2)', lineHeight: 1.45 }}>
+              You signed in on another device. Request a new code to continue here.
+            </p>
           </div>
         )}
 
-        {/* Card */}
-        <div className="portal-card">
-          {status === 'sent' ? (
-            /* Success state */
-            <div className="text-center py-4">
-              <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-              <h2 className="font-serif text-xl font-bold text-amari-charcoal mb-2">
-                Check your email
-              </h2>
-              <p className="text-amari-text-secondary mb-4">
-                We sent a login link to <span className="font-medium">{email}</span>.
-                Click the link to access your portal.
-              </p>
-              <p className="text-sm text-amari-text-muted">
-                We're looking forward to seeing you. Check your spam folder if you don't see it within a minute.
-              </p>
-              <div className="mt-6 flex flex-col items-center gap-3">
-                {countdown !== null && countdown > 0 ? (
-                  <span className="text-sm text-amari-text-muted">
-                    Resend in {countdown}s
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => { setStatus('idle'); setCountdown(null); }}
-                    className="text-sm text-amari-charcoal underline hover:no-underline"
-                  >
-                    Resend link
-                  </button>
-                )}
+        {status === 'sent' || status === 'verifying' ? (
+          <form onSubmit={handleVerifyCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label className="cp-mono" htmlFor="otp" style={{ textAlign: 'left' }}>
+              6-digit code
+            </label>
+            <input
+              ref={codeRef}
+              id="otp"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              disabled={status === 'verifying'}
+              style={{
+                width: '100%',
+                padding: '16px 18px',
+                fontSize: 28,
+                letterSpacing: '0.35em',
+                textAlign: 'center',
+                fontFamily: 'var(--cp-display)',
+                color: 'var(--cp-ink)',
+                background: 'var(--cp-paper)',
+                border: '1px solid var(--cp-line-2)',
+                outline: 'none',
+              }}
+            />
+            <p style={{ fontSize: 13, color: 'var(--cp-mute)', textAlign: 'left', lineHeight: 1.5 }}>
+              Sent to <strong style={{ color: 'var(--cp-ink)', fontWeight: 500 }}>{email}</strong>.
+              Check spam if it isn&apos;t there in a minute. Prefer a link? Use the one in the same email.
+            </p>
+
+            {errorMessage && (
+              <p style={{ fontSize: 14, color: 'var(--cp-err)', textAlign: 'left' }}>{errorMessage}</p>
+            )}
+
+            <button
+              type="submit"
+              className="cp-btn cp-btn-primary"
+              disabled={status === 'verifying' || code.length !== 6}
+              style={{ width: '100%', marginTop: 4 }}
+            >
+              <span>{status === 'verifying' ? 'Signing in…' : 'Sign in'}</span>
+              {status !== 'verifying' && <span className="cp-arrow">→</span>}
+            </button>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, justifyContent: 'center', marginTop: 8 }}>
+              {countdown !== null && countdown > 0 ? (
+                <span className="cp-mono">Resend in {Math.ceil(countdown / 60)}m {String(countdown % 60).padStart(2, '0')}s</span>
+              ) : (
                 <button
-                  onClick={() => { setStatus('idle'); setEmail(''); setCountdown(null); }}
-                  className="text-sm text-amari-text-muted hover:text-amari-charcoal"
+                  type="button"
+                  className="cp-btn cp-btn-text"
+                  onClick={() => {
+                    setStatus('idle');
+                    setCountdown(null);
+                    setErrorMessage('');
+                  }}
                 >
-                  Use a different email
+                  Resend code
                 </button>
-              </div>
-            </div>
-          ) : (
-            /* Login form */
-            <form onSubmit={handleSubmit}>
-              <label htmlFor="email" className="portal-label">
-                Email address
-              </label>
-              <div className="relative mb-4">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amari-text-muted" />
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="portal-input pl-11"
-                  required
-                  autoFocus
-                  disabled={status === 'loading'}
-                />
-              </div>
-
-              {status === 'error' && (
-                <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-red-50 border border-red-100">
-                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-red-700">{errorMessage}</p>
-                </div>
               )}
-
               <button
-                type="submit"
-                className="portal-btn-primary w-full"
-                disabled={status === 'loading' || !email.trim() || (countdown !== null && countdown > 0)}
+                type="button"
+                className="cp-btn cp-btn-text"
+                onClick={() => {
+                  setStatus('idle');
+                  setEmail('');
+                  setCode('');
+                  setCountdown(null);
+                  setErrorMessage('');
+                }}
               >
-                {status === 'loading' ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Sending link...
-                  </span>
-                ) : countdown !== null && countdown > 0 ? (
-                  `Wait ${countdown}s`
-                ) : (
-                  <span className="flex items-center gap-2">
-                    Send login link
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
+                Different email
               </button>
-            </form>
-          )}
-        </div>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleRequestCode} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <label className="cp-mono" htmlFor="email" style={{ textAlign: 'left' }}>
+              Email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              autoFocus
+              disabled={status === 'loading'}
+              style={{
+                width: '100%',
+                padding: '14px 16px',
+                fontSize: 16,
+                fontFamily: 'var(--cp-sans)',
+                color: 'var(--cp-ink)',
+                background: 'var(--cp-paper)',
+                border: '1px solid var(--cp-line-2)',
+                outline: 'none',
+              }}
+            />
 
-        {/* Footer */}
-        <p className="text-center text-sm text-amari-text-muted mt-6">
-          New to the Amari Method?{' '}
-          <a href="/booking" className="text-amari-charcoal underline hover:no-underline">
+            {status === 'error' && errorMessage && (
+              <p style={{ fontSize: 14, color: 'var(--cp-err)', textAlign: 'left' }}>{errorMessage}</p>
+            )}
+
+            <button
+              type="submit"
+              className="cp-btn cp-btn-primary"
+              disabled={status === 'loading' || !email.trim() || (countdown !== null && countdown > 0)}
+              style={{ width: '100%', marginTop: 4 }}
+            >
+              <span>
+                {status === 'loading'
+                  ? 'Sending…'
+                  : countdown !== null && countdown > 0
+                    ? `Wait ${Math.ceil(countdown / 60)}m`
+                    : 'Email me a code'}
+              </span>
+              {status !== 'loading' && !(countdown !== null && countdown > 0) && (
+                <span className="cp-arrow">→</span>
+              )}
+            </button>
+          </form>
+        )}
+
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: 14,
+            color: 'var(--cp-mute)',
+            marginTop: 28,
+            lineHeight: 1.5,
+          }}
+        >
+          New here?{' '}
+          <a href="/booking" style={{ color: 'var(--cp-ink)', textDecoration: 'underline' }}>
             Book your first session
           </a>
         </p>
-      </div>
+      </main>
     </div>
   );
 }

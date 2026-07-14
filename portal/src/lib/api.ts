@@ -59,10 +59,20 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
-export async function requestMagicLink(email: string): Promise<{ success: boolean; message: string }> {
+export async function requestMagicLink(email: string): Promise<{ success: boolean; message: string; mode?: string }> {
   return fetchApi('/portal-auth', {
     method: 'POST',
     body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyLoginCode(
+  email: string,
+  code: string,
+): Promise<{ sessionToken: string; contactId: string; email: string }> {
+  return fetchApi('/portal-verify-code', {
+    method: 'POST',
+    body: JSON.stringify({ email, code }),
   });
 }
 
