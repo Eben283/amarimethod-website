@@ -11,17 +11,17 @@
 // series of what PARTICIPANTS REPORTED with Amari rebalancing PROTOCOLS. No
 // medical claims, no "Dr.", the practitioner teaches and guides.
 
-// Instrument fields are the proposed picks from the rigor spine. `license` is
-// intentionally "verify" until each one's permission terms are confirmed.
+// Instrument fields are the picks from the rigor spine. Live instruments have
+// confirmed terms; draft ones stay "verify" until transcribed + cleared.
 export const STUDIES = {
   "tennis-elbow": {
     slug: "tennis-elbow",
     tag: "elbow-study-participant",
     module: "elbow-reset",
     condition: "tennis elbow",
-    shortName: "Elbow Reset Study",
+    shortName: "Elbow Pain Study",
     bodyQuestion: { key: "arm", label: "Which arm?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "PRTEE", name: "Patient-Rated Tennis Elbow Evaluation", recall: "past week", license: "verify" },
+    instrument: { abbr: "PRTEE", name: "Patient-Rated Tennis Elbow Evaluation", recall: "past week", license: "free-attribution (MacDermid)" },
     venues: ["Tennis courts", "Pickleball courts"],
     status: "live", // already recruiting
   },
@@ -41,22 +41,33 @@ export const STUDIES = {
     tag: "tmj-study-participant",
     module: "jaw-align",
     condition: "TMJ / jaw pain",
-    shortName: "Jaw Reset Study",
+    shortName: "Jaw Tension Study",
     bodyQuestion: { key: "side", label: "Which side?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "JFLS-8", name: "Jaw Functional Limitation Scale (8-item)", recall: "past month", license: "verify" },
+    instrument: { abbr: "JFLS-8", name: "Jaw Functional Limitation Scale (8-item)", recall: "past month", license: "no-permission-required (Ohrbach)" },
     venues: ["Yoga studios", "Dentist / orthodontist referral"],
-    status: "draft",
+    status: "live",
+  },
+  "hand": {
+    slug: "hand",
+    tag: "hand-study-participant",
+    module: "hand-balancer",
+    condition: "hand / finger tendon pain (climbers)",
+    shortName: "Hand Pain Study",
+    bodyQuestion: { key: "hand", label: "Which hand?", options: ["Left", "Right", "Both"] },
+    instrument: { abbr: "PRWHE", name: "Patient-Rated Wrist/Hand Evaluation", recall: "past week", license: "free-attribution (MacDermid)" },
+    venues: ["Climbing gyms"],
+    status: "live",
   },
   "runners-lower-leg": {
     slug: "runners-lower-leg",
     tag: "lowerleg-study-participant",
     module: "spring-step",
-    condition: "calf, ankle, shin & plantar pain",
-    shortName: "Runner's Lower Leg Study",
+    condition: "plantar fasciitis / heel & foot pain",
+    shortName: "Foot Pain Study",
     bodyQuestion: { key: "leg", label: "Which leg?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "FAAM", name: "Foot & Ankle Ability Measure (ADL)", recall: "past week", license: "verify" },
+    instrument: { abbr: "FAAM", name: "Foot & Ankle Ability Measure (ADL)", recall: "past week", license: "free-clinical-research (Martin)" },
     venues: ["Running clubs", "Run-specialty stores", "Park trailheads"],
-    status: "draft",
+    status: "live",
   },
   "tech-neck": {
     slug: "tech-neck",
@@ -78,7 +89,7 @@ export const STUDIES = {
     bodyQuestion: { key: "shoulder", label: "Which shoulder?", options: ["Left", "Right", "Both"] },
     instrument: { abbr: "SPADI", name: "Shoulder Pain & Disability Index", recall: "past week", license: "verify" },
     venues: ["Coworking spaces", "Tech offices"],
-    status: "draft",
+    status: "live",
   },
   "lower-back": {
     slug: "lower-back",

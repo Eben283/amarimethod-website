@@ -6,8 +6,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <title>The Elbow Pain Study: Sign Up</title>
-  <meta name="description" content="A free 3-session study for San Francisco adults with lingering elbow pain, run by Amari Method.">
+  <title>The Jaw Tension Study: Sign Up</title>
+  <meta name="description" content="A free 3-session study for San Francisco adults with long-term jaw tension, run by Amari Method.">
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
@@ -374,15 +374,15 @@
 <body>
   <div class="card" id="card">
     <p class="eyebrow">Amari Method &middot; San Francisco</p>
-    <h1>The Elbow Pain Study</h1>
-    <p class="lede">A free 3-session study for SF adults with lingering elbow pain. We track your pain score before and after each session.</p>
+    <h1>The Jaw Tension Study</h1>
+    <p class="lede">A free 3-session study for SF adults with long-term jaw tension. We track how your jaw feels before and after each session.</p>
 
     <details>
       <summary>What&rsquo;s involved</summary>
       <div class="learn-body">
         <div class="learn-block">
           <p class="learn-label">Why it works</p>
-          <p class="learn-text">Elbow pain like this is caused by one part of the forearm and elbow working too hard while another part isn&rsquo;t working enough. The protocol rebalances the two, which relieves the pain.</p>
+          <p class="learn-text">Jaw tension like this comes from some of the muscles that move the jaw working too hard while others aren&rsquo;t working enough. The protocol rebalances them, which settles the tension.</p>
         </div>
         <div class="learn-block">
           <p class="learn-label">Who&rsquo;s running it</p>
@@ -395,14 +395,14 @@
         <div class="learn-block">
           <p class="learn-label">Who qualifies</p>
           <ul class="qual-list">
-            <li>Elbow or forearm pain for 2+ weeks</li>
-            <li>Ongoing pain, not a fresh injury</li>
+            <li>Jaw tension or pain for 2+ weeks</li>
+            <li>Ongoing, not a fresh injury</li>
             <li>Can get to 662 8th Ave, San Francisco 3 times</li>
           </ul>
         </div>
         <div class="learn-block">
           <p class="learn-label">What happens with the results</p>
-          <p class="learn-text">When the study closes at 30 participants, we&rsquo;ll publish the full findings, the before-and-after pain scores across the whole cohort. Participants are identified by first name only, and only with their consent.</p>
+          <p class="learn-text">When the study closes at 30 participants, we&rsquo;ll publish the full findings, the before-and-after scores across the whole cohort. Participants are identified by first name only, and only with their consent.</p>
         </div>
       </div>
     </details>
@@ -412,11 +412,11 @@
         <p class="screen-title">First, does this sound like you?</p>
         <label class="screen-item">
           <input type="checkbox" class="screen-check" required>
-          <span>My elbow or forearm pain has lasted 2 weeks or more.</span>
+          <span>My jaw tension has lasted 2 weeks or more.</span>
         </label>
         <label class="screen-item">
           <input type="checkbox" class="screen-check" required>
-          <span>It&rsquo;s ongoing, not a fresh injury.</span>
+          <span>It&rsquo;s ongoing, not a one-off from something I ate.</span>
         </label>
         <label class="screen-item">
           <input type="checkbox" class="screen-check" required>
@@ -438,14 +438,14 @@
         <p class="field-note">Where we send your study results.</p>
       </div>
       <div class="field">
-        <label>Which arm <span class="optional-tag">(optional)</span></label>
+        <label>Which side <span class="optional-tag">(optional)</span></label>
         <div class="arm-group">
-          <input type="radio" name="arm" id="armLeft" value="left">
-          <label for="armLeft">Left</label>
-          <input type="radio" name="arm" id="armRight" value="right">
-          <label for="armRight">Right</label>
-          <input type="radio" name="arm" id="armBoth" value="both">
-          <label for="armBoth">Both</label>
+          <input type="radio" name="bodyPart" id="bpLeft" value="left">
+          <label for="bpLeft">Left</label>
+          <input type="radio" name="bodyPart" id="bpRight" value="right">
+          <label for="bpRight">Right</label>
+          <input type="radio" name="bodyPart" id="bpBoth" value="both">
+          <label for="bpBoth">Both</label>
         </div>
       </div>
       <p class="form-error" id="formError"></p>
@@ -459,7 +459,7 @@
       <p>Amari Method &middot; San Francisco</p>
     </div>
 
-    <p class="not-a-fit" id="notAFit">Not a fit for the study? <a href="/elbow-study-updates.html">Get notified when the results are published</a></p>
+    
 
     <p class="footer-line" id="footerLine">Amari Method &middot; San Francisco</p>
   </div>
@@ -475,16 +475,16 @@
       submitBtn.disabled = true;
       submitBtn.textContent = 'Joining…';
 
-      var arm = document.querySelector('input[name="arm"]:checked');
+      var bodyPart = document.querySelector('input[name="bodyPart"]:checked');
 
-      fetch('/api/elbow-study-signup', {
+      fetch('/api/jaw-study-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: document.getElementById('name').value,
           phone: document.getElementById('phone').value,
           email: document.getElementById('email').value,
-          arm: arm ? arm.value : undefined,
+          bodyPart: bodyPart ? bodyPart.value : undefined,
         }),
       })
         .then(function (res) {
@@ -497,7 +497,7 @@
           document.getElementById('card').classList.add('confirmed');
           document.getElementById('confirm').classList.add('show');
           document.getElementById('footerLine').style.display = 'none';
-          if (window.gtag) { gtag('event', 'elbow_study_signup'); }
+          if (window.gtag) { gtag('event', 'jaw_study_signup'); }
         })
         .catch(function (err) {
           errorEl.textContent = err.message || 'Something went wrong. Please try again.';
