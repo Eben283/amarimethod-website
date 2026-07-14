@@ -48,7 +48,7 @@ export class MultimodalLiveResponseMessage {
     const parts = data?.serverContent?.modelTurn?.parts;
 
     try {
-      if (data?.type === "error" || data?.error) {
+      if (data?.type === "error") {
         console.error("❌ ERROR response", data);
         this.type = MultimodalLiveResponseType.ERROR;
         this.data = data;
@@ -144,7 +144,7 @@ export class GeminiLiveAPI {
     this.responseModalities = ["AUDIO"];
     this.systemInstructions = "";
     this.googleGrounding = false;
-    this.enableAffectiveDialog = true; // Default affective dialog
+    this.enableAffectiveDialog = false; // Disabled: can break Vertex Live sessions
     this.voiceName = "Puck"; // Default voice
     this.temperature = 1.0; // Default temperature
     this.proactivity = { proactiveAudio: false }; // Proactivity config
@@ -180,7 +180,20 @@ export class GeminiLiveAPI {
 
     this.onErrorMessage = (message) => {
       console.error("❌ [GeminiLiveAPI] Error:", message);
-      alert(message);
+      try {
+        const text = typeof message === "string" ? message : JSON.stringify(message, null, 2);
+        let el = document.getElementById("immergo-error-banner");
+        if (!el) {
+          el = document.createElement("div");
+          el.id = "immergo-error-banner";
+          el.style.cssText = "position:fixed;left:12px;right:12px;bottom:12px;z-index:100000;background:#fff;color:#b00020;padding:14px 16px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-height:45vh;overflow:auto;font:14px/1.4 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;";
+          el.onclick = () => el.remove();
+          document.body.appendChild(el);
+        }
+        el.textContent = text + "\n\n(tap to dismiss)";
+      } catch (_) {
+        alert(String(message));
+      }
       this.connected = false;
     };
 
@@ -362,7 +375,6 @@ export class GeminiLiveAPI {
 
     const sessionSetupMessage = {
       setup: {
-
         generation_config: {
           response_modalities: this.responseModalities,
           temperature: this.temperature,
@@ -375,13 +387,13 @@ export class GeminiLiveAPI {
           },
         },
         system_instruction: { parts: [{ text: this.systemInstructions }] },
-        proactivity: this.proactivity,
-
-        realtime_input_config: {
-          automatic_activity_detection: this.automaticActivityDetection,
-        },
       },
     };
+
+    // Only send proactivity when explicitly enabled (avoids Invalid argument on Vertex)
+    if (this.proactivity && this.proactivity.proactiveAudio) {
+      sessionSetupMessage.setup.proactivity = this.proactivity;
+    }
 
     if (tools && tools.length) {
       sessionSetupMessage.setup.tools = { function_declarations: tools };

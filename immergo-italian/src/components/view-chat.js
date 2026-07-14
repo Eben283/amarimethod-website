@@ -419,7 +419,9 @@ class ViewChat extends HTMLElement {
       if (response.type === MultimodalLiveResponseType.ERROR || response.type === "ERROR" || response?.raw?.type === "error") {
         const msg = (response.data && (response.data.error || response.data)) || response.raw?.error || "Unknown Gemini error";
         console.error("❌ [Gemini] Session error:", msg);
-        alert("Gemini error: " + msg);
+        if (this.client && this.client.onErrorMessage) {
+          this.client.onErrorMessage(typeof msg === "string" ? msg : JSON.stringify(msg));
+        }
         return;
       }
       if (response.type === MultimodalLiveResponseType.AUDIO) {

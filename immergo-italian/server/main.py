@@ -309,9 +309,9 @@ async def websocket_endpoint(websocket: WebSocket, token: Optional[str] = None):
         logger.info("Session time limit reached")
         await websocket.close(code=1000, reason="Session time limit reached")
     except Exception as e:
-        logger.error(f"Error in Gemini session: {e}")
+        logger.exception(f"Error in Gemini session: {e}")
         try:
-            await websocket.send_json({"type": "error", "error": str(e)})
+            await websocket.send_json({"type": "error", "error": f"{type(e).__name__}: {e}"})
         except Exception:
             pass
     finally:

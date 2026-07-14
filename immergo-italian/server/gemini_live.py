@@ -104,11 +104,42 @@ class GeminiLive:
                         for fd in tool_config["function_declarations"]:
                             if not fd or not fd.get("name"):
                                 continue
-                            fds.append(types.FunctionDeclaration(
+                            params = fd.get("parameters") or {}
+                            # Normalize JSON-schema-ish tool params into Vertex Schema
+                            schema = None
+                            try:
+                                props = {}
+                                raw_props = (params.get("properties") or {})
+                                for pk, pv in raw_props.items():
+                                    ptype = (pv or {}).get("type", "STRING")
+                                    if isinstance(ptype, str):
+                                        ptype = ptype.upper()
+                                    item_schema = None
+                                    if ptype == "ARRAY":
+                                        itype = ((pv or {}).get("items") or {}).get("type", "STRING")
+                                        if isinstance(itype, str):
+                                            itype = itype.upper()
+                                        item_schema = types.Schema(type=getattr(types.Type, itype, types.Type.STRING))
+                                    props[pk] = types.Schema(
+                                        type=getattr(types.Type, ptype, types.Type.STRING),
+                                        description=(pv or {}).get("description"),
+                                        items=item_schema,
+                                    )
+                                schema = types.Schema(
+                                    type=types.Type.OBJECT,
+                                    properties=props or None,
+                                    required=params.get("required") or None,
+                                )
+                            except Exception as se:
+                                logger.warning(f"Tool schema normalize failed for {fd.get('name')}: {se}")
+                                schema = None
+                            kwargs = dict(
                                 name=fd.get("name"),
                                 description=fd.get("description"),
-                                parameters=fd.get("parameters")
-                            ))
+                            )
+                            if schema is not None:
+                                kwargs["parameters"] = schema
+                            fds.append(types.FunctionDeclaration(**kwargs))
                         # Empty tools packs can trigger Vertex "Invalid document"
                         if fds:
                             config_args["tools"] = [types.Tool(function_declarations=fds)]
