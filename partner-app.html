@@ -32,27 +32,30 @@
     gtag('js', new Date());
     gtag('config', 'G-DGQM32BMYZ');
   </script>
-
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
-  <style>
+<style>
     /* ===== Partner App — editorial dashboard (rebuilt 2026-05-17) ===== */
     body {
       background: var(--pa-paper, #F7F2E8);
       min-height: 100vh;
       min-height: 100dvh;
       margin: 0;
+      font-family: var(--pa-sans);
+      color: var(--pa-ink);
+      -webkit-font-smoothing: antialiased;
     }
 
     :root {
-      --pa-paper: #F7F2E8;
-      --pa-paper-2: #F0E9D8;
+      --pa-paper: #F8F1E8;
+      --pa-display: "Cormorant Garamond", Georgia, serif;
+      --pa-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+      --pa-paper-2: #F1E7DA;
       --pa-paper-3: #EBE2CC;
-      --pa-ink: #1F1D1A;
+      --pa-ink: #211D19;
       --pa-ink-2: #3A3733;
       --pa-mute: #7A746B;
       --pa-line: #E0D7C2;
       --pa-line-2: #CCC1A8;
-      --pa-accent: #C56B4E;
+      --pa-accent: #E1A98B;
       --pa-accent-soft: #F5DDD2;
       --pa-err: #A1402B;
       --pa-ok: #3F7A4F;
@@ -93,7 +96,7 @@
     /* Greeting */
     .app-greeting {
       padding: 26px 20px 4px;
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 38px;
       font-weight: 400;
       letter-spacing: -0.025em;
@@ -152,7 +155,7 @@
       align-items: end;
     }
     .earnings-amount {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-weight: 300;
       letter-spacing: -0.035em;
       line-height: 0.95;
@@ -161,7 +164,7 @@
       display: block;
     }
     .earnings-paid {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 15px;
       font-style: italic;
       color: var(--pa-ok);
@@ -189,7 +192,7 @@
       gap: 2px;
     }
     .earnings-breakdown strong {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-weight: 400;
       font-size: 22px;
       letter-spacing: -0.01em;
@@ -267,14 +270,14 @@
       min-width: 0;
     }
     .cta-label {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
       line-height: 1.15;
     }
     .cta-card-secondary .cta-label {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14.5px;
       font-weight: 500;
       color: var(--pa-ink);
@@ -286,7 +289,7 @@
     }
     .cta-card-secondary .cta-desc { color: var(--pa-mute); font-size: 12px; }
     .cta-earn-tag {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 16px;
       font-weight: 400;
       font-style: italic;
@@ -317,7 +320,7 @@
       margin: 26px 20px 0;
     }
     .app-share-section h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
@@ -340,7 +343,7 @@
     }
     .share-link-input {
       padding: 14px 14px;
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14px;
       color: var(--pa-ink);
       background: transparent;
@@ -399,7 +402,7 @@
     }
     .inline-form.active { display: block; }
     .inline-form h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 20px;
       font-weight: 400;
       letter-spacing: -0.01em;
@@ -436,7 +439,7 @@
       -webkit-appearance: none;
       appearance: none;
       min-height: 48px;
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
     }
     .inline-form input::placeholder { color: var(--pa-mute); opacity: 0.6; }
     .inline-form input:focus { border-color: var(--pa-ink); }
@@ -479,7 +482,7 @@
     .inline-success.active { display: block; }
     .inline-success .check,
     .success-glyph {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 56px;
       line-height: 1;
@@ -525,7 +528,7 @@
       width: 100%;
     }
     .inline-success h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 26px;
       font-weight: 400;
       letter-spacing: -0.015em;
@@ -603,7 +606,7 @@
       min-width: 0;
     }
     .pitch-card-glyph {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 22px;
       color: var(--pa-accent);
@@ -613,7 +616,7 @@
       flex: 0 0 auto;
     }
     .pitch-card-summary h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
@@ -657,7 +660,7 @@
       margin-bottom: 12px;
     }
     .pitch-quote {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 15px;
       line-height: 1.55;
       color: var(--pa-ink);
@@ -707,7 +710,7 @@
       align-items: start;
     }
     .objection-list li strong {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 14px;
       color: var(--pa-accent);
@@ -722,7 +725,7 @@
       border-radius: 2px;
     }
     .objection-list li > span {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14.5px;
       line-height: 1.5;
       color: var(--pa-ink-2);
@@ -752,7 +755,7 @@
     .trust-item:last-child { border-right: 0; }
     .trust-dot { display: none; }
     .trust-item-num {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 26px;
       font-weight: 300;
       letter-spacing: -0.02em;
@@ -820,7 +823,7 @@
       align-items: baseline;
       padding: 16px 20px;
       border-bottom: 1px solid var(--pa-line);
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
