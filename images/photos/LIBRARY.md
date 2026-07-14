@@ -45,7 +45,9 @@ All landscape ~1600×1194. This is the backbone. Filename encodes subject + demo
 |---|---|
 | `journal-base/jh-spinal-wave-refined.jpg` | spinal wave, refined |
 | `journal-base/jh-spring-step.jpg` | spring step |
-| `journal-base/jh-vertical-drop.jpg` | vertical drop |
+| `journal-base/jh-vertical-drop.jpg` | vertical drop (legacy weak lean) |
+| `journal-base/base-vertical-drop-6s.jpg` | vertical drop core front ~6s |
+| `journal-base/base-vertical-drop-side-6s.jpg` | vertical drop side lean ~6s |
 
 ## KEEP — refined condition heroes (clean outputs of the refine pass)
 | File | Depicts |

@@ -203,14 +203,15 @@
      note:'If no usable frame exists in footage, fall back to the Generate card for spring-step.',
      prompt:"Use the attached re-extracted Spring Step frame as the base. Keep the exact person, their pose and footing, the setting, and the natural light, do not change the composition or recast the person. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
 
-    {sec:'s1', id:'vertical-drop', title:'Vertical drop (re-extract first)', badge:'refine', prio:'p1',
-     cast:'Re-extract a better frame first (weak stand-in shown)',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-vertical-drop.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-vertical-drop.jpg',
+    {sec:'s1', id:'vertical-drop', title:'Vertical drop', badge:'refine', prio:'p1',
+     cast:'① Drag base-vertical-drop-6s.jpg into Firefly  ② paste prompt',
+     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-vertical-drop-6s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-vertical-drop-6s.jpg',
      used:'/blog-vertical-drop-spine-decompression',
-     problem:'Weak outdoor stand; near-identical feel to spring-step.',
-     approach:'Re-extract the actual drop from vertical-drop footage, THEN grade-only refine.',
-     prompt:"Use the attached re-extracted Vertical Drop frame as the base. Keep the exact person, their pose and hand position, the setting, and the natural light, do not change the composition or recast the person. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+     problem:'Old jh-vertical-drop was a weak side lean; lav cord still visible. Core front mid-demo pulled from vertical-drop-front.mp4 at ~6s.',
+     approach:'Core frame already pulled. Attach base-vertical-drop-6s.jpg. Strip lav + cord only; keep pose, bench grip, park. Soft face.',
+     note:'Pulled from <b>vertical-drop-front.mp4</b> (~6s). Side lean alternate: base-vertical-drop-side-6s.jpg.',
+     prompt:"Use the attached real frame from the Vertical Drop Course Video as the base (Garrett behind a park bench, hands on the top rail, facing the camera, mid outdoor demo). Keep the exact man, pose, grip on the bench, park setting, trees, path, and natural daylight. Do not change the composition or recast him. Remove the lav microphone clipped on his shirt and every bit of the black mic cord down his torso and legs \u2014 leave no wire visible. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Soften expression slightly: calm and at ease, not intense. Do not add or remove anything else. Avoid a plastic or CGI look, a new pose, or a regenerated background."},
 
     // ===== 2 GENERATE =====
     {sec:'s2', id:'tmj-header', title:'TMJ journal header', badge:'gen', prio:'p1',
