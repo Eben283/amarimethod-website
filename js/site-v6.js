@@ -131,7 +131,7 @@
       '    <div class="foot-bottom">\n' +
       '      <span>Amari © 2026</span>\n' +
       '      <div class="foot-nav">\n' +
-      '        <a href="/contact">Contact</a><a href="/faq">FAQ</a><a href="/booking">Pricing</a><a href="/stories">Stories</a><a href="/partners">Partners</a><a href="/partner-app">Partner Toolkit</a><a href="/refer">Submit a Referral</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
+      '        <a href="/contact">Contact</a><a href="/faq">FAQ</a><a href="/booking">Pricing</a><a href="/stories">Stories</a><a href="/partners">Partners</a><a href="/partner-app">Partner Toolkit</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
       '      </div>\n' +
       '      <span>San Francisco</span>\n' +
       '    </div>\n' +
