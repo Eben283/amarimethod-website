@@ -10,7 +10,8 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
   <title>Your Complimentary Session | Amari Method</title>
   <meta name="description" content="Here's the session we talked about. Come in, feel it, no pressure.">
   <meta name="author" content="Amari Method">
@@ -41,7 +42,7 @@
     gtag('config', 'G-DGQM32BMYZ');
   </script>
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
+  <link rel="stylesheet" href="/css/site-v6.css?v=5">
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
       c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -52,14 +53,17 @@
 
   <style>
     :root {
-      --paper:#F7F2E8; --paper-2:#F0E9D8; --ink:#1F1D1A; --ink-2:#3A3733;
-      --mute:#7A746B; --line:#E0D7C2; --line-2:#CCC1A8; --accent:#C56B4E;
-      --display:'Bona Nova','Fraunces',Georgia,serif;
-      --sans-partner:'Inter',system-ui,sans-serif;
-      --mono:'JetBrains Mono',ui-monospace,monospace;
+      --paper: var(--cream);
+      --paper-2: var(--cream-2);
+      --ink-2: var(--body);
+      --mute: rgba(92,85,77,.74);
+      --line-2: rgba(33,29,25,.26);
+      --accent: var(--peach);
+      --display: var(--serif);
+      --sans-partner: var(--sans);
+      --mono: var(--sans);
     }
     body:has(main.partner-page) { background: var(--paper); }
-    body:has(main.partner-page) nav { background: var(--paper) !important; border-bottom: 1px solid var(--line); }
     main.partner-page { font-family: var(--sans-partner); color: var(--ink); font-size: 17px; line-height: 1.55; background: var(--paper); }
     main.partner-page h1, main.partner-page h2, main.partner-page h3, main.partner-page h4 { font-family: var(--display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.02; color: var(--ink); text-wrap: balance; }
     main.partner-page p { text-wrap: pretty; }
@@ -80,11 +84,11 @@
     main.partner-page .btn:hover .arrow { transform: translateX(3px); }
 
     /* HERO */
-    main.partner-page .hero { max-width: 1360px; margin: 0 auto; padding: 96px 32px 100px; position: relative; text-align: left; background: transparent; border-bottom: 0; }
+    main.partner-page .partner-hero { max-width: 1360px; margin: 0 auto; padding: 150px 32px 100px; position: relative; text-align: left; background: transparent; border-bottom: 0; }
     main.partner-page .hero-stats { justify-items: start; }
     main.partner-page .hero-label { display: block; background: transparent; color: var(--ink-2); padding: 0; border-radius: 0; font-size: inherit; font-weight: inherit; margin: 0 0 32px; letter-spacing: normal; text-transform: none; text-align: left; width: auto; }
-    main.partner-page .hero h1 { font-size: clamp(44px, 6.5vw, 96px); font-weight: 300; letter-spacing: -0.04em; line-height: 0.96; max-width: 16ch; }
-    main.partner-page .hero h1 em { font-style: italic; font-weight: 300; }
+    main.partner-page .partner-hero h1 { font-size: clamp(44px, 6.5vw, 96px); font-weight: 300; letter-spacing: -0.04em; line-height: 0.96; max-width: 16ch; }
+    main.partner-page .partner-hero h1 em { font-style: italic; font-weight: 300; }
     main.partner-page .hero-sub { margin-top: 32px; max-width: 54ch; font-size: 20px; color: var(--ink-2); line-height: 1.5; }
     main.partner-page .hero-stats { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; border-top: 1px solid var(--line); padding-top: 40px; align-items: start; }
     main.partner-page .hero-stats .stat { font-family: var(--display); font-size: 64px; font-weight: 300; letter-spacing: -0.025em; line-height: 1; color: var(--ink); }
@@ -220,7 +224,7 @@
     main.partner-page section.cta .btn-text:hover .arrow { transform: translateX(3px); }
 
     @media (max-width: 960px) {
-      main.partner-page .hero { padding: 48px 24px 64px; }
+      main.partner-page .partner-hero { padding: 120px 24px 64px; }
       main.partner-page .hero-stats { grid-template-columns: 1fr; gap: 28px; }
       main.partner-page .split-inner { grid-template-columns: 1fr; }
       main.partner-page .split .photo { aspect-ratio: 4/3; }
@@ -242,31 +246,12 @@
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="/how-it-works">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="/first-visit">The Journey</a></li>
-        <li><a href="/stories">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="/booking" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </nav>
+  <!-- Header is injected by site-v6.js -->
 
 <main class="partner-page">
 
   <!-- HERO -->
-  <header class="hero">
+  <header class="partner-hero">
     <h1>Your <em>complimentary</em> session.</h1>
     <p class="hero-sub">An introductory, 60-minute session with Garrett. Experience the work for yourself first.</p>
     <div class="hero-stats">
@@ -288,7 +273,7 @@
   <section class="split">
     <div class="split-inner">
       <div class="photo">
-        <img src="images/Dr-Garrett-Headshot-2.avif" alt="Garrett Hewstan, creator of the Amari Method" width="854" height="1280" loading="lazy">
+        <img src="/images/v6/real/garrett-face-1200.jpg" alt="Garrett Hewstan, creator of the Amari Method" width="1200" height="1200" loading="lazy">
         <div class="photo-caption">
           <span class="fig">Garrett Hewstan</span>
           <span>San Francisco, CA</span>
@@ -474,63 +459,7 @@
 
 </main>
 
-    <footer>
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Your body can heal you.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
-        </div>
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/how-it-works">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/how-it-works">How It Works</a></li>
-                    <li><a href="/stories">Results & Reviews</a></li>
-                    <li><a href="/partners">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/booking">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-        </div>
-    </footer>
-<script src="js/main.js?v=5" defer></script>
+<!-- Footer is injected by site-v6.js -->
+<script src="/js/site-v6.js?v=5" data-nav=""></script>
 </body>
 </html>
