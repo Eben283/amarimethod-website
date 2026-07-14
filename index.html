@@ -25,6 +25,7 @@
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="/images/photos/hero-home-cedar-woman.jpg" fetchpriority="high">
 <!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
@@ -103,7 +104,7 @@
   1. Body copy sharpened with real customer language: paraphrased and non-attributed, with no named internal client quotes. Consent rule: ops/drafts/voice-of-customer-2026-07-10/VOC-BANK.md.
   2. JSON-LD blocks: a MedicalBusiness node and a WebSite node. Also testimonial Review nodes (12 names already public on the live site) and an FAQPage block.
   3. A visible FAQ section matching the FAQPage schema verbatim.
-  Facts below aligned to faq.html + GBP baseline (5.0★ / 5 reviews as of 2026-06). Re-check review count before merge if GBP has moved.
+  Facts below aligned to faq.html (insurance/location). No AggregateRating in schema.
 -->
 
 
@@ -290,8 +291,7 @@
 <script src="/js/site-v6.js?v=5"></script>
 
 <!-- ============================================================
-     JSON-LD schema. AggregateRating omitted until a verified
-     Google review count is available (truth gate).
+     JSON-LD: MedicalBusiness + WebSite schema (no aggregateRating).
      ============================================================ -->
 
 <script type="application/ld+json">
@@ -333,7 +333,7 @@
 }
 </script>
 
-<!-- Review nodes: names already public on the live testimonial marquee. No AggregateRating / per-review stars — seven Google reviews is too small a set to lead with as a brand rating. -->
+<!-- Review nodes: names already public on the live testimonial marquee. No per-review star ratings or site-wide AggregateRating. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
