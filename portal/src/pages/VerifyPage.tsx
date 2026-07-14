@@ -56,47 +56,45 @@ export default function VerifyPage() {
   }, []);
 
   return (
-    <div className="cp-screen" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '40px 20px' }}>
-      <main style={{ maxWidth: 460, width: '100%', textAlign: 'center', padding: '64px 24px' }}>
+    <div className="sa-screen">
+      <main className="sa-main">
+        <a href="/" className="sa-wordmark">
+          AMARI
+        </a>
+
         {status === 'verifying' && (
           <>
-            <span className="cp-verify-spinner" aria-hidden="true"></span>
-            <h1 style={{ fontFamily: 'var(--cp-display)', fontSize: 36, fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 28 }}>
-              Signing you <em style={{ fontStyle: 'italic', color: 'var(--cp-accent)' }}>in.</em>
+            <span className="sa-verify-spinner" aria-hidden="true" />
+            <h1 className="sa-title" style={{ marginTop: 28 }}>
+              Signing you <em>in.</em>
             </h1>
-            <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 18, color: 'var(--cp-ink-2)', marginTop: 12 }}>
-              One moment.
-            </p>
+            <p className="sa-lead">One moment.</p>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <div style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 64, color: 'var(--cp-accent)', lineHeight: 1 }}>✦</div>
-            <h1 style={{ fontFamily: 'var(--cp-display)', fontSize: 36, fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 20 }}>
-              You're <em style={{ fontStyle: 'italic', color: 'var(--cp-accent)' }}>in.</em>
+            <span className="sa-eyebrow">You&apos;re in</span>
+            <h1 className="sa-title">
+              Taking you to your <em>portal.</em>
             </h1>
-            <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 18, color: 'var(--cp-ink-2)', marginTop: 12 }}>
-              Taking you to your portal.
-            </p>
+            <p className="sa-lead">Hang tight — almost there.</p>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <span className="cp-mono cp-accent" style={{ display: 'block', marginBottom: 8 }}>Link unavailable</span>
-            <h1 style={{ fontFamily: 'var(--cp-display)', fontSize: 36, fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1.1, textWrap: 'balance' }}>
-              We couldn't <em style={{ fontStyle: 'italic', color: 'var(--cp-accent)' }}>sign you in.</em>
+            <span className="sa-eyebrow">Link unavailable</span>
+            <h1 className="sa-title">
+              We couldn&apos;t <em>sign you in.</em>
             </h1>
-            <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 18, color: 'var(--cp-ink-2)', marginTop: 14, maxWidth: '36ch', marginLeft: 'auto', marginRight: 'auto' }}>
-              {errorMessage}
-            </p>
-            <div style={{ marginTop: 26, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href="/portal/login" className="cp-btn cp-btn-primary">
-                <span>Request a new link</span><span className="cp-arrow">→</span>
+            <p className="sa-lead">{errorMessage}</p>
+            <div className="sa-verify-actions">
+              <a href="/portal/login" className="sa-btn">
+                Request a new link
               </a>
-              <a href="mailto:hello@amarimethod.com" className="cp-btn cp-btn-ghost">
-                Contact Garrett
+              <a href="mailto:hello@amarimethod.com" className="sa-btn-ghost">
+                Email us
               </a>
             </div>
           </>
