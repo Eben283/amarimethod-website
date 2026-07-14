@@ -13,4 +13,4 @@ At session start on Amari work, run:
 
 Read matching skills from `claude-config/skills/` before improvising. For staff-app work, triage with `skills/todo/SKILL.md` when the task might already be solved.
 
-Vault todos and session notes: `/agent/repos/amari-method-docs/ops/open-todos.md` and `NOTES.txt`.
+Vault todos and session notes: `/agent/repos/amari-method-docs/ops/open-todos.md` and `NOTES.txt`. Ledger gate: `claude-config/.cursor/rules/ledger-discipline.mdc`.
