@@ -1,258 +1,98 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <title>Redeem Your Amari Method Gift Card</title>
-  <meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Redeem your Amari Method gift card. Find your code, book a session, and apply it at checkout.">
+<link rel="canonical" href="https://www.amarimethod.com/gift-card-redeem">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Redeem Your Amari Method Gift Card</title>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/gift-card-redeem">
+<meta property="og:title" content="Redeem Your Amari Method Gift Card">
+<meta property="og:description" content="Redeem your Amari Method gift card. Find your code, book a session, and apply it at checkout.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/gift-card-redeem">
+<meta name="twitter:title" content="Redeem Your Amari Method Gift Card">
+<meta name="twitter:description" content="Redeem your Amari Method gift card. Find your code, book a session, and apply it at checkout.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site-v6.css?v=5">
+<style>
 
-  <!-- Favicon & Icons -->
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  main.util-page{display:block}
+  main.util-page .pagehead{background:var(--cream-2);padding:clamp(150px,17vw,196px) 0 clamp(48px,6vw,72px);text-align:center}
+  main.util-page .pagehead .eyebrow{display:block;margin-bottom:20px;color:var(--body)}
+  main.util-page .pagehead h1{font-size:clamp(2.4rem,5vw,3.8rem);font-weight:500;max-width:16ch;margin:0 auto}
+  main.util-page .pagehead p{margin:22px auto 0;max-width:48ch}
+  main.util-page .body{padding:clamp(48px,6vw,84px) 0 clamp(72px,9vw,110px)}
+  main.util-page .body-inner{max-width:720px;margin:0 auto}
+  main.util-page .body-inner h2{font-size:clamp(1.5rem,2.6vw,2rem);font-weight:500;margin:clamp(32px,4vw,48px) 0 14px}
+  main.util-page .body-inner h2:first-of-type{margin-top:0}
+  main.util-page .body-inner p{font-size:15.5px;margin-bottom:16px;max-width:none}
+  main.util-page .body-inner ul{margin:0 0 16px;padding-left:22px}
+  main.util-page .body-inner li{font-size:15.5px;color:var(--body);margin-bottom:8px;line-height:1.6}
+  main.util-page .callout{border:1px solid var(--line);background:var(--paper);padding:22px 24px;margin:22px 0}
+  main.util-page .callout p{margin:0;max-width:none}
+  main.util-page .cta-row{margin-top:28px}
 
-  <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
-
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
-  <style>
-    .redeem-wrapper {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem 4rem;
-    }
-    .redeem-heading {
-      font-family: var(--font-serif-primary);
-      font-size: clamp(1.8rem, 5vw, 2.5rem);
-      font-weight: 400;
-      line-height: 1.2;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-    .redeem-subheading {
-      text-align: center;
-      color: var(--color-text-muted);
-      margin-bottom: 2.5rem;
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
-    .redeem-steps {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 2.5rem;
-      counter-reset: steps;
-    }
-    .redeem-steps li {
-      counter-increment: steps;
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-      padding: 1.25rem 0;
-      border-bottom: 1px solid var(--color-border);
-    }
-    .redeem-steps li:last-child {
-      border-bottom: none;
-    }
-    .redeem-steps li::before {
-      content: counter(steps);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      border-radius: 50%;
-      background: var(--color-accent-warm);
-      color: #fff;
-      font-weight: 600;
-      font-size: 0.9rem;
-    }
-    .step-content h3 {
-      font-family: var(--font-serif-primary);
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 0 0 0.25rem;
-    }
-    .step-content p {
-      margin: 0;
-      color: var(--color-text-muted);
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    .redeem-cta {
-      text-align: center;
-      padding: 2rem 0;
-    }
-    .redeem-cta .btn-primary {
-      font-size: 1.05rem;
-    }
-    .redeem-note {
-      text-align: center;
-      color: var(--color-text-muted);
-      font-size: 0.85rem;
-      margin-top: 1.5rem;
-      line-height: 1.5;
-    }
-    .redeem-help {
-      text-align: center;
-      margin-top: 2.5rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--color-border);
-      color: var(--color-text-muted);
-      font-size: 0.95rem;
-    }
-    .redeem-help a {
-      color: var(--color-text);
-      text-decoration: underline;
-    }
-  </style>
-    <!-- Microsoft Clarity -->
-    <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "vuvx43xu8h");
-    </script>
+  main.util-page .steps{list-style:none;padding:0;margin:0 0 36px;counter-reset:steps}
+  main.util-page .steps li{counter-increment:steps;display:grid;grid-template-columns:40px 1fr;gap:18px;padding:22px 0;border-bottom:1px solid var(--line)}
+  main.util-page .steps li::before{content:counter(steps);font-family:var(--serif);font-size:1.4rem;color:var(--peach);line-height:1.2}
+  main.util-page .steps h3{font-size:1.25rem;font-weight:500;margin:0 0 6px}
+  main.util-page .steps p{margin:0;max-width:none}
+  main.util-page .center{text-align:center;margin-top:28px}
+  
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<script>
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+</script>
 </head>
 <body>
+<!-- Header is injected by site-v6.js -->
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="/how-it-works">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="/first-visit">The Journey</a></li>
-        <li><a href="/stories">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="/booking" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </nav>
-<main>
-
-  <section class="hero">
-    <div class="container hero-content">
-      <h1>Someone Gave You a Gift</h1>
-      <p class="hero-subtitle">A session that could change the way your body feels. Here's how to use it.</p>
-    </div>
-  </section>
-
-  <section>
-    <div class="redeem-wrapper">
-
-      <ol class="redeem-steps">
-        <li>
-          <div class="step-content">
-            <h3>Find your gift card code</h3>
-            <p>Check the email or message from the person who sent it. Your code looks like a short string of letters and numbers.</p>
-          </div>
-        </li>
-        <li>
-          <div class="step-content">
-            <h3>Book your session</h3>
-            <p>Go to our booking page and choose your session type. You can book an initial session, follow-up, or apply it toward a series.</p>
-          </div>
-        </li>
-        <li>
-          <div class="step-content">
-            <h3>Apply your code at checkout</h3>
-            <p>On the payment screen, enter your gift card code in the coupon or gift card field. The amount will be applied automatically.</p>
-          </div>
-        </li>
-      </ol>
-
-      <div class="redeem-cta">
-        <a href="/booking" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Book Your Session</span></span></a>
-        <p class="redeem-note">Gift cards can be used for any service: initial sessions, follow-ups, or session series.</p>
-      </div>
-
-      <div class="redeem-help">
-        <p>Questions? Email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> or <a href="/book/discovery-call" style="color:var(--color-text); text-decoration:underline">book a free discovery call</a>.</p>
-      </div>
-
-    </div>
-  </section>
-
+<main class="util-page">
+<section class="pagehead"><div class="wrap">
+  <span class="eyebrow">Gift card</span>
+  <h1>Someone gave you a <em>gift.</em></h1>
+  <p>A session that could change how your body feels. Here's how to use it.</p>
+</div></section>
+<section class="body"><div class="wrap"><div class="body-inner">
+  <ol class="steps">
+    <li><div><h3>Find your gift card code</h3><p>Check the email or message from the person who sent it. Your code looks like a short string of letters and numbers.</p></div></li>
+    <li><div><h3>Book your session</h3><p>Go to our booking page and choose your session type. You can book an initial session, a follow-up, or apply it toward a series.</p></div></li>
+    <li><div><h3>Apply your code at checkout</h3><p>On the payment screen, enter your gift card code in the coupon or gift card field. The amount applies automatically.</p></div></li>
+  </ol>
+  <div class="center">
+    <a class="btn" href="/booking">Book your session</a>
+    <p style="margin-top:18px">Gift cards can be used for any service: initial sessions, follow-ups, or session series.</p>
+    <p style="margin-top:28px">Questions? Email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> or <a href="/book/discovery-call">book a free discovery call</a>.</p>
+  </div>
+</div></div></section>
 </main>
 
-    <footer>
-        <!-- Footer Top: Logo + Contact -->
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Freedom From Pain. Results For Life.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
-        </div>
-        <!-- Footer Links -->
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                        <li><a href="conditions">All conditions</a></li>
-      </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/how-it-works">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/how-it-works">How It Works</a></li>
-                    <li><a href="/stories">Results & Reviews</a></li>
-                    <li><a href="/partners">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/booking">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-        </div>
-    </footer>
-<script src="js/main.js?v=5" defer></script>
+<!-- Footer is injected by site-v6.js -->
+<script src="/js/site-v6.js?v=5" data-nav=""></script>
+
 </body>
 </html>
