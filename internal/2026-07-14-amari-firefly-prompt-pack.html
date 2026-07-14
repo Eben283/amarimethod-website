@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex,nofollow">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amari Firefly prompt pack — 2026-07-14</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--cream:#F8F1E8;--cream2:#F1E7DA;--paper:#FCF7F1;--ink:#211D19;--body:#5C554D;--line:rgba(33,29,25,.15);
+    --rust:#A9481F;--forest:#3E4A32;--gold:#9C7A2E;--teal:#2E5C58;--plum:#6B3F5C;--grey:#8A8177}
+  *{box-sizing:border-box}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.5;max-width:1120px;margin:0 auto;padding:44px clamp(18px,4vw,40px) 90px}
+  h1{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(2.1rem,4.8vw,3.1rem);margin:0 0 4px}
+  h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.5rem,3vw,1.9rem);margin:0 0 6px}
+  .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--rust);font-weight:600}
+  .intro{color:var(--body);font-size:.98rem;max-width:80ch;margin:12px 0 18px}
+  .intro b{color:var(--ink)}
+  .rules{background:#2A2420;color:#EDE4D6;border-radius:10px;padding:14px 18px;font-size:.86rem;max-width:82ch;margin:14px 0 8px;line-height:1.6}
+  .rules b{color:#F2C879}
+  .statusbar{position:sticky;top:0;z-index:20;background:var(--cream);padding:12px 0 14px;border-bottom:1px solid var(--line);margin-bottom:26px;
+    display:flex;flex-wrap:wrap;gap:9px 18px;align-items:center;font-size:12.5px;color:var(--body)}
+  .statusbar b{color:var(--ink);font-size:15px}
+  .pill{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.done{background:#1E1B18}
+  .jumpnav{display:flex;flex-wrap:wrap;gap:6px 14px;margin-left:auto}
+  .jumpnav a{font-size:12px;color:var(--body);text-decoration:none;border-bottom:1px dotted var(--line)}
+  .jumpnav a:hover{color:var(--rust)}
+  section{margin:0 0 46px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .sec-num{font-family:'Cormorant Garamond',serif;font-weight:600;color:var(--rust);font-size:1.5rem}
+  .sec-note{color:var(--body);font-size:.94rem;max-width:82ch;margin:6px 0 22px}
+  .sec-note b{color:var(--ink)}
+  .callout{background:#2A2420;color:#EDE4D6;border-radius:10px;padding:12px 16px;font-size:.88rem;max-width:82ch;margin:8px 0 22px;line-height:1.55}
+  .callout b{color:#F2C879}
+  .callout a{color:#F2C879}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+  .card.done{opacity:.5}
+  .thumbwrap{aspect-ratio:4/3;background:var(--cream2);position:relative;overflow:hidden}
+  .thumbwrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumbwrap a{display:block;width:100%;height:100%}
+  .nothumb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    background:repeating-linear-gradient(135deg,var(--cream2),var(--cream2) 10px,#EDE0CC 10px,#EDE0CC 20px);color:var(--gold);text-align:center;padding:14px}
+  .nothumb .icon{font-size:20px}
+  .nothumb span{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600}
+  .badge{position:absolute;top:8px;left:8px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;padding:4px 9px;border-radius:20px;color:#fff}
+  .badge.gen{background:var(--plum)} .badge.refine{background:var(--teal)} .badge.wire{background:var(--grey)} .badge.resource{background:var(--gold)} .badge.skip{background:#1E1B18}
+  .prio{position:absolute;top:8px;right:8px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:20px;color:#fff}
+  .prio.p1{background:var(--rust)} .prio.p2{background:var(--gold)} .prio.p3{background:var(--grey)}
+  .meta{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1.25rem;margin:0}
+  .card .cast{font-size:11px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:var(--teal);margin:0}
+  .field{font-size:12.5px;color:var(--body);margin:0}
+  .field b{color:var(--ink);font-weight:600}
+  .field.problem b{color:var(--rust)}
+  .note{font-size:11.5px;color:var(--body);opacity:.95;margin:0;background:var(--cream2);border-radius:8px;padding:9px 11px}
+  .note b{color:var(--ink)}
+  .prompt-wrap{position:relative;margin-top:auto}
+  pre{background:#221E1A;color:#EDE4D6;padding:12px 44px 12px 12px;border-radius:8px;overflow-x:auto;white-space:pre-wrap;
+    font-family:ui-monospace,Menlo,monospace;font-size:10.7px;line-height:1.55;margin:0;max-height:210px;overflow-y:auto}
+  .copy{position:absolute;top:8px;right:8px;background:#EDE4D6;color:#221E1A;border:none;border-radius:6px;padding:5px 10px;
+    font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+  .copy.copied{background:var(--forest);color:#fff}
+  label.donecheck{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--body);cursor:pointer;margin-top:2px}
+  label.donecheck input{accent-color:var(--forest);width:15px;height:15px}
+  .chars{font-size:10.5px;color:var(--grey);margin:2px 0 0}
+  .chars.over{color:var(--rust);font-weight:700}
+  .linkout{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px 20px;max-width:82ch;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .linkout a{color:var(--rust);font-weight:600;text-decoration:none;border-bottom:1px solid rgba(169,72,31,.35)}
+</style>
+</head>
+<body>
+
+  <div class="eyebrow">Website imagery · 2026-07-14</div>
+  <h1>Firefly prompt pack — still needed</h1>
+  <p class="intro">Fresh worklist against the live <b>feat/new-site</b> wiring. Unique page heroes, partner tiles, hip/knee doorway-window winners, and the sharp Annie/Elise/Victor/Tyler testimonials are <b>done — skip them</b>. This pack is only what still blocks brand quality: journal bad-frames, a few wire-fixes, and real-client testimonial re-sources.</p>
+
+  <div class="callout" style="margin-top:0"><b>How to use a REFINE card (e.g. Passive bridge):</b><br>
+    1. The photo shows <b>on the card</b>. Click it to open the full JPG (or use the Photo URL under the card).<br>
+    2. Save that JPG → drag it into <b>Adobe Firefly</b>.<br>
+    3. Click <b>Copy</b> → paste the prompt into Firefly → run.<br>
+    4. “Attached” in the prompt = the photo you dropped in. Generate cards (section 2) have no base photo.<br><br>
+    <b>This page URL:</b> <a href="https://feat-new-site.amarimethod-website.pages.dev/internal/2026-07-14-amari-firefly-prompt-pack.html" style="color:#F2C879">https://feat-new-site.amarimethod-website.pages.dev/internal/2026-07-14-amari-firefly-prompt-pack.html</a>
+  </div>
+
+  <div class="rules"><b>Rules (from 2026-07-11 nano-banana / Firefly rulebook):</b> person is the hero, equipment is context · foam roller = plain <b>smooth black</b> only · yoga block = real <b>Hugger Mugger foam</b> (matte foam texture), never cork/wood swap as the default, never blue plastic · <b>never a massage table</b> · <b>no pain gestures</b> · <b>no cars</b> · composition &gt; backdrop swap (person inside a shallow scene with a caught moment, not squared-up to a flat plane) · ration walls and low bookshelves · elevated-casual wardrobe for 33–48, fabric varied off linen · affluent tidy Marin/Berkeley, shallow background · full body then crop in post · under 1024 chars · refine prompts name only what that exact frame contains.</div>
+
+  <div class="statusbar" id="statusbar"><b>Loading…</b>
+    <div class="jumpnav">
+      <a href="#s1">1 · Refine</a>
+      <a href="#s2">2 · Generate</a>
+      <a href="#s3">3 · Wire</a>
+      <a href="#s4">4 · Re-source</a>
+      <a href="#s5">5 · Skip</a>
+    </div>
+  </div>
+
+  <section id="s1">
+    <div class="sec-head"><span class="sec-num">1</span><h2>REFINE a staged base frame</h2></div>
+    <p class="sec-note">Each refine card shows the base photo and a <b>Photo URL</b>. Click either, save the JPG, drag into Firefly, then paste the prompt. One base per card.</p>
+    <div class="grid" id="grid-s1"></div>
+  </section>
+
+  <section id="s2">
+    <div class="sec-head"><span class="sec-num">2</span><h2>GENERATE fresh</h2></div>
+    <p class="sec-note">Net-new frames where refine isn't enough or footage is missing/mismatched. P1 first.</p>
+    <div class="grid" id="grid-s2"></div>
+  </section>
+
+  <section id="s3">
+    <div class="sec-head"><span class="sec-num">3</span><h2>WIRE only — no generation</h2></div>
+    <p class="sec-note">Point the live page at an asset you already have. Zero Firefly work.</p>
+    <div class="grid" id="grid-s3"></div>
+  </section>
+
+  <section id="s4">
+    <div class="sec-head"><span class="sec-num">4</span><h2>RE-SOURCE real client photos</h2></div>
+    <p class="sec-note"><b>Never generate</b> a face for a named quote. Pull a sharper original, re-shoot, or re-attribute.</p>
+    <div class="grid" id="grid-s4"></div>
+  </section>
+
+  <section id="s5">
+    <div class="sec-head"><span class="sec-num">5</span><h2>SKIP — done or rejected</h2></div>
+    <p class="sec-note">Do not regenerate. Listed so the old 07-12 pack doesn't get reused by mistake.</p>
+    <div class="grid" id="grid-s5"></div>
+  </section>
+
+  <div class="linkout">
+    <p style="margin:0;color:var(--body);font-size:.94rem">Companions:</p>
+    <a href="2026-07-11-nano-banana-prompting-notes.md">Prompting rulebook →</a>
+    <a href="2026-07-12-amari-image-replacements.html">Prior 07-12 replacements (partly stale) →</a>
+    <a href="2026-07-12-amari-journal-headers.html">Journal headers tracker →</a>
+  </div>
+
+<script>
+  const SHOTS = [
+    // ===== 1 REFINE =====
+    {sec:'s1', id:'passive-bridge', title:'Passive bridge', badge:'refine', prio:'p1',
+     cast:'① Drag this photo into Firefly  ② paste prompt · base-passive-bridge-7.5s.jpg',
+     thumb:'/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
+     used:'/blog-passive-bridge-mobility · /blog Take It Home · Living Practice grid',
+     problem:'Garish <b>blue-plastic block</b> under the hips + mic cord on the floor + AI sheen.',
+     approach:'Upload the photo on this card into Firefly first. Then paste the prompt. Keep pose; turn blue block into Hugger Mugger foam (preferred) or smooth black roller; strip the cord.',
+     prompt:"Use the attached real frame from the Passive Bridge Course Video as the base. Keep the exact man, his pose on his back with hips supported, the room, console, plant, and natural light, and keep the framing, do not change the composition or recast him. Recolor the garish blue-plastic block under his hips to a plain matte Hugger Mugger foam yoga block in a muted natural foam color, same block shape and same hips-supported pose; a plain smooth black foam roller in its place is also fine. Remove the black mic cord on the floor, leave no wire visible. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove anything else. Avoid a plastic or CGI look."},
+
+    {sec:'s1', id:'active-bridge', title:'Active bridge', badge:'refine', prio:'p1',
+     cast:'① Drag this photo into Firefly  ② paste prompt · base-active-bridge-3s.jpg',
+     thumb:'/images/photos/journal-base/base-active-bridge-3s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-active-bridge-3s.jpg',
+     used:'/blog-active-bridge-strength · home This Just In · Protocols topic circle',
+     problem:'Reads AI / over-processed. Home currently uses a SOURCE-ONLY base frame.',
+     approach:'Grade-only refine. Name a roller only if one is actually visible.',
+     prompt:"Use the attached real frame from the Active Bridge Course Video as the base. Keep the exact person, her bridge pose, any real equipment in frame, the room, and the natural light, and keep the framing, do not change the composition or recast her. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look. If a foam roller is visible, and only then, it should read as a plain smooth black foam roller."},
+
+    {sec:'s1', id:'power-posture', title:'Power posture', badge:'refine', prio:'p2',
+     cast:'① Drag this photo into Firefly  ② paste prompt · base-power-posture-1.5s.jpg',
+     thumb:'/images/photos/journal-base/base-power-posture-1.5s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-power-posture-1.5s.jpg',
+     used:'/blog-power-posture-shoulder-blades · /images/v6/real/power-posture.jpg',
+     problem:'AI / over-processed still on the live article.',
+     approach:'Grade-only refine of the staged base.',
+     prompt:"Use the attached real frame from the Power Posture Course Video as the base. Keep the exact person, his standing pose with hands clasped behind his back and shoulders opening, the room, window, and natural light, and keep the framing, do not change the composition or recast him. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+
+    {sec:'s1', id:'hand-balancer', title:'Hand balancer', badge:'refine', prio:'p2',
+     cast:'① Drag this photo into Firefly  ② paste prompt · base-hand-balancer-3s.jpg',
+     thumb:'/images/photos/journal-base/base-hand-balancer-3s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-hand-balancer-3s.jpg',
+     used:'/blog-hand-balancer-carpal-tunnel · About Why Amari band',
+     problem:'AI look; hands must stay whole (no tight crop).',
+     approach:'Grade-only refine. Keep hands and fingers natural.',
+     prompt:"Use the attached real frame from the Hand Balancer Course Video as the base. Keep the exact person, their hand and wrist position, the setting, and the natural light, and keep the framing, do not change the composition or recast them. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects, keep the hands whole and natural with correct fingers. Avoid a plastic or CGI look."},
+
+    {sec:'s1', id:'elbow-reset', title:'Elbow reset', badge:'refine', prio:'p2',
+     cast:'① Drag this photo into Firefly  ② paste prompt · base-elbow-reset-6s.jpg',
+     thumb:'/images/photos/journal-base/base-elbow-reset-6s.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-elbow-reset-6s.jpg',
+     used:'/blog-elbow-reset-tennis-elbow · /images/v6/real/elbow-reset.jpg',
+     problem:'AI / over-processed still.',
+     approach:'Grade-only refine of the staged base.',
+     prompt:"Use the attached real frame from the Elbow Reset Course Video as the base. Keep the exact person, his seated pose working his forearm, the couch and room, and the natural light, and keep the framing, do not change the composition or recast him. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+
+    {sec:'s1', id:'spring-step', title:'Spring step (re-extract first)', badge:'refine', prio:'p1',
+     cast:'Re-extract a better frame first (weak stand-in shown)',
+     thumb:'/images/photos/journal-base/jh-spring-step.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-spring-step.jpg',
+     used:'/blog-spring-step-calf-ankle — currently foam-roller-v2.jpg (no ankle/calf)',
+     problem:'Header has zero thematic tie to calf/ankle. Existing jh-spring-step.jpg is a weak standing legs-on-beam still.',
+     approach:'Re-extract mid heel-drop from spring-step footage, THEN refine with the grade prompt (edit to name only what the new frame shows).',
+     note:'If no usable frame exists in footage, fall back to the Generate card for spring-step.',
+     prompt:"Use the attached re-extracted Spring Step frame as the base. Keep the exact person, their pose and footing, the setting, and the natural light, do not change the composition or recast the person. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+
+    {sec:'s1', id:'vertical-drop', title:'Vertical drop (re-extract first)', badge:'refine', prio:'p1',
+     cast:'Re-extract a better frame first (weak stand-in shown)',
+     thumb:'/images/photos/journal-base/jh-vertical-drop.jpg',
+     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-vertical-drop.jpg',
+     used:'/blog-vertical-drop-spine-decompression',
+     problem:'Weak outdoor stand; near-identical feel to spring-step.',
+     approach:'Re-extract the actual drop from vertical-drop footage, THEN grade-only refine.',
+     prompt:"Use the attached re-extracted Vertical Drop frame as the base. Keep the exact person, their pose and hand position, the setting, and the natural light, do not change the composition or recast the person. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+
+    // ===== 2 GENERATE =====
+    {sec:'s2', id:'tmj-header', title:'TMJ journal header', badge:'gen', prio:'p1',
+     cast:'Black woman · ~38 · window / open jaw-neck',
+     used:'/blog-jaw-align-tmj-relief · /blog Conditions topic circle',
+     problem:'Current jaw-align.jpg is a <b>hand-on-jaw pain gesture</b> — brand never-show.',
+     approach:'Generate fresh non-pain TMJ header. (Condition page hero tmj-woman-asn39.jpg is fine; this replaces the journal still.)',
+     prompt:"Candid editorial photo, a real woman, Black, around 38, warm deep undertone, natural dark hair loosely up, warm brown eyes, medium-high contrast. Striking, refined. Seated on a wide upholstered bench beside a steel-framed window of a warm, well-kept upscale Marin home, a plant and furniture at close-medium depth, no distant vista. In the right third, caught mid-movement easing her head into a slow open turn, chin lifting, jaw and neck long and loose, awake and alive, not posing or demonstrating, no hand on her face or jaw. Wardrobe: a cream silk camisole with an open neckline, bare shoulders, dark denim, no logos. Real skin, visible pores for her age, no retouching. Plain overcast daylight through the window, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a hand on the jaw or face, a wince, a massage table, an exercise-demo pose, warm golden light, a bare empty room, a car."},
+
+    {sec:'s2', id:'putting-together', title:'Putting it all together', badge:'gen', prio:'p1',
+     cast:'Black man · ~42 · floor-to-stand moment',
+     used:'/blog-putting-it-all-together · /blog Method topic · Take It Home',
+     problem:'Pull-up-bar equipment-hero + AI/golden look.',
+     approach:'Generate an integrated active moment; bar not the hero. Roller as context only.',
+     prompt:"Candid editorial photo, a real man, Black, around 42, warm deep undertone, short natural hair, warm brown eyes, medium-high contrast. Handsome, refined. On the wood floor of a warm, well-kept upscale Marin or Berkeley home, a plain smooth black foam roller beside him, a steel-framed window and furniture at close-medium depth, no distant vista. In the right third, caught mid-movement rising from the floor, spine stacking tall, arms floating open, chest lifting into a slow full breath, awake and alive, not posing or demonstrating, no hand on a sore spot. Wardrobe: dark athletic joggers, a fitted forest-green cotton tee, bare arms, no logos. Real skin, visible pores for his age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a pull-up bar as the hero, a bumpy or colored foam roller, a massage table, an exercise-demo pose, warm golden light, a bare empty room, a car."},
+
+    {sec:'s2', id:'suspension-squat', title:'Suspension squat / hanging', badge:'gen', prio:'p1',
+     cast:'Multiracial woman · ~34 · person on bar',
+     used:'/blog-suspension-squat-hanging-exercises (still on retired hands-on-rings-landscape.webp)',
+     problem:'Bare equipment / retired rings landscape — no person doing the work.',
+     approach:'Generate person actively hanging or squatting under a bar; bar is context, not product hero.',
+     prompt:"Candid editorial photo, a real woman, Multiracial, around 34, warm golden undertone, dark wavy hair in a loose knot, hazel eyes, medium contrast. Striking, refined, athletic. Inside a warm, well-kept upscale Berkeley home gym corner, a ceiling-mounted pull-up bar as context, a window and plant at close-medium depth, no distant vista. In the right third, caught mid-movement hanging from the bar with knees soft into a controlled squat, shoulders open, spine long, doing the work herself, awake and alive, not posing or demonstrating, no hand on a sore spot. Wardrobe: dark athletic shorts, a rust fitted jersey crop, bare arms, no logos. Real skin, visible pores for her age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a bare product still of the bar alone, gymnastic rings as hero props, a massage table, an exercise-demo pose, warm golden light, a car."},
+
+    {sec:'s2', id:'spring-step-gen', title:'Spring step (fallback generate)', badge:'gen', prio:'p2',
+     cast:'Hispanic man · ~36 · heel-drop moment',
+     used:'Only if re-extract fails for spring-step refine',
+     problem:'No on-topic calf/ankle header on the live article.',
+     approach:'Generate a mid heel-drop / spring moment on a wood floor. Prefer refine-from-footage if a frame exists.',
+     prompt:"Candid editorial photo, a real man, Hispanic, around 36, warm golden undertone, dark hair, warm brown eyes, medium contrast. Handsome, refined. On the wood floor of a warm, well-kept upscale Marin home, beside a steel-framed window, furniture wrapping close behind, no distant vista. In the right third of the frame, standing, caught mid-movement dropping one heel slowly toward the floor with the other foot light, calves working, arms easy at his sides, awake and alive, not posed or demonstrating, no hand tending a sore spot. Wardrobe: dark athletic shorts, a teal cotton tee, bare feet, no logos. Real skin, visible pores for his age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a foam roller unless truly needed as context, a massage table, a posed exercise-demo, warm golden light, a car."},
+
+    {sec:'s2', id:'hand-reaching-open', title:'Hand reaching open (full frame)', badge:'gen', prio:'p3',
+     cast:'Hispanic woman · ~38 · FULL frame, crop after',
+     used:'/about divider — detail-crops/hand-reaching-open.jpg',
+     problem:'Low-res crop. Never prompt a tight body crop (mangled fingers).',
+     approach:'Generate the full person + open hand, then crop the hand in post.',
+     prompt:"Generate the FULL whole shot, never a tight crop, we crop the hand ourselves after. Candid editorial photo, a real woman, Hispanic, around 38, warm golden undertone, warm brown hair, hazel eyes. On the wood floor of a warm, well-kept upscale Marin home, furniture wrapping the room at close-medium depth, no distant vista. Seated easy, caught mid-movement extending one arm forward, the hand opening softly, fingers long and relaxed, palm turning up, an unhurried outward reach, awake and alive, not posed or demonstrating. Keep the whole hand and arm natural with correct fingers and the full body in frame. Wardrobe: a teal silk blouse, dark denim, no logos. Real skin, visible pores for her age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid a tight body crop, mangled or extra fingers, a boneless arm, plastic skin, a massage table, warm golden light, a car."},
+
+    // ===== 3 WIRE =====
+    {sec:'s3', id:'wire-spinal-wave', title:'Spinal wave article header', badge:'wire', prio:'p1',
+     used:'/blog-spinal-wave-gentle-decompression → currently gymnastic-rings.jpg',
+     problem:'Wrong topic (rings). Soft refined frame already exists.',
+     approach:'Point at images/photos/journal-base/jh-spinal-wave-refined.jpg (already on /blog Latest + /ongoing-care).',
+     note:'No Firefly. One HTML src swap.'},
+
+    {sec:'s3', id:'wire-sciatica-article', title:'Sciatica journal article', badge:'wire', prio:'p1',
+     used:'/blog-sciatica-relief → currently back-pain-from-sitting.webp',
+     problem:'Leather-chair reuse, not sciatica.',
+     approach:'Point at images/photos/sciatica-man-wht50.jpg (already the sciatica condition hero).',
+     note:'No Firefly. One HTML src swap.'},
+
+    {sec:'s3', id:'wire-pam-jpg', title:'Pam testimonial on /stories', badge:'wire', prio:'p1',
+     used:'/stories Pam → danielle-testimonial.avif',
+     problem:'Soft avif; sharper jpg already used on home This Just In.',
+     approach:'Point at /images/v6/real/danielle-testimonial.jpg',
+     note:'No Firefly. Wiring only.'},
+
+    {sec:'s3', id:'wire-topic-circles', title:'Journal Browse-by-topic circles', badge:'wire', prio:'p1',
+     used:'/blog topic circles',
+     problem:'Mechanics=rings, Conditions=TMJ pain pose, Method=pull-up bar, Where It Hurts=empty chair type reuse.',
+     approach:'Reselect to keepers once generate/refine land: Mechanics→jh-myofascial.jpg; Conditions→new TMJ or hip-doorway; Method→new putting-together; Where It Hurts→lower-back-refined or knee-window.',
+     note:'Mostly wiring. Depends on TMJ + putting generate cards above.'},
+
+    {sec:'s3', id:'wire-hip-hub-card', title:'Conditions hub hip card', badge:'wire', prio:'p2',
+     used:'/conditions hip card still on hip-woman-wht60.jpg',
+     problem:'Page hero already uses hip-woman-wht60-doorway.jpg; hub card lags.',
+     approach:'Point the hub card at the doorway winner.',
+     note:'Consistency only.'},
+
+    // ===== 4 RE-SOURCE =====
+    {sec:'s4', id:'sara', title:'Sara', badge:'resource', prio:'p1',
+     used:'/stories · /images/Sarah.webp',
+     problem:'Soft / pixelated at card size.',
+     approach:'Re-source a higher-res real photo of the real client. Never generate.',
+     note:'Real quote → real face only.'},
+
+    {sec:'s4', id:'katie', title:'Katie', badge:'resource', prio:'p1',
+     used:'/stories · /images/kate-testimonial.avif',
+     problem:'Soft / low-res tier.',
+     approach:'Re-source sharper original (jpg exists at v6/real/kate-testimonial.jpg — check if usable, else pull from Drive).',
+     note:'Prefer real re-source over generation.'},
+
+    {sec:'s4', id:'paul', title:'Paul', badge:'resource', prio:'p1',
+     used:'/stories · /images/dan-testimonial.webp',
+     problem:'Soft webp.',
+     approach:'Re-source; check /images/v6/real/dan-testimonial.jpg first.',
+     note:'Filename ≠ display name is intentional mapping — keep label, improve pixels.'},
+
+    {sec:'s4', id:'becca', title:'Becca', badge:'resource', prio:'p1',
+     used:'/stories · /images/amy-testimonial.webp',
+     problem:'Soft webp.',
+     approach:'Re-source; check amy-testimonial.jpg in v6/real.',
+     note:'Real face only.'},
+
+    {sec:'s4', id:'barbara', title:'Barbara — age mismatch', badge:'resource', prio:'p1',
+     used:'/stories · samantha-testimonial.avif · quote says “I’m 78”',
+     problem:'Face reads decades younger than the stated age.',
+     approach:'Real ~78 face, OR drop/re-attribute the age line. Do not AI-age a young face.',
+     note:'Truth gate — face and copy must agree.'},
+
+    {sec:'s4', id:'pam-resource', title:'Pam (if jpg still soft)', badge:'resource', prio:'p2',
+     used:'After wiring danielle-testimonial.jpg',
+     problem:'If jpg is still soft at large size, need a better original.',
+     approach:'Pull higher-res from Drive / client archive.',
+     note:'Wire card above first.'},
+
+    {sec:'s4', id:'marisol-julian', title:'Marisol + Julian spot-check', badge:'resource', prio:'p2',
+     used:'/stories · Maria.webp · Justin.webp',
+     problem:'Same soft webp class as the fuzzy set.',
+     approach:'If they mush at retina card size, re-source like the others; otherwise leave.',
+     note:'Spot-check on phone before spending time.'},
+
+    // ===== 5 SKIP =====
+    {sec:'s5', id:'skip-heroes', title:'Unique page heroes', badge:'skip',
+     approach:'DONE — home cedar, how-it-works roller room, first-visit doorway, booking pricing-man, conditions hub, journal, partner, living-practice, virtual, in-person, ongoing-care spinal-wave, condition heroes including hip-doorway + knee-window + plantar.',
+     note:'Do not regenerate. Old 07-12 knee-window / hip-doorway cards are obsolete.'},
+
+    {sec:'s5', id:'skip-partner', title:'Partner tiles', badge:'skip',
+     approach:'DONE — trainer, coach, yoga, movement winners wired.',
+     note:'Old partner gaps are closed.'},
+
+    {sec:'s5', id:'skip-sharp-testimonials', title:'Annie / Elise / Victor / Tyler', badge:'skip',
+     approach:'DONE — terri / nina / gregg / tyler JPGs wired on /stories.',
+     note:'Old Elise+Tyler avatar card is obsolete.'},
+
+    {sec:'s5', id:'skip-sciatica-hedge', title:'Sciatica hedge regen', badge:'skip',
+     approach:'REJECTED 7/12 — hedge is just a green wall; composition problem unchanged.',
+     note:'Current sciatica-man-wht50.jpg stays unless you change scene+moment, not backdrop only.'},
+
+    {sec:'s5', id:'skip-neck-driveway', title:'Neck driveway / car regen', badge:'skip',
+     approach:'REJECTED 7/12 — cars read fake.',
+     note:'Never use the old neck-driveway prompt.'},
+
+    {sec:'s5', id:'skip-explainers', title:'jh-stretching / myofascial / psoas', badge:'skip',
+     approach:'GOOD ENOUGH — keep as journal explainers.',
+     note:'No regen.'},
+  ];
+
+  const BADGE_LABEL = {gen:'generate', refine:'refine base', wire:'wire only', resource:'re-source', skip:'skip'};
+  const PRIO_LABEL = {p1:'P1', p2:'P2', p3:'P3'};
+  const LS = 'ffpack14-';
+
+  function cardHtml(s){
+    const label = BADGE_LABEL[s.badge];
+    const isDone = localStorage.getItem(LS+s.id)==='1';
+    const prioTag = s.prio ? `<span class="prio ${s.prio}">${PRIO_LABEL[s.prio]}</span>` : '';
+    let thumbHtml;
+    if(s.thumb){
+      thumbHtml = `<div class="thumbwrap"><span class="badge ${s.badge}">${label}</span>${prioTag}`+
+        `<a href="${s.photoUrl||s.thumb}" target="_blank" rel="noopener" title="Open photo for Firefly"><img src="${s.thumb}" alt="${s.title}"></a></div>`;
+    } else {
+      thumbHtml = `<div class="thumbwrap"><span class="badge ${s.badge}">${label}</span>${prioTag}`+
+        `<div class="nothumb"><span class="icon">&#10022;</span><span>${s.badge==='skip'?'Skipped on purpose':'No preview · use prompt'}</span></div></div>`;
+    }
+    let bodyHtml = '';
+    if(s.cast) bodyHtml += `<p class="cast">${s.cast}</p>`;
+    if(s.used) bodyHtml += `<p class="field"><b>Used:</b> ${s.used}</p>`;
+    if(s.photoUrl) bodyHtml += `<p class="field"><b>Photo URL:</b> <a href="${s.photoUrl}" target="_blank" rel="noopener" style="color:var(--rust);word-break:break-all">${s.photoUrl}</a></p>`;
+    if(s.problem) bodyHtml += `<p class="field problem"><b>Problem:</b> ${s.problem}</p>`;
+    if(s.approach) bodyHtml += `<p class="field"><b>Approach:</b> ${s.approach}</p>`;
+    if(s.note) bodyHtml += `<p class="note">${s.note}</p>`;
+    if(s.prompt){
+      bodyHtml += `<div class="prompt-wrap"><button class="copy" data-id="${s.id}">Copy</button><pre id="prompt-${s.id}">${s.prompt}</pre></div>`;
+      const over = s.prompt.length > 1024;
+      bodyHtml += `<p class="chars${over?' over':''}">${s.prompt.length} / 1024 chars${over?' — OVER, trim':''}</p>`;
+    }
+    bodyHtml += `<label class="donecheck"><input type="checkbox" data-id="${s.id}" ${isDone?'checked':''}> done</label>`;
+    return `<div class="card${isDone?' done':''}" id="c-${s.id}">${thumbHtml}<div class="meta"><h3>${s.title}</h3>${bodyHtml}</div></div>`;
+  }
+
+  function render(){
+    ['s1','s2','s3','s4','s5'].forEach(sec=>{
+      document.getElementById('grid-'+sec).innerHTML = SHOTS.filter(s=>s.sec===sec).map(cardHtml).join('');
+    });
+  }
+  function renderStatusbar(){
+    const actionable = SHOTS.filter(s=>s.badge!=='skip');
+    const done = actionable.filter(s=>localStorage.getItem(LS+s.id)==='1').length;
+    document.getElementById('statusbar').innerHTML =
+      `<b>${done} / ${actionable.length} done</b>`+
+      `<span class="pill"><span class="dot done"></span> refine ${SHOTS.filter(s=>s.badge==='refine').length}</span>`+
+      `<span class="pill"><span class="dot" style="background:var(--plum)"></span> gen ${SHOTS.filter(s=>s.badge==='gen').length}</span>`+
+      `<span class="pill"><span class="dot" style="background:var(--grey)"></span> wire ${SHOTS.filter(s=>s.badge==='wire').length}</span>`+
+      `<span class="pill"><span class="dot" style="background:var(--gold)"></span> re-source ${SHOTS.filter(s=>s.badge==='resource').length}</span>`+
+      `<div class="jumpnav"><a href="#s1">1 Refine</a><a href="#s2">2 Gen</a><a href="#s3">3 Wire</a><a href="#s4">4 Re-source</a><a href="#s5">5 Skip</a></div>`;
+  }
+  document.addEventListener('change', e=>{
+    if(e.target.matches('input[type=checkbox][data-id]')){
+      localStorage.setItem(LS+e.target.dataset.id, e.target.checked?'1':'0');
+      document.getElementById('c-'+e.target.dataset.id).classList.toggle('done', e.target.checked);
+      renderStatusbar();
+    }
+  });
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('.copy');
+    if(!btn) return;
+    const pre = document.getElementById('prompt-'+btn.dataset.id);
+    navigator.clipboard.writeText(pre.textContent).then(()=>{
+      btn.textContent='Copied'; btn.classList.add('copied');
+      setTimeout(()=>{btn.textContent='Copy'; btn.classList.remove('copied');},1200);
+    });
+  });
+  render(); renderStatusbar();
+</script>
+</body>
+</html>
