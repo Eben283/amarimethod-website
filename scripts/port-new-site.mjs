@@ -70,14 +70,14 @@ const PAGES = {
   '2026-07-09-amari-virtual-sessions.html':                   { url: '/virtual-sessions',                    file: 'virtual-sessions.html' },
   '2026-07-11-amari-ongoing-care-mockup.html':                { url: '/ongoing-care',                        file: 'ongoing-care.html' },
   '2026-07-11-amari-living-practice-mockup.html':             { url: '/living-practice',                     file: 'living-practice.html' },
-  '2026-07-11-amari-partner-mockup.html':                     { url: '/partner',                             file: 'partner.html' },
+  '2026-07-11-amari-partner-mockup.html':                     { url: '/partners',                             file: 'partners.html' },
 };
 
 // Superseded mockups that other pages may still link to.
 const LINK_ONLY = {
   '2026-07-08-amari-home-mockup.html': '/',
   '2026-07-09-amari-journal-article-mockup.html': '/blog',
-  '2026-07-09-amari-partner.html': '/partner',
+  '2026-07-09-amari-partner.html': '/partners',
 };
 
 // Metadata for pages that do not replace an existing live page.
