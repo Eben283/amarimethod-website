@@ -1,0 +1,16 @@
+---
+description: Load the Amari Cursor agent bridge from claude-config
+alwaysApply: true
+---
+
+# Amari agent bridge (website)
+
+Canonical Cursor bridge: `claude-config/.cursor/rules/amari-agent-bridge.mdc`.
+
+At session start on Amari work, run:
+`bash /agent/repos/claude-config/scripts/cursor-session-orient.sh`
+(or `bash ~/code/claude-config/scripts/cursor-session-orient.sh` locally)
+
+Read matching skills from `claude-config/skills/` before improvising. For staff-app work, triage with `skills/todo/SKILL.md` when the task might already be solved.
+
+Vault todos and session notes: `/agent/repos/amari-method-docs/ops/open-todos.md` and `NOTES.txt`.
