@@ -3,6 +3,7 @@ import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
 import './index.css'
 import './styles/portal.css'
+import './styles/site-auth.css'
 
 createRoot(document.getElementById("root")!).render(
   <ErrorBoundary>

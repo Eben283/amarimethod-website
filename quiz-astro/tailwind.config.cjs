@@ -46,19 +46,19 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Amari Method brand tokens
+        // Amari Method brand tokens — mapped to Jul 12 mockup palette
+        // so existing Tailwind classes (bone-white, charcoal, clay, …) land on cream/ink/rust.
         amari: {
-          'bone-white': '#FFFCF5',
-          'light-sand': '#F7F3E9',
-          'charcoal': '#252525',
-          'pine-teal': '#252525',
-          'forest-green': '#3a3a3a',
-          'oat': '#F0E9DC',
-          // Tokens previously referenced in JSX without definitions; now explicit.
-          'text-light': '#718096',
-          'border': '#E5DDC9',
-          'accent-warm': '#EBA584',
-          'clay': '#C56B4E',
+          'bone-white': '#F8F1E8',   // cream
+          'light-sand': '#FCF7F1',   // paper
+          'charcoal': '#211D19',     // ink
+          'pine-teal': '#211D19',    // ink (selected marks / accents)
+          'forest-green': '#3E4A32', // forest
+          'oat': '#F1E7DA',          // cream-2
+          'text-light': '#5C554D',   // body
+          'border': 'rgba(33,29,25,0.14)',
+          'accent-warm': '#A9481F',  // rust
+          'clay': '#A9481F',         // rust
         },
       },
       borderRadius: {
@@ -89,13 +89,13 @@ module.exports = {
         'slide-out': 'slide-out 0.5s ease-out forwards',
       },
       fontFamily: {
-        serif: ['Bona Nova', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        ui: ['Poppins', 'system-ui', 'sans-serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        sans: ['"General Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        ui: ['"General Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'card': '0 2px 8px rgba(0, 0, 0, 0.04)',
-        'card-hover': '0 12px 32px rgba(37, 37, 37, 0.15)',
+        'card-hover': '0 12px 32px rgba(33, 29, 25, 0.12)',
       },
     },
   },

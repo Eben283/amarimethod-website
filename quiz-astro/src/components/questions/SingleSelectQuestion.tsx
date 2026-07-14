@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 type SingleSelectQuestionProps = {
@@ -12,7 +11,17 @@ type SingleSelectQuestionProps = {
   onOtherChange?: (value: string) => void;
   required?: boolean;
   onAutoAdvance?: () => void;
+  /** When true, heading/desc are omitted (QuizStack renders q-head / q-title). */
+  hideHeading?: boolean;
 };
+
+const CheckMark = () => (
+  <span className="mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  </span>
+);
 
 const SingleSelectQuestion = ({
   question,
@@ -25,6 +34,7 @@ const SingleSelectQuestion = ({
   onOtherChange,
   required = false,
   onAutoAdvance,
+  hideHeading = false,
 }: SingleSelectQuestionProps) => {
   const handleClick = (option: string) => {
     onChange(option);
@@ -36,38 +46,30 @@ const SingleSelectQuestion = ({
     return (
       <button
         type="button"
+        role="radio"
+        aria-checked={isSelected}
         onClick={() => handleClick(label)}
-        className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
-          ${isSelected
-            ? 'border-amari-pine-teal bg-amari-pine-teal bg-opacity-[7%] shadow-sm'
-            : 'border-amari-oat bg-white hover:border-amari-pine-teal hover:border-opacity-40 hover:bg-amari-light-sand hover:shadow-sm'
-          }`}
+        className={`opt radio${isSelected ? ' sel' : ''}`}
       >
-        <span className={`font-sans text-sm font-medium leading-snug ${isSelected ? 'text-amari-charcoal' : 'text-gray-700'}`}>
-          {label}
-        </span>
-        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ml-3 transition-all duration-200
-          ${isSelected ? 'border-amari-pine-teal bg-amari-pine-teal' : 'border-amari-oat group-hover:border-amari-pine-teal'}`}
-        >
-          {isSelected && (
-            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </div>
+        <CheckMark />
+        <span className="txt">{label}</span>
       </button>
     );
   };
 
   return (
     <div>
-      <h2 className="text-2xl font-freight mb-2">
-        {question}
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </h2>
-      {description && <p className="mb-4 text-sm text-amari-text-light font-sans">{description}</p>}
+      {!hideHeading && (
+        <>
+          <h2 className="q-title">
+            {question}
+            {required && <span style={{ color: 'var(--rust)' }}> *</span>}
+          </h2>
+          {description && <p className="q-desc">{description}</p>}
+        </>
+      )}
 
-      <div className="space-y-2.5 mt-5">
+      <div className="options" role="radiogroup" aria-label={question}>
         {options.map((option) => (
           <OptionButton key={option} label={option} />
         ))}
@@ -76,25 +78,13 @@ const SingleSelectQuestion = ({
           <div>
             <button
               type="button"
+              role="radio"
+              aria-checked={selectedOption === 'Other'}
               onClick={() => handleClick('Other')}
-              className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group
-                ${selectedOption === 'Other'
-                  ? 'border-amari-pine-teal bg-amari-pine-teal bg-opacity-[7%] shadow-sm'
-                  : 'border-amari-oat bg-white hover:border-amari-pine-teal hover:border-opacity-40 hover:bg-amari-light-sand hover:shadow-sm'
-                }`}
+              className={`opt radio${selectedOption === 'Other' ? ' sel' : ''}`}
             >
-              <span className={`font-sans text-sm font-medium ${selectedOption === 'Other' ? 'text-amari-charcoal' : 'text-gray-700'}`}>
-                Other
-              </span>
-              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ml-3 transition-all duration-200
-                ${selectedOption === 'Other' ? 'border-amari-pine-teal bg-amari-pine-teal' : 'border-amari-oat group-hover:border-amari-pine-teal'}`}
-              >
-                {selectedOption === 'Other' && (
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
+              <CheckMark />
+              <span className="txt">Other</span>
             </button>
             {selectedOption === 'Other' && onOtherChange && (
               <input
@@ -103,7 +93,16 @@ const SingleSelectQuestion = ({
                 onChange={(e) => onOtherChange(e.target.value)}
                 placeholder="Please specify"
                 autoFocus
-                className="mt-2 px-4 py-2.5 w-full border-2 border-amari-pine-teal rounded-xl text-sm font-sans focus:outline-none focus:border-amari-pine-teal bg-white"
+                className="mt-2 w-full"
+                style={{
+                  border: '1px solid var(--line)',
+                  background: 'var(--paper)',
+                  borderRadius: 3,
+                  padding: '14px 16px',
+                  fontFamily: 'var(--sans)',
+                  fontSize: '1rem',
+                  color: 'var(--ink)',
+                }}
                 onClick={(e) => e.stopPropagation()}
               />
             )}

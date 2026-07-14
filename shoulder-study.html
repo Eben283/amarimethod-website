@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+  <title>The Desk Shoulders Study: Sign Up</title>
+  <meta name="description" content="A free 3-session study for San Francisco desk workers with chronic shoulder or upper-back pain from sitting, run by Amari Method.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ');
+  </script>
+
+  <style>
+    :root {
+      --sand: #F5EFE8;
+      --sand-deep: #ECE2D3;
+      --charcoal: #3A3A3A;
+      --accent: #EBA584;
+      --accent-deep: #B5652E;
+      --stone-line: #DED2C0;
+      --stone-text: #8B7F6E;
+      --white: #FFFFFF;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--sand);
+      background-image: radial-gradient(circle at 15% -10%, var(--sand-deep) 0%, transparent 45%);
+      color: var(--charcoal);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8vh 20px 60px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: 0 1px 2px rgba(58,38,20,0.06), 0 18px 40px -20px rgba(58,38,20,0.28);
+      padding: 30px 26px 28px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--stone-text);
+      margin: 0 0 10px;
+    }
+
+    h1 {
+      font-family: 'Bona Nova', Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(26px, 6vw, 31px);
+      line-height: 1.15;
+      text-wrap: balance;
+      margin: 0 0 12px;
+      color: var(--charcoal);
+    }
+
+    .lede {
+      font-size: 15.5px;
+      line-height: 1.55;
+      color: var(--charcoal);
+      margin: 0 0 20px;
+    }
+
+    details {
+      border-top: 1px solid var(--stone-line);
+      border-bottom: 1px solid var(--stone-line);
+      margin: 0 0 24px;
+    }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 2px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-deep);
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::after {
+      content: "＋";
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--accent-deep);
+      transition: transform 0.2s ease;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    details[open] summary::after { transform: rotate(45deg); }
+
+    .learn-body {
+      padding: 2px 2px 18px;
+    }
+
+    .learn-block { margin-bottom: 14px; }
+    .learn-block:last-child { margin-bottom: 0; }
+
+    .learn-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--stone-text);
+      margin: 0 0 4px;
+    }
+
+    .learn-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--charcoal);
+      margin: 0;
+    }
+
+    .qual-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .qual-list li {
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 4px 0 4px 20px;
+      position: relative;
+      color: var(--charcoal);
+    }
+
+    .qual-list li::before {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 12px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .screen {
+      background: var(--sand);
+      border: 1.5px solid var(--stone-line);
+      border-radius: 12px;
+      padding: 14px 14px 10px;
+    }
+
+    .screen-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone-text);
+      margin: 0 0 11px;
+    }
+
+    .screen-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--charcoal);
+      margin: 0 0 11px;
+      cursor: pointer;
+    }
+
+    .screen-item:last-child { margin-bottom: 4px; }
+
+    .screen-check {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin: 1px 0 0;
+      accent-color: var(--accent-deep);
+      cursor: pointer;
+    }
+
+    form { display: flex; flex-direction: column; gap: 16px; }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--stone-text);
+      margin: 0 0 6px;
+    }
+
+    .field input[type="text"],
+    .field input[type="tel"],
+    .field input[type="email"] {
+      width: 100%;
+      font-size: 16px;
+      font-family: inherit;
+      color: var(--charcoal);
+      background: var(--sand);
+      border: 1.5px solid var(--stone-line);
+      border-radius: 10px;
+      padding: 13px 14px;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent-deep);
+      background: var(--white);
+    }
+
+    .field-note {
+      font-size: 11.5px;
+      color: var(--stone-text);
+      margin: 6px 2px 0;
+    }
+
+    .arm-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .arm-group input { position: absolute; opacity: 0; pointer-events: none; }
+
+    .arm-group label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13.5px;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--charcoal);
+      background: var(--sand);
+      border: 1.5px solid var(--stone-line);
+      border-radius: 10px;
+      padding: 11px 4px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .arm-group input:checked + label {
+      background: var(--accent);
+      border-color: var(--accent-deep);
+      color: var(--charcoal);
+    }
+
+    .optional-tag {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--stone-text);
+      font-size: 11.5px;
+    }
+
+    button.submit {
+      margin-top: 4px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--white);
+      background: var(--accent-deep);
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease;
+    }
+
+    button.submit:hover { background: #9c5527; }
+    button.submit:active { transform: scale(0.985); }
+    button.submit:disabled { opacity: 0.6; cursor: default; }
+
+    .form-error {
+      display: none;
+      font-size: 13px;
+      color: #a13a2e;
+      background: #fdf1ee;
+      border: 1px solid #f0c9c0;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .form-error.show { display: block; }
+
+    .not-a-fit {
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--stone-text);
+      margin: 18px 0 0;
+      line-height: 1.5;
+    }
+
+    .not-a-fit a {
+      color: var(--accent-deep);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .footer-line {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--stone-text);
+      margin: 20px 0 0;
+      letter-spacing: 0.02em;
+    }
+
+    .confirm {
+      display: none;
+      text-align: center;
+      padding: 20px 4px 6px;
+    }
+
+    .confirm.show { display: block; }
+    .card.confirmed form,
+    .card.confirmed .lede,
+    .card.confirmed details,
+    .card.confirmed .not-a-fit { display: none; }
+
+    .confirm-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--charcoal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin: 0 auto 16px;
+    }
+
+    .confirm h2 {
+      font-family: 'Bona Nova', Georgia, serif;
+      font-weight: 700;
+      font-size: 22px;
+      margin: 0 0 10px;
+    }
+
+    .confirm p {
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--charcoal);
+      margin: 0 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <p class="eyebrow">Amari Method &middot; San Francisco</p>
+    <h1>The Desk Shoulders Study</h1>
+    <p class="lede">A free 3-session study for SF desk workers with chronic shoulder or upper-back pain from sitting. We track your pain score before and after each session.</p>
+
+    <details>
+      <summary>What&rsquo;s involved</summary>
+      <div class="learn-body">
+        <div class="learn-block">
+          <p class="learn-label">Why it works</p>
+          <p class="learn-text">Shoulder and upper-back pain like this comes from some parts of the upper body working too hard while others aren&rsquo;t working enough. The protocol rebalances them, which relieves the pain.</p>
+        </div>
+        <div class="learn-block">
+          <p class="learn-label">Who&rsquo;s running it</p>
+          <p class="learn-text">Amari Method, a somatic movement practice in San Francisco.</p>
+        </div>
+        <div class="learn-block">
+          <p class="learn-label">What to expect</p>
+          <p class="learn-text">Three 15-minute sessions at our office, 662 8th Ave. No cost. No obligation past session 1 if it&rsquo;s not helping.</p>
+        </div>
+        <div class="learn-block">
+          <p class="learn-label">Who qualifies</p>
+          <ul class="qual-list">
+            <li>Shoulder or upper-back pain for 2+ weeks</li>
+            <li>Flares after a day at the screen, not a fresh injury</li>
+            <li>Can get to 662 8th Ave, San Francisco 3 times</li>
+          </ul>
+        </div>
+        <div class="learn-block">
+          <p class="learn-label">What happens with the results</p>
+          <p class="learn-text">When the study closes at 30 participants, we&rsquo;ll publish the full findings, the before-and-after pain scores across the whole cohort. Participants are identified by first name only, and only with their consent.</p>
+        </div>
+      </div>
+    </details>
+
+    <form id="signupForm">
+      <div class="screen">
+        <p class="screen-title">First, does this sound like you?</p>
+        <label class="screen-item">
+          <input type="checkbox" class="screen-check" required>
+          <span>My shoulder or upper-back pain has lasted 2 weeks or more.</span>
+        </label>
+        <label class="screen-item">
+          <input type="checkbox" class="screen-check" required>
+          <span>It flares after a day at the screen, not a fresh injury.</span>
+        </label>
+        <label class="screen-item">
+          <input type="checkbox" class="screen-check" required>
+          <span>I can get to 662 8th Ave three times.</span>
+        </label>
+      </div>
+      <div class="field">
+        <label for="name">Name</label>
+        <input type="text" id="name" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" required autocomplete="tel" inputmode="tel">
+        <p class="field-note">Used only to schedule your sessions.</p>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required autocomplete="email" inputmode="email">
+        <p class="field-note">Where we send your study results.</p>
+      </div>
+      <div class="field">
+        <label>Which shoulder <span class="optional-tag">(optional)</span></label>
+        <div class="arm-group">
+          <input type="radio" name="bodyPart" id="bpLeft" value="left">
+          <label for="bpLeft">Left</label>
+          <input type="radio" name="bodyPart" id="bpRight" value="right">
+          <label for="bpRight">Right</label>
+          <input type="radio" name="bodyPart" id="bpBoth" value="both">
+          <label for="bpBoth">Both</label>
+        </div>
+      </div>
+      <p class="form-error" id="formError"></p>
+      <button type="submit" class="submit" id="submitBtn">Join the study</button>
+    </form>
+
+    <div class="confirm" id="confirm">
+      <div class="confirm-mark">&check;</div>
+      <h2>You&rsquo;re enrolled.</h2>
+      <p>We&rsquo;ll text you to schedule session 1.</p>
+      <p>Amari Method &middot; San Francisco</p>
+    </div>
+
+    
+
+    <p class="footer-line" id="footerLine">Amari Method &middot; San Francisco</p>
+  </div>
+
+  <script>
+    var form = document.getElementById('signupForm');
+    var errorEl = document.getElementById('formError');
+    var submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errorEl.classList.remove('show');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Joining…';
+
+      var bodyPart = document.querySelector('input[name="bodyPart"]:checked');
+
+      fetch('/api/shoulder-study-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: document.getElementById('name').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          bodyPart: bodyPart ? bodyPart.value : undefined,
+        }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            throw new Error(result.data && result.data.error ? result.data.error : 'Something went wrong. Please try again.');
+          }
+          document.getElementById('card').classList.add('confirmed');
+          document.getElementById('confirm').classList.add('show');
+          document.getElementById('footerLine').style.display = 'none';
+          if (window.gtag) { gtag('event', 'shoulder_study_signup'); }
+        })
+        .catch(function (err) {
+          errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+          errorEl.classList.add('show');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Join the study';
+        });
+    });
+  </script>
+</body>
+</html>

@@ -12,10 +12,11 @@ import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
-import ElbowStudyPanel from '../components/ElbowStudyPanel';
+import StudyCapturePanel from '../components/StudyCapturePanel';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
+import { studyFromTags } from '../data/studies';
 import '../styles/session-a.css';
 
 // Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
@@ -300,7 +301,7 @@ export default function ClientDetailPage() {
 
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ') || 'Unknown';
   const isPartner = client.tags.includes('affiliate-partner');
-  const isElbowStudy = client.tags.includes('elbow-study-participant');
+  const study = studyFromTags(client.tags);
   const roleWord = isPartner ? 'Referral partner' : client.seriesType !== 'none' ? `${client.seriesType.replace('-session', '')}-session client` : 'Client';
 
   // session progress numbers (same math as SessionStats)
@@ -382,8 +383,8 @@ export default function ClientDetailPage() {
           <div className="sa-card"><Checklist appointmentId={appointmentId} client={client} /></div>
         )}
 
-        {/* Elbow Reset Study — intake + before/after pain, only for tagged participants */}
-        {isElbowStudy && <ElbowStudyPanel contactId={client.id} />}
+        {/* Study capture — intake + before/after pain for tagged participants */}
+        {study && <StudyCapturePanel contactId={client.id} study={study} />}
 
         {/* partner toolkit — pinned near the top; mirrors the pay-link pattern:
             tap to reveal a confirm, then tap to actually send (it fires a real

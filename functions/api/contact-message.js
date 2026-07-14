@@ -14,14 +14,30 @@ const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
+  "http://localhost:8788",
+  "http://127.0.0.1:8788",
+  "http://localhost:8899",
+  "http://127.0.0.1:8899",
 ];
 
 const MAX_NAME = 100;
 const MAX_PHONE = 30;
 const MAX_MESSAGE = 4000;
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  // Cloudflare Pages branch previews (same project) for QA before go-live.
+  try {
+    const host = new URL(origin).hostname;
+    return host === "amarimethod-website.pages.dev" || host.endsWith(".amarimethod-website.pages.dev");
+  } catch {
+    return false;
+  }
+}
+
 function corsHeaders(origin) {
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",

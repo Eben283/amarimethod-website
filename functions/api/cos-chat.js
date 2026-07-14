@@ -320,7 +320,7 @@ ${calendarEvents || "Calendar not connected yet. Ask about the schedule if relev
 ## Amari Method — GoHighLevel (GHL) System
 
 ### Business
-Amari Method — solo bodywork practice in San Francisco run by Dr. Garrett. Eben manages ops/tech.
+Amari Method — solo bodywork practice in San Francisco run by Garrett Hewstan. Eben manages ops/tech.
 
 ### Pipeline Stages
 New Lead → Engaged Lead → Booked Consult → Showed → Consultation Attended → Active Client
