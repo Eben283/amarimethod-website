@@ -34,6 +34,10 @@ All landscape ~1600×1194. This is the backbone. Filename encodes subject + demo
 | `partner-woman-his41.jpg` | Hispanic woman | partner page |
 | `partner-movement-man-his52.jpg` | Hispanic man | partner page |
 | `partner-yoga-woman-wht38.jpg` | woman | partner page |
+| `black-woman38-window-seat.jpg` | Black woman, window seat | home band / accent |
+| `black-man42-room-roller.jpg` | Black man, room + roller | how-it-works hero |
+| `hip-woman-wht60-doorway.jpg` | woman in doorway (depth) | hip condition hero |
+| `knee-man-his44-window.jpg` | Hispanic man by window | knee condition hero |
 | `partner-coach.jpg` `partner-trainer.jpg` | partner tiles (1400×1045) | partner grid |
 
 ## KEEP — movement (real Course Video frames, people doing the method)
