@@ -68,9 +68,19 @@ class SpeechService {
   }
 
   stopListening() {
-    if (this.recognition && this.isListening) {
-      this.recognition.stop()
-      this.isListening = false
+    if (!this.recognition || !this.isListening) return
+    this.isListening = false
+    // Prefer abort so a late final transcript does not fire after the user
+    // intentionally stopped; fall back to stop() where abort is missing.
+    try {
+      if (typeof this.recognition.abort === 'function') this.recognition.abort()
+      else this.recognition.stop()
+    } catch {
+      try {
+        this.recognition.stop()
+      } catch {
+        /* already stopped */
+      }
     }
   }
 

@@ -186,6 +186,7 @@ export default function App() {
       speechService.stopListening()
       setIsRecording(false)
       setInterim('')
+      setStatus('Stopped — tap to speak again')
       return
     }
 

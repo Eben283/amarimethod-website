@@ -206,6 +206,7 @@ select {
   border-radius: 50%;
   border: 1px solid rgba(212, 162, 76, 0.55);
   animation: pulse-ring 1.6s ease-out infinite;
+  pointer-events: none; /* rings must not steal taps meant for Stop */
 }
 
 .mic-wrap.listening::after {
@@ -213,6 +214,8 @@ select {
 }
 
 .mic {
+  position: relative;
+  z-index: 1;
   width: 108px;
   height: 108px;
   border-radius: 50%;
@@ -222,6 +225,8 @@ select {
   background: linear-gradient(160deg, var(--gold-soft), var(--gold) 60%, #b8832f);
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.2s ease, filter 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .mic:active:not(:disabled) {
