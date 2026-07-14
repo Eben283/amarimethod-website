@@ -20,8 +20,6 @@
 <style>
   /* ---------- Homepage-specific styles ---------- */
   .hero p{max-width:46ch}
-  .hero-pause{position:absolute;right:34px;bottom:30px;color:#fff;opacity:.7;font-size:13px;letter-spacing:.1em}
-
   /* This Just In */
   .justin{padding:clamp(64px,7vw,92px) 0 clamp(48px,5vw,68px);text-align:center}
   .justin .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);margin-bottom:40px}
@@ -92,7 +90,7 @@
   1. Body copy sharpened with real customer language: paraphrased and non-attributed, with no named internal client quotes. Consent rule: ops/drafts/voice-of-customer-2026-07-10/VOC-BANK.md.
   2. JSON-LD blocks: a MedicalBusiness node and a WebSite node. Also testimonial Review nodes (12 names already public on the live site) and an FAQPage block.
   3. A visible FAQ section matching the FAQPage schema verbatim.
-  See the CONFIRM comments inline for facts that need Eben's sign-off before this goes live.
+  Facts below aligned to faq.html + GBP baseline (5.0★ / 5 reviews as of 2026-06). Re-check review count before merge if GBP has moved.
 -->
 
 
@@ -119,13 +117,12 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-bg" style="background-image:url('/images/photos/chronic-pain-woman-asn61.jpg')"></div>
+  <div class="hero-bg" style="background-image:url('/images/photos/hero-home-cedar-woman.jpg')"></div>
   <div class="hero-inner">
     <h1>Most people forgot their body could feel like this.</h1>
     <p>Amari is a somatic practice you learn. You're shown where your body is stuck and taught to bring it back into balance. People arrive having tried everything, and feel the difference the first visit.</p>
     <a href="/book/initial-in-person" class="btn btn-pale">Book Now</a>
   </div>
-  <div class="hero-pause">❚❚</div>
 </section>
 
 <!-- THIS JUST IN -->
@@ -164,7 +161,7 @@
     <h2>Come back into balance.</h2>
     <a href="/how-it-works" class="btn">Our Method</a>
   </div>
-  <div class="band-fig"><img src="/images/photos/hero-home-cedar-woman.jpg" alt="An Amari client, reaching to test her range of motion"></div>
+  <div class="band-fig"><img src="/images/photos/black-woman38-window-seat.jpg" alt="An Amari client, seated by a window after practice"></div>
 </section>
 
 <!-- SIGNATURE: about the client, not our method -->
@@ -234,7 +231,7 @@
 
       <details>
         <summary>Does the Amari Method take insurance, or can I use my HSA or FSA?<span class="faq-plus">+</span></summary>
-        <div class="faq-answer">The Amari Method does not bill health insurance directly. You pay for each session yourself.<!-- CONFIRM: confirm whether Affirm or another payment-plan option is currently offered at checkout. Add that detail here if so. --> Many HSA and FSA plans allow reimbursement for care like this, but it depends on your specific plan, so check with your plan administrator before booking.<!-- CONFIRM: confirm whether Amari currently provides a receipt for HSA/FSA submission. Add that detail here if so. --></div>
+        <div class="faq-answer">We don't bill insurance directly, but we provide a superbill on request that you can submit for possible reimbursement. Affirm is available at checkout for series. Many HSA and FSA plans allow reimbursement for care like this, but it depends on your specific plan, so check with your plan administrator before booking.</div>
       </details>
 
       <details>
@@ -249,7 +246,7 @@
 
       <details>
         <summary>Where in San Francisco do you see clients?<span class="faq-plus">+</span></summary>
-        <div class="faq-answer">The practice sees clients in person in San Francisco and works with people across the Bay Area, plus virtually anywhere in the world.<!-- CONFIRM: confirm the exact studio address/neighborhood before publishing if it should be named here. No street address is asserted in this draft. --> You get the exact location and directions when you book. Virtual sessions cover the same protocols over video, so distance isn't a barrier.</div>
+        <div class="faq-answer">Clients are seen in person in San Francisco's Richmond District, and virtually anywhere. Exact address and directions come with your booking confirmation. Virtual sessions cover the same protocols over video, so distance isn't a barrier.</div>
       </details>
 
       <details>
@@ -280,8 +277,7 @@
 <script src="/js/site-v6.js?v=5"></script>
 
 <!-- ============================================================
-     JSON-LD: draft schema. See CONFIRM notes above and the
-     ratingCount placeholder below before shipping to production.
+     JSON-LD: aggregateRating from Google Business Profile baseline (2026-06-08: 5.0 / 5 reviews). Update ratingCount if GBP has moved before merge.
      ============================================================ -->
 
 <script type="application/ld+json">
@@ -311,10 +307,10 @@
   "dateModified": "2026-07-10",
   "aggregateRating": {
     "@type": "AggregateRating",
-    "ratingValue": "4.9",
+    "ratingValue": "5",
     "bestRating": "5",
     "worstRating": "1",
-    "ratingCount": "CONFIRM_REAL_GOOGLE_REVIEW_COUNT"
+    "ratingCount": "5"
   }
 }
 </script>
@@ -364,7 +360,7 @@
       "name": "Does the Amari Method take insurance, or can I use my HSA or FSA?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The Amari Method does not bill health insurance directly. You pay for each session yourself. Many HSA and FSA plans allow reimbursement for care like this, but it depends on your specific plan, so check with your plan administrator before booking."
+        "text": "We don't bill insurance directly, but we provide a superbill on request that you can submit for possible reimbursement. Affirm is available at checkout for series. Many HSA and FSA plans allow reimbursement for care like this, but it depends on your specific plan, so check with your plan administrator before booking."
       }
     },
     {
@@ -388,7 +384,7 @@
       "name": "Where in San Francisco do you see clients?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "The practice sees clients in person in San Francisco and works with people across the Bay Area, plus virtually anywhere in the world. You get the exact location and directions when you book. Virtual sessions cover the same protocols over video, so distance isn't a barrier."
+        "text": "Clients are seen in person in San Francisco's Richmond District, and virtually anywhere. Exact address and directions come with your booking confirmation. Virtual sessions cover the same protocols over video, so distance isn't a barrier."
       }
     },
     {
