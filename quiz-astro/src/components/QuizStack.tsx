@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import { useQuiz } from '@/contexts/QuizContext';
 import SingleSelectQuestion from './questions/SingleSelectQuestion';
@@ -119,39 +118,6 @@ export const QUIZ_QUESTIONS: QDef[] = [
   },
 ];
 
-// ─── Answer summary (shown in past rows) ─────────────────────────────────────
-
-function AnswerSummary({ answer }: { answer: string | string[] | null | undefined }) {
-  if (!answer || (Array.isArray(answer) && answer.length === 0)) {
-    return <span className="text-xs text-gray-400 italic font-sans">—</span>;
-  }
-  if (Array.isArray(answer)) {
-    const shown = answer.slice(0, 2);
-    const extra = answer.length - 2;
-    return (
-      <div className="flex flex-wrap gap-1 justify-end">
-        {shown.map(item => (
-          <span key={item} className="px-2 py-0.5 rounded-full text-xs bg-white border border-amari-oat text-gray-600 font-sans whitespace-nowrap">
-            {item}
-          </span>
-        ))}
-        {extra > 0 && (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-white border border-amari-oat text-gray-400 font-sans">
-            +{extra}
-          </span>
-        )}
-      </div>
-    );
-  }
-  return (
-    <span className="px-2 py-0.5 rounded-full text-xs bg-white border border-amari-oat text-gray-600 font-sans whitespace-nowrap">
-      {answer}
-    </span>
-  );
-}
-
-// ─── Main component ───────────────────────────────────────────────────────────
-
 type QuizStackProps = {
   onNext: () => void;
   onPrev: () => void;
@@ -169,196 +135,137 @@ export default function QuizStack({ onNext, onPrev, isSubmitting, validationErro
     jumpToStep,
   } = useQuiz();
 
-  // One ref per question slot for scroll targeting
   const questionRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Scroll active question into view whenever currentStep changes
   useEffect(() => {
-    if (currentStep > 11) return; // contact form handled separately
+    if (currentStep > 11) return;
     const el = questionRefs.current[currentStep];
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [currentStep]);
 
-  // Q10 (treatment results) only shows when treatments were actually selected
   const showQ10 = Boolean(
     answers[9]?.answer &&
     (answers[9].answer as string[]).length > 0 &&
     !(answers[9].answer as string[]).includes("I haven't tried any treatments")
   );
 
+  // Active-question-only presentation (mockup). Past rows stay jumpable above.
+  const activeQ = QUIZ_QUESTIONS[currentStep];
+  const pastQuestions = QUIZ_QUESTIONS.filter((q) => {
+    if (q.index >= currentStep) return false;
+    if (q.index === 10 && !showQ10) return false;
+    return true;
+  });
+
+  if (!activeQ || currentStep > 11) return null;
+
+  const isLast = currentStep === 11;
+
   return (
-    <div className="space-y-2">
-      {QUIZ_QUESTIONS.map((q) => {
-        // Hide Q10 in future/past states when not applicable — active state
-        // is still rendered briefly while the auto-skip useEffect fires.
-        if (q.index === 10 && !showQ10 && q.index !== currentStep) return null;
-
-        const isPast   = q.index < currentStep;
-        const isActive = q.index === currentStep;
-        const isFuture = q.index > currentStep;
-
-        // For past rows: distinguish answered vs skipped
-        const pastAns = answers[q.index]?.answer;
-        const isAnswered = pastAns !== null && pastAns !== undefined &&
-          !(Array.isArray(pastAns) && pastAns.length === 0);
-
-        return (
-          <div
-            key={q.index}
-            ref={(el) => { questionRefs.current[q.index] = el; }}
-            style={{ scrollMarginTop: '90px' }}
-          >
-
-            {/* ── PAST: compact answered row ─────────────────────────── */}
-            {isPast && (
+    <div>
+      {pastQuestions.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          {pastQuestions.map((q) => {
+            const pastAns = answers[q.index]?.answer;
+            const summary = Array.isArray(pastAns)
+              ? pastAns.slice(0, 2).join(', ') + (pastAns.length > 2 ? ` +${pastAns.length - 2}` : '')
+              : (pastAns as string) || '—';
+            return (
               <button
+                key={q.index}
                 type="button"
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-amari-light-sand border border-amari-oat cursor-pointer hover:border-gray-400 transition-all group text-left"
+                className="stack-past"
                 onClick={() => jumpToStep(q.index)}
               >
-                {/* Check (answered) or empty circle (skipped) */}
-                {isAnswered ? (
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-amari-charcoal flex items-center justify-center">
-                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                ) : (
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-gray-300" />
-                )}
-                {/* Question number */}
-                <span className="text-xs text-gray-400 font-mono flex-shrink-0">
+                <span className="num" style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', flexShrink: 0 }}>
                   {String(q.questionNum).padStart(2, '0')}
                 </span>
-                {/* Question text (truncated) */}
-                <span className="text-sm text-gray-600 font-sans flex-1 truncate min-w-0">
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.92rem' }}>
                   {q.question}
                 </span>
-                {/* Answer badges */}
-                <div className="flex-shrink-0 ml-2 max-w-[220px]">
-                  <AnswerSummary answer={pastAns} />
-                </div>
-                {/* Edit icon */}
-                <svg
-                  className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
+                <span style={{ flexShrink: 0, fontSize: 12, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {summary}
+                </span>
               </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div
+        ref={(el) => { questionRefs.current[currentStep] = el; }}
+        style={{ scrollMarginTop: '110px' }}
+        className="quiz-step-enter"
+      >
+        <div className="q-head">
+          <span className="num">{String(activeQ.questionNum).padStart(2, '0')} / 12</span>
+          <span className="cat">{activeQ.category}</span>
+        </div>
+        <h2 className="q-title">{activeQ.question}</h2>
+        {activeQ.description && <p className="q-desc">{activeQ.description}</p>}
+        {activeQ.type === 'multi' && <p className="q-hint">Select all that apply.</p>}
+
+        {activeQ.type === 'single' ? (
+          <SingleSelectQuestion
+            question={activeQ.question}
+            options={activeQ.options}
+            selectedOption={answers[activeQ.index]?.answer as string}
+            onChange={(option) => setAnswer(activeQ.index, option)}
+            required={activeQ.required}
+            otherOption={activeQ.otherOption}
+            onAutoAdvance={goToNextStep}
+            hideHeading
+          />
+        ) : (
+          <MultiSelectQuestion
+            question={activeQ.question}
+            options={activeQ.options}
+            selectedOptions={(answers[activeQ.index]?.answer as string[]) || []}
+            onChange={(opts) => setAnswer(activeQ.index, opts)}
+            otherOption={activeQ.otherOption}
+            hideHeading
+          />
+        )}
+
+        <div className="q-nav" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={onPrev}
+            className="q-back"
+            disabled={currentStep === 0}
+            aria-label="Back"
+          >
+            ←
+          </button>
+
+          <span className="q-count">
+            {currentStep + 1} / {totalSteps}
+          </span>
+
+          <button
+            type="button"
+            onClick={onNext}
+            disabled={isSubmitting}
+            className="btn"
+          >
+            {isSubmitting ? (
+              'Processing'
+            ) : isLast ? (
+              <>Continue <span className="arrow">→</span></>
+            ) : (
+              <>Next <span className="arrow">›</span></>
             )}
+          </button>
+        </div>
 
-            {/* ── ACTIVE: full question card ─────────────────────────── */}
-            {isActive && (
-              <div className="quiz-step-enter">
-                {/* Category + question number chip */}
-                <div className="flex items-center gap-2.5 mb-3 pl-1">
-                  <span className="text-xs font-semibold text-gray-400 font-sans tabular-nums">
-                    {q.questionNum} / 12
-                  </span>
-                  <span className="text-xs font-semibold uppercase tracking-widest text-amari-charcoal bg-amari-charcoal bg-opacity-10 px-3 py-1 rounded-full font-sans">
-                    {q.category}
-                  </span>
-                </div>
-
-                {/* Quiz card wraps question + in-card nav */}
-                <div className="quiz-card">
-                {q.type === 'single' ? (
-                  <SingleSelectQuestion
-                    question={q.question}
-                    options={q.options}
-                    selectedOption={answers[q.index]?.answer as string}
-                    onChange={(option) => setAnswer(q.index, option)}
-                    description={q.description}
-                    required={q.required}
-                    otherOption={q.otherOption}
-                    onAutoAdvance={goToNextStep}
-                  />
-                ) : (
-                  <MultiSelectQuestion
-                    question={q.question}
-                    options={q.options}
-                    selectedOptions={(answers[q.index]?.answer as string[]) || []}
-                    onChange={(opts) => setAnswer(q.index, opts)}
-                    description={q.description}
-                    otherOption={q.otherOption}
-                  />
-                )}
-
-                {/* ── In-card navigation bar ── */}
-                <div className="quiz-card-nav" onClick={(e) => e.stopPropagation()}>
-                  {validationError && (
-                    <p className="text-xs text-red-500 text-center mb-2" role="alert">
-                      {validationError}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    {currentStep > 0 ? (
-                      <button type="button" onClick={onPrev} className="quiz-nav-back">←</button>
-                    ) : (
-                      <div className="w-10" />
-                    )}
-
-                    <span className="text-sm text-gray-400 font-sans tabular-nums">
-                      {currentStep + 1} / {totalSteps}
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={onNext}
-                      disabled={isSubmitting}
-                      className="btn-primary"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          Processing
-                        </>
-                      ) : currentStep === totalSteps - 1 ? (
-                        <>Submit <span className="arrow">→</span></>
-                      ) : (
-                        <>Next <span className="arrow">›</span></>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                </div>{/* end quiz-card */}
-
-              </div>
-            )}
-
-            {/* ── FUTURE: faded preview row (non-interactive — forward
-                jumps are blocked so users can't bypass unanswered Qs) ── */}
-            {isFuture && (
-              <div
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-amari-oat text-left"
-                style={{ opacity: 0.38 }}
-                aria-disabled="true"
-              >
-                <span className="text-xs text-gray-400 font-mono flex-shrink-0">
-                  {String(q.questionNum).padStart(2, '0')}
-                </span>
-                <span className="text-sm text-gray-600 font-sans flex-1">
-                  {q.question}
-                </span>
-                <svg
-                  className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            )}
-
-          </div>
-        );
-      })}
+        {validationError && (
+          <p className="q-err" style={{ textAlign: 'center', marginTop: 14 }} role="alert">
+            {validationError}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

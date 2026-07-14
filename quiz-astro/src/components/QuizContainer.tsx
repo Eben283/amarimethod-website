@@ -1,4 +1,3 @@
-
 import React, { Suspense } from 'react';
 import { useQuiz } from '@/contexts/QuizContext';
 import ProgressBar from './ProgressBar';
@@ -9,11 +8,25 @@ import ContactInfoForm from './questions/ContactInfoForm';
 import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
-import { Loader2 } from 'lucide-react';
 
 // ResultsPage is lazy-loaded so its dependency tree (html2canvas, ShareCard, etc.)
 // stays out of the initial welcome-screen bundle.
 const ResultsPage = React.lazy(() => import('./results/ResultsPage'));
+
+function topMetaLabel({
+  isProcessing,
+  currentStep,
+  totalSteps,
+}: {
+  isProcessing: boolean;
+  currentStep: number;
+  totalSteps: number;
+}): string {
+  if (isProcessing) return 'Reading your pattern';
+  if (currentStep === 12) return 'Almost done';
+  if (currentStep <= 11) return `Question ${currentStep + 1} of 12`;
+  return 'Free Assessment';
+}
 
 const QuizContainer = () => {
   const {
@@ -42,7 +55,6 @@ const QuizContainer = () => {
     setPhone,
     retrySubmission,
     hasStarted,
-    startQuiz,
   } = useQuiz();
 
   // Auto-skip Q10 (treatment results) if no treatments selected
@@ -64,7 +76,7 @@ const QuizContainer = () => {
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (currentStep > 11) return; // contact form handles its own keys
+      if (currentStep > 11) return;
 
       if (e.key === 'Enter') {
         const ans = answers[currentStep]?.answer;
@@ -73,7 +85,6 @@ const QuizContainer = () => {
         if (hasAnswer || isMulti) goToNextStep();
       }
 
-      // Number keys 1-9 for single-select questions
       const q = QUIZ_QUESTIONS[currentStep];
       if (q?.type === 'single' && e.key >= '1' && e.key <= '9') {
         const idx = parseInt(e.key) - 1;
@@ -88,125 +99,98 @@ const QuizContainer = () => {
   }, [currentStep, answers, goToNextStep, setAnswer]);
 
   const renderLoadingState = () => (
-    <div className="text-center py-12 flex flex-col items-center justify-center min-h-[300px]">
-      <Loader2 className="h-12 w-12 text-amari-pine-teal animate-spin mb-4" />
-      <h3 className="text-xl font-medium mb-2">Processing your results...</h3>
-      <p className="text-gray-600">
-        We're analyzing your responses to generate a personalized pain assessment.
-      </p>
-    </div>
+    <section className="screen proc">
+      <div className="ring" aria-hidden="true" />
+      <h2>Processing your results…</h2>
+      <p className="step">We're analyzing your responses.</p>
+    </section>
   );
 
   const renderErrorState = () => (
-    <div className="text-center py-12 flex flex-col items-center justify-center min-h-[300px] bg-red-50 border border-red-200 rounded-lg px-6">
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-      <h3 className="text-xl font-medium mb-2 text-red-700">Submission Error</h3>
-      <p className="text-red-600 mb-4">
+    <section className="screen" style={{ textAlign: 'center' }}>
+      <h2 className="q-title" style={{ color: 'var(--rust)' }}>Submission error</h2>
+      <p className="q-desc" style={{ margin: '16px auto' }}>
         {submissionError || 'There was an error submitting your assessment. Please try again.'}
       </p>
-      <button
-        type="button"
-        onClick={retrySubmission}
-        disabled={isSubmitting}
-        className="btn-primary"
-      >
-        {isSubmitting ? (
-          <span className="flex items-center">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Retrying...
-          </span>
-        ) : (
-          'Try Again'
-        )}
+      <button type="button" onClick={retrySubmission} disabled={isSubmitting} className="btn">
+        {isSubmitting ? 'Retrying…' : 'Try again'}
       </button>
-    </div>
+    </section>
   );
 
-  const isNavVisible = hasStarted && !isProcessing && !isCompleted && !submissionError && !isLoading;
-
-  // Results renders its own editorial doc-bar (brand + "Your result" center)
-  // and doc-foot, so hide the generic AmariLogo + QuizFooter on results to
-  // avoid showing the brand twice. Quiz steps + processing keep them.
   const isResultsView = isCompleted && !isProcessing;
+  const meta = topMetaLabel({ isProcessing, currentStep, totalSteps });
+  // During results the ResultsPage owns its own chrome; hide take-flow topbar/footer.
+  const showTakeChrome = !isResultsView;
 
   return (
-    <div className="min-h-screen bg-amari-bone-white">
-      <div className={isResultsView ? '' : 'container max-w-4xl mx-auto px-4 py-8'}>
-        {!isResultsView && <AmariLogo />}
-
-        {isProcessing ? (
-          <ProcessingScreen />
-        ) : !isCompleted ? (
-          <div>
-            {!hasStarted ? (
-              // The editorial cover at /quiz/ now replaces WelcomeScreen.
-              // If we land here without the bootstrap effect having fired
-              // (e.g. SSR pass), render a placeholder for one frame.
-              <div className="min-h-[200px]" />
-            ) : (
-              <>
-                <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
-
-                {isLoading ? (
-                  renderLoadingState()
-                ) : submissionError ? (
-                  renderErrorState()
-                ) : currentStep === 12 ? (
-                  /* ── Contact form (step 12) ── */
-                  <>
-                    <div className="flex items-center gap-2.5 mb-4">
-                      <span className="text-xs font-semibold uppercase tracking-widest text-amari-charcoal bg-amari-charcoal bg-opacity-10 px-3 py-1 rounded-full font-sans">
-                        Your Results
-                      </span>
-                    </div>
-                    <div className="quiz-step-enter">
-                      <ContactInfoForm
-                        firstName={firstName}
-                        lastName={lastName}
-                        email={email}
-                        phone={phone}
-                        setFirstName={setFirstName}
-                        setLastName={setLastName}
-                        setEmail={setEmail}
-                        setPhone={setPhone}
-                        onSubmit={goToNextStep}
-                        onBack={goToPrevStep}
-                        isSubmitting={isSubmitting}
-                        validationError={validationError}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  /* ── Question stack (steps 0–11) ── */
-                  <QuizStack
-                    onNext={goToNextStep}
-                    onPrev={goToPrevStep}
-                    isSubmitting={isSubmitting}
-                    validationError={validationError}
-                  />
-                )}
-              </>
-            )}
+    <div style={{ minHeight: '100vh', background: 'var(--cream)', color: 'var(--ink)' }}>
+      {showTakeChrome && (
+        <div className="topbar">
+          <div className="row">
+            <AmariLogo />
+            <span className="meta">{meta}</span>
           </div>
-        ) : (
-          <div>
-            {scores && patternSignature && (
-              <Suspense fallback={renderLoadingState()}>
-                <ResultsPage
-                  firstName={firstName}
-                  patternSignature={patternSignature}
-                  scores={scores}
-                  insights={insights}
-                />
-              </Suspense>
-            )}
-          </div>
-        )}
+          {hasStarted && !isProcessing ? (
+            <ProgressBar currentStep={currentStep} totalSteps={totalSteps} />
+          ) : (
+            <div className="rail">
+              <div className="rail-fill" style={{ right: isProcessing ? '0%' : '100%' }} />
+            </div>
+          )}
+        </div>
+      )}
 
-        {!isResultsView && <QuizFooter />}
-      </div>
+      {isResultsView ? (
+        <div>
+          {scores && patternSignature && (
+            <Suspense fallback={renderLoadingState()}>
+              <ResultsPage
+                firstName={firstName}
+                patternSignature={patternSignature}
+                scores={scores}
+                insights={insights}
+              />
+            </Suspense>
+          )}
+        </div>
+      ) : (
+        <main className="stage">
+          {isProcessing ? (
+            <ProcessingScreen />
+          ) : !hasStarted ? (
+            <div style={{ minHeight: 200 }} />
+          ) : isLoading ? (
+            renderLoadingState()
+          ) : submissionError ? (
+            renderErrorState()
+          ) : currentStep === 12 ? (
+            <ContactInfoForm
+              firstName={firstName}
+              lastName={lastName}
+              email={email}
+              phone={phone}
+              setFirstName={setFirstName}
+              setLastName={setLastName}
+              setEmail={setEmail}
+              setPhone={setPhone}
+              onSubmit={goToNextStep}
+              onBack={goToPrevStep}
+              isSubmitting={isSubmitting}
+              validationError={validationError}
+            />
+          ) : (
+            <QuizStack
+              onNext={goToNextStep}
+              onPrev={goToPrevStep}
+              isSubmitting={isSubmitting}
+              validationError={validationError}
+            />
+          )}
+
+          <QuizFooter />
+        </main>
+      )}
     </div>
   );
 };
