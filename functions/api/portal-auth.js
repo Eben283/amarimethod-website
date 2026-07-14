@@ -13,17 +13,6 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
-function isAllowedOrigin(origin) {
-  if (!origin) return false;
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
-  try {
-    const host = new URL(origin).hostname;
-    return host === "amarimethod-website.pages.dev" || host.endsWith(".amarimethod-website.pages.dev");
-  } catch {
-    return false;
-  }
-}
-
 function corsHeaders(origin) {
   // LOW-2: echo the origin only when allow-listed; omit ACAO otherwise instead
   // of returning a constant origin that reads like an allowlist but isn't.
@@ -32,20 +21,10 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
-  if (isAllowedOrigin(origin)) {
+  if (ALLOWED_ORIGINS.includes(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
   return headers;
-}
-
-async function sha256Hex(text) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function mintOtpCode() {
-  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
-  return String(n).padStart(6, "0");
 }
 
 // Simple JWT-like token using HMAC-SHA256
@@ -250,113 +229,50 @@ export async function onRequestPost(context) {
       }
     }
 
-    // Build the magic link URL (still works as a one-click fallback in the same email).
+    // Build the magic link URL
     const magicLink = `https://www.amarimethod.com/portal/verify?token=${encodeURIComponent(token)}`;
 
-    // Prefer a stay-on-page 6-digit code — easier than hunting for a link, and
-    // immune to email clients/scanners that burn one-time links (Track Clicks).
-    const otpCode = mintOtpCode();
-    const otpHash = await sha256Hex(otpCode);
-    const otpTtlSec = 10 * 60;
-    if (context.env.PORTAL_KV) {
-      try {
-        await context.env.PORTAL_KV.put(
-          `otp:portal:${email}`,
-          JSON.stringify({
-            hash: otpHash,
-            contactId: contact.id,
-            attempts: 0,
-            nonce,
-            expSec: otpTtlSec,
-          }),
-          { expirationTtl: otpTtlSec },
-        );
-      } catch (otpErr) {
-        console.error(`[portal-auth] OTP KV put failed: ${otpErr.message}`);
-        return new Response(
-          JSON.stringify({ error: "We couldn't create your sign-in code just now. Please try again in a minute." }),
-          { status: 500, headers },
-        );
-      }
-    }
-
-    const firstName = (contact.firstName || contact.first_name || "").trim();
-    const greet = firstName ? `Hi ${firstName},` : "Hi,";
-    const html = `<p>${greet}</p>
-<p>Your Amari Method portal sign-in code is:</p>
-<p style="font-size:28px;letter-spacing:0.25em;font-weight:600">${otpCode}</p>
-<p>It expires in 10 minutes. Enter it on the sign-in page (stay in this browser if you can).</p>
-<p>Or open this one-time link instead:<br><a href="${magicLink}">Access Your Portal</a></p>
-<p>If you didn't request this, you can ignore the email.</p>
-<p>— Amari Method</p>`;
-
-    // Primary send: Conversations Email API (one email with code + link).
-    // Fallback: legacy GHL magic-link workflow if Conversations fails.
-    let sentVia = "none";
+    // Step 1: Save the magic link field FIRST (must complete before tag triggers the workflow)
+    // Using field ID (not key string) for reliable GHL field resolution.
     try {
-      const sendRes = await fetch(`${GHL_API_BASE}/conversations/messages`, {
-        method: "POST",
+      const fieldResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
+        method: "PUT",
         headers: ghlHeaders(GHL_API_KEY),
         body: JSON.stringify({
-          type: "Email",
-          contactId: contact.id,
-          subject: "Your Amari Method portal code",
-          html,
+          customFields: [
+            { id: "7u8Uu7a1p3KUcu0sgvoQ", field_value: magicLink },
+          ],
         }),
       });
-      if (sendRes.ok) {
-        sentVia = "conversations";
-        console.log(`[portal-auth] OTP email sent via Conversations`);
+
+      if (!fieldResponse.ok) {
+        const errText = await fieldResponse.text();
+        console.error(`[portal-auth] Failed to set portal_magic_link: ${fieldResponse.status} ${errText}`);
+        // Don't fail — token is valid; email merge tag will be blank but we log the issue.
       } else {
-        const errText = await sendRes.text();
-        console.error(`[portal-auth] Conversations email failed: ${sendRes.status} ${errText}`);
+        console.log(`[portal-auth] portal_magic_link field saved`);
       }
-    } catch (sendErr) {
-      console.error(`[portal-auth] Conversations email error: ${sendErr.message}`);
+    } catch (fieldErr) {
+      console.error(`[portal-auth] Field update error: ${fieldErr.message}`);
     }
 
-    if (sentVia !== "conversations") {
-      // Legacy path: write magic link field + tag so GHL workflow emails the link.
-      try {
-        const fieldResponse = await fetch(`${GHL_API_BASE}/contacts/${contact.id}`, {
-          method: "PUT",
-          headers: ghlHeaders(GHL_API_KEY),
-          body: JSON.stringify({
-            customFields: [
-              { id: "7u8Uu7a1p3KUcu0sgvoQ", field_value: magicLink },
-            ],
-          }),
-        });
-        if (!fieldResponse.ok) {
-          const errText = await fieldResponse.text();
-          console.error(`[portal-auth] Failed to set portal_magic_link: ${fieldResponse.status} ${errText}`);
-        }
-      } catch (fieldErr) {
-        console.error(`[portal-auth] Field update error: ${fieldErr.message}`);
-      }
-      try {
-        await applyTagDelta(context, contact.id, { add: ["portal-login-requested"] });
-        sentVia = "ghl-workflow";
-        console.log(`[portal-auth] portal-login-requested tag added (fallback)`);
-      } catch (tagErr) {
-        console.error(`[portal-auth] Tag update error: ${tagErr.message}`);
-      }
+    // Step 2: Add the tag — this triggers the GHL email workflow AFTER the field is saved.
+    // Use the dedicated tag endpoint (additive) so concurrent logins/workflows don't
+    // clobber each other's tag arrays via a full-array PUT.
+    try {
+      await applyTagDelta(context, contact.id, { add: ["portal-login-requested"] });
+      console.log(`[portal-auth] portal-login-requested tag added`);
+    } catch (tagErr) {
+      console.error(`[portal-auth] Tag update error: ${tagErr.message}`);
     }
 
-    if (sentVia === "none") {
-      return new Response(
-        JSON.stringify({ error: "We couldn't send your sign-in email just now. Please try again in a minute." }),
-        { status: 422, headers },
-      );
-    }
-
-    console.log(`[portal-auth] Sign-in issued via ${sentVia}`);
+    console.log(`[portal-auth] Magic link generated`);
+    // Cooldown + counters were already reserved up front (see reserveAuthSlot).
 
     return new Response(
       JSON.stringify({
         success: true,
-        mode: "code",
-        message: "Check your email for a 6-digit code.",
+        message: "Check your email for a login link.",
       }),
       { status: 200, headers }
     );
