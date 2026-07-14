@@ -249,7 +249,25 @@ export default {
     }
 
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request)
+      const assetResponse = await env.ASSETS.fetch(request)
+      const contentType = assetResponse.headers.get('Content-Type') || ''
+      const isHtml =
+        url.pathname === '/' ||
+        url.pathname.endsWith('.html') ||
+        contentType.includes('text/html')
+
+      // HTML must never stick on an old hashed bundle (mobile PWAs + CF edge).
+      if (isHtml) {
+        const headers = new Headers(assetResponse.headers)
+        headers.set('Cache-Control', 'no-store, max-age=0, must-revalidate')
+        headers.set('CDN-Cache-Control', 'no-store')
+        return new Response(assetResponse.body, {
+          status: assetResponse.status,
+          headers,
+        })
+      }
+
+      return assetResponse
     }
 
     return json({ error: 'Not found' }, 404)

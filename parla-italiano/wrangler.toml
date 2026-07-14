@@ -13,6 +13,8 @@ workers_dev = true
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
+# Ensure /api/* and HTML cache headers go through the Worker, not raw assets.
+run_worker_first = true
 
 # Secrets (set via wrangler secret put):
 #   OPENROUTER_API_KEY

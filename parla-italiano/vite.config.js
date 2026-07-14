@@ -39,6 +39,10 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: '/index.html',
+        // Always revalidate the app shell so phones pick up TTS/level fixes.
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
