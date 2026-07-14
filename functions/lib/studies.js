@@ -89,7 +89,7 @@ export const STUDIES = {
     bodyQuestion: { key: "shoulder", label: "Which shoulder?", options: ["Left", "Right", "Both"] },
     instrument: { abbr: "SPADI", name: "Shoulder Pain & Disability Index", recall: "past week", license: "verify" },
     venues: ["Coworking spaces", "Tech offices"],
-    status: "draft",
+    status: "live",
   },
   "lower-back": {
     slug: "lower-back",
