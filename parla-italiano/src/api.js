@@ -9,6 +9,14 @@ export function setAccessCode(code) {
   else localStorage.removeItem(ACCESS_KEY)
 }
 
+function authHeaders(extra = {}) {
+  return {
+    'Content-Type': 'application/json',
+    'X-Parla-Access': getAccessCode(),
+    ...extra,
+  }
+}
+
 export async function fetchHealth() {
   const res = await fetch('/api/health')
   if (!res.ok) throw new Error('Health check failed')
@@ -18,10 +26,7 @@ export async function fetchHealth() {
 export async function sendChat({ messages, level, topic }) {
   const res = await fetch('/api/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Parla-Access': getAccessCode(),
-    },
+    headers: authHeaders(),
     body: JSON.stringify({ messages, level, topic }),
   })
 
@@ -32,4 +37,24 @@ export async function sendChat({ messages, level, topic }) {
     throw err
   }
   return data
+}
+
+/** Returns a blob URL for Italian MP3 speech. Caller should revokeObjectURL when done. */
+export async function fetchSpeechAudio(text) {
+  const res = await fetch('/api/speak', {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ text }),
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    const err = new Error(data.error || `Speak failed (${res.status})`)
+    err.status = res.status
+    throw err
+  }
+
+  const blob = await res.blob()
+  if (!blob.size) throw new Error('Empty audio')
+  return URL.createObjectURL(blob)
 }

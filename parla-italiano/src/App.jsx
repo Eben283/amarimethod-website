@@ -23,6 +23,13 @@ function MicIcon() {
   )
 }
 
+function starterPrompt(level, topic) {
+  if (level === 'A1') {
+    return `Start a brand-new A1 (absolute beginner) Italian conversation about ${topic}. Use only tiny easy sentences (about 5–8 words). Present tense only. Then ask one very easy question.`
+  }
+  return `Start a brand-new ${level}-level Italian conversation about ${topic}. Match CEFR ${level} strictly. One or two sentences, then ask something appropriate for ${level}.`
+}
+
 export default function App() {
   const [level, setLevel] = useState(() => localStorage.getItem('parla_level') || 'A2')
   const [topic, setTopic] = useState(() => localStorage.getItem('parla_topic') || 'travel')
@@ -38,10 +45,9 @@ export default function App() {
   const [accessInput, setAccessInput] = useState(getAccessCode())
   const [bootError, setBootError] = useState('')
   const [showInstallTip, setShowInstallTip] = useState(false)
-  const startedRef = useRef(false)
+  const [session, setSession] = useState(0)
+  const startTokenRef = useRef(0)
   const scrollRef = useRef(null)
-
-  const busy = isRecording || isSpeaking || isProcessing
 
   const support = useMemo(
     () => ({
@@ -92,39 +98,51 @@ export default function App() {
     }
   }, [])
 
-  const speak = useCallback((text) => {
-    if (!support.synthesis) return
+  const speak = useCallback(async (text) => {
+    if (!text?.trim()) return
     setIsSpeaking(true)
-    speechService.speak(
-      text,
-      'it-IT',
-      () => setIsSpeaking(false),
-      () => setIsSpeaking(false),
-    )
-  }, [support.synthesis])
+    setStatus('Parla is speaking…')
+    try {
+      await speechService.speak(
+        text,
+        'it-IT',
+        () => {
+          setIsSpeaking(false)
+          setStatus('Your turn — tap the mic')
+        },
+        (err) => {
+          setIsSpeaking(false)
+          if (err && err !== 'interrupted' && err !== 'canceled') {
+            setError('Could not play audio. Tap ▶ on a reply to try again.')
+          }
+          setStatus('Tap ▶ on a reply to hear it')
+        },
+      )
+    } catch {
+      setIsSpeaking(false)
+      setError('Could not play audio. Tap ▶ on a reply to try again.')
+      setStatus('Tap ▶ on a reply to hear it')
+    }
+  }, [])
 
-  const startConversation = useCallback(async () => {
-    if (startedRef.current || !unlocked) return
-    startedRef.current = true
+  const startConversation = useCallback(async (token) => {
+    if (!unlocked) return
     setIsProcessing(true)
-    setStatus('Starting…')
+    setStatus(`Starting ${level}…`)
     setError('')
+    setMessages([])
     try {
       const { reply } = await sendChat({
-        messages: [
-          {
-            role: 'user',
-            content: `Start a short friendly Italian conversation about ${topic}. One or two sentences, then ask me something easy.`,
-          },
-        ],
+        messages: [{ role: 'user', content: starterPrompt(level, topic) }],
         level,
         topic,
       })
-      setMessages([{ role: 'assistant', content: reply }])
+      if (token !== startTokenRef.current) return
+      setMessages([{ role: 'assistant', content: reply, level }])
       setStatus('Your turn — tap the mic')
-      speak(reply)
+      await speak(reply)
     } catch (err) {
-      startedRef.current = false
+      if (token !== startTokenRef.current) return
       if (err.status === 401) {
         setUnlocked(false)
         setAccessRequired(true)
@@ -134,20 +152,27 @@ export default function App() {
       }
       setStatus('Could not start')
     } finally {
-      setIsProcessing(false)
+      if (token === startTokenRef.current) setIsProcessing(false)
     }
   }, [level, topic, unlocked, speak])
 
+  // Restart whenever unlock / level / topic / manual restart changes.
   useEffect(() => {
-    // Restart greeting when level/topic changes (startConversation identity updates).
-    startedRef.current = false
-    setMessages([])
+    if (!unlocked) return
+    const token = ++startTokenRef.current
     speechService.stopSpeaking()
     speechService.stopListening()
     setIsRecording(false)
     setIsSpeaking(false)
-    if (unlocked) startConversation()
-  }, [unlocked, startConversation])
+    setInterim('')
+    startConversation(token)
+    return () => {
+      // Invalidate in-flight starts when deps change.
+      if (startTokenRef.current === token) {
+        /* keep token; next effect bumps it */
+      }
+    }
+  }, [unlocked, level, topic, session, startConversation])
 
   const handleUserSpeech = useCallback(async (text) => {
     const trimmed = text.trim()
@@ -165,9 +190,9 @@ export default function App() {
         level,
         topic,
       })
-      setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
-      setStatus('Listening when you are ready')
-      speak(reply)
+      setMessages((prev) => [...prev, { role: 'assistant', content: reply, level }])
+      setStatus('Your turn — tap the mic')
+      await speak(reply)
     } catch (err) {
       if (err.status === 401) {
         setUnlocked(false)
@@ -182,6 +207,8 @@ export default function App() {
   }, [messages, level, topic, speak])
 
   const toggleMic = useCallback(async () => {
+    await speechService.unlock()
+
     if (isRecording) {
       speechService.stopListening()
       setIsRecording(false)
@@ -223,18 +250,31 @@ export default function App() {
         if (err === 'no-speech') setError('No speech detected — try again a bit closer to the mic.')
         else if (err === 'not-allowed') setError('Microphone blocked. Enable it in browser settings.')
         else if (err === 'unsupported') setError('Speech recognition not supported in this browser.')
+        else if (err === 'aborted') setStatus('Stopped — tap to speak again')
         else setError('Could not recognize speech. Try again.')
-        setStatus('Tap the mic')
+        if (err !== 'aborted') setStatus('Tap the mic')
       },
     )
   }, [isRecording, support.recognition, handleUserSpeech])
 
-  const unlock = (e) => {
+  const unlock = async (e) => {
     e.preventDefault()
+    await speechService.unlock()
     setAccessCode(accessInput.trim())
     setUnlocked(true)
     setError('')
-    startedRef.current = false
+  }
+
+  const onLevelChange = (value) => {
+    speechService.stopSpeaking()
+    setIsSpeaking(false)
+    setLevel(value)
+  }
+
+  const onTopicChange = (value) => {
+    speechService.stopSpeaking()
+    setIsSpeaking(false)
+    setTopic(value)
   }
 
   if (bootError) {
@@ -290,7 +330,12 @@ export default function App() {
         <div className="controls">
           <div className="field">
             <label htmlFor="level">Level</label>
-            <select id="level" value={level} onChange={(e) => setLevel(e.target.value)} disabled={busy}>
+            <select
+              id="level"
+              value={level}
+              onChange={(e) => onLevelChange(e.target.value)}
+              disabled={isRecording || isProcessing}
+            >
               {LEVELS.map((l) => (
                 <option key={l} value={l}>{l}</option>
               ))}
@@ -298,13 +343,31 @@ export default function App() {
           </div>
           <div className="field">
             <label htmlFor="topic">Topic</label>
-            <select id="topic" value={topic} onChange={(e) => setTopic(e.target.value)} disabled={busy}>
+            <select
+              id="topic"
+              value={topic}
+              onChange={(e) => onTopicChange(e.target.value)}
+              disabled={isRecording || isProcessing}
+            >
               {TOPICS.map((t) => (
                 <option key={t.id} value={t.id}>{t.label}</option>
               ))}
             </select>
           </div>
         </div>
+
+        <button
+          type="button"
+          className="restart-btn"
+          onClick={() => {
+            speechService.stopSpeaking()
+            setIsSpeaking(false)
+            setSession((n) => n + 1)
+          }}
+          disabled={isRecording || isProcessing}
+        >
+          Restart as {level}
+        </button>
 
         <section className="stage">
           <p className="status">
@@ -335,13 +398,30 @@ export default function App() {
         <div className="transcript" ref={scrollRef}>
           {messages.map((m, i) => (
             <div key={`${m.role}-${i}`} className={`bubble ${m.role}`}>
-              <span className="who">{m.role === 'user' ? 'You' : 'Parla'}</span>
+              <div className="bubble-top">
+                <span className="who">
+                  {m.role === 'user' ? 'You' : `Parla${m.level ? ` · ${m.level}` : ''}`}
+                </span>
+                {m.role === 'assistant' && (
+                  <button
+                    type="button"
+                    className="hear-btn"
+                    onClick={async () => {
+                      await speechService.unlock()
+                      speak(m.content)
+                    }}
+                    aria-label="Play this reply"
+                  >
+                    ▶ Hear
+                  </button>
+                )}
+              </div>
               {m.content}
             </div>
           ))}
         </div>
 
-        <p className="hint">Tap mic → speak Italian → hear the reply. Works best on your phone over HTTPS.</p>
+        <p className="hint">If audio is quiet, tap ▶ Hear on a reply. Level changes start a fresh chat.</p>
       </div>
     </div>
   )
