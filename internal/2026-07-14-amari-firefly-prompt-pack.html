@@ -3,7 +3,7 @@
 <head>
 <meta name="robots" content="noindex,nofollow">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Amari Firefly prompt pack — 2026-07-14</title>
+<title>Amari Firefly prompt pack — generate only · 2026-07-15</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -35,6 +35,12 @@
   .callout{background:#2A2420;color:#EDE4D6;border-radius:10px;padding:12px 16px;font-size:.88rem;max-width:82ch;margin:8px 0 22px;line-height:1.55}
   .callout b{color:#F2C879}
   .callout a{color:#F2C879}
+  .cast-table{width:100%;max-width:82ch;border-collapse:collapse;font-size:.86rem;margin:10px 0 18px;background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .cast-table th,.cast-table td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cast-table th{background:var(--cream2);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--body)}
+  .cast-table tr:last-child td{border-bottom:none}
+  .cast-table .gap{color:var(--rust);font-weight:600}
+  .cast-table .ok{color:var(--forest);font-weight:600}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
   .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .card.done{opacity:.5}
@@ -46,7 +52,7 @@
   .nothumb .icon{font-size:20px}
   .nothumb span{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600}
   .badge{position:absolute;top:8px;left:8px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;padding:4px 9px;border-radius:20px;color:#fff}
-  .badge.gen{background:var(--plum)} .badge.refine{background:var(--teal)} .badge.wire{background:var(--grey)} .badge.resource{background:var(--gold)} .badge.skip{background:#1E1B18}
+  .badge.gen{background:var(--plum)} .badge.wire{background:var(--grey)} .badge.resource{background:var(--gold)} .badge.skip{background:#1E1B18}
   .prio{position:absolute;top:8px;right:8px;font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:700;padding:4px 8px;border-radius:20px;color:#fff}
   .prio.p1{background:var(--rust)} .prio.p2{background:var(--gold)} .prio.p3{background:var(--grey)}
   .meta{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
@@ -73,306 +79,239 @@
 </head>
 <body>
 
-  <div class="eyebrow">Website imagery · 2026-07-14</div>
-  <h1>Firefly prompt pack — still needed</h1>
-  <p class="intro">Fresh worklist against the live <b>feat/new-site</b> wiring. Unique page heroes, partner tiles, hip/knee doorway-window winners, and the sharp Annie/Elise/Victor/Tyler testimonials are <b>done — skip them</b>. This pack is only what still blocks brand quality: journal bad-frames, a few wire-fixes, and real-client testimonial re-sources.</p>
+  <div class="eyebrow">Website imagery · 2026-07-15</div>
+  <h1>Firefly — pure generate only</h1>
+  <p class="intro"><b>Refine is paused.</b> Attached-base refine burns credits and isn’t landing. For now: copy → paste → generate from scratch in Firefly. No attachment. Scenes must read as <b>Amari Method</b> — soft Marin/Berkeley home, quiet protocol moments with roller or doorway bar as context — not a glam home-gym pull-up corner.</p>
 
-  <div class="callout" style="margin-top:0"><b>How to use a REFINE card (e.g. Passive bridge):</b><br>
-    1. The photo shows <b>on the card</b>. Click it to open the full JPG (or use the Photo URL under the card).<br>
-    2. Save that JPG → drag it into <b>Adobe Firefly</b>.<br>
-    3. Click <b>Copy</b> → paste the prompt into Firefly → run.<br>
-    4. “Attached” in the prompt = the photo you dropped in. Generate cards (section 2) have no base photo.<br><br>
-    <b>This page URL:</b> <a href="https://raw.githack.com/Eben283/amarimethod-website/feat/new-site/2026-07-14-amari-firefly-prompt-pack.html" style="color:#F2C879">https://raw.githack.com/Eben283/amarimethod-website/feat/new-site/2026-07-14-amari-firefly-prompt-pack.html</a>
-  </div>
+  <div class="callout"><b>This page:</b> <a href="https://raw.githack.com/Eben283/amarimethod-website/feat/new-site/2026-07-14-amari-firefly-prompt-pack.html">raw.githack · firefly prompt pack</a><br>
+    <b>Credits:</b> generate cards only. Skip section 4 parked refine forever (for now).<br>
+    <b>Cast goal:</b> Asian · Hispanic · White balance — fill gaps below. Do <b>not</b> default new prompts to Black cast (already covered: blk49 hub, black-man42 roller, black-woman38 window).</div>
 
-  <div class="rules"><b>Rules (from 2026-07-11 nano-banana / Firefly rulebook):</b> person is the hero, equipment is context · foam roller = plain <b>smooth black</b> only · yoga block = real <b>Hugger Mugger foam</b> (matte foam texture), never cork/wood swap as the default, never blue plastic · <b>never a massage table</b> · <b>no pain gestures</b> · <b>no cars</b> · composition &gt; backdrop swap (person inside a shallow scene with a caught moment, not squared-up to a flat plane) · ration walls and low bookshelves · elevated-casual wardrobe for 33–48, fabric varied off linen · affluent tidy Marin/Berkeley, shallow background · full body then crop in post · under 1024 chars · refine prompts name only what that exact frame contains.<br><br><b>Taste gate (2026-07-15):</b> handsome / pretty / a little wow is OK. Sultry / lingerie / “almost naked” is not. Fully clothed with real fabric covering chest and midriff. No camisole or open plunging neckline as the wardrobe. No bare chest, no sports-bra crop as the hero, no shirtless men unless the shot is clearly athletic training and still reads as dressed for the gym. Attraction lives in face, carriage, fabric, and light — not skin as the subject.</div>
+  <div class="rules"><b>Amari look:</b> person is the hero · plain <b>smooth black</b> foam roller only · Hugger Mugger foam block if needed · <b>never massage table</b> · <b>no pain gestures</b> · <b>no cars</b> · shallow Marin/Berkeley home · elevated-casual fully clothed · overcast daylight not golden hour · under 1024 chars.<br><br>
+    <b>Taste gate:</b> pretty / handsome / quiet wow OK. Not sultry. Chest + midriff covered. No camisole, crop-as-hero, sports-bra outfit, shirtless men.<br><br>
+    <b>Not Amari:</b> brick CrossFit corners, rust crop tops on a bar, gym-demo flex, rings as hero, bare product stills.</div>
+
+  <section id="cast">
+    <div class="sec-head"><span class="sec-num">0</span><h2>Cast inventory — what we have vs need</h2></div>
+    <p class="sec-note">From <b>images/photos/LIBRARY.md</b> KEEP portraits (filename age codes). Target mix: <b>Asian · Hispanic · White</b>. Ages should span ~35–65+, not cluster only mid-30s / mid-40s.</p>
+    <table class="cast-table">
+      <thead><tr><th>Group</th><th>Have (distinct)</th><th>Ages</th><th>Gap / action</th></tr></thead>
+      <tbody>
+        <tr><td>White</td><td>~8 (plurality)</td><td>~38–60</td><td class="ok">Covered — no new White generate this round</td></tr>
+        <tr><td>East Asian</td><td>~6</td><td>35–47 women/men; woman 61</td><td class="gap">Need East Asian man ~55–60; home hang not gym</td></tr>
+        <tr><td>Hispanic</td><td>~3</td><td>41♀ · 44♂ · 52♂</td><td class="gap">Thin — need woman ~55–62; more depth mid/late</td></tr>
+        <tr><td>South Asian</td><td>0</td><td>—</td><td class="gap">Missing — woman ~50s + man ~40s</td></tr>
+        <tr><td>Black</td><td>3</td><td>38♀ · 42♂ · 49♂</td><td class="ok">Enough for now — do not add more generate defaults</td></tr>
+        <tr><td>Multiracial</td><td>1</td><td>~41 plantar</td><td>Optional later — not P1</td></tr>
+      </tbody>
+    </table>
+    <p class="sec-note" style="margin-top:0"><b>Age holes overall:</b> 55–65+ non-White (esp. Hispanic woman, East Asian man). <b>Under-30:</b> we don’t need. <b>Mid-30s Black/multiracial gym athletic:</b> oversampled in prior prompt drafts — retired.</p>
+  </section>
 
   <div class="statusbar" id="statusbar"><b>Loading…</b>
     <div class="jumpnav">
-      <a href="#s1">1 · Refine</a>
-      <a href="#s2">2 · Generate</a>
-      <a href="#s3">3 · Wire</a>
-      <a href="#s4">4 · Re-source</a>
-      <a href="#s5">5 · Skip</a>
+      <a href="#cast">0 · Cast</a>
+      <a href="#s1">1 · Generate</a>
+      <a href="#s2">2 · Wire</a>
+      <a href="#s3">3 · Re-source</a>
+      <a href="#s4">4 · Parked</a>
     </div>
   </div>
 
   <section id="s1">
-    <div class="sec-head"><span class="sec-num">1</span><h2>REFINE a staged base frame</h2></div>
-    <p class="sec-note">Each refine card shows the base photo and a <b>Photo URL</b>. Click either, save the JPG, drag into Firefly, then paste the prompt. One base per card.</p>
+    <div class="sec-head"><span class="sec-num">1</span><h2>GENERATE — pure prompts (no attach)</h2></div>
+    <p class="sec-note">P1 first. Each card fills a <b>cast gap</b> and a <b>content hole</b>. Copy → Firefly Text to image → generate. <b>No reference photo.</b></p>
     <div class="grid" id="grid-s1"></div>
   </section>
 
   <section id="s2">
-    <div class="sec-head"><span class="sec-num">2</span><h2>GENERATE fresh</h2></div>
-    <p class="sec-note">Net-new frames where refine isn't enough or footage is missing/mismatched. P1 first.</p>
+    <div class="sec-head"><span class="sec-num">2</span><h2>WIRE only — no generation</h2></div>
+    <p class="sec-note">Point the live page at an asset you already have. Zero Firefly credits.</p>
     <div class="grid" id="grid-s2"></div>
   </section>
 
   <section id="s3">
-    <div class="sec-head"><span class="sec-num">3</span><h2>WIRE only — no generation</h2></div>
-    <p class="sec-note">Point the live page at an asset you already have. Zero Firefly work.</p>
+    <div class="sec-head"><span class="sec-num">3</span><h2>RE-SOURCE real client photos</h2></div>
+    <p class="sec-note"><b>Never generate</b> a face for a named quote.</p>
     <div class="grid" id="grid-s3"></div>
   </section>
 
   <section id="s4">
-    <div class="sec-head"><span class="sec-num">4</span><h2>RE-SOURCE real client photos</h2></div>
-    <p class="sec-note"><b>Never generate</b> a face for a named quote. Pull a sharper original, re-shoot, or re-attribute.</p>
+    <div class="sec-head"><span class="sec-num">4</span><h2>PARKED — skip for now</h2></div>
+    <p class="sec-note">Refine-from-base, done heroes, and rejected gym casts. <b>Do not spend credits here.</b></p>
     <div class="grid" id="grid-s4"></div>
-  </section>
-
-  <section id="s5">
-    <div class="sec-head"><span class="sec-num">5</span><h2>SKIP — done or rejected</h2></div>
-    <p class="sec-note">Do not regenerate. Listed so the old 07-12 pack doesn't get reused by mistake.</p>
-    <div class="grid" id="grid-s5"></div>
   </section>
 
   <div class="linkout">
     <p style="margin:0;color:var(--body);font-size:.94rem">Companions:</p>
     <a href="2026-07-11-nano-banana-prompting-notes.md">Prompting rulebook →</a>
-    <a href="2026-07-12-amari-image-replacements.html">Prior 07-12 replacements (partly stale) →</a>
-    <a href="2026-07-12-amari-journal-headers.html">Journal headers tracker →</a>
+    <a href="images/photos/LIBRARY.md">Photo library / cast codes →</a>
+    <a href="2026-07-12-amari-image-replacements.html">Prior 07-12 replacements →</a>
   </div>
 
 <script>
   const SHOTS = [
-    // ===== 1 REFINE =====
-    {sec:'s1', id:'passive-bridge', title:'Passive bridge', badge:'refine', prio:'p1',
-     cast:'① Drag this photo into Firefly  ② paste prompt · base-passive-bridge-7.5s.jpg',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
-     used:'/blog-passive-bridge-mobility · /blog Take It Home · Living Practice grid',
-     problem:'Mic / AI sheen. Keep the real Hugger Mugger blue foam blocks as in the frame — do not recolor.',
-     approach:'Keep Hugger Mugger blocks as in the attached frame. Remove mic + AI sheen only. Do not recolor blocks.',
-     prompt:"Use the attached real frame from the Passive Bridge Course Video as the base. Keep the exact man, his pose on his back with hips supported, the room, console, plant, and natural light, and keep the framing, do not change the composition or recast him. Keep the Hugger Mugger foam yoga blocks exactly as they appear in the attached frame \u2014 same blue foam, same shape, same positions; do not recolor or replace them with cork, stone, or a roller. Remove the lav mic and any cord, leave no wire visible. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove anything else. Avoid a plastic or CGI look."},
+    // ===== 1 GENERATE — gap fills =====
+    {sec:'s1', id:'his-woman-58-roller', title:'Hispanic woman · living-room roller', badge:'gen', prio:'p1',
+     cast:'Hispanic woman · ~58 · gap: older Hispanic ♀ (have only ~41)',
+     used:'Chronic / method / Take It Home / journal protocol still',
+     problem:'Hispanic cast is thin and young/mid; no woman 55+.',
+     approach:'Pure generate. Amari home + smooth black roller as context — not a gym.',
+     prompt:"Candid editorial photo, a real woman, Hispanic, around 58, warm golden undertone, salt-and-pepper dark hair loosely tied, brown eyes. Pretty, composed — quiet wow, not sultry. On the wood floor of a warm, well-kept Marin living room, a plain smooth black foam roller beside her as context, linen sofa and plants close behind, no distant vista. Right third, seated mid-movement easing her spine long over soft hips, shoulders open under fabric, awake, not posing, no hand on a sore spot. Wardrobe: soft rust knit cardigan fully closed over a cream tee, dark trousers, no logos, no crop, no bare midriff. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie energy, gym/brick backdrop, pull-up bar, massage table, pain gesture, golden light, car."},
 
-    {sec:'s1', id:'passive-bridge-relaxed-face', title:'Passive bridge — relaxed face only', badge:'refine', prio:'p1',
-     cast:'① Attach your Passive Bridge Firefly keep  ② paste this  ③ do NOT start from scratch',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-passive-bridge-7.5s.jpg',
-     used:'Follow-up on the Passive Bridge refine. Attach YOUR Firefly Passive Bridge PNG as the base — not a fresh generation.',
-     problem:'The earlier “happy or relaxed not so intense” line made Firefly invent a new shot (black rollers, thumbs-up, different room).',
-     approach:'Face-only refine. Keep Hugger Mugger blocks exactly as in the attached frame. Soften expression only; remove mic if still there.',
-     note:'<b>Attach the Passive Bridge Firefly PNG you already like</b> (the one that kept the pose). Do not re-ask for happy/thumbs-up. Hugger Mugger stays as in that photo.',
-     prompt:"Use the attached Passive Bridge photo as the base (the man on his back with hips on the Hugger Mugger foam block, one leg up). Keep the exact man, pose, room, rug, furniture, plants, light, framing, and both Hugger Mugger foam blocks exactly as they appear \u2014 same blue foam, same shape, same positions. Do not recolor or replace the blocks. Do not change his body, clothes, or the scene. Only soften his facial expression: calm, relaxed, lightly at ease, eyes softer, jaw loose \u2014 not intense, not staged, not a big smile, not a thumbs-up. Remove the lav mic and any cord if still visible. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain. Do not add or remove anything else. Avoid a plastic or CGI look, a posed smile, a new pose, foam rollers, or a regenerated room."},
+    {sec:'s1', id:'sa-woman-52-tmj', title:'South Asian woman · jaw/neck ease', badge:'gen', prio:'p1',
+     cast:'South Asian woman · ~52 · gap: South Asian = 0 in KEEP',
+     used:'/blog-jaw-align-tmj-relief · Conditions topic · neck alternate',
+     problem:'Journal TMJ still is a hand-on-jaw pain gesture. No South Asian portraits in library.',
+     approach:'Pure generate. Clothed neck turn — never hand on jaw.',
+     prompt:"Candid editorial photo, a real woman, South Asian, around 52, warm golden undertone, shoulder-length dark hair with soft silver threads, brown eyes. Beautiful, composed — quiet wow, not sultry. Seated on a linen sofa in a warm Marin home, steel-framed window and plants close, no distant vista. Right third, mid-movement turning her head gently toward the light, neck long, jaw loose, shoulders soft under fabric, awake, not demonstrating, no hand on face or jaw. Wardrobe: ivory silk blouse, modest closed neckline, long sleeves, soft charcoal trousers, no logos, no camisole, no bare shoulders. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie energy, hand on jaw, wince, massage table, gym, golden light, car."},
 
+    {sec:'s1', id:'sa-man-42-desk', title:'South Asian man · desk mid-breath', badge:'gen', prio:'p1',
+     cast:'South Asian man · ~42 · gap: South Asian = 0',
+     used:'Virtual / method / putting-it-together alternate',
+     problem:'Zero South Asian men in KEEP heroes.',
+     approach:'Pure generate. Housed calm at a desk — Amari at-home practice, not gym.',
+     prompt:"Candid editorial photo, a real man, South Asian, around 42, warm undertone, short black hair, dark eyes, medium contrast. Handsome, refined — quiet wow, not gym-bro. Seated at a wood desk beside a steel-framed window in a tidy Berkeley home office, books and a plant close, no distant vista. Right third, mid-movement finishing a slow inhale, ribs wide, shoulders easy, arms relaxed, awake, not posing, no hand on a sore spot. A plain smooth black foam roller leans against the desk leg as quiet context. Wardrobe: soft charcoal cotton tee fully covering his chest, olive trousers, no logos, not shirtless, not a tank. Real skin, pores for his age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, bare torso, massage table, gym pull-up bar, demo pose, golden light, car."},
 
-    {sec:'s1', id:'active-bridge', title:'Active bridge', badge:'refine', prio:'p1',
-     cast:'① Drag base-active-bridge-3s.jpg into Firefly  ② paste prompt  ③ start over from this base',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-active-bridge-3s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-active-bridge-3s.jpg',
-     used:'/blog-active-bridge-strength · home This Just In · Protocols topic circle',
-     problem:'Live site still uses an AI woman-on-roller still. Redo from the real Garrett course frame; strip mic cord + AI sheen.',
-     approach:'Attach base-active-bridge-3s.jpg. Keep HM blocks + smooth black roller as in frame. Remove mic. Soften face slightly. Do not recast.',
-     prompt:"Use the attached real frame from the Active Bridge Course Video as the base (the man on his back in a bridge, hips lifted, knees bent, feet flat, hands near his chest). Keep the exact man, pose, room, rug, furniture, plants, lantern, sunflowers, framing, and light. Do not change the composition or recast him. Keep all props exactly as they appear: the plain smooth black foam roller on the rug behind his legs, and the Hugger Mugger foam yoga blocks on the side-table shelf \u2014 same blue foam, same shape, same positions; do not recolor or replace them. Remove the lav mic and the black mic cord on the rug, leave no wire visible. Soften his expression slightly: calm and at ease, not intense, not a big smile. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove anything else. Avoid a plastic or CGI look, a new pose, cork/stone blocks, or a regenerated room."},
+    {sec:'s1', id:'asn-man-56-rise', title:'East Asian man · floor rise + roller', badge:'gen', prio:'p1',
+     cast:'East Asian man · ~56 · gap: older Asian ♂ (have men ~43–47 only)',
+     used:'/blog-putting-it-all-together · Method topic circle',
+     problem:'Putting-it-together was pull-up-bar / wrong energy; prior gen drafts overused Black cast we already have.',
+     approach:'Pure generate. Floor-to-stand protocol moment; roller context only.',
+     prompt:"Candid editorial photo, a real man, East Asian, around 56, warm undertone, short salt-and-pepper black hair, dark eyes. Handsome, grounded — quiet wow. On the wood floor of a warm Berkeley living room, a plain smooth black foam roller beside him as context, window and furniture close-medium, no distant vista. Right third, mid-movement rising from the floor, spine stacking tall, arms floating open, chest lifting into a slow breath, awake, not posing or demonstrating, no hand on a sore spot. Wardrobe: fitted forest-green cotton tee covering chest, dark joggers, no logos, not shirtless. Real skin, pores for his age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, pull-up bar as hero, brick gym, massage table, demo pose, golden light, empty room, car."},
 
-    {sec:'s1', id:'power-posture', title:'Power posture', badge:'refine', prio:'p2',
-     cast:'① Drag this photo into Firefly  ② paste prompt · base-power-posture-1.5s.jpg',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-power-posture-1.5s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-power-posture-1.5s.jpg',
-     used:'/blog-power-posture-shoulder-blades · /images/v6/real/power-posture.jpg',
-     problem:'AI / over-processed still on the live article.',
-     approach:'Grade-only refine of the staged base.',
-     prompt:"Use the attached real frame from the Power Posture Course Video as the base. Keep the exact person, his standing pose with hands clasped behind his back and shoulders opening, the room, window, and natural light, and keep the framing, do not change the composition or recast him. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+    {sec:'s1', id:'his-woman-46-home-hang', title:'Hispanic woman · home doorway hang', badge:'gen', prio:'p1',
+     cast:'Hispanic woman · ~46 · gap: Hispanic depth + suspension content',
+     used:'/blog-suspension-squat-hanging-exercises',
+     problem:'Prior gen was Multiracial ~34 rust crop in a home-gym brick corner — not Amari. Rings landscape still retired.',
+     approach:'Pure generate. Ceiling/doorway bar in a living space; fully clothed hang — not CrossFit glamour.',
+     prompt:"Candid editorial photo, a real woman, Hispanic, around 46, warm golden undertone, dark wavy hair in a loose knot, hazel-brown eyes. Pretty, athletic — handsome energy, not sultry. Inside a tidy Berkeley home hallway near a bright doorway, a simple ceiling-mounted pull-up bar as quiet context (not a gym), plant and wood trim close, no distant vista. Right third, hanging with knees soft into a controlled squat, shoulders open under a shirt, spine long, doing the work, not posing. Wardrobe: dark athletic shorts, fitted slate cotton tee covering chest and midriff, bare arms OK, no logos, no crop top, no sports-bra outfit. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie or almost-naked reads, brick home-gym corner, rings as hero, bare bar product still, massage table, golden light, car."},
 
-    {sec:'s1', id:'hand-balancer', title:'Hand balancer', badge:'refine', prio:'p2',
-     cast:'① Drag this photo into Firefly  ② paste prompt · base-hand-balancer-3s.jpg',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-hand-balancer-3s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-hand-balancer-3s.jpg',
-     used:'/blog-hand-balancer-carpal-tunnel · About Why Amari band',
-     problem:'AI look; hands must stay whole (no tight crop).',
-     approach:'Grade-only refine. Keep hands and fingers natural.',
-     prompt:"Use the attached real frame from the Hand Balancer Course Video as the base. Keep the exact person, their hand and wrist position, the setting, and the natural light, and keep the framing, do not change the composition or recast them. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects, keep the hands whole and natural with correct fingers. Avoid a plastic or CGI look."},
+    {sec:'s1', id:'his-man-38-heel', title:'Hispanic man · spring step heel-drop', badge:'gen', prio:'p2',
+     cast:'Hispanic man · ~38 · distinct from his44 / his52',
+     used:'/blog-spring-step-calf-ankle (if footage extract fails)',
+     problem:'Article needs on-topic calf/ankle; refine-from-footage parked.',
+     approach:'Pure generate. Mid heel-drop on wood floor — Amari home, not gym.',
+     prompt:"Candid editorial photo, a real man, Hispanic, around 38, warm golden undertone, dark hair, warm brown eyes. Handsome, refined. On the wood floor of a warm Marin home beside a steel-framed window, furniture close behind, no distant vista. Right third, standing mid-movement dropping one heel slowly toward the floor, other foot light, calves working, arms easy, awake, not demonstrating, no hand on a sore spot. Wardrobe: dark athletic shorts, teal cotton tee covering chest, bare feet, no logos. Real skin, pores for his age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, massage table, gym, demo pose, golden light, car."},
 
-    {sec:'s1', id:'elbow-reset', title:'Elbow reset', badge:'refine', prio:'p2',
-     cast:'① Drag this photo into Firefly  ② paste prompt · base-elbow-reset-6s.jpg',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-elbow-reset-6s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-elbow-reset-6s.jpg',
-     used:'/blog-elbow-reset-tennis-elbow · /images/v6/real/elbow-reset.jpg',
-     problem:'AI / over-processed still.',
-     approach:'Grade-only refine of the staged base.',
-     prompt:"Use the attached real frame from the Elbow Reset Course Video as the base. Keep the exact person, his seated pose working his forearm, the couch and room, and the natural light, and keep the framing, do not change the composition or recast him. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
+    {sec:'s1', id:'asn-woman-48-shoulders', title:'East Asian woman · shoulders open', badge:'gen', prio:'p2',
+     cast:'East Asian woman · ~48 · mid-age Asian ♀ depth (have 35–39 + 61)',
+     used:'Shoulder / power-posture / neck alternate',
+     problem:'Age hole between late-30s Asian women and asn61; need clothed shoulder beat without sultry bare skin.',
+     approach:'Pure generate. Fabric on shoulders; openness in posture.',
+     prompt:"Candid editorial photo, a real woman, East Asian, around 48, warm undertone, dark hair in a soft low knot, dark eyes. Striking, pretty — quiet wow, not sultry. Standing in a warm Marin living room, steel-framed window and furniture close-medium, no distant vista. Right third, mid-movement rolling shoulders down and back, chest soft, neck long, hands loosely clasped behind her, awake, not a gym demo, no hand on a sore spot. Wardrobe: slate-blue fine-knit sweater with a modest boat neck that still fully covers chest, charcoal trousers, no logos, no bare shoulders, no camisole. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie energy, bare chest, massage table, gym, golden light, car."},
 
-    {sec:'s1', id:'spring-step', title:'Spring step (re-extract first)', badge:'refine', prio:'p1',
-     cast:'Re-extract a better frame first (weak stand-in shown)',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-spring-step.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/jh-spring-step.jpg',
-     used:'/blog-spring-step-calf-ankle — currently foam-roller-v2.jpg (no ankle/calf)',
-     problem:'Header has zero thematic tie to calf/ankle. Existing jh-spring-step.jpg is a weak standing legs-on-beam still.',
-     approach:'Re-extract mid heel-drop from spring-step footage, THEN refine with the grade prompt (edit to name only what the new frame shows).',
-     note:'If no usable frame exists in footage, fall back to the Generate card for spring-step.',
-     prompt:"Use the attached re-extracted Spring Step frame as the base. Keep the exact person, their pose and footing, the setting, and the natural light, do not change the composition or recast the person. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Do not add or remove any objects. Avoid a plastic or CGI look."},
-
-    {sec:'s1', id:'vertical-drop', title:'Vertical drop', badge:'refine', prio:'p1',
-     cast:'① Drag base-vertical-drop-6s.jpg into Firefly  ② paste prompt',
-     thumb:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-vertical-drop-6s.jpg',
-     photoUrl:'https://feat-new-site.amarimethod-website.pages.dev/images/photos/journal-base/base-vertical-drop-6s.jpg',
-     used:'/blog-vertical-drop-spine-decompression',
-     problem:'Old jh-vertical-drop was a weak side lean; lav cord still visible. Core front mid-demo pulled from vertical-drop-front.mp4 at ~6s.',
-     approach:'Core frame already pulled. Attach base-vertical-drop-6s.jpg. Strip lav + cord only; keep pose, bench grip, park. Soft face.',
-     note:'Pulled from <b>vertical-drop-front.mp4</b> (~6s). Side lean alternate: base-vertical-drop-side-6s.jpg.',
-     prompt:"Use the attached real frame from the Vertical Drop Course Video as the base (Garrett behind a park bench, hands on the top rail, facing the camera, mid outdoor demo). Keep the exact man, pose, grip on the bench, park setting, trees, path, and natural daylight. Do not change the composition or recast him. Remove the lav microphone clipped on his shirt and every bit of the black mic cord down his torso and legs \u2014 leave no wire visible. Warm filmic color grade, gentle contrast, real skin with visible pores, fine natural film grain, remove any glossy over-processed sheen. Soften expression slightly: calm and at ease, not intense. Do not add or remove anything else. Avoid a plastic or CGI look, a new pose, or a regenerated background."},
-
-    // ===== 2 GENERATE =====
-    {sec:'s2', id:'tmj-header', title:'TMJ journal header', badge:'gen', prio:'p1',
-     cast:'Black woman · ~38 · window / open jaw-neck',
-     used:'/blog-jaw-align-tmj-relief · /blog Conditions topic circle',
-     problem:'Current jaw-align.jpg is a <b>hand-on-jaw pain gesture</b> — brand never-show.',
-     approach:'Generate fresh non-pain TMJ header. (Condition page hero tmj-woman-asn39.jpg is fine; this replaces the journal still.)',
-     prompt:"Candid editorial photo, a real woman, Black, around 38, warm deep undertone, natural dark hair loosely up, warm brown eyes. Striking, pretty — quiet wow, not sultry. Seated on a wide upholstered bench beside a steel-framed window in a warm Marin home, plant and furniture close, no distant vista. Right third, mid-movement easing her head into a slow open turn, chin lifting, jaw and neck long and loose, awake, not posing, no hand on her face or jaw. Wardrobe: ivory silk blouse, modest neckline, sleeves rolled once, dark denim, no logos, no camisole, no bare chest. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie energy, bare shoulders as subject, hand on jaw, wince, massage table, demo pose, golden light, empty room, car."},
-
-    {sec:'s2', id:'putting-together', title:'Putting it all together', badge:'gen', prio:'p1',
-     cast:'Black man · ~42 · floor-to-stand moment',
-     used:'/blog-putting-it-all-together · /blog Method topic · Take It Home',
-     problem:'Pull-up-bar equipment-hero + AI/golden look.',
-     approach:'Generate an integrated active moment; bar not the hero. Roller as context only.',
-     prompt:"Candid editorial photo, a real man, Black, around 42, warm deep undertone, short natural hair, warm brown eyes, medium-high contrast. Handsome, refined. On the wood floor of a warm, well-kept upscale Marin or Berkeley home, a plain smooth black foam roller beside him, a steel-framed window and furniture at close-medium depth, no distant vista. In the right third, caught mid-movement rising from the floor, spine stacking tall, arms floating open, chest lifting into a slow full breath, awake and alive, not posing or demonstrating, no hand on a sore spot. Wardrobe: dark athletic joggers, a fitted forest-green cotton tee, bare arms, no logos. Real skin, visible pores for his age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a pull-up bar as the hero, a bumpy or colored foam roller, a massage table, an exercise-demo pose, warm golden light, a bare empty room, a car."},
-
-    {sec:'s2', id:'suspension-squat', title:'Suspension squat / hanging', badge:'gen', prio:'p1',
-     cast:'Multiracial woman · ~34 · person on bar',
-     used:'/blog-suspension-squat-hanging-exercises (still on retired hands-on-rings-landscape.webp)',
-     problem:'Bare equipment / retired rings landscape — no person doing the work.',
-     approach:'Full hang frame parked — not quite right. Arms-only crop saved at detail-crops/suspension-hang-arms-crop.jpg; do not use full-bleed. Regenerate later when credits allow.',
-     prompt:"Candid editorial photo, a real woman, Multiracial, around 34, warm golden undertone, dark wavy hair in a loose knot, hazel eyes. Striking, athletic — handsome energy, not sultry. Inside a tidy Berkeley home gym corner, pull-up bar as context, window and plant close, no distant vista. Right third, hanging from the bar with knees soft into a controlled squat, shoulders open under a shirt, spine long, doing the work, not posing. Wardrobe: dark athletic shorts, fitted rust cotton tee covering chest and midriff, bare arms OK, no logos, no crop top, no sports-bra outfit. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid plastic skin, lingerie or almost-naked reads, bare bar product still, rings as hero, massage table, demo pose, golden light, car."},
-
-    {sec:'s2', id:'spring-step-gen', title:'Spring step (fallback generate)', badge:'gen', prio:'p2',
-     cast:'Hispanic man · ~36 · heel-drop moment',
-     used:'Only if re-extract fails for spring-step refine',
-     problem:'No on-topic calf/ankle header on the live article.',
-     approach:'Generate a mid heel-drop / spring moment on a wood floor. Prefer refine-from-footage if a frame exists.',
-     prompt:"Candid editorial photo, a real man, Hispanic, around 36, warm golden undertone, dark hair, warm brown eyes, medium contrast. Handsome, refined. On the wood floor of a warm, well-kept upscale Marin home, beside a steel-framed window, furniture wrapping close behind, no distant vista. In the right third of the frame, standing, caught mid-movement dropping one heel slowly toward the floor with the other foot light, calves working, arms easy at his sides, awake and alive, not posed or demonstrating, no hand tending a sore spot. Wardrobe: dark athletic shorts, a teal cotton tee, bare feet, no logos. Real skin, visible pores for his age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a foam roller unless truly needed as context, a massage table, a posed exercise-demo, warm golden light, a car."},
-
-    {sec:'s2', id:'hand-reaching-open', title:'Hand reaching open (full frame)', badge:'gen', prio:'p3',
-     cast:'Hispanic woman · ~38 · FULL frame, crop after',
-     used:'/about divider — detail-crops/hand-reaching-open.jpg',
-     problem:'Low-res crop. Never prompt a tight body crop (mangled fingers).',
-     approach:'Generate the full person + open hand, then crop the hand in post.',
-     prompt:"Generate the FULL shot, never a tight crop — we crop the hand after. Candid editorial photo, a real woman, Hispanic, around 38, warm golden undertone, warm brown hair, hazel eyes. Pretty, refined — a little wow, fully dressed. On a Marin wood floor, furniture close, no distant vista. Seated easy, extending one arm forward, hand opening softly, fingers long and relaxed, palm turning up, not posing. Whole hand and arm natural with correct fingers; full body in frame. Wardrobe: teal silk blouse, modest neckline, long sleeves, dark denim, no logos, no camisole. Real skin, pores for her age, no retouching. Overcast daylight, soft shadow, not golden hour. Film, 50mm f/4, natural grain. Avoid tight crop, mangled fingers, boneless arm, plastic skin, lingerie energy, massage table, golden light, car."},
-
-    {sec:'s2', id:'shoulder-open-clothed', title:'Shoulders open (clothed wow)', badge:'gen', prio:'p1',
-     cast:'White woman · ~36 · power posture energy',
-     used:'Shoulder condition / power-posture alternate if needed',
-     problem:'Need a handsome pretty shoulder beat that still reads fully clothed — not sultry bare skin.',
-     approach:'Generate. Fabric on the shoulders; openness in posture, not undress.',
-     prompt:"Candid editorial photo, a real woman, White, around 36, light olive undertone, dark hair in a soft low knot, green-hazel eyes, medium-high contrast. Striking, pretty, refined — quiet wow, not sultry. Standing in a warm, well-kept upscale Marin living room, steel-framed window and furniture at close-medium depth, no distant vista. In the right third, caught mid-movement rolling her shoulders down and back, chest soft, neck long, chin slightly lifted, hands loosely clasped behind her, awake and alive, not a gym demo, no hand on a sore spot. Wardrobe: a slate-blue fine-knit sweater with a boat neck that still fully covers collarbones and chest, charcoal trousers, no logos, no bare shoulders, no camisole. Real skin, visible pores for her age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, lingerie or almost-naked reads, bare chest, a massage table, warm golden light, a bare empty room, a car."},
-
-    {sec:'s2', id:'man-handsome-tee', title:'Handsome man mid-breath (tee)', badge:'gen', prio:'p2',
-     cast:'Asian man · ~40 · housed calm',
-     used:'General method / putting-it-together alternate',
-     problem:'Need non-frumpy male energy: handsome, grounded, clearly dressed.',
-     approach:'Generate. Soft tee + trousers; attraction in face and posture.',
-     prompt:"Candid editorial photo, a real man, East Asian, around 40, warm undertone, short black hair, dark eyes, medium contrast. Handsome, refined — a little wow, not gym-bro glossy. Standing near a steel-framed window in a warm, well-kept Berkeley home, furniture close behind, no distant vista. In the right third, caught mid-movement finishing a slow inhale, ribs wide, shoulders easy, arms relaxed at his sides, awake and alive, not posing for the camera, no hand on a sore spot. Wardrobe: a soft charcoal cotton tee that fully covers his chest, olive trousers, no logos, not shirtless, not a tank. Real skin, visible pores for his age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, a bare torso, a massage table, an exercise-demo pose, warm golden light, a bare empty room, a car."},
-
-    {sec:'s2', id:'neck-turn-blouse', title:'Neck turn in a blouse', badge:'gen', prio:'p2',
-     cast:'South Asian woman · ~41 · neck ease',
-     used:'Neck condition / TMJ alternate',
-     problem:'Replace pain-gesture and camisole reads with clothed ease.',
-     approach:'Generate. Blouse on; neck motion is the story.',
-     prompt:"Candid editorial photo, a real woman, South Asian, around 41, warm golden undertone, long dark hair loosely tied, brown eyes, medium-high contrast. Beautiful, composed — a little wow, not sultry. Seated on a linen sofa in a warm, well-kept Marin home, a window and plants at close-medium depth, no distant vista. In the right third, caught mid-movement turning her head gently toward the light, neck long, shoulders soft under fabric, jaw loose, awake and alive, not demonstrating, no hand on her neck or jaw. Wardrobe: a soft rust silk blouse with a closed scoop neck and long sleeves, dark trousers, no logos, no bare shoulders, no plunging neckline. Real skin, visible pores for her age, no retouching. Plain overcast daylight, soft real shadow, not golden hour. Film, 50mm f/4, natural grain, one focal plane. Avoid plastic skin, lingerie energy, bare chest, a hand on the neck, a wince, a massage table, warm golden light, a car."},
-
-    // ===== 3 WIRE =====
-    {sec:'s3', id:'wire-spinal-wave', title:'Spinal wave article header', badge:'wire', prio:'p1',
+    // ===== 2 WIRE =====
+    {sec:'s2', id:'wire-spinal-wave', title:'Spinal wave article header', badge:'wire', prio:'p1',
      used:'/blog-spinal-wave-gentle-decompression → currently gymnastic-rings.jpg',
      problem:'Wrong topic (rings). Soft refined frame already exists.',
-     approach:'Point at images/photos/journal-base/jh-spinal-wave-refined.jpg (already on /blog Latest + /ongoing-care).',
+     approach:'Point at images/photos/journal-base/jh-spinal-wave-refined.jpg.',
      note:'No Firefly. One HTML src swap.'},
 
-    {sec:'s3', id:'wire-sciatica-article', title:'Sciatica journal article', badge:'wire', prio:'p1',
+    {sec:'s2', id:'wire-sciatica-article', title:'Sciatica journal article', badge:'wire', prio:'p1',
      used:'/blog-sciatica-relief → currently back-pain-from-sitting.webp',
      problem:'Leather-chair reuse, not sciatica.',
-     approach:'Point at images/photos/sciatica-man-wht50.jpg (already the sciatica condition hero).',
-     note:'No Firefly. One HTML src swap.'},
+     approach:'Point at images/photos/sciatica-man-wht50.jpg.',
+     note:'No Firefly.'},
 
-    {sec:'s3', id:'wire-pam-jpg', title:'Pam testimonial on /stories', badge:'wire', prio:'p1',
+    {sec:'s2', id:'wire-pam-jpg', title:'Pam testimonial on /stories', badge:'wire', prio:'p1',
      used:'/stories Pam → danielle-testimonial.avif',
-     problem:'Soft avif; sharper jpg already used on home This Just In.',
+     problem:'Soft avif; sharper jpg already on home.',
      approach:'Point at /images/v6/real/danielle-testimonial.jpg',
-     note:'No Firefly. Wiring only.'},
+     note:'Wiring only.'},
 
-    {sec:'s3', id:'wire-topic-circles', title:'Journal Browse-by-topic circles', badge:'wire', prio:'p1',
+    {sec:'s2', id:'wire-topic-circles', title:'Journal Browse-by-topic circles', badge:'wire', prio:'p1',
      used:'/blog topic circles',
-     problem:'Mechanics=rings, Conditions=TMJ pain pose, Method=pull-up bar, Where It Hurts=empty chair type reuse.',
-     approach:'Reselect to keepers once generate/refine land: Mechanics→jh-myofascial.jpg; Conditions→new TMJ or hip-doorway; Method→new putting-together; Where It Hurts→lower-back-refined or knee-window.',
-     note:'Mostly wiring. Depends on TMJ + putting generate cards above.'},
+     problem:'Mechanics=rings, Conditions=TMJ pain pose, Method=pull-up bar, etc.',
+     approach:'Reselect once P1 generates land: Conditions→new SA TMJ; Method→asn-man-56-rise; Mechanics→jh-myofascial; Where It Hurts→lower-back-refined or knee-window.',
+     note:'Mostly wiring after generate keeps.'},
 
-    {sec:'s3', id:'wire-hip-hub-card', title:'Conditions hub hip card', badge:'wire', prio:'p2',
+    {sec:'s2', id:'wire-hip-hub-card', title:'Conditions hub hip card', badge:'wire', prio:'p2',
      used:'/conditions hip card still on hip-woman-wht60.jpg',
-     problem:'Page hero already uses hip-woman-wht60-doorway.jpg; hub card lags.',
-     approach:'Point the hub card at the doorway winner.',
+     problem:'Page hero already uses doorway winner; hub card lags.',
+     approach:'Point hub card at hip-woman-wht60-doorway.jpg.',
      note:'Consistency only.'},
 
-    // ===== 4 RE-SOURCE =====
-    {sec:'s4', id:'sara', title:'Sara', badge:'resource', prio:'p1',
+    // ===== 3 RE-SOURCE =====
+    {sec:'s3', id:'sara', title:'Sara', badge:'resource', prio:'p1',
      used:'/stories · /images/Sarah.webp',
      problem:'Soft / pixelated at card size.',
-     approach:'Re-source a higher-res real photo of the real client. Never generate.',
+     approach:'Re-source higher-res real photo. Never generate.',
      note:'Real quote → real face only.'},
 
-    {sec:'s4', id:'katie', title:'Katie', badge:'resource', prio:'p1',
-     used:'/stories · /images/kate-testimonial.avif',
+    {sec:'s3', id:'katie', title:'Katie', badge:'resource', prio:'p1',
+     used:'/stories · kate-testimonial.avif',
      problem:'Soft / low-res tier.',
-     approach:'Re-source sharper original (jpg exists at v6/real/kate-testimonial.jpg — check if usable, else pull from Drive).',
-     note:'Prefer real re-source over generation.'},
+     approach:'Check v6/real/kate-testimonial.jpg; else Drive.',
+     note:'Prefer real re-source.'},
 
-    {sec:'s4', id:'paul', title:'Paul', badge:'resource', prio:'p1',
-     used:'/stories · /images/dan-testimonial.webp',
+    {sec:'s3', id:'paul', title:'Paul', badge:'resource', prio:'p1',
+     used:'/stories · dan-testimonial.webp',
      problem:'Soft webp.',
-     approach:'Re-source; check /images/v6/real/dan-testimonial.jpg first.',
-     note:'Filename ≠ display name is intentional mapping — keep label, improve pixels.'},
+     approach:'Re-source; check v6/real/dan-testimonial.jpg first.',
+     note:'Filename ≠ display name intentional.'},
 
-    {sec:'s4', id:'becca', title:'Becca', badge:'resource', prio:'p1',
-     used:'/stories · /images/amy-testimonial.webp',
+    {sec:'s3', id:'becca', title:'Becca', badge:'resource', prio:'p1',
+     used:'/stories · amy-testimonial.webp',
      problem:'Soft webp.',
      approach:'Re-source; check amy-testimonial.jpg in v6/real.',
      note:'Real face only.'},
 
-    {sec:'s4', id:'barbara', title:'Barbara — age mismatch', badge:'resource', prio:'p1',
-     used:'/stories · samantha-testimonial.avif · quote says “I’m 78”',
-     problem:'Face reads decades younger than the stated age.',
-     approach:'Real ~78 face, OR drop/re-attribute the age line. Do not AI-age a young face.',
-     note:'Truth gate — face and copy must agree.'},
+    {sec:'s3', id:'barbara', title:'Barbara — age mismatch', badge:'resource', prio:'p1',
+     used:'/stories · quote says “I’m 78”',
+     problem:'Face reads decades younger than stated age.',
+     approach:'Real ~78 face, OR drop/re-attribute the age line. Do not AI-age.',
+     note:'Truth gate.'},
 
-    {sec:'s4', id:'pam-resource', title:'Pam (if jpg still soft)', badge:'resource', prio:'p2',
+    {sec:'s3', id:'pam-resource', title:'Pam (if jpg still soft)', badge:'resource', prio:'p2',
      used:'After wiring danielle-testimonial.jpg',
-     problem:'If jpg is still soft at large size, need a better original.',
-     approach:'Pull higher-res from Drive / client archive.',
-     note:'Wire card above first.'},
+     problem:'If jpg still soft at large size, need better original.',
+     approach:'Pull higher-res from Drive / archive.',
+     note:'Wire card first.'},
 
-    {sec:'s4', id:'marisol-julian', title:'Marisol + Julian spot-check', badge:'resource', prio:'p2',
+    {sec:'s3', id:'marisol-julian', title:'Marisol + Julian spot-check', badge:'resource', prio:'p2',
      used:'/stories · Maria.webp · Justin.webp',
-     problem:'Same soft webp class as the fuzzy set.',
-     approach:'If they mush at retina card size, re-source like the others; otherwise leave.',
-     note:'Spot-check on phone before spending time.'},
+     problem:'Same soft webp class.',
+     approach:'Re-source only if they mush at retina card size.',
+     note:'Spot-check on phone first.'},
 
-    // ===== 5 SKIP =====
-    {sec:'s5', id:'skip-heroes', title:'Unique page heroes', badge:'skip',
-     approach:'DONE — home cedar, how-it-works roller room, first-visit doorway, booking pricing-man, conditions hub, journal, partner, living-practice, virtual, in-person, ongoing-care spinal-wave, condition heroes including hip-doorway + knee-window + plantar.',
-     note:'Do not regenerate. Old 07-12 knee-window / hip-doorway cards are obsolete.'},
+    // ===== 4 PARKED =====
+    {sec:'s4', id:'park-refine', title:'All REFINE-from-base cards', badge:'skip',
+     approach:'PARKED 2026-07-15 — refine outputs not landing, credits costly. Includes passive/active bridge, power posture, hand balancer, elbow reset, spring-step refine, vertical-drop refine.',
+     note:'Do not attach course frames until refine workflow is worth revisiting. Prefer pure generate or real footage stills graded offline.'},
 
-    {sec:'s5', id:'skip-partner', title:'Partner tiles', badge:'skip',
-     approach:'DONE — trainer, coach, yoga, movement winners wired.',
-     note:'Old partner gaps are closed.'},
+    {sec:'s4', id:'park-black-gen', title:'Prior Black / Multiracial~34 gym gens', badge:'skip',
+     approach:'RETIRED as defaults — TMJ Black♀38, putting Black♂42, Multiracial♀34 gym crop hang. Cast already covered; scenes weren’t Amari.',
+     note:'Use the new Hispanic / South Asian / East Asian generates instead.'},
 
-    {sec:'s5', id:'skip-sharp-testimonials', title:'Annie / Elise / Victor / Tyler', badge:'skip',
-     approach:'DONE — terri / nina / gregg / tyler JPGs wired on /stories.',
-     note:'Old Elise+Tyler avatar card is obsolete.'},
+    {sec:'s4', id:'park-white-gen', title:'Extra White generate this round', badge:'skip',
+     approach:'White already plurality in KEEP (~8). No new White prompt until Asian·Hispanic gaps close.',
+     note:'Old clothed white-woman-36 shoulders draft superseded by asn-woman-48-shoulders.'},
 
-    {sec:'s5', id:'skip-sciatica-hedge', title:'Sciatica hedge regen', badge:'skip',
-     approach:'REJECTED 7/12 — hedge is just a green wall; composition problem unchanged.',
-     note:'Current sciatica-man-wht50.jpg stays unless you change scene+moment, not backdrop only.'},
+    {sec:'s4', id:'skip-heroes', title:'Unique page heroes', badge:'skip',
+     approach:'DONE — home cedar, how-it-works, first-visit, booking, conditions, journal, partner, living-practice, virtual, in-person, condition heroes.',
+     note:'Do not regenerate.'},
 
-    {sec:'s5', id:'skip-neck-driveway', title:'Neck driveway / car regen', badge:'skip',
-     approach:'REJECTED 7/12 — cars read fake.',
-     note:'Never use the old neck-driveway prompt.'},
+    {sec:'s4', id:'skip-partner', title:'Partner tiles', badge:'skip',
+     approach:'DONE — trainer, coach, yoga, movement wired.',
+     note:'Closed.'},
 
-    {sec:'s5', id:'skip-explainers', title:'jh-stretching / myofascial / psoas', badge:'skip',
-     approach:'GOOD ENOUGH — keep as journal explainers.',
-     note:'No regen.'},
+    {sec:'s4', id:'skip-sharp-testimonials', title:'Annie / Elise / Victor / Tyler', badge:'skip',
+     approach:'DONE — sharp JPGs on /stories.',
+     note:'Obsolete avatar card.'},
+
+    {sec:'s4', id:'skip-sciatica-hedge', title:'Sciatica hedge regen', badge:'skip',
+     approach:'REJECTED — backdrop swap doesn’t fix composition.',
+     note:'sciatica-man-wht50.jpg stays.'},
+
+    {sec:'s4', id:'skip-neck-driveway', title:'Neck driveway / car regen', badge:'skip',
+     approach:'REJECTED — cars read fake.',
+     note:'Never reuse.'},
   ];
 
-  const BADGE_LABEL = {gen:'generate', refine:'refine base', wire:'wire only', resource:'re-source', skip:'skip'};
+  const BADGE_LABEL = {gen:'generate', wire:'wire only', resource:'re-source', skip:'parked'};
   const PRIO_LABEL = {p1:'P1', p2:'P2', p3:'P3'};
-  const LS = 'ffpack14-';
+  const LS = 'ffpack15gen-';
 
   function cardHtml(s){
     const label = BADGE_LABEL[s.badge];
@@ -381,10 +320,10 @@
     let thumbHtml;
     if(s.thumb){
       thumbHtml = `<div class="thumbwrap"><span class="badge ${s.badge}">${label}</span>${prioTag}`+
-        `<a href="${s.photoUrl||s.thumb}" target="_blank" rel="noopener" title="Open photo for Firefly"><img src="${s.thumb}" alt="${s.title}"></a></div>`;
+        `<a href="${s.photoUrl||s.thumb}" target="_blank" rel="noopener" title="Open photo"><img src="${s.thumb}" alt="${s.title}"></a></div>`;
     } else {
       thumbHtml = `<div class="thumbwrap"><span class="badge ${s.badge}">${label}</span>${prioTag}`+
-        `<div class="nothumb"><span class="icon">&#10022;</span><span>${s.badge==='skip'?'Skipped on purpose':'No preview · use prompt'}</span></div></div>`;
+        `<div class="nothumb"><span class="icon">&#10022;</span><span>${s.badge==='skip'?'Parked · no credits':'Pure generate · no attach'}</span></div></div>`;
     }
     let bodyHtml = '';
     if(s.cast) bodyHtml += `<p class="cast">${s.cast}</p>`;
@@ -403,7 +342,7 @@
   }
 
   function render(){
-    ['s1','s2','s3','s4','s5'].forEach(sec=>{
+    ['s1','s2','s3','s4'].forEach(sec=>{
       document.getElementById('grid-'+sec).innerHTML = SHOTS.filter(s=>s.sec===sec).map(cardHtml).join('');
     });
   }
@@ -412,11 +351,11 @@
     const done = actionable.filter(s=>localStorage.getItem(LS+s.id)==='1').length;
     document.getElementById('statusbar').innerHTML =
       `<b>${done} / ${actionable.length} done</b>`+
-      `<span class="pill"><span class="dot done"></span> refine ${SHOTS.filter(s=>s.badge==='refine').length}</span>`+
       `<span class="pill"><span class="dot" style="background:var(--plum)"></span> gen ${SHOTS.filter(s=>s.badge==='gen').length}</span>`+
       `<span class="pill"><span class="dot" style="background:var(--grey)"></span> wire ${SHOTS.filter(s=>s.badge==='wire').length}</span>`+
       `<span class="pill"><span class="dot" style="background:var(--gold)"></span> re-source ${SHOTS.filter(s=>s.badge==='resource').length}</span>`+
-      `<div class="jumpnav"><a href="#s1">1 Refine</a><a href="#s2">2 Gen</a><a href="#s3">3 Wire</a><a href="#s4">4 Re-source</a><a href="#s5">5 Skip</a></div>`;
+      `<span class="pill"><span class="dot done"></span> parked ${SHOTS.filter(s=>s.badge==='skip').length}</span>`+
+      `<div class="jumpnav"><a href="#cast">0 Cast</a><a href="#s1">1 Gen</a><a href="#s2">2 Wire</a><a href="#s3">3 Re-source</a><a href="#s4">4 Parked</a></div>`;
   }
   document.addEventListener('change', e=>{
     if(e.target.matches('input[type=checkbox][data-id]')){
