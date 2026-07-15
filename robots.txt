@@ -8,6 +8,7 @@ Disallow: /dist/
 Disallow: /member-agreement
 Disallow: /cdn-cgi/
 Disallow: /api/
+Disallow: /field-signup
 
 # AI search bots — explicitly allowed for citation
 User-agent: GPTBot
