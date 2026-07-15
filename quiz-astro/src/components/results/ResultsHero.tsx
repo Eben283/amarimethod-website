@@ -28,7 +28,7 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
       </h1>
 
       <p className="hero-sub">
-        Your readings show a body that <em>can rebalance</em> — it just hasn't been given the right input to start.
+        Your readings show a body that <em>can rebalance</em>. It just hasn't been given the right input to start.
       </p>
 
       <div className="hero-meta">

@@ -29,3 +29,7 @@ jobs:
       # (which require a committed lockfile) can't be used here.
       - run: npm install
       - run: npm test
+      # Advisory source scan: fails the job if a raw money/session field-ID literal
+      # leaked outside functions/lib/ghl-fields.js. Belt-and-suspenders to the daily
+      # local --beat run (which feeds /day) — CI going red on a stray literal is fine.
+      - run: npm run check:field-ids

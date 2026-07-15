@@ -1,810 +1,332 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Field Notes · Amari Method</title>
-  <meta name="description" content="Notes on moving better, from the practice. Exercise breakdowns and pain mechanics from Garrett Hewstan — the Amari Method, San Francisco.">
-  <meta property="og:title" content="Field Notes · Amari Method">
-  <meta property="og:description" content="Notes on moving better, from the practice. Exercise breakdowns and pain mechanics from Garrett Hewstan.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/blog">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Field Notes · Amari Method">
-  <meta name="twitter:description" content="Notes on moving better, from the practice.">
-  <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Notes on moving better from the Amari Method in San Francisco. How your pain patterns actually work, and the protocols that unwind them at home.">
+<link rel="canonical" href="https://www.amarimethod.com/blog">
 
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/blog">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Field Notes · Amari Method</title>
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/blog">
+<meta property="og:title" content="Field Notes · Amari Method">
+<meta property="og:description" content="Notes on moving better from the Amari Method in San Francisco. How your pain patterns actually work, and the protocols that unwind them at home.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/blog">
+<meta name="twitter:title" content="Field Notes · Amari Method">
+<meta name="twitter:description" content="Notes on moving better from the Amari Method in San Francisco. How your pain patterns actually work, and the protocols that unwind them at home.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<style>
+  /* ---------- Journal-page-specific styles ---------- */
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  /* Featured hero article — contained, not full dvh; bottom-left overlay */
+  .hero.journal-hero{min-height:640px;justify-content:flex-start;align-items:flex-end;text-align:left;padding-bottom:0}
+  .journal-hero .hero-inner{max-width:640px;padding:0 0 clamp(48px,6vw,72px) clamp(24px,5vw,56px);margin:0}
+  .journal-hero .hero-inner h1{font-size:clamp(2rem,4vw,3.4rem);max-width:18ch;margin:0}
+  .journal-hero .eyebrow{margin-bottom:16px}
+  .read-link{display:inline-flex;align-items:center;gap:10px;margin-top:26px;font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#fff;border-bottom:1px solid rgba(255,255,255,.6);padding-bottom:4px}
+  .read-link .arrow{transition:transform .3s var(--ease)}
+  .read-link:hover .arrow{transform:translateX(5px)}
+  .read-link.dark{color:var(--ink);border-color:var(--ink)}
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
+  /* Section heads (shared pattern, centered) */
+  .sec-head{text-align:center;margin-bottom:clamp(40px,5vw,60px)}
+  .sec-head .eyebrow{display:block;margin-bottom:14px}
+  .sec-head h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:500}
 
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    "name": "Field Notes · Amari Method",
-    "description": "Notes on moving better, from the practice. Exercise breakdowns and pain mechanics from Garrett Hewstan.",
-    "url": "https://www.amarimethod.com/blog",
-    "publisher": {
-      "@type": "Organization",
-      "name": "Amari Method",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://www.amarimethod.com/images/AmariLogo.avif"
-      }
-    }
+  /* Explore the Journal — row of small category thumbnails */
+  .explore{padding:clamp(56px,6vw,80px) 0 clamp(40px,5vw,60px)}
+  .explore-row{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+  .explore-item{text-align:center;cursor:pointer}
+  .explore-thumb{aspect-ratio:1/1;border-radius:50%;overflow:hidden;background:var(--cream-2);margin:0 auto 14px;max-width:132px}
+  .explore-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
+  .explore-item:hover .explore-thumb img{transform:scale(1.08)}
+  .explore-item span{font-family:var(--sans);font-weight:600;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+
+  /* Post card (shared shape for Featured + Latest grids) */
+  .post-card{cursor:pointer}
+  .post-photo{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;margin-bottom:18px;background:var(--cream-2)}
+  .post-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
+  .post-card:hover .post-photo img{transform:scale(1.045)}
+  .post-card .cat{display:block;margin-bottom:10px}
+  .post-card h3{font-weight:500;line-height:1.2}
+
+  /* Featured — 3-col grid, 6 cards */
+  .featured{padding:clamp(56px,6vw,90px) 0}
+  .featured-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(28px,3vw,44px) clamp(24px,3vw,36px)}
+  .featured-grid .post-card h3{font-size:clamp(1.35rem,1.9vw,1.65rem)}
+
+  /* At-home band — 2-up wide, overlaid titles */
+  .home-band{padding:clamp(24px,4vw,48px) 0 clamp(64px,7vw,96px)}
+  .home-tiles{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .home-tile{position:relative;aspect-ratio:5/4;overflow:hidden;background:var(--cream-2)}
+  .home-tile img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s var(--ease)}
+  .home-tile:hover img{transform:scale(1.05)}
+  .home-tile::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,transparent 46%,rgba(20,16,13,.56))}
+  .home-tile .cap{position:absolute;left:28px;right:28px;bottom:26px;z-index:2}
+  .home-tile .cap .eyebrow.light{display:block;margin-bottom:10px}
+  .home-tile .cap h3{color:#fff;font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:500;max-width:18ch}
+
+  /* Latest Posts — 4-col grid, 16 cards */
+  .latest{padding:clamp(56px,6vw,90px) 0}
+  .latest-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(24px,2.6vw,34px) clamp(20px,2.4vw,28px)}
+  .latest-grid .post-card h3{font-size:clamp(1.05rem,1.3vw,1.22rem)}
+  .load-more{text-align:center;margin-top:clamp(48px,6vw,68px)}
+
+  @media (prefers-reduced-motion:reduce){.post-photo img,.home-tile img,.explore-thumb img{transition:none!important}}
+  @media (max-width:1000px){
+    .explore-row{grid-template-columns:repeat(3,1fr)}
+    .featured-grid{grid-template-columns:1fr 1fr}
+    .latest-grid{grid-template-columns:1fr 1fr}
+    .home-tiles{grid-template-columns:1fr}
   }
-  </script>
-  <!-- Microsoft Clarity -->
-  <script type="text/javascript">
+  @media (max-width:640px){
+    .explore-row{grid-template-columns:repeat(2,1fr)}
+    .featured-grid{grid-template-columns:1fr}
+    .latest-grid{grid-template-columns:1fr}
+    .journal-hero .hero-inner{padding-left:22px;padding-right:22px}
+  }
+</style>
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
-  </script>
-
-  <style>
-    /* Editorial blog index — scoped under main.field-notes to avoid conflicts with style-v5.css */
-    main.field-notes {
-      --paper: var(--bg-primary, #f5efe8);
-      --paper-2: var(--bg-secondary, #f0e9d8);
-      --ink: var(--color-text, #1d1d1d);
-      --ink-2: var(--color-text-secondary, #3a3733);
-      --mute: var(--color-text-muted, #7a746b);
-      --line: var(--color-border, #e0d7c2);
-      --line-2: #ccc1a8;
-      --accent: var(--color-accent-warm, #EBA584);
-      --display: 'Bona Nova', Georgia, serif;
-      --sans: 'DM Sans', system-ui, sans-serif;
-      --mono: ui-monospace, 'JetBrains Mono', monospace;
-      background: var(--paper);
-      color: var(--ink);
-      font-family: var(--sans);
-      font-size: 17px;
-      line-height: 1.55;
-      display: block;
-    }
-    main.field-notes a { color: inherit; text-decoration: none; }
-    main.field-notes h1, main.field-notes h2, main.field-notes h3 {
-      font-family: var(--display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.04;
-      color: var(--ink); text-wrap: balance;
-    }
-    main.field-notes h1 em, main.field-notes h2 em, main.field-notes h3 em { font-style: italic; color: var(--accent); }
-    main.field-notes p { text-wrap: pretty; }
-    main.field-notes img { display: block; max-width: 100%; }
-
-    /* Masthead */
-    main.field-notes .masthead {
-      max-width: 1360px; margin: 0 auto; padding: 40px 32px 20px;
-      display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px;
-      border-bottom: 1px solid var(--line);
-    }
-    main.field-notes .masthead .kick { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); }
-    main.field-notes .masthead .issue { font-family: var(--display); font-style: italic; font-size: 18px; color: var(--ink); text-align: center; }
-    main.field-notes .masthead .dateline { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute); text-align: right; }
-
-    /* Index head */
-    main.field-notes .index-head {
-      max-width: 1360px; margin: 0 auto; padding: 80px 32px 64px;
-      display: grid; grid-template-columns: 1.4fr 1fr; gap: 80px; align-items: end;
-      border-bottom: 1px solid var(--line);
-    }
-    main.field-notes .index-head h1 {
-      font-size: clamp(56px, 8vw, 132px); font-weight: 300; letter-spacing: -0.04em;
-      line-height: .92; max-width: 14ch;
-    }
-    main.field-notes .index-head .lede {
-      font-family: var(--display); font-size: 22px; line-height: 1.5; color: var(--ink-2);
-      max-width: 38ch; font-weight: 400;
-    }
-    main.field-notes .index-head .lede em { color: var(--accent); font-style: italic; }
-
-    /* Topic pills */
-    main.field-notes .topics {
-      max-width: 1360px; margin: 0 auto; padding: 32px 32px 32px;
-      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-      border-bottom: 1px solid var(--line);
-    }
-    main.field-notes .topics .label {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
-      color: var(--mute); margin-right: 16px;
-    }
-    main.field-notes .topic {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
-      padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px;
-      color: var(--ink-2); cursor: pointer; transition: all .2s; background: transparent; font-weight: 500;
-    }
-    main.field-notes .topic:hover { border-color: var(--ink); color: var(--ink); }
-    main.field-notes .topic.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-    main.field-notes .topic .ct { margin-left: 8px; color: var(--mute); font-weight: 400; }
-    main.field-notes .topic.on .ct { color: #c9bea9; }
-
-    /* Featured (Garrett's pick) */
-    main.field-notes .feature {
-      max-width: 1360px; margin: 0 auto; padding: 96px 32px 96px;
-      border-bottom: 1px solid var(--line);
-    }
-    main.field-notes .feature-inner { display: grid; grid-template-columns: 1.3fr 1fr; gap: 80px; align-items: start; }
-    main.field-notes .feature .photo { aspect-ratio: 4/3; background: var(--paper-2); overflow: hidden; position: relative; }
-    main.field-notes .feature .photo img { width: 100%; height: 100%; object-fit: cover; }
-    main.field-notes .feature .photo .badge {
-      position: absolute; top: 24px; left: 24px;
-      background: var(--ink); color: var(--paper);
-      font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
-      padding: 8px 14px; font-weight: 500;
-    }
-    main.field-notes .feature .body { padding-top: 8px; }
-    main.field-notes .feature .meta {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--mute); margin-bottom: 24px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
-    }
-    main.field-notes .feature .meta .cat { color: var(--accent); }
-    main.field-notes .feature .meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line-2); }
-    main.field-notes .feature h2 {
-      font-size: clamp(36px, 4.4vw, 60px); font-weight: 300; letter-spacing: -0.025em;
-      line-height: 1.02; margin: 0 0 24px;
-    }
-    main.field-notes .feature h2 a:hover { color: var(--accent); transition: color .25s; }
-    main.field-notes .feature .dek {
-      font-family: var(--display); font-size: 22px; line-height: 1.5; color: var(--ink-2);
-      margin-bottom: 32px; font-weight: 400; max-width: 38ch;
-    }
-    main.field-notes .feature .byline {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--mute); padding-top: 24px; border-top: 1px solid var(--line);
-      display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
-    }
-    main.field-notes .feature .byline b { color: var(--ink); font-weight: 600; letter-spacing: .12em; }
-    main.field-notes .feature .read-more {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--ink); font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
-    }
-    main.field-notes .feature .read-more:hover { color: var(--accent); }
-    main.field-notes .feature .read-more .arrow { transition: transform .25s; }
-    main.field-notes .feature .read-more:hover .arrow { transform: translateX(3px); }
-
-    /* Index list */
-    main.field-notes .index { max-width: 1360px; margin: 0 auto; padding: 0 32px; }
-    main.field-notes .index-section-head {
-      display: grid; grid-template-columns: 1fr auto; align-items: end;
-      padding: 80px 0 40px; gap: 24px; border-bottom: 1px solid var(--line);
-    }
-    main.field-notes .index-section-head h3 { font-size: clamp(28px, 3vw, 40px); font-weight: 300; letter-spacing: -0.02em; }
-    main.field-notes .index-section-head .count {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mute);
-    }
-    main.field-notes .article-row {
-      display: grid; grid-template-columns: 280px 1fr auto; gap: 48px; align-items: start;
-      padding: 36px 0; border-bottom: 1px solid var(--line);
-      transition: padding .3s, background .3s; position: relative;
-    }
-    main.field-notes .article-row::before {
-      content: ""; position: absolute; left: -32px; right: -32px; top: 0; bottom: 0;
-      background: transparent; transition: background .3s; pointer-events: none; z-index: 0;
-    }
-    main.field-notes .article-row > * { position: relative; z-index: 1; }
-    main.field-notes .article-row:hover { padding-left: 8px; padding-right: 8px; }
-    main.field-notes .article-row:hover::before { background: var(--paper-2); }
-    main.field-notes .article-row .photo { aspect-ratio: 4/3; background: var(--paper-2); overflow: hidden; }
-    main.field-notes .article-row .photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s; }
-    main.field-notes .article-row:hover .photo img { transform: scale(1.04); }
-    main.field-notes .article-row .body { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
-    main.field-notes .article-row .meta {
-      font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--mute); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
-    }
-    main.field-notes .article-row .meta .cat { color: var(--accent); font-weight: 500; }
-    main.field-notes .article-row .meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--line-2); }
-    main.field-notes .article-row h3 {
-      font-size: clamp(24px, 2.2vw, 32px); font-weight: 300; letter-spacing: -0.02em;
-      line-height: 1.1; margin: 0;
-    }
-    main.field-notes .article-row:hover h3 { color: var(--accent); transition: color .25s; }
-    main.field-notes .article-row .dek { font-size: 16px; line-height: 1.55; color: var(--ink-2); max-width: 60ch; margin-top: 6px; }
-    main.field-notes .article-row .arrow-cell {
-      font-family: var(--display); font-size: 48px; font-weight: 300; color: var(--line-2);
-      align-self: center; transition: color .3s, transform .3s; line-height: 1;
-    }
-    main.field-notes .article-row:hover .arrow-cell { color: var(--accent); transform: translateX(8px); }
-
-    /* Assessment band */
-    main.field-notes .assessment {
-      background: var(--paper-2);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      margin-top: 120px;
-    }
-    main.field-notes .assessment-inner {
-      max-width: 1360px; margin: 0 auto; padding: 0;
-      display: grid; grid-template-columns: 5fr 7fr; min-height: 520px;
-    }
-    main.field-notes .assessment .photo {
-      background: var(--paper); position: relative; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; padding: 64px 48px;
-      border-right: 1px solid var(--line);
-    }
-    main.field-notes .assessment .photo img { width: 100%; max-width: 360px; height: auto; box-shadow: 0 20px 60px rgba(58,55,51,.18); border-radius: 4px; }
-    main.field-notes .assessment .body { padding: 96px 80px; display: flex; flex-direction: column; justify-content: center; gap: 28px; }
-    main.field-notes .assessment .body .eyebrow {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
-      color: var(--mute); display: inline-flex; align-items: center; gap: 10px;
-    }
-    main.field-notes .assessment .body .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--mute); }
-    main.field-notes .assessment .body h2 { font-size: clamp(32px, 4vw, 52px); font-weight: 300; letter-spacing: -0.025em; line-height: 1.05; max-width: 18ch; }
-    main.field-notes .assessment .body p { font-size: 18px; line-height: 1.55; color: var(--ink-2); max-width: 52ch; }
-    main.field-notes .assessment .body ul { list-style: none; display: flex; flex-direction: column; gap: 14px; margin: 8px 0 0; padding: 0; }
-    main.field-notes .assessment .body ul li { font-size: 15px; color: var(--ink); display: flex; gap: 14px; align-items: flex-start; }
-    main.field-notes .assessment .body ul li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 8px; flex-shrink: 0; }
-    main.field-notes .assessment .body .actions { display: flex; gap: 16px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
-    main.field-notes .assessment .body .actions .btn {
-      display: inline-flex; align-items: center; gap: 10px; padding: 16px 26px;
-      background: var(--ink); color: var(--paper) !important;
-      border-radius: 999px; font-family: var(--sans); font-size: 15px; font-weight: 500;
-      transition: transform .25s, background .25s; border: 0;
-    }
-    main.field-notes .assessment .body .actions .btn:hover { background: var(--accent); transform: translateY(-1px); }
-    main.field-notes .assessment .body .actions .btn .arrow { transition: transform .25s; }
-    main.field-notes .assessment .body .actions .btn:hover .arrow { transform: translateX(3px); }
-    main.field-notes .assessment .body .secondary {
-      font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--mute); border-bottom: 1px solid var(--line-2); padding-bottom: 2px;
-    }
-    main.field-notes .assessment .body .secondary:hover { color: var(--ink); border-color: var(--ink); }
-
-    /* Bottom CTA */
-    main.field-notes .field-cta { padding: 120px 32px; background: var(--ink); text-align: center; position: relative; overflow: hidden; }
-    main.field-notes .field-cta::before {
-      content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 30%, rgba(235,165,132,.18), transparent 60%);
-    }
-    main.field-notes .field-cta-inner { position: relative; max-width: 760px; margin: 0 auto; }
-    main.field-notes .field-cta h2 { color: var(--paper); font-size: clamp(36px, 5vw, 64px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.05; margin: 0 auto; }
-    main.field-notes .field-cta h2 em { font-style: italic; color: #E8A38A; }
-    main.field-notes .field-cta p { color: #c9bea9; font-size: 18px; margin: 24px auto 0; max-width: 50ch; line-height: 1.5; }
-    main.field-notes .field-cta-actions { margin-top: 40px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    main.field-notes .field-cta .btn-light {
-      display: inline-flex; align-items: center; gap: 10px; padding: 16px 24px;
-      background: var(--paper); color: var(--ink); border-radius: 999px;
-      font-size: 15px; font-weight: 500; transition: all .25s;
-    }
-    main.field-notes .field-cta .btn-light:hover { background: var(--accent); color: var(--paper); transform: translateY(-1px); }
-    main.field-notes .field-cta .btn-outline {
-      display: inline-flex; align-items: center; gap: 10px; padding: 16px 24px;
-      border: 1px solid rgba(247,242,232,.3); color: var(--paper); border-radius: 999px;
-      font-size: 15px; font-weight: 500; transition: all .25s;
-    }
-    main.field-notes .field-cta .btn-outline:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-    main.field-notes .field-cta .arrow { transition: transform .25s; }
-    main.field-notes .field-cta .btn-light:hover .arrow,
-    main.field-notes .field-cta .btn-outline:hover .arrow { transform: translateX(3px); }
-
-    /* Hidden state for filtered articles */
-    main.field-notes .article-row.hidden, main.field-notes .feature.hidden { display: none; }
-
-    /* Responsive */
-    @media (max-width: 1100px) {
-      main.field-notes .index-head { grid-template-columns: 1fr; gap: 40px; padding: 64px 32px 48px; }
-      main.field-notes .feature-inner { grid-template-columns: 1fr; gap: 40px; }
-      main.field-notes .article-row { grid-template-columns: 200px 1fr auto; gap: 32px; }
-      main.field-notes .article-row .arrow-cell { display: none; }
-      main.field-notes .assessment-inner { grid-template-columns: 1fr; }
-      main.field-notes .assessment .photo { padding: 64px; min-height: 360px; }
-      main.field-notes .assessment .body { padding: 64px 32px; }
-    }
-    @media (max-width: 720px) {
-      main.field-notes .masthead { display: none; }
-      main.field-notes .index-head h1 { font-size: clamp(40px, 11vw, 72px); }
-      main.field-notes .feature { padding: 48px 32px; }
-      main.field-notes .article-row { grid-template-columns: 1fr; gap: 20px; padding: 28px 0; }
-      main.field-notes .article-row .photo { aspect-ratio: 16/9; }
-      main.field-notes .index-section-head { padding: 48px 0 24px; }
-    }
-  </style>
+</script>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- FEATURED ARTICLE -->
+<section class="hero journal-hero">
+  <div class="hero-bg" style="background-image:url('/images/photos/journal-woman-asn37.jpg');background-position:right center"></div>
+  <div class="hero-inner">
+    <span class="eyebrow light">Posture</span>
+    <h1>Power Posture: undo the damage from sitting all day</h1>
+    <a href="/blog-power-posture-shoulder-blades" class="read-link">Read article <span class="arrow">&rarr;</span></a>
+  </div>
+</section>
+
+<!-- EXPLORE THE JOURNAL -->
+<section class="explore">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Browse by topic</span>
     </div>
-  </nav>
-
-  <main class="field-notes">
-
-    <div class="masthead">
-      <div class="kick"></div>
-      <div class="issue">Field Notes from the Practice</div>
-      <div class="dateline" id="dateline">Loading…</div>
+    <div class="explore-row">
+      <a class="explore-item reveal" href="/how-it-works">
+        <div class="explore-thumb" style="background:var(--tan)"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
+        <span>Protocols</span>
+      </a>
+      <a class="explore-item reveal" style="transition-delay:.05s" href="/blog-why-myofascial-release-doesnt-work">
+        <div class="explore-thumb" style="background:var(--sage)"><img src="/images/photos/jh-myofascial.jpg" alt="" onerror="this.remove()"></div>
+        <span>Mechanics</span>
+      </a>
+      <a class="explore-item reveal" style="transition-delay:.1s" href="/conditions">
+        <div class="explore-thumb" style="background:var(--peach)"><img src="/images/photos/knee-man-his44-window.jpg" alt="" onerror="this.remove()"></div>
+        <span>Where It Hurts</span>
+      </a>
+      <a class="explore-item reveal" style="transition-delay:.15s" href="/conditions">
+        <div class="explore-thumb" style="background:#E7D8C4"><img src="/images/photos/hip-woman-wht60-doorway.jpg" alt="" onerror="this.remove()"></div>
+        <span>Conditions</span>
+      </a>
+      <a class="explore-item reveal" style="transition-delay:.2s" href="/about">
+        <div class="explore-thumb" style="background:#B98E63"><img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()"></div>
+        <span>The Method</span>
+      </a>
+      <a class="explore-item reveal" style="transition-delay:.25s" href="/blog-power-posture-shoulder-blades">
+        <div class="explore-thumb" style="background:#A88F73"><img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()"></div>
+        <span>Posture</span>
+      </a>
     </div>
+  </div>
+</section>
 
-    <section class="index-head">
-      <h1>Notes on <em>moving better,</em> from the practice.</h1>
-      <p class="lede">Exercise breakdowns, body mechanics, and observations from twenty-five years of hands-on work. <em>These guides introduce the method.</em> The actual change happens in session.</p>
-    </section>
-
-    <!-- Topic filter — restored from earlier blog version -->
-    <div class="topics" id="topics" role="tablist" aria-label="Filter articles by topic">
-      <span class="label">Filter</span>
-      <button class="topic on" data-filter="all" role="tab" aria-selected="true">All <span class="ct">26</span></button>
-      <button class="topic" data-filter="exercises" role="tab" aria-selected="false">Protocols <span class="ct">11</span></button>
-      <button class="topic" data-filter="conditions" role="tab" aria-selected="false">Reading <span class="ct">6</span></button>
-      <button class="topic" data-filter="locations" role="tab" aria-selected="false">Where it hurts <span class="ct">9</span></button>
+<!-- FEATURED — 3-col grid, 6 cards -->
+<section class="featured">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>Featured</h2>
     </div>
-
-    <article class="feature">
-      <div class="feature-inner">
-        <a href="blog-power-posture-shoulder-blades" class="photo">
-          <span class="badge">Garrett's pick</span>
-          <img src="images/power-posture.webp" alt="Power posture protocol — squeezing shoulder blades together to correct forward-leaning posture" loading="lazy">
-        </a>
-        <div class="body">
-          <div class="meta">
-            <span class="cat">Posture</span>
-            <span class="dot"></span>
-            <span>5 min read</span>
-            <span class="dot"></span>
-            <span class="meta-date" data-month-offset="0"></span>
-          </div>
-          <h2><a href="blog-power-posture-shoulder-blades">Power Posture: undo the damage from <em>sitting all day.</em></a></h2>
-          <p class="dek">There's a massive over-flexion problem. Your back muscles are working too hard because the front isn't working enough. Power Posture corrects that, in two minutes a day, anywhere.</p>
-          <div class="byline">
-            <span>By <b>Garrett Hewstan</b></span>
-            <a class="read-more" href="blog-power-posture-shoulder-blades"><span>Read the full piece</span><span class="arrow">→</span></a>
-          </div>
-        </div>
-      </div>
-    </article>
-
-    <section class="index">
-
-      <div class="index-section-head">
-        <h3>The <em>protocols.</em></h3>
-        <span class="count">11 entries</span>
-      </div>
-
-      <a class="article-row" href="blog-suspension-squat-hanging-exercises" data-topic="exercises">
-        <div class="photo"><img src="images/hands-on-rings-landscape.webp" alt="Hands gripping gymnastics rings demonstrating suspension squat hanging protocols for grip strength and body alignment" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>9 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Suspension squat: hanging protocols that <em>cascade through your chain.</em></h3>
-          <p class="dek">Hanging awakens your posterior chain through the domino effect. Grip strength cascades through your entire body, pulling shoulders, ribcage, and pelvis back into alignment without you having to think about it.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+    <div class="featured-grid">
+      <a href="/blog-why-deep-tissue-doesnt-last" class="post-card reveal">
+        <div class="post-photo" style="background:var(--tan)"><img src="/images/v6/real/garrett-session-img-3348.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Mechanics</span>
+        <h3>Why deep tissue massage doesn't last</h3>
       </a>
-
-      <a class="article-row" href="blog-hand-balancer-carpal-tunnel" data-topic="exercises">
-        <div class="photo"><img src="images/hand-balancer.webp" alt="Hand balancer protocol demonstration for carpal tunnel relief and hand pain treatment" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>The hand balancer: a fix for <em>carpal tunnel</em> the wrist brace can't reach.</h3>
-          <p class="dek">Hand muscle imbalance, not the median nerve, is what causes most carpal tunnel. Restore flexor-extensor balance and the compression resolves on its own.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+      <a href="/blog-why-myofascial-release-doesnt-work" class="post-card reveal" style="transition-delay:.05s">
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/photos/jh-myofascial.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Mechanics</span>
+        <h3>Why myofascial release doesn't hold</h3>
       </a>
-
-      <a class="article-row" href="blog-vertical-drop-spine-decompression" data-topic="exercises">
-        <div class="photo"><img src="images/vertical-drop.webp" alt="Vertical drop protocol for spine decompression and shoulder tension relief" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Vertical drop: <em>decompress the spine</em> in ninety seconds.</h3>
-          <p class="dek">Release decades of compression and shoulder tension with locked-elbow hanging. Your vertebrae self-adjust as the spine decompresses. Gravity does the work.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+      <a href="/blog-sciatica-relief" class="post-card reveal" style="transition-delay:.1s">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/sciatica-man-wht50.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Sciatica isn't a nerve problem. It's a pattern problem</h3>
       </a>
-
-      <a class="article-row" href="blog-passive-bridge-mobility" data-topic="exercises">
-        <div class="photo"><img src="images/passive-bridge.webp" alt="Passive bridge protocol for restoring spinal mobility" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>9 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>The passive bridge: a moving meditation for <em>tight, restricted bodies.</em></h3>
-          <p class="dek">Yoga block under the sacrum. Five minutes a day. Restores spinal mobility decade by decade, slowly enough that nothing fights back, deeply enough that something actually shifts.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+      <a href="/blog-jaw-align-tmj-relief" class="post-card reveal" style="transition-delay:.15s">
+        <div class="post-photo" style="background:#E7D8C4"><img src="/images/v6/real/jaw-align.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pattern</span>
+        <h3>TMJ pain rarely starts in the jaw</h3>
       </a>
-
-      <a class="article-row" href="blog-active-bridge-strength" data-topic="exercises">
-        <div class="photo"><img src="images/active-bridge.webp" alt="Active bridge protocol for building spinal strength and stabilizing joints" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>The active bridge: <em>build spinal strength</em> by doing the opposite of sitting.</h3>
-          <p class="dek">Where the passive bridge releases, the active bridge re-strengthens. Stabilize loose joints by training the exact opposite movement pattern your chair has trained for fifteen years.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+      <a href="/blog-elbow-reset-tennis-elbow" class="post-card reveal" style="transition-delay:.2s">
+        <div class="post-photo" style="background:#B98E63"><img src="/images/v6/real/elbow-reset.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
       </a>
-
-      <a class="article-row" href="blog-spinal-wave-gentle-decompression" data-topic="exercises">
-        <div class="photo"><img src="images/spinal-wave.webp" alt="Spinal wave protocol for gentle spinal decompression and hip release" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>The spinal wave: <em>gentle decompression</em> that resets the lower back.</h3>
-          <p class="dek">A foam roller, a few minutes, and a wave that does what stretching can't. Reverses the compression sitting creates without forcing anything.</p>
-        </div>
-        <span class="arrow-cell">→</span>
+      <a href="/blog-back-pain-from-sitting" class="post-card reveal" style="transition-delay:.25s">
+        <div class="post-photo" style="background:#A88F73"><img src="/images/photos/condition-base/lower-back-refined.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Lower back pain: a pelvic and hip problem</h3>
       </a>
-
-      <a class="article-row" href="blog-spring-step-calf-ankle" data-topic="exercises">
-        <div class="photo"><img src="images/spring-step.webp" alt="Spring step protocol for calf and ankle decompression and plantar fasciitis relief" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>7 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Spring step: how the <em>ankle's lymph pump</em> reaches everything above it.</h3>
-          <p class="dek">Tight calves and weak ankles affect your whole kinetic chain, including your back. Reawaken the bouncing motion in your heel that flat shoes and flat surfaces have suppressed.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-elbow-reset-tennis-elbow" data-topic="exercises">
-        <div class="photo"><img src="images/elbow-reset.webp" alt="Elbow reset protocol demonstration showing proper forearm rotation technique for tennis elbow relief" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>6 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>The elbow reset: a fix for <em>tennis elbow and golfer's elbow,</em> without rest, braces, or shots.</h3>
-          <p class="dek">The forearm imbalance behind tendonitis and overuse injuries. Targets the actual mechanic, not the inflammation.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-jaw-align-tmj-relief" data-topic="exercises">
-        <div class="photo"><img src="images/jaw-align.webp" alt="Jaw align protocol demonstration showing proper technique for TMJ relief" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Protocol</span><span class="dot"></span><span>6 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Jaw Align: <em>A Simple Protocol that Resolves TMJ Disorder</em></h3>
-          <p class="dek">TMJ pain comes from jaw muscle imbalance, not the joint itself. Every client who's come in with TMJ has reversed it with this one protocol.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-putting-it-all-together" data-topic="exercises">
-        <div class="photo"><img src="images/putting-it-all-together.webp" alt="Putting the Amari Method together" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Method</span><span class="dot"></span><span>10 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Putting it all together: building your <em>own daily practice.</em></h3>
-          <p class="dek">How the eight protocols work as a system, and how to build a practice that fits your body, your time, and the specific patterns keeping pain around.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <div class="index-section-head">
-        <h3>The <em>thinking.</em></h3>
-        <span class="count">6 entries</span>
-      </div>
-
-      <a class="article-row" href="blog-why-deep-tissue-doesnt-last" data-topic="conditions">
-        <div class="body">
-          <div class="meta"><span class="cat">Mechanics</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Why deep tissue massage <em>doesn't last.</em></h3>
-          <p class="dek">Pressure-based bodywork lengthens tissue and changes blood flow. Within a few days the same patterns reload it. Why the cycle becomes the practice, and what changes the load instead.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-why-myofascial-release-doesnt-work" data-topic="conditions">
-        <div class="body">
-          <div class="meta"><span class="cat">Mechanics</span><span class="dot"></span><span>8 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Why myofascial release <em>doesn't hold.</em></h3>
-          <p class="dek">Fascia softens, you walk out looser, the tightness returns within a day or two. Why MFR fades, and what's actually loading the fascia upstream.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-why-psoas-tightens-back" data-topic="conditions">
-        <div class="body">
-          <div class="meta"><span class="cat">Mechanics</span><span class="dot"></span><span>7 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Why the psoas <em>keeps tightening back.</em></h3>
-          <p class="dek">The psoas is the messenger, not the source. If it's chronically tight, something else stopped doing its job. Here's what's actually happening upstream.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-back-pain-from-sitting" data-topic="conditions">
-        <div class="photo"><img src="images/back-pain-from-sitting.webp" alt="Office chair and back pain from prolonged sitting" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Conditions</span><span class="dot"></span><span>9 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Why your back hurts when you <em>sit,</em> and what's actually happening.</h3>
-          <p class="dek">Spinal compression and tight hip flexors, not weakness. Here's what's actually happening to your back at hour four, and how to fix the cause, not the symptom.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-sciatica-relief" data-topic="conditions">
-        <div class="photo"><img src="images/sciatica-relief.webp" alt="Foam roller used for sciatica relief at home" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Conditions</span><span class="dot"></span><span>9 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Sciatica isn't a nerve problem. It's a <em>muscle imbalance problem.</em></h3>
-          <p class="dek">What's really causing the shooting pain down your leg, and why the standard playbook (rest, stretch, ice) doesn't fix it.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="blog-stretching-not-helping" data-topic="conditions">
-        <div class="photo"><img src="images/stretching-not-helping.webp" alt="Resistance bands — when stretching alone isn't relieving back pain" loading="lazy"></div>
-        <div class="body">
-          <div class="meta"><span class="cat">Mechanics</span><span class="dot"></span><span>7 min read</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Why stretching <em>doesn't fix</em> what stretching is supposed to fix.</h3>
-          <p class="dek">If a muscle's tight every morning by 9am, it's not short. It's compensating. Stretching a compensator is like draining a flooded basement without finding the leak.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <div class="index-section-head">
-        <h3>Where it <em>hurts.</em></h3>
-        <span class="count">9 entries</span>
-      </div>
-
-      <a class="article-row" href="lower-back-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Lower back pain: a <em>pelvic and hip</em> problem.</h3>
-          <p class="dek">Something is working too hard because something else isn't working enough. Find where you're out of balance and learn to correct it yourself.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="neck-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Neck pain is almost always a <em>shoulder-blade</em> problem.</h3>
-          <p class="dek">Something below your neck is out of position, and your neck is absorbing the load. Change the upstream pattern and the neck stops bracing.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="shoulder-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Shoulder pain that doesn't respond <em>to rest.</em></h3>
-          <p class="dek">A shoulder-blade and upper-back problem. The shoulder absorbs forces it was never designed to carry alone, until the upstream pattern changes.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="hip-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Hip pain is a <em>pelvic positioning</em> problem.</h3>
-          <p class="dek">The hip joint is compressed because the structures around it are out of balance. Change the pattern, the joint decompresses on its own.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="knee-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Knee pain is almost always a <em>hip</em> problem.</h3>
-          <p class="dek">The knee is caught in the middle, absorbing forces it was never designed to handle alone. Find what's actually loading it.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="sciatica-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pattern</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Sciatica isn't a nerve problem. It's <em>compression.</em></h3>
-          <p class="dek">Find where your sciatic nerve is being squeezed, usually upstream in your hip or pelvis, and change the pattern that's compressing it.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="tmj-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pattern</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>TMJ pain rarely <em>starts in the jaw.</em></h3>
-          <p class="dek">Most TMJ comes from upstream tension in the neck, shoulders, and upper back. Change the pattern loading your jaw and it stops bracing.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="plantar-fasciitis-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Pain</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>Plantar fasciitis is a <em>load</em> problem.</h3>
-          <p class="dek">The foot is adapting to a load it shouldn't carry. Find why your foot is taking on more than its share, whether calf, ankle, or hip mechanics, and change the source.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-      <a class="article-row" href="chronic-pain-san-francisco" data-topic="locations">
-        <div class="body">
-          <div class="meta"><span class="cat">Conditions</span><span class="dot"></span><span>SF + virtual</span><span class="dot"></span><span class="meta-date" data-month-offset="0"></span></div>
-          <h3>When PT, chiropractic, and massage <em>haven't ended it.</em></h3>
-          <p class="dek">Chronic pain that returns despite treatment usually means the treatment is addressing the symptom, not the pattern. The pattern is what stays.</p>
-        </div>
-        <span class="arrow-cell">→</span>
-      </a>
-
-    </section>
-
-    <section class="assessment">
-      <div class="assessment-inner">
-        <div class="photo">
-          <img src="images/quiz-cover.webp" alt="Body Balance Assessment Quiz">
-        </div>
-        <div class="body">
-          <span class="eyebrow">Free 2-minute assessment</span>
-          <h2>Discover what's <em>really causing</em> your pain.</h2>
-          <p>The Body Balance Assessment reveals the hidden patterns most treatments miss. Two minutes. A personalized report in your inbox. A starting point you can use today.</p>
-          <ul>
-            <li>Two minutes to complete</li>
-            <li>Personalized report sent to your email</li>
-            <li>No commitment, no sales call</li>
-          </ul>
-          <div class="actions">
-            <a href="/quiz/" class="btn"><span>Start your assessment</span><span class="arrow">→</span></a>
-            <a href="/book-discovery-call" class="secondary">Or book a free 15-min discovery call</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="field-cta">
-      <div class="field-cta-inner">
-        <h2>Reading helps. <em>Working together</em> helps more.</h2>
-        <p>These notes will get you started. The actual change happens in session, where the protocols meet your specific pattern, your specific body, your specific history.</p>
-        <div class="field-cta-actions">
-          <a class="btn-light" href="/book-initial-in-person"><span>Book a session</span><span class="arrow">→</span></a>
-          <a class="btn-outline" href="/book-discovery-call"><span>Free 15-min discovery call</span><span class="arrow">→</span></a>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <footer>
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-      <div style="display: flex; align-items: center; gap: 1.25rem;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-        <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Your body can heal you.</p>
-      </div>
-      <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-        hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-      </p>
     </div>
-    <div class="footer-content" style="padding-top: 2.5rem;">
-      <div class="footer-section">
-        <h3>Services</h3>
-        <ul>
-          <li><a href="in-person-sessions">In-Person Sessions</a></li>
-          <li><a href="virtual-sessions">Virtual Sessions</a></li>
-          <li><a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd">Online Program</a></li>
-          <li><a href="ongoing-care">Ongoing Care</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>Conditions</h3>
-        <ul>
-          <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-          <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-          <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-          <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-          <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>About</h3>
-        <ul>
-          <li><a href="/#why">Why Amari Method</a></li>
-          <li><a href="about.html">About Garrett</a></li>
-          <li><a href="/how-it-works">How It Works</a></li>
-          <li><a href="/#testimonials">Results &amp; Reviews</a></li>
-          <li><a href="affiliate">Partnership Program</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>Get Started</h3>
-        <ul>
-          <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-          <li><a href="client-info.html">Client Information</a></li>
-          <li><a href="booking">View Pricing &amp; Packages</a></li>
-          <li><a href="/portal">Client Portal</a></li>
-          <li><a href="/#faq">FAQ</a></li>
-        </ul>
-      </div>
+  </div>
+</section>
+
+<!-- AT-HOME BAND — 2-up wide, overlaid titles -->
+<section class="home-band">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Take It Home</span>
+      <h2>The Practice, at Home</h2>
     </div>
-    <div class="footer-bottom">
-      <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
+    <div class="home-tiles">
+      <a href="/blog-putting-it-all-together" class="home-tile reveal">
+        <img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()">
+        <div class="cap">
+          <span class="eyebrow light">Method</span>
+          <h3>Putting It All Together</h3>
+        </div>
+      </a>
+      <a href="/blog-passive-bridge-mobility" class="home-tile reveal" style="transition-delay:.06s">
+        <img src="/images/v6/real/passive-bridge.jpg" alt="" onerror="this.remove()">
+        <div class="cap">
+          <span class="eyebrow light">Protocol</span>
+          <h3>The Passive Bridge</h3>
+        </div>
+      </a>
     </div>
-  </footer>
+  </div>
+</section>
 
-  <script>
-    (function() {
-      // Dynamic dateline + per-card date — current month/year
-      var d = new Date();
-      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      var monthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      var dateline = document.getElementById('dateline');
-      if (dateline) dateline.textContent = months[d.getMonth()] + ' ' + d.getFullYear();
-      document.querySelectorAll('.meta-date').forEach(function(el) {
-        var off = parseInt(el.dataset.monthOffset || '0', 10);
-        var m = new Date(d.getFullYear(), d.getMonth() + off, 1);
-        el.textContent = monthsShort[m.getMonth()] + ' ' + m.getFullYear();
-      });
+<!-- LATEST POSTS — 4-col grid, 16 cards -->
+<section class="latest">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>Latest Posts</h2>
+    </div>
+    <div class="latest-grid">
+      <a href="/blog-suspension-squat-hanging-exercises" class="post-card reveal">
+        <div class="post-photo" style="background:var(--tan)"><img src="/images/v6/real/pull-up-bar.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
+      </a>
+      <a href="/blog-hand-balancer-carpal-tunnel" class="post-card reveal">
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/hand-balancer.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The hand balancer: for carpal tunnel the wrist brace can't reach</h3>
+      </a>
+      <a href="/blog-vertical-drop-spine-decompression" class="post-card reveal">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/journal-base/jh-vertical-drop.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>Vertical drop: decompress the spine in ninety seconds</h3>
+      </a>
+      <a href="/blog-active-bridge-strength" class="post-card reveal">
+        <div class="post-photo" style="background:#E7D8C4"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The active bridge: build spinal strength by doing the opposite of sitting</h3>
+      </a>
+      <a href="/blog-spinal-wave-gentle-decompression" class="post-card reveal">
+        <div class="post-photo" style="background:#B98E63"><img src="/images/photos/journal-base/jh-spinal-wave-refined.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The spinal wave: gentle decompression that resets the lower back</h3>
+      </a>
+      <a href="/blog-spring-step-calf-ankle" class="post-card reveal">
+        <div class="post-photo" style="background:#A88F73"><img src="/images/photos/journal-base/jh-spring-step.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>Spring step: how the ankle's lymph pump reaches everything above it</h3>
+      </a>
+      <a href="/blog-why-psoas-tightens-back" class="post-card reveal">
+        <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/jh-psoas.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Mechanics</span>
+        <h3>Why the psoas keeps tightening back</h3>
+      </a>
+      <a href="/lower-back-pain-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Conditions</span>
+        <h3>Why your back hurts when you sit</h3>
+      </a>
+      <a href="/blog-stretching-not-helping" class="post-card reveal">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/jh-stretching.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Mechanics</span>
+        <h3>Why stretching doesn't resolve what it's supposed to</h3>
+      </a>
+      <a href="/blog-power-posture-shoulder-blades" class="post-card reveal">
+        <div class="post-photo" style="background:#E7D8C4"><img src="/images/photos/neck-man-asn47.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Neck pain is almost always a shoulder-blade problem</h3>
+      </a>
+      <a href="/shoulder-pain-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:#B98E63"><img src="/images/photos/condition-base/shoulder-refined.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Shoulder pain that doesn't respond to rest</h3>
+      </a>
+      <a href="/hip-pain-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:#A88F73"><img src="/images/photos/hip-woman-wht60.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Hip pain is a pelvic positioning problem</h3>
+      </a>
+      <a href="/knee-pain-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/knee-man-his44.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Knee pain is almost always a hip problem</h3>
+      </a>
+      <a href="/sciatica-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/photos/conditions-hub-man-blk49.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Why sciatica keeps coming back</h3>
+      </a>
+      <a href="/plantar-fasciitis-san-francisco" class="post-card reveal">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/plantar-woman-multi41.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Pain</span>
+        <h3>Plantar fasciitis is a load problem</h3>
+      </a>
+      <a href="/amari-method-vs-physical-therapy" class="post-card reveal">
+        <div class="post-photo" style="background:#E7D8C4"><img src="/images/photos/chronic-pain-woman-asn61.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Conditions</span>
+        <h3>When PT, bodywork, and massage haven't ended it</h3>
+      </a>
+    </div>
+  </div>
+</section>
 
-    })();
-  </script>
-
-  <!-- Topic filter — toggles article-rows by data-topic; "all" shows everything -->
-  <script>
-    (function () {
-      var topicsBar = document.getElementById('topics');
-      if (!topicsBar) return;
-      var chips = topicsBar.querySelectorAll('.topic');
-      var rows = document.querySelectorAll('main.field-notes .article-row');
-      var headings = document.querySelectorAll('main.field-notes .index-section-head');
-
-      function applyFilter(filter) {
-        // Toggle rows
-        rows.forEach(function (row) {
-          var topic = row.getAttribute('data-topic');
-          var show = filter === 'all' || topic === filter;
-          row.style.display = show ? '' : 'none';
-        });
-        // Hide section headings whose section has no visible rows
-        headings.forEach(function (head) {
-          // Walk forward through siblings until next index-section-head; show if any visible article-row found
-          var anyVisible = false;
-          var node = head.nextElementSibling;
-          while (node && !node.classList.contains('index-section-head')) {
-            if (node.classList.contains('article-row') && node.style.display !== 'none') {
-              anyVisible = true;
-              break;
-            }
-            node = node.nextElementSibling;
-          }
-          head.style.display = anyVisible ? '' : 'none';
-        });
-      }
-
-      chips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-          chips.forEach(function (c) {
-            c.classList.remove('on');
-            c.setAttribute('aria-selected', 'false');
-          });
-          chip.classList.add('on');
-          chip.setAttribute('aria-selected', 'true');
-          var filter = chip.getAttribute('data-filter') || 'all';
-          applyFilter(filter);
-          // Optional: GA4 event
-          if (window.gtag) {
-            gtag('event', 'blog_topic_filter', { topic: filter });
-          }
-        });
-      });
-    })();
-  </script>
-
-  <script src="js/main.js?v=5" defer></script>
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js?v=11" data-nav="journal"></script>
 </body>
 </html>

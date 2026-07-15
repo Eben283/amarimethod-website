@@ -8,11 +8,11 @@
 
 ## Repository Structure
 ```
-my-new-website/
+amarimethod-website/
 ├── *.html                  # Static marketing pages
 ├── css/style-v5.css        # Main stylesheet + design tokens
 ├── js/main.js              # Site JS (GA4, menu toggle)
-├── functions/api/          # Cloudflare Pages Functions (serverless)
+├── functions/api/          # Cloudflare Pages Functions (serverless) (subset — see directory)
 │   ├── portal-auth.js      # POST: send magic link email
 │   ├── portal-verify.js    # GET: validate magic link → session token
 │   ├── portal-data.js      # GET: fetch client data from GHL
@@ -55,6 +55,32 @@ cd quiz && npx vite build   # Build quiz only
 - **NEVER return `status: 503`** for the same reason. Safe error codes: 400, 401, 403, 404, 422, 500.
 - Environment variables are accessed via `context.env.VAR_NAME`
 - CORS headers must be set manually on every response
+- **Pages Functions can't cross-import from sibling `functions/api/*.js` files.** Cloudflare bundles each function as its own route entry, so `import { foo } from "./portal-data.js"` makes the importing function fail to register and every request returns **404** (not 401/422/500) while other functions on the project work fine. Shared helpers go in `functions/lib/` (e.g. `lib/auth.js`, `lib/ghl.js`, `lib/session-ledger.js`, `lib/portal-helpers.js`). Lift the helper to `lib/` first, update both call sites, then import from `../lib/...`. Lost ~30 min on 2026-05-06 during the stream-token rollout to this exact 404.
+
+## Deploy & Editorial-Page Gotchas
+> Relocated 2026-07-09 from ops memory (`feedback_rebuild_staff_dist`, `feedback_partner_page_css`) into the repo they describe. Whys/dates preserved.
+
+### Rebuild + force-add `dist/<spa>` after every SPA source change
+Editing `staff/src/**` (or `portal/`, `quiz/`, `cos/` src) does NOT deploy unless you rebuild the SPA and force-add the new `dist/` artifacts. Cloudflare Pages serves committed files from `dist/`; `dist/` is gitignored at root, so new/updated files in `dist/staff/` are ignored by `git add` unless you use `-f`:
+```bash
+cd staff && npx vite build && cd ..
+git add -f dist/staff/index.html dist/staff/assets/   # hashed asset names change every build
+git add staff/src/*.ts staff/src/**/*.tsx functions/api/*.js
+git commit -m "..." && git push
+```
+Skip this and the backend change deploys (Functions need no build) but the frontend keeps serving the OLD JS bundle. You'll spend hours debugging why a fix isn't landing. Happened 2026-04-10. Same for `dist/portal/`, `dist/quiz/`, `dist/cos/`. Does NOT apply to `functions/**` or static root HTML (both auto-deploy from source).
+
+### `style-v5.css` global selectors hijack new editorial pages
+When rebuilding a marketing page with the editorial design system, production `style-v5.css` injects styles via global selectors that override the new design. Lost ~20 commits on the 2026-05-04 partner-page redesign because each round only surfaced one conflict. Before shipping any new editorial page, scope your inline `<style>` under a unique main class (e.g. `main.partner-page`) AND override these:
+
+| Production selector | What it does | Override needed |
+|---|---|---|
+| `.hero` | `text-align: center`, `background: var(--bg-secondary)`, `border-bottom: 1px solid var(--color-border)` | Force `text-align: left`, explicit `background: var(--paper)` (NOT `transparent` — production bg shows through in some specificity contexts), `border-bottom: 0` |
+| `.hero h1` | `font-size: clamp(2.2rem, 10vw, 4rem)` | Your own clamp + `!important` (specificity tie at `0,2,1`) |
+| `.hero-label` | Dark rounded pill (`background: var(--color-text)`, `color: white`, `border-radius: 20px`) | Reset to transparent + inherit for a flat eyebrow |
+| Global `<header>` | Sticky white bg | Use `<section>` instead of `<header>` for hero blocks |
+
+Background gotcha: `body { background }` from style-v5.css shows in the gutters around a constrained 1360px hero. If the top reads as a different cream tone, force `body { background: var(--paper) !important; }` inside the page's inline `<style>`. Pattern that works: wrap page content in `<main class="partner-page">` and prefix every inline selector with that class; production CSS still cascades to nav/footer (intentional).
 
 ## Cloudflare Deployment
 - **Project**: `amarimethod-website` on Cloudflare Pages
@@ -73,7 +99,7 @@ cd quiz && npx vite build   # Build quiz only
 |-------|-----|------|
 | Series Type | `series_type` | Dropdown: none / 4-session / 8-session |
 | Sessions Completed | `sessions_completed` | Number |
-| Sessions Remaining | `sessions_remaining` | Number |
+| Sessions Remaining | `sessions_remaining` | Number — raw value is stale; the derived ledger is truth (see memory `feedback-session-count-semantics`) |
 | Portal Access | `portal_access` | Checkbox |
 | Living Practice Access | `living_practice_access` | Checkbox |
 

@@ -9,8 +9,7 @@
 // ../lib/reimbursement-template.js so it can be previewed/tested standalone.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
-import { isContactRevoked } from "../lib/session-guard.js";
+import { requireOwner } from "../lib/owned-access.js";
 import { renderPacket, formatDate, formatPhone } from "../lib/reimbursement-template.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -68,22 +67,16 @@ export async function onRequestGet(context) {
       return jsonError(500, "Server configuration error");
     }
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return jsonError(401, "Not authenticated");
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return jsonError(401, "Session expired. Please log in again.");
-    }
-
-    const contactId = tokenPayload.contactId;
-    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
-      return jsonError(401, "Session expired. Please log in again.");
-    }
+    // Ownership gate: Bearer + verify + per-contact revoke, centralized in
+    // lib/owned-access.js. contactId comes from the verified JWT, never the
+    // request — the invoices fetched below are only ever the caller's own. The
+    // gate's error body matches jsonError's shape (same headers + JSON error).
+    const gate = await requireOwner(context, {
+      ...baseHeaders,
+      "Content-Type": "application/json",
+    });
+    if (gate.error) return gate.error;
+    const { contactId } = gate;
 
     const [contactResponse, invoicesResponse] = await Promise.all([
       fetch(`${GHL_API_BASE}/contacts/${contactId}`, {

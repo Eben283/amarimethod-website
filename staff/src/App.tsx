@@ -11,6 +11,7 @@ import FunnelPage from './pages/FunnelPage';
 import PipelinePage from './pages/PipelinePage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
+import WritePage from './pages/WritePage';
 import StaffNav from './components/StaffNav';
 import { Loader2 } from 'lucide-react';
 
@@ -156,6 +157,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <LayoutWithNav fullBleed>
               <CosPage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/write"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav fullBleed>
+              <WritePage />
             </LayoutWithNav>
           </ProtectedRoute>
         }

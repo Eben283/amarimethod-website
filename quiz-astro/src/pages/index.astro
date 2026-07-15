@@ -8,319 +8,35 @@ import QuizLayout from '@/layouts/QuizLayout.astro';
 const beginHref = '/quiz/take/';
 ---
 <QuizLayout
-  title="Pain Pattern Assessment · Form 01 | Amari Method"
-  description="A short clinical instrument that maps where your body is out of balance across six dimensions. Free, ~3 minutes. Issued by Amari Method."
+  title="Free Assessment | Amari Method"
+  description="Twelve questions about where it hurts, how long it has, and what you've already tried. At the end you'll see the pattern behind it. Free, ~3 minutes."
   canonical="https://www.amarimethod.com/quiz"
 >
-  <style is:global>
-    /* The cover page renders inside an editorial document frame; these styles
-       are scoped to the cover only and override the Tailwind base just for
-       the body of /quiz/. We re-namespace them under [data-cover] so they
-       can't bleed into the take page or results. */
-    [data-cover] {
-      --paper:#F7F2E8; --paper-2:#F0E9D8; --ink:#1F1D1A; --ink-2:#3A3733;
-      --mute:#7A746B; --line:#E0D7C2; --line-2:#CCC1A8; --accent:#C56B4E; --accent-soft:#E8A38A;
-      --display:'Bona Nova',Georgia,serif;
-      --sans:'Inter',system-ui,sans-serif;
-      --mono:'JetBrains Mono',ui-monospace,monospace;
-      background:var(--paper); color:var(--ink); font-family:var(--sans);
-      -webkit-font-smoothing:antialiased; font-size:16px; line-height:1.55;
-      overflow-x:hidden; min-height:100vh;
-    }
-    [data-cover] *{box-sizing:border-box;margin:0;padding:0}
-    [data-cover] a{color:inherit;text-decoration:none}
-    [data-cover] img{display:block;max-width:100%}
-    [data-cover] h1,[data-cover] h2,[data-cover] h3,[data-cover] h4{font-family:var(--display);font-weight:400;letter-spacing:-0.02em;line-height:1.02;color:var(--ink);text-wrap:balance}
-    [data-cover] p{text-wrap:pretty}
-    [data-cover] em{font-style:italic;color:var(--accent)}
-    [data-cover] .mono{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
-
-    [data-cover] .doc{max-width:1100px;margin:0 auto;padding:0 32px}
-
-    [data-cover] .doc-bar{border-bottom:1px solid var(--line);background:var(--paper)}
-    [data-cover] .doc-bar-inner{max-width:1100px;margin:0 auto;padding:14px 32px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:24px}
-    [data-cover] .doc-bar a.brand{font-family:var(--display);font-size:18px;letter-spacing:-0.01em;display:flex;align-items:center;gap:10px;color:var(--ink)}
-    [data-cover] .doc-bar a.brand .mark{width:18px;height:18px;border-radius:50%;background:var(--ink);position:relative}
-    [data-cover] .doc-bar a.brand .mark::after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--paper)}
-    [data-cover] .doc-bar .center{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);text-align:center}
-    [data-cover] .doc-bar .right{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);display:inline-flex;align-items:center;gap:8px}
-    [data-cover] .doc-bar .right a{color:var(--ink-2)}
-    [data-cover] .doc-bar .right a:hover{color:var(--accent)}
-
-    [data-cover] .cover{padding-top:64px;padding-bottom:48px}
-    [data-cover] .cover-head{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:start;gap:24px;padding-bottom:48px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
-    [data-cover] .cover-head .col{display:flex;flex-direction:column;gap:6px}
-    [data-cover] .cover-head .col b{color:var(--ink);font-weight:500;letter-spacing:.18em}
-    [data-cover] .cover-head .center{text-align:center}
-    [data-cover] .cover-head .right{text-align:right}
-
-    [data-cover] .cover-title{padding:80px 0 64px;display:grid;grid-template-columns:1fr;gap:48px;text-align:center;position:relative}
-    [data-cover] .cover-title .form-id{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);text-wrap:balance}
-    [data-cover] .cover-title .form-id span{color:var(--mute)}
-    [data-cover] .cover-title h1{font-family:var(--display);font-weight:300;font-size:clamp(44px,6.4vw,108px);letter-spacing:-0.035em;line-height:0.96;max-width:18ch;margin:0 auto}
-    [data-cover] .cover-title h1 em{font-style:italic;color:var(--accent);font-weight:300}
-    [data-cover] .cover-title .lede{font-family:var(--display);font-style:italic;font-size:clamp(18px,2vw,24px);max-width:48ch;margin:0 auto;color:var(--ink-2);line-height:1.45;font-weight:400}
-    [data-cover] .cover-rule{display:flex;justify-content:center;align-items:center;gap:14px;font-family:var(--display);font-style:italic;color:var(--accent);font-size:18px;letter-spacing:.4em}
-    [data-cover] .cover-rule::before,[data-cover] .cover-rule::after{content:"";width:60px;height:1px;background:var(--line-2)}
-
-    [data-cover] .entry{margin-top:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:32px 0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:32px}
-    [data-cover] .entry .meta-l,[data-cover] .entry .meta-r{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);display:flex;flex-direction:column;gap:6px}
-    [data-cover] .entry .meta-r{text-align:right}
-    [data-cover] .entry .meta-l b,[data-cover] .entry .meta-r b{color:var(--ink);font-weight:500;letter-spacing:.16em}
-    [data-cover] .begin{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;padding:22px 40px;border-radius:0;border:none;cursor:pointer;gap:18px;transition:background .2s,gap .2s}
-    [data-cover] .begin:hover{background:var(--accent);gap:24px;color:var(--paper)}
-    [data-cover] .begin .arrow{font-family:var(--display);font-style:italic;font-size:18px;letter-spacing:0;line-height:0}
-
-    [data-cover] .notes{padding-top:64px;padding-bottom:48px;display:grid;grid-template-columns:1fr 2.4fr;gap:64px;border-bottom:1px solid var(--line)}
-    [data-cover] .notes .label{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
-    [data-cover] .notes .label-name{font-family:var(--display);font-style:italic;font-size:24px;font-weight:400;color:var(--ink);line-height:1.15;max-width:14ch}
-    [data-cover] .notes .body{display:flex;flex-direction:column;gap:24px}
-    [data-cover] .notes .body p{font-family:var(--display);font-size:21px;line-height:1.55;color:var(--ink);max-width:54ch;font-weight:400}
-    [data-cover] .notes .body p em{font-style:italic;color:var(--accent)}
-    [data-cover] .notes .body p.foot{font-family:var(--sans);font-size:13px;color:var(--mute);line-height:1.6;border-top:1px solid var(--line);padding-top:18px;margin-top:8px;max-width:54ch}
-
-    [data-cover] .section-head{padding-top:80px;padding-bottom:32px}
-    [data-cover] .section-head .num{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
-    [data-cover] .section-head .num::before{content:"§ ";font-family:var(--display);font-style:italic;font-size:16px;color:var(--accent);letter-spacing:0;font-weight:400;margin-right:4px}
-    [data-cover] .section-head h2{font-family:var(--display);font-size:clamp(28px,3.4vw,42px);font-weight:300;letter-spacing:-0.02em;line-height:1.1;margin-top:14px;max-width:24ch}
-    [data-cover] .section-head h2 em{font-style:italic;color:var(--accent)}
-
-    [data-cover] .specimen{padding-bottom:64px;border-bottom:1px solid var(--line)}
-    [data-cover] .specimen-frame{position:relative;margin-top:8px}
-    [data-cover] .specimen-frame::before,[data-cover] .specimen-frame::after{content:"";position:absolute;width:14px;height:14px;border:1px solid var(--line-2)}
-    [data-cover] .specimen-frame::before{top:-7px;left:-7px;border-right:0;border-bottom:0}
-    [data-cover] .specimen-frame::after{top:-7px;right:-7px;border-left:0;border-bottom:0}
-    [data-cover] .specimen-frame .corners{position:absolute;inset:0;pointer-events:none}
-    [data-cover] .specimen-frame .corners::before,[data-cover] .specimen-frame .corners::after{content:"";position:absolute;width:14px;height:14px;border:1px solid var(--line-2)}
-    [data-cover] .specimen-frame .corners::before{bottom:-7px;left:-7px;border-right:0;border-top:0}
-    [data-cover] .specimen-frame .corners::after{bottom:-7px;right:-7px;border-left:0;border-top:0}
-    [data-cover] .specimen-cap{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin-bottom:18px}
-    [data-cover] .specimen-cap .stamp{color:var(--accent);border:1px solid var(--accent);padding:4px 10px;border-radius:0;font-size:10px;letter-spacing:.2em}
-
-    [data-cover] .report{background:var(--paper);border:1px solid var(--ink-2);position:relative}
-    [data-cover] .report-head{padding:24px 32px;border-bottom:1px solid var(--ink-2);display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;background:var(--paper-2)}
-    [data-cover] .report-head .doc-id{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
-    [data-cover] .report-head .doc-id b{color:var(--accent);font-weight:500}
-    [data-cover] .report-head .doc-title{font-family:var(--display);font-size:18px;font-style:italic;font-weight:400;color:var(--ink);text-align:center}
-    [data-cover] .report-head .stamp{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:5px 10px}
-    [data-cover] .report-body{display:grid;grid-template-columns:1.05fr 1fr;gap:0}
-    [data-cover] .report-left{padding:36px 32px;border-right:1px solid var(--ink-2);display:flex;flex-direction:column;gap:36px;min-height:380px}
-    [data-cover] .field{display:flex;flex-direction:column;gap:6px;border-bottom:1px dotted var(--line-2);padding-bottom:18px}
-    [data-cover] .field:last-child{border-bottom:0;padding-bottom:0}
-    [data-cover] .field .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
-    [data-cover] .pattern-name{font-family:var(--display);font-size:38px;font-weight:300;font-style:italic;letter-spacing:-0.02em;color:var(--ink);line-height:1.05}
-    [data-cover] .pattern-name em{color:var(--accent)}
-    [data-cover] .pattern-desc{font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px;max-width:42ch;font-family:var(--sans)}
-    [data-cover] .finding{font-family:var(--display);font-size:18px;line-height:1.5;color:var(--ink);max-width:36ch;font-weight:400}
-    [data-cover] .finding em{font-style:italic;color:var(--accent)}
-    [data-cover] .report-right{padding:32px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,var(--paper) 0,var(--paper) 12px,var(--paper-2) 12px,var(--paper-2) 13px);position:relative;min-height:380px}
-    [data-cover] .radar-wrap{width:100%;max-width:340px;aspect-ratio:1;position:relative;background:var(--paper);padding:18px;border:1px dotted var(--line-2)}
-    [data-cover] .radar-svg{width:100%;height:auto;display:block}
-    [data-cover] .specimen-foot{margin-top:18px;display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);flex-wrap:wrap;gap:12px}
-
-    [data-cover] .scope{padding-bottom:80px}
-    [data-cover] .scope-grid{margin-top:24px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;font-family:var(--sans);border-top:1px solid var(--line);padding-top:32px}
-    [data-cover] .scope-col h4{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:500}
-    [data-cover] .scope-col p{font-size:14px;color:var(--ink-2);line-height:1.6;max-width:36ch}
-
-    [data-cover] .doc-foot{padding:48px 0 64px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:end;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin-top:48px}
-    [data-cover] .doc-foot .col b{color:var(--ink);font-weight:500;letter-spacing:.18em;display:block;margin-bottom:6px}
-    [data-cover] .doc-foot .center{text-align:center;font-family:var(--display);font-style:italic;font-size:16px;letter-spacing:0;color:var(--ink-2);text-transform:none}
-    [data-cover] .doc-foot .right{text-align:right}
-    [data-cover] .doc-foot a{color:var(--ink-2)}
-    [data-cover] .doc-foot a:hover{color:var(--accent)}
-
-    [data-cover] .foot-entry{padding:24px 0 0;display:flex;justify-content:center}
-    [data-cover] .foot-link{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--line-2);transition:color .2s,border-color .2s}
-    [data-cover] .foot-link:hover{color:var(--accent);border-color:var(--accent)}
-    [data-cover] .foot-link .arrow{font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:0;margin-left:6px}
-
-    @media(max-width:880px){
-      [data-cover] .doc-bar-inner{grid-template-columns:auto 1fr;gap:14px}
-      [data-cover] .doc-bar .center{display:none}
-      [data-cover] .cover{padding-top:32px;padding-bottom:24px}
-      [data-cover] .cover-head{grid-template-columns:1fr;text-align:left;padding-bottom:24px;gap:14px}
-      [data-cover] .cover-head .center,[data-cover] .cover-head .right{text-align:left}
-      [data-cover] .cover-title{padding:40px 0 32px;gap:32px}
-      [data-cover] .entry{grid-template-columns:1fr;text-align:center;padding:24px 0;gap:18px}
-      [data-cover] .entry .meta-l,[data-cover] .entry .meta-r{text-align:center}
-      [data-cover] .notes{grid-template-columns:1fr;gap:24px;padding-top:48px;padding-bottom:32px}
-      [data-cover] .section-head{padding-top:48px;padding-bottom:24px}
-      [data-cover] .report-body{grid-template-columns:1fr}
-      [data-cover] .report-left{border-right:0;border-bottom:1px solid var(--ink-2);min-height:auto}
-      [data-cover] .report-right{min-height:auto}
-      [data-cover] .report-head{grid-template-columns:1fr;gap:8px;text-align:left}
-      [data-cover] .report-head .doc-title{text-align:left}
-      [data-cover] .scope-grid{grid-template-columns:1fr;gap:24px}
-      [data-cover] .doc-foot{grid-template-columns:1fr;text-align:left;gap:18px}
-      [data-cover] .doc-foot .center,[data-cover] .doc-foot .right{text-align:left}
-    }
-  </style>
-
-  <div data-cover>
-
-    <div class="doc-bar">
-      <div class="doc-bar-inner">
-        <a class="brand" href="https://www.amarimethod.com/"><span class="mark"></span><span>Amari Method</span></a>
-        <div class="center">Form 01 · Pain Pattern Assessment</div>
-        <div class="right"><a href="https://www.amarimethod.com/">← Return</a></div>
-      </div>
+  <div class="topbar">
+    <div class="row">
+      <a class="wordmark" href="https://www.amarimethod.com/">AMARI</a>
+      <span class="meta">Free Assessment · Form 01</span>
     </div>
-
-    <section class="cover doc">
-      <div class="cover-head">
-        <div class="col"><span>Document</span><b>Form № 01</b></div>
-        <div class="col center"><span>Issued by</span><b>Amari Method</b></div>
-        <div class="col right"><span>Revision</span><b>2026 · v1.0</b></div>
-      </div>
-
-      <div class="cover-title">
-        <span class="form-id">Pain Pattern Assessment <span>·</span> Self-administered <span>·</span> ~3 min</span>
-        <h1>An instrument for reading <em>why pain keeps coming back.</em></h1>
-        <p class="lede">A short clinical instrument. You answer twelve questions. It returns a balance reading across six dimensions and a recommended next step.</p>
-        <div class="cover-rule">· · ·</div>
-      </div>
-
-      <div class="entry">
-        <div class="meta-l">
-          <span>Time required</span>
-          <b>~ 3 minutes</b>
-        </div>
-        <a class="begin" href={beginHref}><span>Begin Assessment</span><span class="arrow">→</span></a>
-        <div class="meta-r">
-          <span>Cost</span>
-          <b>Free · Report by email</b>
-        </div>
-      </div>
-    </section>
-
-    <section class="notes doc">
-      <div>
-        <div class="label">Examiner's Note</div>
-        <div class="label-name">On the use of <em>this instrument.</em></div>
-      </div>
-      <div class="body">
-        <p>Most people manage symptoms for years without addressing the real pattern. This is not because they aren't trying. It is because pain has a <em>shape,</em> and most approaches measure only one axis of it.</p>
-        <p>The instrument below was developed across twenty-five years of clinical practice. It will not diagnose you. It will not replace a clinician. It <em>will</em> tell you, with reasonable confidence, where your body is most out of balance — and what that means for what to do next.</p>
-        <p class="foot">Self-administered · Not a medical diagnosis · For orientation toward the right approach. Designed by Garrett Hewstan, drawing on 25 years of clinical practice.</p>
-      </div>
-    </section>
-
-    <section class="specimen doc">
-      <div class="section-head">
-        <span class="num">01 · Specimen output</span>
-        <h2>What the report <em>looks like</em> when it returns to you.</h2>
-      </div>
-
-      <div class="specimen-cap">
-        <span>Specimen · Anonymized · Sample reading · 2026</span>
-        <span class="stamp">Sample only</span>
-      </div>
-
-      <div class="specimen-frame">
-        <div class="corners"></div>
-        <div class="report">
-          <div class="report-head">
-            <span class="doc-id">№ 0428 · <b>Reading Returned</b></span>
-            <span class="doc-title">Pain Pattern Report · Form 01</span>
-            <span class="stamp">Returned</span>
-          </div>
-          <div class="report-body">
-            <div class="report-left">
-              <div class="field">
-                <span class="lbl">Primary reading</span>
-                <span class="pattern-name">Out of <em>balance</em></span>
-                <p class="pattern-desc">Adaptations are carrying more than their share. Something else has stopped doing its job, and the body has built a chain around the original site to keep moving.</p>
-              </div>
-              <div class="field">
-                <span class="lbl">Recovery reading</span>
-                <p class="finding">Recovery potential reads <em>high</em> — the system can rebalance with the right input.</p>
-              </div>
-            </div>
-            <div class="report-right">
-              <div class="radar-wrap">
-                <svg class="radar-svg" viewBox="-160 -160 320 320" aria-hidden="true">
-                  <defs>
-                    <radialGradient id="radarFill" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stop-color="#C56B4E" stop-opacity="0.32"/>
-                      <stop offset="100%" stop-color="#C56B4E" stop-opacity="0.1"/>
-                    </radialGradient>
-                  </defs>
-                  <g fill="none" stroke="#CCC1A8" stroke-width="1">
-                    <polygon points="0,-130 113,-65 113,65 0,130 -113,65 -113,-65"/>
-                    <polygon points="0,-97 84,-49 84,49 0,97 -84,49 -84,-49"/>
-                    <polygon points="0,-65 56,-32 56,32 0,65 -56,32 -56,-32"/>
-                    <polygon points="0,-32 28,-16 28,16 0,32 -28,16 -28,-16"/>
-                  </g>
-                  <g stroke="#CCC1A8" stroke-width="1">
-                    <line x1="0" y1="-130" x2="0" y2="130"/>
-                    <line x1="-113" y1="-65" x2="113" y2="65"/>
-                    <line x1="-113" y1="65" x2="113" y2="-65"/>
-                  </g>
-                  <polygon points="0,-100 102,-58 78,45 0,80 -88,52 -98,-56" fill="url(#radarFill)" stroke="#C56B4E" stroke-width="2" stroke-linejoin="round"/>
-                  <g fill="#C56B4E">
-                    <circle cx="0" cy="-100" r="4"/>
-                    <circle cx="102" cy="-58" r="4"/>
-                    <circle cx="78" cy="45" r="4"/>
-                    <circle cx="0" cy="80" r="4"/>
-                    <circle cx="-88" cy="52" r="4"/>
-                    <circle cx="-98" cy="-56" r="4"/>
-                  </g>
-                  <g font-family="JetBrains Mono, monospace" font-size="9" fill="#7A746B" letter-spacing="1.2">
-                    <text x="0" y="-142" text-anchor="middle">SOFT TISSUE</text>
-                    <text x="128" y="-68" text-anchor="start">JOINT / BONE</text>
-                    <text x="128" y="78" text-anchor="start">DURATION</text>
-                    <text x="0" y="148" text-anchor="middle">DAILY IMPACT</text>
-                    <text x="-128" y="78" text-anchor="end">ADAPTATIONS</text>
-                    <text x="-128" y="-68" text-anchor="end">RECOVERY</text>
-                  </g>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="specimen-foot">
-        <span>Fig. 1 · Sample output</span>
-        <span>Plotted on six axes · Six dimensions of pain</span>
-      </div>
-    </section>
-
-    <section class="scope doc">
-      <div class="section-head">
-        <span class="num">02 · Scope of use</span>
-        <h2>What this instrument is <em>and isn't.</em></h2>
-      </div>
-      <div class="scope-grid">
-        <div class="scope-col">
-          <h4>For</h4>
-          <p>People whose pain keeps returning. People who have tried everything. People who want a name for what they feel before deciding what to do about it.</p>
-        </div>
-        <div class="scope-col">
-          <h4>Not for</h4>
-          <p>Acute injury, post-surgical care, or anything that requires imaging. If pain is severe, sudden, or accompanied by neurological symptoms, see a clinician first.</p>
-        </div>
-        <div class="scope-col">
-          <h4>What it returns</h4>
-          <p>An orientation, not a diagnosis. The report tells you where your body reads as most out of balance — and which next step tends to work for that pattern.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="doc">
-      <div class="foot-entry">
-        <a class="foot-link" href={beginHref}>Begin Assessment <span class="arrow">↗</span></a>
-      </div>
-
-      <div class="doc-foot">
-        <div class="col"><b>Form 01 · v1.0</b><span>Issued 2026</span></div>
-        <div class="col center">~ 3 minutes · Free · Report by email</div>
-        <div class="col right"><b>Amari Method</b><a href="https://www.amarimethod.com/">Return to home ↗</a></div>
-      </div>
-    </section>
-
+    <div class="rail"><div class="rail-fill" style="right:100%"></div></div>
   </div>
+
+  <main class="stage page-cover">
+    <section class="screen">
+      <span class="kicker eyebrow">Free Assessment · Form 01</span>
+      <h1>Find out why your pain <em>keeps coming back.</em></h1>
+      <p class="lede">Twelve questions about where it hurts, how long it has, and what you've already tried. At the end you'll see the pattern behind it and what tends to change it.</p>
+      <div class="go">
+        <a class="btn" href={beginHref}>Begin assessment <span class="arrow">→</span></a>
+      </div>
+      <div class="facts">
+        <div class="f"><b>12</b><span>Questions</span></div>
+        <div class="f"><b>3 min</b><span>To complete</span></div>
+        <div class="f"><b>Private</b><span>Read by Garrett</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="qfoot">Amari Method · Free pain pattern assessment</footer>
 
   <script is:inline>
     // Affiliate ?ref= capture. The legacy React quiz read ?ref from window.location

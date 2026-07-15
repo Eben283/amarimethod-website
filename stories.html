@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="What clients say after working with Garrett, in their own words. Backs, necks, jaws, hips, and the sessions that changed them.">
+<link rel="canonical" href="https://www.amarimethod.com/stories">
+
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Client Stories | Amari Method</title>
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/stories">
+<meta property="og:title" content="Client Stories | Amari Method">
+<meta property="og:description" content="What clients say after working with Garrett, in their own words. Backs, necks, jaws, hips, and the sessions that changed them.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/stories">
+<meta name="twitter:title" content="Client Stories | Amari Method">
+<meta name="twitter:description" content="What clients say after working with Garrett, in their own words. Backs, necks, jaws, hips, and the sessions that changed them.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<style>
+  /* ---------- Stories-page-specific styles ---------- */
+
+  /* Intro band — light, matching Yinova's team-page hero (no dark image hero,
+     so the shared header script falls back to its cream/scrolled state,
+     same as Yinova's plain nav bar on the team page). */
+  .stories-hero{padding:clamp(150px,16vw,182px) 0 clamp(56px,6vw,78px);background:var(--cream-2);text-align:center}
+  .stories-hero .eyebrow{display:block;margin-bottom:18px}
+  .stories-hero h1{font-size:clamp(2.3rem,4.6vw,3.7rem);font-weight:500;max-width:17ch;margin:0 auto}
+  .stories-hero p{margin:22px auto 0;max-width:58ch}
+
+  .filter-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:clamp(14px,2vw,22px) 0 clamp(34px,4vw,44px)}
+  .filter-pill{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);background:transparent;border:1px solid var(--line);padding:10px 22px;border-radius:999px;cursor:pointer;transition:background .3s var(--ease),color .3s var(--ease),border-color .3s var(--ease)}
+  .filter-pill.active,.filter-pill:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* Guide band — reuses shared .band component, Garrett-specific copy only */
+  .guide-band .band-copy p{max-width:46ch}
+  .guide-band .band-copy .stat-row{display:flex;gap:clamp(30px,4vw,54px);margin-top:28px}
+  .guide-band .band-copy .stat-row b{font-family:var(--serif);font-weight:500;font-size:1.9rem;display:block;color:var(--ink)}
+  .guide-band .band-copy .stat-row span{font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);display:block;margin-top:6px}
+
+  /* Story grid — the Yinova team-grid shape, repurposed as client-result cards */
+  .stories-grid-section{padding:clamp(64px,8vw,96px) 0}
+  .stories-grid-section .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);text-align:center;margin-bottom:clamp(20px,2.4vw,28px)}
+  /* Fewer, larger cells so each portrait and quote can breathe, instead of
+     twelve small thumbnails reading as a stock bucket. */
+  .story-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(42px,4vw,58px) clamp(30px,3vw,44px)}
+  .story-card{text-align:center;transition:opacity .3s var(--ease)}
+  /* Uniform photo frame: same ratio, rounded corners, hairline inset border,
+     plus a warm duotone-style filter + overlay that pulls the mismatched
+     source grades into one cohesive earth-toned set. */
+  .story-avatar{position:relative;aspect-ratio:4/5;border-radius:5px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;overflow:hidden;border:1px solid var(--line)}
+  .story-avatar span{font-family:var(--serif);font-size:2.9rem;font-weight:500;color:rgba(255,255,255,.94);z-index:0}
+  /* object-position biases the crop toward faces (heads sit high); the filter
+     desaturates and warms every source toward a common tone. */
+  .story-avatar img{z-index:1;object-position:center 28%;filter:grayscale(.2) sepia(.14) contrast(1.05) brightness(1);transition:filter .6s var(--ease),transform .9s var(--ease)}
+  .story-avatar::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(178deg,rgba(216,187,134,.12),rgba(94,85,77,.13));mix-blend-mode:multiply}
+  .story-card:hover .story-avatar img{filter:grayscale(0) sepia(0) contrast(1.02);transform:scale(1.035)}
+  .story-name{font-family:var(--serif);font-weight:500;font-size:1.32rem;letter-spacing:.01em;color:var(--ink)}
+  .story-tag{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:7px 0 14px}
+  /* min-height evens out the row baselines when quotes run 1–3 lines */
+  .story-quote{font-size:15.5px;line-height:1.62;color:var(--body);max-width:34ch;margin:0 auto;min-height:3.24em}
+
+  @media (max-width:1000px){
+    .story-grid{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:640px){
+    .story-grid{grid-template-columns:1fr}
+    .story-card{max-width:360px;margin:0 auto}
+    .guide-band .band-copy .stat-row{gap:36px}
+  }
+</style>
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+</script>
+</head>
+<body>
+
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- INTRO / "OUR TEAM" ANALOG -->
+<section class="stories-hero">
+  <div class="wrap reveal">
+    <span class="eyebrow">Stories</span>
+    <h1>The results, in their own <em>words.</em></h1>
+    <p>Twelve Amari clients, in their own words. Every quote below is verbatim, and every session happened in the same room, using the Amari Method.</p>
+  </div>
+</section>
+
+<!-- GARRETT — the one practitioner, featured before the client grid -->
+<section class="band tan guide-band">
+  <div class="band-copy reveal">
+    <span class="eyebrow">Your Guide</span>
+    <h2>One person in the room, for every story <em>here.</em></h2>
+    <p>Garrett Hewstan built the Amari Method after 25 years of hands-on practice. Nobody is doing the work to you. You're shown where your body is out of balance, and how to correct it yourself.</p>
+    <div class="stat-row">
+      <div><b>25+</b><span>Years in practice</span></div>
+      <div><b>8</b><span>Core protocols</span></div>
+    </div>
+    <a href="/about" class="btn">About Garrett</a>
+  </div>
+  <div class="band-photo" style="background-image:url('/images/v6/real/garrett-face-1200.jpg')"></div>
+</section>
+
+<!-- CLIENT STORY GRID — the Yinova team-grid shape, repurposed -->
+<section class="stories-grid-section">
+  <div class="wrap">
+    <h2 class="kicker reveal">Twelve Clients, Twelve Results</h2>
+    <div class="filter-row reveal">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="pain-relief">Pain Relief</button>
+      <button class="filter-pill" data-filter="mobility">Mobility &amp; Movement</button>
+      <button class="filter-pill" data-filter="chronic-pain">Chronic Pain</button>
+      <button class="filter-pill" data-filter="recovery-aging">Recovery &amp; Aging</button>
+    </div>
+    <div class="story-grid">
+      <div class="story-card reveal" data-cat="pain-relief">
+        <div class="story-avatar" style="background:#D8BB86"><span>S</span><img src="/images/Sarah.webp" alt="Sara" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Sara</div>
+        <div class="story-tag">Low Back Relief</div>
+        <p class="story-quote">&ldquo;I thought the best I could hope for was less pain. I've never felt this at home in my body.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.04s" data-cat="mobility">
+        <div class="story-avatar" style="background:#E1A98B"><span>K</span><img src="/images/kate-testimonial.avif" alt="Katie" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Katie</div>
+        <div class="story-tag">Runner</div>
+        <p class="story-quote">&ldquo;One visit with Garrett gave me better results than three months of physical therapy.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.08s" data-cat="pain-relief">
+        <div class="story-avatar" style="background:#AFC1A9"><span>M</span><img src="/images/Maria.webp" alt="Marisol" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Marisol</div>
+        <div class="story-tag">Teacher</div>
+        <p class="story-quote">&ldquo;I follow his protocol every day. 8 months no pain.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.12s" data-cat="mobility">
+        <div class="story-avatar" style="background:#B98E63"><span>P</span><img src="/images/dan-testimonial.webp" alt="Paul" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Paul</div>
+        <div class="story-tag">Weightlifter</div>
+        <p class="story-quote">&ldquo;My shoulder was just the weakest link. Huge a-ha moment.&rdquo;</p>
+      </div>
+
+      <div class="story-card reveal" data-cat="recovery-aging">
+        <div class="story-avatar" style="background:#C98F71"><span>A</span><img src="/images/terri-testimonial.jpg" alt="Annie" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Annie</div>
+        <div class="story-tag">Renewed</div>
+        <p class="story-quote">&ldquo;I thought pain was just part of getting older. I wish I'd met Garrett ten years sooner.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.04s" data-cat="recovery-aging">
+        <div class="story-avatar" style="background:#8E9F82"><span>B</span><img src="/images/amy-testimonial.webp" alt="Becca" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Becca</div>
+        <div class="story-tag">Hip Pain</div>
+        <p class="story-quote">&ldquo;I went from barely walking to six-mile hikes. I didn't think that was possible for me again after my accident.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.08s" data-cat="chronic-pain">
+        <div class="story-avatar" style="background:#A88F73"><span>J</span><img src="/images/Justin.webp" alt="Julian" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Julian</div>
+        <div class="story-tag">Avoided Surgery</div>
+        <p class="story-quote">&ldquo;I always thought a herniated disc meant surgery. Everything's changed. Huge relief.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.12s" data-cat="chronic-pain">
+        <div class="story-avatar" style="background:#D8BB86"><span>B</span><img src="/images/samantha-testimonial.avif" alt="Barbara" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Barbara</div>
+        <div class="story-tag">Chronic Pain Relief</div>
+        <p class="story-quote">&ldquo;Three different doctors told me to just live with the pain. I'm 78 years old. Never felt better.&rdquo;</p>
+      </div>
+
+      <div class="story-card reveal" data-cat="recovery-aging">
+        <div class="story-avatar" style="background:#E1A98B"><span>V</span><img src="/images/gregg-testimonial.jpg" alt="Victor" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Victor</div>
+        <div class="story-tag">Newly Retired</div>
+        <p class="story-quote">&ldquo;I've spent decades not listening to my body. Retirement gave me the time. Garrett showed me how.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.04s" data-cat="chronic-pain">
+        <div class="story-avatar" style="background:#AFC1A9"><span>P</span><img src="/images/danielle-testimonial.avif" alt="Pam" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Pam</div>
+        <div class="story-tag">Business Owner</div>
+        <p class="story-quote">&ldquo;I really have tried everything. Nothing has ever come close to this.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.08s" data-cat="pain-relief">
+        <div class="story-avatar" style="background:#B98E63"><span>E</span><img src="/images/nina-testimonial.jpg" alt="Elise" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Elise</div>
+        <div class="story-tag">Young Professional</div>
+        <p class="story-quote">&ldquo;I came in for back pain. I didn't expect to sleep better and stop grinding my teeth too. At 24, I didn't think I needed this kind of care.&rdquo;</p>
+      </div>
+      <div class="story-card reveal" style="transition-delay:.12s" data-cat="pain-relief">
+        <div class="story-avatar" style="background:#C98F71"><span>T</span><img src="/images/tyler-testimonial.jpg" alt="Tyler" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" onerror="this.remove()"></div>
+        <div class="story-name">Tyler</div>
+        <div class="story-tag">Photographer</div>
+        <p class="story-quote">&ldquo;I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.&rdquo;</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PULL QUOTE -->
+<section class="pullquote" style="background-image:url('/images/photos/materials/hand-handrail-grip.jpg')">
+  <div class="wrap reveal">
+    <span class="mark">//</span>
+    <blockquote>I went from barely walking to six-mile hikes. I didn't think that was possible for me again after my accident.</blockquote>
+    <cite>Becca &middot; Hip Pain</cite>
+  </div>
+</section>
+
+<!-- APPOINTMENT CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <h2>Ready to be one of these <em>stories?</em></h2>
+    <p>Your first session is 60 minutes with Garrett, and most clients feel a difference before they leave. If you don't, we keep working with you until you do.</p>
+    <div class="btn-row">
+      <a href="/book/initial-in-person" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js?v=11" data-nav="stories"></script>
+<script>
+  // Page-specific: decorative filter tabs over the story grid (progressive
+  // enhancement only, mirrors Yinova's "Explore by Specialty" tab shape).
+  (function () {
+    var pills = document.querySelectorAll('.filter-pill');
+    var cards = document.querySelectorAll('.story-card');
+    pills.forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        pills.forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+        var cat = pill.getAttribute('data-filter');
+        cards.forEach(function (card) {
+          var show = cat === 'all' || card.getAttribute('data-cat') === cat;
+          card.style.display = show ? '' : 'none';
+        });
+      });
+    });
+  })();
+</script>
+</body>
+</html>

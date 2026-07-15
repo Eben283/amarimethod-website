@@ -1,15 +1,10 @@
-
 import React from 'react';
 
 const AmariLogo = () => {
   return (
-    <div className="flex justify-center py-6">
-      <img
-        src="/quiz/AmariLogo.avif"
-        alt="Amari Method"
-        className="h-12 w-auto"
-      />
-    </div>
+    <a className="wordmark" href="https://www.amarimethod.com/">
+      AMARI
+    </a>
   );
 };
 

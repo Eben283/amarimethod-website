@@ -3,11 +3,15 @@ main = "src/index.js"
 compatibility_date = "2024-01-01"
 
 # Worker processes contacts in chunks of ~25 due to CF subrequest limit.
-# With ~412 partner contacts that's ~17 chunks needed. Fire every 5 min in the
-# 4-5 AM PDT window (~12 invocations) — completes most of the queue per night,
+# With ~412 partner contacts that's ~17 chunks needed. Fire every 5 min across the
+# 6-7 UTC window (24 invocations) — completes most of the queue per night,
 # stragglers picked up the next morning. Idle once queue is empty.
+# Minutes offset to 2,7,...,57 (2-59/5) so the burst never lands on :15, :30, or
+# :45, where series-reconcile (:15 hourly), conversation-cache (:30), and
+# funnel-refresh (:45 hourly) hit the single-use GHL token. Same 24 runs, no
+# same-minute token contention. See 2026-07-11-invariant-laws-live-verification.md (Law 12).
 [triggers]
-crons = ["*/5 6-7 * * *"]
+crons = ["2-59/5 6-7 * * *"]
 
 # Same KV namespace as Pages + daily-audit + ghl-token-refresh
 [[kv_namespaces]]

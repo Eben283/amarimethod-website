@@ -89,6 +89,39 @@ export async function sendCosMessage(
   }
 }
 
+// ── Voice Writer ─────────────────────────────────────────────────────────────
+// Hits /api/voice-write, which runs the shared voice engine (generate -> audit ->
+// revise until on-brand). Non-streaming: one request, one finished draft back.
+
+export interface VoiceWriteResult {
+  copy: string;
+  channel: string;
+  fixes: string[];
+  rounds: number;
+  passedClean: boolean;
+  remainingTells: string[];
+}
+
+export async function sendVoiceWrite(
+  message: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+): Promise<VoiceWriteResult> {
+  const token = staffToken();
+  if (!token) throw new Error('Session expired. Please log in again.');
+
+  const response = await fetch(`${API_BASE}/voice-write`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ message, history }),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(data.error || 'The writer hit a problem.');
+  }
+  return response.json();
+}
+
 // Wipe today's server-side conversation bucket so "New chat" actually starts
 // fresh (the backend keys history per user per day; clearing the UI alone
 // leaves the old thread in KV for the next message to reload).
