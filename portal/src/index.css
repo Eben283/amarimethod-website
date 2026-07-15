@@ -39,10 +39,13 @@
   body {
     @apply bg-amari-bone-white text-amari-charcoal font-sans antialiased;
     min-height: 100vh;
+    background-color: #F8F1E8;
+    color: #211D19;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-serif;
+    font-weight: 500;
   }
 }
 

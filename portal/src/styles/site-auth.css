@@ -1,5 +1,5 @@
 /* Portal auth screens — match marketing site-v6 (cream / Cormorant / General Sans).
-   Scoped under .sa-screen so the logged-in portal cp-* shell is unchanged. */
+   Scoped under .sa-screen. Logged-in shell (cp-*) now shares the same token palette. */
 
 .sa-screen{
   --sa-cream:#F8F1E8;

@@ -41,16 +41,16 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Amari Method Brand Colors
+        // Amari Method Brand Colors (aligned to site-v6)
         amari: {
-          "bone-white": "#FFFCF5",
-          "light-sand": "#F6F3E9",
-          "charcoal": "#252525",
-          "text-secondary": "#484742",
-          "text-muted": "#666666",
-          "border": "#F0EADC",
-          "accent-warm": "#EBA584",
-          "accent-warm-light": "#F5D4C3",
+          "bone-white": "#F8F1E8",
+          "light-sand": "#F1E7DA",
+          "charcoal": "#211D19",
+          "text-secondary": "#5C554D",
+          "text-muted": "#8A8177",
+          "border": "#E8E3DC",
+          "accent-warm": "#E1A98B",
+          "accent-warm-light": "#F3E4DA",
         },
       },
       borderRadius: {
@@ -59,12 +59,12 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        'serif': ['Bona Nova', 'Georgia', 'serif'],
-        'sans': ['DM Sans', 'system-ui', 'sans-serif'],
+        'serif': ['Cormorant Garamond', 'Georgia', 'serif'],
+        'sans': ['General Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'card': '0 2px 8px rgba(0, 0, 0, 0.04)',
-        'card-hover': '0 8px 24px rgba(37, 37, 37, 0.1)',
+        'card': '0 2px 10px rgba(33, 29, 25, 0.05)',
+        'card-hover': '0 8px 24px rgba(33, 29, 25, 0.09)',
       },
       keyframes: {
         "fade-in": {
