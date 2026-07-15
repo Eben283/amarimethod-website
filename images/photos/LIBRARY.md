@@ -109,3 +109,7 @@ mockup de-dup and the shots-todo worklist.
 - `journal-base/jh-vertical-drop.jpg`, `jh-spring-step.jpg` replaced with Firefly keeps
 - `detail-crops/hand-reaching-open.jpg` cropped from hand-reaching generate
 - Suspension hang full frame NOT wired (crop-only asset saved at `detail-crops/suspension-hang-arms-crop.jpg` unused)
+
+
+## Drive masters archived 2026-07-15
+All non-flyer images from Drive folder `1CNJb3sDkeRmZq03g3JQatTQCNNNdIpNo` are saved under `images/photos/drive-masters/` (JPG masters). Safe to delete image files from that Drive folder once this lands on `feat/new-site`. **Keep on Drive:** flyer PDFs and `amari-study-flyers-fedex.zip` only.
