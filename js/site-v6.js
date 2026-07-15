@@ -123,7 +123,7 @@
       '      </div>\n' +
       '      <div class="foot-col foot-locs">\n' +
       '        <h3>Amari</h3>\n' +
-      '        <a href="/contact">San Francisco, CA</a>\n' +
+      '        <span class="foot-city">San Francisco, CA</span>\n' +
       '        <a href="' + BOOK_URL + '">Book a session</a>\n' +
       '        <a href="' + CALL_URL + '">Free 15-minute call</a>\n' +
       '        <a href="/portal/">Client portal</a>\n' +
