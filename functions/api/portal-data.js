@@ -2,9 +2,8 @@
 // Returns client data from GHL: contact details, appointments, series progress
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireOwner } from "../lib/owned-access.js";
 import { deriveLedger, hydrateOrders, classifyOrder, classifyInvoice } from "../lib/session-ledger.js";
-import { isContactRevoked } from "../lib/session-guard.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { getCustomField, isChecked, computeHasLivingPractice } from "../lib/portal-helpers.js";
 import { parsePacificWallClock, normalizeGhlTimestamp } from "../lib/datetime.js";
@@ -74,36 +73,14 @@ export async function onRequestGet(context) {
       );
     }
 
-    // Verify auth token
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers }
-      );
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
-
-    const contactId = tokenPayload.contactId;
-
-    // HIGH-2: per-contact kill switch — revoke one client's live sessions
-    // without rotating JWT_SECRET. (No tag/portalAccess gate here: portal-data
-    // is scoped to the caller's own contactId, so it's their own data.)
-    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
+    // Ownership gate: Bearer + token verify + per-contact revoke, centralized in
+    // lib/owned-access.js. contactId comes from the verified JWT, never a request
+    // id — the invariant that closes the portal IDOR class. (No tag/portalAccess
+    // gate here: portal-data is scoped to the caller's own contactId, so it's
+    // their own data.)
+    const gate = await requireOwner(context, headers);
+    if (gate.error) return gate.error;
+    const { tokenPayload, contactId } = gate;
 
     // Fetch contact, appointments, custom field defs, orders, and invoices in
     // parallel. The ledger needs orders+invoices in addition to contact+appts;

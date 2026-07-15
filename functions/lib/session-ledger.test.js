@@ -441,6 +441,62 @@ describe('deriveLedger — booking-generated placeholder exclusion', () => {
   });
 });
 
+describe('deriveLedger — Kristina 8-Session Series regression (2026-07-08)', () => {
+  it('Kristina 8-Session Series: $1,295 order → remaining 8, series 8-session', () => {
+    // Kristina Schubert paid a real $1,295 8-Session Series (payment_link,
+    // completed). A second $190 sourceType="calendar" placeholder order (a
+    // booking artifact, no card charged) must be ignored. She has a 7/6
+    // Partner Initial comp on a NON-series calendar (showed, does NOT draw
+    // the pack) and an upcoming 7/13 follow-up (confirmed, future). Correct
+    // verdict: pack full, no paid session consumed → remaining 8, 8-session.
+    // The bug that must never regress: her balance derived as 0 (or her order
+    // failing to classify).
+    const kristinaOrders = [
+      {
+        sourceName: '',
+        sourceType: 'payment_link',
+        status: 'completed',
+        amount: 1295,
+        createdAt: '2026-07-05T18:00:00Z',
+        // classifyOrder reads items[0].product._id and looks it up by EXACT
+        // productId — the real order carries the 8-Session Series productId.
+        items: [{ product: { _id: PID.eightSeries, name: '8-Session Series' } }],
+      },
+      // $190 booking placeholder — sourceType=calendar → classifies as
+      // "placeholder", 0 sessions, must not inflate purchased.
+      {
+        sourceName: 'Follow-up Session — In Person',
+        sourceType: 'calendar',
+        status: 'completed',
+        amount: 190,
+        createdAt: '2026-07-06T20:00:00Z',
+        items: [{ product: { _id: PID.followupInPerson } }],
+      },
+    ];
+    const kristinaAppts = [
+      // 7/6 Partner Initial comp — NON-series calendar, showed. Does not draw.
+      appt({ calendarId: CAL.partner, status: 'showed', startTime: '2026-07-06T18:00:00Z' }),
+      // 7/13 follow-up — series calendar but confirmed + future, not attended.
+      appt({ calendarId: CAL.followup, status: 'confirmed', startTime: '2026-07-13T18:00:00Z' }),
+    ];
+
+    const result = deriveLedger({
+      contact: contact(),
+      orders: kristinaOrders,
+      appointments: kristinaAppts,
+      fieldDefs: FIELD_DEFS,
+    });
+
+    expect(result.purchased).toBe(8);
+    expect(result.attended).toBe(0);
+    expect(result.remaining).toBe(8);
+    expect(result.seriesType).toBe('8-session');
+    expect(result.display.seriesType).toBe('8-session');
+    expect(result.display.remaining).toBe(8);
+    expect(result.confidence).toBe('high');
+  });
+});
+
 describe('deriveLedger — entrainment exclusion', () => {
   it('8-session with 3 follow-ups + 2 entrainments → remaining 5 (entrainments excluded)', () => {
     const result = deriveLedger({

@@ -11,9 +11,9 @@
 //     initials (comped perk) and entrainments (billed separately $90) on top of
 //     the non-journey set.
 //
-// NOTE: series-reconcile-worker/src/sync.js computeLifetimeCount holds an
-// intentional fifth copy of NON_JOURNEY — it is a separate deploy unit (its own
-// build root) and cannot import from functions/lib. Keep the two in sync by hand.
+// series-reconcile-worker/src/sync.js computeLifetimeCount imports NON_JOURNEY_PATTERN
+// from here (Wrangler bundles the relative import transitively at deploy), so there is
+// no hand-kept copy in the worker. All consumers share this one source.
 
 export const NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
 export const NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;

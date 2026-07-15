@@ -7,8 +7,7 @@
 // Auth pattern copied from portal-data.js; write pattern from send-to-ghl.js.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
-import { isContactRevoked } from "../lib/session-guard.js";
+import { requireOwner } from "../lib/owned-access.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const REMINDER_PREFERENCE_FIELD_ID = "a42sQtjQ2yZPd0eJmkGW"; // contact.reminder_preference
@@ -52,22 +51,12 @@ export async function onRequestPost(context) {
       return jsonError(500, "Server configuration error");
     }
 
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return jsonError(401, "Not authenticated");
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return jsonError(401, "Session expired. Please log in again.");
-    }
-
-    const contactId = tokenPayload.contactId;
-    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
-      return jsonError(401, "Session expired. Please log in again.");
-    }
+    // Ownership gate: Bearer + verify + per-contact revoke, centralized in
+    // lib/owned-access.js. contactId comes from the verified JWT, never the
+    // request — the write below only ever targets the caller's own contact.
+    const gate = await requireOwner(context, headers);
+    if (gate.error) return gate.error;
+    const { contactId } = gate;
 
     const body = await context.request.json().catch(() => ({}));
     const preference = String(body.preference || "").toLowerCase();

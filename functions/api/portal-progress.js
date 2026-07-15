@@ -4,8 +4,7 @@
 // GET  — returns the stored progress object (or null if none)
 // POST — writes a new progress object; client sends the full merged blob
 
-import { verifySessionToken } from "../lib/auth.js";
-import { isContactRevoked } from "../lib/session-guard.js";
+import { requireOwner } from "../lib/owned-access.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -28,34 +27,16 @@ function kvKey(contactId) {
   return `lp_progress:${contactId}`;
 }
 
+// Routes through the shared ownership gate (lib/owned-access.js) so this
+// endpoint enforces the same Bearer + verify + per-contact revoke checks as the
+// rest of the portal. contactId comes from the verified JWT, never a request id.
+// The short "Session expired" wording is preserved via a message override.
 async function requirePortalAuth(context, headers) {
-  const secret = context.env.JWT_SECRET;
-  if (!secret) {
-    return { error: new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers }) };
-  }
-
-  const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers }) };
-  }
-
-  let payload;
-  try {
-    payload = await verifySessionToken(auth.slice(7), secret);
-  } catch {
-    return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) };
-  }
-
-  if (!payload.contactId) {
-    return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers }) };
-  }
-
-  // Per-contact kill switch (2026-07-02 audit — same check as portal-data).
-  if (await isContactRevoked(context.env.PORTAL_KV, payload.contactId)) {
-    return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) };
-  }
-
-  return { payload };
+  const gate = await requireOwner(context, headers, {
+    messages: { invalidToken: "Session expired", revoked: "Session expired" },
+  });
+  if (gate.error) return { error: gate.error };
+  return { payload: gate.tokenPayload };
 }
 
 export async function onRequestOptions(context) {

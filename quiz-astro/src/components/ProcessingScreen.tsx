@@ -1,58 +1,36 @@
 import React, { useEffect, useState } from 'react';
 
+const STEPS = [
+  'Mapping where your pain lives…',
+  'Tracing the chain behind it…',
+  "Weighing what you've already tried…",
+  'Estimating your recovery potential…',
+];
+
 const ProcessingScreen = () => {
   const [currentStep, setCurrentStep] = useState(0);
-
-  const steps = [
-    'Analyzing your pain pattern...',
-    'Evaluating movement compensations...',
-    'Calculating your scores...',
-    'Generating personalized insights...',
-  ];
+  const [fade, setFade] = useState(1);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        if (prev < steps.length - 1) {
-          return prev + 1;
-        }
-        return prev;
-      });
-    }, 600);
+      setFade(0);
+      setTimeout(() => {
+        setCurrentStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev));
+        setFade(1);
+      }, 200);
+    }, 800);
 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="min-h-[500px] flex items-center justify-center">
-      <div className="max-w-2xl w-full px-6">
-        <div className="bg-white rounded-xl shadow-lg p-8 md:p-10">
-          {/* Simple spinner */}
-          <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 border-4 border-amari-oat border-t-amari-pine-teal rounded-full animate-spin"></div>
-          </div>
-
-          {/* Main heading */}
-          <h2 className="text-2xl md:text-3xl font-serif text-amari-charcoal text-center mb-6">
-            Analyzing Your Results
-          </h2>
-
-          {/* Simple progress text */}
-          <div className="text-center">
-            <p className="text-base md:text-lg font-sans text-amari-text-light">
-              {steps[currentStep]}
-            </p>
-          </div>
-
-          {/* Bottom message */}
-          <div className="mt-8 text-center">
-            <p className="text-sm text-amari-text-light font-sans">
-              This will only take a moment...
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <section className="screen proc">
+      <div className="ring" aria-hidden="true" />
+      <h2>Reading your pattern</h2>
+      <p className="step" style={{ opacity: fade }}>
+        {STEPS[currentStep]}
+      </p>
+    </section>
   );
 };
 

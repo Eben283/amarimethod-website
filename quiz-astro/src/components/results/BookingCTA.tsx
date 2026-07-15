@@ -32,7 +32,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <div className="offer-price-num">$225</div>
             <div className="offer-price-lbl">One session · No package required</div>
             <p className="offer-price-meta">
-              Pay for one session — your $225 carries forward if you continue.
+              Pay for one session. Your $225 carries forward if you continue.
             </p>
           </div>
 
@@ -42,7 +42,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
               <span className="eyebrow">What's included</span>
               <ul className="offer-list">
                 <li>Full assessment with Garrett</li>
-                <li>Your first guided protocol — most clients feel a shift</li>
+                <li>Your first guided protocol, where most clients feel a shift</li>
                 <li>Take-home practice you can do tonight</li>
                 <li>Satisfaction guarantee</li>
               </ul>
@@ -52,15 +52,15 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
               <span className="eyebrow">How the path works</span>
               <div className="row">
                 <span className="lbl">Today:</span>
-                <span className="body">Book your first session — $225.</span>
+                <span className="body">Book your first session ($225).</span>
               </div>
               <div className="row">
                 <span className="lbl">After session 1:</span>
-                <span className="body">Decide whether to continue. No pressure.</span>
+                <span className="body">Decide whether to continue.</span>
               </div>
               <div className="row">
                 <span className="lbl">Before session 2:</span>
-                <span className="body">If you continue, upgrade for the difference — your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</span>
+                <span className="body">If you continue, upgrade for the difference. Your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</span>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
           <blockquote>
             {testimonial.quote}
           </blockquote>
-          <cite>— {testimonial.name} · {testimonial.attribution}</cite>
+          <cite>{testimonial.name} · {testimonial.attribution}</cite>
         </section>
       ) : null}
 

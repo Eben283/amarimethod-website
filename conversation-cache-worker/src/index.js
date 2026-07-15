@@ -17,6 +17,7 @@
 // Cron: every 3 hours (see wrangler.toml). Each run: sync → derive → reconcile
 //       ghost cards → transcribe a bounded batch of new call recordings.
 
+import { isFullReconcile } from "./schedule.js";
 import { runSync } from "./sync.js";
 import { deriveCadence } from "./cadence.js";
 import { reconcileDeletions } from "./reconcile.js";
@@ -110,11 +111,10 @@ async function transcribePending(env, limit = 8) {
 export default {
   async scheduled(event, env, ctx) {
     // The Monday weekly cron does a FULL reconcile (drift insurance); the 3-hourly
-    // cron does the cheap incremental sync. Both then derive the due-list.
-    // Checked against the incremental cron (not the weekly one) so a future change
-    // to the weekly schedule's exact time can't silently disable the full reconcile
-    // again — see wrangler.toml [triggers].crons for the two schedules.
-    const full = event.cron !== "0 */3 * * *";
+    // cron does the cheap incremental sync. Both then derive the due-list. The cron
+    // strings and this decision live in schedule.js, which schedule.test.js pins to
+    // wrangler.toml so they can't silently drift again (see ih32).
+    const full = isFullReconcile(event.cron);
     // Sync + derive, then transcribe a bounded batch of new call recordings
     // (catches up the backlog over runs, then stays current with new calls).
     ctx.waitUntil(

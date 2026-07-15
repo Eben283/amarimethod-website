@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
   <title>Amari Partner | Your Toolkit</title>
   <meta name="description" content="Refer clients, track earnings, and grow with Amari Method.">
   <meta name="robots" content="noindex, nofollow">
@@ -31,27 +32,30 @@
     gtag('js', new Date());
     gtag('config', 'G-DGQM32BMYZ');
   </script>
-
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
-  <style>
+<style>
     /* ===== Partner App — editorial dashboard (rebuilt 2026-05-17) ===== */
     body {
       background: var(--pa-paper, #F7F2E8);
       min-height: 100vh;
       min-height: 100dvh;
       margin: 0;
+      font-family: var(--pa-sans);
+      color: var(--pa-ink);
+      -webkit-font-smoothing: antialiased;
     }
 
     :root {
-      --pa-paper: #F7F2E8;
-      --pa-paper-2: #F0E9D8;
+      --pa-paper: #F8F1E8;
+      --pa-display: "Cormorant Garamond", Georgia, serif;
+      --pa-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+      --pa-paper-2: #F1E7DA;
       --pa-paper-3: #EBE2CC;
-      --pa-ink: #1F1D1A;
+      --pa-ink: #211D19;
       --pa-ink-2: #3A3733;
       --pa-mute: #7A746B;
       --pa-line: #E0D7C2;
       --pa-line-2: #CCC1A8;
-      --pa-accent: #C56B4E;
+      --pa-accent: #E1A98B;
       --pa-accent-soft: #F5DDD2;
       --pa-err: #A1402B;
       --pa-ok: #3F7A4F;
@@ -92,7 +96,7 @@
     /* Greeting */
     .app-greeting {
       padding: 26px 20px 4px;
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 38px;
       font-weight: 400;
       letter-spacing: -0.025em;
@@ -151,7 +155,7 @@
       align-items: end;
     }
     .earnings-amount {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-weight: 300;
       letter-spacing: -0.035em;
       line-height: 0.95;
@@ -160,7 +164,7 @@
       display: block;
     }
     .earnings-paid {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 15px;
       font-style: italic;
       color: var(--pa-ok);
@@ -188,7 +192,7 @@
       gap: 2px;
     }
     .earnings-breakdown strong {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-weight: 400;
       font-size: 22px;
       letter-spacing: -0.01em;
@@ -266,14 +270,14 @@
       min-width: 0;
     }
     .cta-label {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
       line-height: 1.15;
     }
     .cta-card-secondary .cta-label {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14.5px;
       font-weight: 500;
       color: var(--pa-ink);
@@ -285,7 +289,7 @@
     }
     .cta-card-secondary .cta-desc { color: var(--pa-mute); font-size: 12px; }
     .cta-earn-tag {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 16px;
       font-weight: 400;
       font-style: italic;
@@ -316,7 +320,7 @@
       margin: 26px 20px 0;
     }
     .app-share-section h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
@@ -339,7 +343,7 @@
     }
     .share-link-input {
       padding: 14px 14px;
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14px;
       color: var(--pa-ink);
       background: transparent;
@@ -398,7 +402,7 @@
     }
     .inline-form.active { display: block; }
     .inline-form h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 20px;
       font-weight: 400;
       letter-spacing: -0.01em;
@@ -435,7 +439,7 @@
       -webkit-appearance: none;
       appearance: none;
       min-height: 48px;
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
     }
     .inline-form input::placeholder { color: var(--pa-mute); opacity: 0.6; }
     .inline-form input:focus { border-color: var(--pa-ink); }
@@ -478,7 +482,7 @@
     .inline-success.active { display: block; }
     .inline-success .check,
     .success-glyph {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 56px;
       line-height: 1;
@@ -524,7 +528,7 @@
       width: 100%;
     }
     .inline-success h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 26px;
       font-weight: 400;
       letter-spacing: -0.015em;
@@ -602,7 +606,7 @@
       min-width: 0;
     }
     .pitch-card-glyph {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 22px;
       color: var(--pa-accent);
@@ -612,7 +616,7 @@
       flex: 0 0 auto;
     }
     .pitch-card-summary h3 {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
@@ -656,7 +660,7 @@
       margin-bottom: 12px;
     }
     .pitch-quote {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 15px;
       line-height: 1.55;
       color: var(--pa-ink);
@@ -706,7 +710,7 @@
       align-items: start;
     }
     .objection-list li strong {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-style: italic;
       font-size: 14px;
       color: var(--pa-accent);
@@ -721,7 +725,7 @@
       border-radius: 2px;
     }
     .objection-list li > span {
-      font-family: 'DM Sans', system-ui, sans-serif;
+      font-family: var(--pa-sans);
       font-size: 14.5px;
       line-height: 1.5;
       color: var(--pa-ink-2);
@@ -751,7 +755,7 @@
     .trust-item:last-child { border-right: 0; }
     .trust-dot { display: none; }
     .trust-item-num {
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 26px;
       font-weight: 300;
       letter-spacing: -0.02em;
@@ -819,7 +823,7 @@
       align-items: baseline;
       padding: 16px 20px;
       border-bottom: 1px solid var(--pa-line);
-      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-family: var(--pa-display);
       font-size: 18px;
       font-weight: 400;
       letter-spacing: -0.005em;
@@ -1018,33 +1022,92 @@
       vertical-align: middle;
     }
 
-    /* ===== Login Screen ===== */
-    /* ===== Editorial sign-in (replaced 2026-05-17) ===== */
-    .login-screen {
-      display: none;
-      max-width: 420px;
-      margin: 0 auto;
-      padding: 12vh 24px 48px;
-      text-align: left;
+    /* ===== Login Screen — match marketing site-v6 ===== */
+    .app-shell:has(#login-screen.active) {
+      max-width: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: #F8F1E8;
     }
-    .login-screen.active { display: block; }
-    .login-screen > img { display: none; } /* hide old logo — header has brand */
+    .login-screen {
+      --sa-cream: #F8F1E8;
+      --sa-paper: #FCF7F1;
+      --sa-ink: #211D19;
+      --sa-body: #5C554D;
+      --sa-line: rgba(33,29,25,.14);
+      --sa-serif: "Cormorant Garamond", Georgia, serif;
+      --sa-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+      --sa-ease: cubic-bezier(0.32,0.72,0,1);
+
+      display: none;
+      min-height: 100vh;
+      min-height: 100dvh;
+      width: 100%;
+      margin: 0;
+      padding: 48px 24px;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: var(--sa-cream);
+      color: var(--sa-ink);
+      font-family: var(--sa-sans);
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    .login-screen.active { display: flex; }
+    .login-screen > img { display: none; }
+    .login-main {
+      width: 100%;
+      max-width: 440px;
+    }
+    .login-wordmark {
+      display: inline-block;
+      font-family: var(--sa-serif);
+      font-weight: 500;
+      font-size: clamp(28px, 5vw, 38px);
+      letter-spacing: .34em;
+      padding-left: .34em;
+      color: var(--sa-ink);
+      line-height: 1;
+      margin-bottom: 36px;
+      text-decoration: none;
+    }
+    .login-eyebrow {
+      display: block;
+      font-family: var(--sa-sans);
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .2em;
+      color: var(--sa-body);
+      margin-bottom: 18px;
+    }
     .login-screen h1 {
-      font-family: var(--font-serif-primary);
-      font-weight: 400;
-      font-size: clamp(32px, 7.2vw, 44px);
-      letter-spacing: -0.025em;
-      line-height: 1.05;
-      color: var(--color-text);
-      margin: 0 0 28px;
+      font-family: var(--sa-serif);
+      font-weight: 500;
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: 0;
+      line-height: 1.14;
+      color: var(--sa-ink);
+      margin: 0;
       text-wrap: balance;
     }
     .login-screen h1 em {
       font-style: italic;
-      color: var(--color-accent-warm);
-      font-weight: 400;
+      color: var(--sa-ink);
+      font-weight: 500;
     }
-    .login-screen .login-subtitle { display: none; } /* headline carries it */
+    .login-lead {
+      margin: 18px auto 0;
+      max-width: 34ch;
+      font-family: var(--sa-sans);
+      font-size: clamp(1rem, 1.4vw, 1.125rem);
+      color: var(--sa-body);
+      line-height: 1.65;
+    }
+    .login-screen .login-subtitle { display: none; }
 
     .login-card {
       background: transparent;
@@ -1052,127 +1115,145 @@
       border-radius: 0;
       padding: 0;
       box-shadow: none;
+      margin-top: 34px;
+      text-align: left;
     }
     .login-card label {
       display: block;
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-      color: var(--color-text-secondary);
-      margin-bottom: 8px;
+      font-family: var(--sa-sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--sa-body);
+      margin-bottom: 9px;
     }
     .login-card input[type="email"] {
       width: 100%;
-      padding: 10px 2px;
-      background: transparent;
-      border: 0;
-      border-bottom: 1.5px solid var(--color-text);
-      border-radius: 0;
-      font-family: 'DM Sans', system-ui, sans-serif;
-      font-size: 17px;
+      padding: 14px 16px;
+      background: var(--sa-paper);
+      border: 1px solid var(--sa-line);
+      border-radius: 2px;
+      font-family: var(--sa-sans);
+      font-size: 15px;
       font-weight: 400;
-      color: var(--color-text);
+      color: var(--sa-ink);
       box-sizing: border-box;
-      margin-bottom: 20px;
-      transition: border-color 0.2s;
+      margin-bottom: 22px;
+      transition: border-color .3s var(--sa-ease);
     }
     .login-card input[type="email"]::placeholder {
-      font-family: var(--font-serif-primary);
-      font-style: italic;
-      color: var(--color-text-muted);
-      opacity: 0.6;
+      font-family: var(--sa-sans);
+      font-style: normal;
+      color: rgba(92,85,77,.55);
+      opacity: 1;
     }
     .login-card input[type="email"]:focus {
       outline: none;
-      border-color: var(--color-accent-warm);
+      border-color: var(--sa-ink);
       box-shadow: none;
     }
     .login-card input[type="email"][aria-invalid="true"] {
-      border-color: var(--color-accent-warm);
+      border-color: #8B2E1F;
     }
     .login-card .login-btn {
       width: 100%;
-      padding: 16px 22px;
+      padding: 18px 34px;
       border: 0;
-      border-radius: 0;
-      background: var(--color-text);
-      color: var(--bg-primary);
-      font-family: 'DM Sans', system-ui, sans-serif;
-      font-size: 15px;
-      font-weight: 500;
-      letter-spacing: -0.005em;
+      border-radius: 2px;
+      background: var(--sa-ink);
+      color: #fff;
+      font-family: var(--sa-sans);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background .4s var(--sa-ease), transform .4s var(--sa-ease);
     }
-    .login-card .login-btn:hover:not(:disabled) { background: var(--color-accent-warm); }
-    .login-card .login-btn:disabled { opacity: 0.65; cursor: default; }
+    .login-card .login-btn:hover:not(:disabled) {
+      background: #000;
+      transform: translateY(-1px);
+    }
+    .login-card .login-btn:active:not(:disabled) { transform: scale(.985); }
+    .login-card .login-btn:disabled { opacity: 0.55; cursor: default; transform: none; }
     .login-error {
-      color: var(--color-accent-warm);
+      color: #8B2E1F;
       font-size: 13px;
       line-height: 1.5;
       margin: -12px 0 16px;
       display: none;
     }
     .login-resend {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--color-text-muted);
+      margin-top: 28px;
+      font-family: var(--sa-sans);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--sa-body);
     }
     .login-resend a {
-      color: var(--color-text-secondary);
-      border-bottom: 1px solid var(--color-border-dark);
-      padding-bottom: 1px;
+      color: var(--sa-ink);
+      border-bottom: 1px solid var(--sa-ink);
+      padding-bottom: 3px;
       text-decoration: none;
       cursor: pointer;
-      transition: color 0.2s, border-color 0.2s;
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 600;
     }
-    .login-resend a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
+    .login-resend a:hover { opacity: .7; }
     .login-success {
       display: none;
-      text-align: left;
+      text-align: center;
       padding: 0;
     }
-    .login-success .check-circle { display: none; } /* drop the icon — editorial copy carries it */
+    .login-success .check-circle { display: none; }
     .login-success h3 {
-      font-family: var(--font-serif-primary);
-      font-weight: 400;
-      font-size: clamp(22px, 5.4vw, 28px);
-      letter-spacing: -0.01em;
-      line-height: 1.2;
-      color: var(--color-text);
-      margin-bottom: 12px;
+      font-family: var(--sa-serif);
+      font-weight: 500;
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: 0;
+      line-height: 1.14;
+      color: var(--sa-ink);
+      margin: 0 0 18px;
       text-wrap: balance;
     }
     .login-success h3 em {
       font-style: italic;
-      color: var(--color-accent-warm);
-      font-weight: 400;
+      color: var(--sa-ink);
+      font-weight: 500;
     }
     .login-success p {
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.55;
-      color: var(--color-text-secondary);
-      margin-bottom: 4px;
+      color: var(--sa-body);
+      margin: 0 auto 8px;
+      max-width: 36ch;
     }
     .login-success p.muted {
-      font-size: 13px;
-      color: var(--color-text-muted);
+      font-size: 14px;
+      color: var(--sa-body);
+      opacity: .9;
     }
     .login-apply {
-      margin-top: 24px;
+      margin-top: 36px;
       font-size: 14px;
-      color: var(--color-text-muted);
+      color: var(--sa-body);
+      text-align: center;
     }
     .login-apply a {
-      color: var(--color-text-secondary);
-      border-bottom: 1px solid var(--color-border-dark);
-      padding-bottom: 1px;
-      text-decoration: none;
-      transition: color 0.2s, border-color 0.2s;
+      color: var(--sa-ink);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      border: 0;
+      padding: 0;
     }
-    .login-apply a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
+    .login-apply a:hover { opacity: .75; }
     @media (max-width: 520px) {
-      .login-screen { padding: 8vh 20px 32px; }
+      .login-screen { padding: 40px 20px; }
       .login-card input[type="email"] { font-size: 16px; }
     }
 
@@ -1218,33 +1299,36 @@
 
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
-    <h1>Partner <em>sign-in.</em></h1>
+    <div class="login-main">
+      <a href="/" class="login-wordmark">AMARI</a>
+      <span class="login-eyebrow">Partner portal</span>
+      <h1 id="login-heading">Sign <em>in.</em></h1>
+      <p class="login-lead" id="login-lead">Use the email on your partner account. We&rsquo;ll send a one-time login link.</p>
 
-    <div class="login-card">
-      <form id="login-form" autocomplete="on" novalidate>
-        <label for="login-email">Email</label>
-        <input
-          type="email"
-          id="login-email"
-          name="email"
-          placeholder="you@yourpractice.com"
-          required
-          autocomplete="email"
-          autofocus
-          aria-describedby="login-error"
-        >
-        <div class="login-error" id="login-error" role="alert"></div>
-        <button type="submit" class="login-btn" id="login-btn">Send sign-in link &nbsp;&rarr;</button>
-      </form>
+      <div class="login-card">
+        <form id="login-form" autocomplete="on" novalidate>
+          <label for="login-email">Email address</label>
+          <input
+            type="email"
+            id="login-email"
+            name="email"
+            placeholder="you@yourpractice.com"
+            required
+            autocomplete="email"
+            autofocus
+            aria-describedby="login-error"
+          >
+          <div class="login-error" id="login-error" role="alert"></div>
+          <button type="submit" class="login-btn" id="login-btn">Email me a login link</button>
+        </form>
 
-      <div class="login-success" id="login-success" role="status" aria-live="polite">
-        <h3>Check your inbox <em>&mdash; we sent a link.</em></h3>
-        <p>The link is good for 10 minutes.</p>
-        <p class="muted">Don&rsquo;t see it? Check your spam folder.</p>
-        <div class="login-resend" id="login-resend"></div>
+        <div class="login-success" id="login-success" role="status" aria-live="polite">
+          <p class="muted">Check spam if it isn&rsquo;t there in a minute. The link works once and expires in 24 hours.</p>
+          <div class="login-resend" id="login-resend"></div>
+        </div>
+
+        <p class="login-apply" id="login-apply">New partner? <a href="/partners">Apply here</a></p>
       </div>
-
-      <p class="login-apply" id="login-apply">New partner? <a href="/partner">Apply here</a></p>
     </div>
   </div>
 
@@ -1420,10 +1504,6 @@
         <div class="pitch-section-title">Trust signals</div>
         <div class="trust-items">
           <div class="trust-item">
-            <span class="trust-item-num"><em>4.9</em>/5</span>
-            <span class="trust-item-sub">Client rating</span>
-          </div>
-          <div class="trust-item">
             <span class="trust-item-num"><em>1st</em></span>
             <span class="trust-item-sub">Session shift, for most</span>
           </div>
@@ -1590,7 +1670,7 @@
       if (remaining <= 0) {
         clearInterval(interval);
         btn.disabled = false;
-        btn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
+        btn.textContent = 'Email me a login link';
       } else {
         btn.textContent = 'Wait ' + remaining + 's';
       }
@@ -1612,6 +1692,10 @@
           form.style.display = '';
           var applyLine = document.getElementById('login-apply');
           if (applyLine) applyLine.style.display = '';
+          var heading = document.getElementById('login-heading');
+          var lead = document.getElementById('login-lead');
+          if (heading) heading.innerHTML = 'Sign <em>in.</em>';
+          if (lead) lead.textContent = 'Use the email on your partner account. We\u2019ll send a one-time login link.';
           var emailInput = document.getElementById('login-email');
           if (emailInput) emailInput.focus();
         });
@@ -1658,6 +1742,10 @@
       form.style.display = 'none';
       successDiv.style.display = 'block';
       if (applyLine) applyLine.style.display = 'none';
+      var heading = document.getElementById('login-heading');
+      var lead = document.getElementById('login-lead');
+      if (heading) heading.innerHTML = 'Check your <em>email.</em>';
+      if (lead) lead.textContent = 'Open the login link we just sent — it takes you straight into your toolkit.';
       startResendCooldown(document.getElementById('login-resend'), form, successDiv, 60);
     } catch (err) {
       errorDiv.textContent = err.message;
@@ -1667,7 +1755,7 @@
         startBtnCooldown(loginBtn, 60);
       } else {
         loginBtn.disabled = false;
-        loginBtn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
+        loginBtn.textContent = 'Email me a login link';
       }
     }
   });
@@ -1689,9 +1777,16 @@
     document.getElementById('login-success').style.display = 'none';
     document.getElementById('login-error').style.display = 'none';
     document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').innerHTML = 'Send sign-in link &nbsp;&rarr;';
+    document.getElementById('login-btn').textContent = 'Email me a login link';
     var applyLine = document.getElementById('login-apply');
     if (applyLine) applyLine.style.display = '';
+    var heading = document.getElementById('login-heading');
+    var lead = document.getElementById('login-lead');
+    if (heading) { heading.style.display = ''; heading.innerHTML = 'Sign <em>in.</em>'; }
+    if (lead) {
+      lead.style.display = '';
+      lead.textContent = 'Use the email on your partner account. We\u2019ll send a one-time login link.';
+    }
     document.getElementById('login-email').removeAttribute('aria-invalid');
   });
 

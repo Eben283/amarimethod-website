@@ -3,7 +3,7 @@
 // Queries GHL contacts where referral_source matches the partner name.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireOwner } from "../lib/owned-access.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -58,43 +58,21 @@ export async function onRequestGet(context) {
   headers["Content-Type"] = "application/json";
 
   try {
-    // Require a valid PARTNER session token.
-    const JWT_SECRET = context.env.JWT_SECRET;
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ") || !JWT_SECRET) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers }
-      );
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (authErr) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
-    if (tokenPayload.type !== "partner") {
-      return new Response(
-        JSON.stringify({ error: "Partner access required" }),
-        { status: 403, headers }
-      );
-    }
-
     // ── Authorization: a partner may only ever see THEIR OWN referrals. ──
     // Identity comes from the signed token (contactId), NEVER from a client-
     // supplied ?ref= name. Trusting ?ref= was an IDOR (E#1, 2026-07-04): any
     // partner could read any other partner's referral list + referred-client PII.
-    const partnerContactId = tokenPayload.contactId;
-    if (!partnerContactId) {
-      return new Response(
-        JSON.stringify({ error: "Partner access required" }),
-        { status: 403, headers }
-      );
-    }
+    //
+    // Bearer + verify + partner-audience + per-contact revoke are centralized in
+    // lib/owned-access.js so this endpoint can't drift from the rest of the
+    // partner surface. (Routing through the gate also ADDS the revoke check this
+    // endpoint previously lacked.)
+    const gate = await requireOwner(context, headers, {
+      audience: "partner",
+      messages: { wrongAudience: "Partner access required" },
+    });
+    if (gate.error) return gate.error;
+    const partnerContactId = gate.contactId;
 
     const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {

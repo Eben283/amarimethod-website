@@ -10,13 +10,13 @@ type ResultsHeroProps = {
 
 const patternDescriptions: Record<PatternSignature, string> = {
   'Protective Tension':
-    "Your muscles are gripping. They're working overtime because your body senses something needs holding together. Until that signal changes, the tension can't release — no matter how much you stretch.",
+    "Your muscles are gripping. They're working overtime because your body senses something needs holding together. Until that signal changes, the tension can't release, no matter how much you stretch.",
   'Structural Adaptation':
     'Your skeleton has reorganized around the pattern. What started as a workaround became your default position. What shifted in can shift back, with the right input.',
   'Established Pattern':
     "This pattern has been with you long enough that your body practices it without thinking. Long-standing patterns feel inevitable, but the body stays adaptable. Duration doesn't predict the outcome. The pattern does.",
   'Functional Limitation':
-    "Your pain is changing how you live, not just how you feel. You're navigating around it — different chairs, different routines, different movements. Each workaround keeps the pattern alive.",
+    "Your pain has started to change how you live. You're navigating around it with different chairs, different routines. Each workaround keeps the pattern alive.",
   'Compensatory Movement':
     "Other parts of your body are doing the work the painful part has stopped doing. Those parts are now overworking, which is why the pain often shows up somewhere different from where the problem actually started.",
 };

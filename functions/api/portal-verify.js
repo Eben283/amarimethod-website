@@ -6,6 +6,17 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  try {
+    const host = new URL(origin).hostname;
+    return host === "amarimethod-website.pages.dev" || host.endsWith(".amarimethod-website.pages.dev");
+  } catch {
+    return false;
+  }
+}
+
 function corsHeaders(origin) {
   // LOW-2: echo the origin only when allow-listed; omit ACAO otherwise.
   const headers = {
@@ -13,7 +24,7 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
   };
-  if (ALLOWED_ORIGINS.includes(origin)) {
+  if (isAllowedOrigin(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
   }
   return headers;

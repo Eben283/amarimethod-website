@@ -1,9 +1,8 @@
 // Cloudflare Pages Function: GET /api/partner-data
 // Authenticated endpoint: verifies Bearer token, fetches partner info + referral stats from GHL
 
-import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
-import { isContactRevoked } from "../lib/session-guard.js";
+import { ghlHeaders } from "../lib/ghl.js";
+import { loadOwnedContact } from "../lib/owned-access.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -43,84 +42,18 @@ export async function onRequestGet(context) {
   headers["Content-Type"] = "application/json";
 
   try {
-    const JWT_SECRET = context.env.JWT_SECRET;
-    const GHL_API_KEY = await getGhlToken(context);
-
-    if (!JWT_SECRET || !GHL_API_KEY) {
-      console.error("[partner-data] Missing env vars");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers }
-      );
-    }
-
-    // Verify auth token
-    const authHeader = context.request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers }
-      );
-    }
-
-    let tokenPayload;
-    try {
-      tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
-
-    const contactId = tokenPayload.contactId;
-
-    // HIGH-2: assert the token came from the partner flow (audience), not just
-    // that it's validly signed. Partner session tokens carry type:"partner"
-    // (partner-verify.js); a client/staff token must not reach partner data.
-    if (tokenPayload.type !== "partner") {
-      return new Response(
-        JSON.stringify({ error: "This area is for partners." }),
-        { status: 403, headers }
-      );
-    }
-
-    // HIGH-2: per-contact kill switch — lets us revoke one partner's live
-    // sessions without rotating JWT_SECRET (which logs out everyone).
-    if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
-      return new Response(
-        JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers }
-      );
-    }
-
-    // Fetch partner's own contact details from GHL
-    const contactResponse = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
-      headers: ghlHeaders(GHL_API_KEY),
+    // Ownership gate: Bearer + verify + partner-audience + per-contact revoke +
+    // own-contact fetch + affiliate-partner re-check, all centralized in
+    // lib/owned-access.js. Identity is the token's contactId, never a request
+    // id (the invariant). The contact is fetched here (no extra round-trip);
+    // its tag re-check revokes access the moment the affiliate-partner tag is
+    // stripped, instead of waiting out the 30-day session.
+    const owned = await loadOwnedContact(context, headers, {
+      audience: "partner",
+      requireTag: "affiliate-partner",
     });
-
-    if (!contactResponse.ok) {
-      console.error(`[partner-data] GHL contact fetch error: ${contactResponse.status}`);
-      return new Response(
-        JSON.stringify({ error: "Unable to load your data. Please try again." }),
-        { status: 422, headers }
-      );
-    }
-
-    const contactData = await contactResponse.json();
-    const contact = contactData.contact;
-
-    // HIGH-2: re-verify partner eligibility on EVERY read, not just at login.
-    // The contact is already fetched, so this is free. Stripping the
-    // affiliate-partner tag now revokes access on the next request (was: the
-    // tag was checked only at partner-auth, so a revoked partner kept access
-    // for up to the 30-day session).
-    if (!(contact.tags || []).includes("affiliate-partner")) {
-      return new Response(
-        JSON.stringify({ error: "Your partner access is no longer active." }),
-        { status: 403, headers }
-      );
-    }
+    if (owned.error) return owned.error;
+    const { tokenPayload, contactId, contact, ghlToken: GHL_API_KEY } = owned;
 
     const capitalize = (s) =>
       s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : "";

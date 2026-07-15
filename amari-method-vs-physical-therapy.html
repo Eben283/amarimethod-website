@@ -1,328 +1,401 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <title>Amari Method vs Physical Therapy | What's the Difference?</title>
-  <meta name="description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain, and how to know which is right for you.">
-  <meta name="keywords" content="Amari Method vs physical therapy, chronic pain treatment comparison, alternative to physical therapy, body alignment vs PT">
-  <meta name="author" content="Amari Method">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain, and how to know which is right for you.">
+<link rel="canonical" href="https://www.amarimethod.com/amari-method-vs-physical-therapy">
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/amari-method-vs-physical-therapy">
-  <meta property="og:title" content="Amari Method vs Physical Therapy | What's the Difference?">
-  <meta property="og:description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain.">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Amari Method vs Physical Therapy | What's the Difference?</title>
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/amari-method-vs-physical-therapy">
+<meta property="og:title" content="Amari Method vs Physical Therapy | What's the Difference?">
+<meta property="og:description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain, and how to know which is right for you.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/amari-method-vs-physical-therapy">
+<meta name="twitter:title" content="Amari Method vs Physical Therapy | What's the Difference?">
+<meta name="twitter:description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain, and how to know which is right for you.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<style>
+  /* ---------- Journal-article-page-specific styles ---------- */
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.amarimethod.com/amari-method-vs-physical-therapy">
-  <meta property="twitter:title" content="Amari Method vs Physical Therapy | What's the Difference?">
-  <meta property="twitter:description" content="Physical therapy is a prescription. The Amari Method is a scaffolding for discovery. An honest comparison for chronic pain.">
-  <meta property="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  /* No dark hero on this page, so the header renders "scrolled" (cream, fixed)
+     from load. Clear its height before the article header. */
+  .art-top{padding-top:150px}
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/amari-method-vs-physical-therapy">
+  .art-crumbs{display:flex;justify-content:center;gap:10px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--body);margin-bottom:30px}
+  .art-crumbs .sep{opacity:.5}
 
-  <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
+  .art-header{text-align:center;max-width:900px;margin:0 auto}
+  .art-header h1{font-size:clamp(2.3rem,5vw,4rem);font-weight:500;line-height:1.1;margin:0 auto;max-width:19ch}
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
+  .art-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;align-items:center;margin-top:30px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-meta .dot{width:4px;height:4px;border-radius:50%;background:var(--body);opacity:.5}
 
-  <!-- FAQPage Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What is the main difference between the Amari Method and physical therapy?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Physical therapy typically treats the area that hurts — strengthening, stretching, and mobilizing the painful region. The Amari Method finds where your body is out of balance, often in a different part of the body than the pain, and rebalances it at the source. This is why many people who didn't improve with PT find lasting relief with the Amari Method."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Should I try physical therapy before the Amari Method?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It depends on your situation. Physical therapy is effective for post-surgical rehab, acute injuries, and conditions that respond to targeted strengthening. If you have chronic pain that hasn't responded to PT, or pain that keeps returning after treatment ends, the Amari Method addresses a different layer of the problem: the way your body has gone out of balance, which a PT program alone doesn't correct."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I do the Amari Method and physical therapy at the same time?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes, but it's usually not necessary. The Amari Method includes its own protocol practice tailored to where your body is out of balance. Many clients find that the corrective work replaces what they were doing in PT. If you're currently in PT for a specific condition, Garrett can coordinate to make sure the approaches complement each other."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How many sessions does the Amari Method take compared to physical therapy?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Physical therapy typically involves 12-20 sessions over several months. The Amari Method runs as a series of 4 or 8 sessions designed to resolve the root cause. Most clients feel a measurable difference in their first session and have the tools to maintain their results independently."
-        }
-      }
-    ]
+  .art-share{display:flex;justify-content:center;gap:12px;align-items:center;margin-top:26px}
+  .art-share span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-right:4px}
+  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--ink)}
+
+  .art-featured{padding:52px 0 0}
+  .art-featured .ph{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:16/9;background:var(--tan) center/cover no-repeat;border-radius:2px;overflow:hidden}
+  .art-featured .ph img{width:100%;height:100%;object-fit:cover;display:block}
+
+  .art-body{padding:clamp(60px,8vw,96px) 0}
+  .art-grid{display:grid;grid-template-columns:1fr 300px;gap:clamp(40px,6vw,86px);align-items:start;max-width:1080px;margin:0 auto}
+
+  .art-prose{max-width:66ch}
+  .art-prose p{font-size:1.05rem;line-height:1.75;margin-top:22px;color:var(--body)}
+  .art-prose p:first-child{margin-top:0}
+  .art-prose h2{font-size:clamp(1.4rem,2.6vw,2.05rem);font-weight:500;margin-top:52px;margin-bottom:4px;color:var(--ink)}
+  .art-prose .lead-item{margin-top:30px}
+  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:italic;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
+
+  .art-inline{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px 0;padding:26px;background:var(--cream-2);border-radius:2px}
+  .art-inline .lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body);grid-column:1/-1;margin-bottom:2px}
+  .art-inline a{display:block}
+  .art-inline .thumb{aspect-ratio:4/3;background:var(--peach);border-radius:1px;overflow:hidden;margin-bottom:12px}
+  .art-inline .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-inline .cat{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--peach)}
+  .art-inline h4{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-top:6px;line-height:1.25;color:var(--ink)}
+
+  .art-pq{position:relative;margin:clamp(52px,7vw,84px) 0;padding-left:clamp(44px,6vw,80px)}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
+  .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
+
+  .art-closer{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
+  .art-closer a{border-bottom:1px solid var(--ink);font-style:normal}
+
+  .art-bio{display:flex;gap:20px;align-items:flex-start;margin-top:56px;padding-top:36px;border-top:1px solid var(--line)}
+  .art-bio .av{width:56px;height:56px;border-radius:50%;background:var(--tan);flex-shrink:0;overflow:hidden}
+  .art-bio .av img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-bio .by b{display:block;font-family:var(--serif);font-size:1.1rem;font-weight:500;color:var(--ink)}
+  .art-bio .by span{display:block;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--body);margin-top:2px}
+  .art-bio p{margin-top:10px;font-size:14px;max-width:52ch}
+
+  /* sidebar */
+  .art-side{display:flex;flex-direction:column;gap:26px;position:sticky;top:140px}
+  .art-signup{background:var(--peach);padding:30px 26px;border-radius:2px}
+  .art-signup h4{font-family:var(--serif);font-size:1.28rem;font-weight:500;color:var(--ink);line-height:1.2}
+  .art-signup p{font-size:13px;color:rgba(33,29,25,.72);margin-top:10px;max-width:none}
+  .art-signup .news{margin-top:18px;border-color:rgba(33,29,25,.25);background:var(--cream);max-width:none}
+  .art-side-list{background:var(--cream-2);padding:24px 22px;border-radius:2px}
+  .art-side-list h5{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:14px}
+  .art-side-list a{display:block;padding:14px 0;border-top:1px solid var(--line)}
+  .art-side-list a:first-of-type{border-top:none;padding-top:0}
+  .art-side-list .cat{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--peach);display:block;margin-bottom:4px}
+  .art-side-list h6{font-family:var(--serif);font-size:1rem;font-weight:500;color:var(--ink);line-height:1.3}
+
+  /* FAQ */
+  .art-faq{padding:clamp(50px,6vw,88px) 0;background:var(--cream-2)}
+  .art-faq .sec-head{text-align:center;max-width:820px;margin:0 auto clamp(36px,4vw,54px)}
+  .art-faq .sec-head h2{font-size:clamp(1.9rem,3.4vw,2.6rem);font-weight:500}
+  .art-faq-list{max-width:820px;margin:0 auto}
+  .art-faq-list details{border-top:1px solid var(--line)}
+  .art-faq-list details:last-child{border-bottom:1px solid var(--line)}
+  .art-faq-list summary{padding:24px 0;cursor:pointer;display:grid;grid-template-columns:1fr 28px;gap:18px;align-items:start;list-style:none}
+  .art-faq-list summary::-webkit-details-marker{display:none}
+  .art-faq-list summary h3{font-size:clamp(1.05rem,1.8vw,1.3rem);font-weight:500;margin:0;color:var(--ink)}
+  .art-faq-list summary .plus{font-family:var(--serif);font-size:1.5rem;color:var(--peach);line-height:1;transition:transform .3s var(--ease);text-align:right}
+  .art-faq-list details[open] summary .plus{transform:rotate(45deg)}
+  .art-faq-list .ans{padding:0 0 24px;max-width:64ch;color:var(--body);font-size:15px}
+
+  /* Explore More (related, 3-card) */
+  .art-related{padding:clamp(64px,8vw,98px) 0}
+  .art-related .rel-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:12px;margin-bottom:36px}
+  .art-related h2{font-size:clamp(1.7rem,3vw,2.3rem);font-weight:500}
+  .art-related .rel-head span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-rel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .art-rel-card .ph{aspect-ratio:4/3;border-radius:1px;overflow:hidden;margin-bottom:16px}
+  .art-rel-card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .art-rel-card .cat{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .art-rel-card h3{font-size:1.32rem;margin-top:10px;font-weight:500;line-height:1.2}
+
+  /* Comparison table (page-specific — not part of shared system) */
+  .cmp-wrap{margin-top:30px;overflow-x:auto}
+  .cmp-table{width:100%;border-collapse:collapse;font-size:14px}
+  .cmp-table th,.cmp-table td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cmp-table th{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--body);border-bottom:1px solid var(--ink)}
+  .cmp-table td:first-child{font-family:var(--serif);font-style:italic;color:var(--ink);white-space:nowrap}
+  .cmp-table td,.cmp-table th{color:var(--body)}
+
+  @media (max-width:900px){
+    .art-grid{grid-template-columns:1fr}
+    .art-side{position:static;flex-direction:row;flex-wrap:wrap}
+    .art-signup,.art-side-list{flex:1;min-width:260px}
+    .art-inline{grid-template-columns:1fr}
+    .art-rel-grid{grid-template-columns:1fr}
   }
-  </script>
-
-  <!-- MedicalBusiness Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "MedicalBusiness",
-    "@id": "https://www.amarimethod.com/#business",
-    "name": "Amari Method",
-    "url": "https://www.amarimethod.com",
-    "image": "https://www.amarimethod.com/social-preview.png",
-    "telephone": "+1-628-877-7673",
-    "address": {
-      "@type": "PostalAddress",
-      "addressLocality": "San Francisco",
-      "addressRegion": "CA",
-      "addressCountry": "US"
-    }
+  @media (max-width:640px){
+    .art-top{padding-top:120px}
+    .art-side{flex-direction:column}
   }
-  </script>
+</style>
 
-  <!-- Microsoft Clarity -->
-  <script type="text/javascript">
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
         t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
-  </script>
+</script>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
+<!-- Header is injected by amari-mockup.js -->
+
+<!-- ARTICLE HEADER (no dark hero — light top, matches Yinova's article shape) -->
+<section class="art-top">
+  <div class="wrap">
+    <div class="art-crumbs reveal">
+      <span>Journal</span><span class="sep">/</span><span>Compare</span>
+    </div>
+    <div class="art-header reveal">
+      <h1>Amari Method <em>vs. physical therapy.</em></h1>
+      <div class="art-meta">
+        <span>Garrett Hewstan</span>
+        <span class="dot"></span>
+        <span>July 9, 2026</span>
+        <span class="dot"></span>
+        <span>7 min read</span>
       </div>
     </div>
-  </nav>
-<article>
-  <h1>Amari Method vs Physical Therapy: What's the Difference?</h1>
-  <p class="article-meta"><time datetime="2026-03-19">Last updated: March 19, 2026</time> • By Garrett Hewstan</p>
-
-  <p>If you're dealing with chronic pain, you've probably been told to try physical therapy. Maybe you already have, and it helped for a while, or it didn't help at all. Now you're looking at alternatives and wondering how the Amari Method compares.</p>
-
-  <p>The short version: <strong>physical therapy is a prescription. The Amari Method is a scaffolding for discovery.</strong> Below is an honest comparison of how the two approaches differ, where each one works best, and how to know which is right for you.</p>
-
-  <h2>The Core Difference</h2>
-
-  <p><strong>Physical therapy gives you a prescription.</strong> A licensed therapist evaluates the area that hurts, diagnoses what's weak or stiff, and prescribes the exercises you should do to address it. You follow the protocol. The therapist owns the diagnosis. Your job is compliance. When the pain comes back, and for chronic pain it often does, the path is another evaluation and another prescription.</p>
-
-  <p><strong>The Amari Method gives you a scaffolding for discovery.</strong> Garrett's job isn't to tell you what's broken. It's to guide you to <em>feel</em> where your body has gone out of balance, why, and what lets it release. Each session is one rung of a structure that lets you see the pattern. By the end of your series the scaffolding gets internalized. You stop needing a practitioner because you've learned to read your own body.</p>
-
-  <p>PT optimizes for the therapist's expertise. The Amari Method optimizes for yours. That's why it works for people who've been through years of treatment and the pain keeps coming back: they were never the expert on their own body, so the moment supervision ended, the pattern returned. Scaffolding stays after the practitioner leaves.</p>
-
-  <h2>How They Compare</h2>
-
-  <table class="comparison-table">
-    <thead>
-      <tr>
-        <th></th>
-        <th>Physical Therapy</th>
-        <th>Amari Method</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><strong>Approach</strong></td>
-        <td>Prescriptive: treats the painful area directly</td>
-        <td>Discovery: finds what's out of balance and driving the pain</td>
-      </tr>
-      <tr>
-        <td><strong>Role of the practitioner</strong></td>
-        <td>Owns the diagnosis. Prescribes the program. You comply.</td>
-        <td>Guides you to find your own pattern. You become the expert on your body.</td>
-      </tr>
-      <tr>
-        <td><strong>Assessment</strong></td>
-        <td>Range of motion, strength testing, pain provocation at the site</td>
-        <td>Full-body assessment, pelvis, hips, spine, shoulders, to find where you're out of balance</td>
-      </tr>
-      <tr>
-        <td><strong>Treatment</strong></td>
-        <td>Exercises, stretching, manual therapy, modalities (heat, ice, e-stim)</td>
-        <td>Hands-on alignment work + guided corrective protocols you learn to do on your own</td>
-      </tr>
-      <tr>
-        <td><strong>Typical timeline</strong></td>
-        <td>12–20 sessions over 3–5 months</td>
-        <td>A series of 4 or 8 sessions</td>
-      </tr>
-      <tr>
-        <td><strong>Session length</strong></td>
-        <td>45–60 minutes (often shared with other patients)</td>
-        <td>50–60 minutes, 1-on-1 with Garrett</td>
-      </tr>
-      <tr>
-        <td><strong>After treatment ends</strong></td>
-        <td>Maintenance exercises, periodic return visits when pain comes back</td>
-        <td>You keep the scaffolding: the pattern recognition and the protocols stay with you</td>
-      </tr>
-      <tr>
-        <td><strong>Insurance</strong></td>
-        <td>Usually covered (with copays and visit limits)</td>
-        <td>Not covered by insurance. $225 initial, $190 follow-up. Affirm available.</td>
-      </tr>
-      <tr>
-        <td><strong>Best for</strong></td>
-        <td>Post-surgical rehab, acute injuries, insurance-covered care</td>
-        <td>Chronic pain that hasn't responded to other treatments, recurring pain, a body that's gone out of balance</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h2>When Physical Therapy Is the Better Choice</h2>
-
-  <p>Physical therapy is excellent for specific situations:</p>
-
-  <ul>
-    <li><strong>Post-surgical rehabilitation.</strong> After a knee replacement, rotator cuff repair, or spinal surgery, PT provides the structured recovery protocol your surgeon prescribes.</li>
-    <li><strong>Acute injuries.</strong> A fresh sprain, strain, or fracture benefits from PT's progressive loading approach.</li>
-    <li><strong>Insurance coverage matters.</strong> If cost is a primary concern and you have PT coverage, it's a reasonable starting point.</li>
-    <li><strong>You need supervised exercise progressions.</strong> If you're deconditioned or recovering from a long period of inactivity, PT provides structured guidance.</li>
-  </ul>
-
-  <h2>When the Amari Method Is the Better Choice</h2>
-
-  <ul>
-    <li><strong>You've already tried PT and the pain came back.</strong> This is the most common scenario we see. The pain improved during treatment but returned weeks or months after discharge, because the underlying pattern was never corrected.</li>
-    <li><strong>Your pain is chronic, not acute.</strong> If you've had pain for months or years, it's almost certainly a structural pattern, not an injury that just needs time and strengthening.</li>
-    <li><strong>The pain moves around.</strong> First it was your back, then your hip, now your neck. This is a classic sign your body is out of balance: it's shifting load from one area to another. The Amari Method is built to trace these patterns back to their source.</li>
-    <li><strong>You want faster results with fewer sessions.</strong> The work is designed to resolve the issue in a series of 4 or 8 sessions, not manage it over months of appointments.</li>
-    <li><strong>You want to understand your own body.</strong> Every session teaches you what's happening mechanically and gives you protocols to maintain the correction yourself.</li>
-  </ul>
-
-  <div class="stat-callout">
-    <span class="stat-figure">61%</span>
-    <span class="stat-detail">of adults who report chronic pain one year still report it the next, suggesting that many common treatment approaches aren't resolving the underlying cause. <span class="stat-source">Source: <a href="https://www.nih.gov/news-events/news-releases/nih-study-finds-high-rates-persistent-chronic-pain-among-us-adults" target="_blank" rel="noopener">NIH, 2023</a></span></span>
+    <div class="art-share reveal">
+      <span>Share</span>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fwww.amarimethod.com%2Famari-method-vs-physical-therapy" target="_blank" rel="noopener" aria-label="Share on Facebook">f</a>
+      <a href="https://x.com/intent/post?url=https%3A%2F%2Fwww.amarimethod.com%2Famari-method-vs-physical-therapy" target="_blank" rel="noopener" aria-label="Share on X">X</a>
+    </div>
   </div>
+</section>
 
-  <h2>Can You Do Both?</h2>
-
-  <p>Yes, but most people don't need to. The Amari Method includes its own protocol practice, one that's tailored to where your body is out of balance, not a generic strengthening routine. Clients often find that the corrective protocols replace what they were doing in PT.</p>
-
-  <p>If you're currently in physical therapy and considering the Amari Method, you don't need to stop PT first. Garrett can assess whether the two approaches complement each other or whether it makes sense to transition.</p>
-
-  <h2>Frequently Asked Questions</h2>
-
-  <h3>What is the main difference between the Amari Method and physical therapy?</h3>
-  <p>Physical therapy is prescriptive: the therapist diagnoses the painful area, designs a program around it, and tells you what to do. The Amari Method is a scaffolding for discovery: Garrett guides you to feel what's compensating in your body and why, so by the end of your series you've learned to read your own body. PT optimizes for the therapist's expertise. Amari Method optimizes for yours.</p>
-
-  <h3>Should I try physical therapy before the Amari Method?</h3>
-  <p>It depends. PT is effective for post-surgical rehab, acute injuries, and conditions that respond to targeted strengthening. If you have chronic pain that hasn't responded to PT, or pain that returns after treatment ends, the Amari Method addresses a different layer of the problem.</p>
-
-  <h3>How many sessions does the Amari Method take compared to physical therapy?</h3>
-  <p>Physical therapy typically involves 12–20 sessions over several months. The Amari Method is designed to resolve the root cause in a series of 4 or 8 sessions. Most clients feel a measurable difference in their first session.</p>
-
-  <h3>Is the Amari Method covered by insurance?</h3>
-  <p>Not directly, but we provide a superbill on request that you can submit for potential reimbursement. An initial session is $225 (60 minutes, 1-on-1). Many clients find the shorter total treatment timeline makes the out-of-pocket cost comparable to PT copays over months of visits.</p>
-
-  <div class="cta-box">
-    <h3>Not sure which is right for you?</h3>
-    <p>Take the free assessment. It takes 2 minutes and helps us understand your pain pattern before you commit to anything.</p>
-    <a href="/quiz/" class="btn-primary"><span class="btn-content"><span class="arrow">→</span><span class="btn-text">Take the Free Assessment</span></span></a>
-    <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.9rem; color: #888;">Or <a href="/booking" style="color: #252525; text-decoration: underline;">book a session directly</a>. $225, 60 minutes, in-person or virtual.</p>
+<!-- FEATURED IMAGE -->
+<section class="art-featured">
+  <div class="ph reveal">
+    <img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()">
   </div>
+</section>
 
-</article>
+<!-- ARTICLE BODY -->
+<section class="art-body">
+  <div class="wrap">
+    <div class="art-grid">
 
-    <footer>
-        <!-- Footer Top: Logo + Contact -->
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Freedom From Pain. Results For Life.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
+      <!-- Main column -->
+      <div class="art-prose reveal">
+        <p>If you're dealing with chronic pain, you've probably been told to try physical therapy. Maybe you already have, and it helped for a while, or it didn't help at all. Now you're looking at what else is out there and wondering how the Amari Method compares.</p>
+        <p>The short version: physical therapy gives you a prescription. The Amari Method gives you a scaffolding for discovery. Here's an honest comparison of how the two differ, where each works best, and how to know which is right for you.</p>
+
+        <h2>The core difference</h2>
+        <p>Physical therapy gives you a prescription. A licensed therapist evaluates the area that hurts, diagnoses what's weak or stiff, and prescribes what you should do about it. You follow the protocol. The therapist owns the diagnosis. Your job is compliance. When the pain comes back, and for chronic pain it often does, the path is another evaluation and another prescription.</p>
+        <p>The Amari Method gives you a scaffolding for discovery. Garrett's job isn't to tell you what's broken. It's to guide you to feel where your body has gone out of balance, why, and what lets it release. Each session is one rung of a structure that lets you see the pattern. By the end of your series, the scaffolding is internalized. You stop needing a practitioner because you've learned to read your own body.</p>
+        <p>Physical therapy optimizes for the therapist's expertise. The Amari Method optimizes for yours. That's why it works for people who've been through years of treatment and the pain keeps coming back: they were never the expert on their own body, so the moment supervision ended, the pattern returned. Scaffolding stays after the practitioner leaves.</p>
+
+        <div class="art-inline">
+          <span class="lbl">You may also like</span>
+          <a href="/blog-putting-it-all-together">
+            <div class="thumb"><img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()"></div>
+            <span class="cat">The Method</span>
+            <h4>Putting it all together</h4>
+          </a>
+          <a href="/blog-stretching-not-helping">
+            <div class="thumb"><img src="/images/v6/real/foam-roller-v2.jpg" alt="" onerror="this.remove()"></div>
+            <span class="cat">Mechanics</span>
+            <h4>Why stretching doesn't resolve back pain</h4>
+          </a>
         </div>
-        <!-- Footer Links -->
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/#why">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/#how">How It Works</a></li>
-                    <li><a href="/#results">Results & Reviews</a></li>
-                    <li><a href="affiliate">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/#services">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
+
+        <h2>How they compare</h2>
+        <div class="cmp-wrap">
+          <table class="cmp-table">
+            <thead>
+              <tr><th></th><th>Physical Therapy</th><th>Amari Method</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Approach</td><td>Prescriptive: treats the painful area directly</td><td>Discovery: finds what's out of balance and driving the pain</td></tr>
+              <tr><td>Practitioner's role</td><td>Owns the diagnosis, prescribes the program, you comply</td><td>Guides you to find your own pattern; you become the expert on your body</td></tr>
+              <tr><td>Assessment</td><td>Range of motion, strength testing, pain at the site</td><td>Full-body assessment: pelvis, hips, spine, shoulders, to find where you're out of balance</td></tr>
+              <tr><td>Treatment</td><td>Exercises, stretching, manual therapy, modalities</td><td>Hands-on alignment work plus guided protocols you learn to do on your own</td></tr>
+              <tr><td>Typical timeline</td><td>12&ndash;20 sessions over 3&ndash;5 months</td><td>A series of 4 or 8 sessions</td></tr>
+              <tr><td>Session length</td><td>45&ndash;60 minutes, often shared with other patients</td><td>50&ndash;60 minutes, one-on-one with Garrett</td></tr>
+              <tr><td>After treatment ends</td><td>Maintenance exercises, periodic return visits when pain comes back</td><td>You keep the scaffolding: the pattern recognition and the protocols stay with you</td></tr>
+              <tr><td>Insurance</td><td>Usually covered, with copays and visit limits</td><td>Not covered by insurance. $225 initial, $190 follow-up. Affirm available</td></tr>
+              <tr><td>Best for</td><td>Post-surgical rehab, acute injuries, insurance-covered care</td><td>Chronic pain that hasn't responded to other treatment, recurring pain, a body that's out of balance</td></tr>
+            </tbody>
+          </table>
         </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
+
+        <h2>When physical therapy is the better choice</h2>
+        <div class="lead-item">
+          <b>Post-surgical rehabilitation.</b>
+          <p style="margin-top:0">After a knee replacement, rotator cuff repair, or spinal surgery, physical therapy provides the structured recovery protocol your surgeon prescribes.</p>
         </div>
-    </footer>
-<script src="js/main.js?v=5"></script>
+        <div class="lead-item">
+          <b>Acute injuries.</b>
+          <p style="margin-top:0">A fresh sprain, strain, or fracture benefits from physical therapy's progressive loading approach.</p>
+        </div>
+        <div class="lead-item">
+          <b>You need supervised progressions or insurance coverage matters.</b>
+          <p style="margin-top:0">If cost is a primary concern and you have PT coverage, it's a reasonable starting point, and it provides structured guidance if you're deconditioned or recovering from a long period of inactivity.</p>
+        </div>
+
+        <div class="art-pq">
+          <blockquote>Physical therapy is a prescription. The Amari Method is a scaffolding for discovery.</blockquote>
+          <cite>Garrett</cite>
+        </div>
+
+        <h2>When the Amari Method is the better choice</h2>
+        <div class="lead-item">
+          <b>You've already tried physical therapy and the pain came back.</b>
+          <p style="margin-top:0">This is the most common scenario we see. The pain improved during treatment but returned weeks or months after discharge, because the pattern underneath it was never addressed.</p>
+        </div>
+        <div class="lead-item">
+          <b>Your pain is chronic, not acute, or it moves around.</b>
+          <p style="margin-top:0">If you've had pain for months or years, it's almost certainly a body that's out of balance, not an injury that just needs time and strengthening. Pain that moves, first your back, then your hip, now your neck, is a classic sign your body is shifting load from one area to another. The Amari Method traces these patterns back to their source.</p>
+        </div>
+        <div class="lead-item">
+          <b>You want fewer sessions and to understand your own body.</b>
+          <p style="margin-top:0">The work is designed to resolve the issue in a series of 4 or 8 sessions, not manage it over months of appointments, and every session teaches you what's happening mechanically so you can maintain the correction yourself.</p>
+        </div>
+
+        <h2>Can you do both?</h2>
+        <p>Yes, but most people don't need to. The Amari Method includes its own protocol practice, tailored to where your body is out of balance, not a generic strengthening routine. Clients often find the corrective protocols replace what they were doing in physical therapy. If you're currently in physical therapy and considering the Amari Method, you don't need to stop PT first. Garrett can assess whether the two approaches complement each other or whether it makes sense to transition.</p>
+
+        <p class="art-closer">Not sure which is right for you? <a href="/how-it-works">Take the free assessment before you commit to anything.</a></p>
+
+        <div class="art-bio">
+          <div class="av"><img src="/images/v6/real/garrett-face-1200.jpg" alt="" onerror="this.remove()"></div>
+          <div class="by">
+            <b>Garrett Hewstan</b>
+            <span>Founder, Amari Method</span>
+            <p>Garrett has spent 25+ years in hands-on practice. He built the Amari Method after using its own protocols to resolve his own carpal tunnel and plantar fasciitis.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="art-side reveal">
+        <div class="art-signup">
+          <h4>Like what you're reading?</h4>
+          <p>Occasional notes on movement, pain, and the practice, straight to your inbox.</p>
+          <form class="news">
+            <input type="email" placeholder="Email address" aria-label="Email address">
+            <button type="submit">Submit</button>
+          </form>
+        </div>
+        <div class="art-side-list">
+          <h5>Also in Compare</h5>
+          <a href="/blog-putting-it-all-together">
+            <span class="cat">The Method</span>
+            <h6>Putting it all together</h6>
+          </a>
+          <a href="/blog-stretching-not-helping">
+            <span class="cat">Mechanics</span>
+            <h6>Why stretching doesn't resolve back pain</h6>
+          </a>
+          <a href="/blog">
+            <span class="cat">Mechanics</span>
+            <h6>Why deep tissue massage doesn't last</h6>
+          </a>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="art-faq">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <h2>Common <em>questions.</em></h2>
+    </div>
+    <div class="art-faq-list reveal">
+      <details>
+        <summary><h3>What is the main difference between the Amari Method and physical therapy?</h3><span class="plus">+</span></summary>
+        <div class="ans">Physical therapy is prescriptive: the therapist diagnoses the painful area, designs a program around it, and tells you what to do. The Amari Method is a scaffolding for discovery: Garrett guides you to feel what's compensating in your body and why, so by the end of your series you've learned to read your own body. Physical therapy optimizes for the therapist's expertise. The Amari Method optimizes for yours.</div>
+      </details>
+      <details>
+        <summary><h3>Should I try physical therapy before the Amari Method?</h3><span class="plus">+</span></summary>
+        <div class="ans">It depends. Physical therapy is effective for post-surgical rehab, acute injuries, and conditions that respond to targeted strengthening. If you have chronic pain that hasn't responded to PT, or pain that returns after treatment ends, the Amari Method addresses a different layer of the problem.</div>
+      </details>
+      <details>
+        <summary><h3>How many sessions does the Amari Method take compared to physical therapy?</h3><span class="plus">+</span></summary>
+        <div class="ans">Physical therapy typically involves 12&ndash;20 sessions over several months. The Amari Method is designed to resolve the root cause in a series of 4 or 8 sessions. Most clients feel a measurable difference in their first session.</div>
+      </details>
+      <details>
+        <summary><h3>Is the Amari Method covered by insurance?</h3><span class="plus">+</span></summary>
+        <div class="ans">Not directly, but we provide a superbill on request that you can submit for potential reimbursement. An initial session is $225, 60 minutes, one-on-one. Many clients find the shorter total treatment timeline makes the out-of-pocket cost comparable to PT copays over months of visits.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- EXPLORE MORE -->
+<section class="art-related">
+  <div class="wrap">
+    <div class="rel-head reveal">
+      <h2>Explore more</h2>
+      <span>Same method &middot; Different pattern</span>
+    </div>
+    <div class="art-rel-grid">
+      <a class="art-rel-card reveal" href="/blog-putting-it-all-together">
+        <div class="ph" style="background:#AFC1A9"><img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">The Method</span>
+        <h3>Putting it all together</h3>
+      </a>
+      <a class="art-rel-card reveal" style="transition-delay:.06s" href="/blog-stretching-not-helping">
+        <div class="ph" style="background:#D8BB86"><img src="/images/v6/real/foam-roller-v2.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">Mechanics</span>
+        <h3>Why stretching doesn't resolve back pain</h3>
+      </a>
+      <a class="art-rel-card reveal" style="transition-delay:.12s" href="/blog-why-psoas-tightens-back">
+        <div class="ph" style="background:#E1A98B"><img src="/images/v6/real/gymnastic-rings.jpg" alt="" onerror="this.remove()"></div>
+        <span class="cat">Mechanics</span>
+        <h3>Why the psoas keeps tightening back</h3>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- APPOINTMENT CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <span class="eyebrow">The guarantee</span>
+    <h2>Most clients feel a difference in their <em>first session.</em></h2>
+    <p>Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
+    <div class="btn-row">
+      <a href="/book/initial-in-person" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
+    </div>
+    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$225</b> &middot; First session &middot; San Francisco + virtual</p>
+  </div>
+</section>
+
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js?v=11" data-nav="journal"></script>
 </body>
 </html>

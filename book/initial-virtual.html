@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Your First Session — Virtual | Amari Method</title>
+  <title>Book Your First Session · Virtual | Amari Method</title>
   <meta name="description" content="Book your first 60-minute virtual session with Garrett Hewstan over secure video. $225. Most clients feel a difference in their first session.">
   <meta name="robots" content="noindex,follow">
   <meta name="author" content="Amari Method">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.amarimethod.com/book/initial-virtual/">
-  <meta property="og:title" content="Book Your First Session — Virtual | Amari Method">
-  <meta property="og:description" content="Book your first 60-minute virtual session with Garrett over secure video.">
+  <meta property="og:title" content="Book Your First Session · Virtual | Amari Method">
+  <meta property="og:description" content="Book your first 60-minute virtual session with Garrett Hewstan over secure video. $225. Most clients feel a difference in their first session.">
   <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
 
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
@@ -21,9 +21,11 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+  <!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/style-v5.css?v=37">
+  <link rel="stylesheet" href="/css/site-v6.css?v=11">
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
   <script>
@@ -43,151 +45,134 @@
 
   <style>
     /* ---- Page shell ---- */
-    .book-page { max-width: 880px; margin: 0 auto; padding: 56px 32px 96px; }
+    .book-page { max-width: 880px; margin: 0 auto; padding: clamp(140px,16vw,190px) 32px 96px; }
 
     /* ---- Top header ---- */
     .book-header { text-align: center; margin-bottom: 44px; background: transparent; }
-    .book-kicker { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
-    .book-headline { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--color-text, #1d1d1d); margin: 0 0 18px; }
+    .book-kicker { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--body); margin: 0 0 14px; }
+    .book-headline { font-family: var(--serif); font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 18px; }
     .book-headline em { font-style: italic; }
-    .book-sub { font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.55; color: var(--color-text-secondary, #555); margin: 0 auto 18px; max-width: 50ch; }
-    .book-meta { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-muted, #888); }
+    .book-sub { font-family: var(--sans); font-size: 16px; line-height: 1.55; color: var(--body); margin: 0 auto 18px; max-width: 50ch; }
+    .book-meta { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center; font-family: var(--sans); font-size: 13px; color: var(--body); }
     .book-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
 
     /* ---- Progress strip ---- */
-    .book-progress { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 36px; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); }
+    .book-progress { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 36px; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--body); }
     .book-progress-step { display: inline-flex; align-items: center; gap: 8px; }
-    .book-progress-num { font-family: 'Bona Nova', serif; font-style: italic; font-size: 16px; font-weight: 400; color: var(--color-text-muted, #aaa); letter-spacing: 0; text-transform: none; }
+    .book-progress-num { font-family: var(--serif); font-style: italic; font-size: 16px; font-weight: 400; color: var(--body); letter-spacing: 0; text-transform: none; }
     .book-progress-step.is-active .book-progress-num,
-    .book-progress-step.is-active .book-progress-label { color: var(--color-text, #1d1d1d); }
+    .book-progress-step.is-active .book-progress-label { color: var(--ink); }
     .book-progress-step.is-done .book-progress-num,
-    .book-progress-step.is-done .book-progress-label { color: var(--accent-warm, #EBA584); }
-    .book-progress-bar { flex: 0 0 24px; height: 1px; background: #e8dfc7; }
+    .book-progress-step.is-done .book-progress-label { color: var(--peach); }
+    .book-progress-bar { flex: 0 0 24px; height: 1px; background: var(--line); }
 
-    .form-banner-error { padding: 14px 16px; background: #fdf3f0; border-left: 3px solid #c64a3a; color: #8a2e1f; font-size: 14px; line-height: 1.55; margin-bottom: 24px; font-family: 'Inter', sans-serif; }
+    .form-banner-error { padding: 14px 16px; background: #fdf3f0; border-left: 3px solid #c64a3a; color: #8a2e1f; font-size: 14px; line-height: 1.55; margin-bottom: 24px; font-family: var(--sans); }
     .form-banner-error.is-hidden { display: none; }
 
     .step-section { display: none; }
     .step-section.is-active { display: block; }
 
     /* ---- TWO-MONTH CALENDAR (Tock pattern) ---- */
-    .cal-frame { padding: 32px 0; border-top: 1px solid #e8dfc7; }
+    .cal-frame { padding: 32px 0; border-top: 1px solid var(--line); }
     .cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
     .cal-month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .cal-month-header.is-left { padding-left: 0; }
     .cal-month-header.is-right { padding-right: 0; }
-    .cal-month-label { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: var(--color-text, #1d1d1d); letter-spacing: 0.01em; }
-    .cal-nav-btn { background: transparent; border: 1px solid #e8dfc7; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--color-text-secondary, #555); transition: all 0.12s ease; padding: 0; font-family: 'Inter', sans-serif; font-size: 14px; }
-    .cal-nav-btn:hover:not(:disabled) { border-color: var(--color-text, #1d1d1d); color: var(--color-text, #1d1d1d); }
+    .cal-month-label { font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
+    .cal-nav-btn { background: transparent; border: 1px solid var(--line); width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--body); transition: all 0.12s ease; padding: 0; font-family: var(--sans); font-size: 14px; }
+    .cal-nav-btn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
     .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
     .cal-nav-spacer { width: 28px; height: 28px; }
 
-    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted, #999); padding-bottom: 8px; }
+    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--body); padding-bottom: 8px; }
     .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
-    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: var(--color-text, #1d1d1d); background: transparent; border: none; cursor: pointer; border-radius: 50%; transition: background 0.12s ease, color 0.12s ease; padding: 0; }
+    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--ink); background: transparent; border: none; cursor: pointer; border-radius: 50%; transition: background 0.12s ease, color 0.12s ease; padding: 0; }
     .cal-day.is-empty { visibility: hidden; pointer-events: none; }
     .cal-day:disabled, .cal-day.is-unavailable { color: #c8bfa8; cursor: default; }
-    .cal-day:hover:not(:disabled):not(.is-unavailable):not(.is-selected) { background: #faf6ec; }
-    .cal-day.is-selected { background: var(--color-text, #1d1d1d); color: #fff; font-weight: 600; }
+    .cal-day:hover:not(:disabled):not(.is-unavailable):not(.is-selected) { background: var(--cream-2); }
+    .cal-day.is-selected { background: var(--ink); color: #fff; font-weight: 600; }
     .cal-day.is-today:not(.is-selected) { font-weight: 700; }
-    .cal-day.is-today:not(.is-selected)::after { content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-warm, #EBA584); transform: translateY(14px); }
+    .cal-day.is-today:not(.is-selected)::after { content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--peach); transform: translateY(14px); }
     .cal-day { position: relative; }
 
     /* ---- Time slot list (below calendar after a date is picked) ---- */
-    .time-slots { padding: 28px 0 0; border-top: 1px solid #e8dfc7; margin-top: 32px; }
-    .time-slots-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 14px; }
-    .time-slots-label strong { color: var(--color-text, #1d1d1d); font-weight: 600; }
+    .time-slots { padding: 28px 0 0; border-top: 1px solid var(--line); margin-top: 32px; }
+    .time-slots-label { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--body); margin: 0 0 14px; }
+    .time-slots-label strong { color: var(--ink); font-weight: 600; }
     .time-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
-    .slot-btn { padding: 14px 10px; background: #fff; border: 1px solid #d5cdbb; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500; color: var(--color-text, #1d1d1d); transition: all 0.12s ease; }
-    .slot-btn:hover { border-color: var(--color-text, #1d1d1d); }
-    .slot-btn.is-selected { background: var(--color-text, #1d1d1d); border-color: var(--color-text, #1d1d1d); color: #fff; }
+    .slot-btn { padding: 14px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--ink); transition: all 0.12s ease; }
+    .slot-btn:hover { border-color: var(--ink); }
+    .slot-btn.is-selected { background: var(--ink); border-color: var(--ink); color: #fff; }
 
-    .slot-loading, .slot-error, .slot-empty { padding: 24px 0; text-align: center; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text-muted, #888); }
+    .slot-loading, .slot-error, .slot-empty { padding: 24px 0; text-align: center; font-family: var(--sans); font-size: 14px; color: var(--body); }
     .slot-error { color: #c64a3a; }
 
     /* ---- Order summary ---- */
-    .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid #e8dfc7; border-bottom: 1px solid #e8dfc7; }
-    .order-summary-title { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-text-muted, #888); margin: 0 0 10px; }
-    .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--color-text, #1d1d1d); }
-    .order-summary-row .summary-datetime { color: var(--color-text-secondary, #555); font-weight: 500; }
-    .order-summary-total { padding-top: 8px; margin-top: 6px; border-top: 1px solid #e8dfc7; font-size: 15px; font-weight: 600; }
+    .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .order-summary-title { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--body); margin: 0 0 10px; }
+    .order-summary-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 4px 0; font-family: var(--sans); font-size: 14px; color: var(--ink); }
+    .order-summary-row .summary-datetime { color: var(--body); font-weight: 500; }
+    .order-summary-total { padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--line); font-size: 15px; font-weight: 600; }
 
     /* ---- Form (step 2) ---- */
-    .step-section h2 { font-family: 'Bona Nova', serif; font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--color-text, #1d1d1d); margin: 0 0 8px; }
-    .step-section .subhead { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5; color: var(--color-text-muted, #888); margin: 0 0 28px; }
-    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--color-text-secondary, #555); text-decoration: none; background: none; border: none; cursor: pointer; }
-    .btn-back:hover { color: var(--color-text, #1d1d1d); }
+    .step-section h2 { font-family: var(--serif); font-weight: 400; font-size: clamp(28px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.015em; color: var(--ink); margin: 0 0 8px; }
+    .step-section .subhead { font-family: var(--sans); font-size: 14px; line-height: 1.5; color: var(--body); margin: 0 0 28px; }
+    .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: var(--sans); font-size: 13px; color: var(--body); text-decoration: none; background: none; border: none; cursor: pointer; }
+    .btn-back:hover { color: var(--ink); }
 
     .form-row { margin-bottom: 18px; }
     .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .form-label { display: block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted, #888); margin-bottom: 8px; }
+    .form-label { display: block; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--body); margin-bottom: 8px; }
     .form-label .req { color: #c64a3a; margin-left: 2px; }
-    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.4; color: var(--color-text, #1d1d1d); background: transparent; border: none; border-bottom: 1px solid #d5cdbb; border-radius: 0; transition: border-color 0.15s ease; }
-    .form-input:focus { outline: none; border-bottom-color: var(--color-text, #1d1d1d); border-bottom-width: 2px; padding-bottom: 11px; }
+    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: var(--sans); font-size: 16px; line-height: 1.4; color: var(--ink); background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; transition: border-color 0.15s ease; }
+    .form-input:focus { outline: none; border-bottom-color: var(--ink); border-bottom-width: 2px; padding-bottom: 11px; }
     .form-input.is-invalid { border-bottom-color: #c64a3a; }
     .form-input::placeholder { color: #b8b0a0; }
-    .form-error { font-family: 'Inter', sans-serif; font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
+    .form-error { font-family: var(--sans); font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
 
     .checkbox-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; cursor: pointer; }
-    .checkbox-row + .checkbox-row { border-top: 1px solid #e8dfc7; }
-    .checkbox-row input[type=checkbox] { margin: 4px 0 0 0; flex-shrink: 0; cursor: pointer; accent-color: var(--color-text, #1d1d1d); }
-    .checkbox-row > span { flex: 1; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.55; color: var(--color-text-secondary, #555); cursor: pointer; }
-    .checkbox-row a { color: var(--color-text, #1d1d1d); text-decoration: underline; text-underline-offset: 2px; }
+    .checkbox-row + .checkbox-row { border-top: 1px solid var(--line); }
+    .checkbox-row input[type=checkbox] { margin: 4px 0 0 0; flex-shrink: 0; cursor: pointer; accent-color: var(--ink); }
+    .checkbox-row > span { flex: 1; font-family: var(--sans); font-size: 13px; line-height: 1.55; color: var(--body); cursor: pointer; }
+    .checkbox-row a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
     .checkbox-row.is-invalid > span { color: #c64a3a; }
-    .checkbox-row .opt-tag { font-weight: 600; color: var(--color-text, #1d1d1d); margin-right: 4px; }
+    .checkbox-row .opt-tag { font-weight: 600; color: var(--ink); margin-right: 4px; }
 
     /* ---- Primary button ---- */
-    .btn-primary-pill { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 18px 28px; min-height: 56px; background: var(--color-text, #1d1d1d); color: #fff; border: none; border-radius: 999px; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; margin-top: 28px; }
-    .btn-primary-pill:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .btn-primary-pill { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 18px 34px; min-height: 56px; background: var(--ink); color: #fff; border: none; border-radius: 2px; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; transition: background 0.4s var(--ease), transform 0.4s var(--ease), opacity 0.15s ease; margin-top: 28px; }
+    .btn-primary-pill:hover:not(:disabled) { background: #000; transform: translateY(-1px); }
     .btn-primary-pill:disabled { opacity: 0.35; cursor: not-allowed; }
     .btn-primary-pill .arrow { transition: transform 0.15s ease; }
     .btn-primary-pill:hover:not(:disabled) .arrow { transform: translateX(4px); }
 
     /* ---- Mobile ---- */
     @media (max-width: 720px) {
-      .book-page { padding: 32px 20px 64px; }
+      .book-page { padding: clamp(120px,22vw,150px) 20px 64px; }
       .cal-months { grid-template-columns: 1fr; gap: 32px; }
       .book-progress { gap: 8px; font-size: 10px; letter-spacing: 0.1em; }
       .book-progress-bar { flex: 0 0 14px; }
     }
     @media (max-width: 480px) {
-      .book-page { padding: 24px 16px 48px; }
+      .book-page { padding: clamp(110px,24vw,140px) 16px 48px; }
       .form-row.cols-2 { grid-template-columns: 1fr; }
-      .cal-day { font-size: 13px; }
+      .cal-day { font-size: 14px; min-height: 44px; }
+      .slot-btn { min-height: 48px; padding: 16px 10px; }
+      .btn-primary-pill { min-height: 56px; }
     }
 
     /* ---- Format toggle (In person / Virtual) ---- */
     .format-toggle { display: flex; justify-content: center; margin: 0 auto 56px; }
     .format-toggle-inner { display: inline-flex; gap: 4px; padding: 4px; background: #f5eedc; border-radius: 999px; }
-    .ft-option { display: inline-flex; flex-direction: column; align-items: center; padding: 8px 22px; border-radius: 999px; text-decoration: none; color: var(--color-text-secondary, #555); line-height: 1.2; transition: background 0.2s ease, color 0.2s ease; font-family: 'Inter', sans-serif; }
+    .ft-option { display: inline-flex; flex-direction: column; align-items: center; padding: 8px 22px; border-radius: 999px; text-decoration: none; color: var(--body); line-height: 1.2; transition: background 0.2s ease, color 0.2s ease; font-family: var(--sans); }
     .ft-option .ft-label { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
     .ft-option .ft-detail { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; margin-top: 2px; }
-    .ft-option:not(.ft-active):hover { background: rgba(0,0,0,0.04); color: var(--color-text, #1d1d1d); }
-    .ft-option.ft-active { background: var(--color-text, #1d1d1d); color: #fff; pointer-events: none; }
+    .ft-option:not(.ft-active):hover { background: rgba(0,0,0,0.04); color: var(--ink); }
+    .ft-option.ft-active { background: var(--ink); color: #fff; pointer-events: none; }
   </style>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="/" class="logo" style="text-decoration: none;">
-        <img src="/images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="/#why">Why Amari Method</a></li>
-        <li><a href="/how-it-works">How It Works</a></li>
-        <li><a href="/#journey">The Journey</a></li>
-        <li><a href="/#testimonials">Stories</a></li>
-        <li><a href="/booking">Pricing</a></li>
-        <li><a href="/blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="/#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </nav>
+  <!-- Header is injected by site-v6.js -->
 
   <main>
     <div class="book-page">
@@ -276,7 +261,7 @@
 
         <div class="order-summary" id="orderSummaryStep1" hidden>
           <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span>Initial Session · Virtual</span><span>$225</span></div>
           <div class="order-summary-row"><span class="summary-datetime">—</span></div>
           <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
         </div>
@@ -295,7 +280,7 @@
 
         <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
           <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session — In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span>Initial Session · Virtual</span><span>$225</span></div>
           <div class="order-summary-row"><span class="summary-datetime">—</span></div>
           <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
         </div>
@@ -339,7 +324,7 @@
           </div>
 
           <button type="submit" class="btn-primary-pill" id="step2SubmitBtn">
-            <span id="step2SubmitLabel">Continue to payment — $225</span>
+            <span id="step2SubmitLabel">Continue to payment · $225</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
         </form>
@@ -348,61 +333,8 @@
     </div>
   </main>
 
-  <footer>
-    <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-      <div style="display: flex; align-items: center; gap: 1.25rem;">
-        <img src="/images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-        <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Your body can heal you.</p>
-      </div>
-      <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-        eben@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-      </p>
-    </div>
-    <div class="footer-content" style="padding-top: 2.5rem;">
-      <div class="footer-section">
-        <h3>Services</h3>
-        <ul>
-          <li><a href="/in-person-sessions">In-Person Sessions</a></li>
-          <li><a href="/virtual-sessions">Virtual Sessions</a></li>
-          <li><a href="https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd">Online Program</a></li>
-          <li><a href="/ongoing-care">Ongoing Care</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>Conditions</h3>
-        <ul>
-          <li><a href="/neck-pain-san-francisco">Neck Pain</a></li>
-          <li><a href="/shoulder-pain-san-francisco">Shoulder Pain</a></li>
-          <li><a href="/hip-pain-san-francisco">Hip Pain</a></li>
-          <li><a href="/knee-pain-san-francisco">Knee Pain</a></li>
-          <li><a href="/lower-back-pain-san-francisco">Lower Back Pain</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>About</h3>
-        <ul>
-          <li><a href="/#why">Why Amari Method</a></li>
-          <li><a href="/about">About Garrett</a></li>
-          <li><a href="/how-it-works">How It Works</a></li>
-          <li><a href="/#testimonials">Results &amp; Reviews</a></li>
-          <li><a href="/affiliate">Partnership Program</a></li>
-        </ul>
-      </div>
-      <div class="footer-section">
-        <h3>Get Started</h3>
-        <ul>
-          <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-          <li><a href="/client-info">Client Information</a></li>
-          <li><a href="/booking">View Pricing &amp; Packages</a></li>
-          <li><a href="/portal">Client Portal</a></li>
-          <li><a href="/#faq">FAQ</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="/privacy-policy">Privacy Policy</a> | <a href="/terms-of-use">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-    </div>
-  </footer>
+  <!-- Footer is injected by site-v6.js -->
+  <script src="/js/site-v6.js?v=11" data-nav=""></script>
 
   <script>
     (function() {
@@ -787,7 +719,7 @@
         } catch (err) {
           state.submitting = false;
           els.step2SubmitBtn.disabled = false;
-          els.step2SubmitLabel.textContent = 'Continue to payment — $' + SESSION_PRICE;
+          els.step2SubmitLabel.textContent = 'Continue to payment · $' + SESSION_PRICE;
           setBannerError("We couldn't start the secure payment. Try again, or email eben@amarimethod.com.");
         }
       });
@@ -797,6 +729,5 @@
       loadSlots();
     })();
   </script>
-  <script src="/js/main.js?v=3" defer></script>
 </body>
 </html>

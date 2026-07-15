@@ -6,6 +6,7 @@
 // ports funnel.mjs's 429 exponential-backoff (GHL burst-limits aggressively).
 
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+import { fetchWithRetry } from "../../functions/lib/fetch-retry.js";
 
 export { getAccessToken };
 
@@ -31,7 +32,11 @@ export async function ghlFetch(env, path) {
     url.searchParams.set("locationId", LOCATION_ID);
   }
 
-  const res = await fetch(url.toString(), {
+  // fetchWithRetry: per-attempt timeout + backoff on network/timeout/5xx/429.
+  // A single hung GHL call used to stall the whole ~400-subrequest run until the
+  // Worker wall-clock limit killed it (the 30s-timeout funnel failure); now it
+  // aborts early and retries. ghlRetry below still adds the longer 429 backoff.
+  const res = await fetchWithRetry(url.toString(), {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",

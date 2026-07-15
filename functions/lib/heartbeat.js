@@ -35,6 +35,17 @@ export const HEARTBEAT_JOBS = [
   { job: "funnel-refresh", label: "Funnel refresh", maxAgeH: 3, producedNoun: "rows" }, // hourly cron
   { job: "daily-audit", label: "Daily audit", maxAgeH: 26, producedNoun: "contacts audited" }, // daily 11:00 UTC
   { job: "outreach-snapshot", label: "Outreach snapshot", maxAgeH: 26, producedNoun: "cards" }, // daily local cron → upload
+  // Advisory field-ID single-source check. A DEPLOYED worker has no filesystem, so
+  // this source-tree scan can't run in-worker; it runs from the local daily driver
+  // (run-daily.sh) which HAS the WEB source tree, and POSTs its result here. maxAgeH
+  // 30 so a once-daily run isn't falsely stale. ok:false (a stray literal) is red.
+  // A stopped checker goes stale, also red. One beat covers both signals.
+  { job: "field-id-check", label: "Field-ID single-source check", maxAgeH: 30, producedNoun: "files scanned" }, // daily local run via run-daily.sh
+  // Heartbeat self-watch. The GET handler judges beats first, then writes THIS beat,
+  // so today's judgement reflects the PREVIOUS run's self-beat: if the read/judge path
+  // was broken or never ran, the self-beat is missing/stale, so it shows red today. A
+  // totally-dead endpoint can't record its own death (accepted blind spot, no external ping).
+  { job: "heartbeat", label: "Heartbeat self-check", maxAgeH: 30, producedNoun: "jobs judged" }, // self-written by GET /api/heartbeats
 ];
 
 const JOBS_BY_NAME = Object.fromEntries(HEARTBEAT_JOBS.map((j) => [j.job, j]));

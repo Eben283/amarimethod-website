@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 type MultiSelectQuestionProps = {
@@ -10,7 +9,17 @@ type MultiSelectQuestionProps = {
   otherOption?: boolean;
   otherValue?: string;
   onOtherChange?: (value: string) => void;
+  /** When true, heading/desc/hint are omitted (QuizStack renders them). */
+  hideHeading?: boolean;
 };
+
+const CheckMark = () => (
+  <span className="mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  </span>
+);
 
 const MultiSelectQuestion = ({
   question,
@@ -21,6 +30,7 @@ const MultiSelectQuestion = ({
   otherOption = false,
   otherValue = '',
   onOtherChange,
+  hideHeading = false,
 }: MultiSelectQuestionProps) => {
   const toggleOption = (option: string) => {
     if (selectedOptions.includes(option)) {
@@ -40,32 +50,28 @@ const MultiSelectQuestion = ({
 
   return (
     <div>
-      <h2 className="text-2xl font-freight mb-2">{question}</h2>
-      {description && (
-        <p className="text-sm text-amari-text-light font-sans mb-1">{description}</p>
+      {!hideHeading && (
+        <>
+          <h2 className="q-title">{question}</h2>
+          {description && <p className="q-desc">{description}</p>}
+          <p className="q-hint">Select all that apply.</p>
+        </>
       )}
-      <p className="text-xs text-amari-text-light font-sans mb-5 opacity-70">Select all that apply</p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="options" role="group" aria-label={question}>
         {options.map((option) => {
           const isSelected = selectedOptions.includes(option);
           return (
             <button
               key={option}
               type="button"
+              role="checkbox"
+              aria-checked={isSelected}
               onClick={() => toggleOption(option)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium font-sans border-2 transition-all duration-200 leading-tight
-                ${isSelected
-                  ? 'border-amari-pine-teal bg-amari-pine-teal text-white shadow-sm'
-                  : 'border-amari-oat bg-white text-gray-700 hover:border-amari-pine-teal hover:bg-amari-light-sand'
-                }`}
+              className={`opt check${isSelected ? ' sel' : ''}`}
             >
-              {isSelected && (
-                <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-              {option}
+              <CheckMark />
+              <span className="txt">{option}</span>
             </button>
           );
         })}
@@ -73,24 +79,17 @@ const MultiSelectQuestion = ({
         {otherOption && (
           <button
             type="button"
+            role="checkbox"
+            aria-checked={selectedOptions.includes('Other')}
             onClick={toggleOther}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium font-sans border-2 transition-all duration-200
-              ${selectedOptions.includes('Other')
-                ? 'border-amari-pine-teal bg-amari-pine-teal text-white shadow-sm'
-                : 'border-amari-oat bg-white text-gray-700 hover:border-amari-pine-teal hover:bg-amari-light-sand'
-              }`}
+            className={`opt check${selectedOptions.includes('Other') ? ' sel' : ''}`}
           >
-            {selectedOptions.includes('Other') && (
-              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-            Other
+            <CheckMark />
+            <span className="txt">Other</span>
           </button>
         )}
       </div>
 
-      {/* Other text input — appears below chips when "Other" is selected */}
       {otherOption && selectedOptions.includes('Other') && onOtherChange && (
         <input
           type="text"
@@ -98,12 +97,19 @@ const MultiSelectQuestion = ({
           onChange={(e) => onOtherChange(e.target.value)}
           placeholder="Please specify…"
           autoFocus
-          className="mt-4 px-4 py-2.5 w-full border-2 border-amari-pine-teal rounded-xl text-sm font-sans focus:outline-none bg-white"
+          className="mt-4 w-full"
+          style={{
+            border: '1px solid var(--line)',
+            background: 'var(--paper)',
+            borderRadius: 3,
+            padding: '14px 16px',
+            fontFamily: 'var(--sans)',
+            fontSize: '1rem',
+            color: 'var(--ink)',
+          }}
           onClick={(e) => e.stopPropagation()}
         />
       )}
-
-
     </div>
   );
 };

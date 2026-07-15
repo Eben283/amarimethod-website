@@ -332,7 +332,7 @@ export function generateInsights(answers: QuizAnswer[], scores: ScoreCategories)
   ) {
     insights.push({
       title: 'Why Past Treatments Haven\'t Worked',
-      description: 'Your experience with multiple treatments suggests they addressed symptoms, not the underlying movement pattern. The Amari Method targets the root cause—the imbalance creating your pain.'
+      description: 'Your experience with multiple treatments suggests they addressed symptoms, not the underlying movement pattern. The Amari Method targets the root cause: the imbalance creating your pain.'
     });
   }
   

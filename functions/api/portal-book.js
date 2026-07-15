@@ -11,9 +11,8 @@
  */
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { requireOwner } from "../lib/owned-access.js";
 import { computeSessionLedger } from "../lib/session-ledger.js";
-import { isContactRevoked } from "../lib/session-guard.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { appointmentEndTime } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
@@ -97,26 +96,18 @@ export async function onRequestPost(context) {
   const origin = request.headers.get('Origin') || '';
   const GHL_API_KEY = await getGhlToken(context);
 
-  // Verify session token and extract contactId
-  const auth = request.headers.get('Authorization') || '';
-  const token = auth.replace('Bearer ', '').trim();
-  if (!token) return json({ error: 'Unauthorized' }, 401, origin);
-
-  let contactId, email;
-  try {
-    const payload = await verifySessionToken(token, env.JWT_SECRET);
-    contactId = payload.contactId;
-    email = payload.email;
-  } catch {
-    return json({ error: 'Unauthorized' }, 401, origin);
-  }
-
-  // Per-contact kill switch — sessions are 30-day bearer tokens with no other
-  // revocation, and booking is one of the two highest-stakes actions. Same
-  // check portal-data runs; it was missing here (2026-07-02 audit).
-  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) {
-    return json({ error: 'Session expired. Please log in again.' }, 401, origin);
-  }
+  // Ownership gate: Bearer + verify + per-contact revoke, centralized in
+  // lib/owned-access.js. contactId comes from the verified JWT, never the
+  // request body — booking is one of the two highest-stakes actions. The
+  // "Unauthorized" wording for missing/invalid tokens is preserved via override;
+  // the error body matches this endpoint's json() helper (cors + JSON error).
+  const gateHeaders = { ...cors(origin), 'Content-Type': 'application/json' };
+  const gate = await requireOwner(context, gateHeaders, {
+    messages: { notAuthenticated: 'Unauthorized', invalidToken: 'Unauthorized' },
+  });
+  if (gate.error) return gate.error;
+  const { tokenPayload, contactId } = gate;
+  const email = tokenPayload.email;
 
   let body;
   try {

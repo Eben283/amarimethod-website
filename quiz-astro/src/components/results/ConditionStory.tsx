@@ -1,9 +1,9 @@
-// Pain-location-specific story for the results page (editorial restyle).
+// Pain-location-specific story for the results page (premium mockup restyle).
 //
 // Renders three editorial sections sequentially:
-//   1. "Why your X keeps hurting" — 3-up cred-grid sourced from whyCards
+//   1. "Why your X keeps hurting" — why-cards sourced from whyCards
 //   2. "A taste of the work" — protocolIntro video block
-//   3. "Where X pain actually comes from" — chain steps grid
+//   3. "Where X pain actually comes from" — chain steps
 //
 // Falls back to a generic chain for pain locations without a condition page
 // (upper back, ankles/feet, wrists/hands, elbows). All copy is sourced from
@@ -39,7 +39,6 @@ function renderItalicTail(heading: string): React.ReactNode {
       );
     }
   }
-  // Fallback: italicize last two words
   const parts = heading.split(' ');
   if (parts.length < 3) return <em>{heading}.</em>;
   const head = parts.slice(0, -2).join(' ') + ' ';
@@ -69,26 +68,22 @@ function renderProtocolName(name: string): React.ReactNode {
 }
 
 const ConditionStory = ({ content }: Props) => {
-  const stepCount = content.chainSteps.length;
   const protocolDurationLabel = content.protocolIntro?.durationLabel?.toUpperCase() ?? '';
 
   return (
     <>
       {/* ─── WHY YOUR X KEEPS HURTING ─── */}
-      <section className="doc">
-        <div className="section-head">
+      <section className="doc sect">
+        <div className="section-head" style={{ borderTop: 'none', marginTop: 0, paddingTop: 48 }}>
           <span className="eyebrow">Why it keeps hurting</span>
-          {/* Italicize the trailing verb phrase. "keeps hurting" matches 5 of 9
-              locations; "keeps coming back" matches hips. Anything else falls
-              back to italicizing the last two words. */}
           <h2>{renderItalicTail(content.whyHeading)}</h2>
           <p className="lede">{content.whySubline}</p>
         </div>
 
-        <div className="cred-grid">
+        <div className="why-cards">
           {content.whyCards.map((card) => (
-            <div key={card.num} className="cred-cell">
-              <span className="num">{card.num}</span>
+            <div key={card.num} className="why-card">
+              <span className="n">{card.num}</span>
               <h3>{card.title}</h3>
               <p>{card.body}</p>
             </div>
@@ -98,14 +93,10 @@ const ConditionStory = ({ content }: Props) => {
 
       {/* ─── PROTOCOL INTRO VIDEO ─── */}
       {content.protocolIntro ? (
-        <section className="doc">
-          <div className="section-head">
+        <section className="doc sect">
+          <div className="section-head" style={{ borderTop: 'none', marginTop: 0, paddingTop: 0 }}>
             <span className="eyebrow">A taste of the work</span>
-            <h2>
-              {/* Italicize the protocol name itself. e.g. "The Spinal Wave"
-                  becomes "The <em>Spinal Wave.</em>" */}
-              {renderProtocolName(content.protocolIntro.name)}
-            </h2>
+            <h2>{renderProtocolName(content.protocolIntro.name)}</h2>
           </div>
 
           <div className="video-block">
@@ -137,20 +128,24 @@ const ConditionStory = ({ content }: Props) => {
       ) : null}
 
       {/* ─── WHERE PAIN ACTUALLY COMES FROM ─── */}
-      <section className="doc">
-        <div className="section-head">
+      <section className="doc sect">
+        <div className="section-head" style={{ borderTop: 'none', marginTop: 0, paddingTop: 0 }}>
           <span className="eyebrow">The pattern</span>
           <h2>{renderItalicTail(content.chainHeading)}</h2>
           <p className="lede">{content.chainSubline}</p>
         </div>
 
-        <div className={`chain-grid${stepCount === 4 ? ' is-4' : ''}`}>
+        <div className="chain">
           {content.chainSteps.map((step) => (
-            <div key={step.num} className="chain-cell">
-              <span className="num">{step.num}</span>
-              <span className="flow">{step.flow}</span>
-              <h3>{step.title}</h3>
-              <p>{step.body}</p>
+            <div key={step.num} className="chain-step">
+              <div className="lead">
+                <span className="n">{step.num}</span>
+                <div className="flow">{step.flow}</div>
+              </div>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.body}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -158,9 +153,7 @@ const ConditionStory = ({ content }: Props) => {
         {content.conditionPageSlug ? (
           <p className="chain-foot">
             Want the full breakdown?{' '}
-            <a
-              href={`https://www.amarimethod.com/${content.conditionPageSlug}`}
-            >
+            <a href={`https://www.amarimethod.com/${content.conditionPageSlug}`}>
               Read the full {content.displayName.toLowerCase()} page →
             </a>
           </p>
