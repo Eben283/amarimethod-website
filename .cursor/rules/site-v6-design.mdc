@@ -1,0 +1,20 @@
+---
+description: Amari marketing site visual system (site-v6) — read before building or restyling HTML/CSS
+alwaysApply: true
+---
+
+# Site-v6 design (Amari marketing pages)
+
+Before building or restyling public HTML on `amarimethod-website`, read **`DESIGN.md`** at the repo root. Tokens/components live in `css/site-v6.css`; chrome in `js/site-v6.js`.
+
+## Hard rules
+
+1. **Use the system** — `site-v6.css` + `site-v6.js`. Do not revive `style-v5` or invent a parallel design system.
+2. **Tokens only** — cream `#F8F1E8`, cream-2, paper, tan, peach, sage, ink `#211D19`, body, line. Serif = Cormorant Garamond; sans = General Sans.
+3. **Buttons** — `.btn` ink rectangles, radius **2px**, uppercase tracked labels. No pills.
+4. **No default cards** — avoid rounded shadowed cards. Open sections, bands, pageheads, hairline borders.
+5. **Heroes** — full-bleed `.hero-bg` by default; no inset media cards or sticker overlays in the first viewport.
+6. **Photo variety** — do not fill a page with look-over-shoulder / right-third portraits. Prefer protocols, face-forward, profile, or activity. Check `images/photos/LIBRARY.md`.
+7. **Page shell** — inject header/footer via `site-v6.js`; set `data-nav` when applicable; absolute asset paths.
+
+If a mockup conflicts with this system, **preserve site-v6** unless the user explicitly asks to change the design language.
