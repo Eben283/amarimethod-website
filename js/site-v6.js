@@ -7,7 +7,7 @@
    Usage, at the end of <body>:
      <script src="js/site-v6.js" data-nav="method"></script>
    data-nav marks the current nav item: method | firstvisit |
-   sessions | stories | about (omit on the homepage).
+   sessions | stories | about | partners (omit on the homepage).
    ============================================================ */
 (function () {
   var script = document.currentScript;
@@ -18,12 +18,13 @@
   var NAV_ITEMS = [
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
-    { key: 'sessions',   label: 'Sessions',    href: '/booking' },
+    { key: 'sessions',   label: 'Pricing',     href: '/booking' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
-    { key: 'about',      label: 'About',       href: '/about' }
+    { key: 'about',      label: 'About',       href: '/about' },
+    { key: 'partners',   label: 'Partners',    href: '/partners' }
   ];
 
-  var BOOK_URL = '/book/initial-in-person';
+  var BOOK_URL = '/booking';
   var CALL_URL = '/book/discovery-call';
 
   /* Search index: every public page. Titles are what a visitor
@@ -85,7 +86,7 @@
     return '' +
       '<header class="site on-dark" id="hdr">\n' +
       '  <div class="hdr-row">\n' +
-      '    <div class="hdr-utility"><a href="/blog">Journal</a><a href="/booking">Pricing</a><a href="/portal/">Client Portal</a></div>\n' +
+      '    <div class="hdr-utility"><a href="/blog">Journal</a><a href="' + CALL_URL + '">Free 15-min call</a><a href="/portal/">Client Portal</a></div>\n' +
       '    <a href="/" class="brand-slot"><span class="wordmark">AMARI</span><img class="logomark" src="' + LOGOMARK + '" alt="Amari"></a>\n' +
       '    <div class="hdr-right">\n' +
       '      <button class="hdr-search" type="button" aria-label="Search the site">' +
@@ -96,7 +97,7 @@
       '  </div>\n' +
       '  <nav class="nav-row">\n    ' + navLinks() + '\n  </nav>\n' +
       '  <nav class="mobile-nav" id="mobilenav">\n    ' + navLinks() +
-      '\n    <a href="/blog">Journal</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a>' +
+      '\n    <a href="/blog">Journal</a><a href="' + CALL_URL + '">Free 15-min call</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a>' +
       '<a href="' + BOOK_URL + '" class="btn">Book Now</a>\n  </nav>\n' +
       '</header>';
   }
@@ -126,12 +127,13 @@
       '        <a href="' + BOOK_URL + '">Book a session</a>\n' +
       '        <a href="' + CALL_URL + '">Free 15-minute call</a>\n' +
       '        <a href="/portal/">Client portal</a>\n' +
+      '        <a href="/partners">Partners</a>\n' +
       '      </div>\n' +
       '    </div>\n' +
       '    <div class="foot-bottom">\n' +
       '      <span>Amari © 2026</span>\n' +
       '      <div class="foot-nav">\n' +
-      '        <a href="/contact">Contact</a><a href="/faq">FAQ</a><a href="/booking">Pricing</a><a href="/stories">Stories</a><a href="/partners">Partners</a><a href="/partner-app">Partner Toolkit</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
+      '        <a href="/contact">Contact</a><a href="/faq">FAQ</a><a href="/booking">Pricing</a><a href="/stories">Stories</a><a href="/partners">Partners</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
       '      </div>\n' +
       '      <span>San Francisco</span>\n' +
       '    </div>\n' +
