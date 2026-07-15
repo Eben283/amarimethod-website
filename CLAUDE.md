@@ -10,8 +10,10 @@
 ```
 amarimethod-website/
 ├── *.html                  # Static marketing pages
-├── css/style-v5.css        # Main stylesheet + design tokens
-├── js/main.js              # Site JS (GA4, menu toggle)
+├── DESIGN.md               # Universal site-v6 style guide (agents: read first)
+├── css/site-v6.css         # Design tokens + shared components
+├── js/site-v6.js           # Header/footer/search/mobile chrome
+├── js/main.js              # Legacy site JS (prefer site-v6 on public pages)
 ├── functions/api/          # Cloudflare Pages Functions (serverless) (subset — see directory)
 │   ├── portal-auth.js      # POST: send magic link email
 │   ├── portal-verify.js    # GET: validate magic link → session token
