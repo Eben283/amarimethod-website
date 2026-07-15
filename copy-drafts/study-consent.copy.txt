@@ -1,24 +1,25 @@
-Study consent + publishing opt-in
-Templated for all studies. [Condition] and [questionnaire] fill from the registry.
-Shown as a checkbox at signup, reconfirmed on paper at session 1.
+Study participation + publishing opt-in
+Templated for all studies.
 
---- CONSENT (checkbox at signup) ---
+Decision (2026-07-15): Joining the study (submitting the signup form) is
+participation consent. Do NOT add a separate required "I agree" checkbox.
 
-I'm joining the Amari Method [Condition] case series. Here's what that means:
+Live on *-study.html: one OPTIONAL, unchecked checkbox for publishing.
+Checked → GHL tag `study-publish-opt-in`.
+Label: "You can use my first name and results in the published case series."
+No faces / likeness — first name + results only.
+
+--- PUBLISH OPT-IN (optional checkbox at signup) ---
+
+[ ] You can use my first name and results in the published case series. (optional)
+
+--- PARTICIPATION (implied by Join — keep visible in What's involved) ---
 
 - Three free 15-minute in-person sessions at 662 8th Ave, San Francisco.
-- These are Amari Method rebalancing sessions, not medical care. Garrett teaches
-  and guides the movement work.
-- At each session I'll rate my pain 0 to 10 before and after. At the first and
-  last session I'll fill out a short questionnaire about how [Condition] affects
-  me.
-- Taking part is my choice. I can stop after any session with no obligation.
-- After the study wraps, Amari Method may publish the combined results as a case
-  series. If my own words or scores are used, only my first name appears, and
-  only if I opt in below.
-
-[ ] I agree to take part on these terms.
-[ ] You can use my first name and results in the published case series. (optional)
+- Amari Method rebalancing sessions, not medical care. Garrett teaches and guides.
+- Pain rated 0–10 before/after each session; short questionnaire at first and last.
+- Voluntary; can stop after any session with no obligation.
+- Group results may be published; named use only with the opt-in above.
 
 --- WHAT TO EXPECT (plain-language expander) ---
 

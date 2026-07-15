@@ -6,6 +6,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { STUDIES } from "../lib/studies.js";
+import { wantsPublishOptIn, STUDY_PUBLISH_OPT_IN_TAG } from "../lib/study-consent.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -84,7 +85,7 @@ export async function onRequestPost(context) {
     }
 
     const body = await context.request.json();
-    const { name, phone, email, bodyPart } = body;
+    const { name, phone, email, bodyPart, publishOptIn } = body;
 
     if (!name || !phone || !email) {
       return new Response(
@@ -115,6 +116,10 @@ export async function onRequestPost(context) {
     const normalizedPart = bodyPart ? String(bodyPart).trim().toLowerCase() : "";
     if (["left", "right", "both"].includes(normalizedPart)) {
       tags.push(`${STUDY.slug}-${normalizedPart}`);
+    }
+
+    if (wantsPublishOptIn(publishOptIn)) {
+      tags.push(STUDY_PUBLISH_OPT_IN_TAG);
     }
 
     const upsertPayload = {

@@ -279,6 +279,11 @@
       font-size: 11.5px;
     }
 
+    .publish-optin {
+      margin: 4px 2px 16px;
+    }
+
+
     button.submit {
       margin-top: 4px;
       width: 100%;
@@ -449,6 +454,11 @@
           <label for="armBoth">Both</label>
         </div>
       </div>
+
+      <label class="screen-item publish-optin">
+        <input type="checkbox" id="consentPublish" class="screen-check">
+        <span>You can use my first name and results in the published case series. <span class="optional-tag">(optional)</span></span>
+      </label>
       <p class="form-error" id="formError"></p>
       <button type="submit" class="submit" id="submitBtn">Join the study</button>
     </form>
@@ -486,6 +496,7 @@
           phone: document.getElementById('phone').value,
           email: document.getElementById('email').value,
           arm: arm ? arm.value : undefined,
+          publishOptIn: document.getElementById('consentPublish').checked,
         }),
       })
         .then(function (res) {
