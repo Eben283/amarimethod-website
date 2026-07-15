@@ -201,7 +201,7 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
   .wordmark{font-size:26px;letter-spacing:.22em;padding-left:.22em}
   .hdr-right{gap:12px}
   .btn.hdr-book{padding:10px 14px;font-size:10px;letter-spacing:.12em;white-space:nowrap}
-  .mobile-nav{position:fixed;inset:0;background:var(--cream);padding:120px 30px 40px;flex-direction:column;gap:20px;font-size:19px;font-family:var(--serif);opacity:0;pointer-events:none;transition:opacity .35s var(--ease);color:var(--ink)}
+  .mobile-nav{position:fixed;inset:0;background:var(--cream);padding:calc(120px + var(--banner-h, 0px)) 30px 40px;flex-direction:column;gap:20px;font-size:19px;font-family:var(--serif);opacity:0;pointer-events:none;transition:opacity .35s var(--ease);color:var(--ink);overflow-y:auto}
   header.site.menu-open{position:fixed;background:var(--cream);color:var(--ink);box-shadow:none}
   /* Beat .on-dark nav { color:#fff } so links stay readable on cream */
   header.site.menu-open,
