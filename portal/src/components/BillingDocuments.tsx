@@ -53,7 +53,7 @@ export default function BillingDocuments() {
   return (
     <section className="cp-actions">
       <div className="cp-section-head">
-        <h3 className="cp-section-h">Billing &amp; documents</h3>
+        <h3 className="cp-section-h">Receipts &amp; insurance</h3>
       </div>
       <div
         style={{
@@ -64,11 +64,11 @@ export default function BillingDocuments() {
         }}
       >
         <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
-          Insurance reimbursement packet
+          Receipts &amp; reimbursement packet
         </div>
         <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8, maxWidth: 560 }}>
-          A cover letter, a letter of services, and your paid invoices for the dates you choose —
-          ready to submit to your insurer.
+          Paid invoices for the dates you choose, plus a cover letter and letter of services —
+          ready to save as a PDF or submit to your insurer.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'flex-end' }}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>
