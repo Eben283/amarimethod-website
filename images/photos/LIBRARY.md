@@ -103,3 +103,9 @@ re-refining; do not wire into pages.
 from `mockup-assets/real/`) against ~156 journal slots. Heavy repetition on the
 journal is structural until a per-article header batch is generated. See the journal
 mockup de-dup and the shots-todo worklist.
+
+## Firefly keeps wired 2026-07-15
+- `images/v6/real/{passive-bridge,active-bridge,elbow-reset,hand-balancer,putting-it-all-together,spring-step,vertical-drop}.jpg` from Drive Firefly outputs
+- `journal-base/jh-vertical-drop.jpg`, `jh-spring-step.jpg` replaced with Firefly keeps
+- `detail-crops/hand-reaching-open.jpg` cropped from hand-reaching generate
+- Suspension hang full frame NOT wired (crop-only asset saved at `detail-crops/suspension-hang-arms-crop.jpg` unused)
