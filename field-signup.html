@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Amari Studies">
+<meta name="theme-color" content="#F8F1E8">
+<meta name="description" content="Private study picker for Amari Method field signup. Not for public search.">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Amari Method · Field Signup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<style>
+  body.field-signup{
+    min-height:100dvh;
+    background:
+      linear-gradient(180deg, var(--cream-2) 0%, var(--cream) 42%, var(--cream) 100%);
+    padding:
+      max(36px, env(safe-area-inset-top))
+      max(20px, env(safe-area-inset-right))
+      max(36px, env(safe-area-inset-bottom))
+      max(20px, env(safe-area-inset-left));
+  }
+  .field-shell{width:100%;max-width:440px;margin:0 auto}
+  .field-shell .word{font-family:var(--serif);font-weight:500;font-size:clamp(2.2rem,8vw,2.8rem);letter-spacing:.28em;text-align:center;padding-left:.28em;margin:0 0 10px;line-height:1}
+  .field-shell .hint{text-align:center;font-size:15px;color:var(--body);margin:0 0 32px;max-width:none}
+  .field-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .field-list a{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    min-height:74px;padding:18px 20px;
+    border:1px solid var(--line);background:var(--paper);border-radius:2px;
+    color:inherit;text-decoration:none;
+    transition:background .3s var(--ease), border-color .3s var(--ease), transform .3s var(--ease);
+  }
+  .field-list a:hover{background:#fff;border-color:var(--ink);transform:translateY(-1px)}
+  .field-list a:active{transform:scale(.985)}
+  .field-list .name{font-family:var(--serif);font-weight:500;font-size:1.55rem;line-height:1.1;display:block}
+  .field-list .sub{display:block;margin-top:4px;font-size:13px;color:var(--body);line-height:1.35}
+  .field-list .go{
+    flex-shrink:0;font-family:var(--sans);font-weight:600;font-size:11px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--ink);
+  }
+  .field-note{margin:28px 0 0;font-size:13px;line-height:1.55;color:var(--body);text-align:center;max-width:none}
+  .field-note strong{font-weight:600;color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){
+    .field-list a{transition:none}
+    .field-list a:hover,.field-list a:active{transform:none}
+  }
+</style>
+</head>
+<body class="field-signup">
+  <main class="field-shell">
+    <p class="word">AMARI</p>
+    <p class="hint">Pick the study, then hand them the phone.</p>
+    <ul class="field-list">
+      <li><a href="/jaw-study"><span><span class="name">Jaw</span><span class="sub">Jaw / TMJ tension &amp; clicking</span></span><span class="go">Open</span></a></li>
+      <li><a href="/foot-study"><span><span class="name">Foot</span><span class="sub">Arch, heel &amp; plantar pain</span></span><span class="go">Open</span></a></li>
+      <li><a href="/elbow-study"><span><span class="name">Elbow</span><span class="sub">Tennis / golfer&rsquo;s elbow</span></span><span class="go">Open</span></a></li>
+      <li><a href="/hand-study"><span><span class="name">Hand</span><span class="sub">Wrist, thumb &amp; grip pain</span></span><span class="go">Open</span></a></li>
+      <li><a href="/shoulder-study"><span><span class="name">Upper Back</span><span class="sub">Desk shoulders &amp; upper-back ache</span></span><span class="go">Open</span></a></li>
+    </ul>
+    <p class="field-note"><strong>Save on your phone:</strong> open this page → Share → Add to Home Screen. Icon label: Amari Studies. Page is not indexed.</p>
+  </main>
+</body>
+</html>
