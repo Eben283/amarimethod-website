@@ -27,35 +27,39 @@
   var BOOK_URL = '/booking';
   var CALL_URL = '/book/discovery-call';
 
-  /* Search index: every public page. Titles are what a visitor
-     would type, not internal names. */
+  /* Search index: every public page. Titles (t) are shown in results.
+     Optional aliases (a) catch what visitors actually type — portal,
+     buy, HSA, insurance, receipts — without polluting the label. */
   var PAGES = [
     { t: 'Home', u: '/' },
-    { t: 'Our Method: How It Works', u: '/how-it-works' },
-    { t: 'Your First Visit', u: '/first-visit' },
-    { t: 'Sessions & Pricing', u: '/booking' },
-    { t: 'Client Stories', u: '/stories' },
-    { t: 'About Garrett', u: '/about' },
-    { t: 'Book a Session', u: '/book/initial-in-person' },
-    { t: 'Book a Virtual Session', u: '/book/initial-virtual' },
-    { t: 'Free 15-Minute Call', u: '/book/discovery-call' },
-    { t: 'Conditions We Work With', u: '/conditions' },
+    { t: 'Our Method: How It Works', u: '/how-it-works', a: ['method', 'how it works', 'what is amari'] },
+    { t: 'Your First Visit', u: '/first-visit', a: ['first session', 'what to expect', 'new client'] },
+    { t: 'Sessions & Pricing', u: '/booking', a: ['buy', 'buying', 'purchase', 'pricing', 'price', 'cost', 'packages', 'pay', 'payment', 'book', 'booking', 'rates'] },
+    { t: 'Client Portal', u: '/portal/', a: ['portal', 'client portal', 'login', 'log in', 'sign in', 'account', 'my account', 'dashboard'] },
+    { t: 'FAQ', u: '/faq', a: ['insurance', 'hsa', 'fsa', 'receipt', 'receipts', 'superbill', 'billing', 'reimbursement', 'affirm', 'payment plan', 'questions'] },
+    { t: 'Client Stories', u: '/stories', a: ['testimonials', 'reviews', 'results'] },
+    { t: 'About Garrett', u: '/about', a: ['garrett', 'practitioner', 'who'] },
+    { t: 'Book a Session', u: '/book/initial-in-person', a: ['schedule', 'appointment'] },
+    { t: 'Book a Virtual Session', u: '/book/initial-virtual', a: ['online', 'zoom', 'remote'] },
+    { t: 'Free 15-Minute Call', u: '/book/discovery-call', a: ['discovery call', 'consult', 'consultation', 'free call'] },
+    { t: 'Conditions We Work With', u: '/conditions', a: ['conditions', 'pain', 'issues'] },
     { t: 'Lower Back Pain', u: '/lower-back-pain-san-francisco' },
     { t: 'Neck Pain', u: '/neck-pain-san-francisco' },
     { t: 'Shoulder Pain', u: '/shoulder-pain-san-francisco' },
     { t: 'Hip Pain', u: '/hip-pain-san-francisco' },
     { t: 'Knee Pain', u: '/knee-pain-san-francisco' },
     { t: 'Sciatica', u: '/sciatica-san-francisco' },
-    { t: 'TMJ & Jaw Pain', u: '/tmj-san-francisco' },
-    { t: 'Plantar Fasciitis', u: '/plantar-fasciitis-san-francisco' },
+    { t: 'TMJ & Jaw Pain', u: '/tmj-san-francisco', a: ['jaw', 'tmj'] },
+    { t: 'Plantar Fasciitis', u: '/plantar-fasciitis-san-francisco', a: ['foot', 'heel'] },
     { t: 'Chronic Pain', u: '/chronic-pain-san-francisco' },
-    { t: 'In-Person Sessions', u: '/in-person-sessions' },
-    { t: 'Virtual Sessions', u: '/virtual-sessions' },
-    { t: 'Ongoing Care', u: '/ongoing-care' },
-    { t: 'The Living Practice', u: '/living-practice' },
-    { t: 'Partners', u: '/partners' },
-    { t: 'Contact', u: '/contact' },
-    { t: 'Journal', u: '/blog' },
+    { t: 'In-Person Sessions', u: '/in-person-sessions', a: ['office', 'in person', 'san francisco'] },
+    { t: 'Virtual Sessions', u: '/virtual-sessions', a: ['virtual', 'online session'] },
+    { t: 'Ongoing Care', u: '/ongoing-care', a: ['follow up', 'follow-up', 'membership'] },
+    { t: 'The Living Practice', u: '/living-practice', a: ['videos', 'home practice', 'program'] },
+    { t: 'Partners', u: '/partners', a: ['affiliate', 'refer', 'referral'] },
+    { t: 'Contact', u: '/contact', a: ['email', 'phone', 'address', 'location', 'hours'] },
+    { t: 'Gift Card Redeem', u: '/gift-card-redeem', a: ['gift card', 'giftcard', 'redeem', 'voucher'] },
+    { t: 'Journal', u: '/blog', a: ['blog', 'articles'] },
     { t: 'Back Pain from Sitting', u: '/blog-back-pain-from-sitting' },
     { t: 'Sciatica Relief', u: '/blog-sciatica-relief' },
     { t: 'Tennis Elbow: The Elbow Reset', u: '/blog-elbow-reset-tennis-elbow' },
@@ -211,11 +215,22 @@
       overlay.hidden = true;
       document.body.classList.remove('search-open');
     }
+    function pageMatches(p, query) {
+      if (p.t.toLowerCase().indexOf(query) !== -1) return true;
+      var aliases = p.a || [];
+      for (var i = 0; i < aliases.length; i++) {
+        var alias = String(aliases[i]).toLowerCase();
+        if (!alias) continue;
+        if (alias.indexOf(query) !== -1 || query.indexOf(alias) !== -1) return true;
+      }
+      return false;
+    }
+
     function render(q) {
       var query = q.trim().toLowerCase();
       if (!query) { results.innerHTML = ''; return; }
       var hits = PAGES.filter(function (p) {
-        return p.t.toLowerCase().indexOf(query) !== -1;
+        return pageMatches(p, query);
       }).slice(0, 8);
       if (!hits.length) {
         results.innerHTML = '<p class="search-empty">Nothing on the site matches that. Try a body part, or <a href="/contact">ask us directly</a>.</p>';
