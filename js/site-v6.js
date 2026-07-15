@@ -123,7 +123,7 @@
       '      </div>\n' +
       '      <div class="foot-col foot-locs">\n' +
       '        <h3>Amari</h3>\n' +
-      '        <span class="foot-city">San Francisco, CA</span>\n' +
+      '        <a href="/contact">Contact</a>\n' +
       '        <a href="' + BOOK_URL + '">Book a session</a>\n' +
       '        <a href="' + CALL_URL + '">Free 15-minute call</a>\n' +
       '        <a href="/portal/">Client portal</a>\n' +
@@ -133,9 +133,9 @@
       '    <div class="foot-bottom">\n' +
       '      <span>Amari © 2026</span>\n' +
       '      <div class="foot-nav">\n' +
-      '        <a href="/contact">Contact</a><a href="/faq">FAQ</a><a href="/booking">Pricing</a><a href="/stories">Stories</a><a href="/partners">Partners</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
+      '        <a href="/faq">FAQ</a><a href="/partners">Partners</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
       '      </div>\n' +
-      '      <span>San Francisco</span>\n' +
+      '      <span>San Francisco, CA</span>\n' +
       '    </div>\n' +
       '  </div>\n' +
       '</footer>';

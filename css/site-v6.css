@@ -136,7 +136,6 @@ footer{background:var(--cream);padding:80px 0 40px}
 .news button{background:transparent;border:none;border-left:1px solid var(--line);padding:0 20px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
 .foot-locs a{display:block;margin-bottom:8px;font-size:14.5px;border-bottom:1px solid transparent}
 .foot-locs a:hover{border-color:var(--ink)}
-.foot-locs .foot-city{display:block;margin-bottom:14px;font-size:14.5px;color:var(--body);cursor:default}
 .foot-bottom{border-top:1px solid var(--line);padding-top:26px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
 .foot-nav{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
 .foot-nav a:hover{color:var(--ink)}
