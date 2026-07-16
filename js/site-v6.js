@@ -373,6 +373,96 @@
     initNewsletter();
     initSearch();
     initMobileMenu();
+    initAnalytics();
+  }
+
+  /* GA4 engagement events — restored after site-v6 dropped js/main.js.
+     Base page_view still comes from the gtag snippet in each page <head>. */
+  function initAnalytics() {
+    if (typeof window.gtag !== 'function') return;
+
+    document.addEventListener('click', function (e) {
+      var el = e.target.closest(
+        'a.btn, button.btn, a[href*="/booking"], a[href*="/book/"], a[href*="discoverycall"], a[href*="discovery-call"]'
+      );
+      if (!el) return;
+
+      var buttonText = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      var buttonHref = el.getAttribute('href') || 'internal-link';
+      var params = {
+        event_category: 'engagement',
+        event_label: buttonText,
+        button_text: buttonText,
+        button_url: buttonHref,
+        page_location: window.location.pathname,
+        value: 1
+      };
+
+      window.gtag('event', 'cta_button_click', params);
+
+      var href = buttonHref.toLowerCase();
+      var text = buttonText.toLowerCase();
+      if (
+        href.indexOf('discoverycall') !== -1 ||
+        href.indexOf('discovery-call') !== -1 ||
+        text.indexOf('discovery call') !== -1 ||
+        text.indexOf('free 15') !== -1 ||
+        text.indexOf('15-minute') !== -1 ||
+        text.indexOf('15 minute') !== -1
+      ) {
+        window.gtag('event', 'click_discovery_call', params);
+      } else if (
+        href.indexOf('/booking') !== -1 ||
+        href.indexOf('/book/') !== -1 ||
+        text.indexOf('book session') !== -1 ||
+        text.indexOf('book now') !== -1 ||
+        text.indexOf('book a session') !== -1
+      ) {
+        window.gtag('event', 'click_book_session', params);
+      }
+    });
+
+    var scrollDepthTracked = { 25: false, 50: false, 75: false, 100: false };
+    var scrollDepthTicking = false;
+    function checkScrollDepth() {
+      var windowHeight = window.innerHeight;
+      var documentHeight = document.documentElement.scrollHeight;
+      var scrollTop = window.scrollY;
+      var scrollPercent = Math.round(((scrollTop + windowHeight) / documentHeight) * 100);
+      [25, 50, 75, 100].forEach(function (milestone) {
+        if (scrollPercent >= milestone && !scrollDepthTracked[milestone]) {
+          scrollDepthTracked[milestone] = true;
+          window.gtag('event', 'scroll_depth', {
+            event_category: 'engagement',
+            event_label: milestone + '%',
+            scroll_depth: milestone + '%'
+          });
+        }
+      });
+      if (scrollDepthTracked[100]) {
+        window.removeEventListener('scroll', onScrollDepth);
+      }
+      scrollDepthTicking = false;
+    }
+    function onScrollDepth() {
+      if (!scrollDepthTicking) {
+        scrollDepthTicking = true;
+        requestAnimationFrame(checkScrollDepth);
+      }
+    }
+    window.addEventListener('scroll', onScrollDepth, { passive: true });
+
+    var pageStartTime = Date.now();
+    setInterval(function () {
+      var timeOnPage = Math.round((Date.now() - pageStartTime) / 1000);
+      if ([30, 60, 120, 300].indexOf(timeOnPage) !== -1) {
+        window.gtag('event', 'page_engagement', {
+          event_category: 'engagement',
+          event_label: timeOnPage + 's on page',
+          engagement_time_msec: timeOnPage * 1000
+        });
+      }
+    }, 1000);
   }
 
   if (document.readyState === 'loading') {
