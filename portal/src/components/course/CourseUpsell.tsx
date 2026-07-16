@@ -10,11 +10,11 @@ export default function CourseUpsell() {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <div className="w-16 h-16 rounded-2xl bg-amari-light-sand flex items-center justify-center mx-auto mb-6">
+        <div className="w-16 h-16 rounded-[2px] bg-amari-light-sand flex items-center justify-center mx-auto mb-6">
           <Play className="w-8 h-8 text-amari-charcoal" />
         </div>
 
-        <h1 className="font-serif text-2xl font-bold text-amari-charcoal mb-3">
+        <h1 className="font-serif text-2xl font-medium text-amari-charcoal mb-3 tracking-tight">
           Living Practice
         </h1>
 

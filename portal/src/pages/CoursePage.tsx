@@ -127,7 +127,7 @@ export default function CoursePage() {
                 {currentModule.title} &middot; Lesson {lessonNumber} of{' '}
                 {currentModule.lessons.length}
               </p>
-              <h1 className="font-serif text-xl sm:text-2xl font-bold text-amari-charcoal">
+              <h1 className="font-serif text-xl sm:text-2xl font-medium text-amari-charcoal tracking-tight">
                 {currentLesson.title}
               </h1>
             </div>
@@ -141,7 +141,7 @@ export default function CoursePage() {
 
             {/* Equipment & guidance — shown on first lesson of each module */}
             {lessonNumber === 1 && (currentModule.equipment || currentModule.guidance) && (
-              <div className="mt-5 p-4 rounded-lg bg-amari-light-sand border border-amari-border">
+              <div className="mt-5 p-4 rounded-[2px] bg-amari-light-sand border border-amari-border">
                 {currentModule.equipment && currentModule.equipment.length > 0 && (
                   <div className="mb-3">
                     <h3 className="flex items-center gap-1.5 text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
@@ -172,7 +172,7 @@ export default function CoursePage() {
 
             {/* Lesson notes — key takeaways from the video */}
             {currentLesson.notes && currentLesson.notes.length > 0 && (
-              <div className="mt-5 p-4 rounded-lg border border-amari-border">
+              <div className="mt-5 p-4 rounded-[2px] border border-amari-border bg-[#FCF7F1]">
                 <h3 className="text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
                   Key Takeaways
                 </h3>

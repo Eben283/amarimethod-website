@@ -63,8 +63,8 @@ export default {
         'sans': ['General Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'card': '0 2px 10px rgba(33, 29, 25, 0.05)',
-        'card-hover': '0 8px 24px rgba(33, 29, 25, 0.09)',
+        'card': 'none',
+        'card-hover': 'none',
       },
       keyframes: {
         "fade-in": {

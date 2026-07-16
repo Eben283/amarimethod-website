@@ -64,7 +64,7 @@ export default function CourseSidebar({
               <div key={mod.slug}>
                 <button
                   onClick={() => toggleModule(mod.slug)}
-                  className="flex items-center gap-2 w-full text-left py-2 px-2 rounded-lg hover:bg-amari-light-sand transition-colors"
+                  className="flex items-center gap-2 w-full text-left py-2 px-2 rounded-[2px] hover:bg-amari-light-sand transition-colors"
                 >
                   {isExpanded ? (
                     <ChevronDown className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
@@ -100,9 +100,9 @@ export default function CourseSidebar({
                           )}
                           <button
                             onClick={() => navigate(`/practice/${mod.slug}/${lesson.slug}`)}
-                            className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-md text-xs font-sans transition-colors ${
+                            className={`flex items-center gap-2 w-full text-left py-1.5 px-2 rounded-[2px] text-xs font-sans transition-colors ${
                               isCurrent
-                                ? 'bg-amari-accent-warm/10 text-amari-accent-warm font-semibold'
+                                ? 'bg-amari-accent-warm-light text-amari-charcoal font-semibold'
                                 : 'text-amari-text-secondary hover:bg-amari-light-sand'
                             }`}
                           >
