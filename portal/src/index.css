@@ -72,7 +72,7 @@
   }
 
   .portal-btn-accent {
-    @apply portal-btn bg-amari-accent-warm text-white hover:bg-[#e0926f] hover:-translate-y-[1px] hover:shadow-card-hover;
+    @apply portal-btn bg-amari-accent-warm text-white hover:bg-[#D49274] hover:-translate-y-[1px] hover:shadow-card-hover;
   }
 
   .portal-input {
