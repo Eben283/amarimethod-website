@@ -1,4 +1,4 @@
-import { Play, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const PURCHASE_URL =
@@ -8,37 +8,35 @@ export default function CourseUpsell() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <div className="max-w-md text-center">
-        <div className="w-16 h-16 rounded-[2px] bg-amari-light-sand flex items-center justify-center mx-auto mb-6">
-          <Play className="w-8 h-8 text-amari-charcoal" />
-        </div>
-
-        <h1 className="font-serif text-2xl font-medium text-amari-charcoal mb-3 tracking-tight">
+    <div className="lp-upsell">
+      <div>
+        <p className="lp-eyebrow" style={{ marginBottom: '1rem' }}>
           Living Practice
-        </h1>
+        </p>
+        <h1>Living Practice</h1>
 
-        <p className="text-sm text-amari-text-secondary mb-2">
+        <p>
           The complete video program for building your at-home Amari Method practice.
           11 modules, 43 guided videos.
         </p>
 
-        <p className="text-xs text-amari-text-muted mb-6">
+        <p style={{ fontSize: '12px', letterSpacing: '.08em', textTransform: 'uppercase' }}>
           Included with the 8-session series, or available standalone for $347.
         </p>
 
-        <div className="flex flex-col gap-3">
+        <div className="lp-actions">
           <a
             href={PURCHASE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="portal-btn-primary no-underline"
+            className="lp-btn lp-btn-primary"
           >
             Get Living Practice — $347
           </a>
           <button
+            type="button"
             onClick={() => navigate('/')}
-            className="portal-btn-secondary"
+            className="lp-btn lp-btn-outline"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard

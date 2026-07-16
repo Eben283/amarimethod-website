@@ -19,39 +19,37 @@ export default function CourseModulesPage() {
 
   return (
     <CourseGuard>
-      <PortalNav firstName={firstName} />
+      <div className="lp-shell">
+        <PortalNav firstName={firstName} hasLivingPractice />
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-8 py-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-sm text-amari-text-muted hover:text-amari-charcoal transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
+        <div className="lp-wrap" style={{ maxWidth: '42rem' }}>
+          <button type="button" onClick={() => navigate('/')} className="lp-back">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
 
-        <h1 className="font-serif text-2xl font-medium text-amari-charcoal mb-2 tracking-tight">
-          Living Practice
-        </h1>
+          <p className="lp-page-kicker">Curriculum</p>
+          <h1 className="lp-page-title">Living Practice</h1>
 
-        <div className="mb-6">
-          <CourseProgressBar
-            completed={overallProgress.completed}
-            total={overallProgress.total}
-          />
-        </div>
-
-        <div className="space-y-2">
-          {COURSE_MODULES.map((mod) => (
-            <ModuleAccordion
-              key={mod.slug}
-              module={mod}
-              progress={progress}
-              moduleProgress={getModuleProgress(mod.slug)}
+          <div style={{ marginBottom: '2rem' }}>
+            <CourseProgressBar
+              completed={overallProgress.completed}
+              total={overallProgress.total}
             />
-          ))}
+          </div>
+
+          <div>
+            {COURSE_MODULES.map((mod) => (
+              <ModuleAccordion
+                key={mod.slug}
+                module={mod}
+                progress={progress}
+                moduleProgress={getModuleProgress(mod.slug)}
+              />
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
     </CourseGuard>
   );
 }
@@ -70,68 +68,75 @@ function ModuleAccordion({
   const isComplete = moduleProgress.completed === moduleProgress.total;
 
   return (
-    <div className="portal-card p-0 overflow-hidden">
+    <div className="lp-mod-card">
       <button
+        type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-3 w-full text-left p-4"
+        className="lp-mod-card-head"
       >
         <div
-          className={`w-8 h-8 rounded-[2px] flex items-center justify-center flex-shrink-0 ${
-            isComplete ? 'bg-amari-accent-warm/10' : 'bg-amari-light-sand'
-          }`}
+          style={{
+            width: 32,
+            height: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            background: isComplete ? 'rgba(225,169,139,.18)' : 'var(--lp-cream-2, #F1E7DA)',
+          }}
         >
           {isComplete ? (
-            <CheckCircle2 className="w-4 h-4 text-amari-accent-warm" />
+            <CheckCircle2 className="w-4 h-4" style={{ color: 'var(--lp-peach, #E1A98B)' }} />
           ) : (
             <ChevronRight
-              className={`w-4 h-4 text-amari-text-muted transition-transform ${
-                isOpen ? 'rotate-90' : ''
-              }`}
+              className="w-4 h-4"
+              style={{
+                color: 'var(--lp-body, #5C554D)',
+                transform: isOpen ? 'rotate(90deg)' : undefined,
+                transition: 'transform .2s',
+              }}
             />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="font-sans font-semibold text-sm text-amari-charcoal truncate">
-            {mod.title}
-          </h3>
-          <p className="text-[11px] text-amari-text-muted">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3>{mod.title}</h3>
+          <p>
             {moduleProgress.completed} of {moduleProgress.total} complete
           </p>
         </div>
       </button>
 
       {isOpen && (
-        <ul className="border-t border-amari-border">
+        <div className="lp-mod-card-body">
           {mod.lessons.map((lesson) => {
             const key = lessonKey(mod.slug, lesson.slug);
             const isCompleted = progress.lessons[key]?.completed ?? false;
 
             return (
-              <li key={lesson.slug} className="border-b border-amari-border last:border-b-0">
+              <div key={lesson.slug}>
                 {lesson.section && (
-                  <div className="px-4 pt-3 pb-1">
-                    <p className="text-[10px] uppercase tracking-widest text-amari-text-muted font-sans font-semibold">
-                      {lesson.section}
-                    </p>
-                  </div>
+                  <p className="lp-section-label" style={{ padding: '14px 24px 0' }}>
+                    {lesson.section}
+                  </p>
                 )}
                 <button
+                  type="button"
                   onClick={() => navigate(`/practice/${mod.slug}/${lesson.slug}`)}
-                  className="flex items-center gap-3 w-full text-left px-4 py-3 hover:bg-amari-light-sand transition-colors"
                 >
                   {isCompleted ? (
-                    <CheckCircle2 className="w-4 h-4 text-amari-accent-warm flex-shrink-0" />
+                    <CheckCircle2
+                      className="w-4 h-4"
+                      style={{ color: 'var(--lp-peach, #E1A98B)', flexShrink: 0 }}
+                    />
                   ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-amari-border flex-shrink-0" />
+                    <span className="lp-dot" aria-hidden />
                   )}
-                  <span className="text-sm text-amari-text-secondary font-sans">
-                    {lesson.title}
-                  </span>
+                  <span>{lesson.title}</span>
                 </button>
-              </li>
+              </div>
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );
