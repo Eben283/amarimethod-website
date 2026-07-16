@@ -19,11 +19,12 @@ export default function LessonNav({ moduleSlug, lessonSlug }: LessonNavProps) {
   const next = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   return (
-    <div className="flex items-center justify-between gap-4 pt-4">
+    <div className="lp-nav">
       {prev ? (
         <button
+          type="button"
           onClick={() => navigate(`/practice/${prev.moduleSlug}/${prev.lesson.slug}`)}
-          className="portal-btn-secondary text-xs"
+          className="lp-btn lp-btn-outline"
         >
           <ChevronLeft className="w-4 h-4" />
           Previous
@@ -34,8 +35,9 @@ export default function LessonNav({ moduleSlug, lessonSlug }: LessonNavProps) {
 
       {next ? (
         <button
+          type="button"
           onClick={() => navigate(`/practice/${next.moduleSlug}/${next.lesson.slug}`)}
-          className="portal-btn-primary text-xs"
+          className="lp-btn lp-btn-primary"
         >
           Next
           <ChevronRight className="w-4 h-4" />

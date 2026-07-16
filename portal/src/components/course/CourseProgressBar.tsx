@@ -12,25 +12,27 @@ export default function CourseProgressBar({
   showLabel = true,
 }: CourseProgressBarProps) {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const barHeight = size === 'sm' ? 'h-1.5' : 'h-2.5';
+  const barHeight = size === 'sm' ? 2 : 2;
 
   return (
     <div className="w-full">
       {showLabel && (
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-amari-text-muted font-sans">
+        <div className="lp-progress-row">
+          <span>
             {completed} of {total} complete
           </span>
-          <span className="text-xs font-semibold text-amari-charcoal font-sans">
-            {percent}%
-          </span>
+          <strong>{percent}%</strong>
         </div>
       )}
-      <div className={`w-full ${barHeight} bg-amari-light-sand rounded-[1px] overflow-hidden`}>
-        <div
-          className={`${barHeight} bg-amari-accent-warm rounded-[1px] transition-all duration-500 ease-out`}
-          style={{ width: `${percent}%` }}
-        />
+      <div
+        className="lp-bar"
+        style={{ height: barHeight }}
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <span style={{ width: `${percent}%` }} />
       </div>
     </div>
   );

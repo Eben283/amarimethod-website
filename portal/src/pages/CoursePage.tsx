@@ -78,125 +78,104 @@ export default function CoursePage() {
 
   return (
     <CourseGuard>
-      <PortalNav firstName={firstName} />
+      <div className="lp-shell">
+        <PortalNav firstName={firstName} hasLivingPractice />
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 lg:px-10 py-6">
-        {/* Back link — visible on all sizes */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-sm text-amari-text-muted hover:text-amari-charcoal transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
+        <div className="lp-wrap">
+          <button type="button" onClick={() => navigate('/')} className="lp-back">
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
 
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar — hidden on mobile at lesson view, shown on desktop */}
-          <div className="hidden md:block">
-            <CourseSidebar
-              progress={progress}
-              overallProgress={overallProgress}
-              getModuleProgress={getModuleProgress}
-              currentModuleSlug={moduleSlug}
-              currentLessonSlug={lessonSlug}
-            />
-          </div>
-
-          {/* Main content */}
-          <div className="flex-1 min-w-0">
-            {/* Mobile: back to modules + progress */}
-            <div className="md:hidden mb-4">
-              <button
-                onClick={() => navigate('/practice/modules')}
-                className="flex items-center gap-1.5 text-xs text-amari-text-muted hover:text-amari-charcoal transition-colors mb-3"
-              >
-                <List className="w-3.5 h-3.5" />
-                All Modules
-              </button>
-              <CourseProgressBar
-                completed={overallProgress.completed}
-                total={overallProgress.total}
-                size="sm"
-                showLabel={false}
+          <div className="lp-layout">
+            <div className="hidden md:block">
+              <CourseSidebar
+                progress={progress}
+                overallProgress={overallProgress}
+                getModuleProgress={getModuleProgress}
+                currentModuleSlug={moduleSlug}
+                currentLessonSlug={lessonSlug}
               />
             </div>
 
-            {/* Module + lesson header */}
-            <div className="mb-4">
-              <p className="text-xs text-amari-text-muted font-sans uppercase tracking-widest mb-1">
-                {currentModule.title} &middot; Lesson {lessonNumber} of{' '}
+            <div className="lp-main">
+              <div className="md:hidden" style={{ marginBottom: '1.25rem' }}>
+                <button
+                  type="button"
+                  onClick={() => navigate('/practice/modules')}
+                  className="lp-back"
+                  style={{ marginBottom: '12px' }}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  All Modules
+                </button>
+                <CourseProgressBar
+                  completed={overallProgress.completed}
+                  total={overallProgress.total}
+                  size="sm"
+                  showLabel={false}
+                />
+              </div>
+
+              <p className="lp-eyebrow mute lp-lesson-meta">
+                {currentModule.title} · Lesson {lessonNumber} of{' '}
                 {currentModule.lessons.length}
               </p>
-              <h1 className="font-serif text-xl sm:text-2xl font-medium text-amari-charcoal tracking-tight">
-                {currentLesson.title}
-              </h1>
+              <h1 className="lp-lesson-title">{currentLesson.title}</h1>
+
+              <VideoPlayer
+                streamUid={currentLesson.streamUid}
+                initialSeconds={lessonProg?.watchedSeconds ?? 0}
+                onTimeUpdate={handleTimeUpdate}
+              />
+
+              {lessonNumber === 1 && (currentModule.equipment || currentModule.guidance) && (
+                <div className="lp-panel">
+                  {currentModule.equipment && currentModule.equipment.length > 0 && (
+                    <div style={{ marginBottom: currentModule.guidance ? '1rem' : 0 }}>
+                      <h3>
+                        <Wrench className="w-3.5 h-3.5" />
+                        Equipment
+                      </h3>
+                      <ul>
+                        {currentModule.equipment.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {currentModule.guidance && (
+                    <div>
+                      <h3>
+                        <Clock className="w-3.5 h-3.5" />
+                        Recommended Practice
+                      </h3>
+                      <p>{currentModule.guidance}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentLesson.notes && currentLesson.notes.length > 0 && (
+                <div className="lp-panel">
+                  <h3>Key Takeaways</h3>
+                  <ul>
+                    {currentLesson.notes.map((note, i) => (
+                      <li key={i}>{note}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <LessonNav moduleSlug={moduleSlug} lessonSlug={lessonSlug} />
+
+              <p className="lp-footer-meta">
+                Lesson {globalIndex + 1} of {allLessons.length}
+              </p>
             </div>
-
-            {/* Video player */}
-            <VideoPlayer
-              streamUid={currentLesson.streamUid}
-              initialSeconds={lessonProg?.watchedSeconds ?? 0}
-              onTimeUpdate={handleTimeUpdate}
-            />
-
-            {/* Equipment & guidance — shown on first lesson of each module */}
-            {lessonNumber === 1 && (currentModule.equipment || currentModule.guidance) && (
-              <div className="mt-5 p-4 rounded-[2px] bg-amari-light-sand border border-amari-border">
-                {currentModule.equipment && currentModule.equipment.length > 0 && (
-                  <div className="mb-3">
-                    <h3 className="flex items-center gap-1.5 text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
-                      <Wrench className="w-3.5 h-3.5" />
-                      Equipment
-                    </h3>
-                    <ul className="space-y-1">
-                      {currentModule.equipment.map((item, i) => (
-                        <li key={i} className="text-sm text-amari-text-secondary font-sans flex items-start gap-2">
-                          <span className="text-amari-accent-warm mt-0.5">•</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {currentModule.guidance && (
-                  <div>
-                    <h3 className="flex items-center gap-1.5 text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      Recommended Practice
-                    </h3>
-                    <p className="text-sm text-amari-text-secondary font-sans">{currentModule.guidance}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Lesson notes — key takeaways from the video */}
-            {currentLesson.notes && currentLesson.notes.length > 0 && (
-              <div className="mt-5 p-4 rounded-[2px] border border-amari-border bg-[#FCF7F1]">
-                <h3 className="text-xs font-sans font-semibold uppercase tracking-widest text-amari-charcoal mb-2">
-                  Key Takeaways
-                </h3>
-                <ul className="space-y-1.5">
-                  {currentLesson.notes.map((note, i) => (
-                    <li key={i} className="text-sm text-amari-text-secondary font-sans flex items-start gap-2">
-                      <span className="text-amari-accent-warm mt-0.5">•</span>
-                      {note}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Nav buttons */}
-            <LessonNav moduleSlug={moduleSlug} lessonSlug={lessonSlug} />
-
-            {/* Lesson position indicator */}
-            <p className="text-center text-[11px] text-amari-text-muted mt-3 font-sans">
-              Lesson {globalIndex + 1} of {allLessons.length}
-            </p>
           </div>
         </div>
-      </main>
+      </div>
     </CourseGuard>
   );
 }
