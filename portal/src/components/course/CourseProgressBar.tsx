@@ -26,9 +26,9 @@ export default function CourseProgressBar({
           </span>
         </div>
       )}
-      <div className={`w-full ${barHeight} bg-amari-light-sand rounded-full overflow-hidden`}>
+      <div className={`w-full ${barHeight} bg-amari-light-sand rounded-[1px] overflow-hidden`}>
         <div
-          className={`${barHeight} bg-amari-accent-warm rounded-full transition-all duration-500 ease-out`}
+          className={`${barHeight} bg-amari-accent-warm rounded-[1px] transition-all duration-500 ease-out`}
           style={{ width: `${percent}%` }}
         />
       </div>

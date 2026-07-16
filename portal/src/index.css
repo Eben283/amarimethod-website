@@ -4,32 +4,34 @@
 
 @layer base {
   :root {
-    --background: 40 100% 98%;
-    --foreground: 0 0% 15%;
+    /* HSL mirrors of site-v6 cream / ink / peach */
+    --background: 36 47% 94%;
+    --foreground: 30 13% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 15%;
+    --card: 36 47% 94%;
+    --card-foreground: 30 13% 12%;
 
-    --popover: 40 100% 98%;
-    --popover-foreground: 0 0% 15%;
+    --popover: 36 56% 97%;
+    --popover-foreground: 30 13% 12%;
 
-    --primary: 0 0% 15%;
-    --primary-foreground: 40 100% 98%;
+    --primary: 30 13% 12%;
+    --primary-foreground: 36 47% 94%;
 
-    --secondary: 39 40% 93%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 36 40% 90%;
+    --secondary-foreground: 30 13% 12%;
 
-    --muted: 39 40% 93%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 36 40% 90%;
+    --muted-foreground: 30 8% 35%;
 
-    --accent: 19 78% 72%;
-    --accent-foreground: 0 0% 15%;
+    --accent: 20 55% 71%;
+    --accent-foreground: 30 13% 12%;
 
-    --border: 39 30% 88%;
-    --input: 39 30% 88%;
-    --ring: 0 0% 15%;
+    --border: 30 13% 12% / 0.14;
+    --input: 30 13% 12% / 0.14;
+    --ring: 30 13% 12%;
 
-    --radius: 0.75rem;
+    /* site-v6 buttons use 2px */
+    --radius: 0.125rem;
   }
 
   * {
@@ -49,37 +51,75 @@
   }
 }
 
-/* Portal-specific utilities */
+/* Portal / Living Practice — site-v6 language (no white cards, no soft shadows) */
 @layer components {
   .portal-card {
-    @apply bg-white rounded-xl border border-amari-border p-6 shadow-card transition-all duration-200;
+    @apply bg-amari-light-sand border border-amari-border p-6 transition-colors duration-200;
+    border-radius: 2px;
+    background-color: #FCF7F1; /* --paper */
+    border-color: rgba(33, 29, 25, 0.14);
+    box-shadow: none;
   }
 
   .portal-card:hover {
-    @apply shadow-card-hover;
+    box-shadow: none;
   }
 
   .portal-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-6 py-3 font-sans font-medium text-sm transition-all duration-200;
+    @apply inline-flex items-center justify-center gap-2 font-sans font-semibold transition-all duration-200;
+    border-radius: 2px;
+    padding: 14px 28px;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
   .portal-btn-primary {
-    @apply portal-btn bg-amari-charcoal text-white hover:bg-[#3a3a3a] hover:-translate-y-[1px] hover:shadow-card-hover;
+    @apply portal-btn text-white;
+    background-color: #211D19;
+  }
+  .portal-btn-primary:hover {
+    background-color: #000;
+    transform: translateY(-1px);
   }
 
   .portal-btn-secondary {
-    @apply portal-btn bg-white text-amari-charcoal border border-amari-border hover:bg-amari-light-sand hover:-translate-y-[1px];
+    @apply portal-btn;
+    background: transparent;
+    color: #211D19;
+    border: 1px solid #211D19;
+  }
+  .portal-btn-secondary:hover {
+    background-color: #211D19;
+    color: #fff;
   }
 
   .portal-btn-accent {
-    @apply portal-btn bg-amari-accent-warm text-white hover:bg-[#D49274] hover:-translate-y-[1px] hover:shadow-card-hover;
+    @apply portal-btn text-white;
+    background-color: #E1A98B;
+  }
+  .portal-btn-accent:hover {
+    background-color: #D49274;
+    transform: translateY(-1px);
   }
 
   .portal-input {
-    @apply w-full rounded-lg border border-amari-border bg-white px-4 py-3 font-sans text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-2 focus:ring-amari-charcoal focus:border-transparent transition-all;
+    @apply w-full font-sans placeholder:text-amari-text-muted focus:outline-none transition-all;
+    border-radius: 2px;
+    border: 1px solid rgba(33, 29, 25, 0.22);
+    background-color: #FCF7F1;
+    color: #211D19;
+    padding: 14px 16px;
+    font-size: 15px;
+  }
+  .portal-input:focus {
+    border-color: #211D19;
+    box-shadow: none;
   }
 
   .portal-label {
-    @apply block text-sm font-medium text-amari-text-secondary mb-1.5;
+    @apply block text-amari-text-secondary mb-1.5 font-sans font-semibold uppercase;
+    font-size: 11px;
+    letter-spacing: 0.16em;
   }
 }

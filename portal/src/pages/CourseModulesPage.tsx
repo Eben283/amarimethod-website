@@ -30,7 +30,7 @@ export default function CourseModulesPage() {
           Back to Dashboard
         </button>
 
-        <h1 className="font-serif text-2xl font-bold text-amari-charcoal mb-2">
+        <h1 className="font-serif text-2xl font-medium text-amari-charcoal mb-2 tracking-tight">
           Living Practice
         </h1>
 
@@ -76,7 +76,7 @@ function ModuleAccordion({
         className="flex items-center gap-3 w-full text-left p-4"
       >
         <div
-          className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          className={`w-8 h-8 rounded-[2px] flex items-center justify-center flex-shrink-0 ${
             isComplete ? 'bg-amari-accent-warm/10' : 'bg-amari-light-sand'
           }`}
         >

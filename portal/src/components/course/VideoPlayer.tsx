@@ -115,7 +115,7 @@ export default function VideoPlayer({ streamUid, initialSeconds = 0, onTimeUpdat
 
   if (!streamUid) {
     return (
-      <div className="w-full aspect-video bg-amari-light-sand rounded-xl flex items-center justify-center">
+      <div className="w-full aspect-video bg-amari-light-sand rounded-[2px] flex items-center justify-center">
         <p className="text-sm text-amari-text-muted font-sans">Video coming soon</p>
       </div>
     );
@@ -123,7 +123,7 @@ export default function VideoPlayer({ streamUid, initialSeconds = 0, onTimeUpdat
 
   if (error) {
     return (
-      <div className="w-full aspect-video bg-amari-light-sand rounded-xl flex items-center justify-center px-6 text-center">
+      <div className="w-full aspect-video bg-amari-light-sand rounded-[2px] flex items-center justify-center px-6 text-center">
         <p className="text-sm text-amari-text-muted font-sans">{error}</p>
       </div>
     );
@@ -132,7 +132,7 @@ export default function VideoPlayer({ streamUid, initialSeconds = 0, onTimeUpdat
   return (
     <div className="relative w-full aspect-video">
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-amari-light-sand rounded-xl">
+        <div className="absolute inset-0 flex items-center justify-center bg-amari-light-sand rounded-[2px]">
           <p className="text-sm text-amari-text-muted font-sans">Loading…</p>
         </div>
       )}
@@ -140,7 +140,7 @@ export default function VideoPlayer({ streamUid, initialSeconds = 0, onTimeUpdat
         ref={videoRef}
         controls
         playsInline
-        className="w-full aspect-video bg-black rounded-xl"
+        className="w-full aspect-video bg-black rounded-[2px]"
         onLoadedMetadata={handleLoadedMetadata}
         onTimeUpdate={handleTimeUpdate}
       >
