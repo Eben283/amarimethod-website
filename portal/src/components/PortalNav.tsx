@@ -13,9 +13,13 @@ export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings
 
   return (
     <header className="cp-topbar">
-      <Link to="/" className="cp-seal" aria-label="Amari Method — Dashboard">
+      <a
+        href="https://www.amarimethod.com/"
+        className="cp-seal"
+        aria-label="Amari Method — Home"
+      >
         <img src="/images/AmariLogo.avif" alt="Amari Method" className="cp-seal-logo" />
-      </Link>
+      </a>
       <nav className="cp-topnav">
         <Link to="/" className="cp-topnav-link cp-current">Dashboard</Link>
         {hasLivingPractice && (
