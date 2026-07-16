@@ -35,6 +35,8 @@ interface Action {
   label: string;
   description: string;
   price?: string;
+  /** Uppercase button label — site-v6 BOOK NOW pattern */
+  cta?: string;
   href?: string;
   onClick?: () => void;
   primary?: boolean;
@@ -60,16 +62,16 @@ function getSeriesActions(client: ClientData): Action[] {
         label: 'Upgrade to a 4-session series',
         description: 'Continue with 3 more sessions — your $225 is already applied.',
         price: '$495',
+        cta: 'Upgrade',
         href: PAYMENT_LINKS.upgrade_to_4,
-        
         testId: 'upgrade-to-4-card',
       },
       {
         label: 'Upgrade to an 8-session series',
         description: 'Full 8-step protocol + Living Practice — your $225 is already applied.',
         price: '$1,070',
+        cta: 'Upgrade',
         href: PAYMENT_LINKS.upgrade_to_8,
-        
         testId: 'upgrade-to-8-card',
       },
     ];
@@ -95,16 +97,16 @@ function getSeriesActions(client: ClientData): Action[] {
       label: '4-session series',
       description: pack4Description,
       price: '$720',
+      cta: 'Buy',
       href: PAYMENT_LINKS.series_4,
-      
       testId: 'series-4-card',
     },
     {
       label: '8-session series',
       description: pack8Description,
       price: '$1,295',
+      cta: 'Buy',
       href: PAYMENT_LINKS.series_8,
-      
       testId: 'series-8-card',
     },
   ];
@@ -114,6 +116,7 @@ function ActionCard({ a }: { a: Action }) {
   const className = 'cp-action'
     + (a.primary ? ' cp-action-primary' : '')
     + (a.muted ? ' is-muted' : '');
+  const cta = a.cta || 'Open';
   const inner = (
     <>
       <span className="cp-action-l">
@@ -122,7 +125,7 @@ function ActionCard({ a }: { a: Action }) {
       </span>
       <span className="cp-action-r">
         {a.price && <span className="cp-action-price">{a.price}</span>}
-        <span className="cp-arrow">→</span>
+        <span className="cp-action-cta">{cta}</span>
       </span>
     </>
   );
@@ -215,6 +218,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
     ? {
         label: 'Continue Living Practice',
         description: 'Your daily home-practice videos with Garrett.',
+        cta: 'Open',
         onClick: () => navigate(LIVING_PRACTICE_ROUTE),
         testId: 'living-practice-card',
       }
@@ -222,6 +226,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
         label: 'Living Practice',
         description: 'Standalone video program for daily home practice.',
         price: '$347',
+        cta: 'Buy',
         href: PAYMENT_LINKS.living_practice,
         external: true, // its own app — keep portal open behind it
         testId: 'living-practice-card',
@@ -230,16 +235,16 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
   const toolsAction: Action = {
     label: 'Tools for the protocols',
     description: 'Equipment we recommend for your practice at home.',
+    cta: 'Shop',
     href: TOOLS_URL,
-    
   };
 
   const giftCardAction: Action | null = GIFT_CARD_URL
     ? {
         label: 'Buy a gift card',
         description: 'Give the session that changes everything.',
+        cta: 'Buy',
         href: GIFT_CARD_URL,
-        
       }
     : null;
 
@@ -247,8 +252,8 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
     ? {
         label: 'Referral toolkit',
         description: 'Refer clients & track your referrals.',
+        cta: 'Open',
         href: 'https://www.amarimethod.com/partner-app',
-        
         testId: 'partner-toolkit-card',
       }
     : null;
@@ -256,6 +261,7 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
   const contactAction: Action = {
     label: 'Contact Garrett',
     description: 'Questions, scheduling, or notes between sessions.',
+    cta: 'Email',
     href: 'mailto:eben@amarimethod.com',
     muted: true,
   };
@@ -331,14 +337,14 @@ function BookingCard({
         </span>
         <span className="cp-action-r">
           {price && <span className="cp-action-price">{price}</span>}
-          <span className="cp-arrow">→</span>
+          <span className="cp-action-cta">Book</span>
         </span>
       </button>
     );
   }
   return (
     <div
-      className="cp-action cp-action-primary"
+      className="cp-action cp-action-primary is-open"
       style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 14, gridColumn: '1 / -1' }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
@@ -346,7 +352,8 @@ function BookingCard({
         <button
           type="button"
           onClick={onClose}
-          style={{ background: 'transparent', border: 0, color: '#C9BEA9', fontSize: 13, cursor: 'pointer', padding: 4 }}
+          className="cp-action-close"
+          aria-label="Close"
         >
           ✕
         </button>
@@ -354,27 +361,21 @@ function BookingCard({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {choices.map((c) => {
           const cls = c.ghost
-            ? 'cp-btn cp-btn-ghost'
-            : 'cp-btn cp-btn-primary';
-          const style: React.CSSProperties = c.ghost
-            ? { background: 'rgba(247,242,232,0.06)', color: 'var(--cp-paper)', borderColor: 'rgba(245,221,210,0.32)' }
-            : { background: 'var(--cp-paper)', color: 'var(--cp-ink)' };
+            ? 'cp-btn cp-btn-ghost cp-btn-on-ink'
+            : 'cp-btn cp-btn-pale';
           if (c.href) {
             return (
               <a
                 key={c.label}
                 href={c.href}
-                
-                
                 className={cls}
-                style={style}
               >
                 {c.label}
               </a>
             );
           }
           return (
-            <button key={c.label} type="button" onClick={c.onClick} className={cls} style={style}>
+            <button key={c.label} type="button" onClick={c.onClick} className={cls}>
               {c.label}
             </button>
           );
