@@ -1,22 +1,24 @@
 /* Client Portal — desktop dashboard styles. All selectors prefixed cp-. */
 
-/* Tokens mirrored from marketing site-v6.css — CSS only; no markup/behavior changes. */
+/* Exact site-v6 tokens (css/site-v6.css) — CSS only; no markup/behavior changes. */
 :root{
-  --cp-paper:#F8F1E8;
-  --cp-paper-2:#F1E7DA;
-  --cp-paper-3:#E8DFD0;
+  --cp-paper:#F8F1E8;   /* --cream */
+  --cp-paper-2:#F1E7DA; /* --cream-2 */
+  --cp-paper-3:#FCF7F1; /* --paper */
   --cp-ink:#211D19;
-  --cp-ink-2:#5C554D;
-  --cp-mute:#8A8177;
+  --cp-ink-2:#5C554D;   /* --body */
+  --cp-mute:#5C554D;
   --cp-line:rgba(33,29,25,.14);
   --cp-line-2:rgba(33,29,25,.22);
-  --cp-accent:#B9795B;
+  --cp-accent:#E1A98B;  /* --peach */
   --cp-accent-soft:#F3E4DA;
+  --cp-tan:#D8BB86;
+  --cp-sage:#AFC1A9;
   --cp-err:#A1402B;
   --cp-ok:#3F7A4F;
   --cp-warn:#B58836;
-  --cp-display:'Cormorant Garamond',Georgia,serif;
-  --cp-sans:'General Sans',ui-sans-serif,system-ui,sans-serif;
+  --cp-display:"Cormorant Garamond",Georgia,serif;
+  --cp-sans:"General Sans",ui-sans-serif,system-ui,sans-serif;
 }
 
 /* ===== SCREEN ===== */
@@ -259,7 +261,7 @@
 .cp-ref-code-row{display:flex;align-items:center;gap:10px}
 .cp-ref-code{font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:18px;font-weight:600;color:var(--cp-ink);background:var(--cp-paper-2);padding:10px 14px;letter-spacing:0.06em;border:1px solid var(--cp-line-2);flex:1;text-align:center}
 .cp-ref-link-row{display:flex;align-items:center;gap:10px;border:1px dashed var(--cp-line-2);padding:0;background:var(--cp-paper)}
-.cp-ref-link{padding:11px 14px;font-family:'DM Sans',system-ui,sans-serif;font-size:13px;color:var(--cp-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.cp-ref-link{padding:11px 14px;font-family:var(--cp-sans);font-size:13px;color:var(--cp-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
 .cp-ref-link-row .cp-btn-row{border-left:1px dashed var(--cp-line-2);min-height:42px;align-self:stretch}
 .cp-ref-message{font-family:var(--cp-display);font-style:italic;font-size:15px;line-height:1.55;color:var(--cp-ink-2);padding:14px 16px;background:var(--cp-paper-2);border-left:2px solid var(--cp-accent);margin:0}
 .cp-ref-message-url{color:var(--cp-accent);word-break:break-all}
