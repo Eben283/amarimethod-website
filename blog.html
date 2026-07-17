@@ -63,9 +63,16 @@
   .topic-bar p{font-family:var(--display);font-size:clamp(1.35rem,2.2vw,1.75rem);font-weight:500;color:var(--ink);margin:0 0 10px}
   .topic-bar a{font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-2);padding-bottom:2px}
   .topic-bar a:hover{color:var(--ink)}
-  .post-card.is-topic-hidden,.home-tile.is-topic-hidden{display:none!important}
-  .featured.is-topic-empty,.home-band.is-topic-empty,.latest.is-topic-empty{display:none!important}
-  body.is-topic-filtered .journal-hero{display:none}
+  .post-card.is-topic-hidden{display:none!important}
+  .latest.is-topic-empty{display:none!important}
+  /* Topic view: one article list only — hide hero, featured, and take-home band */
+  body.is-topic-filtered .journal-hero,
+  body.is-topic-filtered .featured,
+  body.is-topic-filtered .home-band{display:none!important}
+  body.is-topic-filtered .latest{padding-top:clamp(24px,3vw,40px)}
+  body.is-topic-filtered .latest-grid{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:1000px){body.is-topic-filtered .latest-grid{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){body.is-topic-filtered .latest-grid{grid-template-columns:1fr}}
 
   /* Post card (shared shape for Featured + Latest grids) */
   .post-card{cursor:pointer}
@@ -261,30 +268,45 @@
         <span class="eyebrow cat">Protocol</span>
         <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
       </a>
-      <a href="/blog-hand-balancer-carpal-tunnel" class="post-card reveal" data-topics="protocols">
-        <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/hand-balancer.jpg" alt="" onerror="this.remove()"></div>
+      <a href="/blog-passive-bridge-mobility" class="post-card reveal" data-topics="protocols">
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/passive-bridge.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
-        <h3>The hand balancer: for carpal tunnel the wrist brace can't reach</h3>
-      </a>
-      <a href="/blog-vertical-drop-spine-decompression" class="post-card reveal" data-topics="protocols">
-        <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/journal-base/jh-vertical-drop.jpg" alt="" onerror="this.remove()"></div>
-        <span class="eyebrow cat">Protocol</span>
-        <h3>Vertical drop: decompress the spine in ninety seconds</h3>
+        <h3>The passive bridge: let the hips open without forcing a stretch</h3>
       </a>
       <a href="/blog-active-bridge-strength" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:#E7D8C4"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The active bridge: build spinal strength by doing the opposite of sitting</h3>
       </a>
+      <a href="/blog-hand-balancer-carpal-tunnel" class="post-card reveal" data-topics="protocols">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/v6/real/hand-balancer.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The hand balancer: for carpal tunnel the wrist brace can't reach</h3>
+      </a>
+      <a href="/blog-elbow-reset-tennis-elbow" class="post-card reveal" data-topics="protocols conditions">
+        <div class="post-photo" style="background:#B98E63"><img src="/images/v6/real/elbow-reset.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
+      </a>
+      <a href="/blog-vertical-drop-spine-decompression" class="post-card reveal" data-topics="protocols">
+        <div class="post-photo" style="background:#A88F73"><img src="/images/photos/journal-base/jh-vertical-drop.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>Vertical drop: decompress the spine in ninety seconds</h3>
+      </a>
       <a href="/blog-spinal-wave-gentle-decompression" class="post-card reveal" data-topics="protocols">
-        <div class="post-photo" style="background:#B98E63"><img src="/images/photos/journal-base/jh-spinal-wave-refined.jpg" alt="" onerror="this.remove()"></div>
+        <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/journal-base/jh-spinal-wave-refined.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The spinal wave: gentle decompression that resets the lower back</h3>
       </a>
       <a href="/blog-spring-step-calf-ankle" class="post-card reveal" data-topics="protocols">
-        <div class="post-photo" style="background:#A88F73"><img src="/images/photos/journal-base/jh-spring-step.jpg" alt="" onerror="this.remove()"></div>
+        <div class="post-photo" style="background:var(--sage)"><img src="/images/photos/journal-base/jh-spring-step.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>Spring step: how the ankle's lymph pump reaches everything above it</h3>
+      </a>
+      <a href="/blog-power-posture-shoulder-blades" class="post-card reveal" data-topics="posture protocols where-it-hurts">
+        <div class="post-photo" style="background:var(--peach)"><img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()"></div>
+        <span class="eyebrow cat">Protocol</span>
+        <h3>Power Posture: undo the damage from sitting all day</h3>
       </a>
       <a href="/blog-why-psoas-tightens-back" class="post-card reveal" data-topics="mechanics">
         <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/jh-psoas.jpg" alt="" onerror="this.remove()"></div>
@@ -300,11 +322,6 @@
         <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/jh-stretching.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Mechanics</span>
         <h3>Why stretching doesn't resolve what it's supposed to</h3>
-      </a>
-      <a href="/blog-power-posture-shoulder-blades" class="post-card reveal" data-topics="posture protocols where-it-hurts">
-        <div class="post-photo" style="background:#E7D8C4"><img src="/images/photos/neck-man-asn47.jpg" alt="" onerror="this.remove()"></div>
-        <span class="eyebrow cat">Pain</span>
-        <h3>Neck pain is almost always a shoulder-blade problem</h3>
       </a>
       <a href="/shoulder-pain-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:#B98E63"><img src="/images/photos/condition-base/shoulder-refined.jpg" alt="" onerror="this.remove()"></div>
@@ -380,7 +397,8 @@
       }
     }
 
-    document.querySelectorAll('[data-topics]').forEach(function (el) {
+    // Only filter the article list — featured / take-home are hidden via CSS when filtered
+    document.querySelectorAll('.latest-grid [data-topics]').forEach(function (el) {
       if (!valid) {
         el.classList.remove('is-topic-hidden');
         return;
@@ -389,21 +407,18 @@
       el.classList.toggle('is-topic-hidden', topics.indexOf(topic) === -1);
     });
 
-    ['featured', 'home-band', 'latest'].forEach(function (name) {
-      var section = document.querySelector('.' + name);
-      if (!section) return;
+    var latest = document.querySelector('.latest');
+    if (latest) {
       if (!valid) {
-        section.classList.remove('is-topic-empty');
-        return;
+        latest.classList.remove('is-topic-empty');
+      } else {
+        var visible = latest.querySelectorAll('[data-topics]:not(.is-topic-hidden)');
+        latest.classList.toggle('is-topic-empty', visible.length === 0);
       }
-      var visible = section.querySelectorAll('[data-topics]:not(.is-topic-hidden)');
-      section.classList.toggle('is-topic-empty', visible.length === 0);
-    });
+    }
 
     var latestHead = document.querySelector('.latest .sec-head h2');
     if (latestHead) latestHead.textContent = valid ? LABELS[topic] : 'Latest Posts';
-    var featuredHead = document.querySelector('.featured .sec-head h2');
-    if (featuredHead) featuredHead.textContent = valid ? 'In this topic' : 'Featured';
   }
 
   var topic = topicFromUrl();
