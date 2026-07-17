@@ -405,7 +405,14 @@
     if (bar) bar.hidden = !valid;
     if (label) label.textContent = valid ? LABELS[topic] : '';
 
-    // Only filter the article list — featured / take-home are hidden via CSS when filtered
+    // Drop Featured + Take It Home entirely on topic views (CSS also hides them).
+    document.querySelectorAll('.featured, .home-band').forEach(function (section) {
+      section.style.display = valid ? 'none' : '';
+      if (valid) section.setAttribute('hidden', '');
+      else section.removeAttribute('hidden');
+    });
+
+    // Only filter the article list
     document.querySelectorAll('.latest-grid [data-topics]').forEach(function (el) {
       if (!valid) {
         el.classList.remove('is-topic-hidden');
