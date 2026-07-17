@@ -347,9 +347,11 @@
     // Scroll-position based, not an IntersectionObserver ratio: a ratio
     // threshold fails whenever the hero is taller than the viewport
     // (short windows, and any page once the study banner adds height).
+    // Treat display:none / zero-height heroes as absent (e.g. /blog?topic=…).
     var hdr = document.getElementById('hdr');
     var hero = document.querySelector('.hero');
-    if (hero) {
+    var heroVisible = !!(hero && hero.offsetHeight > 40);
+    if (heroVisible) {
       var swapAt = Math.min(140, Math.round(hero.offsetHeight * 0.15));
       var toggleHero = function () {
         if (window.scrollY > swapAt) { hdr.classList.remove('on-dark'); hdr.classList.add('scrolled'); }
