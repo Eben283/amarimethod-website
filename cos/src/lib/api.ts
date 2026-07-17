@@ -9,18 +9,28 @@ export class ApiError extends Error {
   }
 }
 
+/** Clear JWT + notify AuthProvider so ProtectedRoute forces PIN re-auth. */
+export function clearCosSession(): void {
+  localStorage.removeItem('cos_token');
+  localStorage.removeItem('cos_token_expiry');
+  window.dispatchEvent(new Event('cos:unauthorized'));
+}
+
 function getToken(): string | null {
   const token = localStorage.getItem('cos_token');
   if (!token) return null;
 
   const expiry = localStorage.getItem('cos_token_expiry');
   if (expiry && Date.now() > parseInt(expiry, 10)) {
-    localStorage.removeItem('cos_token');
-    localStorage.removeItem('cos_token_expiry');
+    clearCosSession();
     return null;
   }
 
   return token;
+}
+
+function handleUnauthorized(status: number): void {
+  if (status === 401) clearCosSession();
 }
 
 function authHeaders(): Record<string, string> {
@@ -54,6 +64,7 @@ export async function sendMessage(
 ): Promise<void> {
   const token = getToken();
   if (!token) {
+    clearCosSession();
     onError('Session expired. Please log in again.');
     return;
   }
@@ -69,8 +80,14 @@ export async function sendMessage(
     });
 
     if (!response.ok) {
+      handleUnauthorized(response.status);
       const data = await response.json().catch(() => ({ error: 'Request failed' }));
-      throw new ApiError(data.error || 'Chat request failed', response.status);
+      throw new ApiError(
+        response.status === 401
+          ? 'Session expired. Please log in again.'
+          : data.error || 'Chat request failed',
+        response.status,
+      );
     }
 
     const reader = response.body?.getReader();
@@ -136,7 +153,13 @@ export async function getActions(status = 'pending'): Promise<unknown[]> {
   });
 
   if (!response.ok) {
-    throw new ApiError('Failed to fetch actions', response.status);
+    handleUnauthorized(response.status);
+    throw new ApiError(
+      response.status === 401
+        ? 'Session expired. Please log in again.'
+        : 'Failed to fetch actions',
+      response.status,
+    );
   }
 
   const data = await response.json();

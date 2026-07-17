@@ -1,5 +1,5 @@
 // Cloudflare Pages Function: POST /api/elbow-study-signup
-// Enrolls a tennis-court contact into the Elbow Reset Study (GHL contact upsert + tag).
+// Enrolls a tennis-court contact into the Elbow Pain Study (GHL contact upsert + tag).
 // Courts capture is sign-up only (name, phone, email, optional arm) — pain score
 // and the rest of the intake happen at session 1, not here. See
 // ops/drafts/tennis-elbow-study-plan.md for the full plan.
