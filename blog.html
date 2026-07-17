@@ -58,9 +58,10 @@
   .explore-item span{font-family:var(--sans);font-weight:600;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
   .explore-item.is-active span{color:var(--ink)}
   .explore-item.is-active .explore-thumb{box-shadow:0 0 0 2px var(--ink)}
-  .topic-bar{display:none;text-align:center;margin:clamp(8px,1.5vw,16px) 0 0}
-  html.is-topic-filtered .topic-bar{display:block}
-  .topic-bar a{font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-2);padding-bottom:2px}
+  .topic-bar{display:none;width:100%;margin:clamp(36px,5vw,56px) 0 0;text-align:center}
+  html.is-topic-filtered .topic-bar{display:flex;flex-direction:column;align-items:center}
+  .topic-bar h2{width:100%;margin:0;text-align:center;font-family:var(--serif);font-size:clamp(2rem,3.6vw,3rem);font-weight:500;line-height:1.14}
+  .topic-bar a{margin-top:14px;font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-2);padding-bottom:2px}
   .topic-bar a:hover{color:var(--ink)}
   .post-card.is-topic-hidden{display:none!important}
   .latest.is-topic-empty{display:none!important}
@@ -69,8 +70,9 @@
   html.is-topic-filtered .journal-hero,
   html.is-topic-filtered .featured,
   html.is-topic-filtered .home-band{display:none!important}
+  html.is-topic-filtered .latest .sec-head{display:none!important}
   html.is-topic-filtered .explore{padding-top:clamp(168px,22vw,220px)}
-  html.is-topic-filtered .latest{padding-top:clamp(24px,3vw,40px)}
+  html.is-topic-filtered .latest{padding-top:clamp(8px,1.5vw,20px)}
   html.is-topic-filtered .latest-grid{grid-template-columns:repeat(3,1fr)}
   @media (max-width:1000px){html.is-topic-filtered .latest-grid{grid-template-columns:1fr 1fr}}
   @media (max-width:640px){html.is-topic-filtered .latest-grid{grid-template-columns:1fr}}
@@ -195,6 +197,7 @@
       </a>
     </div>
     <div class="topic-bar" id="topic-bar" hidden>
+      <h2 id="topic-bar-label"></h2>
       <a href="/blog">Show all posts</a>
     </div>
   </div>
@@ -398,7 +401,9 @@
     });
 
     var bar = document.getElementById('topic-bar');
+    var label = document.getElementById('topic-bar-label');
     if (bar) bar.hidden = !valid;
+    if (label) label.textContent = valid ? LABELS[topic] : '';
 
     // Only filter the article list — featured / take-home are hidden via CSS when filtered
     document.querySelectorAll('.latest-grid [data-topics]').forEach(function (el) {
@@ -421,7 +426,7 @@
     }
 
     var latestHead = document.querySelector('.latest .sec-head h2');
-    if (latestHead) latestHead.textContent = valid ? LABELS[topic] : 'Latest Posts';
+    if (latestHead) latestHead.textContent = 'Latest Posts';
 
     // Keep header in ink-on-cream mode (site-v6 may have already attached a hero listener).
     if (valid) {
