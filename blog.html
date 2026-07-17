@@ -56,6 +56,16 @@
   .explore-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
   .explore-item:hover .explore-thumb img{transform:scale(1.08)}
   .explore-item span{font-family:var(--sans);font-weight:600;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+  .explore-item.is-active span{color:var(--ink)}
+  .explore-item.is-active .explore-thumb{box-shadow:0 0 0 2px var(--ink)}
+  .topic-bar{display:none;text-align:center;margin:-8px 0 clamp(28px,4vw,40px)}
+  body.is-topic-filtered .topic-bar{display:block}
+  .topic-bar p{font-family:var(--display);font-size:clamp(1.35rem,2.2vw,1.75rem);font-weight:500;color:var(--ink);margin:0 0 10px}
+  .topic-bar a{font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-2);padding-bottom:2px}
+  .topic-bar a:hover{color:var(--ink)}
+  .post-card.is-topic-hidden,.home-tile.is-topic-hidden{display:none!important}
+  .featured.is-topic-empty,.home-band.is-topic-empty,.latest.is-topic-empty{display:none!important}
+  body.is-topic-filtered .journal-hero{display:none}
 
   /* Post card (shared shape for Featured + Latest grids) */
   .post-card{cursor:pointer}
@@ -140,30 +150,34 @@
       <span class="eyebrow">Browse by topic</span>
     </div>
     <div class="explore-row">
-      <a class="explore-item reveal" href="/how-it-works">
+      <a class="explore-item reveal" href="/blog?topic=protocols" data-topic-link="protocols">
         <div class="explore-thumb" style="background:var(--tan)"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
         <span>Protocols</span>
       </a>
-      <a class="explore-item reveal" style="transition-delay:.05s" href="/blog-why-myofascial-release-doesnt-work">
+      <a class="explore-item reveal" style="transition-delay:.05s" href="/blog?topic=mechanics" data-topic-link="mechanics">
         <div class="explore-thumb" style="background:var(--sage)"><img src="/images/photos/jh-myofascial.jpg" alt="" onerror="this.remove()"></div>
         <span>Mechanics</span>
       </a>
-      <a class="explore-item reveal" style="transition-delay:.1s" href="/conditions">
+      <a class="explore-item reveal" style="transition-delay:.1s" href="/blog?topic=where-it-hurts" data-topic-link="where-it-hurts">
         <div class="explore-thumb" style="background:var(--peach)"><img src="/images/photos/knee-man-his44-window.jpg" alt="" onerror="this.remove()"></div>
         <span>Where It Hurts</span>
       </a>
-      <a class="explore-item reveal" style="transition-delay:.15s" href="/conditions">
+      <a class="explore-item reveal" style="transition-delay:.15s" href="/blog?topic=conditions" data-topic-link="conditions">
         <div class="explore-thumb" style="background:#E7D8C4"><img src="/images/photos/hip-woman-wht60-doorway.jpg" alt="" onerror="this.remove()"></div>
         <span>Conditions</span>
       </a>
-      <a class="explore-item reveal" style="transition-delay:.2s" href="/about">
+      <a class="explore-item reveal" style="transition-delay:.2s" href="/blog?topic=the-method" data-topic-link="the-method">
         <div class="explore-thumb" style="background:#B98E63"><img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()"></div>
         <span>The Method</span>
       </a>
-      <a class="explore-item reveal" style="transition-delay:.25s" href="/blog-power-posture-shoulder-blades">
+      <a class="explore-item reveal" style="transition-delay:.25s" href="/blog?topic=posture" data-topic-link="posture">
         <div class="explore-thumb" style="background:#A88F73"><img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()"></div>
         <span>Posture</span>
       </a>
+    </div>
+    <div class="topic-bar" id="topic-bar" hidden>
+      <p id="topic-bar-label"></p>
+      <a href="/blog">Show all posts</a>
     </div>
   </div>
 </section>
@@ -175,32 +189,32 @@
       <h2>Featured</h2>
     </div>
     <div class="featured-grid">
-      <a href="/blog-why-deep-tissue-doesnt-last" class="post-card reveal">
+      <a href="/blog-why-deep-tissue-doesnt-last" class="post-card reveal" data-topics="mechanics">
         <div class="post-photo" style="background:var(--tan)"><img src="/images/v6/real/garrett-session-img-3348.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Mechanics</span>
         <h3>Why deep tissue massage doesn't last</h3>
       </a>
-      <a href="/blog-why-myofascial-release-doesnt-work" class="post-card reveal" style="transition-delay:.05s">
+      <a href="/blog-why-myofascial-release-doesnt-work" class="post-card reveal" style="transition-delay:.05s" data-topics="mechanics">
         <div class="post-photo" style="background:var(--sage)"><img src="/images/photos/jh-myofascial.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Mechanics</span>
         <h3>Why myofascial release doesn't hold</h3>
       </a>
-      <a href="/blog-sciatica-relief" class="post-card reveal" style="transition-delay:.1s">
+      <a href="/blog-sciatica-relief" class="post-card reveal" style="transition-delay:.1s" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/sciatica-man-wht50.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Sciatica isn't a nerve problem. It's a pattern problem</h3>
       </a>
-      <a href="/blog-jaw-align-tmj-relief" class="post-card reveal" style="transition-delay:.15s">
+      <a href="/blog-jaw-align-tmj-relief" class="post-card reveal" style="transition-delay:.15s" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:#E7D8C4"><img src="/images/v6/real/jaw-align.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pattern</span>
         <h3>TMJ pain rarely starts in the jaw</h3>
       </a>
-      <a href="/blog-elbow-reset-tennis-elbow" class="post-card reveal" style="transition-delay:.2s">
+      <a href="/blog-elbow-reset-tennis-elbow" class="post-card reveal" style="transition-delay:.2s" data-topics="protocols conditions">
         <div class="post-photo" style="background:#B98E63"><img src="/images/v6/real/elbow-reset.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
       </a>
-      <a href="/blog-back-pain-from-sitting" class="post-card reveal" style="transition-delay:.25s">
+      <a href="/blog-back-pain-from-sitting" class="post-card reveal" style="transition-delay:.25s" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:#A88F73"><img src="/images/photos/condition-base/lower-back-refined.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Lower back pain: a pelvic and hip problem</h3>
@@ -217,14 +231,14 @@
       <h2>The Practice, at Home</h2>
     </div>
     <div class="home-tiles">
-      <a href="/blog-putting-it-all-together" class="home-tile reveal">
+      <a href="/blog-putting-it-all-together" class="home-tile reveal" data-topics="the-method">
         <img src="/images/v6/real/putting-it-all-together.jpg" alt="" onerror="this.remove()">
         <div class="cap">
           <span class="eyebrow light">Method</span>
           <h3>Putting It All Together</h3>
         </div>
       </a>
-      <a href="/blog-passive-bridge-mobility" class="home-tile reveal" style="transition-delay:.06s">
+      <a href="/blog-passive-bridge-mobility" class="home-tile reveal" style="transition-delay:.06s" data-topics="protocols">
         <img src="/images/v6/real/passive-bridge.jpg" alt="" onerror="this.remove()">
         <div class="cap">
           <span class="eyebrow light">Protocol</span>
@@ -242,82 +256,82 @@
       <h2>Latest Posts</h2>
     </div>
     <div class="latest-grid">
-      <a href="/blog-suspension-squat-hanging-exercises" class="post-card reveal">
+      <a href="/blog-suspension-squat-hanging-exercises" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:var(--tan)"><img src="/images/v6/real/suspension-squat.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
       </a>
-      <a href="/blog-hand-balancer-carpal-tunnel" class="post-card reveal">
+      <a href="/blog-hand-balancer-carpal-tunnel" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/hand-balancer.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The hand balancer: for carpal tunnel the wrist brace can't reach</h3>
       </a>
-      <a href="/blog-vertical-drop-spine-decompression" class="post-card reveal">
+      <a href="/blog-vertical-drop-spine-decompression" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/journal-base/jh-vertical-drop.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>Vertical drop: decompress the spine in ninety seconds</h3>
       </a>
-      <a href="/blog-active-bridge-strength" class="post-card reveal">
+      <a href="/blog-active-bridge-strength" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:#E7D8C4"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The active bridge: build spinal strength by doing the opposite of sitting</h3>
       </a>
-      <a href="/blog-spinal-wave-gentle-decompression" class="post-card reveal">
+      <a href="/blog-spinal-wave-gentle-decompression" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:#B98E63"><img src="/images/photos/journal-base/jh-spinal-wave-refined.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>The spinal wave: gentle decompression that resets the lower back</h3>
       </a>
-      <a href="/blog-spring-step-calf-ankle" class="post-card reveal">
+      <a href="/blog-spring-step-calf-ankle" class="post-card reveal" data-topics="protocols">
         <div class="post-photo" style="background:#A88F73"><img src="/images/photos/journal-base/jh-spring-step.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Protocol</span>
         <h3>Spring step: how the ankle's lymph pump reaches everything above it</h3>
       </a>
-      <a href="/blog-why-psoas-tightens-back" class="post-card reveal">
+      <a href="/blog-why-psoas-tightens-back" class="post-card reveal" data-topics="mechanics">
         <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/jh-psoas.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Mechanics</span>
         <h3>Why the psoas keeps tightening back</h3>
       </a>
-      <a href="/lower-back-pain-san-francisco" class="post-card reveal">
+      <a href="/lower-back-pain-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:var(--sage)"><img src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Conditions</span>
         <h3>Why your back hurts when you sit</h3>
       </a>
-      <a href="/blog-stretching-not-helping" class="post-card reveal">
+      <a href="/blog-stretching-not-helping" class="post-card reveal" data-topics="mechanics">
         <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/jh-stretching.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Mechanics</span>
         <h3>Why stretching doesn't resolve what it's supposed to</h3>
       </a>
-      <a href="/blog-power-posture-shoulder-blades" class="post-card reveal">
+      <a href="/blog-power-posture-shoulder-blades" class="post-card reveal" data-topics="posture protocols where-it-hurts">
         <div class="post-photo" style="background:#E7D8C4"><img src="/images/photos/neck-man-asn47.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Neck pain is almost always a shoulder-blade problem</h3>
       </a>
-      <a href="/shoulder-pain-san-francisco" class="post-card reveal">
+      <a href="/shoulder-pain-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:#B98E63"><img src="/images/photos/condition-base/shoulder-refined.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Shoulder pain that doesn't respond to rest</h3>
       </a>
-      <a href="/hip-pain-san-francisco" class="post-card reveal">
+      <a href="/hip-pain-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:#A88F73"><img src="/images/photos/hip-woman-wht60.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Hip pain is a pelvic positioning problem</h3>
       </a>
-      <a href="/knee-pain-san-francisco" class="post-card reveal">
+      <a href="/knee-pain-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:var(--tan)"><img src="/images/photos/knee-man-his44.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Knee pain is almost always a hip problem</h3>
       </a>
-      <a href="/sciatica-san-francisco" class="post-card reveal">
+      <a href="/sciatica-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:var(--sage)"><img src="/images/photos/conditions-hub-man-blk49.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Why sciatica keeps coming back</h3>
       </a>
-      <a href="/plantar-fasciitis-san-francisco" class="post-card reveal">
+      <a href="/plantar-fasciitis-san-francisco" class="post-card reveal" data-topics="where-it-hurts conditions">
         <div class="post-photo" style="background:var(--peach)"><img src="/images/photos/plantar-woman-multi41.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Pain</span>
         <h3>Plantar fasciitis is a load problem</h3>
       </a>
-      <a href="/amari-method-vs-physical-therapy" class="post-card reveal">
+      <a href="/amari-method-vs-physical-therapy" class="post-card reveal" data-topics="the-method conditions">
         <div class="post-photo" style="background:#E7D8C4"><img src="/images/photos/chronic-pain-woman-asn61.jpg" alt="" onerror="this.remove()"></div>
         <span class="eyebrow cat">Conditions</span>
         <h3>When PT, bodywork, and massage haven't ended it</h3>
@@ -328,5 +342,77 @@
 
 <!-- Footer is injected by amari-mockup.js -->
 <script src="/js/site-v6.js?v=13" data-nav="journal"></script>
+<script>
+(function () {
+  var LABELS = {
+    protocols: 'Protocols',
+    mechanics: 'Mechanics',
+    'where-it-hurts': 'Where It Hurts',
+    conditions: 'Conditions',
+    'the-method': 'The Method',
+    posture: 'Posture'
+  };
+
+  function topicFromUrl() {
+    try {
+      return new URLSearchParams(window.location.search).get('topic') || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function applyTopicFilter(topic) {
+    var valid = !!LABELS[topic];
+    document.body.classList.toggle('is-topic-filtered', valid);
+
+    document.querySelectorAll('[data-topic-link]').forEach(function (el) {
+      el.classList.toggle('is-active', valid && el.getAttribute('data-topic-link') === topic);
+    });
+
+    var bar = document.getElementById('topic-bar');
+    var label = document.getElementById('topic-bar-label');
+    if (bar && label) {
+      if (valid) {
+        label.textContent = LABELS[topic];
+        bar.hidden = false;
+      } else {
+        bar.hidden = true;
+      }
+    }
+
+    document.querySelectorAll('[data-topics]').forEach(function (el) {
+      if (!valid) {
+        el.classList.remove('is-topic-hidden');
+        return;
+      }
+      var topics = (el.getAttribute('data-topics') || '').split(/\s+/);
+      el.classList.toggle('is-topic-hidden', topics.indexOf(topic) === -1);
+    });
+
+    ['featured', 'home-band', 'latest'].forEach(function (name) {
+      var section = document.querySelector('.' + name);
+      if (!section) return;
+      if (!valid) {
+        section.classList.remove('is-topic-empty');
+        return;
+      }
+      var visible = section.querySelectorAll('[data-topics]:not(.is-topic-hidden)');
+      section.classList.toggle('is-topic-empty', visible.length === 0);
+    });
+
+    var latestHead = document.querySelector('.latest .sec-head h2');
+    if (latestHead) latestHead.textContent = valid ? LABELS[topic] : 'Latest Posts';
+    var featuredHead = document.querySelector('.featured .sec-head h2');
+    if (featuredHead) featuredHead.textContent = valid ? 'In this topic' : 'Featured';
+  }
+
+  var topic = topicFromUrl();
+  applyTopicFilter(topic);
+  if (LABELS[topic]) {
+    var explore = document.querySelector('.explore');
+    if (explore) explore.scrollIntoView({ behavior: 'auto', block: 'start' });
+  }
+})();
+</script>
 </body>
 </html>
