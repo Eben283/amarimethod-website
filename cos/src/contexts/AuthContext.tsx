@@ -36,6 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setState({ isAuthenticated: false, isLoading: false });
     }
+
+    // JWT rotation / expired API responses clear storage and fire this.
+    const onUnauthorized = () => {
+      setState({ isAuthenticated: false, isLoading: false });
+    };
+    window.addEventListener('cos:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('cos:unauthorized', onUnauthorized);
   }, []);
 
   function login(token: string) {

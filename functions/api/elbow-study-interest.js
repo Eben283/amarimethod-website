@@ -1,5 +1,5 @@
 // Cloudflare Pages Function: POST /api/elbow-study-interest
-// Email-only capture for people who aren't enrolling in the Elbow Reset Study
+// Email-only capture for people who aren't enrolling in the Elbow Pain Study
 // (not a fit, or not ready to commit) but want to be notified when the results
 // are published. Deliberately lighter than elbow-study-signup.js — see
 // ops/drafts/tennis-elbow-study-plan.md, "For everyone else" section.
