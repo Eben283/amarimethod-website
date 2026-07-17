@@ -58,21 +58,22 @@
   .explore-item span{font-family:var(--sans);font-weight:600;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
   .explore-item.is-active span{color:var(--ink)}
   .explore-item.is-active .explore-thumb{box-shadow:0 0 0 2px var(--ink)}
-  .topic-bar{display:none;text-align:center;margin:-8px 0 clamp(28px,4vw,40px)}
-  body.is-topic-filtered .topic-bar{display:block}
-  .topic-bar p{font-family:var(--display);font-size:clamp(1.35rem,2.2vw,1.75rem);font-weight:500;color:var(--ink);margin:0 0 10px}
+  .topic-bar{display:none;text-align:center;margin:clamp(8px,1.5vw,16px) 0 0}
+  html.is-topic-filtered .topic-bar{display:block}
   .topic-bar a{font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2);border-bottom:1px solid var(--line-2);padding-bottom:2px}
   .topic-bar a:hover{color:var(--ink)}
   .post-card.is-topic-hidden{display:none!important}
   .latest.is-topic-empty{display:none!important}
-  /* Topic view: one article list only — hide hero, featured, and take-home band */
-  body.is-topic-filtered .journal-hero,
-  body.is-topic-filtered .featured,
-  body.is-topic-filtered .home-band{display:none!important}
-  body.is-topic-filtered .latest{padding-top:clamp(24px,3vw,40px)}
-  body.is-topic-filtered .latest-grid{grid-template-columns:repeat(3,1fr)}
-  @media (max-width:1000px){body.is-topic-filtered .latest-grid{grid-template-columns:1fr 1fr}}
-  @media (max-width:640px){body.is-topic-filtered .latest-grid{grid-template-columns:1fr}}
+  /* Topic view: one article list only — hide hero, featured, and take-home band.
+     Class is on <html> so it applies before site-v6.js measures the hero. */
+  html.is-topic-filtered .journal-hero,
+  html.is-topic-filtered .featured,
+  html.is-topic-filtered .home-band{display:none!important}
+  html.is-topic-filtered .explore{padding-top:clamp(168px,22vw,220px)}
+  html.is-topic-filtered .latest{padding-top:clamp(24px,3vw,40px)}
+  html.is-topic-filtered .latest-grid{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:1000px){html.is-topic-filtered .latest-grid{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){html.is-topic-filtered .latest-grid{grid-template-columns:1fr}}
 
   /* Post card (shared shape for Featured + Latest grids) */
   .post-card{cursor:pointer}
@@ -119,6 +120,17 @@
   }
 </style>
 
+<!-- Apply topic filter class before site-v6 measures the hero (keeps header ink-on-cream). -->
+<script>
+(function () {
+  try {
+    var t = new URLSearchParams(location.search).get('topic') || '';
+    if (/^(protocols|mechanics|where-it-hurts|conditions|the-method|posture)$/.test(t)) {
+      document.documentElement.classList.add('is-topic-filtered');
+    }
+  } catch (e) {}
+})();
+</script>
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
 <script>
@@ -183,7 +195,6 @@
       </a>
     </div>
     <div class="topic-bar" id="topic-bar" hidden>
-      <p id="topic-bar-label"></p>
       <a href="/blog">Show all posts</a>
     </div>
   </div>
@@ -358,7 +369,7 @@
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=13" data-nav="journal"></script>
+<script src="/js/site-v6.js?v=14" data-nav="journal"></script>
 <script>
 (function () {
   var LABELS = {
@@ -380,22 +391,14 @@
 
   function applyTopicFilter(topic) {
     var valid = !!LABELS[topic];
-    document.body.classList.toggle('is-topic-filtered', valid);
+    document.documentElement.classList.toggle('is-topic-filtered', valid);
 
     document.querySelectorAll('[data-topic-link]').forEach(function (el) {
       el.classList.toggle('is-active', valid && el.getAttribute('data-topic-link') === topic);
     });
 
     var bar = document.getElementById('topic-bar');
-    var label = document.getElementById('topic-bar-label');
-    if (bar && label) {
-      if (valid) {
-        label.textContent = LABELS[topic];
-        bar.hidden = false;
-      } else {
-        bar.hidden = true;
-      }
-    }
+    if (bar) bar.hidden = !valid;
 
     // Only filter the article list — featured / take-home are hidden via CSS when filtered
     document.querySelectorAll('.latest-grid [data-topics]').forEach(function (el) {
@@ -419,14 +422,18 @@
 
     var latestHead = document.querySelector('.latest .sec-head h2');
     if (latestHead) latestHead.textContent = valid ? LABELS[topic] : 'Latest Posts';
+
+    // Keep header in ink-on-cream mode (site-v6 may have already attached a hero listener).
+    if (valid) {
+      var hdr = document.getElementById('hdr');
+      if (hdr) {
+        hdr.classList.remove('on-dark');
+        if (window.scrollY <= 40) hdr.classList.remove('scrolled');
+      }
+    }
   }
 
-  var topic = topicFromUrl();
-  applyTopicFilter(topic);
-  if (LABELS[topic]) {
-    var explore = document.querySelector('.explore');
-    if (explore) explore.scrollIntoView({ behavior: 'auto', block: 'start' });
-  }
+  applyTopicFilter(topicFromUrl());
 })();
 </script>
 </body>
