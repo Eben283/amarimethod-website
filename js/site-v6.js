@@ -248,62 +248,6 @@
     input.addEventListener('input', function () { render(input.value); });
   }
 
-  // Elbow Reset Study announcement banner — ported verbatim from js/main.js
-  // (live-site copy). Sitewide, dismissible, skips the study's own pages.
-  // The v6 header is absolutely positioned at top:0, so the banner height is
-  // published as --banner-h and the header offsets below it (css site-v6).
-  function initStudyBanner() {
-    var SKIP_PATHS = ['/elbow-study', '/elbow-study.html', '/elbow-study-updates', '/elbow-study-updates.html'];
-    var DISMISS_KEY = 'elbowStudyBannerDismissed';
-
-    var path = window.location.pathname.replace(/\/$/, '');
-    if (SKIP_PATHS.indexOf(path) !== -1) return;
-    if (localStorage.getItem(DISMISS_KEY) === '1') return;
-
-    var banner = document.createElement('div');
-    banner.setAttribute('role', 'region');
-    banner.setAttribute('aria-label', 'Elbow Reset Study announcement');
-    banner.style.cssText = [
-      'display:flex',
-      'align-items:center',
-      'justify-content:center',
-      'gap:16px',
-      'flex-wrap:wrap',
-      'padding:10px 44px 10px 16px',
-      'position:relative',
-      'z-index:50',
-      'background:#252525',
-      'color:rgba(255,255,255,.92)',
-      'font-family:var(--sans, sans-serif)',
-      'font-size:14px',
-      'text-align:center'
-    ].join(';');
-
-    var text = document.createElement('span');
-    text.textContent = 'Tennis elbow? Amari Method is running a free 3-session study for SF players.';
-
-    var link = document.createElement('a');
-    link.href = '/elbow-study';
-    link.textContent = 'Learn more';
-    link.style.cssText = 'color:#EBA584;font-weight:600;text-decoration:underline;white-space:nowrap;';
-
-    var close = document.createElement('button');
-    close.setAttribute('aria-label', 'Dismiss');
-    close.textContent = '×';
-    close.style.cssText = 'position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:rgba(255,255,255,.7);padding:4px 8px;';
-    close.addEventListener('click', function () {
-      banner.remove();
-      document.documentElement.style.removeProperty('--banner-h');
-      localStorage.setItem(DISMISS_KEY, '1');
-    });
-
-    banner.appendChild(text);
-    banner.appendChild(link);
-    banner.appendChild(close);
-    document.body.insertBefore(banner, document.body.firstChild);
-    document.documentElement.style.setProperty('--banner-h', banner.offsetHeight + 'px');
-  }
-
   function initMobileMenu() {
     var btn = document.querySelector('.hdr-menu');
     var nav = document.getElementById('mobilenav');
@@ -346,7 +290,7 @@
     // Header: white over the dark hero, cream once scrolled past it.
     // Scroll-position based, not an IntersectionObserver ratio: a ratio
     // threshold fails whenever the hero is taller than the viewport
-    // (short windows, and any page once the study banner adds height).
+    // (short windows).
     // Treat display:none / zero-height heroes as absent (e.g. /blog?topic=…).
     var hdr = document.getElementById('hdr');
     var hero = document.querySelector('.hero');
@@ -371,7 +315,6 @@
       window.addEventListener('scroll', toggleScrolled, { passive: true });
     }
 
-    initStudyBanner();
     initNewsletter();
     initSearch();
     initMobileMenu();
