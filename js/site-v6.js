@@ -112,8 +112,8 @@
       '  <div class="wrap">\n' +
       '    <div class="foot-grid">\n' +
       '      <div class="foot-col">\n' +
-      '        <h3>Our Philosophy</h3>\n' +
-      '        <p>Only your body can heal you. The Amari Method teaches it how, so you need the table less over time, not more.</p>\n' +
+      '        <h3>What Amari Is</h3>\n' +
+      '        <p>The Amari Method helps you end the cycle of needing someone else to fix you. You learn how to work with your own body, so the change belongs to you.</p>\n' +
       '        <div class="links"><a href="/how-it-works">Our Method</a><a href="/about">About Garrett</a></div>\n' +
       '      </div>\n' +
       '      <div class="foot-col">\n' +
