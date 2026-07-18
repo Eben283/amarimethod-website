@@ -44,6 +44,19 @@
   .field-list .name{font-family:var(--serif);font-weight:500;font-size:1.55rem;line-height:1.1;display:block}
   .field-list .sub{display:block;margin-top:4px;font-size:13px;color:var(--body);line-height:1.35}
   .field-list .go{flex-shrink:0;font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
+  .field-section{margin-top:40px}
+  .field-section .sec-label{
+    font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink);margin:0 0 8px;text-align:center;
+  }
+  .field-section .sec-hint{text-align:center;font-size:14px;color:var(--body);margin:0 0 18px;max-width:none;line-height:1.45}
+  .field-list.flyers a{min-height:64px;padding:14px 18px}
+  .field-list.flyers .name{font-size:1.25rem}
+  .field-list.flyers .thumb{
+    flex-shrink:0;width:40px;height:64px;object-fit:cover;border-radius:1px;
+    border:1px solid var(--line);background:var(--cream-2);
+  }
+  .field-list.flyers .row{display:flex;align-items:center;gap:14px;min-width:0}
   .field-note{margin:28px 0 0;font-size:13px;line-height:1.55;color:var(--body);text-align:center;max-width:none}
   .field-note strong{font-weight:600;color:var(--ink)}
   @media (prefers-reduced-motion:reduce){
@@ -63,6 +76,101 @@
       <li><a href="/hand-study"><span><span class="name">Hand</span><span class="sub">Wrist, thumb &amp; grip pain</span></span><span class="go">Open</span></a></li>
       <li><a href="/shoulder-study"><span><span class="name">Upper Back</span><span class="sub">Desk shoulders &amp; upper-back ache</span></span><span class="go">Open</span></a></li>
     </ul>
+
+    <section class="field-section" aria-labelledby="flyers-label">
+      <p class="sec-label" id="flyers-label">Textable posters</p>
+      <p class="sec-hint">Tap a poster → Share → Messages. Or long-press the image and send it.</p>
+      <ul class="field-list flyers">
+        <li>
+          <a href="/images/study-flyers-textable/Jaw-Tension-Grinders.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Jaw-Tension-Grinders.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Jaw — Grinders</span><span class="sub">Jaw Tension Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Jaw-Tension-TMJ.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Jaw-Tension-TMJ.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Jaw — TMJ</span><span class="sub">Jaw Tension Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Foot-Pain-Runners.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Foot-Pain-Runners.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Foot — Runners</span><span class="sub">Foot Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Foot-Pain-On-Feet.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Foot-Pain-On-Feet.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Foot — On feet</span><span class="sub">Foot Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Elbow — Tennis / pickleball</span><span class="sub">Elbow Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Elbow — Golfers</span><span class="sub">Elbow Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Elbow — Lifters</span><span class="sub">Elbow Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Hand-Pain-Study-Climbers.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Hand-Pain-Study-Climbers.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Hand — Climbers</span><span class="sub">Hand Pain Study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png">
+            <span class="row">
+              <img class="thumb" src="/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png" alt="" width="40" height="64" loading="lazy">
+              <span><span class="name">Upper back — Coworking</span><span class="sub">Shoulder / upper-back study</span></span>
+            </span>
+            <span class="go">Open</span>
+          </a>
+        </li>
+        <li>
+          <a href="/images/study-flyers-textable/amari-study-flyers-textable.zip">
+            <span><span class="name">Download all</span><span class="sub">Zip of all 9 posters</span></span>
+            <span class="go">Zip</span>
+          </a>
+        </li>
+      </ul>
+    </section>
+
     <p class="field-note"><strong>Save on your phone:</strong> open this page → Share → Add to Home Screen. Icon label: Amari Studies. Page is not indexed.</p>
   </main>
 </body>

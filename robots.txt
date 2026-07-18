@@ -9,6 +9,7 @@ Disallow: /member-agreement
 Disallow: /cdn-cgi/
 Disallow: /api/
 Disallow: /field-signup
+Disallow: /images/study-flyers-textable/
 
 # AI search bots — explicitly allowed for citation
 User-agent: GPTBot
