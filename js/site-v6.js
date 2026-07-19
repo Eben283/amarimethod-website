@@ -12,6 +12,7 @@
 (function () {
   var script = document.currentScript;
   var currentNav = (script && script.getAttribute('data-nav')) || '';
+  var noShell = !!(script && script.hasAttribute('data-no-shell'));
 
   var LOGOMARK = '/images/v6/logo-icon.png';
 
@@ -261,8 +262,10 @@
   }
 
   function init() {
-    document.body.insertAdjacentHTML('afterbegin', headerHTML());
-    document.body.insertAdjacentHTML('beforeend', footerHTML());
+    if (!noShell) {
+      document.body.insertAdjacentHTML('afterbegin', headerHTML());
+      document.body.insertAdjacentHTML('beforeend', footerHTML());
+    }
 
     // Reveal-on-scroll. Fail open: content is visible by default (CSS), and we only
     // opt into the hidden-then-animate state once JS is confirmed running. If anything
@@ -293,31 +296,35 @@
     // (short windows).
     // Treat display:none / zero-height heroes as absent (e.g. /blog?topic=…).
     var hdr = document.getElementById('hdr');
-    var hero = document.querySelector('.hero');
-    var heroVisible = !!(hero && hero.offsetHeight > 40);
-    if (heroVisible) {
-      var swapAt = Math.min(140, Math.round(hero.offsetHeight * 0.15));
-      var toggleHero = function () {
-        if (window.scrollY > swapAt) { hdr.classList.remove('on-dark'); hdr.classList.add('scrolled'); }
-        else { hdr.classList.add('on-dark'); hdr.classList.remove('scrolled'); }
-      };
-      toggleHero();
-      window.addEventListener('scroll', toggleHero, { passive: true });
-    } else {
-      // No dark hero on this page: show the AMARI wordmark at the top on the page's
-      // light background, and swap to the compact icon only after scrolling down.
-      hdr.classList.remove('on-dark');
-      var toggleScrolled = function () {
-        if (window.scrollY > 40) { hdr.classList.add('scrolled'); }
-        else { hdr.classList.remove('scrolled'); }
-      };
-      toggleScrolled();
-      window.addEventListener('scroll', toggleScrolled, { passive: true });
+    if (hdr) {
+      var hero = document.querySelector('.hero');
+      var heroVisible = !!(hero && hero.offsetHeight > 40);
+      if (heroVisible) {
+        var swapAt = Math.min(140, Math.round(hero.offsetHeight * 0.15));
+        var toggleHero = function () {
+          if (window.scrollY > swapAt) { hdr.classList.remove('on-dark'); hdr.classList.add('scrolled'); }
+          else { hdr.classList.add('on-dark'); hdr.classList.remove('scrolled'); }
+        };
+        toggleHero();
+        window.addEventListener('scroll', toggleHero, { passive: true });
+      } else {
+        // No dark hero on this page: show the AMARI wordmark at the top on the page's
+        // light background, and swap to the compact icon only after scrolling down.
+        hdr.classList.remove('on-dark');
+        var toggleScrolled = function () {
+          if (window.scrollY > 40) { hdr.classList.add('scrolled'); }
+          else { hdr.classList.remove('scrolled'); }
+        };
+        toggleScrolled();
+        window.addEventListener('scroll', toggleScrolled, { passive: true });
+      }
     }
 
     initNewsletter();
-    initSearch();
-    initMobileMenu();
+    if (!noShell) {
+      initSearch();
+      initMobileMenu();
+    }
     initAnalytics();
   }
 
