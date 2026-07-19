@@ -55,8 +55,9 @@
       --pa-mute: #7A746B;
       --pa-line: #E0D7C2;
       --pa-line-2: #CCC1A8;
-      --pa-accent: #E1A98B;
-      --pa-accent-soft: #F5DDD2;
+      --pa-accent: #466151;
+      --pa-accent-strong: #31483B;
+      --pa-accent-soft: #D9E4D6;
       --pa-err: #A1402B;
       --pa-ok: #3F7A4F;
       --pa-warn: #B58836;
@@ -231,23 +232,23 @@
       transition: background 0.15s, border-color 0.15s, transform 0.08s;
     }
     .cta-card-primary {
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto 1fr auto auto;
       padding: 18px 18px;
       background: var(--pa-ink);
       color: var(--pa-paper);
       min-height: 64px;
     }
     .cta-card-primary:hover { background: #2c2924; }
-    .cta-card-primary:active { background: var(--pa-accent); transform: translateY(1px); }
+    .cta-card-primary:active { background: var(--pa-accent-strong); transform: translateY(1px); }
     .cta-card-secondary {
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       padding: 14px 18px;
       background: var(--pa-paper);
       border: 1px solid var(--pa-line-2);
       color: var(--pa-ink);
       min-height: 56px;
     }
-    .cta-card-secondary:hover { border-color: var(--pa-ink-2); background: var(--pa-paper-2); }
+    .cta-card-secondary:hover { border-color: var(--pa-accent); background: var(--pa-accent-soft); }
     .cta-card-secondary:active { background: var(--pa-paper-3); transform: translateY(1px); }
 
     .cta-icon {
@@ -300,6 +301,15 @@
       border-radius: 999px;
       letter-spacing: -0.005em;
     }
+    .cta-card::after {
+      content: "→";
+      color: currentColor;
+      font-size: 20px;
+      line-height: 1;
+      transition: transform 0.15s;
+    }
+    .cta-card:hover::after { transform: translateX(3px); }
+    .cta-card-primary::after { color: var(--pa-accent-soft); }
     .cta-card-secondary .cta-earn-tag {
       font-size: 16px;
       color: var(--pa-accent);
@@ -371,7 +381,7 @@
       min-height: 48px;
     }
     .share-link-copy:hover { background: var(--pa-ink); color: var(--pa-paper); }
-    .share-link-copy:active { background: var(--pa-accent); color: var(--pa-paper); }
+    .share-link-copy:active { background: var(--pa-accent-strong); color: var(--pa-paper); }
 
     /* ===== Already-sold link ===== */
     .sold-link-row {
@@ -390,7 +400,7 @@
       padding: 8px 0;
       min-height: 36px;
     }
-    #btn-sold:hover { color: var(--pa-accent); text-decoration-color: var(--pa-accent); }
+    #btn-sold:hover { color: var(--pa-accent-strong); text-decoration-color: var(--pa-accent-strong); }
 
     /* ===== Inline forms (Refer / Sold) ===== */
     .inline-form {
@@ -465,10 +475,10 @@
       transition: background 0.15s, transform 0.08s;
     }
     .submit-btn:hover:not(:disabled) { background: #2c2924; }
-    .submit-btn:active:not(:disabled) { background: var(--pa-accent); transform: translateY(1px); }
+    .submit-btn:active:not(:disabled) { background: var(--pa-accent-strong); transform: translateY(1px); }
     .submit-btn:disabled { background: var(--pa-ink-2); cursor: default; opacity: 0.85; }
     .submit-btn-warm { background: var(--pa-accent); }
-    .submit-btn-warm:hover:not(:disabled) { background: #b15c41; }
+    .submit-btn-warm:hover:not(:disabled) { background: var(--pa-accent-strong); }
 
     /* ===== Success state ===== */
     .inline-success {
@@ -581,6 +591,7 @@
       margin: 22px 20px 0;
       background: var(--pa-paper);
       border: 1px solid var(--pa-line);
+      border-left: 3px solid var(--pa-accent);
     }
     .pitch-card-summary {
       width: 100%;
@@ -597,8 +608,8 @@
       cursor: pointer;
       transition: background 0.15s;
     }
-    .pitch-card-summary:hover { background: var(--pa-paper-2); }
-    .pitch-card-summary:active { background: var(--pa-paper-3); }
+    .pitch-card-summary:hover { background: var(--pa-accent-soft); }
+    .pitch-card-summary:active { background: #C9D9C5; }
     .pitch-card-summary-l {
       display: flex;
       align-items: center;
@@ -639,6 +650,15 @@
       flex: 0 0 auto;
       width: 24px;
       text-align: center;
+    }
+    .pitch-card-action {
+      display: block;
+      margin-top: 5px;
+      color: var(--pa-accent-strong);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
     }
     .pitch-card.is-open .pitch-card-chev { transform: rotate(180deg); }
     .pitch-card-body {
@@ -691,7 +711,7 @@
       transition: background 0.15s, border-color 0.15s, color 0.15s;
     }
     .pitch-video-btn:hover { background: var(--pa-ink); color: var(--pa-paper); border-color: var(--pa-ink); }
-    .pitch-video-btn:active { background: var(--pa-accent); border-color: var(--pa-accent); color: var(--pa-paper); }
+    .pitch-video-btn:active { background: var(--pa-accent-strong); border-color: var(--pa-accent-strong); color: var(--pa-paper); }
     .pitch-video-btn svg { width: 14px; height: 14px; }
 
     /* Objections */
@@ -737,10 +757,10 @@
       font-weight: 500;
     }
 
-    /* Trust signals — 3-column number grid */
+    /* What to expect — two-column number grid */
     .trust-items {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 0;
       border: 1px solid var(--pa-line);
     }
@@ -951,7 +971,7 @@
       color: #1a1a1a;
     }
     .video-share-btn--send {
-      background: var(--color-accent-warm, #EBA584);
+      background: var(--pa-accent, #466151);
       color: #1a1a1a;
     }
 
@@ -1280,6 +1300,12 @@
       color: var(--color-text-secondary);
       text-decoration: underline;
     }
+    button:focus-visible,
+    input:focus-visible,
+    a:focus-visible {
+      outline: 3px solid var(--pa-accent);
+      outline-offset: 3px;
+    }
   </style>
     <!-- Microsoft Clarity -->
     <script type="text/javascript">
@@ -1459,10 +1485,11 @@
   <section class="pitch-card" id="pitch-card">
     <button type="button" class="pitch-card-summary" id="pitch-card-toggle" aria-expanded="false">
       <span class="pitch-card-summary-l">
-        <span class="pitch-card-glyph">&para;</span>
-        <span>
-          <h3>What to say</h3>
-          <span class="pitch-card-summary-sub">Pitch, objections, and trust signals</span>
+      <span class="pitch-card-glyph">+</span>
+      <span>
+          <h3>Talking points</h3>
+          <span class="pitch-card-summary-sub">A simple way to describe Amari</span>
+          <span class="pitch-card-action">Tap to open the guide</span>
         </span>
       </span>
       <span class="pitch-card-chev">&#x25BE;</span>
@@ -1470,9 +1497,9 @@
 
     <div class="pitch-card-body">
       <div class="pitch-section">
-        <div class="pitch-section-title">30-second pitch</div>
+        <div class="pitch-section-title">The quick version</div>
         <p class="pitch-quote">
-          "When pain sticks around, it's usually because the body is out of balance &mdash; one part working too hard, another part not enough. Garrett finds where you're out of balance and teaches you the protocols to rebalance. <em>Most people feel a shift in their first session.</em>"
+          "At Amari, we look at why the body has gone out of balance instead of focusing only on where it hurts. We use hands-on work and simple protocols to help people change the pattern and keep working with their own body at home. <em>People often feel a change in their first session.</em>"
         </p>
         <button class="pitch-video-btn" id="btn-video" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1483,33 +1510,33 @@
       </div>
 
       <div class="pitch-section">
-        <div class="pitch-section-title">If they push back</div>
+        <div class="pitch-section-title">Questions you may hear</div>
         <ul class="objection-list">
           <li>
-            <strong>vs. Chiro</strong>
-            <span>Chiro adjusts the joints. The muscles around them keep pulling them back out of alignment. <em>Garrett teaches you how to retrain the muscles.</em></span>
+            <strong>"How is it different?"</strong>
+            <span>We start with the whole pattern instead of only the place that hurts. <em>The work includes hands-on guidance and protocols people can use at home.</em></span>
           </li>
           <li>
-            <strong>vs. PT</strong>
-            <span>PT gives you general exercises for a diagnosis. <em>Garrett finds your specific imbalance and teaches you the protocols for it.</em></span>
+            <strong>"Will it help me?"</strong>
+            <span>We cannot promise a result before meeting someone. <em>The first session gives them a clear picture of what is out of balance and what they can do next.</em></span>
           </li>
           <li>
-            <strong>"Tried it all"</strong>
-            <span>Most of those treat the spot where it hurts. <em>Garrett works on the imbalance underneath.</em></span>
+            <strong>"I've tried a lot"</strong>
+            <span>That is exactly why we look at what is loading the painful area from somewhere else in the body. <em>We help them learn a different input that they can keep using.</em></span>
           </li>
         </ul>
       </div>
 
       <div class="pitch-section">
-        <div class="pitch-section-title">Trust signals</div>
+        <div class="pitch-section-title">What to expect</div>
         <div class="trust-items">
           <div class="trust-item">
-            <span class="trust-item-num"><em>1st</em></span>
-            <span class="trust-item-sub">Session shift, for most</span>
+            <span class="trust-item-num"><em>First</em></span>
+            <span class="trust-item-sub">We start with the full pattern</span>
           </div>
           <div class="trust-item">
-            <span class="trust-item-num"><em>100<small>%</small></em></span>
-            <span class="trust-item-sub">Satisfaction guarantee</span>
+            <span class="trust-item-num"><em>At home</em></span>
+            <span class="trust-item-sub">The protocols stay with them</span>
           </div>
         </div>
       </div>
@@ -1517,11 +1544,11 @@
       <div class="pitch-section">
         <div class="pitch-section-title">What they're buying</div>
         <ul class="spec-list">
-          <li><span class="spec-k">Session</span><span class="spec-v">60 min one-on-one with Garrett</span></li>
+          <li><span class="spec-k">Session</span><span class="spec-v">60 minutes with the Amari team</span></li>
           <li><span class="spec-k">Price</span><span class="spec-v"><em>$225</em></span></li>
           <li><span class="spec-k">Format</span><span class="spec-v">In-person or virtual</span></li>
           <li><span class="spec-k">Payment</span><span class="spec-v">Affirm available</span></li>
-          <li><span class="spec-k">Includes</span><span class="spec-v">Assessment, hands-on work, and protocols they take home</span></li>
+          <li><span class="spec-k">Includes</span><span class="spec-v">A full look at their pattern, hands-on work, and take-home protocols</span></li>
         </ul>
       </div>
     </div>
