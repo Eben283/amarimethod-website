@@ -694,6 +694,33 @@
       color: var(--pa-accent);
       font-weight: 500;
     }
+    .talking-points {
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--pa-line);
+    }
+    .talking-point {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .talking-point:last-child { border-bottom: 0; }
+    .talking-point-label {
+      color: var(--pa-accent-strong);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      line-height: 1.35;
+      text-transform: uppercase;
+    }
+    .talking-point-copy {
+      color: var(--pa-ink-2);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+    }
     .pitch-video-btn {
       margin-top: 14px;
       display: inline-flex;
@@ -1497,48 +1524,31 @@
 
     <div class="pitch-card-body">
       <div class="pitch-section">
-        <div class="pitch-section-title">The quick version</div>
-        <p class="pitch-quote">
-          "At Amari, we look at why the body has gone out of balance instead of focusing only on where it hurts. We use hands-on work and simple protocols to help people change the pattern and keep working with their own body at home. <em>People often feel a change in their first session.</em>"
-        </p>
+        <div class="pitch-section-title">Use the one that fits the conversation</div>
+        <div class="talking-points">
+          <div class="talking-point">
+            <span class="talking-point-label">Simplest</span>
+            <p class="talking-point-copy">Amari teaches you to bring your body back into balance yourself.</p>
+          </div>
+          <div class="talking-point">
+            <span class="talking-point-label">The comparison</span>
+            <p class="talking-point-copy">Like chiropractic, except you learn to do it yourself.</p>
+          </div>
+          <div class="talking-point">
+            <span class="talking-point-label">The big promise</span>
+            <p class="talking-point-copy">Amari helps people end the cycle of needing someone else to fix them.</p>
+          </div>
+          <div class="talking-point">
+            <span class="talking-point-label">The fuller explanation</span>
+            <p class="talking-point-copy">Amari helps you understand what your pain means, then gives you the skills to bring that part of your body back into balance.</p>
+          </div>
+        </div>
         <button class="pitch-video-btn" id="btn-video" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="5 3 19 12 5 21 5 3"/>
           </svg>
           Preview &amp; share the 60-second video
         </button>
-      </div>
-
-      <div class="pitch-section">
-        <div class="pitch-section-title">Questions you may hear</div>
-        <ul class="objection-list">
-          <li>
-            <strong>"How is it different?"</strong>
-            <span>We start with the whole pattern instead of only the place that hurts. <em>The work includes hands-on guidance and protocols people can use at home.</em></span>
-          </li>
-          <li>
-            <strong>"Will it help me?"</strong>
-            <span>We cannot promise a result before meeting someone. <em>The first session gives them a clear picture of what is out of balance and what they can do next.</em></span>
-          </li>
-          <li>
-            <strong>"I've tried a lot"</strong>
-            <span>That is exactly why we look at what is loading the painful area from somewhere else in the body. <em>We help them learn a different input that they can keep using.</em></span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="pitch-section">
-        <div class="pitch-section-title">What to expect</div>
-        <div class="trust-items">
-          <div class="trust-item">
-            <span class="trust-item-num"><em>First</em></span>
-            <span class="trust-item-sub">We start with the full pattern</span>
-          </div>
-          <div class="trust-item">
-            <span class="trust-item-num"><em>At home</em></span>
-            <span class="trust-item-sub">The protocols stay with them</span>
-          </div>
-        </div>
       </div>
 
       <div class="pitch-section">
