@@ -14,7 +14,7 @@ import './FieldStudiesFixes.css';
 const BOOKING_URL = 'https://link.amarimethod.com/widget/bookings/amari-study';
 const SCALE = Array.from({ length: 11 }, (_, index) => index);
 
-type View = 'participant' | 'queue' | 'baseline';
+type View = 'participant' | 'queue' | 'saved' | 'baseline';
 
 type ParticipantForm = {
   fieldStudyKey: FieldStudyKey;
@@ -86,6 +86,7 @@ export default function FieldStudiesPage() {
   const [message, setMessage] = useState('');
 
   const pending = useMemo(() => queue.filter((item) => !item.baselineCapturedAt), [queue]);
+  const savedParticipants = useMemo(() => queue, [queue]);
   const selectedStudy = FIELD_STUDIES[form.fieldStudyKey];
   const paperLabel = `${form.firstName || 'First name'} · ${selectedStudy.label} · ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date())}`;
 
@@ -170,7 +171,7 @@ export default function FieldStudiesPage() {
 
   return <main className="field-study-shell"><section className="field-study-ipad">
     <header className="fs-topbar"><button onClick={() => { setView('participant'); setRecord(null); }}><i />AMARI METHOD</button><div><span><LockKeyhole size={13} /> Staff view</span><time>{new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date())}</time></div></header>
-    <nav className="fs-workbar"><button className={view === 'participant' ? 'selected' : ''} onClick={() => { setView('participant'); setRecord(null); }}><UserPlus size={16} /> New participant</button><button className={view !== 'participant' ? 'selected' : ''} onClick={() => { setView('queue'); refreshQueue(); }}><ClipboardList size={16} /> Paper forms to enter {pending.length > 0 && <b>{pending.length}</b>}</button></nav>
+    <nav className="fs-workbar"><button className={view === 'participant' ? 'selected' : ''} onClick={() => { setView('participant'); setRecord(null); }}><UserPlus size={16} /> New participant</button><button className={view === 'queue' || view === 'baseline' ? 'selected' : ''} onClick={() => { setView('queue'); refreshQueue(); }}><ClipboardList size={16} /> Paper forms to enter {pending.length > 0 && <b>{pending.length}</b>}</button><button className={view === 'saved' ? 'selected' : ''} onClick={() => { setView('saved'); refreshQueue(); }}><FilePenLine size={16} /> Saved participants</button></nav>
     {message && <div className="fs-message" role="status">{message}<button onClick={() => setMessage('')}>Dismiss</button></div>}
     {view === 'participant' && <section className="fs-intake"><form onSubmit={saveParticipant} className="fs-form">
       <div className="fs-heading"><div><p>AFTER SESSION ONE</p><h1>Finish participant record</h1></div></div>
@@ -181,6 +182,7 @@ export default function FieldStudiesPage() {
       {record && <div className="fs-book"><strong>{record.firstName} is saved.</strong><span>Now reserve sessions 2 and 3 in the existing Amari calendar.</span><a href={BOOKING_URL} target="_blank" rel="noreferrer">Open booking calendar <ExternalLink size={14} /></a></div>}
     </form></section>}
     {view === 'queue' && <section className="fs-queue"><header><div><p>BETWEEN PARTICIPANTS</p><h1>Paper forms to enter</h1><span>Find the paper ID on the physical sheet, then copy the six answers and body-map notes.</span></div><button onClick={() => { setView('participant'); setRecord(null); }}><Plus size={17} /> New participant</button></header><div className="fs-key"><span><i /> Paper form waiting to be entered</span></div>{loadingQueue ? <Loader2 className="fs-loader animate-spin" /> : pending.length === 0 ? <div className="fs-empty">No paper baselines waiting.</div> : <div className="fs-list">{pending.map((item) => <article key={item.id}><code>{item.paperId}</code><div><p>{item.studyLabel || item.studyName}</p><h2>{item.firstName}</h2><span>Session one complete</span></div><em><i /> Paper waiting</em><button onClick={() => openPaper(item.id)}>Enter this paper form <ArrowRight size={16} /></button></article>)}</div>}</section>}
+    {view === 'saved' && <section className="fs-queue"><header><div><p>FIELD STUDY RECORDS</p><h1>Saved participants</h1><span>Every participant saved through the table flow. Open any record to review or finish its paper baseline.</span></div><button onClick={() => { setView('participant'); setRecord(null); }}><Plus size={17} /> New participant</button></header><div className="fs-key"><span>{savedParticipants.length} participant{savedParticipants.length === 1 ? '' : 's'} saved</span></div>{loadingQueue ? <Loader2 className="fs-loader animate-spin" /> : savedParticipants.length === 0 ? <div className="fs-empty">No participants saved yet.</div> : <div className="fs-list">{savedParticipants.map((item) => <article key={item.id}><code>{item.paperId}</code><div><p>{item.studyLabel || item.studyName}</p><h2>{item.firstName}</h2><span>After session: {item.afterSessionOnePain}/10</span></div><em className={item.baselineCapturedAt ? 'complete' : ''}><i /> {item.baselineCapturedAt ? 'Baseline entered' : 'Paper waiting'}</em><button onClick={() => openPaper(item.id)}>{item.baselineCapturedAt ? 'Open record' : 'Enter paper form'} <ArrowRight size={16} /></button></article>)}</div>}</section>}
     {view === 'baseline' && record && <section className="fs-baseline"><button className="fs-back" onClick={() => setView('queue')}><ArrowLeft size={16} /> Back to paper forms</button><header><div><p>COPYING FROM PAPER / {record.paperId}</p><h1>Enter {record.firstName}'s paper form</h1><span>Copy the six answers and body-map notes exactly as they appear on the sheet.</span></div><aside><b>Match the sheet</b><span>{record.studyLabel || record.studyName}</span></aside></header><StudyBaselineForm value={baseline} onChange={(next) => setBaseline((previous) => ({ ...previous, ...next }))} bodyMapHeading="Paper body map" /><footer><span>Saving clears this person from the pending queue.</span><button onClick={saveBaseline} disabled={saving}>{saving ? <Loader2 size={17} className="animate-spin" /> : 'Save baseline entry'} <Check size={17} /></button></footer></section>}
   </section></main>;
 }
