@@ -63,7 +63,7 @@ export default function FieldStudiesPage() {
     event.preventDefault(); const next = validate(); setErrors(next);
     if (Object.keys(next).length) { window.setTimeout(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(), 0); return; }
     setSaving(true); setMessage('');
-    try { const saved = await enrollFieldStudyParticipant(form as ParticipantForm & { fieldStudyKey: FieldStudyKey }); setRecord(saved); const reset = blankParticipant(); setForm(reset); formStart.current = JSON.stringify(reset); setCalendarOpened(false); await refreshQueue(); setMessage(`${saved.paperId} saved. Next: book sessions 2 and 3.`); }
+    try { const saved = await enrollFieldStudyParticipant(form as ParticipantForm & { fieldStudyKey: FieldStudyKey }); setRecord(saved); const reset = blankParticipant(); setForm(reset); formStart.current = JSON.stringify(reset); setCalendarOpened(true); await refreshQueue(); setMessage(`${saved.paperId} saved. Now book sessions 2 and 3.`); setCalendarOpen(true); }
     catch (e) { setMessage(e instanceof Error ? e.message : 'Could not save the participant. Check the fields and try again.'); }
     finally { setSaving(false); }
   }
