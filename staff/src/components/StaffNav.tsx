@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Calendar, ListChecks, Users, Wallet, TrendingUp, Sparkles, BookOpen, Kanban, PenLine } from 'lucide-react';
+import { Calendar, ListChecks, Users, Wallet, TrendingUp, Sparkles, BookOpen, Kanban, PenLine, ClipboardPlus } from 'lucide-react';
 
 // Flat bottom nav — every staff surface lives in the footer. Messages + Outreach
 // were retired into Follow-Up (2026-06-13), which freed the room to drop the
@@ -8,6 +8,7 @@ const NAV = [
   { to: '/', label: 'Today', Icon: Calendar, end: true },
   { to: '/follow-up', label: 'Follow-Up', Icon: ListChecks },
   { to: '/clients', label: 'Clients', Icon: Users },
+  { to: '/field-studies', label: 'Studies', Icon: ClipboardPlus },
   { to: '/balances', label: 'Balances', Icon: Wallet },
   { to: '/funnel', label: 'Funnel', Icon: TrendingUp },
   { to: '/pipeline', label: 'Pipeline', Icon: Kanban },

@@ -731,4 +731,46 @@ export async function saveElbowStudy(
   return saveStudyCapture(contactId, 'tennis-elbow', record);
 }
 
+// ── Field table studies — secured record capture + paper-baseline queue
+export async function listFieldStudyParticipants(): Promise<import('../types/staff').FieldStudyQueueItem[]> {
+  const r = await fetchApi<{ records: import('../types/staff').FieldStudyQueueItem[] }>('/staff-field-study');
+  return r.records;
+}
+
+export async function getFieldStudyParticipant(
+  recordId: string,
+): Promise<import('../types/staff').FieldStudyParticipant | null> {
+  const r = await fetchApi<{ record: import('../types/staff').FieldStudyParticipant | null }>(
+    `/staff-field-study?recordId=${encodeURIComponent(recordId)}`,
+  );
+  return r.record;
+}
+
+export async function enrollFieldStudyParticipant(input: {
+  fieldStudyKey: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  canUseFirstName: boolean;
+  afterSessionOnePain: number | null;
+}): Promise<import('../types/staff').FieldStudyParticipant> {
+  const r = await fetchApi<{ record: import('../types/staff').FieldStudyParticipant }>('/staff-field-study', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'enroll', ...input }),
+  });
+  return r.record;
+}
+
+export async function saveFieldStudyBaseline(
+  recordId: string,
+  baseline: Omit<import('../types/staff').FieldStudyBaseline, 'capturedAt'>,
+): Promise<import('../types/staff').FieldStudyParticipant> {
+  const r = await fetchApi<{ record: import('../types/staff').FieldStudyParticipant }>('/staff-field-study', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'save-baseline', recordId, baseline }),
+  });
+  return r.record;
+}
+
 export { ApiError };

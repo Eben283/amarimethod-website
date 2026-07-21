@@ -1,0 +1,7 @@
+/* The paper ID is an editable join key, not a passive status chip. */
+.fs-study-row { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 16px; }
+.fs-paper-id { display: block; color: #5c6258; font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.fs-paper-id strong { display: block; width: 100%; margin-top: 7px; padding: 13px 14px; border: 1px solid #d5d1c8; border-radius: 5px; background: #f5f3ee; color: #283026; font: 500 13px 'DM Mono', monospace; text-transform: none; }
+.fs-study small, .fs-paper-id small { display: block; margin-top: 5px; color: #777b72; font-size: 10px; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.fs-details input[type='checkbox'] { width: 15px; height: 15px; flex: none; padding: 0; }
+@media (max-width: 800px) { .fs-study-row { grid-template-columns: 1fr; } }

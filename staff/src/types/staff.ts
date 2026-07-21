@@ -505,3 +505,49 @@ export interface ElbowStudyRecord {
 /** Alias — same record shape for all studies. */
 export type StudyCaptureRecord = ElbowStudyRecord;
 export type StudyCaptureSession = ElbowStudySession;
+
+// ── Field table studies — the six answers begin on paper, then are entered
+// privately by staff. This is intentionally separate from the existing
+// generalized study instrument capture above.
+export interface FieldStudyBaseline {
+  discomfortNow: number | null;
+  worstPastSevenDays: number | null;
+  easierActivity: string;
+  activityDifficulty: number | null;
+  dayLimit: number | null;
+  activityAvoidance: number | null;
+  bodyLocations: string[];
+  capturedAt: string | null;
+}
+
+export interface FieldStudyParticipant {
+  id: string;
+  paperId: string;
+  contactId: string;
+  fieldStudyKey: string;
+  studySlug: string;
+  studyLabel: string;
+  studyName: string;
+  source: 'field-table';
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  canUseFirstName: boolean;
+  afterSessionOnePain: number;
+  baseline: FieldStudyBaseline | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FieldStudyQueueItem {
+  id: string;
+  paperId: string;
+  fieldStudyKey?: string;
+  studyName: string;
+  studyLabel?: string;
+  firstName: string;
+  createdAt: string;
+  afterSessionOnePain: number;
+  baselineCapturedAt: string | null;
+}
