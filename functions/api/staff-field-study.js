@@ -203,7 +203,7 @@ export async function onRequestPost(context) {
       return json({ error: 'First name, last name, a valid mobile, and a valid email are required.' }, 400, headers);
     }
     if (afterSessionOnePain === null) return json({ error: 'Record the after-session score before saving.' }, 400, headers);
-    if (!isValidPaperDate(paperDate)) return json({ error: 'Choose the date on the paper form.' }, 400, headers);
+    if (!isValidPaperDate(paperDate)) return json({ error: 'Could not determine today’s date. Refresh and try again.' }, 400, headers);
     const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email, fieldStudyKey, paperDate });
     if (duplicate) return json({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers);
 
