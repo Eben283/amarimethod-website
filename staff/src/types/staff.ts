@@ -520,6 +520,12 @@ export interface FieldStudyBaseline {
   capturedAt: string | null;
 }
 
+export interface FieldStudyBookedSession {
+  id: string;
+  startTime: string;
+  status: string;
+}
+
 export interface FieldStudyParticipant {
   id: string;
   paperId: string;
@@ -537,6 +543,9 @@ export interface FieldStudyParticipant {
   canUseFirstName: boolean;
   afterSessionOnePain: number;
   baseline: FieldStudyBaseline | null;
+  /** Live from the Amari Study calendar — not a staff-entered guess. */
+  bookedSessions?: FieldStudyBookedSession[];
+  bookingStatus?: 'loaded' | 'unavailable';
   createdAt: string;
   updatedAt: string;
 }
@@ -551,4 +560,6 @@ export interface FieldStudyQueueItem {
   createdAt: string;
   afterSessionOnePain: number;
   baselineCapturedAt: string | null;
+  bookedSessions?: FieldStudyBookedSession[];
+  bookingStatus?: 'loaded' | 'unavailable';
 }

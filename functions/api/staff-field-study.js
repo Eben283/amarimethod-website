@@ -8,7 +8,7 @@
 
 import { corsHeaders, parseJsonBody, requireStaffAuth } from '../lib/endpoint-guards.js';
 import { ghlFetch } from '../lib/ghl.js';
-import { STUDIES } from '../lib/studies.js';
+import { STUDIES, STUDY_CALENDAR_ID } from '../lib/studies.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -116,6 +116,49 @@ async function findSameDayDuplicate(kv, { phone, email, fieldStudyKey, paperDate
     && (record.phone === phone || record.email === email)) || null;
 }
 
+export function studyAppointments(rawAppointments) {
+  const cancelled = new Set(['cancelled', 'canceled']);
+  return (Array.isArray(rawAppointments) ? rawAppointments : [])
+    .filter((appointment) => appointment?.calendarId === STUDY_CALENDAR_ID)
+    .map((appointment) => ({
+      id: String(appointment.id || ''),
+      startTime: appointment.startTime || appointment.start_time || '',
+      status: String(appointment.appointmentStatus || appointment.status || 'confirmed').toLowerCase(),
+    }))
+    .filter((appointment) => appointment.id && appointment.startTime && !Number.isNaN(Date.parse(appointment.startTime)) && !cancelled.has(appointment.status))
+    .sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
+}
+
+async function withStudyAppointments(context, record) {
+  if (!record?.contactId) return { ...record, bookedSessions: [], bookingStatus: 'unavailable' };
+  try {
+    const response = await ghlFetch(context, `${GHL_API_BASE}/contacts/${record.contactId}/appointments`);
+    if (!response.ok) {
+      console.error('[staff-field-study] appointment lookup error:', response.status);
+      return { ...record, bookedSessions: [], bookingStatus: 'unavailable' };
+    }
+    const data = await response.json();
+    return { ...record, bookedSessions: studyAppointments(data.appointments || data.events), bookingStatus: 'loaded' };
+  } catch (err) {
+    console.error('[staff-field-study] appointment lookup error:', err.message);
+    return { ...record, bookedSessions: [], bookingStatus: 'unavailable' };
+  }
+}
+
+async function enrichBookings(context, records) {
+  const result = new Array(records.length);
+  let next = 0;
+  // Saved records can grow to 200. Keep the live-calendar refresh considerate
+  // of GHL's rate limit instead of firing every contact lookup at once.
+  await Promise.all(Array.from({ length: Math.min(8, records.length) }, async () => {
+    while (next < records.length) {
+      const index = next++;
+      result[index] = await withStudyAppointments(context, records[index]);
+    }
+  }));
+  return result;
+}
+
 function summarize(record) {
   return {
     id: record.id,
@@ -150,15 +193,19 @@ export async function onRequestGet(context) {
   try {
     const url = new URL(request.url);
     const recordId = url.searchParams.get('recordId');
+    const includeBookings = url.searchParams.get('includeBookings') === '1';
     if (recordId) {
       const record = await env.PORTAL_KV.get(recordKey(recordId), 'json');
-      return json({ record: record || null }, 200, headers);
+      return json({ record: record ? await withStudyAppointments(context, record) : null }, 200, headers);
     }
     const index = await env.PORTAL_KV.get(INDEX_KEY, 'json');
     const ids = indexIds(index);
-    const records = (await Promise.all(ids.map((id) => env.PORTAL_KV.get(recordKey(id), 'json'))))
+    let records = (await Promise.all(ids.map((id) => env.PORTAL_KV.get(recordKey(id), 'json'))))
       .filter(Boolean)
       .map(summarize);
+    // The paper-entry queue stays immediate. The Saved tab opts into live
+    // GHL calendar data, so its dates are the actual selected appointments.
+    if (includeBookings) records = await enrichBookings(context, records);
     return json({ records }, 200, headers);
   } catch (err) {
     console.error('[staff-field-study] GET error:', err.message);

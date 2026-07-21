@@ -732,8 +732,12 @@ export async function saveElbowStudy(
 }
 
 // ── Field table studies — secured record capture + paper-baseline queue
-export async function listFieldStudyParticipants(): Promise<import('../types/staff').FieldStudyQueueItem[]> {
-  const r = await fetchApi<{ records: import('../types/staff').FieldStudyQueueItem[] }>('/staff-field-study');
+export async function listFieldStudyParticipants(
+  includeBookings = false,
+): Promise<import('../types/staff').FieldStudyQueueItem[]> {
+  const r = await fetchApi<{ records: import('../types/staff').FieldStudyQueueItem[] }>(
+    `/staff-field-study${includeBookings ? '?includeBookings=1' : ''}`,
+  );
   return r.records;
 }
 
@@ -741,7 +745,7 @@ export async function getFieldStudyParticipant(
   recordId: string,
 ): Promise<import('../types/staff').FieldStudyParticipant | null> {
   const r = await fetchApi<{ record: import('../types/staff').FieldStudyParticipant | null }>(
-    `/staff-field-study?recordId=${encodeURIComponent(recordId)}`,
+    `/staff-field-study?recordId=${encodeURIComponent(recordId)}&includeBookings=1`,
   );
   return r.record;
 }

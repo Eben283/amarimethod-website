@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, isCompleteBaseline, isValidEmail, isValidPaperDate, isValidPhone } from './staff-field-study.js';
+import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, isCompleteBaseline, isValidEmail, isValidPaperDate, isValidPhone, studyAppointments } from './staff-field-study.js';
 
 describe('field-study contact validation', () => {
   it('accepts normal field-table contact details', () => {
@@ -26,5 +26,17 @@ describe('field-study contact validation', () => {
   it('uses one non-flyer tag for every table participant', () => {
     expect(FIELD_STUDY_TABLE_TAG).toBe('field-study-table-participant');
     expect(Object.values(FIELD_STUDIES).every((study) => !('tableTag' in study))).toBe(true);
+  });
+
+  it('only returns active appointments from the dedicated study calendar', () => {
+    expect(studyAppointments([
+      { id: 'follow-up-2', calendarId: 'J1N09B6bRYPOGNyVAfmX', startTime: '2026-07-30T18:00:00Z', appointmentStatus: 'confirmed' },
+      { id: 'cancelled', calendarId: 'J1N09B6bRYPOGNyVAfmX', startTime: '2026-07-22T18:00:00Z', appointmentStatus: 'cancelled' },
+      { id: 'other-calendar', calendarId: 'other', startTime: '2026-07-21T18:00:00Z', appointmentStatus: 'confirmed' },
+      { id: 'follow-up-1', calendarId: 'J1N09B6bRYPOGNyVAfmX', startTime: '2026-07-24T18:00:00Z', appointmentStatus: 'confirmed' },
+    ])).toEqual([
+      { id: 'follow-up-1', startTime: '2026-07-24T18:00:00Z', status: 'confirmed' },
+      { id: 'follow-up-2', startTime: '2026-07-30T18:00:00Z', status: 'confirmed' },
+    ]);
   });
 });
