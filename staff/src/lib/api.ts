@@ -752,6 +752,7 @@ export async function enrollFieldStudyParticipant(input: {
   lastName: string;
   phone: string;
   email: string;
+  paperDate: string;
   canUseFirstName: boolean;
   afterSessionOnePain: number | null;
 }): Promise<import('../types/staff').FieldStudyParticipant> {

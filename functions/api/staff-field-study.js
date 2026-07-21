@@ -42,10 +42,9 @@ function cleanText(value, max = MAX_TEXT) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
-function paperLabel(firstName, studyLabel, date = new Date()) {
-  const displayDate = new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles',
-  }).format(date);
+function paperLabel(firstName, studyLabel, paperDate) {
+  const displayDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+    .format(new Date(`${paperDate}T12:00:00Z`));
   return `${firstName} · ${studyLabel} · ${displayDate}`;
 }
 
@@ -63,6 +62,10 @@ export function isValidPhone(phone) {
 
 export function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+}
+
+export function isValidPaperDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value)) && !Number.isNaN(Date.parse(`${value}T12:00:00Z`));
 }
 
 function normalizeBaseline(raw, nowIso) {
@@ -83,6 +86,16 @@ function normalizeBaseline(raw, nowIso) {
   return baseline;
 }
 
+export function isCompleteBaseline(baseline) {
+  return baseline.discomfortNow !== null
+    && baseline.worstPastSevenDays !== null
+    && Boolean(baseline.easierActivity)
+    && baseline.activityDifficulty !== null
+    && baseline.dayLimit !== null
+    && baseline.activityAvoidance !== null
+    && baseline.bodyLocations.some(Boolean);
+}
+
 function indexIds(raw) {
   return Array.isArray(raw?.ids) ? raw.ids.filter((id) => typeof id === 'string').slice(0, MAX_INDEX) : [];
 }
@@ -92,6 +105,15 @@ async function addToIndex(kv, id) {
   const ids = indexIds(current).filter((existing) => existing !== id);
   ids.unshift(id);
   await kv.put(INDEX_KEY, JSON.stringify({ ids: ids.slice(0, MAX_INDEX) }));
+}
+
+async function findSameDayDuplicate(kv, { phone, email, fieldStudyKey, paperDate }) {
+  const index = await kv.get(INDEX_KEY, 'json');
+  const records = await Promise.all(indexIds(index).map((id) => kv.get(recordKey(id), 'json')));
+  return records.find((record) => record
+    && record.fieldStudyKey === fieldStudyKey
+    && record.paperDate === paperDate
+    && (record.phone === phone || record.email === email)) || null;
 }
 
 function summarize(record) {
@@ -159,7 +181,9 @@ export async function onRequestPost(context) {
       const existing = await env.PORTAL_KV.get(recordKey(recordId), 'json');
       if (!existing) return json({ error: 'Study record not found' }, 404, headers);
       const nowIso = new Date().toISOString();
-      const record = { ...existing, baseline: normalizeBaseline(body.baseline, nowIso), updatedAt: nowIso };
+      const baseline = normalizeBaseline(body.baseline, nowIso);
+      if (!isCompleteBaseline(baseline)) return json({ error: 'Enter all 6 answers and at least 1 marked body location before saving.' }, 400, headers);
+      const record = { ...existing, baseline, updatedAt: nowIso };
       await env.PORTAL_KV.put(recordKey(recordId), JSON.stringify(record));
       return json({ record }, 200, headers);
     }
@@ -173,11 +197,15 @@ export async function onRequestPost(context) {
     const phone = String(body.phone || '').replace(/[^\d+]/g, '').slice(0, 20);
     const email = cleanText(body.email, 254).toLowerCase();
     const afterSessionOnePain = score(body.afterSessionOnePain);
+    const paperDate = cleanText(body.paperDate, 10);
     if (!study) return json({ error: 'Choose one of the active field studies.' }, 400, headers);
     if (!firstName || !lastName || !isValidPhone(phone) || !isValidEmail(email)) {
       return json({ error: 'First name, last name, a valid mobile, and a valid email are required.' }, 400, headers);
     }
     if (afterSessionOnePain === null) return json({ error: 'Record the after-session score before saving.' }, 400, headers);
+    if (!isValidPaperDate(paperDate)) return json({ error: 'Choose the date on the paper form.' }, 400, headers);
+    const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email, fieldStudyKey, paperDate });
+    if (duplicate) return json({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers);
 
     const upsert = await ghlFetch(context, `${GHL_API_BASE}/contacts/upsert`, {
       method: 'POST',
@@ -210,7 +238,8 @@ export async function onRequestPost(context) {
       id: crypto.randomUUID(),
       // The sheet is matched by first name, study, and date. The UUID above is
       // still the unique record key, so duplicate names cannot collide.
-      paperId: paperLabel(firstName, study.label, new Date(nowIso)),
+      paperId: paperLabel(firstName, study.label, paperDate),
+      paperDate,
       contactId,
       fieldStudyKey,
       studySlug: study.slug,

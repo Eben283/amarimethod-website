@@ -523,6 +523,7 @@ export interface FieldStudyBaseline {
 export interface FieldStudyParticipant {
   id: string;
   paperId: string;
+  paperDate?: string;
   contactId: string;
   fieldStudyKey: string;
   studySlug: string;
