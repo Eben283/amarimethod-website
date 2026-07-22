@@ -1,20 +1,22 @@
 import React from 'react';
-import { PatternSignature } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
 import { getConditionContent } from '@/lib/conditionContent';
 
 type BookingCTAProps = {
-  patternSignature: PatternSignature;
   /** Builds a booking URL with the visitor's pain location appended as
    *  ?pain=… so booking pages can render the right intro copy. */
   buildBookingUrl: (base: string) => string;
 };
 
 const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
-  const { answers } = useQuiz();
+  const { answers, audience, referralSource } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
   const conditionContent = getConditionContent(painLocation);
   const testimonial = conditionContent?.matchedTestimonial;
+  const remotePreferred = audience === 'remote';
+  const referralName = referralSource
+    ? referralSource.charAt(0).toUpperCase() + referralSource.slice(1)
+    : null;
 
   return (
     <div id="booking-cta">
@@ -67,14 +69,22 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
         </div>
 
         <div className="offer-cta">
-          <a
-            href={buildBookingUrl('/book/initial-in-person')}
-            className="btn-ink"
-          >
-            <span>Book your session</span>
-            <span className="arrow">→</span>
-          </a>
-          <span className="fine">In person or virtual · HSA / FSA accepted</span>
+          {referralName ? <p className="referral-note">Referred by {referralName}</p> : null}
+          <div className={`booking-options${remotePreferred ? ' virtual-first' : ''}`}>
+            <a href={buildBookingUrl('/book/initial-in-person')} className="btn-ink">
+              <span>Book in person</span>
+              <span className="arrow">→</span>
+            </a>
+            <a href={buildBookingUrl('/book/initial-virtual')} className="btn-paper">
+              <span>Book virtual</span>
+              <span className="arrow">→</span>
+            </a>
+          </div>
+          <span className="fine">
+            {remotePreferred
+              ? 'Virtual from anywhere · In person available when you visit SF · HSA / FSA accepted'
+              : 'San Francisco in person or virtual from anywhere · HSA / FSA accepted'}
+          </span>
           <p className="guarantee">
             <b>Satisfaction guaranteed.</b> If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.
           </p>

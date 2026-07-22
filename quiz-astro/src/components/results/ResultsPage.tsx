@@ -330,6 +330,21 @@ const EDITORIAL_STYLES = `
 }
 [data-results] .btn-ink:hover{background:var(--accent);gap:24px;color:var(--paper)}
 [data-results] .btn-ink .arrow{font-family:var(--display);font-style:italic;font-size:18px;letter-spacing:0;line-height:0}
+[data-results] .booking-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px;margin:0 auto}
+[data-results] .booking-options.virtual-first .btn-paper{order:-1;background:var(--ink);color:var(--paper);border-color:var(--ink)}
+[data-results] .booking-options.virtual-first .btn-ink{background:var(--paper);color:var(--ink);border-color:var(--ink)}
+[data-results] .btn-paper{
+  display:flex;align-items:center;justify-content:center;gap:16px;width:100%;
+  padding:20px 28px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+  transition:background-color .18s ease,color .18s ease,gap .18s ease;
+}
+[data-results] .btn-paper:hover{background:var(--paper-2);gap:24px}
+[data-results] .btn-paper .arrow{font-family:var(--display);font-style:italic;font-size:18px;letter-spacing:0;line-height:0}
+[data-results] .referral-note{
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent);text-align:center;margin:0 0 14px;
+}
 [data-results] .offer-cta .fine{
   font-family:var(--mono);font-size:10px;letter-spacing:.22em;
   text-transform:uppercase;color:var(--mute);
@@ -463,6 +478,8 @@ const EDITORIAL_STYLES = `
   [data-results] .offer-body{grid-template-columns:1fr}
   [data-results] .offer-pane + .offer-pane{border-left:0;border-top:1px solid var(--ink-2)}
   [data-results] .offer-cta{padding:20px}
+  [data-results] .booking-options{grid-template-columns:1fr}
+  [data-results] .booking-options.virtual-first .btn-paper{order:initial}
   [data-results] .testimonial{padding:48px 0}
   /* aside-links responsive handling lives in its own @media (max-width:520px) above */
   [data-results] .doc-foot{grid-template-columns:1fr;text-align:left;gap:18px;padding:32px 20px}
@@ -585,7 +602,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 7 — Offer card */}
       <section style={{ padding: '64px 0' }}>
         <div className="doc">
-          <BookingCTA patternSignature={patternSignature} buildBookingUrl={buildBookingUrl} />
+          <BookingCTA buildBookingUrl={buildBookingUrl} />
         </div>
       </section>
 
@@ -595,7 +612,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 9 — Aside links */}
       <div className="doc">
         <div className="aside-links">
-          <a href={buildBookingUrl('/book-discovery-call')}>
+          <a href={buildBookingUrl('/book/discovery-call')}>
             Schedule free 15-min call ↗
           </a>
           <a href="https://www.amarimethod.com/booking">
