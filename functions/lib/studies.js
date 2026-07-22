@@ -36,17 +36,6 @@ export const STUDIES = {
     venues: ["Coworking spaces", "Climbing gyms"],
     status: "draft",
   },
-  "hand": {
-    slug: "hand",
-    tag: "hand-study-participant",
-    module: "hand-balancer",
-    condition: "hand & finger pain",
-    shortName: "Hand Pain Study",
-    bodyQuestion: { key: "hand", label: "Which hand?", options: ["Left", "Right", "Both"] },
-    instrument: { abbr: "QuickDASH", name: "Disabilities of the Arm, Shoulder & Hand (short form)", recall: "past week", license: "verify" },
-    venues: ["Climbing gyms", "Bouldering gyms"],
-    status: "draft",
-  },
   "tmj": {
     slug: "tmj",
     tag: "tmj-study-participant",
