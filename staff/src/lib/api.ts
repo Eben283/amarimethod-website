@@ -759,6 +759,7 @@ export async function enrollFieldStudyParticipant(input: {
   paperDate: string;
   canUseFirstName: boolean;
   afterSessionOnePain: number | null;
+  participantQuote: string;
 }): Promise<import('../types/staff').FieldStudyParticipant> {
   const r = await fetchApi<{ record: import('../types/staff').FieldStudyParticipant }>('/staff-field-study', {
     method: 'POST',

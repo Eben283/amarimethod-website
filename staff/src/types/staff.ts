@@ -542,6 +542,7 @@ export interface FieldStudyParticipant {
   email: string;
   canUseFirstName: boolean;
   afterSessionOnePain: number;
+  participantQuote: string;
   baseline: FieldStudyBaseline | null;
   /** Live from the Amari Study calendar — not a staff-entered guess. */
   bookedSessions?: FieldStudyBookedSession[];

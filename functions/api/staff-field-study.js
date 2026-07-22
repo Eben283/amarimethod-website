@@ -350,6 +350,7 @@ export async function onRequestPost(context) {
     const phone = String(body.phone || '').replace(/[^\d+]/g, '').slice(0, 20);
     const email = cleanText(body.email, 254).toLowerCase();
     const afterSessionOnePain = score(body.afterSessionOnePain);
+    const participantQuote = cleanText(body.participantQuote, 500);
     const paperDate = cleanText(body.paperDate, 10);
     if (!study) return json({ error: 'Choose one of the active field studies.' }, 400, headers);
     if (!firstName || !lastName || !isValidPhone(phone) || !isValidEmail(email)) {
@@ -405,6 +406,7 @@ export async function onRequestPost(context) {
       email,
       canUseFirstName: body.canUseFirstName === true,
       afterSessionOnePain,
+      participantQuote,
       baseline: null,
       createdAt: nowIso,
       updatedAt: nowIso,
