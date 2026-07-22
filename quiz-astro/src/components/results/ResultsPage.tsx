@@ -325,6 +325,22 @@ const EDITORIAL_STYLES = `
 [data-results] .btn-ink:hover{background:#000;transform:translateY(-1px);gap:.7em;color:#fff}
 [data-results] .btn-ink .arrow{font-family:inherit;font-style:normal;font-size:inherit;letter-spacing:inherit;transition:transform .3s var(--ease)}
 [data-results] .btn-ink:hover .arrow{transform:translateX(4px)}
+[data-results] .booking-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px;margin:0 auto}
+[data-results] .booking-options.virtual-first .btn-paper{order:-1;background:var(--ink);color:#fff;border-color:var(--ink)}
+[data-results] .booking-options.virtual-first .btn-ink{background:var(--paper);color:var(--ink);border:1px solid var(--ink)}
+[data-results] .btn-paper{
+  display:inline-flex;align-items:center;justify-content:center;gap:.7em;width:auto;
+  padding:17px 34px;border:1px solid var(--ink);background:var(--paper);color:var(--ink);
+  font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  transition:background .3s var(--ease),transform .3s var(--ease);
+}
+[data-results] .btn-paper:hover{background:var(--paper-2);transform:translateY(-1px)}
+[data-results] .btn-paper .arrow{font-family:inherit;font-style:normal;font-size:inherit;letter-spacing:inherit;transition:transform .3s var(--ease)}
+[data-results] .btn-paper:hover .arrow{transform:translateX(4px)}
+[data-results] .referral-note{
+  font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--rust);text-align:center;margin:0 0 14px;
+}
 [data-results] .offer-cta .fine{
   display:block;margin-top:14px;font-family:var(--sans);font-size:11px;font-weight:600;
   letter-spacing:.14em;text-transform:uppercase;color:var(--body);
@@ -446,6 +462,8 @@ const EDITORIAL_STYLES = `
   [data-results] .chain-step,[data-results] .chain-cell{grid-template-columns:1fr;gap:8px}
   [data-results] .offer-body{grid-template-columns:1fr}
   [data-results] .offer-pane + .offer-pane{border-left:none;border-top:1px solid var(--line)}
+  [data-results] .booking-options{grid-template-columns:1fr}
+  [data-results] .booking-options.virtual-first .btn-paper{order:initial}
   [data-results] .doc-foot{grid-template-columns:1fr;text-align:left;gap:18px;padding:32px 20px}
   [data-results] .doc-foot .center,[data-results] .doc-foot .right{text-align:left}
 }
@@ -565,7 +583,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 7 — Offer card */}
       <section style={{ padding: '64px 0' }}>
         <div className="doc">
-          <BookingCTA patternSignature={patternSignature} buildBookingUrl={buildBookingUrl} />
+          <BookingCTA buildBookingUrl={buildBookingUrl} />
         </div>
       </section>
 
@@ -575,7 +593,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 9 — Aside links */}
       <div className="doc">
         <div className="aside-links">
-          <a href={buildBookingUrl('/book-discovery-call')}>
+          <a href={buildBookingUrl('/book/discovery-call')}>
             Schedule free 15-min call ↗
           </a>
           <a href="https://www.amarimethod.com/booking">

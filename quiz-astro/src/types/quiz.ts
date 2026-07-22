@@ -4,16 +4,14 @@ export type QuizAnswer = {
   answer: string | string[] | null;
 };
 
-// Plain-English observations grounded in Garrett's actual vocabulary
-// (out-of-balance, working too hard / not enough, workaround patterns).
-// Replaces the prior pseudo-clinical labels which weren't from his
-// methodology and read as fabricated diagnoses on the results page.
+// Established result labels. The editorial reskin keeps these labels so the
+// underlying result people receive remains consistent with the original quiz.
 export type PatternSignature =
-  | 'Overworking muscles'
-  | 'Joint-side strain'
-  | 'Long-standing imbalance'
-  | 'Daily-life impact'
-  | 'Built-in workarounds';
+  | 'Protective Tension'
+  | 'Structural Adaptation'
+  | 'Established Pattern'
+  | 'Functional Limitation'
+  | 'Compensatory Movement';
 
 export type ScoreCategories = {
   softTissueTension: number;
