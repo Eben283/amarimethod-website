@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, isCompleteBaseline, isValidEmail, isValidPaperDate, isValidPhone, studyAppointments } from './staff-field-study.js';
+import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, flattenSlots, isCompleteBaseline, isValidEmail, isValidPaperDate, isValidPhone, studyAppointments } from './staff-field-study.js';
 
 describe('field-study contact validation', () => {
   it('accepts normal field-table contact details', () => {
@@ -37,6 +37,15 @@ describe('field-study contact validation', () => {
     ])).toEqual([
       { id: 'follow-up-1', startTime: '2026-07-24T18:00:00Z', status: 'confirmed' },
       { id: 'follow-up-2', startTime: '2026-07-30T18:00:00Z', status: 'confirmed' },
+    ]);
+  });
+
+  it('flattens a month of GHL free slots for the native calendar', () => {
+    expect(flattenSlots({
+      '2026-08-12': { slots: ['2026-08-12T14:30:00-07:00', '2026-08-12T09:00:00-07:00'] },
+    })).toEqual([
+      { date: '2026-08-12', hour: 9, minute: 0, datetime: '2026-08-12T09:00:00-07:00' },
+      { date: '2026-08-12', hour: 14, minute: 30, datetime: '2026-08-12T14:30:00-07:00' },
     ]);
   });
 });

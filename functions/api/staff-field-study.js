@@ -9,6 +9,7 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from '../lib/endpoint-guards.js';
 import { ghlFetch } from '../lib/ghl.js';
 import { STUDIES, STUDY_CALENDAR_ID } from '../lib/studies.js';
+import { appointmentEndTime } from '../lib/datetime.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -54,6 +55,57 @@ function score(value) {
   if (!Number.isFinite(numeric)) return null;
   const rounded = Math.round(numeric);
   return rounded >= 0 && rounded <= 10 ? rounded : null;
+}
+
+function validDateRange(startDate, endDate) {
+  if (!isValidPaperDate(startDate) || !isValidPaperDate(endDate)) return false;
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const end = Date.parse(`${endDate}T23:59:59Z`);
+  return Number.isFinite(start) && Number.isFinite(end) && end >= start && end - start <= 32 * 86400000;
+}
+
+export function flattenSlots(data) {
+  const slots = [];
+  for (const date of Object.keys(data || {}).sort()) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+    const values = Array.isArray(data[date]?.slots) ? data[date].slots : [];
+    for (const datetime of [...new Set(values)].sort()) {
+      const time = String(datetime).split('T')[1] || '';
+      const hour = Number.parseInt(time.split(':')[0], 10);
+      const minute = Number.parseInt(time.split(':')[1], 10);
+      if (!Number.isInteger(hour) || !Number.isInteger(minute)) continue;
+      slots.push({ date, hour, minute, datetime });
+    }
+  }
+  return slots;
+}
+
+async function studySlots(context, startDate, endDate, timezone) {
+  const start = Date.parse(`${startDate}T00:00:00Z`);
+  const end = Date.parse(`${endDate}T23:59:59Z`) + 12 * 60 * 60 * 1000;
+  // GHL rejects some 31-day windows. Split a long month into two safe lookups.
+  const windows = [];
+  for (let cursor = start; cursor < end; cursor += 30 * 86400000) windows.push([cursor, Math.min(cursor + 30 * 86400000, end)]);
+  const responses = await Promise.all(windows.map(([windowStart, windowEnd]) => ghlFetch(
+    context,
+    `${GHL_API_BASE}/calendars/${STUDY_CALENDAR_ID}/free-slots?startDate=${windowStart}&endDate=${windowEnd}&timezone=${encodeURIComponent(timezone)}`,
+  )));
+  const merged = {};
+  let succeeded = false;
+  for (const response of responses) {
+    if (!response.ok) {
+      console.error('[staff-field-study] slot lookup error:', response.status, (await response.text()).slice(0, 200));
+      continue;
+    }
+    succeeded = true;
+    const data = await response.json();
+    for (const [date, value] of Object.entries(data)) {
+      if (!merged[date]) merged[date] = { slots: [] };
+      for (const slot of (Array.isArray(value?.slots) ? value.slots : [])) if (!merged[date].slots.includes(slot)) merged[date].slots.push(slot);
+    }
+  }
+  if (!succeeded) throw new Error('Could not load available study times.');
+  return flattenSlots(merged);
 }
 
 export function isValidPhone(phone) {
@@ -222,6 +274,60 @@ export async function onRequestPost(context) {
   if (parseError) return parseError;
 
   try {
+    if (body.action === 'get-slots') {
+      const recordId = cleanText(body.recordId, 80);
+      const startDate = cleanText(body.startDate, 10);
+      const endDate = cleanText(body.endDate, 10);
+      const timezone = cleanText(body.timezone, 80) || 'America/Los_Angeles';
+      if (!recordId || !validDateRange(startDate, endDate)) return json({ error: 'Choose a valid calendar month.' }, 400, headers);
+      const record = await env.PORTAL_KV.get(recordKey(recordId), 'json');
+      if (!record) return json({ error: 'Study record not found.' }, 404, headers);
+      return json({ slots: await studySlots(context, startDate, endDate, timezone) }, 200, headers);
+    }
+
+    if (body.action === 'book-followup') {
+      const recordId = cleanText(body.recordId, 80);
+      const startTime = cleanText(body.startTime, 80);
+      const timezone = cleanText(body.timezone, 80) || 'America/Los_Angeles';
+      const idempotencyKey = cleanText(body.idempotencyKey, 100);
+      if (!recordId || !startTime || Number.isNaN(Date.parse(startTime))) return json({ error: 'Choose an available study time.' }, 400, headers);
+      const record = await env.PORTAL_KV.get(recordKey(recordId), 'json');
+      if (!record) return json({ error: 'Study record not found.' }, 404, headers);
+
+      const cacheKey = idempotencyKey ? `field-study-book:${recordId}:${idempotencyKey}` : null;
+      if (cacheKey) {
+        const existing = await env.PORTAL_KV.get(cacheKey, 'json');
+        if (existing) return json(existing, 200, headers);
+      }
+
+      const booking = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          calendarId: STUDY_CALENDAR_ID,
+          locationId: GHL_LOCATION_ID,
+          contactId: record.contactId,
+          startTime,
+          endTime: appointmentEndTime(startTime, 15),
+          selectedTimezone: timezone,
+          title: 'Amari Study 15-Minute Session',
+          appointmentStatus: 'confirmed',
+          firstName: record.firstName,
+          lastName: record.lastName,
+          email: record.email,
+          phone: record.phone,
+        }),
+      });
+      if (!booking.ok) {
+        const detail = await booking.text();
+        console.error('[staff-field-study] study booking error:', booking.status, detail.slice(0, 300));
+        return json({ error: 'That time is no longer available. Choose another one.' }, 422, headers);
+      }
+      const data = await booking.json();
+      const result = { appointment: { id: data.id || data.appointment?.id || '', startTime } };
+      if (cacheKey) await env.PORTAL_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
+      return json(result, 200, headers);
+    }
+
     if (body.action === 'save-baseline') {
       const recordId = cleanText(body.recordId, 80);
       if (!recordId) return json({ error: 'recordId required' }, 400, headers);

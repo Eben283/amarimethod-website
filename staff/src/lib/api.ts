@@ -778,4 +778,36 @@ export async function saveFieldStudyBaseline(
   return r.record;
 }
 
+export interface FieldStudySlot {
+  date: string;
+  hour: number;
+  minute: number;
+  datetime: string;
+}
+
+export async function getFieldStudySlots(
+  recordId: string,
+  startDate: string,
+  endDate: string,
+  timezone: string,
+): Promise<FieldStudySlot[]> {
+  const r = await fetchApi<{ slots: FieldStudySlot[] }>('/staff-field-study', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'get-slots', recordId, startDate, endDate, timezone }),
+  });
+  return r.slots;
+}
+
+export async function bookFieldStudyFollowup(
+  recordId: string,
+  startTime: string,
+  timezone: string,
+  idempotencyKey: string,
+): Promise<{ appointment: { id: string; startTime: string } }> {
+  return fetchApi('/staff-field-study', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'book-followup', recordId, startTime, timezone, idempotencyKey }),
+  });
+}
+
 export { ApiError };
