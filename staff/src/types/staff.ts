@@ -536,12 +536,13 @@ export interface FieldStudyParticipant {
   studyLabel: string;
   studyName: string;
   source: 'field-table';
+  firstSessionCompleted: boolean;
   firstName: string;
   lastName: string;
   phone: string;
   email: string;
   canUseFirstName: boolean;
-  afterSessionOnePain: number;
+  afterSessionOnePain: number | null;
   participantQuote: string;
   baseline: FieldStudyBaseline | null;
   /** Live from the Amari Study calendar — not a staff-entered guess. */
@@ -559,7 +560,8 @@ export interface FieldStudyQueueItem {
   studyLabel?: string;
   firstName: string;
   createdAt: string;
-  afterSessionOnePain: number;
+  firstSessionCompleted: boolean;
+  afterSessionOnePain: number | null;
   baselineCapturedAt: string | null;
   bookedSessions?: FieldStudyBookedSession[];
   bookingStatus?: 'loaded' | 'unavailable';

@@ -757,6 +757,7 @@ export async function enrollFieldStudyParticipant(input: {
   phone: string;
   email: string;
   paperDate: string;
+  firstSessionCompleted: boolean;
   canUseFirstName: boolean;
   afterSessionOnePain: number | null;
   participantQuote: string;

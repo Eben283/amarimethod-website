@@ -120,6 +120,10 @@ export function isValidPaperDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value)) && !Number.isNaN(Date.parse(`${value}T12:00:00Z`));
 }
 
+export function isFirstSessionCompleted(value) {
+  return value === true;
+}
+
 function normalizeBaseline(raw, nowIso) {
   const value = raw && typeof raw === 'object' ? raw : {};
   const locations = Array.isArray(value.bodyLocations) ? value.bodyLocations : [];
@@ -220,6 +224,8 @@ function summarize(record) {
     studyName: record.studyName,
     firstName: record.firstName,
     createdAt: record.createdAt,
+    // Records saved before this choice existed had completed session one.
+    firstSessionCompleted: record.firstSessionCompleted !== false,
     afterSessionOnePain: record.afterSessionOnePain,
     baselineCapturedAt: record.baseline?.capturedAt || null,
   };
@@ -349,6 +355,8 @@ export async function onRequestPost(context) {
     const lastName = cleanText(body.lastName, 100);
     const phone = String(body.phone || '').replace(/[^\d+]/g, '').slice(0, 20);
     const email = cleanText(body.email, 254).toLowerCase();
+    if (typeof body.firstSessionCompleted !== 'boolean') return json({ error: 'Confirm whether they completed their first session.' }, 400, headers);
+    const firstSessionCompleted = isFirstSessionCompleted(body.firstSessionCompleted);
     const afterSessionOnePain = score(body.afterSessionOnePain);
     const participantQuote = cleanText(body.participantQuote, 500);
     const paperDate = cleanText(body.paperDate, 10);
@@ -356,7 +364,7 @@ export async function onRequestPost(context) {
     if (!firstName || !lastName || !isValidPhone(phone) || !isValidEmail(email)) {
       return json({ error: 'First name, last name, a valid mobile, and a valid email are required.' }, 400, headers);
     }
-    if (afterSessionOnePain === null) return json({ error: 'Record the after-session score before saving.' }, 400, headers);
+    if (firstSessionCompleted && afterSessionOnePain === null) return json({ error: 'Record the after-session score before saving.' }, 400, headers);
     if (!isValidPaperDate(paperDate)) return json({ error: 'Could not determine today’s date. Refresh and try again.' }, 400, headers);
     const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email, fieldStudyKey, paperDate });
     if (duplicate) return json({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers);
@@ -375,7 +383,7 @@ export async function onRequestPost(context) {
         source: 'Golden Gate Park field table',
         customFields: [
           { id: STUDY_NAME_FIELD_ID, value: study.studyName },
-          { id: STUDY_SESSIONS_DONE_FIELD_ID, value: 1 },
+          { id: STUDY_SESSIONS_DONE_FIELD_ID, value: firstSessionCompleted ? 1 : 0 },
         ],
       }),
     });
@@ -400,12 +408,13 @@ export async function onRequestPost(context) {
       studyLabel: study.label,
       studyName: study.studyName,
       source: 'field-table',
+      firstSessionCompleted,
       firstName,
       lastName,
       phone,
       email,
       canUseFirstName: body.canUseFirstName === true,
-      afterSessionOnePain,
+      afterSessionOnePain: firstSessionCompleted ? afterSessionOnePain : null,
       participantQuote,
       baseline: null,
       createdAt: nowIso,

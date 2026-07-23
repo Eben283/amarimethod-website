@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, flattenSlots, isCompleteBaseline, isValidEmail, isValidPaperDate, isValidPhone, studyAppointments } from './staff-field-study.js';
+import { FIELD_STUDIES, FIELD_STUDY_TABLE_TAG, flattenSlots, isCompleteBaseline, isFirstSessionCompleted, isValidEmail, isValidPaperDate, isValidPhone, studyAppointments } from './staff-field-study.js';
 
 describe('field-study contact validation', () => {
   it('accepts normal field-table contact details', () => {
@@ -26,6 +26,12 @@ describe('field-study contact validation', () => {
   it('uses one non-flyer tag for every table participant', () => {
     expect(FIELD_STUDY_TABLE_TAG).toBe('field-study-table-participant');
     expect(Object.values(FIELD_STUDIES).every((study) => !('tableTag' in study))).toBe(true);
+  });
+
+  it('only marks a first session complete when staff explicitly confirms it', () => {
+    expect(isFirstSessionCompleted(true)).toBe(true);
+    expect(isFirstSessionCompleted(false)).toBe(false);
+    expect(isFirstSessionCompleted(undefined)).toBe(false);
   });
 
   it('only returns active appointments from the dedicated study calendar', () => {
