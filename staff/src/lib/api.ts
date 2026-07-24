@@ -467,7 +467,9 @@ export interface FunnelCallEvent {
 export interface FunnelSessionEvent {
   d: string;                       // booking date (when it was booked)
   sessionDate?: string;            // the scheduled session date
+  status?: 'attended' | 'noshow' | 'cancelled' | 'pending';
   showed: boolean;
+  eightSeries?: boolean;           // contact-matched purchase after attendance
   c: string;
 }
 export interface FunnelSaleEvent {

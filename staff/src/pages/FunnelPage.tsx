@@ -364,15 +364,20 @@ export default function FunnelPage() {
     const talk = calls.filter((c) => c.o === 'talk').length;
     const vm = calls.filter((c) => c.o === 'vm').length;
     const none = calls.filter((c) => c.o === 'none').length;
-    const booked = sessions.length;
-    const showed = sessions.filter((s) => s.showed).length;
+    // These are all initial-session calendars. A cancelled appointment is not
+    // a booking in the conversion denominator; no-shows stay visible on their
+    // own rather than disappearing into the attendance rate.
+    const booked = sessions.filter((s) => s.status !== 'cancelled').length;
+    const showed = sessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
+    const noShows = sessions.filter((s) => s.status === 'noshow').length;
+    const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
 
     const countOn: Record<string, (d: string) => number> = {
       calls: (d) => (data.calls || []).filter((c) => c.d === d).length,
       talked: (d) => (data.calls || []).filter((c) => c.d === d && c.o === 'talk').length,
-      booked: (d) => (data.sessions || []).filter((s) => s.d === d).length,
-      showed: (d) => (data.sessions || []).filter((s) => s.d === d && s.showed).length,
-      sales: (d) => (data.sales || []).filter((s) => s.d === d).length,
+      booked: (d) => (data.sessions || []).filter((s) => s.d === d && s.status !== 'cancelled').length,
+      showed: (d) => (data.sessions || []).filter((s) => s.d === d && (s.status === 'attended' || (!s.status && s.showed))).length,
+      sales: (d) => (data.sessions || []).filter((s) => s.d === d && (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length,
     };
     // trend window adapts to the selected range — daily bars for day/week/month, weekly bars for the quarter
     const TREND_DAYS: Record<RangeUnit, number> = { day: 3, week: 7, month: 30, quarter: 91 };
@@ -395,8 +400,13 @@ export default function FunnelPage() {
     const cohorts = new Map<string, { sold: number; talk: number; booked: number; showed: number; sales: number }>();
     const row = (c: string) => { if (!cohorts.has(c)) cohorts.set(c, { sold: 0, talk: 0, booked: 0, showed: 0, sales: 0 }); return cohorts.get(c)!; };
     calls.forEach((c) => { if (c.o === 'talk') row(c.c).talk++; });
-    sessions.forEach((s) => { row(s.c).booked++; if (s.showed) row(s.c).showed++; });
-    sales.forEach((s) => { const r = row(s.c); r.sold += s.s; r.sales++; });
+    sessions.forEach((s) => {
+      const r = row(s.c);
+      if (s.status !== 'cancelled') r.booked++;
+      const attended = s.status === 'attended' || (!s.status && s.showed);
+      if (attended) r.showed++;
+      if (attended && s.eightSeries) { r.sold++; r.sales++; }
+    });
     const board = [...cohorts.entries()].map(([name, v]) => ({ name, ...v })).sort((a, b) => b.sold - a.sold || b.talk - a.talk);
     const repeats = sales.filter((s) => s.r).length;
 
@@ -411,7 +421,7 @@ export default function FunnelPage() {
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
-      callsN: calls.length, none, vm, talk, booked, showed, salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
+      callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries, salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
       textsN: texts.length, emailsN: emails.length,
       stageTarget, dailyCallsTarget };
   }, [data, range]);
@@ -441,8 +451,8 @@ export default function FunnelPage() {
     calls:  { label: 'Calls',  col: COL.plum,   count: v.callsN,     target: v.stageTarget.calls,  pulse: v.pulses.calls },
     talked: { label: 'Talked', col: COL.maroon, count: v.talk,       target: v.stageTarget.talk,   pulse: v.pulses.talked },
     booked: { label: 'Booked', col: COL.rust,   count: v.booked,     target: v.stageTarget.booked, pulse: v.pulses.booked },
-    showed: { label: 'Showed', col: COL.ember,  count: v.showed,     target: v.stageTarget.showed, pulse: v.pulses.showed },
-    sales:  { label: 'Sales',  col: COL.goldDeep, count: v.salesCount, target: v.stageTarget.sales, pulse: v.pulses.sales },
+    showed: { label: 'Attended', col: COL.ember,  count: v.showed,     target: v.stageTarget.showed, pulse: v.pulses.showed },
+    sales:  { label: '8-series',  col: COL.goldDeep, count: v.eightSeries, target: v.stageTarget.sales, pulse: v.pulses.sales },
   };
   const sm = SM[stage];
   const smMax = Math.max(1, ...sm.pulse.map((p) => p.n));
@@ -455,16 +465,16 @@ export default function FunnelPage() {
     { key: 'calls',  label: 'calls',  n: v.callsN, col: COL.plum,   t: v.stageTarget.calls },
     { key: 'talked', label: 'talked', n: v.talk,   col: COL.maroon, t: v.stageTarget.talk },
     { key: 'booked', label: 'booked', n: v.booked, col: COL.rust,   t: v.stageTarget.booked },
-    { key: 'showed', label: 'showed', n: v.showed, col: COL.ember,  t: v.stageTarget.showed },
-    { key: 'sales',  label: v.salesCount === 1 ? 'sale' : 'sales', n: v.salesCount, col: COL.goldDeep, t: v.stageTarget.sales },
+    { key: 'showed', label: 'attended', n: v.showed, col: COL.ember,  t: v.stageTarget.showed },
+    { key: 'sales',  label: '8-series', n: v.eightSeries, col: COL.goldDeep, t: v.stageTarget.sales },
   ];
   const winCount = rings.filter((r) => r.t >= 1 && r.n >= r.t).length;
   const pct = (a: number, b: number) => (b > 0 ? `${Math.round((a / b) * 100)}%` : '—');
   const drops = [
     { v: pct(v.talk, v.callsN), word: 'of calls were answered', none: 'no calls yet' },
     { v: pct(v.booked, v.talk), word: 'of talks booked a session', none: 'no one answered yet' },
-    { v: pct(v.showed, v.booked), word: 'of bookings showed up', none: 'no bookings yet' },
-    { v: pct(v.salesCount, v.showed), word: 'of shows bought a pack', none: 'no one has shown yet' },
+    { v: pct(v.showed, v.booked), word: 'of bookings attended', none: 'no bookings yet' },
+    { v: pct(v.eightSeries, v.showed), word: 'of attendees bought an 8-series', none: 'no one has attended yet' },
   ];
   const rk: Record<string, typeof rings[number]> = Object.fromEntries(rings.map((r) => [r.key, r]));
   const burst = goalHit || winCount === 5;
@@ -553,6 +563,22 @@ export default function FunnelPage() {
               <b style={{ color: COL.ink }}>{v.remaining.toFixed(1)}</b> packs to go · <b style={{ color: COL.ink }}>{v.daysLeft}</b> day{v.daysLeft === 1 ? '' : 's'} left · aim <b style={{ color: COL.ink }}>~{v.dailyCallsTarget}</b> calls/day
             </p>
           )}
+        </div>
+
+        {/* Initial-session funnel is contact-matched. Overall sales above remain
+            cash pacing; this row is the clean attendance/conversion cohort. */}
+        <div className="fn-reveal mb-5 grid grid-cols-4 gap-2">
+          {[
+            { n: v.booked, label: 'initial booked', col: COL.rust },
+            { n: v.showed, label: 'attended', col: COL.ember },
+            { n: v.noShows, label: 'no-show', col: COL.maroon },
+            { n: v.eightSeries, label: 'bought 8-series', col: COL.goldDeep },
+          ].map((s) => (
+            <div key={s.label} className="flex flex-col items-center rounded-2xl px-1 py-2.5 text-center" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
+              <span className="fn-story text-2xl font-bold leading-none tabular-nums" style={{ color: s.col }}>{s.n}</span>
+              <span className="mt-1 text-[9px] uppercase tracking-wider" style={{ color: COL.inkSoft }}>{s.label}</span>
+            </div>
+          ))}
         </div>
 
         {/* outreach touches this period — the non-call work (texts, emails, voicemails left) */}

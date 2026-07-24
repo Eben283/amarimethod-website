@@ -17,10 +17,12 @@
 
 import { ghlRetry, LOCATION_ID } from "./ghl.js";
 
-// Gifted/comp partner initial sessions — both delivery modes. The GHL
-// /calendars/events endpoint takes one calendarId per call, so loadGifted
-// sweeps each and merges.
-const GIFTED_PARTNER_CALENDARS = [
+// Every calendar that represents a person's first Amari session. The GHL
+// endpoint takes one calendarId per call, so the loader sweeps each and merges.
+const INITIAL_SESSION_CALENDARS = [
+  "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person
+  "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner
   "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (in person)
   "P7T6M1w8wtuRfwAqzOVw", // Partner Initial Session - Virtual
 ];
@@ -244,12 +246,12 @@ async function loadCalls(env, lid, cutoffMs, cohortOf) {
   return { calls, texts, emails };
 }
 
-async function loadGifted(env, lid, cutoffMs, cohortOf) {
+async function loadInitialSessions(env, lid, cutoffMs, cohortOf) {
   // Fetch FUTURE bookings too (was endTime=now, which silently dropped every
   // session scheduled for a future date).
   const futureEnd = Date.now() + 120 * 24 * 60 * 60 * 1000;
   const responses = await Promise.all(
-    GIFTED_PARTNER_CALENDARS.map((calId) =>
+    INITIAL_SESSION_CALENDARS.map((calId) =>
       ghlRetry(
         env,
         `/calendars/events?locationId=${lid}&calendarId=${calId}&startTime=${cutoffMs}&endTime=${futureEnd}`
@@ -257,15 +259,20 @@ async function loadGifted(env, lid, cutoffMs, cohortOf) {
     )
   );
   const events = responses.flatMap((d) => d.events || []);
-  const out = events.map((e) => ({
+  const out = events.map((e) => {
+    const status = String(e.appointmentStatus || "").toLowerCase();
+    return {
     // Bucket by BOOKING date (dateAdded), not the session date.
     d: laDate(e.dateAdded || e.startTime),
     sessionDate: laDate(e.startTime || e.dateAdded),
-    showed: (e.appointmentStatus || "") === "showed",
-    invalid: (e.appointmentStatus || "") === "invalid",
+      status: status === "showed" || status === "completed" ? "attended" : ["noshow", "no-show", "no_show"].includes(status) ? "noshow" : status === "cancelled" || status === "canceled" ? "cancelled" : "pending",
+      showed: status === "showed" || status === "completed",
+      invalid: status === "invalid",
     c: cohortOf(e.contactId),
-  })).filter((e) => !e.invalid).map(({ invalid, ...rest }) => rest);
-  console.log(`gifted sessions in window: ${out.length}`);
+      contactId: e.contactId,
+    };
+  }).filter((e) => !e.invalid).map(({ invalid, ...rest }) => rest);
+  console.log(`initial sessions in window: ${out.length}`);
   return out;
 }
 
@@ -310,7 +317,6 @@ async function loadSales(env, lid, contacts) {
   for (const s of sales) {
     s.r = seen.has(s.contactId);
     seen.add(s.contactId);
-    delete s.contactId;
   }
   console.log(`session-sales classified: ${sales.length}`);
   return sales;
@@ -330,10 +336,22 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
 
   const [touches, sessions, sales] = await Promise.all([
     loadCalls(env, lid, cutoffMs, cohortOf),
-    loadGifted(env, lid, cutoffMs, cohortOf),
+    loadInitialSessions(env, lid, cutoffMs, cohortOf),
     loadSales(env, lid, contacts),
   ]);
   const { calls, texts, emails } = touches;
+
+  // Match the final stage to the same person: an 8-series purchased on or
+  // after an attended initial. Overall sales remain separate cash pacing data.
+  for (const session of sessions) {
+    session.eightSeries = session.status === "attended" && sales.some((sale) =>
+      sale.contactId === session.contactId &&
+      (sale.k === "8-pack" || sale.k === "upgrade →8") &&
+      sale.d >= session.sessionDate
+    );
+    delete session.contactId;
+  }
+  for (const sale of sales) delete sale.contactId;
 
   // trailing-90 calls-per-pack-equivalent → drives "need ~N calls/day"
   const cut90 = laDate(new Date(Date.now() - 90 * DAY_MS).toISOString());
@@ -354,7 +372,7 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
   const targets = await resolveMonthlyTargets(env, monthPrefix, {
     calls90,
     talk90: calls.filter((c) => c.d >= cut90 && c.o === "talk").length,
-    booked90: sess90.length,
+    booked90: sess90.filter((s) => s.status !== "cancelled").length,
     showed90: sess90.filter((s) => s.showed).length,
     callsPerEquiv,
   });
@@ -368,14 +386,14 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
     (needCalls ? ` · ~${needCalls} calls/day` : "");
 
   const result = {
-    v: 2,
+    v: 3,
     generatedAt: new Date().toISOString(),
     windowDays,
     goal: { packsPerMonth: GOAL_PACKS_PER_MONTH, sessionsPerPack: SESSIONS_PER_PACK },
     calls,      // [{d, o: "none"|"vm"|"talk", c: cohort}]
     texts,      // [{d}] outbound SMS, one touch per contact-day
     emails,     // [{d}] outbound email, one touch per contact-day
-    sessions,   // [{d, showed, c}]
+    sessions,   // [{d, sessionDate, status, showed, eightSeries, c}]
     sales,      // [{d, s: sessionsSold, k: kind, c, r: repeat, who}]
     trailing90: { calls: calls90, equivs: Number(equivs90.toFixed(2)), callsPerEquiv: callsPerEquiv ? Math.round(callsPerEquiv) : null },
     targets,    // { calls, talk, booked, showed, sales, source, asOf } — monthly, frozen
