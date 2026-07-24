@@ -681,6 +681,7 @@ export interface PipelineColumns {
   'touch-5': PipelineCard[];
   'touch-6': PipelineCard[];
   'discovery-noshow': PipelineCard[];
+  'session-noshow': PipelineCard[];
   discovery: PipelineCard[];
   'first-session': PipelineCard[];
   'multipack-1': PipelineCard[];

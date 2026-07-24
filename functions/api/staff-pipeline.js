@@ -81,7 +81,7 @@ function getLastActivity(contact) {
 function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   const tags = getTags(contact);
   const touchCount = getTouchCount(contact);
-  const attendance = sessionAttendanceMap[contact.id] || { showed: 0, hasPackage: false };
+  const attendance = sessionAttendanceMap[contact.id] || { showed: 0, noShow: false, hasPackage: false };
 
   // Referred clients get their own column — highest priority
   if (tags.includes("referred-a-client")) return "referred";
@@ -94,6 +94,7 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
   if (attendance.showed > 8 || (sessionsCompleted + sessionsRemaining) > 8) return "multipack-2";
   if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
   if (attendance.showed >= 1) return "first-session";
+  if (attendance.noShow) return "session-noshow";
 
   // Discovery — driven by appointment data; no tag required
   const discoveryApptStatus = discoveryStatusMap[contact.id];
@@ -169,7 +170,7 @@ const PACKAGE_CALENDAR_IDS = new Set([
 async function fetchSessionAttendance(ghlToken) {
   const start = new Date("2024-01-01").getTime();
   const end = new Date("2028-01-01").getTime();
-  // contactId → { showed: number, hasPackage: boolean }
+  // contactId → { showed: number, noShow: boolean, hasPackage: boolean }
   const map = {};
   await Promise.all(SESSION_CALENDARS.map(async (calId) => {
     const res = await fetch(
@@ -179,12 +180,15 @@ async function fetchSessionAttendance(ghlToken) {
     if (!res.ok) return;
     const data = await res.json();
     for (const appt of (data.appointments || data.events || [])) {
-      if (appt.appointmentStatus !== "showed") continue;
       const cId = appt.contactId;
       if (!cId) continue;
-      if (!map[cId]) map[cId] = { showed: 0, hasPackage: false };
-      map[cId].showed += 1;
-      if (PACKAGE_CALENDAR_IDS.has(calId)) map[cId].hasPackage = true;
+      if (!map[cId]) map[cId] = { showed: 0, noShow: false, hasPackage: false };
+      if (appt.appointmentStatus === "showed" || appt.appointmentStatus === "completed") {
+        map[cId].showed += 1;
+        if (PACKAGE_CALENDAR_IDS.has(calId)) map[cId].hasPackage = true;
+      } else if (appt.appointmentStatus === "noshow") {
+        map[cId].noShow = true;
+      }
     }
   }));
   return map;
@@ -284,8 +288,9 @@ export async function onRequestGet(context) {
   for (const c of allContacts) {
     if (EXCLUDED_EMAILS.has(c.email)) continue;
     if (byId.has(c.id)) continue;
-    // Include anyone with real session attendance, regardless of custom field state
-    if (sessionAttendanceMap[c.id]?.showed > 0) byId.set(c.id, c);
+    // Include anyone with a completed or no-show session, regardless of outreach tags.
+    const attendance = sessionAttendanceMap[c.id];
+    if (attendance?.showed > 0 || attendance?.noShow) byId.set(c.id, c);
   }
 
   // Bucket into columns
@@ -297,6 +302,7 @@ export async function onRequestGet(context) {
     "touch-5": [],
     "touch-6": [],
     "discovery-noshow": [],
+    "session-noshow": [],
     discovery: [],
     "first-session": [],
     "multipack-1": [],
@@ -308,7 +314,7 @@ export async function onRequestGet(context) {
     const col = assignColumn(contact, discoveryStatusMap, sessionAttendanceMap);
     if (!col) continue; // stale — outside 6-month window, no sessions
 
-    const attendance = sessionAttendanceMap[contact.id] || { showed: 0, hasPackage: false };
+    const attendance = sessionAttendanceMap[contact.id] || { showed: 0, noShow: false, hasPackage: false };
     const touchCount = getTouchCount(contact);
 
     columns[col].push({
