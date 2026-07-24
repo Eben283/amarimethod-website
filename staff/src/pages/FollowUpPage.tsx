@@ -234,6 +234,7 @@ function staleFreshnessMessage(f: FollowUpFreshness): string | null {
   const isOld = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() > STALE_MS;
   const parts: string[] = [];
   if (isOld(f.coachDataAt)) parts.push(`coach data (${relTime(f.coachDataAt)})`);
+  if (isOld(f.sheetCachedAt)) parts.push(`partner sheet (${relTime(f.sheetCachedAt)})`);
   if (f.activityRefreshStatus === 'error') parts.push('partner activity refresh (errored)');
   else if (isOld(f.activityRefreshAt)) parts.push(`partner activity (${relTime(f.activityRefreshAt)})`);
   if (!parts.length) return null;
@@ -300,6 +301,7 @@ export default function FollowUpPage() {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [conversationError, setConversationError] = useState<string | null>(null);
   const [view, setView] = useState<'act' | 'aside'>('act');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -322,10 +324,16 @@ export default function FollowUpPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setConversationError(null);
     try {
       const [prospectsRes, convoRes] = await Promise.all([
         getPartnerProspects(),
-        getConversations('needs_reply').catch(() => ({ conversations: [] as ConversationSummary[] })),
+        getConversations('needs_reply')
+          .then((result) => ({ result, error: null as string | null }))
+          .catch((err) => ({
+            result: { conversations: [] as ConversationSummary[] },
+            error: err instanceof Error ? err.message : 'Replies could not be loaded',
+          })),
       ]);
       setProspects(prospectsRes.prospects);
       setFreshness({
@@ -335,7 +343,8 @@ export default function FollowUpPage() {
         activityRefreshStatus: prospectsRes.activityRefreshStatus ?? null,
         coachDataAt: prospectsRes.coachDataAt ?? null,
       });
-      setConversations((convoRes as { conversations: ConversationSummary[] }).conversations || []);
+      setConversations(convoRes.result.conversations || []);
+      setConversationError(convoRes.error);
       if (prospectsRes.dismissedReplies) setDismissedReplies(prospectsRes.dismissedReplies);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
@@ -528,7 +537,7 @@ export default function FollowUpPage() {
         <div>
           <h1 className="text-xl font-semibold text-amari-charcoal">Follow-Up</h1>
           <p className="text-xs text-amari-text-muted">
-            {counts.replies} to reply · {counts.act} to reach out · {counts.waiting} cooling off · {counts.total} in the funnel
+            {loading ? 'Loading follow-ups…' : `${counts.replies} to reply · ${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} in the funnel`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -576,6 +585,12 @@ export default function FollowUpPage() {
       {staleFreshnessMessage(freshness) && (
         <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           {staleFreshnessMessage(freshness)}
+        </div>
+      )}
+
+      {conversationError && (
+        <div className="mb-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
+          Replies could not be loaded. The outreach list is still available, but do not treat “0 to reply” as reliable. Refresh to try again.
         </div>
       )}
 
