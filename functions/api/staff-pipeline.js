@@ -250,7 +250,7 @@ async function fetchAllContacts(ghlToken) {
   return all;
 }
 
-async function fetchStripePurchaseHistory(stripeKey) {
+async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
   const purchases = new Map();
   if (!stripeKey) return purchases;
 
@@ -273,10 +273,21 @@ async function fetchStripePurchaseHistory(stripeKey) {
   }
 
   // Payment-link charges identify their GHL contact directly. Invoice/POS
-  // charges commonly omit that field but share the same Stripe customer.
+  // charges commonly omit that field, so also match their billing/receipt email
+  // to GHL and then carry that identity across the Stripe customer record.
+  const contactByEmail = new Map(
+    contacts
+      .filter((contact) => contact.email)
+      .map((contact) => [String(contact.email).trim().toLowerCase(), contact.id]),
+  );
+  const contactForCharge = (charge) => {
+    if (charge.metadata?.contactId) return charge.metadata.contactId;
+    const email = charge.billing_details?.email || charge.receipt_email;
+    return email ? contactByEmail.get(String(email).trim().toLowerCase()) : null;
+  };
   const customerToContact = new Map();
   for (const charge of charges) {
-    const contactId = charge.metadata?.contactId;
+    const contactId = contactForCharge(charge);
     if (contactId && charge.customer) customerToContact.set(charge.customer, contactId);
   }
   for (const charge of charges) {
@@ -286,7 +297,7 @@ async function fetchStripePurchaseHistory(stripeKey) {
     // Only session-bearing charges define a care purchase. Entrainment and
     // unknown products remain out rather than being guessed into this funnel.
     if (!classified.sessions || classified.sessions <= 0) continue;
-    const contactId = charge.metadata?.contactId || customerToContact.get(charge.customer);
+    const contactId = contactForCharge(charge) || customerToContact.get(charge.customer);
     if (!contactId) continue;
     const prior = purchases.get(contactId) || { count: 0, sessionsPurchased: 0, dates: [] };
     prior.count += 1;
@@ -358,14 +369,14 @@ export async function onRequestGet(context) {
   // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
   // 4. Session attendance from all session calendars
   // 5. Successful Stripe charges — source of truth for purchase count
-  const [tagResults, allContacts, discoveryData, sessionAttendanceMap, purchasesByContact, funnelSnapshot] = await Promise.all([
+  const [tagResults, allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
     fetchAllContacts(ghlToken).catch(() => []),
     fetchDiscoveryStatus(ghlToken).catch(() => ({ statusMap: {}, events: [] })),
     fetchSessionAttendance(ghlToken).catch(() => ({})),
-    fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY).catch(() => new Map()),
     context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null),
   ]);
+  const purchasesByContact = await fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY, allContacts).catch(() => new Map());
   const discoveryStatusMap = discoveryData.statusMap;
   const cohortMetrics = buildCohortMetrics(funnelSnapshot, discoveryData.events, purchasesByContact);
 
