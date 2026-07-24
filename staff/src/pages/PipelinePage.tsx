@@ -15,9 +15,8 @@ const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'discovery', label: 'Discovery', sub: 'call attended' },
   { id: 'session-noshow', label: 'Session No-Show', sub: 'initial not attended' },
   { id: 'first-session', label: 'First Session', sub: 'session attended' },
-  { id: 'multipack-1', label: 'Pack 1', sub: 'first series' },
-  { id: 'multipack-2', label: 'Pack 2+', sub: 'repurchased' },
-  { id: 'referred', label: 'Referred', sub: 'sent us a client' },
+  { id: 'multipack-1', label: 'First Purchase', sub: 'made 1 purchase' },
+  { id: 'multipack-2', label: 'Repeat Purchase', sub: 'made 2+ purchases' },
 ];
 
 // Column accent colors — warm left→right gradient from cold → loyal client
@@ -34,7 +33,6 @@ const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot:
   'first-session': { bg: '#E4EEE6', ring: '#B4D3B9', dot: '#4A8C56' },
   'multipack-1': { bg: '#EBE8D8', ring: '#C8C09A', dot: '#8B7A3A' },
   'multipack-2': { bg: '#E8E0C8', ring: '#C4B880', dot: '#8A7020' },
-  referred: { bg: '#E8EEF0', ring: '#A8C4CC', dot: '#2E7D92' },
 };
 
 function sessionLabel(card: PipelineCard): string {
@@ -81,6 +79,20 @@ function Card({ card, colId, onClick }: {
           {subLabel ? (
             <p className="text-[11px] text-amari-text-muted mt-0.5">{subLabel}</p>
           ) : null}
+          {(card.purchaseCount > 0 || card.hasSentReferral) && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {card.purchaseCount > 0 && (
+                <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: '#F1E8C7', color: '#746221' }}>
+                  {card.purchaseCount} purchase{card.purchaseCount === 1 ? '' : 's'}
+                </span>
+              )}
+              {card.hasSentReferral && (
+                <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: '#DCEDEF', color: '#236A78' }}>
+                  Sent referral
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </button>
@@ -168,7 +180,7 @@ export default function PipelinePage() {
   const reachedOutIds = new Set(allCards.filter((card) => card.touchCount > 0).map((card) => card.id));
   // Pipeline cards show each person only at their furthest stage. Therefore a
   // discovery attendee may now be in a later session, pack, or referral column.
-  const discoveryOrLater: (keyof PipelineColumns)[] = ['discovery', 'session-noshow', 'first-session', 'multipack-1', 'multipack-2', 'referred'];
+  const discoveryOrLater: (keyof PipelineColumns)[] = ['discovery', 'session-noshow', 'first-session', 'multipack-1', 'multipack-2'];
   const discoveryAttendedIds = new Set(
     discoveryOrLater.flatMap((column) => columns?.[column] || [])
       .filter((card) => reachedOutIds.has(card.id))
@@ -179,8 +191,8 @@ export default function PipelinePage() {
     ...(funnel ? {
       'session-noshow': `${pct(noShows, attended + noShows)} no-show rate · ${noShows} of ${attended + noShows}`,
       'first-session': `${pct(attended, attended + noShows)} attended · ${attended} of ${attended + noShows}`,
-      'multipack-1': `${pct(eightSeries, attended)} of attendees buy 8-series`,
-      'multipack-2': `${pct(downstream?.downstreamBuyers || 0, downstream?.firstSeriesBuyers || 0)} of first-series buyers repurchase`,
+      'multipack-1': `${pct((columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length, (columns?.['first-session'] || []).length + (columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length)} of attendees made a first purchase`,
+      'multipack-2': `${pct((columns?.['multipack-2'] || []).length, (columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length)} of purchasers bought again`,
     } : {}),
   };
 

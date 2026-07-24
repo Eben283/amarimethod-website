@@ -674,6 +674,9 @@ export interface PipelineCard {
   sessionsCompleted: number;
   sessionsRemaining: number;
   seriesType: string;
+  purchaseCount: number;
+  sessionsPurchased: number;
+  hasSentReferral: boolean;
   lastActivity: string | null;
   dateAdded: string | null;
 }
@@ -691,7 +694,6 @@ export interface PipelineColumns {
   'first-session': PipelineCard[];
   'multipack-1': PipelineCard[];
   'multipack-2': PipelineCard[];
-  referred: PipelineCard[];
 }
 
 export async function getPipeline(): Promise<PipelineColumns> {

@@ -6,6 +6,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
+import { classifyCharge } from "../lib/stripe-charges.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -78,21 +79,17 @@ function getLastActivity(contact) {
   return raw ? new Date(raw).getTime() : 0;
 }
 
-function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
+function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap, purchasesByContact) {
   const tags = getTags(contact);
   const touchCount = getTouchCount(contact);
   const attendance = sessionAttendanceMap[contact.id] || { showed: 0, noShow: false, hasPackage: false };
+  const purchases = purchasesByContact.get(contact.id)?.count || 0;
 
-  // Referred clients get their own column — highest priority
-  if (tags.includes("referred-a-client")) return "referred";
-
-  // Session columns — use real appointment attendance data
-  // sc+sr = total sessions purchased across all packs (reliable); showed > 8 = hard attendance count
-  // Using sc+sr instead of showed+sr avoids false Pack 2+ for first-pack clients near the end of their pack
-  const sessionsCompleted = getSessionsCompleted(contact);
-  const sessionsRemaining = getSessionsRemaining(contact);
-  if (attendance.showed > 8 || (sessionsCompleted + sessionsRemaining) > 8) return "multipack-2";
-  if (attendance.hasPackage && attendance.showed >= 1) return "multipack-1";
+  // Purchase stages are based on successful Stripe charges, rather than a
+  // package-size/session-count proxy. A 2-session purchase is still a first
+  // purchase; two distinct charges are a repeat purchase.
+  if (purchases >= 2) return "multipack-2";
+  if (purchases === 1) return "multipack-1";
   if (attendance.showed >= 1) return "first-session";
   if (attendance.noShow) return "session-noshow";
 
@@ -247,6 +244,52 @@ async function fetchAllContacts(ghlToken) {
   return all;
 }
 
+async function fetchStripePurchaseHistory(stripeKey) {
+  const purchases = new Map();
+  if (!stripeKey) return purchases;
+
+  const charges = [];
+  let cursor = null;
+  // The practice has a small charge volume; paginate defensively in case the
+  // account has grown beyond one Stripe page.
+  for (let page = 0; page < 10; page += 1) {
+    const params = new URLSearchParams({ limit: "100" });
+    if (cursor) params.set("starting_after", cursor);
+    const res = await fetch(`https://api.stripe.com/v1/charges?${params}`, {
+      headers: { Authorization: `Bearer ${stripeKey}` },
+    });
+    if (!res.ok) break;
+    const payload = await res.json();
+    const batch = payload.data || [];
+    charges.push(...batch);
+    if (!payload.has_more || batch.length === 0) break;
+    cursor = batch[batch.length - 1].id;
+  }
+
+  // Payment-link charges identify their GHL contact directly. Invoice/POS
+  // charges commonly omit that field but share the same Stripe customer.
+  const customerToContact = new Map();
+  for (const charge of charges) {
+    const contactId = charge.metadata?.contactId;
+    if (contactId && charge.customer) customerToContact.set(charge.customer, contactId);
+  }
+  for (const charge of charges) {
+    if (!charge.paid || charge.status !== "succeeded" || charge.refunded) continue;
+    if ((charge.amount || 0) <= (charge.amount_refunded || 0)) continue;
+    const classified = classifyCharge(charge);
+    // Only session-bearing charges define a care purchase. Entrainment and
+    // unknown products remain out rather than being guessed into this funnel.
+    if (!classified.sessions || classified.sessions <= 0) continue;
+    const contactId = charge.metadata?.contactId || customerToContact.get(charge.customer);
+    if (!contactId) continue;
+    const prior = purchases.get(contactId) || { count: 0, sessionsPurchased: 0 };
+    prior.count += 1;
+    prior.sessionsPurchased += classified.sessions;
+    purchases.set(contactId, prior);
+  }
+  return purchases;
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
@@ -267,16 +310,18 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
   }
 
-  // Four fetches in parallel:
+  // Five fetches in parallel:
   // 1. Outreach-tagged contacts (for touch/discovery columns)
   // 2. All contacts — to catch clients with no outreach tags
   // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
-  // 4. Session attendance from all session calendars — source of truth for column placement
-  const [tagResults, allContacts, discoveryStatusMap, sessionAttendanceMap] = await Promise.all([
+  // 4. Session attendance from all session calendars
+  // 5. Successful Stripe charges — source of truth for purchase count
+  const [tagResults, allContacts, discoveryStatusMap, sessionAttendanceMap, purchasesByContact] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
     fetchAllContacts(ghlToken).catch(() => []),
     fetchDiscoveryStatus(ghlToken).catch(() => ({})),
     fetchSessionAttendance(ghlToken).catch(() => ({})),
+    fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY).catch(() => new Map()),
   ]);
 
   // Merge: outreach contacts first, then anyone with sessions who wasn't already included
@@ -309,15 +354,16 @@ export async function onRequestGet(context) {
     "first-session": [],
     "multipack-1": [],
     "multipack-2": [],
-    referred: [],
   };
 
   for (const contact of byId.values()) {
-    const col = assignColumn(contact, discoveryStatusMap, sessionAttendanceMap);
+    const col = assignColumn(contact, discoveryStatusMap, sessionAttendanceMap, purchasesByContact);
     if (!col) continue; // stale — outside 6-month window, no sessions
 
     const attendance = sessionAttendanceMap[contact.id] || { showed: 0, noShow: false, hasPackage: false };
     const touchCount = getTouchCount(contact);
+    const purchase = purchasesByContact.get(contact.id) || { count: 0, sessionsPurchased: 0 };
+    const hasSentReferral = getTags(contact).includes("referred-a-client");
 
     columns[col].push({
       id: contact.id,
@@ -326,6 +372,9 @@ export async function onRequestGet(context) {
       sessionsCompleted: attendance.showed,
       sessionsRemaining: getSessionsRemaining(contact),
       seriesType: attendance.hasPackage ? "series" : "none",
+      purchaseCount: purchase.count,
+      sessionsPurchased: purchase.sessionsPurchased,
+      hasSentReferral,
       lastActivity: contact.lastActivity || contact.dateUpdated || null,
       dateAdded: contact.dateAdded || null,
     });
