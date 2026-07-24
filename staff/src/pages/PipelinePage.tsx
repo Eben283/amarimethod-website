@@ -172,7 +172,7 @@ export default function PipelinePage() {
     : 0;
   const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
   const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = cohort ? {
-    discovery: `${pct(cohort.discoveryAttended, cohort.reachedOut)} attended · ${cohort.discoveryAttended} of ${cohort.reachedOut} reached`,
+    discovery: `${pct(cohort.discoveryAttended, cohort.reachedOut)} attended · ${cohort.discoveryAttended} of ${cohort.reachedOut} called`,
     'session-noshow': `${pct(cohort.initialNoShows, cohort.initialResolved)} no-show · ${cohort.initialNoShows} of ${cohort.initialResolved}`,
     'first-session': `${pct(cohort.initialAttended, cohort.initialResolved)} attended · ${cohort.initialAttended} of ${cohort.initialResolved}`,
     'multipack-1': `${pct(cohort.firstPurchasers, cohort.initialAttended)} first purchase · ${cohort.firstPurchasers} of ${cohort.initialAttended}`,
