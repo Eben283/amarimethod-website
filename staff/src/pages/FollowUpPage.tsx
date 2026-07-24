@@ -225,6 +225,7 @@ function agoColorClass(iso: string | null | undefined): string {
 type FollowUpFreshness = {
   generatedAt: string | null;
   sheetCachedAt: string | null;
+  sheetRefreshError: string | null;
   activityRefreshAt: string | null;
   activityRefreshStatus: string | null;
   coachDataAt: string | null;
@@ -233,6 +234,7 @@ function staleFreshnessMessage(f: FollowUpFreshness): string | null {
   const STALE_MS = 12 * 60 * 60 * 1000;
   const isOld = (iso: string | null) => !!iso && Date.now() - new Date(iso).getTime() > STALE_MS;
   const parts: string[] = [];
+  if (f.sheetRefreshError) parts.push('partner sheet refresh (failed)');
   if (isOld(f.coachDataAt)) parts.push(`coach data (${relTime(f.coachDataAt)})`);
   if (isOld(f.sheetCachedAt)) parts.push(`partner sheet (${relTime(f.sheetCachedAt)})`);
   if (f.activityRefreshStatus === 'error') parts.push('partner activity refresh (errored)');
@@ -318,7 +320,7 @@ export default function FollowUpPage() {
   const [query, setQuery] = useState('');
   const [showRubric, setShowRubric] = useState(false);
   const [freshness, setFreshness] = useState<FollowUpFreshness>({
-    generatedAt: null, sheetCachedAt: null, activityRefreshAt: null, activityRefreshStatus: null, coachDataAt: null,
+    generatedAt: null, sheetCachedAt: null, sheetRefreshError: null, activityRefreshAt: null, activityRefreshStatus: null, coachDataAt: null,
   });
 
   const load = useCallback(async () => {
@@ -339,6 +341,7 @@ export default function FollowUpPage() {
       setFreshness({
         generatedAt: prospectsRes.generatedAt ?? null,
         sheetCachedAt: prospectsRes.sheetCachedAt ?? null,
+        sheetRefreshError: prospectsRes.sheetRefreshError ?? null,
         activityRefreshAt: prospectsRes.activityRefreshAt ?? null,
         activityRefreshStatus: prospectsRes.activityRefreshStatus ?? null,
         coachDataAt: prospectsRes.coachDataAt ?? null,
@@ -561,7 +564,9 @@ export default function FollowUpPage() {
           stalled by working a contact off stale data. */}
       {!loading && (
         <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-          <span className={agoColorClass(freshness.sheetCachedAt)}>Sheet {freshness.sheetCachedAt ? relTime(freshness.sheetCachedAt) : 'never'}</span>
+          <span className={freshness.sheetRefreshError ? 'text-red-500' : agoColorClass(freshness.sheetCachedAt)}>
+            Sheet {freshness.sheetRefreshError ? 'refresh error' : freshness.sheetCachedAt ? relTime(freshness.sheetCachedAt) : 'never'}
+          </span>
           <span className={freshness.activityRefreshStatus === 'error' ? 'text-red-500' : agoColorClass(freshness.activityRefreshAt)}>
             Activity {freshness.activityRefreshStatus === 'error' ? 'error' : freshness.activityRefreshAt ? relTime(freshness.activityRefreshAt) : 'never'}
           </span>

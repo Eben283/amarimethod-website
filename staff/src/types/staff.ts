@@ -432,6 +432,7 @@ export type PartnerStageFilter = 'all' | PartnerStage;
 export interface PartnerProspectsResponse {
   generatedAt: string;
   sheetCachedAt?: string;
+  sheetRefreshError?: string | null;
   /** When partner-activity-refresh Worker last ran (writes partner_last_real_activity).
    *  Null if KV is empty (worker never run) or unreadable. */
   activityRefreshAt?: string | null;

@@ -10,7 +10,7 @@
 // Auth: JWT bearer, same pattern as other staff endpoints.
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import sheetCache from "../lib/partner-sheet-cache.json";
+import { getPartnerSheetCache } from "../lib/partner-sheet.js";
 import { buildCard } from "../lib/build-card.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
@@ -495,7 +495,7 @@ export function finalizePlay(p, warmFacilities = new Set()) {
 }
 
 // Lookup Garrett's sheet row for a contact by phone or email match.
-function lookupSheetRow(contact) {
+function lookupSheetRow(contact, sheetCache) {
   const phoneNorm = normalizePhone(contact.phone);
   if (phoneNorm && sheetCache.byPhone[phoneNorm]) return sheetCache.byPhone[phoneNorm];
   const emailNorm = contact.email ? contact.email.toLowerCase() : null;
@@ -503,9 +503,9 @@ function lookupSheetRow(contact) {
   return null;
 }
 
-function toProspect(contact) {
+function toProspect(contact, sheetCache) {
   const tags = Array.isArray(contact.tags) ? contact.tags : [];
-  const sheetRow = lookupSheetRow(contact);
+  const sheetRow = lookupSheetRow(contact, sheetCache);
   return {
     contactId: contact.id,
     firstName: contact.firstName || "",
@@ -625,6 +625,10 @@ export async function onRequestGet(context) {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
+    // Keep the partner sheet fresh on the first staff load after 20 hours. A
+    // last-good cache is deliberately used if Google is unavailable, and the
+    // response exposes that failure rather than pretending fresh data exists.
+    const { cache: sheetCache, refreshError: sheetRefreshError } = await getPartnerSheetCache(context);
 
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
@@ -658,7 +662,7 @@ export async function onRequestGet(context) {
         if (!byId.has(c.id)) byId.set(c.id, c);
       }
     }
-    const prospects = Array.from(byId.values()).map(toProspect);
+    const prospects = Array.from(byId.values()).map((contact) => toProspect(contact, sheetCache));
 
     // Engine-merge: compute the Act-Now decision SERVER-SIDE so the UI and the
     // coach pipeline read one due-decision. Fold in the coach's eligibility
@@ -864,6 +868,7 @@ export async function onRequestGet(context) {
       JSON.stringify({
         generatedAt: new Date().toISOString(),
         sheetCachedAt: sheetCache.generatedAt,
+        sheetRefreshError,
         // Last time the partner-activity-refresh Worker ran successfully
         // (writes partner_last_real_activity from /conversations). null if KV is
         // empty (worker never run) or unreadable.
