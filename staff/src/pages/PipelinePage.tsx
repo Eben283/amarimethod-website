@@ -12,6 +12,7 @@ const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
   { id: 'touch-5', label: 'Touch 5', sub: '5 outreaches' },
   { id: 'touch-6', label: 'Touch 6+', sub: '6+ outreaches' },
   { id: 'discovery-noshow', label: 'No-Show', sub: 'cancelled / ghosted' },
+  { id: 'discovery-booked', label: 'Discovery Booked', sub: 'call scheduled' },
   { id: 'discovery', label: 'Discovery', sub: 'call attended' },
   { id: 'session-noshow', label: 'Session No-Show', sub: 'initial not attended' },
   { id: 'first-session', label: 'First Session', sub: 'session attended' },
@@ -29,6 +30,7 @@ const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot:
   'touch-5': { bg: '#E9DCC8', ring: '#C6AF8E', dot: '#8D6D4E' },
   'touch-6': { bg: '#E5D5BC', ring: '#C0A47D', dot: '#855F3B' },
   'discovery-noshow': { bg: '#F5E8E8', ring: '#DEB8B8', dot: '#A04040' },
+  'discovery-booked': { bg: '#EEE6F1', ring: '#CEBAD8', dot: '#81559B' },
   'session-noshow': { bg: '#F5E8E8', ring: '#DEB8B8', dot: '#A04040' },
   discovery: { bg: '#EAE0EE', ring: '#C9B5D8', dot: '#8B5DA8' },
   'first-session': { bg: '#E4EEE6', ring: '#B4D3B9', dot: '#4A8C56' },
@@ -164,7 +166,9 @@ export default function PipelinePage() {
   const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
   const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
   const downstream = funnel?.cohort;
+  const uniquePeopleCalled = new Set((funnel?.calls || []).map((call) => call.c).filter(Boolean)).size;
   const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = funnel ? {
+    discovery: `${pct((columns?.discovery || []).length, uniquePeopleCalled)} of people called attended`,
     'session-noshow': `${pct(noShows, attended + noShows)} no-show rate · ${noShows} of ${attended + noShows}`,
     'first-session': `${pct(attended, attended + noShows)} attended · ${attended} of ${attended + noShows}`,
     'multipack-1': `${pct(eightSeries, attended)} of attendees buy 8-series`,

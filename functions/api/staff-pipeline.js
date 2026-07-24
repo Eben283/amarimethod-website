@@ -102,7 +102,8 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
     if (discoveryApptStatus === "noshow" || discoveryApptStatus === "cancelled" || tags.includes("discovery-no-show")) {
       return "discovery-noshow";
     }
-    return "discovery";
+    if (discoveryApptStatus === "showed" || discoveryApptStatus === "completed") return "discovery";
+    return "discovery-booked";
   }
   // Has booking tag but no appointment record → fall through to touch columns
   // (e.g., clicked booking link but didn't complete the booking)
@@ -302,6 +303,7 @@ export async function onRequestGet(context) {
     "touch-5": [],
     "touch-6": [],
     "discovery-noshow": [],
+    "discovery-booked": [],
     "session-noshow": [],
     discovery: [],
     "first-session": [],
