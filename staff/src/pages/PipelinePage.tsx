@@ -165,8 +165,8 @@ export default function PipelinePage() {
   const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
   const downstream = funnel?.cohort;
   const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = funnel ? {
-    'session-noshow': `${pct(noShows, attended + noShows)} of resolved initials`,
-    'first-session': `${pct(attended, attended + noShows)} of resolved initials`,
+    'session-noshow': `${pct(noShows, attended + noShows)} no-show rate · ${noShows} of ${attended + noShows}`,
+    'first-session': `${pct(attended, attended + noShows)} attended · ${attended} of ${attended + noShows}`,
     'multipack-1': `${pct(eightSeries, attended)} of attendees buy 8-series`,
     'multipack-2': `${pct(downstream?.downstreamBuyers || 0, downstream?.firstSeriesBuyers || 0)} of first-series buyers repurchase`,
   } : {};
