@@ -237,12 +237,13 @@ async function loadCalls(env, lid, cutoffMs, cohortOf) {
     const prev = dedup.get(key);
     if (!prev || (RANK[r.o] || 0) > (RANK[prev.o] || 0)) dedup.set(key, r);
   }
-  const calls = [...dedup.values()].map(({ contactId, ...rest }) => rest);
-  // texts/emails: one outreach touch per contact per day (parallel to calls), then drop contactId.
+  // Staff-only snapshot: retain contact IDs for fixed outreach cohorts.
+  const calls = [...dedup.values()];
+  // Texts/emails are likewise retained for unique-person outreach cohorts.
   const dedupTouch = (arr) => {
     const m = new Map();
     for (const r of arr) m.set(`${r.d}|${r.contactId || "?"}`, r);
-    return [...m.values()].map(({ contactId, ...rest }) => rest);
+    return [...m.values()];
   };
   const texts = dedupTouch(rawTexts);
   const emails = dedupTouch(rawEmails);
@@ -361,7 +362,6 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
     session.eightSeries = postInitialSeries.some((sale) => sale.k === "8-pack" || sale.k === "upgrade →8");
     session.firstSeriesEquivs = postInitialSeries.filter((sale) => sale.seriesPurchaseNumber === 1).reduce((n, sale) => n + sale.s / SESSIONS_PER_PACK, 0);
     session.downstreamEquivs = postInitialSeries.filter((sale) => sale.downstreamSeries).reduce((n, sale) => n + sale.s / SESSIONS_PER_PACK, 0);
-    delete session.contactId;
   }
   const attendedSessions = sessions.filter((s) => s.status === "attended");
   const cohort = {

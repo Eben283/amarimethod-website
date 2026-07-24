@@ -202,6 +202,7 @@ async function fetchDiscoveryStatus(ghlToken) {
     "aVE54Qf4lrbYTB0zFqXy", // 15-Minute Pain Assessment / Ambassador Prospect Call
   ];
   const statusMap = {};
+  const events = [];
   await Promise.all(calIds.map(async (calId) => {
     const res = await fetch(
       `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
@@ -212,13 +213,18 @@ async function fetchDiscoveryStatus(ghlToken) {
     for (const appt of (data.appointments || data.events || [])) {
       const cId = appt.contactId;
       if (!cId) continue;
+      events.push({
+        contactId: cId,
+        status: String(appt.appointmentStatus || "").toLowerCase(),
+        date: new Date(appt.startTime || appt.dateAdded || 0).toISOString().slice(0, 10),
+      });
       // "showed" wins over anything else; otherwise keep the most recent
       if (!statusMap[cId] || appt.appointmentStatus === "showed") {
         statusMap[cId] = appt.appointmentStatus;
       }
     }
   }));
-  return statusMap;
+  return { statusMap, events };
 }
 
 async function fetchAllContacts(ghlToken) {
@@ -282,12 +288,48 @@ async function fetchStripePurchaseHistory(stripeKey) {
     if (!classified.sessions || classified.sessions <= 0) continue;
     const contactId = charge.metadata?.contactId || customerToContact.get(charge.customer);
     if (!contactId) continue;
-    const prior = purchases.get(contactId) || { count: 0, sessionsPurchased: 0 };
+    const prior = purchases.get(contactId) || { count: 0, sessionsPurchased: 0, dates: [] };
     prior.count += 1;
     prior.sessionsPurchased += classified.sessions;
+    prior.dates.push(new Date((charge.created || 0) * 1000).toISOString().slice(0, 10));
     purchases.set(contactId, prior);
   }
   return purchases;
+}
+
+function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
+  const blank = { reachedOut: 0, discoveryAttended: 0, initialResolved: 0, initialAttended: 0, initialNoShows: 0, firstPurchasers: 0, repeatPurchasers: 0 };
+  if (!snapshot) return blank;
+  const windowStart = snapshot.generatedAt
+    ? new Date(new Date(snapshot.generatedAt).getTime() - (snapshot.windowDays || 180) * 86_400_000).toISOString().slice(0, 10)
+    : "";
+  const outreachIds = new Set(
+    (snapshot.calls || []).filter((event) => event.contactId).map((event) => event.contactId),
+  );
+  const discoveryAttended = new Set(
+    (discoveryEvents || [])
+      .filter((event) => ["showed", "completed"].includes(event.status) && event.date >= windowStart && outreachIds.has(event.contactId))
+      .map((event) => event.contactId),
+  );
+  const sessions = (snapshot.sessions || []).filter((event) => event.contactId && ["attended", "noshow"].includes(event.status));
+  const attended = sessions.filter((event) => event.status === "attended");
+  const noShows = sessions.filter((event) => event.status === "noshow");
+  const firstPurchasers = new Set();
+  const repeatPurchasers = new Set();
+  for (const session of attended) {
+    const dates = (purchasesByContact.get(session.contactId)?.dates || []).filter((date) => date >= session.sessionDate).sort();
+    if (dates.length >= 1) firstPurchasers.add(session.contactId);
+    if (dates.length >= 2) repeatPurchasers.add(session.contactId);
+  }
+  return {
+    reachedOut: outreachIds.size,
+    discoveryAttended: discoveryAttended.size,
+    initialResolved: sessions.length,
+    initialAttended: attended.length,
+    initialNoShows: noShows.length,
+    firstPurchasers: firstPurchasers.size,
+    repeatPurchasers: repeatPurchasers.size,
+  };
 }
 
 export async function onRequestOptions(context) {
@@ -316,13 +358,16 @@ export async function onRequestGet(context) {
   // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
   // 4. Session attendance from all session calendars
   // 5. Successful Stripe charges — source of truth for purchase count
-  const [tagResults, allContacts, discoveryStatusMap, sessionAttendanceMap, purchasesByContact] = await Promise.all([
+  const [tagResults, allContacts, discoveryData, sessionAttendanceMap, purchasesByContact, funnelSnapshot] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
     fetchAllContacts(ghlToken).catch(() => []),
-    fetchDiscoveryStatus(ghlToken).catch(() => ({})),
+    fetchDiscoveryStatus(ghlToken).catch(() => ({ statusMap: {}, events: [] })),
     fetchSessionAttendance(ghlToken).catch(() => ({})),
     fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY).catch(() => new Map()),
+    context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null),
   ]);
+  const discoveryStatusMap = discoveryData.statusMap;
+  const cohortMetrics = buildCohortMetrics(funnelSnapshot, discoveryData.events, purchasesByContact);
 
   // Merge: outreach contacts first, then anyone with sessions who wasn't already included
   const byId = new Map();
@@ -389,5 +434,5 @@ export async function onRequestGet(context) {
     }
   }
 
-  return new Response(JSON.stringify({ columns }), { status: 200, headers });
+  return new Response(JSON.stringify({ columns, cohortMetrics }), { status: 200, headers });
 }

@@ -696,9 +696,23 @@ export interface PipelineColumns {
   'multipack-2': PipelineCard[];
 }
 
-export async function getPipeline(): Promise<PipelineColumns> {
-  const r = await fetchApi<{ columns: PipelineColumns }>('/staff-pipeline');
-  return r.columns;
+export interface PipelineCohortMetrics {
+  reachedOut: number;
+  discoveryAttended: number;
+  initialResolved: number;
+  initialAttended: number;
+  initialNoShows: number;
+  firstPurchasers: number;
+  repeatPurchasers: number;
+}
+
+export interface PipelineData {
+  columns: PipelineColumns;
+  cohortMetrics: PipelineCohortMetrics;
+}
+
+export async function getPipeline(): Promise<PipelineData> {
+  return fetchApi<PipelineData>('/staff-pipeline');
 }
 
 // ── Study capture — intake + before/after pain (elbow / jaw / foot / hand)

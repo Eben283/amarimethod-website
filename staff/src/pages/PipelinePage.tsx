@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { getFunnel, getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
+import { getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
 import { useApiCall } from '../hooks/useApiCall';
 
 const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
@@ -163,38 +163,21 @@ function KanbanColumn({
 export default function PipelinePage() {
   const navigate = useNavigate();
   const fetcher = useCallback(() => getPipeline(), []);
-  const { data: columns, isLoading, error, refetch } = useApiCall(fetcher);
-  const funnelFetcher = useCallback(() => getFunnel(), []);
-  const { data: funnel } = useApiCall(funnelFetcher);
+  const { data: pipeline, isLoading, error, refetch } = useApiCall(fetcher);
+  const columns = pipeline?.columns;
+  const cohort = pipeline?.cohortMetrics;
 
   const total = columns
     ? Object.values(columns).reduce((s, arr) => s + arr.length, 0)
     : 0;
-  const sessions = funnel?.sessions || [];
-  const attended = sessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
-  const noShows = sessions.filter((s) => s.status === 'noshow').length;
-  const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
   const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
-  const downstream = funnel?.cohort;
-  const allCards = columns ? Object.values(columns).flat() : [];
-  const reachedOutIds = new Set(allCards.filter((card) => card.touchCount > 0).map((card) => card.id));
-  // Pipeline cards show each person only at their furthest stage. Therefore a
-  // discovery attendee may now be in a later session, pack, or referral column.
-  const discoveryOrLater: (keyof PipelineColumns)[] = ['discovery', 'session-noshow', 'first-session', 'multipack-1', 'multipack-2'];
-  const discoveryAttendedIds = new Set(
-    discoveryOrLater.flatMap((column) => columns?.[column] || [])
-      .filter((card) => reachedOutIds.has(card.id))
-      .map((card) => card.id),
-  );
-  const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = {
-    discovery: `${pct(discoveryAttendedIds.size, reachedOutIds.size)} of people reached out to attended`,
-    ...(funnel ? {
-      'session-noshow': `${pct(noShows, attended + noShows)} no-show rate · ${noShows} of ${attended + noShows}`,
-      'first-session': `${pct(attended, attended + noShows)} attended · ${attended} of ${attended + noShows}`,
-      'multipack-1': `${pct((columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length, (columns?.['first-session'] || []).length + (columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length)} of attendees made a first purchase`,
-      'multipack-2': `${pct((columns?.['multipack-2'] || []).length, (columns?.['multipack-1'] || []).length + (columns?.['multipack-2'] || []).length)} of purchasers bought again`,
-    } : {}),
-  };
+  const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = cohort ? {
+    discovery: `${pct(cohort.discoveryAttended, cohort.reachedOut)} attended · ${cohort.discoveryAttended} of ${cohort.reachedOut} reached`,
+    'session-noshow': `${pct(cohort.initialNoShows, cohort.initialResolved)} no-show · ${cohort.initialNoShows} of ${cohort.initialResolved}`,
+    'first-session': `${pct(cohort.initialAttended, cohort.initialResolved)} attended · ${cohort.initialAttended} of ${cohort.initialResolved}`,
+    'multipack-1': `${pct(cohort.firstPurchasers, cohort.initialAttended)} first purchase · ${cohort.firstPurchasers} of ${cohort.initialAttended}`,
+    'multipack-2': `${pct(cohort.repeatPurchasers, cohort.firstPurchasers)} purchased again · ${cohort.repeatPurchasers} of ${cohort.firstPurchasers}`,
+  } : {};
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
