@@ -15,7 +15,8 @@ import { getFunnel, triggerFunnelRefresh, ApiError, type FunnelData } from '../l
 
 type RangeUnit = 'day' | 'week' | 'month' | 'quarter';
 interface Range { unit: RangeUnit; offset: number }
-const GOAL_PACKS: Record<RangeUnit, number> = { day: 0, week: 2, month: 8, quarter: 24 };
+const MONTHLY_PACK_GOAL = 8;
+const GOAL_PACKS: Record<RangeUnit, number> = { day: 0, week: 2, month: MONTHLY_PACK_GOAL, quarter: MONTHLY_PACK_GOAL * 3 };
 
 // Fallback monthly targets when the snapshot doesn't carry measured ones —
 // chain: calls→talked 13% · talked→booked 58% · booked→showed 43% · showed→buy ~80%.
@@ -25,6 +26,11 @@ const WORKDAYS_MO = 21;
 // regardless of the (lower) measured need, and let a busier month raise it.
 const MIN_DAILY_CALLS = 15;
 const workdays = (calDays: number) => Math.max(1, Math.round((calDays * 5) / 7));
+const sixDayWorkdaysLeft = (from: Date, through: Date) => {
+  let n = 0;
+  for (const d = new Date(from); d <= through; d.setDate(d.getDate() + 1)) if (d.getDay() !== 0) n++;
+  return Math.max(1, n);
+};
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const M3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -348,9 +354,12 @@ export default function FunnelPage() {
     const totalDays = Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000));
     const elapsed = isCurrent ? Math.min(totalDays, Math.round((Date.now() - start.getTime()) / 86_400_000) + 1) : totalDays;
     const daysLeft = isCurrent ? Math.max(0, totalDays - elapsed + 1) : 0;
-    const cpe = data.trailing90?.callsPerEquiv ?? null;
     const remaining = Math.max(0, goalPacks - equivs);
-    const needCallsPerDay = !isDay && isCurrent && cpe && remaining > 0 && daysLeft > 0 ? Math.max(1, Math.round((remaining * cpe) / daysLeft)) : null;
+    const monthPrefix = toStr(new Date()).slice(0, 7);
+    const monthEquivs = (data.sales || []).filter((s) => s.d.startsWith(monthPrefix)).reduce((t, s) => t + s.s, 0) / spp;
+    const monthRemaining = Math.max(0, MONTHLY_PACK_GOAL - monthEquivs);
+    const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    const workdaysLeft = isCurrent ? sixDayWorkdaysLeft(new Date(), monthEnd) : 0;
 
     let status = { word: 'ON PACE', dot: COL.green };
     if (isDay) status = { word: '', dot: COL.ember };
@@ -375,6 +384,13 @@ export default function FunnelPage() {
     // Pending appointments are intentionally excluded from the show/no-show
     // rates. They have not had a chance to resolve yet.
     const resolvedInitials = showed + noShows;
+    const allSessions = data.sessions || [];
+    const allAttended = allSessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
+    const allEightSeries = allSessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
+    const initialConversionRate = allAttended > 0 ? allEightSeries / allAttended : null;
+    const callsPerCompletedInitial = allAttended > 0 ? (data.calls || []).length / allAttended : null;
+    const initialsNeededPerWorkday = isCurrent && initialConversionRate && monthRemaining > 0 ? monthRemaining / initialConversionRate / workdaysLeft : 0;
+    const extrapolatedCallsPerWorkday = initialsNeededPerWorkday && callsPerCompletedInitial ? Math.ceil(initialsNeededPerWorkday * callsPerCompletedInitial) : 0;
 
     const countOn: Record<string, (d: string) => number> = {
       calls: (d) => (data.calls || []).filter((c) => c.d === d).length,
@@ -424,7 +440,7 @@ export default function FunnelPage() {
     };
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
-    return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
+    return { label, isDay, isCurrent, daysLeft, workdaysLeft, goalPacks, spp, sessionsSold, equivs, remaining, monthRemaining, initialsNeededPerWorkday, extrapolatedCallsPerWorkday, status,
       callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries,
       showRate: pctText(showed, resolvedInitials), noShowRate: pctText(noShows, resolvedInitials), eightSeriesRate: pctText(eightSeries, showed),
       salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
@@ -566,7 +582,8 @@ export default function FunnelPage() {
           </div>
           {v.isCurrent && !v.isDay && !goalHit && (
             <p className="mt-2 border-t pt-2 text-center text-sm" style={{ borderColor: COL.line, color: COL.inkSoft }}>
-              <b style={{ color: COL.ink }}>{v.remaining.toFixed(1)}</b> packs to go · <b style={{ color: COL.ink }}>{v.daysLeft}</b> day{v.daysLeft === 1 ? '' : 's'} left · aim <b style={{ color: COL.ink }}>~{v.dailyCallsTarget}</b> calls/day
+              <b style={{ color: COL.ink }}>{v.monthRemaining.toFixed(1)}</b> of the <b style={{ color: COL.ink }}>{MONTHLY_PACK_GOAL}</b>-pack month goal left · <b style={{ color: COL.ink }}>{v.workdaysLeft}</b> six-day workdays left<br />
+              {v.initialsNeededPerWorkday > 0 && <><b style={{ color: COL.ink }}>{v.initialsNeededPerWorkday.toFixed(1)}</b> completed initials/day · <b style={{ color: COL.ink }}>~{v.extrapolatedCallsPerWorkday}</b> extrapolated calls/day</>}
             </p>
           )}
         </div>
