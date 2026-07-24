@@ -378,12 +378,7 @@ export default function FunnelPage() {
     // own rather than disappearing into the attendance rate.
     const booked = sessions.filter((s) => s.status !== 'cancelled').length;
     const showed = sessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
-    const noShows = sessions.filter((s) => s.status === 'noshow').length;
     const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
-    const pctText = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
-    // Pending appointments are intentionally excluded from the show/no-show
-    // rates. They have not had a chance to resolve yet.
-    const resolvedInitials = showed + noShows;
     const allSessions = data.sessions || [];
     const allAttended = allSessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
     const allEightSeries = allSessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
@@ -439,14 +434,15 @@ export default function FunnelPage() {
     const callsTarget = Math.max(mt.calls, MIN_DAILY_CALLS * WORKDAYS_MO); // 15/day activity floor
     const sc = workdays(totalDays) / WORKDAYS_MO;
     const stageTarget = {
-      calls: Math.round(callsTarget * sc), talk: Math.round(mt.talk * sc), booked: Math.round(mt.booked * sc),
+      // The current-day Calls pool is the same downstream-aware requirement
+      // shown in the operational target, rather than the old fixed activity floor.
+      calls: isCurrent && isDay && extrapolatedCallsPerWorkday > 0 ? extrapolatedCallsPerWorkday : Math.round(callsTarget * sc), talk: Math.round(mt.talk * sc), booked: Math.round(mt.booked * sc),
       showed: Math.round(mt.showed * sc), sales: Math.round((mt.sales ?? goalPacks) * sc),
     };
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, workdaysLeft, goalPacks, spp, sessionsSold, equivs, remaining, monthRemaining, initialsNeededPerWorkday, extrapolatedCallsPerWorkday, downstreamBuyerRate: data.cohort?.downstreamBuyerRate ?? 0, status,
-      callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries,
-      showRate: pctText(showed, resolvedInitials), noShowRate: pctText(noShows, resolvedInitials), eightSeriesRate: pctText(eightSeries, showed),
+      callsN: calls.length, none, vm, talk, booked, showed, eightSeries,
       salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
       textsN: texts.length, emailsN: emails.length,
       stageTarget, dailyCallsTarget };
@@ -584,29 +580,6 @@ export default function FunnelPage() {
             </div>
             {v.status.word && <span className="flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold tracking-widest" style={{ background: COL.bg, color: COL.ink, border: `1px solid ${COL.line}` }}><span className="h-2 w-2 animate-pulse rounded-full" style={{ background: v.status.dot }} />{v.status.word}{goalHit && ' 🎉'}</span>}
           </div>
-          {v.isCurrent && !v.isDay && !goalHit && (
-            <p className="mt-2 border-t pt-2 text-center text-sm" style={{ borderColor: COL.line, color: COL.inkSoft }}>
-              <b style={{ color: COL.ink }}>{v.monthRemaining.toFixed(1)}</b> of the <b style={{ color: COL.ink }}>{MONTHLY_PACK_GOAL}</b>-pack month goal left · <b style={{ color: COL.ink }}>{v.workdaysLeft}</b> six-day workdays left<br />
-              {v.initialsNeededPerWorkday > 0 && <><b style={{ color: COL.ink }}>{v.initialsNeededPerWorkday.toFixed(1)}</b> completed initials/day · <b style={{ color: COL.ink }}>~{v.extrapolatedCallsPerWorkday}</b> extrapolated calls/day <span style={{ color: COL.inkSoft }}>(includes {(v.downstreamBuyerRate * 100).toFixed(0)}% repeat-pack rate)</span></>}
-            </p>
-          )}
-        </div>
-
-        {/* Initial-session funnel is contact-matched. Overall sales above remain
-            cash pacing; this row is the clean attendance/conversion cohort. */}
-        <div className="fn-reveal mb-5 grid grid-cols-4 gap-2">
-          {[
-            { n: v.booked, label: 'initial booked', detail: 'starting cohort', col: COL.rust },
-            { n: v.showed, label: 'attended', detail: `${v.showRate} show rate`, col: COL.ember },
-            { n: v.noShows, label: 'no-show', detail: `${v.noShowRate} no-show rate`, col: COL.maroon },
-            { n: v.eightSeries, label: 'bought 8-series', detail: `${v.eightSeriesRate} of attendees`, col: COL.goldDeep },
-          ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center rounded-2xl px-1 py-2.5 text-center" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
-              <span className="fn-story text-2xl font-bold leading-none tabular-nums" style={{ color: s.col }}>{s.n}</span>
-              <span className="mt-1 text-[9px] uppercase tracking-wider" style={{ color: COL.inkSoft }}>{s.label}</span>
-              <span className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color: s.col }}>{s.detail}</span>
-            </div>
-          ))}
         </div>
 
         {/* outreach touches this period — the non-call work (texts, emails, voicemails left) */}
