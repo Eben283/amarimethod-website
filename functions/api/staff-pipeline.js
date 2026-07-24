@@ -103,7 +103,8 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap) {
       return "discovery-noshow";
     }
     if (discoveryApptStatus === "showed" || discoveryApptStatus === "completed") return "discovery";
-    return "discovery-booked";
+    // A scheduled discovery call has not yet reached a completed pipeline
+    // stage. Keep the person in their outreach-touch column until it happens.
   }
   // Has booking tag but no appointment record → fall through to touch columns
   // (e.g., clicked booking link but didn't complete the booking)
@@ -303,7 +304,6 @@ export async function onRequestGet(context) {
     "touch-5": [],
     "touch-6": [],
     "discovery-noshow": [],
-    "discovery-booked": [],
     "session-noshow": [],
     discovery: [],
     "first-session": [],

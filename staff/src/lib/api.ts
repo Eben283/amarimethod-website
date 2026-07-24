@@ -686,7 +686,6 @@ export interface PipelineColumns {
   'touch-5': PipelineCard[];
   'touch-6': PipelineCard[];
   'discovery-noshow': PipelineCard[];
-  'discovery-booked': PipelineCard[];
   'session-noshow': PipelineCard[];
   discovery: PipelineCard[];
   'first-session': PipelineCard[];
