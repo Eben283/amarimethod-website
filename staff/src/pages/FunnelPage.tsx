@@ -371,6 +371,10 @@ export default function FunnelPage() {
     const showed = sessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
     const noShows = sessions.filter((s) => s.status === 'noshow').length;
     const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
+    const pctText = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
+    // Pending appointments are intentionally excluded from the show/no-show
+    // rates. They have not had a chance to resolve yet.
+    const resolvedInitials = showed + noShows;
 
     const countOn: Record<string, (d: string) => number> = {
       calls: (d) => (data.calls || []).filter((c) => c.d === d).length,
@@ -421,7 +425,9 @@ export default function FunnelPage() {
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
     return { label, isDay, isCurrent, daysLeft, goalPacks, spp, sessionsSold, equivs, remaining, needCallsPerDay, status,
-      callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries, salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
+      callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries,
+      showRate: pctText(showed, resolvedInitials), noShowRate: pctText(noShows, resolvedInitials), eightSeriesRate: pctText(eightSeries, showed),
+      salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
       textsN: texts.length, emailsN: emails.length,
       stageTarget, dailyCallsTarget };
   }, [data, range]);
@@ -569,14 +575,15 @@ export default function FunnelPage() {
             cash pacing; this row is the clean attendance/conversion cohort. */}
         <div className="fn-reveal mb-5 grid grid-cols-4 gap-2">
           {[
-            { n: v.booked, label: 'initial booked', col: COL.rust },
-            { n: v.showed, label: 'attended', col: COL.ember },
-            { n: v.noShows, label: 'no-show', col: COL.maroon },
-            { n: v.eightSeries, label: 'bought 8-series', col: COL.goldDeep },
+            { n: v.booked, label: 'initial booked', detail: 'starting cohort', col: COL.rust },
+            { n: v.showed, label: 'attended', detail: `${v.showRate} show rate`, col: COL.ember },
+            { n: v.noShows, label: 'no-show', detail: `${v.noShowRate} no-show rate`, col: COL.maroon },
+            { n: v.eightSeries, label: 'bought 8-series', detail: `${v.eightSeriesRate} of attendees`, col: COL.goldDeep },
           ].map((s) => (
             <div key={s.label} className="flex flex-col items-center rounded-2xl px-1 py-2.5 text-center" style={{ background: COL.card, border: `1px solid ${COL.line}` }}>
               <span className="fn-story text-2xl font-bold leading-none tabular-nums" style={{ color: s.col }}>{s.n}</span>
               <span className="mt-1 text-[9px] uppercase tracking-wider" style={{ color: COL.inkSoft }}>{s.label}</span>
+              <span className="mt-0.5 text-[10px] font-semibold tabular-nums" style={{ color: s.col }}>{s.detail}</span>
             </div>
           ))}
         </div>
