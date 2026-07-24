@@ -470,6 +470,8 @@ export interface FunnelSessionEvent {
   status?: 'attended' | 'noshow' | 'cancelled' | 'pending';
   showed: boolean;
   eightSeries?: boolean;           // contact-matched purchase after attendance
+  firstSeriesEquivs?: number;
+  downstreamEquivs?: number;
   c: string;
 }
 export interface FunnelSaleEvent {
@@ -491,6 +493,7 @@ export interface FunnelData {
   emails?: { d: string }[];        // outbound email, one touch per contact-day
   sessions?: FunnelSessionEvent[];
   sales?: FunnelSaleEvent[];
+  cohort?: { attended: number; firstSeriesBuyers: number; downstreamBuyers: number; downstreamBuyerRate: number; firstSeriesEquivs: number; downstreamEquivs: number; expectedEquivsPerAttended: number };
   trailing90?: { calls: number; equivs: number; callsPerEquiv: number | null };
   targets?: { calls: number; talk: number; booked: number; showed: number; sales: number; source?: string; asOf?: string };
   paceLine?: string;

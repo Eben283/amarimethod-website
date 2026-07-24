@@ -389,7 +389,11 @@ export default function FunnelPage() {
     const allEightSeries = allSessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
     const initialConversionRate = allAttended > 0 ? allEightSeries / allAttended : null;
     const callsPerCompletedInitial = allAttended > 0 ? (data.calls || []).length / allAttended : null;
-    const initialsNeededPerWorkday = isCurrent && initialConversionRate && monthRemaining > 0 ? monthRemaining / initialConversionRate / workdaysLeft : 0;
+    // The cohort value includes first-series and later repurchase equivalents,
+    // so the daily call requirement does not assume every future pack must be
+    // a brand-new 8-series sale.
+    const expectedEquivsPerAttended = data.cohort?.expectedEquivsPerAttended || initialConversionRate || 0;
+    const initialsNeededPerWorkday = isCurrent && expectedEquivsPerAttended && monthRemaining > 0 ? monthRemaining / expectedEquivsPerAttended / workdaysLeft : 0;
     const extrapolatedCallsPerWorkday = initialsNeededPerWorkday && callsPerCompletedInitial ? Math.ceil(initialsNeededPerWorkday * callsPerCompletedInitial) : 0;
 
     const countOn: Record<string, (d: string) => number> = {
@@ -440,7 +444,7 @@ export default function FunnelPage() {
     };
     const dailyCallsTarget = Math.max(1, Math.round(callsTarget / WORKDAYS_MO));
 
-    return { label, isDay, isCurrent, daysLeft, workdaysLeft, goalPacks, spp, sessionsSold, equivs, remaining, monthRemaining, initialsNeededPerWorkday, extrapolatedCallsPerWorkday, status,
+    return { label, isDay, isCurrent, daysLeft, workdaysLeft, goalPacks, spp, sessionsSold, equivs, remaining, monthRemaining, initialsNeededPerWorkday, extrapolatedCallsPerWorkday, downstreamBuyerRate: data.cohort?.downstreamBuyerRate ?? 0, status,
       callsN: calls.length, none, vm, talk, booked, showed, noShows, eightSeries,
       showRate: pctText(showed, resolvedInitials), noShowRate: pctText(noShows, resolvedInitials), eightSeriesRate: pctText(eightSeries, showed),
       salesCount: sales.length, repeats, pulses, callsToday, board, trendLabel,
@@ -583,7 +587,7 @@ export default function FunnelPage() {
           {v.isCurrent && !v.isDay && !goalHit && (
             <p className="mt-2 border-t pt-2 text-center text-sm" style={{ borderColor: COL.line, color: COL.inkSoft }}>
               <b style={{ color: COL.ink }}>{v.monthRemaining.toFixed(1)}</b> of the <b style={{ color: COL.ink }}>{MONTHLY_PACK_GOAL}</b>-pack month goal left · <b style={{ color: COL.ink }}>{v.workdaysLeft}</b> six-day workdays left<br />
-              {v.initialsNeededPerWorkday > 0 && <><b style={{ color: COL.ink }}>{v.initialsNeededPerWorkday.toFixed(1)}</b> completed initials/day · <b style={{ color: COL.ink }}>~{v.extrapolatedCallsPerWorkday}</b> extrapolated calls/day</>}
+              {v.initialsNeededPerWorkday > 0 && <><b style={{ color: COL.ink }}>{v.initialsNeededPerWorkday.toFixed(1)}</b> completed initials/day · <b style={{ color: COL.ink }}>~{v.extrapolatedCallsPerWorkday}</b> extrapolated calls/day <span style={{ color: COL.inkSoft }}>(includes {(v.downstreamBuyerRate * 100).toFixed(0)}% repeat-pack rate)</span></>}
             </p>
           )}
         </div>

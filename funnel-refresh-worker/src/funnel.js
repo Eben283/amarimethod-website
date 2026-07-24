@@ -155,6 +155,10 @@ function classifySale(name, amt) {
   return null;
 }
 
+function isSeriesPurchase(sale) {
+  return ["8-pack", "4-pack", "upgrade →8", "upgrade →4", "upgrade 4→8", "upgrade"].includes(sale.k);
+}
+
 // ---- loaders ------------------------------------------------------------
 
 async function loadContacts(env, lid) {
@@ -314,9 +318,16 @@ async function loadSales(env, lid, contacts) {
   // Repeat flag: contact had an earlier classified sale
   const sales = classified.filter(Boolean).sort((a, b) => (a.d < b.d ? -1 : 1));
   const seen = new Set();
+  const seriesPurchaseCount = new Map();
   for (const s of sales) {
     s.r = seen.has(s.contactId);
     seen.add(s.contactId);
+    if (isSeriesPurchase(s)) {
+      const n = (seriesPurchaseCount.get(s.contactId) || 0) + 1;
+      seriesPurchaseCount.set(s.contactId, n);
+      s.seriesPurchaseNumber = n;
+      s.downstreamSeries = n > 1;
+    }
   }
   console.log(`session-sales classified: ${sales.length}`);
   return sales;
@@ -344,13 +355,28 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
   // Match the final stage to the same person: an 8-series purchased on or
   // after an attended initial. Overall sales remain separate cash pacing data.
   for (const session of sessions) {
-    session.eightSeries = session.status === "attended" && sales.some((sale) =>
-      sale.contactId === session.contactId &&
-      (sale.k === "8-pack" || sale.k === "upgrade →8") &&
-      sale.d >= session.sessionDate
-    );
+    const postInitialSeries = session.status === "attended" ? sales.filter((sale) =>
+      sale.contactId === session.contactId && isSeriesPurchase(sale) && sale.d >= session.sessionDate
+    ) : [];
+    session.eightSeries = postInitialSeries.some((sale) => sale.k === "8-pack" || sale.k === "upgrade →8");
+    session.firstSeriesEquivs = postInitialSeries.filter((sale) => sale.seriesPurchaseNumber === 1).reduce((n, sale) => n + sale.s / SESSIONS_PER_PACK, 0);
+    session.downstreamEquivs = postInitialSeries.filter((sale) => sale.downstreamSeries).reduce((n, sale) => n + sale.s / SESSIONS_PER_PACK, 0);
     delete session.contactId;
   }
+  const attendedSessions = sessions.filter((s) => s.status === "attended");
+  const cohort = {
+    attended: attendedSessions.length,
+    firstSeriesBuyers: attendedSessions.filter((s) => s.firstSeriesEquivs > 0).length,
+    downstreamBuyers: attendedSessions.filter((s) => s.downstreamEquivs > 0).length,
+    firstSeriesEquivs: Number(attendedSessions.reduce((n, s) => n + s.firstSeriesEquivs, 0).toFixed(2)),
+    downstreamEquivs: Number(attendedSessions.reduce((n, s) => n + s.downstreamEquivs, 0).toFixed(2)),
+  };
+  cohort.downstreamBuyerRate = cohort.firstSeriesBuyers
+    ? Number((cohort.downstreamBuyers / cohort.firstSeriesBuyers).toFixed(4))
+    : 0;
+  cohort.expectedEquivsPerAttended = cohort.attended
+    ? Number(((cohort.firstSeriesEquivs + cohort.downstreamEquivs) / cohort.attended).toFixed(2))
+    : 0;
   for (const sale of sales) delete sale.contactId;
 
   // trailing-90 calls-per-pack-equivalent → drives "need ~N calls/day"
@@ -393,8 +419,9 @@ export async function buildFunnelSnapshot(env, windowDays = 180) {
     calls,      // [{d, o: "none"|"vm"|"talk", c: cohort}]
     texts,      // [{d}] outbound SMS, one touch per contact-day
     emails,     // [{d}] outbound email, one touch per contact-day
-    sessions,   // [{d, sessionDate, status, showed, eightSeries, c}]
+    sessions,   // [{d, sessionDate, status, showed, eightSeries, firstSeriesEquivs, downstreamEquivs, c}]
     sales,      // [{d, s: sessionsSold, k: kind, c, r: repeat, who}]
+    cohort,     // initial-session cohort value, including downstream pack equivalents
     trailing90: { calls: calls90, equivs: Number(equivs90.toFixed(2)), callsPerEquiv: callsPerEquiv ? Math.round(callsPerEquiv) : null },
     targets,    // { calls, talk, booked, showed, sales, source, asOf } — monthly, frozen
     paceLine,

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
-import { getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
+import { getFunnel, getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
 import { useApiCall } from '../hooks/useApiCall';
 
 const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
@@ -145,10 +145,18 @@ export default function PipelinePage() {
   const navigate = useNavigate();
   const fetcher = useCallback(() => getPipeline(), []);
   const { data: columns, isLoading, error, refetch } = useApiCall(fetcher);
+  const funnelFetcher = useCallback(() => getFunnel(), []);
+  const { data: funnel } = useApiCall(funnelFetcher);
 
   const total = columns
     ? Object.values(columns).reduce((s, arr) => s + arr.length, 0)
     : 0;
+  const sessions = funnel?.sessions || [];
+  const attended = sessions.filter((s) => s.status === 'attended' || (!s.status && s.showed)).length;
+  const noShows = sessions.filter((s) => s.status === 'noshow').length;
+  const eightSeries = sessions.filter((s) => (s.status === 'attended' || (!s.status && s.showed)) && s.eightSeries).length;
+  const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
+  const downstream = funnel?.cohort;
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
@@ -168,6 +176,26 @@ export default function PipelinePage() {
           <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
         </button>
       </div>
+
+      {funnel && (
+        <section className="mx-4 mb-3 rounded-xl border border-amari-light-sand bg-white px-3 py-2.5 flex-shrink-0" aria-label="Initial-session conversion">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-amari-text-muted">Initial-session conversion · last 180 days</p>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { n: pct(attended, attended + noShows), label: 'show rate', detail: `${attended} attended`, color: '#4A8C56' },
+              { n: pct(noShows, attended + noShows), label: 'no-show rate', detail: `${noShows} no-show`, color: '#A04040' },
+              { n: pct(eightSeries, attended), label: '8-series', detail: `${eightSeries} buyers`, color: '#8B7A3A' },
+              { n: pct(downstream?.downstreamBuyers || 0, downstream?.firstSeriesBuyers || 0), label: 'repeat pack', detail: `${downstream?.downstreamBuyers || 0} repurchased`, color: '#8A7020' },
+            ].map((metric) => (
+              <div key={metric.label} className="min-w-0 text-center">
+                <p className="font-serif text-xl font-bold leading-none tabular-nums" style={{ color: metric.color }}>{metric.n}</p>
+                <p className="mt-1 text-[9px] uppercase tracking-wide text-amari-text-muted">{metric.label}</p>
+                <p className="truncate text-[10px] text-amari-text-muted">{metric.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Body */}
       {isLoading ? (
