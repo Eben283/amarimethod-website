@@ -3,7 +3,7 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import discoveryMd from '@/content/playbooks/discovery-call.md?raw';
 import partnerMd from '@/content/playbooks/partner-call.md?raw';
-import linkedinMd from '@/content/playbooks/partner-linkedin-connect.md?raw';
+import therapistMd from '@/content/playbooks/therapist-call.md?raw';
 
 // Garrett-facing playbooks for in-call lookup.
 // Source markdown lives in src/content/playbooks/*.md.
@@ -127,7 +127,7 @@ function PlaybookContent({ md }: { md: string }) {
   );
 }
 
-type Tab = 'discovery' | 'partner' | 'linkedin';
+type Tab = 'discovery' | 'partner' | 'therapist';
 
 export default function PlaybookPage() {
   const [tab, setTab] = useState<Tab>('discovery');
@@ -149,15 +149,15 @@ export default function PlaybookPage() {
           <button onClick={() => setTab('partner')} className={tabClass(tab === 'partner')}>
             Partner Call
           </button>
-          <button onClick={() => setTab('linkedin')} className={tabClass(tab === 'linkedin')}>
-            LinkedIn DM
+          <button onClick={() => setTab('therapist')} className={tabClass(tab === 'therapist')}>
+            Therapist Call
           </button>
         </div>
       </div>
 
       {tab === 'discovery' && <PlaybookContent md={discoveryMd} />}
       {tab === 'partner' && <PlaybookContent md={partnerMd} />}
-      {tab === 'linkedin' && <PlaybookContent md={linkedinMd} />}
+      {tab === 'therapist' && <PlaybookContent md={therapistMd} />}
     </div>
   );
 }
