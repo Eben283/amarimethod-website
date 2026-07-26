@@ -33,22 +33,10 @@
 
     --radius: 0.75rem;
 
-    /* Fixed bottom nav height incl. the iOS home-indicator inset. Pages that
-       fill the viewport (the COS chat) subtract this so their input pins
-       exactly above the nav instead of being hidden behind it. 65px = py-3
-       (24) + icon (20) + gap-1 (4) + text-xs label (16) + border-t (1). */
-    --staff-nav-h: calc(65px + env(safe-area-inset-bottom, 0px));
   }
 
   * {
     @apply border-border;
-  }
-
-  /* Pads a fixed bottom bar past the iOS home indicator. Referenced by
-     StaffNav; was previously undefined (no-op), so on notched phones the bar
-     sat under the home indicator. */
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   body {
@@ -135,6 +123,13 @@
   .staff-home-tool--violet .staff-home-tool__face { background: #74688c; }
   @media (min-width: 540px) { .staff-home__tools { gap: 25px 18px; } .staff-home-tool__face { max-width: 90px; border-radius: 27px; } .staff-home-tool__face::after { border-radius: 21px; } }
   @media (prefers-reduced-motion: reduce) { .staff-home-tool { transition: none; } }
+
+  /* The single return pin replaces navigation chrome inside every Staff tool. */
+  .staff-home-widget { position: fixed; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 60; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 13px 0 10px; border: 1px solid rgba(25,52,61,.16); border-radius: 999px; background: rgba(255,255,255,.92); box-shadow: 0 5px 16px rgba(25,52,61,.12); color: #19343d; font-size: 11px; font-weight: 700; line-height: 1; backdrop-filter: blur(10px); }
+  .staff-home-widget svg { width: 17px; height: 17px; stroke-width: 1.8; }
+  .staff-home-widget:active { transform: scale(.96); }
+  .staff-home-widget:focus-visible { outline: 3px solid #19343d; outline-offset: 3px; }
+  .staff-home-widget--chat { top: calc(env(safe-area-inset-top, 0px) + 62px); bottom: auto; }
 
   .fs-topbar-brand { @apply flex items-center gap-[18px]; }
   .fs-topbar .fs-home-link { @apply text-[10px] tracking-[.08em] text-[#e3e5db]; }

@@ -68,9 +68,7 @@ export default function CosPage() {
   }, [isStreaming]);
 
   return (
-    // Fill the viewport minus the fixed bottom nav (incl. iOS safe area) so the
-    // input pins exactly above the nav and the message list scrolls between.
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - var(--staff-nav-h))' }}>
+    <div className="flex flex-col" style={{ height: '100dvh' }}>
       <header className="flex items-center justify-between px-4 py-3 border-b border-amari-border">
         <h1 className="text-base font-semibold text-amari-charcoal">Chief of Staff</h1>
         <button

@@ -14,7 +14,7 @@ import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
 import WritePage from './pages/WritePage';
 import FieldStudiesPage from './pages/FieldStudiesPage';
-import StaffNav from './components/StaffNav';
+import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -53,28 +53,20 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function LayoutWithNav({ children, fullBleed = false, showNav = true }: { children: React.ReactNode; fullBleed?: boolean; showNav?: boolean }) {
-  // Most pages scroll under a fixed nav, so they need bottom padding (pb-20).
-  // Full-bleed pages (the COS chat) manage their own viewport-height layout and
-  // must NOT carry that padding or they'd overflow past the nav.
-  return (
-    <div className={fullBleed ? '' : 'min-h-screen pb-20'}>
-      {children}
-      {showNav && <StaffNav />}
-    </div>
-  );
+function Layout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
+  return <div className={fullBleed ? '' : 'min-h-screen'}>{children}</div>;
 }
 
 function AppRoutes() {
-  return (
+  return <>
     <Routes>
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <HomePage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -82,9 +74,9 @@ function AppRoutes() {
         path="/today"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <TodayPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -92,9 +84,9 @@ function AppRoutes() {
         path="/clients"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <ClientsPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -104,9 +96,9 @@ function AppRoutes() {
         path="/balances"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <BalancesPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -114,9 +106,9 @@ function AppRoutes() {
         path="/playbook"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <PlaybookPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -129,9 +121,9 @@ function AppRoutes() {
         path="/follow-up"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <FollowUpPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -139,9 +131,9 @@ function AppRoutes() {
         path="/funnel"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <FunnelPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -149,9 +141,9 @@ function AppRoutes() {
         path="/pipeline"
         element={
           <ProtectedRoute>
-            <LayoutWithNav>
+            <Layout>
               <PipelinePage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -167,9 +159,9 @@ function AppRoutes() {
         path="/cos"
         element={
           <ProtectedRoute>
-            <LayoutWithNav fullBleed>
+            <Layout fullBleed>
               <CosPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -177,9 +169,9 @@ function AppRoutes() {
         path="/write"
         element={
           <ProtectedRoute>
-            <LayoutWithNav fullBleed>
+            <Layout fullBleed>
               <WritePage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -187,9 +179,9 @@ function AppRoutes() {
         path="/field-studies"
         element={
           <ProtectedRoute>
-            <LayoutWithNav fullBleed showNav={false}>
+            <Layout fullBleed>
               <FieldStudiesPage />
-            </LayoutWithNav>
+            </Layout>
           </ProtectedRoute>
         }
       />
@@ -211,7 +203,8 @@ function AppRoutes() {
       />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
+    <StaffHomeWidget />
+  </>;
 }
 
 export default function App() {
