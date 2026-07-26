@@ -16,7 +16,13 @@ const SYSTEM = `You are reviewing one Amari Method client's recent cross-channel
 - "redundant": two different channels said essentially the same thing, in different words, close together in time — worth noticing even if neither message alone is wrong.
 - "contradiction": two messages gave different information about the same fact (a time, a price, an instruction).
 - "confusion": an inbound message asks about something a recent outbound message already covered — a sign it didn't land, was unclear, or arrived through a channel the client doesn't check.
-- "timing": a burst of outbound sends close together that reads as overwhelming or uncoordinated, not a single well-timed touch.
+- "timing": a burst of outbound sends close together that reads as overwhelming or uncoordinated, OR a session reminder that arrives at or after the session start time stated in that message. The latter is a delivery-timing problem, not a contradiction.
+
+Do NOT flag one outbound call followed by one SMS within a few minutes. That is a normal voicemail / call-follow-up pattern, even if the call record has no duration or text. Do not infer that a short call was unanswered, accidental, or pushy without stronger evidence in the conversation.
+
+Do NOT flag a coordinated email-and-SMS pair sent for the same appointment reminder. That is an intentional cross-channel reminder pattern. A later confirmation that names a different appointment date is a new booking, not a duplicate of the earlier reminder.
+
+All timestamps in the touch history are America/Los_Angeles local time and include PDT or PST. Interpret appointment language using that timezone; never treat the displayed times as UTC.
 
 Only flag things you can point to specific touches for. If the cross-channel activity looks normal and well-coordinated, return an empty flags array — do not invent a flag to have something to say.
 
@@ -29,8 +35,23 @@ Respond as STRICT JSON only (no prose, no markdown fences):
 }
 "confidence":"low" when there's only borderline signal worth a second look, not a clear-cut issue.`;
 
+export function formatPacificTimestamp(timestamp) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "short",
+  }).formatToParts(new Date(timestamp));
+  const value = (type) => parts.find((part) => part.type === type)?.value || "";
+  return `${value("year")}-${value("month")}-${value("day")} ${value("hour")}:${value("minute")} ${value("timeZoneName")}`;
+}
+
 function formatTouchLine(t) {
-  const date = new Date(t.ts).toISOString().slice(0, 16).replace("T", " ");
+  const date = formatPacificTimestamp(t.ts);
   const dir = t.dir === "out" ? "out" : "in";
   const body = t.kind === "call" ? `(call, ${t.dur || 0}s)` : (t.text || "(no text on record)");
   return `[${date} · ${t.kind} · ${dir}] ${body}`;

@@ -4,7 +4,7 @@
 // manual /run against a live contact (see plan verification step 2-3), not here.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { windowTouches, buildNarrative, parseFlags } from "../src/coherence.js";
+import { windowTouches, buildNarrative, formatPacificTimestamp, parseFlags } from "../src/coherence.js";
 
 const DAY_MS = 86_400_000;
 const NOW = 10 * DAY_MS; // arbitrary fixed "now" so tests don't depend on wall clock
@@ -46,21 +46,27 @@ test("buildNarrative reports no-touches plainly", () => {
   assert.match(out, /No recent touches on record for Leanne/);
 });
 
-test("buildNarrative formats SMS/email touches with channel, direction, and text", () => {
+test("buildNarrative formats SMS/email touches in Pacific time with an explicit zone", () => {
   const touches = [
     { ts: Date.UTC(2026, 5, 28, 9, 0), kind: "email", dir: "out", text: "Here's your portal link!" },
     { ts: Date.UTC(2026, 5, 28, 9, 5), kind: "sms", dir: "out", text: "Check out these tools" },
   ];
   const out = buildNarrative(touches, "Leanne");
   assert.match(out, /Contact: Leanne/);
-  assert.match(out, /\[2026-06-28 09:00 · email · out\] Here's your portal link!/);
-  assert.match(out, /\[2026-06-28 09:05 · sms · out\] Check out these tools/);
+  assert.match(out, /\[2026-06-28 02:00 PDT · email · out\] Here's your portal link!/);
+  assert.match(out, /\[2026-06-28 02:05 PDT · sms · out\] Check out these tools/);
+});
+
+test("formatPacificTimestamp does not present a Pacific appointment as UTC", () => {
+  // Eli's July 24 2:00 PM PDT reminder was stored as 21:00Z. The old formatter
+  // displayed 21:00 without a zone and caused a false 'seven hours late' flag.
+  assert.equal(formatPacificTimestamp(Date.UTC(2026, 6, 24, 21, 0)), "2026-07-24 14:00 PDT");
 });
 
 test("buildNarrative formats call touches by duration, not text", () => {
   const touches = [{ ts: Date.UTC(2026, 5, 28, 9, 0), kind: "call", dir: "in", dur: 42 }];
   const out = buildNarrative(touches, "Leanne");
-  assert.match(out, /\[2026-06-28 09:00 · call · in\] \(call, 42s\)/);
+  assert.match(out, /\[2026-06-28 02:00 PDT · call · in\] \(call, 42s\)/);
 });
 
 test("buildNarrative falls back to '(no text on record)' for textless sms/email", () => {

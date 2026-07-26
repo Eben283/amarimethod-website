@@ -34,6 +34,7 @@ const LEDGER_MAX_ENTRIES = 500;                // cap growth — append-only his
 const DEFAULT_WINDOW_DAYS = 3;
 const MAX_CONTACTS = 60;                       // bound one run's Anthropic spend
 const CONCURRENCY = 5;                         // mirrors conversation-cache-worker's mapLimit
+const SEVERITY_RANK = { high: 0, medium: 1, low: 2 };
 
 // Limited-concurrency map — ported from conversation-cache-worker/src/sync.js.
 async function mapLimit(items, limit, fn) {
@@ -47,6 +48,10 @@ async function mapLimit(items, limit, fn) {
   });
   await Promise.all(workers);
   return out;
+}
+
+function mostActionableFlag(flags) {
+  return [...flags].sort((a, b) => (SEVERITY_RANK[a.severity] ?? 3) - (SEVERITY_RANK[b.severity] ?? 3))[0];
 }
 
 export default {
@@ -206,7 +211,7 @@ export async function runCoherence(env, { nowMs, windowDays = DEFAULT_WINDOW_DAY
       summaryItems.push({
         contactId: record.contactId,
         contactName: record.contactName,
-        topFlag: record.flags[0],
+        topFlag: mostActionableFlag(record.flags),
         flagCount: record.flags.length,
       });
     }
