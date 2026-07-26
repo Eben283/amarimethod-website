@@ -104,6 +104,23 @@
   .staff-home__wordmark i { width: 9px; height: 9px; border-radius: 50%; background: #e48769; box-shadow: 13px 0 0 #d7a63f; }
   .staff-home__masthead h1 { margin: 14px 0 0; color: #19343d; font-size: clamp(2.35rem, 11vw, 3.25rem); font-weight: 400; letter-spacing: -.055em; line-height: .92; }
   .staff-home__masthead p { margin: 12px 0 0; color: #64777d; font-size: 14px; }
+  .staff-session-door { margin: 0 0 30px; border-radius: 24px; background: #19343d; box-shadow: 0 11px 23px rgba(25,52,61,.18); overflow: hidden; }
+  .staff-session-door button { display: flex; width: 100%; min-height: 132px; flex-direction: column; align-items: flex-start; padding: 18px 20px; border: 0; background: transparent; color: white; text-align: left; transition: background 180ms ease, transform 180ms ease; }
+  .staff-session-door button:active { transform: scale(.985); }
+  .staff-session-door button:focus-visible { outline: 3px solid #d2a042; outline-offset: -7px; }
+  .staff-session-door button:hover { background: #23434d; }
+  .staff-session-door__signal { display: inline-flex; align-items: center; gap: 7px; color: #cadde0; font: 600 10px/1 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
+  .staff-session-door__signal i { width: 8px; height: 8px; border-radius: 50%; background: #a4bac0; }
+  .staff-session-door__signal--now { color: #f6d8a4; }
+  .staff-session-door__signal--now i { background: #d2a042; box-shadow: 0 0 0 4px rgba(210,160,66,.18); }
+  .staff-session-door__signal--error { color: #ffc6b8; }
+  .staff-session-door__signal--error i { background: #df8067; }
+  .staff-session-door__person { margin-top: 14px; color: white; font-family: 'Bona Nova', Georgia, serif; font-size: 27px; line-height: 1; letter-spacing: -.035em; }
+  .staff-session-door__meta { display: flex; align-items: center; gap: 4px; margin-top: auto; color: #b5c9cd; font-size: 12px; }
+  .staff-session-door__meta svg { width: 15px; height: 15px; }
+  .staff-session-door__loading { display: flex; min-height: 132px; align-items: center; gap: 9px; padding: 18px 20px; color: #cadde0; font-size: 13px; }
+  .staff-session-door__loading svg { width: 17px; height: 17px; animation: staff-spin 1s linear infinite; }
+  @keyframes staff-spin { to { transform: rotate(360deg); } }
   .staff-home__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 21px 12px; }
   .staff-home-tool { position: relative; display: flex; min-width: 0; flex-direction: column; align-items: center; border: 0; background: transparent; color: #19343d; text-align: center; transition: transform 180ms ease; }
   .staff-home-tool:active { transform: scale(.94); }
