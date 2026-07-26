@@ -31,12 +31,14 @@ describe("CRM mirror reconciliation review", () => {
         { results: [{ provider_charge_id: "ch_candidate" }] },
         { results: [{ provider_charge_id: "ch_unmatched" }] },
         { results: [{ provider_charge_id: "ch_unclassified" }] },
+        { results: [{ id: "four-session-series", name: "4-Session Series" }] },
       ],
     };
     await expect(reconciliationReview(db, 25)).resolves.toEqual({
       candidates: [{ provider_charge_id: "ch_candidate" }],
       unmatched: [{ provider_charge_id: "ch_unmatched" }],
       unclassified: [{ provider_charge_id: "ch_unclassified" }],
+      packages: [{ id: "four-session-series", name: "4-Session Series" }],
     });
   });
 });

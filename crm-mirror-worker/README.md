@@ -29,6 +29,8 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.
 
 The root dashboard exchanges an operator bearer credential for a signed, eight-hour HttpOnly browser session. That session can read only the dashboard's GET endpoints; `POST /sync` continues to require the bearer credential on every request.
+
+Approval actions require a separate signed 15-minute review session, created only with the bearer credential. Candidate acceptance/rejection and package classification record an `operational_events` audit record; neither action creates a ledger entry.
 - `POST /sync` with optional `{ "sources": ["ghl", "stripe"], "limit": 25 }` — bounded manual import. Both provider integrations use `GET` only.
 
 The normal first run is repeated bounded imports until both providers report `status: "succeeded"`, followed by reconciliation of unlinked purchases and the session ledger in a separate, reviewed change.

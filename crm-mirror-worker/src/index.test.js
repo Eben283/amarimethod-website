@@ -22,4 +22,8 @@ describe("CRM mirror request validation", () => {
     expect(parseQueueLimit("0")).toBe(1);
     expect(parseQueueLimit("99")).toBe(50);
   });
+
+  it("does not make approval actions a sync source", () => {
+    expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain ghl and/or stripe");
+  });
 });

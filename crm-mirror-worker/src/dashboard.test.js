@@ -9,7 +9,9 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/reconciliation", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/reconciliation/review?limit=50", { credentials: "same-origin" })');
-    expect(html).toContain("This screen does not approve a link");
+    expect(html).toContain("Approve link");
+    expect(html).toContain("Not a session package");
+    expect(html).toContain("elevated review session");
     expect(html).toContain("Exact email evidence, pending review");
     expect(html).toContain("history.replaceState");
     expect(html).toContain("It cannot send email or SMS");

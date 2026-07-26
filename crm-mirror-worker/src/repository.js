@@ -297,13 +297,14 @@ export async function reconciliationQueue(db, limit) {
 
 export async function reconciliationReview(db, limit) {
   const purchaseFields = `
+    purchase.id AS purchase_id,
     purchase.provider_charge_id,
     purchase.amount_cents,
     purchase.currency,
     purchase.purchased_at,
     purchase.classification,
     purchase.billing_email_normalized`;
-  const [candidates, unmatched, unclassified] = await db.batch([
+  const [candidates, unmatched, unclassified, packages] = await db.batch([
     db.prepare(
       `SELECT
          candidate.id AS candidate_id,
@@ -345,10 +346,111 @@ export async function reconciliationReview(db, limit) {
        ORDER BY purchase.purchased_at DESC
        LIMIT ?`,
     ).bind(limit),
+    db.prepare(
+      "SELECT id, name FROM packages WHERE active = 1 ORDER BY name",
+    ),
   ]);
   return {
     candidates: candidates.results || [],
     unmatched: unmatched.results || [],
     unclassified: unclassified.results || [],
+    packages: packages.results || [],
   };
+}
+
+function reviewActor(value) {
+  const actor = String(value || "").trim();
+  if (!actor || actor.length > 100) throw new Error("reviewedBy is required and must be 100 characters or fewer");
+  return actor;
+}
+
+async function recordOperationalEvent(db, eventType, entityType, entityId, detail, now) {
+  await db.prepare(
+    `INSERT INTO operational_events (id, event_type, entity_type, entity_id, detail_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).bind(id(), eventType, entityType, entityId, JSON.stringify(detail), now).run();
+}
+
+export async function decideReconciliationCandidate(db, candidateId, decision, reviewedBy, now) {
+  if (decision !== "accept" && decision !== "reject") throw new Error("decision must be accept or reject");
+  const actor = reviewActor(reviewedBy);
+  const candidate = await db.prepare(
+    `SELECT candidate.id, candidate.purchase_id, candidate.contact_id, candidate.state, purchase.contact_id AS purchase_contact_id
+     FROM purchase_reconciliation_candidates candidate
+     JOIN purchases purchase ON purchase.id = candidate.purchase_id
+     WHERE candidate.id = ?`,
+  ).bind(candidateId).first();
+  if (!candidate || candidate.state !== "pending_review") throw new Error("candidate is not pending review");
+  if (decision === "accept" && candidate.purchase_contact_id) throw new Error("purchase already has a contact link");
+
+  if (decision === "accept") {
+    await db.batch([
+      db.prepare(
+        `UPDATE purchase_reconciliation_candidates
+         SET state = 'accepted', reviewed_at = ?, reviewed_by = ?
+         WHERE id = ?`,
+      ).bind(now, actor, candidateId),
+      db.prepare("UPDATE purchases SET contact_id = ?, updated_at = ? WHERE id = ?")
+        .bind(candidate.contact_id, now, candidate.purchase_id),
+      db.prepare(
+        `UPDATE external_records SET contact_id = ?
+         WHERE provider = 'stripe' AND record_type = 'purchase' AND record_id = ?`,
+      ).bind(candidate.contact_id, candidate.purchase_id),
+    ]);
+  } else {
+    await db.prepare(
+      `UPDATE purchase_reconciliation_candidates
+       SET state = 'rejected', reviewed_at = ?, reviewed_by = ?
+       WHERE id = ?`,
+    ).bind(now, actor, candidateId).run();
+  }
+  await recordOperationalEvent(
+    db,
+    `purchase_reconciliation_candidate_${decision}ed`,
+    "purchase_reconciliation_candidate",
+    candidateId,
+    { purchaseId: candidate.purchase_id, contactId: candidate.contact_id, reviewedBy: actor },
+    now,
+  );
+  return { candidateId, decision, purchaseId: candidate.purchase_id };
+}
+
+export async function classifyPurchase(db, purchaseId, resolution, packageId, reviewedBy, now) {
+  const actor = reviewActor(reviewedBy);
+  const purchase = await db.prepare(
+    "SELECT id, classification FROM purchases WHERE id = ?",
+  ).bind(purchaseId).first();
+  if (!purchase || purchase.classification !== "unclassified") {
+    throw new Error("only an unclassified purchase can be classified");
+  }
+  let classification;
+  let nextPackageId = null;
+  let reviewState;
+  if (resolution === "package") {
+    const pack = await db.prepare("SELECT id, name FROM packages WHERE id = ? AND active = 1").bind(packageId).first();
+    if (!pack) throw new Error("packageId must identify an active package");
+    classification = pack.name;
+    nextPackageId = pack.id;
+    reviewState = "confirmed";
+  } else if (resolution === "not_a_package") {
+    classification = "Not a session package";
+    reviewState = "not_a_package";
+  } else {
+    throw new Error("resolution must be package or not_a_package");
+  }
+  await db.prepare(
+    `UPDATE purchases
+     SET package_id = ?, classification = ?, classification_review_state = ?,
+         classification_reviewed_at = ?, classification_reviewed_by = ?, updated_at = ?
+     WHERE id = ?`,
+  ).bind(nextPackageId, classification, reviewState, now, actor, now, purchaseId).run();
+  await recordOperationalEvent(
+    db,
+    "purchase_classification_confirmed",
+    "purchase",
+    purchaseId,
+    { resolution, packageId: nextPackageId, reviewedBy: actor },
+    now,
+  );
+  return { purchaseId, classification, reviewState, packageId: nextPackageId };
 }

@@ -36,6 +36,14 @@ const DASHBOARD_HTML = `<!doctype html>
       .review-item strong { color: #e7f4ea; font-size: .82rem; }
       .review-item span { margin-top: 4px; color: #9caf9f; font-size: .73rem; line-height: 1.35; }
       .review-empty { color: #8fa295; font-size: .8rem; line-height: 1.45; }
+      .review-tools { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin: 0 0 16px; }
+      .review-tools label { display: grid; gap: 5px; color: #9caf9f; font-size: .72rem; }
+      .review-tools input, .review-tools select { min-height: 33px; padding: 7px 9px; border: 0; border-radius: 8px; background: #26362d; color: #edf4ef; font: inherit; }
+      .action-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+      .action-row button { padding: 7px 9px; border: 0; border-radius: 8px; background: #385b45; color: #edfff2; cursor: pointer; font: 650 .71rem/1 ui-sans-serif, system-ui, sans-serif; }
+      .action-row button.danger { background: #6a403a; }
+      .action-row button:hover { transform: translateY(-1px); }
+      .action-status { color: #f1d59b; font-size: .74rem; line-height: 1.4; }
       .footer { margin-top: 46px; color: #708378; font-size: .8rem; }
       @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
@@ -68,7 +76,8 @@ const DASHBOARD_HTML = `<!doctype html>
 
       <section class="section">
         <h2>Review workspace</h2>
-        <p>Prepare the human decisions here. This screen does not approve a link, classify a purchase, or write a session balance.</p>
+        <p>Every decision records a reviewer and audit event. No decision creates a session balance; review actions require a separate 15-minute elevated session.</p>
+        <div class="review-tools"><label>Reviewer name<input id="reviewer-name" maxlength="100" placeholder="Required for an action" /></label><span class="action-status" id="review-action-status">Read-only until an elevated review session is opened.</span></div>
         <div class="review-grid">
           <article class="review-shell"><div class="review-core"><h3>Exact-email candidates</h3><p>One Stripe customer email exactly matches one contact.</p><ul class="review-list" id="review-candidates"></ul></div></article>
           <article class="review-shell"><div class="review-core"><h3>Unmatched purchases</h3><p>No safe contact evidence is available yet.</p><ul class="review-list" id="review-unmatched"></ul></div></article>
@@ -115,7 +124,26 @@ const DASHBOARD_HTML = `<!doctype html>
             ? "GHL import " + status.lastSync.status + " · " + new Date(status.lastSync.finished_at).toLocaleString()
             : "No completed import reported";
           const money = (row) => new Intl.NumberFormat("en-US", { style: "currency", currency: (row.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format((row.amount_cents || 0) / 100);
-          const render = (id, rows, title, detail) => {
+          const reviewer = () => document.getElementById("reviewer-name").value.trim();
+          const actionStatus = document.getElementById("review-action-status");
+          const perform = async (path, body) => {
+            if (!reviewer()) {
+              actionStatus.textContent = "Enter your reviewer name before making a decision.";
+              return;
+            }
+            const response = await fetch(path, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...body, reviewedBy: reviewer() }),
+            });
+            if (!response.ok) {
+              actionStatus.textContent = response.status === 401 ? "An elevated review session is required for changes." : "The review action could not be completed.";
+              return;
+            }
+            window.location.reload();
+          };
+          const render = (id, rows, title, detail, controls) => {
             const list = document.getElementById(id);
             list.replaceChildren();
             if (!rows.length) {
@@ -133,12 +161,51 @@ const DASHBOARD_HTML = `<!doctype html>
               const subline = document.createElement("span");
               subline.textContent = detail(row);
               item.append(heading, subline);
+              if (controls) controls(item, row);
               list.append(item);
             }
           };
-          render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized);
+          render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized, (item, row) => {
+            const actions = document.createElement("div");
+            actions.className = "action-row";
+            const approve = document.createElement("button");
+            approve.textContent = "Approve link";
+            approve.addEventListener("click", () => perform("/reconciliation/candidates/" + encodeURIComponent(row.candidate_id) + "/decision", { decision: "accept" }));
+            const reject = document.createElement("button");
+            reject.className = "danger";
+            reject.textContent = "Reject";
+            reject.addEventListener("click", () => perform("/reconciliation/candidates/" + encodeURIComponent(row.candidate_id) + "/decision", { decision: "reject" }));
+            actions.append(approve, reject);
+            item.append(actions);
+          });
           render("review-unmatched", review.unmatched, (row) => money(row) + " · " + row.classification, (row) => row.billing_email_normalized || "No billing email captured");
-          render("review-unclassified", review.unclassified, (row) => row.contact_display_name || row.billing_email_normalized || "Identity unresolved", (row) => money(row) + " · " + row.identity_status.replaceAll("_", " "));
+          render("review-unclassified", review.unclassified, (row) => row.contact_display_name || row.billing_email_normalized || "Identity unresolved", (row) => money(row) + " · " + row.identity_status.replaceAll("_", " "), (item, row) => {
+            const actions = document.createElement("div");
+            actions.className = "action-row";
+            const selector = document.createElement("select");
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Choose package";
+            selector.append(placeholder);
+            for (const pack of review.packages) {
+              const option = document.createElement("option");
+              option.value = pack.id;
+              option.textContent = pack.name;
+              selector.append(option);
+            }
+            const confirm = document.createElement("button");
+            confirm.textContent = "Confirm package";
+            confirm.addEventListener("click", () => {
+              if (!selector.value) { actionStatus.textContent = "Choose a package before confirming."; return; }
+              perform("/purchases/" + encodeURIComponent(row.purchase_id) + "/classification", { resolution: "package", packageId: selector.value });
+            });
+            const notPackage = document.createElement("button");
+            notPackage.className = "danger";
+            notPackage.textContent = "Not a session package";
+            notPackage.addEventListener("click", () => perform("/purchases/" + encodeURIComponent(row.purchase_id) + "/classification", { resolution: "not_a_package" }));
+            actions.append(selector, confirm, notPackage);
+            item.append(actions);
+          });
           state.textContent = "Protected data loaded · no sender actions available";
         } catch (error) {
           state.textContent = "Protected operator session required";

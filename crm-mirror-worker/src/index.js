@@ -1,7 +1,14 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
-import { dashboardSessionCookie, hasDashboardSession } from "./dashboard-session.js";
-import { mirrorStatus, reconciliationQueue, reconciliationReview, reconciliationStatus } from "./repository.js";
+import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import {
+  classifyPurchase,
+  decideReconciliationCandidate,
+  mirrorStatus,
+  reconciliationQueue,
+  reconciliationReview,
+  reconciliationStatus,
+} from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -42,6 +49,22 @@ async function requireDashboardReadAuth(request, env) {
   return bearerDenied;
 }
 
+async function requireReviewWriteAuth(request, env) {
+  const bearerDenied = requireWorkerAuth(request, env);
+  if (!bearerDenied || await hasReviewSession(request, env)) return null;
+  return bearerDenied;
+}
+
+async function actionPayload(request) {
+  const length = Number(request.headers.get("Content-Length") || 0);
+  if (length > 4096) throw new Error("request body too large");
+  try {
+    return await request.json();
+  } catch {
+    throw new Error("invalid JSON");
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -55,6 +78,41 @@ export default {
         if (denied) return denied;
         const cookie = await dashboardSessionCookie(env);
         return json(200, { success: true, expiresInSeconds: 8 * 60 * 60 }, { "Set-Cookie": cookie });
+      }
+      if (request.method === "POST" && url.pathname === "/review-session") {
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+        const cookie = await reviewSessionCookie(env);
+        return json(200, { success: true, expiresInSeconds: 15 * 60 }, { "Set-Cookie": cookie });
+      }
+      const candidateDecision = url.pathname.match(/^\/reconciliation\/candidates\/([^/]+)\/decision$/);
+      if (request.method === "POST" && candidateDecision) {
+        const denied = await requireReviewWriteAuth(request, env);
+        if (denied) return denied;
+        const payload = await actionPayload(request);
+        const result = await decideReconciliationCandidate(
+          env.CRM_DB,
+          decodeURIComponent(candidateDecision[1]),
+          payload.decision,
+          payload.reviewedBy,
+          new Date().toISOString(),
+        );
+        return json(200, { success: true, result });
+      }
+      const purchaseClassification = url.pathname.match(/^\/purchases\/([^/]+)\/classification$/);
+      if (request.method === "POST" && purchaseClassification) {
+        const denied = await requireReviewWriteAuth(request, env);
+        if (denied) return denied;
+        const payload = await actionPayload(request);
+        const result = await classifyPurchase(
+          env.CRM_DB,
+          decodeURIComponent(purchaseClassification[1]),
+          payload.resolution,
+          payload.packageId || null,
+          payload.reviewedBy,
+          new Date().toISOString(),
+        );
+        return json(200, { success: true, result });
       }
       if (request.method === "GET" && ["/status", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname)) {
         const denied = await requireDashboardReadAuth(request, env);

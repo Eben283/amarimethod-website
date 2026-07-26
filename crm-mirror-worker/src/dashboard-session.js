@@ -1,5 +1,7 @@
-const COOKIE_NAME = "amari_crm_dashboard";
-const SESSION_SECONDS = 8 * 60 * 60;
+const DASHBOARD_COOKIE_NAME = "amari_crm_dashboard";
+const REVIEW_COOKIE_NAME = "amari_crm_review";
+const DASHBOARD_SESSION_SECONDS = 8 * 60 * 60;
+const REVIEW_SESSION_SECONDS = 15 * 60;
 const encoder = new TextEncoder();
 
 function base64url(bytes) {
@@ -17,26 +19,42 @@ function cookieValue(request, name) {
   return null;
 }
 
-async function signature(secret, expiresAt) {
+async function signature(secret, cookieName, expiresAt) {
   const key = await crypto.subtle.importKey(
     "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
   );
-  const signed = await crypto.subtle.sign("HMAC", key, encoder.encode(`${COOKIE_NAME}.${expiresAt}`));
+  const signed = await crypto.subtle.sign("HMAC", key, encoder.encode(`${cookieName}.${expiresAt}`));
   return base64url(new Uint8Array(signed));
 }
 
-export async function dashboardSessionCookie(env, nowSeconds = Math.floor(Date.now() / 1000)) {
+async function sessionCookie(env, cookieName, durationSeconds, nowSeconds = Math.floor(Date.now() / 1000)) {
   if (!env.WORKER_AUTH_SECRET) return null;
-  const expiresAt = nowSeconds + SESSION_SECONDS;
-  const token = `${expiresAt}.${await signature(env.WORKER_AUTH_SECRET, expiresAt)}`;
-  return `${COOKIE_NAME}=${token}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+  const expiresAt = nowSeconds + durationSeconds;
+  const token = `${expiresAt}.${await signature(env.WORKER_AUTH_SECRET, cookieName, expiresAt)}`;
+  return `${cookieName}=${token}; Max-Age=${durationSeconds}; Path=/; HttpOnly; Secure; SameSite=Strict`;
 }
 
-export async function hasDashboardSession(request, env, nowSeconds = Math.floor(Date.now() / 1000)) {
+async function hasSession(request, env, cookieName, nowSeconds = Math.floor(Date.now() / 1000)) {
   if (!env.WORKER_AUTH_SECRET) return false;
-  const value = cookieValue(request, COOKIE_NAME);
+  const value = cookieValue(request, cookieName);
   const [expiresRaw, suppliedSignature, ...extra] = (value || "").split(".");
   const expiresAt = Number(expiresRaw);
   if (extra.length || !Number.isSafeInteger(expiresAt) || expiresAt <= nowSeconds || !suppliedSignature) return false;
-  return suppliedSignature === await signature(env.WORKER_AUTH_SECRET, expiresAt);
+  return suppliedSignature === await signature(env.WORKER_AUTH_SECRET, cookieName, expiresAt);
+}
+
+export function dashboardSessionCookie(env, nowSeconds) {
+  return sessionCookie(env, DASHBOARD_COOKIE_NAME, DASHBOARD_SESSION_SECONDS, nowSeconds);
+}
+
+export function reviewSessionCookie(env, nowSeconds) {
+  return sessionCookie(env, REVIEW_COOKIE_NAME, REVIEW_SESSION_SECONDS, nowSeconds);
+}
+
+export function hasDashboardSession(request, env, nowSeconds) {
+  return hasSession(request, env, DASHBOARD_COOKIE_NAME, nowSeconds);
+}
+
+export function hasReviewSession(request, env, nowSeconds) {
+  return hasSession(request, env, REVIEW_COOKIE_NAME, nowSeconds);
 }
