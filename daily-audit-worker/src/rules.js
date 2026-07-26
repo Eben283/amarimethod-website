@@ -56,6 +56,9 @@ const ORDER_CAP_MSG = `Hit the ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}-order pagina
 export function findAuditedProduct(order) {
   const items = order?.items || order?.lineItems || [];
   for (const item of items) {
+    // GHL has returned both nested `_id` and `id` forms, while some payment
+    // sources flatten the same line item. All are product/price identifiers;
+    // resolving each avoids treating a known paid package as a catalog miss.
     const ids = [
       item?.product?._id, item?.product?.id, item?.price?._id, item?.price?.id,
       item?.productId, item?.priceId,
@@ -285,8 +288,9 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
       return d >= new Date(auditStart) && d <= new Date(auditEnd);
     });
     // GHL's list endpoint routinely omits items[] (especially for POS orders).
-    // Without the detail record, every paid $1,295 package falsely looks like an
-    // unknown product. Hydrate the small audit window before classifying it.
+    // GHL's list endpoint routinely omits items[] (especially for POS orders).
+    // Hydrate the small audit window before classifying it, otherwise a paid
+    // $1,295 package falsely looks like an unknown product.
     orders = await hydrateOrders(async (orderId) => {
       const detail = await ghlFetch(env, `/payments/orders/${orderId}?altId=${LOCATION_ID}&altType=location`);
       return detail.order || detail;
