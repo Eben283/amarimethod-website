@@ -11,10 +11,12 @@
 # breaks the SPA bundle load. Target is /staff/ (not /staff/index.html)
 # to avoid Cloudflare's trailing-slash canonicalization.
 /staff/messages /staff/ 200
+/staff/today /staff/ 200
 /staff/balances /staff/ 200
 /staff/clients /staff/ 200
 /staff/client/* /staff/ 200
 /staff/playbook /staff/ 200
+/staff/sharpen /staff/ 200
 /staff/outreach /staff/ 200
 /staff/partners /staff/ 200
 /staff/follow-up /staff/ 200
@@ -22,6 +24,9 @@
 /staff/field-studies /staff/ 200
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200
+/staff/cos /staff/ 200
+/staff/write /staff/ 200
+/staff/community /staff/ 200
 /staff/login /staff/ 200
 
 # SPA fallback for chief of staff
