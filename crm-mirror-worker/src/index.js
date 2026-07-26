@@ -1,4 +1,5 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
+import { dashboardHtml } from "./dashboard.js";
 import { mirrorStatus, reconciliationStatus } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
@@ -7,6 +8,16 @@ const DEFAULT_SOURCES = ["ghl", "stripe"];
 
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+}
+
+function html(body) {
+  return new Response(body, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
 }
 
 function parseSyncRequest(payload) {
@@ -20,10 +31,14 @@ function parseSyncRequest(payload) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+    // The shell has no data or action controls. Data endpoints remain protected,
+    // and the fragment-held access token is stripped from browser history.
+    if (request.method === "GET" && url.pathname === "/") return html(dashboardHtml());
+
     const denied = requireWorkerAuth(request, env);
     if (denied) return denied;
 
-    const url = new URL(request.url);
     try {
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB)) });
