@@ -512,11 +512,16 @@ export async function classifyPurchase(db, purchaseId, resolution, packageId, re
     classification = pack.name;
     nextPackageId = pack.id;
     reviewState = "confirmed";
+  } else if (resolution === "legacy_package") {
+    // Historical offerings predate the current price list. They are known to be
+    // packages, but their session count must not be inferred or ledgered.
+    classification = "Legacy package — pre-current pricing";
+    reviewState = "confirmed";
   } else if (resolution === "not_a_package") {
     classification = "Not a session package";
     reviewState = "not_a_package";
   } else {
-    throw new Error("resolution must be package or not_a_package");
+    throw new Error("resolution must be package, legacy_package, or not_a_package");
   }
   await db.prepare(
     `UPDATE purchases

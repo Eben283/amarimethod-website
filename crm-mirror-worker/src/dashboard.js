@@ -83,7 +83,7 @@ const DASHBOARD_HTML = `<!doctype html>
         <div class="grid">
           <article class="card"><span class="label">Pending review</span><strong class="value" id="pending-review">—</strong><span class="detail">No ledger entries have been created</span></article>
           <article class="card"><span class="label">Review candidates</span><strong class="value" id="candidates">—</strong><span class="detail">Exact email evidence, pending review</span></article>
-          <article class="card"><span class="label">Unclassified</span><strong class="value" id="unclassified">—</strong><span class="detail">Needs package identification</span></article>
+          <article class="card"><span class="label">Unclassified products</span><strong class="value" id="unclassified">—</strong><span class="detail">Needs a historical or current-product decision</span></article>
           <article class="card"><span class="label">Automatic posting</span><strong class="value" id="posting">Off</strong><span class="detail">Deliberately disabled</span></article>
         </div>
       </section>
@@ -95,7 +95,7 @@ const DASHBOARD_HTML = `<!doctype html>
         <div class="review-grid">
           <article class="review-shell"><div class="review-core"><h3>Exact-email candidates</h3><p>One Stripe customer email exactly matches one contact.</p><ul class="review-list" id="review-candidates"></ul></div></article>
           <article class="review-shell"><div class="review-core"><h3>Unmatched purchases</h3><p>No safe contact evidence is available yet.</p><ul class="review-list" id="review-unmatched"></ul></div></article>
-          <article class="review-shell"><div class="review-core"><h3>Unclassified packages</h3><p>Identity may be known; the package still needs a human decision.</p><ul class="review-list" id="review-unclassified"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Product classification</h3><p>Historical packages can be recorded without assigning a modern session count or balance.</p><ul class="review-list" id="review-unclassified"></ul></div></article>
         </div>
       </section>
 
@@ -237,11 +237,14 @@ const DASHBOARD_HTML = `<!doctype html>
               if (!selector.value) { actionStatus.textContent = "Choose a package before confirming."; return; }
               perform("/purchases/" + encodeURIComponent(row.purchase_id) + "/classification", { resolution: "package", packageId: selector.value });
             });
+            const legacy = document.createElement("button");
+            legacy.textContent = "Mark legacy package";
+            legacy.addEventListener("click", () => perform("/purchases/" + encodeURIComponent(row.purchase_id) + "/classification", { resolution: "legacy_package" }));
             const notPackage = document.createElement("button");
             notPackage.className = "danger";
             notPackage.textContent = "Not a session package";
             notPackage.addEventListener("click", () => perform("/purchases/" + encodeURIComponent(row.purchase_id) + "/classification", { resolution: "not_a_package" }));
-            actions.append(selector, confirm, notPackage);
+            actions.append(selector, confirm, legacy, notPackage);
             item.append(actions);
           });
           state.textContent = "Protected data loaded · no sender actions available";

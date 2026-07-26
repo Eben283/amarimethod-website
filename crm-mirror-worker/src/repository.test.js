@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, reconciliationReview, reconciliationStatus } from "./repository.js";
+import { activeClientOperations, classifyPurchase, reconciliationReview, reconciliationStatus } from "./repository.js";
 
 describe("CRM mirror active-client operations", () => {
   it("returns imported balance and upcoming-appointment views without creating a ledger", async () => {
@@ -20,6 +20,30 @@ describe("CRM mirror active-client operations", () => {
       activeClients: [{ contact_id: "c_1", sessions_remaining: "3", series_type: "8-session" }],
       upcomingAppointments: [{ appointment_id: "a_1", status: "confirmed" }],
     });
+  });
+});
+
+describe("CRM mirror historical package classification", () => {
+  it("records a legacy package without assigning a current package or session balance", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: () => ({
+          first: async () => sql.includes("SELECT id, classification") ? { id: "purchase_1", classification: "unclassified" } : null,
+          run: async () => { writes.push(sql); },
+        }),
+      }),
+    };
+
+    await expect(classifyPurchase(
+      db, "purchase_1", "legacy_package", null, "Eben", "2026-07-26T00:00:00.000Z",
+    )).resolves.toEqual({
+      purchaseId: "purchase_1",
+      classification: "Legacy package — pre-current pricing",
+      reviewState: "confirmed",
+      packageId: null,
+    });
+    expect(writes).toHaveLength(2);
   });
 });
 
