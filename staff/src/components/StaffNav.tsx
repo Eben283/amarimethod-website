@@ -1,20 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { Calendar, ListChecks, Users, Wallet, TrendingUp, Sparkles, BookOpen, Kanban, PenLine, ClipboardPlus } from 'lucide-react';
+import { Calendar, House, ListChecks, Users } from 'lucide-react';
 
-// Flat bottom nav — every staff surface lives in the footer. Messages + Outreach
-// were retired into Follow-Up (2026-06-13), which freed the room to drop the
-// "More" sheet and put everything one tap away.
+// The launcher is the operating-system home. The footer keeps only the four
+// places that are useful mid-task, including a reliable route back home.
 const NAV = [
-  { to: '/', label: 'Today', Icon: Calendar, end: true },
+  { to: '/', label: 'Home', Icon: House, end: true },
+  { to: '/today', label: 'Today', Icon: Calendar },
   { to: '/follow-up', label: 'Follow-Up', Icon: ListChecks },
   { to: '/clients', label: 'Clients', Icon: Users },
-  { to: '/field-studies', label: 'Studies', Icon: ClipboardPlus },
-  { to: '/balances', label: 'Balances', Icon: Wallet },
-  { to: '/funnel', label: 'Funnel', Icon: TrendingUp },
-  { to: '/pipeline', label: 'Pipeline', Icon: Kanban },
-  { to: '/cos', label: 'Ask', Icon: Sparkles },
-  { to: '/write', label: 'Write', Icon: PenLine },
-  { to: '/playbook', label: 'Playbooks', Icon: BookOpen },
 ];
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>

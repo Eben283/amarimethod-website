@@ -107,4 +107,26 @@
   .staff-mlabel {
     @apply font-mono text-[10px] uppercase tracking-[0.13em] text-amari-text-muted;
   }
+
+  /* Staff Home is intentionally a launcher, not another data-dense dashboard.
+     The icon tiles give each operational surface a clear physical "door". */
+  .staff-home-tool {
+    @apply relative min-h-[152px] overflow-hidden rounded-[22px] p-4 text-left transition-transform duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amari-charcoal focus-visible:ring-offset-2;
+  }
+
+  .staff-home-tool--charcoal { @apply bg-amari-charcoal text-white; }
+  .staff-home-tool--teal { @apply bg-[#1d6875] text-white; }
+  .staff-home-tool--apricot { @apply bg-amari-accent-warm text-white; }
+
+  .staff-home-tool__icon {
+    @apply flex h-10 w-10 items-center justify-center rounded-[14px] bg-white/15;
+  }
+  .staff-home-tool__icon svg { @apply h-5 w-5; stroke-width: 1.6; }
+  .staff-home-tool__copy { @apply absolute bottom-4 left-4 right-4 flex flex-col; }
+  .staff-home-tool__label { @apply text-base font-semibold leading-tight; }
+  .staff-home-tool__detail { @apply mt-1 max-w-[15ch] text-xs leading-4 text-white/75; }
+  .staff-home-tool__outbound { @apply absolute right-4 top-4 h-4 w-4 text-white/75; stroke-width: 1.6; }
+
+  .fs-topbar-brand { @apply flex items-center gap-[18px]; }
+  .fs-topbar .fs-home-link { @apply text-[10px] tracking-[.08em] text-[#e3e5db]; }
 }

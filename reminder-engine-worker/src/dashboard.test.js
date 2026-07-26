@@ -64,8 +64,9 @@ afterEach(() => vi.unstubAllGlobals());
 describe("GET /dashboard shell", () => {
   it("is a self-contained page with no data baked in", () => {
     expect(DASHBOARD_HTML).toContain("<title>");
+    expect(DASHBOARD_HTML).toContain("Amari Home");
     expect(DASHBOARD_HTML).not.toContain("flow-1-quiz"); // data arrives only via the gated endpoint
-    expect(DASHBOARD_HTML).not.toMatch(/https?:\/\/(?!reminder-engine)[a-z]/); // no external resources
+    expect(DASHBOARD_HTML).not.toMatch(/https?:\/\/(?!reminder-engine|www\.amarimethod\.com)[a-z]/); // no external resources
   });
 });
 

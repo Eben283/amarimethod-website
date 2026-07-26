@@ -258,6 +258,11 @@ export const DASHBOARD_HTML = `<!doctype html>
     padding: 28px 18px 80px;
   }
   .wrap { max-width: 720px; margin: 0 auto; }
+  .home-link {
+    color: var(--muted); display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; letter-spacing: .04em; text-decoration: none; margin-bottom: 20px;
+  }
+  .home-link:hover, .home-link:focus-visible { color: var(--accent); }
   header h1 {
     font-family: Georgia, "Times New Roman", serif; font-weight: 400;
     font-size: 30px; letter-spacing: 0.01em;
@@ -314,6 +319,7 @@ export const DASHBOARD_HTML = `<!doctype html>
 <body>
 <div class="wrap" id="app" hidden>
   <header>
+    <a class="home-link" href="https://www.amarimethod.com/staff/">← Amari Home</a>
     <h1>Automation Watch</h1>
     <p class="thesis">GHL is still doing the sending. This panel shows what the new system
     <b>would have done</b> — watching until the two agree.</p>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import TodayPage from './pages/TodayPage';
+import HomePage from './pages/HomePage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import BalancesPage from './pages/BalancesPage';
@@ -69,6 +70,16 @@ function AppRoutes() {
     <Routes>
       <Route
         path="/"
+        element={
+          <ProtectedRoute>
+            <LayoutWithNav>
+              <HomePage />
+            </LayoutWithNav>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/today"
         element={
           <ProtectedRoute>
             <LayoutWithNav>
