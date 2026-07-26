@@ -1,4 +1,4 @@
-import { ArrowUpRight, Building2, CalendarClock, ChevronLeft, ChevronRight, FileText, Image as ImageIcon, Mail, MapPin, MapPinned, Phone, RefreshCw, Sparkles, Users, X } from 'lucide-react';
+import { Building2, CalendarClock, ChevronLeft, ChevronRight, Image as ImageIcon, Mail, MapPin, MapPinned, Phone, RefreshCw, Sparkles, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCommunityRelationshipImage, getCommunityRelationships } from '../lib/api';
 import type { CommunityRelationship, CommunityRelationshipStage } from '../types/staff';
@@ -162,8 +162,6 @@ export default function CommunityPage() {
       </div>
       <div className="community-page__actions">
         <a href="https://www.google.com/maps/d/u/0/edit?mid=1SGDCg2GLSCvsK9sjFBZSTQtYJv3iYKg&ll=37.75680594284302%2C-122.44620750000001&z=13" target="_blank" rel="noreferrer"><MapPinned aria-hidden="true" /> Potential partner map</a>
-        <a href="https://www.amarimethod.com/field-signup" target="_blank" rel="noreferrer"><ArrowUpRight aria-hidden="true" /> Field signup</a>
-        <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> Garrett’s sales worksheet</a>
         <button type="button" onClick={() => void load()} disabled={loading}><RefreshCw aria-hidden="true" className={loading ? 'animate-spin' : ''} /> Refresh</button>
       </div>
     </header>
