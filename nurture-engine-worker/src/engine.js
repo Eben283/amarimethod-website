@@ -1,0 +1,143 @@
+// Nurture engine — orchestration. Ties the event taxonomy, the pure enroll logic, the D1
+// store, and the shadow-aware sweep together. Two entry points:
+//   handleEvent(env, raw, nowMs, deps?) — an event arrived (appointment via the dispatch seam,
+//       quiz/purchase/tag from their emitters): run exits, then entries, then the entries'
+//       onEnter tags back through exits (Flow 3 enrolling exits Flows 1+2 without a round-trip).
+//   runSweep(env, nowMs)                — the cron: fire (or shadow-log) every due step.
+//
+// Optional deps (wired later; safe defaults keep shadow zero-GHL):
+//   getContactTags(contactId)  → string[]  guard reads. Default: unknown (null) — shadow
+//       enrolls flagged guardUnchecked, active fails closed (see enroll.js).
+//   addContactTags(contactId, tags)        active-mode onEnter tag write (transition window).
+//       Shadow never calls it; an active sequence without it fails loudly, not silently.
+
+import { SEQUENCES } from "./config.js";
+import { toNurtureEvent, eventMatches } from "./events.js";
+import { enroll } from "./enroll.js";
+import { processStep } from "./sweep.js";
+import {
+  saveEnrollment, loadDueSteps, markStep, appendEvent, exitEnrollment, enrollmentId,
+} from "./store.js";
+import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+
+async function exitPass(db, event, nowMs, actions) {
+  for (const seq of SEQUENCES) {
+    if (!seq.exits.some((x) => eventMatches(x, event))) continue;
+    const { exitedSteps, closed } = await exitEnrollment(db, enrollmentId(seq.sequenceId, event.contactId));
+    if (!closed) continue; // no active enrollment — a no-op, no ghost events
+    await appendEvent(db, {
+      ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+      action: "exited", outcome: "exited", detail: { via: event.kind, exitedSteps },
+    });
+    actions.push({ engine: "nurture", action: "exit", detail: { sequenceId: seq.sequenceId, exitedSteps } });
+  }
+}
+
+async function applyOnEnterTags(db, seq, event, nowMs, deps, actions, syntheticTags) {
+  const onEnter = seq.entry.onEnter;
+  if (!onEnter) return;
+  for (const tag of onEnter.addTags) {
+    if (seq.mode === "active") {
+      try {
+        await deps.addContactTags(event.contactId, [tag]);
+        await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId, action: "tagged", outcome: "tagged", detail: { tag } });
+        actions.push({ engine: "nurture", action: "tag", detail: { sequenceId: seq.sequenceId, tag } });
+      } catch (err) {
+        await appendEvent(db, {
+          ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+          action: "tagged", outcome: "failed", detail: { tag, error: String((err && err.message) || err) },
+        });
+        actions.push({ engine: "nurture", action: "tag-failed", detail: { sequenceId: seq.sequenceId, tag } });
+      }
+    } else {
+      await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId, action: "would_tag", outcome: "would_tag", detail: { tag } });
+      actions.push({ engine: "nurture", action: "would_tag", detail: { sequenceId: seq.sequenceId, tag } });
+    }
+    // Internal exit signal in BOTH modes — code-side exits never depend on the GHL tag write.
+    syntheticTags.push(tag);
+  }
+}
+
+/**
+ * React to an inbound event. Order: exits on the real event, then entries, then the new
+ * enrollments' onEnter tags fed back through the exit pass. Idempotent (saveEnrollment de-dupes
+ * a repeated entry event). Returns { actions } for the dispatch seam / emitter to echo.
+ */
+export async function handleEvent(env, raw, nowMs, deps = {}) {
+  const db = env.NURTURE_DB;
+  const actions = [];
+  const event = toNurtureEvent(raw);
+  if (!event) return { actions };
+
+  const getContactTags = deps.getContactTags || (async () => null);
+  const fullDeps = {
+    addContactTags: async () => { throw new Error("active-mode tag writes not built yet"); },
+    ...deps,
+  };
+
+  await exitPass(db, event, nowMs, actions);
+
+  const syntheticTags = [];
+  for (const seq of SEQUENCES) {
+    if (!eventMatches(seq.entry.on, event)) continue;
+
+    let tags = null;
+    if (seq.entry.guard) {
+      try { tags = await getContactTags(event.contactId); } catch { tags = null; }
+    }
+    const enrollment = enroll(event, seq, { tags }, nowMs);
+    if (!enrollment) {
+      actions.push({ engine: "nurture", action: "guard-blocked", detail: { sequenceId: seq.sequenceId } });
+      continue;
+    }
+
+    const { created } = await saveEnrollment(db, enrollment);
+    if (!created) {
+      actions.push({ engine: "nurture", action: "enroll-noop", detail: { sequenceId: seq.sequenceId } });
+      continue;
+    }
+    await appendEvent(db, {
+      ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+      action: "enrolled", outcome: "enrolled",
+      detail: { via: event.kind, steps: enrollment.steps.length, mode: seq.mode, guardUnchecked: enrollment.guardUnchecked },
+    });
+    actions.push({ engine: "nurture", action: "enroll", detail: { sequenceId: seq.sequenceId } });
+    await applyOnEnterTags(db, seq, event, nowMs, fullDeps, actions, syntheticTags);
+  }
+
+  for (const tag of syntheticTags) {
+    await exitPass(db, { kind: "tag.added", contactId: event.contactId, tag }, nowMs, actions);
+  }
+
+  return { actions };
+}
+
+/**
+ * Cron sweep: process every due pending step. Shadow sequences log would_send and never send
+ * (and never read GHL); active sequences resolve branches against a fresh contact read and send
+ * via the shared GHL adapter. Returns per-outcome counts.
+ */
+export async function runSweep(env, nowMs, limit = 100) {
+  const db = env.NURTURE_DB;
+  const due = await loadDueSteps(db, nowMs, limit);
+  const seqByKey = Object.fromEntries(SEQUENCES.map((s) => [s.sequenceId, s]));
+
+  const deps = {
+    logEvent: (r) => appendEvent(db, r),
+    markStep: (enr, idx, status) => markStep(db, enrollmentId(enr.sequenceId, enr.contactId), idx, status),
+    // active-mode only; contact reads + copy templates are later bricks, so an active sequence
+    // fails loudly rather than sending a blank or misbranched message. Shadow never reaches these.
+    getContactFields: async () => { throw new Error("active-mode contact reads not built yet"); },
+    renderMessage: async () => { throw new Error("active-mode templates not built yet"); },
+    send: (msg) => sendConversationMessage({ env }, msg),
+  };
+
+  const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };
+  for (const item of due) {
+    const sequence = seqByKey[item.enrollment.sequenceId];
+    if (!sequence) continue;
+    const r = await processStep({ ...item, sequence }, deps, nowMs);
+    counts[r.outcome] = (counts[r.outcome] || 0) + 1;
+  }
+  return counts;
+}

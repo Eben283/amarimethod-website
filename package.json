@@ -12,7 +12,7 @@
     "lint": "cd quiz && eslint .",
     "check:field-ids": "node scripts/check-field-ids.mjs",
     "check:owned-access": "node scripts/check-owned-access.mjs",
-    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js"
+    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

@@ -1,0 +1,7 @@
+{
+  "name": "nurture-engine-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Code-side nurture-sequence engine — GHL acquisition-nurture workflow replacement (twin migration Unit B). Shadow-safe: computes and logs would-sends until switched to active per sequence."
+}

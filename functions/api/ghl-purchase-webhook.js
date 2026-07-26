@@ -28,6 +28,8 @@ import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { checkPackageBalance } from "../lib/session-consistency.js";
+import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
+import { emitNurtureEvent } from "../lib/engine-forward.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -636,6 +638,29 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} → ${newRemaining} (${pkg.name})`);
+
+    // Purchase event → nurture engine (Flow 3 exit fan-in matches the 4 series/upgrade
+    // productIds; other products are ignored engine-side). Fire-and-forget, dormant until
+    // the worker URL exists.
+    emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: resolvedProductId });
+
+    // ── 8c. Purchase-cluster seam (NON-BLOCKING — GHL exit Unit C) ──
+    // Series/upgrade purchases cancel any pending Post-Initial Upgrade Offer timer and
+    // record the confirmation (shadow mode: would_send only, no message leaves). Singles
+    // (seriesType null) keep the offer alive by design; LP-standalone never reaches this
+    // handler. No-ops without the AUTOMATION_DB binding; never throws.
+    if (pkg.seriesType !== null) {
+      const seam = await recordSeriesPurchase(context, {
+        contactId: sanitizedContactId,
+        seriesType: pkg.seriesType,
+        classification: pkg.classification,
+        ref: resolvedOrderId ? `order:${resolvedOrderId}` : `order:noid:${sanitizedContactId}:${Date.now()}`,
+        source: "order-webhook",
+      }, Date.now());
+      if (!seam.ok) {
+        console.error(`[ghl-purchase-webhook] purchase-cluster seam failed (non-fatal): ${seam.error}`);
+      }
+    }
 
     // ── 8b. Native-booking-flow initial session: also book the appointment ──
     // If this product is an Initial Session sold via the native flow, the

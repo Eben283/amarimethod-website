@@ -58,7 +58,7 @@ export const REMOVE_TAGS = ["discovery call attended", "quiz submitted", "ambass
 export const purchaseKvKey = (orderId) => `processed:${orderId}`;
 export const webhookKvKey = (orderId) => `order:${orderId}`;
 
-function readField(contact, fieldId) {
+export function readField(contact, fieldId) {
   const cf = (contact.customFields || []).find((x) => x.id === fieldId);
   if (!cf) return null;
   return cf.value ?? cf.field_value;

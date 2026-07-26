@@ -29,6 +29,7 @@ import { reconcileOrder } from "./reconcile.js";
 import { getContactCounts, syncContacts, syncFieldsForContact } from "./sync.js";
 import { nextChunk, isQueueStale, requeueAfterSweep } from "./queue.js";
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+import { sweepUpgradeOffers } from "./upgrade-offer-sweep.js";
 
 // Field-sync sweep chunk per run. ~5 subrequests per contact (4 fetches + 1 PUT).
 // Kept small to stay under the 50-subrequest free-tier cap alongside the order
@@ -47,6 +48,8 @@ const SLEEP_MS = 100;
 export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runReconcile(env, "cron", DEFAULT_LOOKBACK_HOURS));
+    // Upgrade-offer due sweep (GHL exit Unit C). No-ops until AUTOMATION_DB is bound.
+    ctx.waitUntil(sweepUpgradeOffers(env, Date.now()));
   },
 
   async fetch(request, env) {

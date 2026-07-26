@@ -3,6 +3,7 @@
 // Uses 2-step process: upsert contact, then PUT custom fields separately
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
+import { emitNurtureEvent } from "../lib/engine-forward.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -229,6 +230,13 @@ export async function onRequestPost(context) {
     const upsertData = await upsertResponse.json();
     const contactId = upsertData.contact?.id;
     console.log(`[send-to-ghl] Contact upserted: ${contactId || "unknown"}`);
+
+    // Quiz-submitted event → nurture engine (Flow 1 entry). Fire-and-forget, dormant until
+    // the NURTURE_ENGINE_URL Pages env exists (GHL exit — replaces the "quiz submitted" tag
+    // trigger). Never delays or breaks the quiz response.
+    if (contactId) {
+      emitNurtureEvent(context, { kind: "quiz.submitted", contactId });
+    }
 
     // ---- STEP 2: Update custom fields via PUT ----
     // This is a separate call because upsert doesn't reliably save custom fields
