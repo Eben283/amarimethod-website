@@ -1,4 +1,4 @@
-import { ArrowUpRight, Building2, CalendarClock, MapPin, RefreshCw, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, MapPin, MapPinned, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCommunityRelationships } from '../lib/api';
 import type { CommunityRelationship, CommunityRelationshipStage } from '../types/staff';
@@ -78,6 +78,7 @@ export default function CommunityPage() {
         <span>Places where a real conversation has started.</span>
       </div>
       <div className="community-page__actions">
+        <a href="https://www.google.com/maps/d/u/0/edit?mid=1SGDCg2GLSCvsK9sjFBZSTQtYJv3iYKg&ll=37.75680594284302%2C-122.44620750000001&z=13" target="_blank" rel="noreferrer"><MapPinned aria-hidden="true" /> Potential partner map</a>
         <a href="https://www.amarimethod.com/field-signup" target="_blank" rel="noreferrer"><ArrowUpRight aria-hidden="true" /> Field signup</a>
         <button type="button" onClick={() => void load()} disabled={loading}><RefreshCw aria-hidden="true" className={loading ? 'animate-spin' : ''} /> Refresh</button>
       </div>
