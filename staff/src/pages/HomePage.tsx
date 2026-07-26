@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, Kanban, ListChecks, Loader2, MapPinned, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -196,6 +196,18 @@ export default function HomePage() {
             </button>;
           })}
         </div>
+      </section>
+
+      <section className="staff-resources" aria-label="Staff resources">
+        <header>
+          <p>Resources</p>
+          <span>Reference materials</span>
+        </header>
+        <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
+          <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
+          <span className="staff-resources__copy"><strong>$5,500 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
+          <ArrowUpRight aria-hidden="true" />
+        </a>
       </section>
 
     </main>
