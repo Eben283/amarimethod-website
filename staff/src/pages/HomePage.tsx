@@ -7,21 +7,21 @@ type HomeTool = {
   Icon: typeof CalendarDays;
   to?: string;
   href?: string;
-  tone: 'charcoal' | 'teal' | 'apricot';
+  tone: 'ink' | 'lake' | 'coral' | 'moss' | 'ochre' | 'violet';
 };
 
 const TOOLS: HomeTool[] = [
-  { label: 'Today', detail: 'Schedule and session work', Icon: CalendarDays, to: '/today', tone: 'charcoal' },
-  { label: 'Follow-Up', detail: 'Personal client outreach', Icon: ListChecks, to: '/follow-up', tone: 'teal' },
-  { label: 'Clients', detail: 'People and session history', Icon: Users, to: '/clients', tone: 'charcoal' },
-  { label: 'Studies', detail: 'Field-study sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'apricot' },
-  { label: 'Automations', detail: 'Shadow watch and timing', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard', tone: 'teal' },
-  { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'apricot' },
-  { label: 'Money', detail: 'Balances and payments', Icon: Wallet, to: '/balances', tone: 'charcoal' },
-  { label: 'Funnel', detail: 'Lead flow overview', Icon: TrendingUp, to: '/funnel', tone: 'teal' },
-  { label: 'Pipeline', detail: 'People moving through care', Icon: Kanban, to: '/pipeline', tone: 'charcoal' },
-  { label: 'Write', detail: 'Voice-guided drafts', Icon: PenLine, to: '/write', tone: 'apricot' },
-  { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook', tone: 'teal' },
+  { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
+  { label: 'Follow-Up', detail: 'Outreach', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
+  { label: 'Clients', detail: 'People', Icon: Users, to: '/clients', tone: 'lake' },
+  { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
+  { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
+  { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
+  { label: 'Funnel', detail: 'Lead flow', Icon: TrendingUp, to: '/funnel', tone: 'ochre' },
+  { label: 'Pipeline', detail: 'Care flow', Icon: Kanban, to: '/pipeline', tone: 'lake' },
+  { label: 'Automations', detail: 'Message watch', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard', tone: 'ink' },
+  { label: 'Write', detail: 'Drafts', Icon: PenLine, to: '/write', tone: 'coral' },
+  { label: 'Playbooks', detail: 'Reference', Icon: BookOpen, to: '/playbook', tone: 'moss' },
 ];
 
 export default function HomePage() {
@@ -33,16 +33,17 @@ export default function HomePage() {
   }
 
   return (
-    <main className="staff-home px-5 pt-7 pb-6">
-      <header className="mb-8">
-        <p className="staff-mlabel mb-2">Amari Method</p>
-        <h1 className="text-[2.1rem] leading-none text-amari-charcoal">Home</h1>
-        <p className="mt-3 max-w-[31ch] text-sm leading-6 text-amari-text-secondary">
-          Open the part of the practice you need to run right now.
-        </p>
+    <main className="staff-home">
+      <header className="staff-home__masthead">
+        <div className="staff-home__wordmark">
+          <i aria-hidden="true" />
+          <span>Amari Method</span>
+        </div>
+        <h1>Operations</h1>
+        <p>Choose a work area.</p>
       </header>
 
-      <section aria-label="Amari tools" className="grid grid-cols-2 gap-3">
+      <section aria-label="Amari tools" className="staff-home__tools">
         {TOOLS.map((tool) => {
           const { Icon } = tool;
           return (
@@ -52,7 +53,7 @@ export default function HomePage() {
               onClick={() => open(tool)}
               className={`staff-home-tool staff-home-tool--${tool.tone}`}
             >
-              <span className="staff-home-tool__icon"><Icon aria-hidden="true" /></span>
+              <span className="staff-home-tool__face"><Icon aria-hidden="true" /></span>
               <span className="staff-home-tool__copy">
                 <span className="staff-home-tool__label">{tool.label}</span>
                 <span className="staff-home-tool__detail">{tool.detail}</span>

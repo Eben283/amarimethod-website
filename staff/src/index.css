@@ -108,24 +108,33 @@
     @apply font-mono text-[10px] uppercase tracking-[0.13em] text-amari-text-muted;
   }
 
-  /* Staff Home is intentionally a launcher, not another data-dense dashboard.
-     The icon tiles give each operational surface a clear physical "door". */
-  .staff-home-tool {
-    @apply relative min-h-[152px] overflow-hidden rounded-[22px] p-4 text-left transition-transform duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amari-charcoal focus-visible:ring-offset-2;
-  }
-
-  .staff-home-tool--charcoal { @apply bg-amari-charcoal text-white; }
-  .staff-home-tool--teal { @apply bg-[#1d6875] text-white; }
-  .staff-home-tool--apricot { @apply bg-amari-accent-warm text-white; }
-
-  .staff-home-tool__icon {
-    @apply flex h-10 w-10 items-center justify-center rounded-[14px] bg-white/15;
-  }
-  .staff-home-tool__icon svg { @apply h-5 w-5; stroke-width: 1.6; }
-  .staff-home-tool__copy { @apply absolute bottom-4 left-4 right-4 flex flex-col; }
-  .staff-home-tool__label { @apply text-base font-semibold leading-tight; }
-  .staff-home-tool__detail { @apply mt-1 max-w-[15ch] text-xs leading-4 text-white/75; }
-  .staff-home-tool__outbound { @apply absolute right-4 top-4 h-4 w-4 text-white/75; stroke-width: 1.6; }
+  /* A phone-like tools tray: one repeated, tactile shape gives the staff a
+     fast visual map without turning Home into another dashboard. */
+  .staff-home { max-width: 560px; margin: 0 auto; padding: 32px 20px 34px; }
+  .staff-home__masthead { margin: 0 2px 31px; }
+  .staff-home__wordmark { display: flex; align-items: center; gap: 8px; color: #52747c; font: 600 10px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
+  .staff-home__wordmark i { width: 9px; height: 9px; border-radius: 50%; background: #e48769; box-shadow: 13px 0 0 #d7a63f; }
+  .staff-home__masthead h1 { margin: 14px 0 0; color: #19343d; font-size: clamp(2.35rem, 11vw, 3.25rem); font-weight: 400; letter-spacing: -.055em; line-height: .92; }
+  .staff-home__masthead p { margin: 12px 0 0; color: #64777d; font-size: 14px; }
+  .staff-home__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 21px 12px; }
+  .staff-home-tool { position: relative; display: flex; min-width: 0; flex-direction: column; align-items: center; border: 0; background: transparent; color: #19343d; text-align: center; transition: transform 180ms ease; }
+  .staff-home-tool:active { transform: scale(.94); }
+  .staff-home-tool:focus-visible { outline: 3px solid #19343d; outline-offset: 5px; border-radius: 18px; }
+  .staff-home-tool__face { position: relative; display: grid; width: 100%; max-width: 80px; aspect-ratio: 1; place-items: center; overflow: hidden; border-radius: 23px; box-shadow: inset 0 1px 0 rgba(255,255,255,.32), 0 6px 12px rgba(25,52,61,.14); }
+  .staff-home-tool__face::after { position: absolute; inset: 7px; border: 1px solid rgba(255,255,255,.24); border-radius: 17px; content: ''; }
+  .staff-home-tool__face svg { position: relative; z-index: 1; width: 31px; height: 31px; color: white; stroke-width: 1.7; }
+  .staff-home-tool__copy { display: flex; min-width: 0; flex-direction: column; align-items: center; margin-top: 8px; }
+  .staff-home-tool__label { max-width: 100%; min-height: 2.4em; color: #243f47; font-size: 11px; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+  .staff-home-tool__detail { margin-top: 3px; color: #819096; font-size: 9px; line-height: 1.15; }
+  .staff-home-tool__outbound { position: absolute; top: 5px; right: calc(50% - 34px); z-index: 2; width: 12px; height: 12px; color: rgba(255,255,255,.78); stroke-width: 2; }
+  .staff-home-tool--ink .staff-home-tool__face { background: #19343d; }
+  .staff-home-tool--lake .staff-home-tool__face { background: #2d7980; }
+  .staff-home-tool--coral .staff-home-tool__face { background: #df8067; }
+  .staff-home-tool--moss .staff-home-tool__face { background: #70825e; }
+  .staff-home-tool--ochre .staff-home-tool__face { background: #d2a042; }
+  .staff-home-tool--violet .staff-home-tool__face { background: #74688c; }
+  @media (min-width: 540px) { .staff-home__tools { gap: 25px 18px; } .staff-home-tool__face { max-width: 90px; border-radius: 27px; } .staff-home-tool__face::after { border-radius: 21px; } }
+  @media (prefers-reduced-motion: reduce) { .staff-home-tool { transition: none; } }
 
   .fs-topbar-brand { @apply flex items-center gap-[18px]; }
   .fs-topbar .fs-home-link { @apply text-[10px] tracking-[.08em] text-[#e3e5db]; }
