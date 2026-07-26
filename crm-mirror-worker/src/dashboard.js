@@ -25,8 +25,19 @@ const DASHBOARD_HTML = `<!doctype html>
       .section > p { margin: 0 0 16px; color: #a6b8ac; line-height: 1.55; }
       .notice { display: flex; align-items: flex-start; gap: 12px; padding: 18px; border: 1px solid #694e26; border-radius: 14px; background: #2d2416; color: #f1d59b; line-height: 1.45; }
       .notice strong { color: #fff0c8; }
+      .review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .review-shell { padding: 5px; border-radius: 18px; background: #26362d; }
+      .review-core { min-height: 220px; padding: 16px; border-radius: 14px; background: #172019; }
+      .review-core h3 { margin: 0 0 6px; font-size: .94rem; }
+      .review-core > p { margin: 0 0 14px; color: #9caf9f; font-size: .78rem; line-height: 1.45; }
+      .review-list { display: grid; gap: 8px; padding: 0; margin: 0; list-style: none; }
+      .review-item { padding: 11px; border-radius: 11px; background: #202c24; }
+      .review-item strong, .review-item span { display: block; overflow-wrap: anywhere; }
+      .review-item strong { color: #e7f4ea; font-size: .82rem; }
+      .review-item span { margin-top: 4px; color: #9caf9f; font-size: .73rem; line-height: 1.35; }
+      .review-empty { color: #8fa295; font-size: .8rem; line-height: 1.45; }
       .footer { margin-top: 46px; color: #708378; font-size: .8rem; }
-      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -55,6 +66,16 @@ const DASHBOARD_HTML = `<!doctype html>
         </div>
       </section>
 
+      <section class="section">
+        <h2>Review workspace</h2>
+        <p>Prepare the human decisions here. This screen does not approve a link, classify a purchase, or write a session balance.</p>
+        <div class="review-grid">
+          <article class="review-shell"><div class="review-core"><h3>Exact-email candidates</h3><p>One Stripe customer email exactly matches one contact.</p><ul class="review-list" id="review-candidates"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Unmatched purchases</h3><p>No safe contact evidence is available yet.</p><ul class="review-list" id="review-unmatched"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Unclassified packages</h3><p>Identity may be known; the package still needs a human decision.</p><ul class="review-list" id="review-unclassified"></ul></div></article>
+        </div>
+      </section>
+
       <div class="notice"><span aria-hidden="true">✓</span><div><strong>Safe by design.</strong> This mirror only imports source data. It cannot send email or SMS, create appointments, update GoHighLevel, or alter a client’s session balance.</div></div>
       <p class="footer">Aggregate counts are shown only after protected operator access. This page intentionally contains no contact or payment details.</p>
     </main>
@@ -72,13 +93,15 @@ const DASHBOARD_HTML = `<!doctype html>
             if (!sessionResponse.ok) throw new Error("operator access was denied");
             history.replaceState(null, "", location.pathname);
           }
-          const [statusResponse, reconciliationResponse] = await Promise.all([
+          const [statusResponse, reconciliationResponse, reviewResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
             fetch("/reconciliation", { credentials: "same-origin" }),
+            fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !reconciliationResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
           const reconciliation = await reconciliationResponse.json();
+          const review = await reviewResponse.json();
           const set = (id, value) => { document.getElementById(id).textContent = String(value); };
           set("contacts", status.contacts);
           set("appointments", status.appointments);
@@ -91,6 +114,31 @@ const DASHBOARD_HTML = `<!doctype html>
           document.getElementById("last-import-detail").textContent = status.lastSync?.finished_at
             ? "GHL import " + status.lastSync.status + " · " + new Date(status.lastSync.finished_at).toLocaleString()
             : "No completed import reported";
+          const money = (row) => new Intl.NumberFormat("en-US", { style: "currency", currency: (row.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format((row.amount_cents || 0) / 100);
+          const render = (id, rows, title, detail) => {
+            const list = document.getElementById(id);
+            list.replaceChildren();
+            if (!rows.length) {
+              const empty = document.createElement("li");
+              empty.className = "review-empty";
+              empty.textContent = "Nothing in this queue.";
+              list.append(empty);
+              return;
+            }
+            for (const row of rows) {
+              const item = document.createElement("li");
+              item.className = "review-item";
+              const heading = document.createElement("strong");
+              heading.textContent = title(row);
+              const subline = document.createElement("span");
+              subline.textContent = detail(row);
+              item.append(heading, subline);
+              list.append(item);
+            }
+          };
+          render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized);
+          render("review-unmatched", review.unmatched, (row) => money(row) + " · " + row.classification, (row) => row.billing_email_normalized || "No billing email captured");
+          render("review-unclassified", review.unclassified, (row) => row.contact_display_name || row.billing_email_normalized || "Identity unresolved", (row) => money(row) + " · " + row.identity_status.replaceAll("_", " "));
           state.textContent = "Protected data loaded · no sender actions available";
         } catch (error) {
           state.textContent = "Protected operator session required";

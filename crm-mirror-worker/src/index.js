@@ -1,7 +1,7 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
 import { dashboardSessionCookie, hasDashboardSession } from "./dashboard-session.js";
-import { mirrorStatus, reconciliationQueue, reconciliationStatus } from "./repository.js";
+import { mirrorStatus, reconciliationQueue, reconciliationReview, reconciliationStatus } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -56,7 +56,7 @@ export default {
         const cookie = await dashboardSessionCookie(env);
         return json(200, { success: true, expiresInSeconds: 8 * 60 * 60 }, { "Set-Cookie": cookie });
       }
-      if (request.method === "GET" && ["/status", "/reconciliation", "/reconciliation/queue"].includes(url.pathname)) {
+      if (request.method === "GET" && ["/status", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -79,6 +79,14 @@ export default {
           success: true,
           worker: "amari-crm-mirror",
           candidates: await reconciliationQueue(env.CRM_DB, limit),
+        });
+      }
+      if (request.method === "GET" && url.pathname === "/reconciliation/review") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await reconciliationReview(env.CRM_DB, limit)),
         });
       }
       if (request.method === "POST" && url.pathname === "/sync") {

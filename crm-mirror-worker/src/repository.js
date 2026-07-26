@@ -294,3 +294,61 @@ export async function reconciliationQueue(db, limit) {
   ).bind(limit).all();
   return result.results || [];
 }
+
+export async function reconciliationReview(db, limit) {
+  const purchaseFields = `
+    purchase.provider_charge_id,
+    purchase.amount_cents,
+    purchase.currency,
+    purchase.purchased_at,
+    purchase.classification,
+    purchase.billing_email_normalized`;
+  const [candidates, unmatched, unclassified] = await db.batch([
+    db.prepare(
+      `SELECT
+         candidate.id AS candidate_id,
+         candidate.match_basis,
+         ${purchaseFields},
+         contact.display_name AS contact_display_name,
+         contact.email_normalized AS contact_email_normalized
+       FROM purchase_reconciliation_candidates candidate
+       JOIN purchases purchase ON purchase.id = candidate.purchase_id
+       JOIN contacts contact ON contact.id = candidate.contact_id
+       WHERE candidate.state = 'pending_review'
+       ORDER BY purchase.purchased_at DESC, candidate.created_at DESC
+       LIMIT ?`,
+    ).bind(limit),
+    db.prepare(
+      `SELECT ${purchaseFields}
+       FROM purchases purchase
+       LEFT JOIN purchase_reconciliation_candidates candidate
+         ON candidate.purchase_id = purchase.id AND candidate.state = 'pending_review'
+       WHERE purchase.contact_id IS NULL AND candidate.id IS NULL
+       ORDER BY purchase.purchased_at DESC
+       LIMIT ?`,
+    ).bind(limit),
+    db.prepare(
+      `SELECT
+         ${purchaseFields},
+         CASE
+           WHEN purchase.contact_id IS NOT NULL THEN 'source_linked'
+           WHEN candidate.id IS NOT NULL THEN 'candidate_pending'
+           ELSE 'unmatched'
+         END AS identity_status,
+         contact.display_name AS contact_display_name,
+         contact.email_normalized AS contact_email_normalized
+       FROM purchases purchase
+       LEFT JOIN purchase_reconciliation_candidates candidate
+         ON candidate.purchase_id = purchase.id AND candidate.state = 'pending_review'
+       LEFT JOIN contacts contact ON contact.id = COALESCE(purchase.contact_id, candidate.contact_id)
+       WHERE purchase.classification = 'unclassified'
+       ORDER BY purchase.purchased_at DESC
+       LIMIT ?`,
+    ).bind(limit),
+  ]);
+  return {
+    candidates: candidates.results || [],
+    unmatched: unmatched.results || [],
+    unclassified: unclassified.results || [],
+  };
+}

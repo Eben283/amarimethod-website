@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconciliationStatus } from "./repository.js";
+import { reconciliationReview, reconciliationStatus } from "./repository.js";
 
 describe("CRM mirror reconciliation status", () => {
   it("reports pending review without exposing purchase details or posting a ledger entry", async () => {
@@ -19,6 +19,24 @@ describe("CRM mirror reconciliation status", () => {
       unclassified: 1,
       pendingCandidates: 2,
       automaticLedgerPosting: false,
+    });
+  });
+});
+
+describe("CRM mirror reconciliation review", () => {
+  it("keeps candidates, unmatched purchases, and classification exceptions separate", async () => {
+    const db = {
+      prepare: () => ({ bind: () => ({}) }),
+      batch: async () => [
+        { results: [{ provider_charge_id: "ch_candidate" }] },
+        { results: [{ provider_charge_id: "ch_unmatched" }] },
+        { results: [{ provider_charge_id: "ch_unclassified" }] },
+      ],
+    };
+    await expect(reconciliationReview(db, 25)).resolves.toEqual({
+      candidates: [{ provider_charge_id: "ch_candidate" }],
+      unmatched: [{ provider_charge_id: "ch_unmatched" }],
+      unclassified: [{ provider_charge_id: "ch_unclassified" }],
     });
   });
 });
