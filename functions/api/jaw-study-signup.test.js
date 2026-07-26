@@ -76,7 +76,7 @@ describe('onRequestPost', () => {
       name: 'Jamie Rivera',
       phone: '4155551234',
       email: 'jamie@example.com',
-      side: 'left',
+      bodyPart: 'left',
     }));
 
     expect(res.status).toBe(200);
@@ -84,7 +84,7 @@ describe('onRequestPost', () => {
     const [, , options] = ghlFetchMock.mock.calls[0];
     const payload = JSON.parse(options.body);
 
-    expect(payload.tags).toEqual(['tmj-study-participant', 'tmj-study-side-left']);
+    expect(payload.tags).toEqual(['tmj-study-participant', 'tmj-left']);
     expect(payload.source).toBe('Jaw Tension Study');
     expect(payload.customFields).toEqual([
       { id: '1xhxStKyEN47shwjOKC0', value: 'Jaw Tension Study' },

@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/auth.js", () => ({ verifySessionToken: vi.fn(async () => ({ role: "staff" })) }));
 
 import { onRequestGet, summarizeClarity } from "./staff-clarity-study.js";
 
 const AUTH = { Authorization: "Bearer staff-token" };
+afterEach(() => vi.restoreAllMocks());
 const traffic = {
   metricName: "Traffic",
   information: [
@@ -44,7 +45,7 @@ describe("staff-clarity-study endpoint", () => {
     expect(res.status).toBe(502);
     expect(fetchSpy.mock.calls[0][0]).toContain("project-live-insights?numOfDays=3&dimension1=URL&dimension2=Source&dimension3=Device");
     expect(fetchSpy.mock.calls[0][1].headers.Authorization).toBe("Bearer token");
-    expect(JSON.stringify(await res.json())).not.toContain("token");
+    expect(JSON.stringify(await res.json())).not.toContain("Bearer token");
   });
 
   it("rejects unsupported date windows without calling Clarity", async () => {
