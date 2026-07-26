@@ -115,6 +115,9 @@ export async function recordFieldVisit(kv, user, input, images = []) {
     notes: string(input.notes, 2000) || null,
     workshop_signal: Boolean(input.workshop_signal),
     next_visit_on: dateOnly(input.next_visit_on),
+    event_on: dateOnly(input.event_on),
+    event_title: string(input.event_title, 240) || null,
+    event_details: string(input.event_details, 1200) || null,
     image_keys: imageKeys,
     created_at: now,
   };
@@ -139,6 +142,9 @@ export async function recordFieldVisit(kv, user, input, images = []) {
     contact: latestContact,
     relationship_stage: stage,
     workshop_signal: Boolean(visit.workshop_signal || existing?.workshop_signal),
+    event_on: visit.event_on || existing?.event_on || null,
+    event_title: visit.event_title || existing?.event_title || null,
+    event_details: visit.event_details || existing?.event_details || null,
     // Logging a completed visit clears the previous follow-up unless this
     // visit supplied a new date. That prevents old dates staying "due" forever.
     next_visit_on: visit.next_visit_on,

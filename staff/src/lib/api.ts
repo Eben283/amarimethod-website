@@ -775,6 +775,19 @@ export async function getCommunityRelationshipImage(
   return fetchApi(`/staff-community-image?partnerId=${encodeURIComponent(partnerId)}&image=${imageIndex}`);
 }
 
+export async function recordCommunityTouch(input: {
+  relationship: import('../types/staff').CommunityRelationship;
+  notes: string;
+  relationship_stage: import('../types/staff').CommunityRelationshipStage;
+  workshop_signal: boolean;
+  next_visit_on: string;
+  event_on: string;
+  event_title: string;
+  event_details: string;
+}): Promise<{ partner: import('../types/staff').CommunityRelationship }> {
+  return fetchApi('/staff-community-touch', { method: 'POST', body: JSON.stringify(input) });
+}
+
 export async function getFieldStudyParticipant(
   recordId: string,
 ): Promise<import('../types/staff').FieldStudyParticipant | null> {

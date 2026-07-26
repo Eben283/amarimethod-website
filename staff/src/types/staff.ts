@@ -15,6 +15,9 @@ export interface CommunityRelationship {
   relationship_stage: CommunityRelationshipStage;
   workshop_signal: boolean;
   next_visit_on: string | null;
+  event_on: string | null;
+  event_title: string | null;
+  event_details: string | null;
   latest_note: string | null;
   latest_visit_at: string | null;
   visit_count: number;

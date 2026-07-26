@@ -49,6 +49,10 @@ export async function onRequestGet(context) {
           visit_count: (latest.visit_count || 0) + (earlier.visit_count || 0),
           contact: latest.contact || earlier.contact || null,
           next_visit_on: latest.next_visit_on || earlier.next_visit_on || null,
+          event_on: latest.event_on || earlier.event_on || null,
+          event_title: latest.event_title || earlier.event_title || null,
+          event_details: latest.event_details || earlier.event_details || null,
+          image_keys: [...new Set([...(latest.image_keys || []), ...(earlier.image_keys || [])])],
         });
       }
     }

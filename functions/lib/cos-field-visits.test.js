@@ -104,6 +104,25 @@ describe("field visit records", () => {
     });
   });
 
+  it("keeps confirmed event details on the durable relationship record", async () => {
+    const kv = new MemoryKv();
+    await recordFieldVisit(kv, "Eben", {
+      business_name: "Golden Gate Park Tennis Center",
+      relationship_stage: "partner",
+      event_on: "2026-09-25",
+      event_title: "Tennis-center tabling",
+      event_details: "Bring the banner, offer, and table wares.",
+    });
+    const record = await recordFieldVisit(kv, "Eben", {
+      business_name: "Golden Gate Park Tennis Center",
+      notes: "Betsy confirmed the table location.",
+    });
+
+    expect(record.partner.event_on).toBe("2026-09-25");
+    expect(record.partner.event_title).toBe("Tennis-center tabling");
+    expect(record.partner.event_details).toBe("Bring the banner, offer, and table wares.");
+  });
+
   it("keeps valid visit photos separate from the compact business record", async () => {
     const kv = new MemoryKv();
     const { visit } = await recordFieldVisit(kv, "Eben", {
