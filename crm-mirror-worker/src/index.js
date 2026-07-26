@@ -85,6 +85,11 @@ export default {
         const cookie = await reviewSessionCookie(env);
         return json(200, { success: true, expiresInSeconds: 15 * 60 }, { "Set-Cookie": cookie });
       }
+      if (request.method === "GET" && url.pathname === "/review-session") {
+        const denied = await requireDashboardReadAuth(request, env);
+        if (denied) return denied;
+        return json(200, { success: true, active: await hasReviewSession(request, env) });
+      }
       const candidateDecision = url.pathname.match(/^\/reconciliation\/candidates\/([^/]+)\/decision$/);
       if (request.method === "POST" && candidateDecision) {
         const denied = await requireReviewWriteAuth(request, env);

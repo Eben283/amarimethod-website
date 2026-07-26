@@ -90,7 +90,9 @@ const DASHBOARD_HTML = `<!doctype html>
     </main>
     <script>
       (async () => {
-        const token = new URLSearchParams(location.hash.slice(1)).get("access_token");
+        const fragment = new URLSearchParams(location.hash.slice(1));
+        const token = fragment.get("access_token");
+        const reviewToken = fragment.get("review_access_token");
         const state = document.querySelector("#state span:last-child");
         try {
           if (token) {
@@ -100,17 +102,29 @@ const DASHBOARD_HTML = `<!doctype html>
               credentials: "same-origin",
             });
             if (!sessionResponse.ok) throw new Error("operator access was denied");
-            history.replaceState(null, "", location.pathname);
           }
-          const [statusResponse, reconciliationResponse, reviewResponse] = await Promise.all([
+          if (reviewToken) {
+            const reviewSessionResponse = await fetch("/review-session", {
+              method: "POST",
+              headers: { Authorization: "Bearer " + reviewToken },
+              credentials: "same-origin",
+            });
+            if (!reviewSessionResponse.ok) throw new Error("review access was denied");
+          }
+          if (token || reviewToken) {
+            history.replaceState(null, "", location.pathname + location.search);
+          }
+          const [statusResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
             fetch("/reconciliation", { credentials: "same-origin" }),
             fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
+            fetch("/review-session", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
           const reconciliation = await reconciliationResponse.json();
           const review = await reviewResponse.json();
+          const reviewSession = await reviewSessionResponse.json();
           const set = (id, value) => { document.getElementById(id).textContent = String(value); };
           set("contacts", status.contacts);
           set("appointments", status.appointments);
@@ -126,6 +140,9 @@ const DASHBOARD_HTML = `<!doctype html>
           const money = (row) => new Intl.NumberFormat("en-US", { style: "currency", currency: (row.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format((row.amount_cents || 0) / 100);
           const reviewer = () => document.getElementById("reviewer-name").value.trim();
           const actionStatus = document.getElementById("review-action-status");
+          actionStatus.textContent = reviewSession.active
+            ? "Elevated review session active for 15 minutes."
+            : "Read-only until an elevated review session is opened.";
           const perform = async (path, body) => {
             if (!reviewer()) {
               actionStatus.textContent = "Enter your reviewer name before making a decision.";

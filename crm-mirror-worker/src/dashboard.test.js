@@ -6,6 +6,7 @@ describe("CRM mirror dashboard", () => {
     const html = dashboardHtml();
     expect(html).toContain("Read-only operator view");
     expect(html).toContain('fetch("/dashboard-session"');
+    expect(html).toContain('fetch("/review-session"');
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/reconciliation", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/reconciliation/review?limit=50", { credentials: "same-origin" })');
