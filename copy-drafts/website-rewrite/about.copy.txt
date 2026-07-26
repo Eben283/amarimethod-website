@@ -1,0 +1,92 @@
+# Rewrite draft: about.html  (type: core)
+# DRAFT - not applied to live HTML, nothing committed
+
+## FLAGS
+- Schema Person markup (head, ~line 49): "@id": "https://www.amarimethod.com/about#dr-garrett". The "dr-garrett" fragment needs to change (suggest #garrett). Not visible copy, but it ships in the page source.
+- Portrait image filename (~line 152): images/Dr-Garrett-Headshot-2.avif. "Dr" in the filename, served publicly. Needs a rename + reference update.
+- Schema sameAs LinkedIn URL (~line 75): slug is "garrett-hewstan-dc-4bb940183". The "dc" is in his LinkedIn URL itself. Flagging for a call on whether to drop the sameAs link entirely.
+- Pain-relief-identity drift corrected: the whole source page frames the product as "learn 8 protocols to fix your own pain." Hero "Teaching you to fix it yourself" also breaks the site's own "no fix" terminology rule. Rewritten so pain relief is the front door and the product is guided movement, state change, and self-access.
+- The brief allows "trained in Network Spinal work," but this repo's CLAUDE.md bans naming Network Spinal on the site (Garrett doesn't want the association). I described the training as table-based gateway work without the brand name.
+- Carried over as-is from source, unverified by me: "25 years," "4.9 average client rating," "about five minutes a day" home practice. They read as established site facts, not placeholders, so I kept them rather than [TBD].
+
+## REWRITE
+
+### Meta (head)
+Title: Garrett Hewstan | Creator of the Amari Method | San Francisco
+Meta description: Meet Garrett Hewstan, creator of the Amari Method. Guided movement sessions in San Francisco where Garrett guides and you move into your own breakthrough. Most clients feel relief in the first session.
+
+### Hero
+H1: Garrett guides. Your body does the *work.*
+Sub: Creator of the Amari Method. 25 years of hands-on practice. San Francisco and virtual.
+Meta blurb: Sessions are guided movement. You're on your feet with props, and Garrett guides you toward what your body is ready to release. Most clients come in for pain and feel relief in the first session. The deeper work, the part people stay for, starts after that.
+Stat 1: 25+ / Years of hands-on practice
+Stat 2: 8 / Core protocols
+
+### Split Portrait (pull quote, Garrett first person)
+Eyebrow: Why he built it
+H2 (quote): Every approach I trained in had the client lying still while someone else did the work. I built this so you're the one *moving.* I guide, and you move into your own breakthrough.
+Attribution: Garrett Hewstan · Creator of the Amari Method
+
+### In a Session
+Label: In a session
+H3: He watches how your body *responds.*
+Body p1: You spend the session on your feet. Garrett sets up props, gymnastic rings to hold, blocks to move over, positions where you hang and let your body open, and guides you through them while he watches how you respond. He isn't doing the work to you. He's showing you where your body is holding, and you're the one who moves into the release.
+Body p2: The work usually starts with pain. A neck that won't turn, a back that keeps flaring. That part tends to shift fast, and most people feel relief in the first session. What comes after is the deeper part of the method. Your nervous system settles, your breath drops lower, and things your body has been holding for years start to move. Sessions can get emotional, and Garrett treats that as part of the work rather than a detour from it.
+
+### Credentials grid
+25+ / Years of hands-on practice: Two and a half decades of working with bodies in pain, across every age and every kind of life.
+8 / Core protocols: Eight core rebalancing protocols. You learn them in session, and they go home with you.
+4.9 / Average client rating: Nearly every client leaves the first session feeling a difference. Many say it's the first thing that's worked.
+✓ / Satisfaction guaranteed: If you don't feel noticeable relief after your first session, we keep working with you until you do, at no additional charge.
+
+### Origin Story
+H2: Named for a boy whose story changed *everything.*
+Lead: Garrett knows what it feels like when a body turns a corner. As a kid he spent nights in hospital oxygen tents with severe asthma. Then his mother took him to a practitioner, and over the following months he came off the medication and started breathing on his own again. That experience is why he went on to study the body professionally.
+P2: Years later, in his final year of training, a woman named Phyllis told him her 11-year-old grandson had just died from complications of asthma. His name was Amari.
+P3: Amari was the same age Garrett had been when that kind of care changed his life. He kept coming back to one question: *What if I could have helped him?*
+Photo caption: Amari, the boy who inspired the method
+
+### The Promise
+Eyebrow: The Promise
+Blockquote: In that moment, Garrett made a promise to Amari and to his own younger self. He would spend the rest of his working life teaching people what saved him, and he would keep it within reach of anyone willing to do the work.
+Signature: Garrett Hewstan
+
+### Why "Amari"
+Label: Why "Amari"
+H2: Every person who moves through this work *carries his name forward.*
+Body p1: Garrett named the method after Amari so the promise would stay attached to the work. It isn't a brand name he picked from a list. It's a reminder of who the work is for.
+Body p2: Twenty-five years on, that promise still shapes how he shows up for every client who walks in.
+
+### What Makes the Method Different
+H2: What makes the method *different.*
+Lead: Four things about how sessions work, and why Garrett set them up that way after 25 years inside other approaches.
+
+01 H3: Most clients feel relief in the first session.
+01 body: That's the front door. The method underneath is about access. You learn to reach the places where your body braces, and you learn to change your own state instead of waiting for it to change. The pain quieting down is usually the first sign that the deeper work has started.
+
+02 H3: The work happens off the table, on your feet.
+02 body: Garrett spent years guiding gateway work with clients lying down. He kept seeing that the real shift happened when the client moved, so he rebuilt the work standing up. You hold rings or hang, you move over blocks, and Garrett guides you through what he sees in how you respond.
+
+03 H3: Nothing gets cracked or adjusted.
+03 body: There are no drugs and no surgery. Your own movement does the reorganizing. You don't come back forever, and the home practice is about five minutes a day on your living room floor.
+
+04 H3: If you don't feel a difference, we keep working.
+04 body: If you don't experience noticeable relief after your first session, we keep working with you until you do, at no additional charge.
+
+### Testimonial (kept verbatim)
+Quote: I finally understand *WHY* my neck has been hurting. That's worth more than any treatment I've ever had.
+Attribution: Tyler · Photographer
+
+### CTA
+H2: Ready to experience the *Amari Method?*
+Body: Your first session is 60 minutes with Garrett, and most clients feel a difference before they leave. If you don't, we keep working with you until you do. Follow-ups are 50 minutes, and most people continue in a series of 4 or 8 sessions.
+Button 1: Book your first session
+Button 2: Take the free assessment
+
+## NOTES
+- Repositioned the whole page off the "fix your own pain" DIY frame. Pain relief now reads as the front door, with the physical, then nervous-system, then emotional throughline carried in the hero blurb, the session section, and approach item 01.
+- Replaced hero "Teaching you to fix it yourself" (breaks the site's own no-"fix" rule) with the guide/agency frame: Garrett guides, the client does the work.
+- Made sessions concrete for the first time on this page: standing, rings, blocks, hanging positions, 60-minute initial, 50-minute follow-ups, series of 4 or 8. The source About page never said what a session physically looks like.
+- Added the origin of the format itself (table-based gateway work taken off the table into standing movement) in approach item 02, without naming Network Spinal per repo rules.
+- De-slopped source tells: the "accessible, effective, and empowering" triad in the promise, the "learn, practice, and take home" triad in the hero, "actually worked" in the 4.9 blurb, and fragment-posing lines ("Not a prescription. Not a treatment you wait out.").
+- Kept exactly: Tyler's testimonial (including his CAPS "WHY"), the guarantee wording, the Amari/Phyllis story facts, all stats, and both CTA button labels. No prices appear on this page, so no [TBD] was needed.
