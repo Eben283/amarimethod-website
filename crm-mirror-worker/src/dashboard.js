@@ -78,10 +78,10 @@ const DASHBOARD_HTML = `<!doctype html>
       </section>
 
       <section class="section">
-        <h2>Reconciliation queue</h2>
-        <p>Purchases stay out of the session ledger until an operator can account for them correctly.</p>
+        <h2>Purchase records</h2>
+        <p>Stripe purchases are imported as records. Session-ledger posting is deliberately off during the mirror phase, so this is not a work queue.</p>
         <div class="grid">
-          <article class="card"><span class="label">Pending review</span><strong class="value" id="pending-review">—</strong><span class="detail">No ledger entries have been created</span></article>
+          <article class="card"><span class="label">Imported purchases</span><strong class="value" id="pending-review">—</strong><span class="detail">No session credits or ledger entries created</span></article>
           <article class="card"><span class="label">Review candidates</span><strong class="value" id="candidates">—</strong><span class="detail">Exact email evidence, pending review</span></article>
           <article class="card"><span class="label">Unclassified products</span><strong class="value" id="unclassified">—</strong><span class="detail">Needs a historical or current-product decision</span></article>
           <article class="card"><span class="label">Automatic posting</span><strong class="value" id="posting">Off</strong><span class="detail">Deliberately disabled</span></article>
