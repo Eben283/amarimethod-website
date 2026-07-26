@@ -9,7 +9,8 @@ export default function StaffHomeWidget() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  if (!isAuthenticated || NO_WIDGET_ROUTES.has(location.pathname)) return null;
+  const hasSessionHeaderHome = location.pathname.startsWith('/client/');
+  if (!isAuthenticated || hasSessionHeaderHome || NO_WIDGET_ROUTES.has(location.pathname)) return null;
 
   const isChat = location.pathname === '/cos' || location.pathname === '/write';
 

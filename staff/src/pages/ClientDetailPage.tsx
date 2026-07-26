@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
+  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
@@ -338,9 +338,14 @@ export default function ClientDetailPage() {
       {/* ── sticky identity header ── */}
       <header className="sa-head">
         <div className="sa-head-top">
-          <button className="sa-back" onClick={() => navigate(-1)}>
-            <ArrowLeft size={18} /><span>All clients</span>
-          </button>
+          <div className="sa-head-nav">
+            <button className="sa-home" onClick={() => navigate('/')}>
+              <House size={16} /><span>Home</span>
+            </button>
+            <button className="sa-back" onClick={() => navigate('/clients')}>
+              <ArrowLeft size={18} /><span>All clients</span>
+            </button>
+          </div>
           <button className="sa-sync" onClick={loadClient} disabled={isLoading}>
             <RefreshCw size={14} className={isLoading ? 'sa-spin' : ''} />
             <span>{isLoading ? 'Refreshing' : 'Refresh'}</span>

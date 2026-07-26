@@ -32,6 +32,11 @@
   backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
   padding:14px 28px;}
 .sa-head-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.sa-head-nav{display:flex; align-items:center; gap:3px;}
+.sa-home{display:inline-flex; align-items:center; gap:6px; color:var(--accent-ink); white-space:nowrap;
+  min-height:44px; font-family:var(--mono); font-size:11px; letter-spacing:.04em; padding:7px 10px; border-radius:8px;
+  background:var(--accent-tint)!important;}
+.sa-home:hover{background:#d6eaee!important; color:var(--accent-ink)!important;}
 .sa-back{display:inline-flex; align-items:center; gap:6px; color:var(--muted); white-space:nowrap;
   font-size:14px; font-weight:500; padding:6px 8px 6px 4px; border-radius:8px;}
 .sa-back:hover{background:var(--tint); color:var(--ink);}
