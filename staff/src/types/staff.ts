@@ -18,6 +18,12 @@ export interface CommunityRelationship {
   latest_note: string | null;
   latest_visit_at: string | null;
   visit_count: number;
+  image_count: number;
+}
+
+export interface CommunityRelationshipImage {
+  image_count: number;
+  image_data_url: string | null;
 }
 
 // Per-session payment status, keyed per appointment (see functions/lib/session-payment.js).

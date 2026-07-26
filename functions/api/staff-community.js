@@ -55,7 +55,13 @@ export async function onRequestGet(context) {
 
     const partners = [...merged.values()]
       .sort((a, b) => String(a.next_visit_on || "9999-12-31").localeCompare(String(b.next_visit_on || "9999-12-31")) || String(b.latest_visit_at || "").localeCompare(String(a.latest_visit_at || "")));
-    return new Response(JSON.stringify({ partners }), { status: 200, headers });
+    return new Response(JSON.stringify({ partners: partners.map((partner) => ({
+      ...partner,
+      image_count: Array.isArray(partner.image_keys) ? partner.image_keys.length : 0,
+      // The keys are internal implementation detail; photos load through the
+      // dedicated Staff-authenticated endpoint only when a card is opened.
+      image_keys: undefined,
+    })) }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-community]", err);
     return new Response(JSON.stringify({ error: "Could not load community relationships" }), { status: 500, headers });

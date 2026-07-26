@@ -768,6 +768,13 @@ export async function getCommunityRelationships(): Promise<import('../types/staf
   return result.partners;
 }
 
+export async function getCommunityRelationshipImage(
+  partnerId: string,
+  imageIndex = 0,
+): Promise<import('../types/staff').CommunityRelationshipImage> {
+  return fetchApi(`/staff-community-image?partnerId=${encodeURIComponent(partnerId)}&image=${imageIndex}`);
+}
+
 export async function getFieldStudyParticipant(
   recordId: string,
 ): Promise<import('../types/staff').FieldStudyParticipant | null> {

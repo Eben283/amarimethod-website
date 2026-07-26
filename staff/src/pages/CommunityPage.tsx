@@ -1,6 +1,6 @@
-import { ArrowUpRight, Building2, CalendarClock, FileText, MapPin, MapPinned, RefreshCw, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, ChevronLeft, ChevronRight, FileText, Image as ImageIcon, Mail, MapPin, MapPinned, Phone, RefreshCw, Sparkles, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getCommunityRelationships } from '../lib/api';
+import { getCommunityRelationshipImage, getCommunityRelationships } from '../lib/api';
 import type { CommunityRelationship, CommunityRelationshipStage } from '../types/staff';
 
 const STAGE: Record<CommunityRelationshipStage, { label: string; tone: string }> = {
@@ -29,9 +29,9 @@ function relativeDate(value: string | null) {
   return `Revisit ${compactDate(value)}`;
 }
 
-function RelationshipCard({ partner }: { partner: CommunityRelationship }) {
+function RelationshipCard({ partner, onOpen }: { partner: CommunityRelationship; onOpen: (partner: CommunityRelationship) => void }) {
   const stage = STAGE[partner.relationship_stage] || STAGE.host;
-  return <article className="community-card">
+  return <button type="button" className="community-card" onClick={() => onOpen(partner)} aria-label={`Open ${partner.business_name} relationship record`}>
     <div className="community-card__head">
       <span className={`community-stage community-stage--${stage.tone}`}>{stage.label}</span>
       <span className="community-card__visits">{partner.visit_count} visit{partner.visit_count === 1 ? '' : 's'}</span>
@@ -43,15 +43,70 @@ function RelationshipCard({ partner }: { partner: CommunityRelationship }) {
     <footer>
       <span className={partner.next_visit_on && partner.next_visit_on <= localDate() ? 'community-card__due community-card__due--now' : 'community-card__due'}><CalendarClock aria-hidden="true" /> {relativeDate(partner.next_visit_on)}</span>
       {partner.contact?.name && <span className="community-card__contact"><Users aria-hidden="true" /> {partner.contact.name}{partner.contact.role ? ` · ${partner.contact.role}` : ''}</span>}
+      {partner.image_count > 0 && <span className="community-card__image"><ImageIcon aria-hidden="true" /> {partner.image_count} card photo{partner.image_count === 1 ? '' : 's'} <ChevronRight aria-hidden="true" /></span>}
       {partner.workshop_signal && <span className="community-card__workshop"><Sparkles aria-hidden="true" /> Workshop conversation</span>}
     </footer>
-  </article>;
+  </button>;
+}
+
+function RelationshipDetail({ partner, image, imageCount, imageIndex, imageLoading, imageError, onClose, onPrevious, onNext }: {
+  partner: CommunityRelationship;
+  image: string | null;
+  imageCount: number;
+  imageIndex: number;
+  imageLoading: boolean;
+  imageError: string;
+  onClose: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const stage = STAGE[partner.relationship_stage] || STAGE.host;
+  return <div className="community-detail__veil" role="presentation" onMouseDown={onClose}>
+    <section className="community-detail" role="dialog" aria-modal="true" aria-label={`${partner.business_name} relationship record`} onMouseDown={(event) => event.stopPropagation()}>
+      <header>
+        <span className={`community-stage community-stage--${stage.tone}`}>{stage.label}</span>
+        <button type="button" onClick={onClose} aria-label="Close relationship record"><X aria-hidden="true" /></button>
+      </header>
+      <div className="community-detail__body">
+        <div className="community-detail__photo">
+          {imageLoading ? <span><RefreshCw className="animate-spin" aria-hidden="true" /> Loading card photo…</span> : image ? <img src={image} alt={`Business card for ${partner.business_name}`} /> : <span><ImageIcon aria-hidden="true" /> {imageError || 'No business-card photo captured yet.'}</span>}
+        </div>
+        {imageCount > 1 && <nav className="community-detail__gallery" aria-label="Business card photos">
+          <button type="button" onClick={onPrevious} disabled={imageIndex === 0}><ChevronLeft aria-hidden="true" /></button>
+          <span>{imageIndex + 1} / {imageCount}</span>
+          <button type="button" onClick={onNext} disabled={imageIndex === imageCount - 1}><ChevronRight aria-hidden="true" /></button>
+        </nav>}
+        <div className="community-detail__copy">
+          <p>Relationship record</p>
+          <h2>{partner.business_name}</h2>
+          {partner.location && <span className="community-detail__location"><MapPin aria-hidden="true" /> {partner.location}</span>}
+          {partner.latest_note && <p className="community-detail__note">{partner.latest_note}</p>}
+          <span className={partner.next_visit_on && partner.next_visit_on <= localDate() ? 'community-detail__due community-detail__due--now' : 'community-detail__due'}><CalendarClock aria-hidden="true" /> {relativeDate(partner.next_visit_on)}</span>
+        </div>
+        {partner.contact && (partner.contact.name || partner.contact.email || partner.contact.phone) && <section className="community-detail__contact">
+          <p>Person at the business</p>
+          {partner.contact.name && <strong>{partner.contact.name}</strong>}
+          {partner.contact.role && <span>{partner.contact.role}</span>}
+          <div>
+            {partner.contact.email && <a href={`mailto:${partner.contact.email}`}><Mail aria-hidden="true" /> Email</a>}
+            {partner.contact.phone && <a href={`tel:${partner.contact.phone.replace(/[^+\d]/g, '')}`}><Phone aria-hidden="true" /> Call</a>}
+          </div>
+        </section>}
+      </div>
+    </section>
+  </div>;
 }
 
 export default function CommunityPage() {
   const [partners, setPartners] = useState<CommunityRelationship[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedPartner, setSelectedPartner] = useState<CommunityRelationship | null>(null);
+  const [image, setImage] = useState<string | null>(null);
+  const [imageCount, setImageCount] = useState(0);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -61,12 +116,40 @@ export default function CommunityPage() {
     finally { setLoading(false); }
   }, []);
 
+  const loadImage = useCallback(async (partner: CommunityRelationship, index = 0) => {
+    setImageLoading(true);
+    setImageError('');
+    setImage(null);
+    try {
+      const result = await getCommunityRelationshipImage(partner.id, index);
+      setImage(result.image_data_url);
+      setImageCount(result.image_count);
+      setImageIndex(index);
+    } catch (err) {
+      setImageError(err instanceof Error ? err.message : 'Could not load the card photo.');
+    } finally { setImageLoading(false); }
+  }, []);
+
+  const openPartner = useCallback((partner: CommunityRelationship) => {
+    setSelectedPartner(partner);
+    setImageCount(partner.image_count || 0);
+    setImageIndex(0);
+    setImageError('');
+    setImage(null);
+    if (partner.image_count) void loadImage(partner);
+  }, [loadImage]);
+
+  const closePartner = useCallback(() => setSelectedPartner(null), []);
+
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (!selectedPartner) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') closePartner(); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [selectedPartner, closePartner]);
 
   const due = useMemo(() => partners.filter((partner) => partner.next_visit_on && partner.next_visit_on <= localDate()), [partners]);
-  // A return visit is the immediate next action. Keep each business in one
-  // lane, so a workshop signal does not hide a due relationship or duplicate
-  // the same card across the board.
   const workshop = useMemo(() => partners.filter((partner) => !due.includes(partner) && (partner.workshop_signal || partner.relationship_stage === 'workshop_opportunity')), [partners, due]);
   const building = useMemo(() => partners.filter((partner) => !due.includes(partner) && !workshop.includes(partner)), [partners, due, workshop]);
 
@@ -91,9 +174,10 @@ export default function CommunityPage() {
     </section>
 
     {error ? <section className="community-empty community-empty--error"><p>{error}</p><button type="button" onClick={() => void load()}>Try again</button></section> : loading ? <section className="community-empty"><RefreshCw className="animate-spin" aria-hidden="true" /><p>Loading field relationships…</p></section> : partners.length === 0 ? <section className="community-empty"><Building2 aria-hidden="true" /><h2>No field relationships yet</h2><p>After the first visit, log the business through Chief of Staff and it will appear here.</p></section> : <div className="community-lanes">
-      <section className="community-lane community-lane--due"><header><p>Revisit</p><span>{due.length} due</span></header>{due.length ? due.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">Nothing needs a return visit today.</p>}</section>
-      <section className="community-lane"><header><p>Building</p><span>{building.length} relationships</span></header>{building.length ? building.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">No active relationship notes yet.</p>}</section>
-      <section className="community-lane community-lane--workshop"><header><p>Deeper partnership</p><span>{workshop.length} signals</span></header>{workshop.length ? workshop.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">Workshop conversations will collect here.</p>}</section>
+      <section className="community-lane community-lane--due"><header><p>Revisit</p><span>{due.length} due</span></header>{due.length ? due.map((partner) => <RelationshipCard key={partner.id} partner={partner} onOpen={openPartner} />) : <p className="community-lane__empty">Nothing needs a return visit today.</p>}</section>
+      <section className="community-lane"><header><p>Building</p><span>{building.length} relationships</span></header>{building.length ? building.map((partner) => <RelationshipCard key={partner.id} partner={partner} onOpen={openPartner} />) : <p className="community-lane__empty">No active relationship notes yet.</p>}</section>
+      <section className="community-lane community-lane--workshop"><header><p>Deeper partnership</p><span>{workshop.length} signals</span></header>{workshop.length ? workshop.map((partner) => <RelationshipCard key={partner.id} partner={partner} onOpen={openPartner} />) : <p className="community-lane__empty">Workshop conversations will collect here.</p>}</section>
     </div>}
+    {selectedPartner && <RelationshipDetail partner={selectedPartner} image={image} imageCount={imageCount} imageIndex={imageIndex} imageLoading={imageLoading} imageError={imageError} onClose={closePartner} onPrevious={() => void loadImage(selectedPartner, imageIndex - 1)} onNext={() => void loadImage(selectedPartner, imageIndex + 1)} />}
   </main>;
 }
