@@ -36,10 +36,8 @@ describe('findAuditedProduct (R3 — read NESTED item.product._id, scan all item
     expect(findAuditedProduct({ lineItems: [lineItem(EIGHT_SERIES_PRODUCT_ID)] })).toBeTruthy();
   });
 
-  // The OLD broken read used flat item.productId/item.priceId, which are absent
-  // on real orders — proving why the watchdog was blind. Nested-only is correct.
-  it('returns null for the old FLAT-field shape (item.productId, no nested product)', () => {
-    expect(findAuditedProduct({ items: [{ productId: EIGHT_SERIES_PRODUCT_ID }] })).toBe(null);
+  it('also resolves flat product ids from payment sources that omit nested objects', () => {
+    expect(findAuditedProduct({ items: [{ productId: EIGHT_SERIES_PRODUCT_ID }] })?.seriesType).toBe('8-session');
   });
 
   it('returns null when no line item is an audited product', () => {

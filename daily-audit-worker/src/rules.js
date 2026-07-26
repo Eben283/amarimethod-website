@@ -3,6 +3,7 @@
 
 import { ghlFetch, fetchAppointmentsForDate, LOCATION_ID } from "./ghl.js";
 import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 
 // ── Product mapping ──
@@ -55,9 +56,17 @@ const ORDER_CAP_MSG = `Hit the ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}-order pagina
 export function findAuditedProduct(order) {
   const items = order?.items || order?.lineItems || [];
   for (const item of items) {
-    const id = item?.product?._id || item?.price?._id;
-    const config = id ? PRODUCT_MAP[id] : null;
-    if (config) return config;
+    // GHL has returned both nested `_id` and `id` forms, while some payment
+    // sources flatten the same line item. All are product/price identifiers;
+    // resolving each avoids treating a known paid package as a catalog miss.
+    const ids = [
+      item?.product?._id, item?.product?.id, item?.price?._id, item?.price?.id,
+      item?.productId, item?.priceId,
+    ];
+    for (const id of ids) {
+      const config = id ? PRODUCT_MAP[id] : null;
+      if (config) return config;
+    }
   }
   return null;
 }
@@ -257,6 +266,13 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(auditStart) && d <= new Date(auditEnd);
     });
+    // GHL's list endpoint routinely omits items[] (especially for POS orders).
+    // Hydrate the small audit window before classifying it, otherwise a paid
+    // $1,295 package falsely looks like an unknown product.
+    orders = await hydrateOrders(async (orderId) => {
+      const detail = await ghlFetch(env, `/payments/orders/${orderId}?altId=${LOCATION_ID}&altType=location`);
+      return detail.order || detail;
+    }, orders, { concurrency: 3 });
     if (hitCap) {
       issues.push(issue(
         "warning", "purchase", "", "",
@@ -283,6 +299,17 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
 
     const productConfig = findAuditedProduct(order);
     if (!productConfig) {
+      if (order.__hydration_failed && isUnmappedHighValueOrder(order)) {
+        const cached = await cache.getContact(contactId);
+        issues.push(issue(
+          "warning", "purchase", contactId, cached?.name || "Unknown",
+          "order_hydration_failed",
+          "A paid high-value order should expose its line items for audit",
+          `Could not fetch order details (${order.__hydration_reason || "unknown error"})`,
+          "Retry the audit after the GHL API recovers; do not add a product mapping until the line items are visible"
+        ));
+        continue;
+      }
       // A paid order ≥ $400 that maps to no known product = likely a package
       // product added in GHL but missing from the catalog → a paid client
       // silently not credited (Jenn POS class). Surface it; otherwise skip the
