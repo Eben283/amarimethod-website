@@ -1,8 +1,9 @@
 // Audit rule sets — ported from qa-audit.js for Cloudflare Worker environment.
 // Each function takes { env, cache, appointments, auditStart, auditEnd } and returns issues[].
 
-import { ghlFetch, fetchAppointmentsForDate, LOCATION_ID } from "./ghl.js";
+import { ghlFetch, fetchAppointmentsForDate, LOCATION_ID, todayPacific } from "./ghl.js";
 import { AUDIT_INCREMENT_MAP } from "../../functions/lib/ghl-products.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 
 // ── Product mapping ──
@@ -55,9 +56,14 @@ const ORDER_CAP_MSG = `Hit the ${ORDER_PAGE_CAP * ORDER_PAGE_LIMIT}-order pagina
 export function findAuditedProduct(order) {
   const items = order?.items || order?.lineItems || [];
   for (const item of items) {
-    const id = item?.product?._id || item?.price?._id;
-    const config = id ? PRODUCT_MAP[id] : null;
-    if (config) return config;
+    const ids = [
+      item?.product?._id, item?.product?.id, item?.price?._id, item?.price?.id,
+      item?.productId, item?.priceId,
+    ];
+    for (const id of ids) {
+      const config = id ? PRODUCT_MAP[id] : null;
+      if (config) return config;
+    }
   }
   return null;
 }
@@ -121,6 +127,27 @@ const UPSELL_PATTERNS = [
 
 function issue(severity, category, contactId, contactName, rule, expected, actual, suggestion) {
   return { severity, category, contactId, contactName, rule, expected, actual, suggestion };
+}
+
+// These are post-send calls to action, not every occurrence of the words
+// "book" or "discovery call". A confirmation such as "your discovery call is
+// booked" is intentionally not a match; an invitation to schedule one is.
+const BOOKING_CTA_PATTERNS = [
+  { label: "discovery-call CTA", pattern: /\b(?:book|schedule|reserve|grab)\b[\s\S]{0,100}\b(?:free\s+)?(?:15[-\s]minute\s+)?discovery call\b/i },
+  { label: "booking CTA", pattern: /\b(?:ready to book|book your|schedule your|book a session|grab a spot)\b/i },
+];
+
+// Pure helper for the post-send watch. Returns the matched CTA label only when
+// the outbound message was sent after the contact booked their appointment.
+// Keeping this time ordering prevents a legitimate pre-booking nurture email
+// from being retroactively flagged after the person books later that day.
+export function bookingPromptAfterAppointment(message, appointment) {
+  const body = String(message?.body || "");
+  const sentAt = new Date(message?.date || message?.dateAdded).getTime();
+  const bookedAt = new Date(appointment?.dateAdded || appointment?.createdAt).getTime();
+  if (!body || !Number.isFinite(sentAt)) return null;
+  if (Number.isFinite(bookedAt) && sentAt < bookedAt) return null;
+  return BOOKING_CTA_PATTERNS.find(({ pattern }) => pattern.test(body))?.label || null;
 }
 
 // Client Initial Session calendars — the ones that fire the G2 "Initial Session
@@ -257,6 +284,13 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
       const d = new Date(o.createdAt || o.dateAdded);
       return d >= new Date(auditStart) && d <= new Date(auditEnd);
     });
+    // GHL's list endpoint routinely omits items[] (especially for POS orders).
+    // Without the detail record, every paid $1,295 package falsely looks like an
+    // unknown product. Hydrate the small audit window before classifying it.
+    orders = await hydrateOrders(async (orderId) => {
+      const detail = await ghlFetch(env, `/payments/orders/${orderId}?altId=${LOCATION_ID}&altType=location`);
+      return detail.order || detail;
+    }, orders, { concurrency: 3 });
     if (hitCap) {
       issues.push(issue(
         "warning", "purchase", "", "",
@@ -283,6 +317,17 @@ export async function auditPurchases({ env, cache, auditStart, auditEnd }) {
 
     const productConfig = findAuditedProduct(order);
     if (!productConfig) {
+      if (order.__hydration_failed && isUnmappedHighValueOrder(order)) {
+        const cached = await cache.getContact(contactId);
+        issues.push(issue(
+          "warning", "purchase", contactId, cached?.name || "Unknown",
+          "order_hydration_failed",
+          "A paid high-value order should expose its line items for audit",
+          `Could not fetch order details (${order.__hydration_reason || "unknown error"})`,
+          "Retry the audit after the GHL API recovers; do not add a product mapping until the line items are visible"
+        ));
+        continue;
+      }
       // A paid order ≥ $400 that maps to no known product = likely a package
       // product added in GHL but missing from the catalog → a paid client
       // silently not credited (Jenn POS class). Surface it; otherwise skip the
@@ -664,18 +709,27 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
   }
 
   // Fetch upcoming appointments (next 3 days) for booking-prompt detection
-  const appointedContactIds = new Set();
+  const upcomingAppointmentsByContact = new Map();
   try {
-    const today = new Date();
+    const today = new Date(`${todayPacific()}T12:00:00.000Z`);
     for (let i = 0; i < 3; i++) {
       const d = new Date(today);
-      d.setDate(d.getDate() + i);
+      d.setUTCDate(d.getUTCDate() + i);
       const dateStr = d.toISOString().split("T")[0];
       try {
         // Return shape changed 2026-07-02: { appointments, failedCalendars }.
         const { appointments: appts } = await fetchAppointmentsForDate(env, dateStr);
         for (const a of appts) {
-          if (a.contactId) appointedContactIds.add(a.contactId);
+          if (a.contactId) {
+            const existing = upcomingAppointmentsByContact.get(a.contactId);
+            // If a contact has several upcoming sessions, the most recently
+            // booked one is the relevant state boundary for a post-send CTA.
+            const existingBookedAt = new Date(existing?.dateAdded || existing?.createdAt).getTime();
+            const candidateBookedAt = new Date(a.dateAdded || a.createdAt).getTime();
+            if (!existing || (Number.isFinite(candidateBookedAt) && (!Number.isFinite(existingBookedAt) || candidateBookedAt > existingBookedAt))) {
+              upcomingAppointmentsByContact.set(a.contactId, a);
+            }
+          }
         }
       } catch {
         // Single day failed — continue
@@ -685,7 +739,10 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
     // Continue without appointment data
   }
 
-  const contactIds = [...new Set(recentPurchaserIds)];
+  // A booked lead may not be a purchaser yet. Include every contact with an
+  // upcoming appointment so post-booking nurture leakage (Michaela's case)
+  // cannot be skipped simply because series_type is empty.
+  const contactIds = [...new Set([...recentPurchaserIds, ...upcomingAppointmentsByContact.keys()])];
 
   for (const contactId of contactIds) {
     const cached = await cache.getContact(contactId);
@@ -693,18 +750,18 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
 
     const { name, fields, tags } = cached;
 
-    // Check 1: Upsell for product they already own
-    if (fields.series_type) {
-      const conv = await cache.getConversations(contactId);
-      if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
-        const allMsgs = conv.flatMap((t) => t.messages || []);
-        const recentOutbound = allMsgs.filter(
-          (m) => m.direction === "outbound" && new Date(m.date) >= new Date(auditStart)
-        );
+    const conv = await cache.getConversations(contactId);
+    if (conv && conv !== "scope_missing" && Array.isArray(conv)) {
+      const allMsgs = conv.flatMap((t) => t.messages || []);
+      const recentOutbound = allMsgs.filter(
+        (m) => m.direction === "outbound" && new Date(m.date) >= new Date(auditStart)
+      );
 
-        for (const msg of recentOutbound) {
-          const bodyLower = (msg.body || "").toLowerCase();
+      for (const msg of recentOutbound) {
+        const bodyLower = (msg.body || "").toLowerCase();
 
+        // Check 1: Upsell for product they already own
+        if (fields.series_type) {
           for (const pattern of UPSELL_PATTERNS) {
             if (fields.series_type === pattern.seriesType) {
               const matched = pattern.keywords.find((kw) => bodyLower.includes(kw));
@@ -719,26 +776,25 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
               }
             }
           }
+        }
 
-          // Booking prompt when already booked
-          if (appointedContactIds.has(contactId)) {
-            const bookingPhrases = ["ready to book", "book your", "schedule your", "book a session", "grab a spot"];
-            const matchedPhrase = bookingPhrases.find((p) => bodyLower.includes(p));
-            if (matchedPhrase) {
-              issues.push(issue(
-                "warning", "state_mismatch", contactId, name,
-                "booking_prompt_when_already_booked",
-                "Should not prompt to book when contact has an upcoming appointment",
-                `Message contains "${matchedPhrase}" but contact has appointment`,
-                "Workflow needs condition to skip if upcoming appointment exists"
-              ));
-            }
-          }
+        // Check 2: Booking or discovery-call CTA after the contact has booked.
+        // This deliberately runs for leads as well as active clients.
+        const appointment = upcomingAppointmentsByContact.get(contactId);
+        const matchedCta = bookingPromptAfterAppointment(msg, appointment);
+        if (matchedCta) {
+          issues.push(issue(
+            "warning", "state_mismatch", contactId, name,
+            "booking_prompt_when_already_booked",
+            "Should not prompt to book when contact has an upcoming appointment",
+            `Message contains ${matchedCta} after appointment booking`,
+            "Remove the contact from booking/discovery nurture when an appointment is created"
+          ));
         }
       }
     }
 
-    // Check 2: Active client in lead nurture
+    // Check 3: Active client in lead nurture
     // Same predicate shape as auditTagConsistency's hasActiveSeries — the old
     // truthiness check passed for the literal string "none", so à-la-carte
     // buyers with a leftover quiz tag fired "active client" false positives.
@@ -753,7 +809,7 @@ export async function auditStateMismatches({ env, cache, auditStart }) {
       ));
     }
 
-    // Check 3: Stale discovery tag on active client
+    // Check 4: Stale discovery tag on active client
     if (isActive && tags.includes("discovery call attended")) {
       issues.push(issue(
         "info", "state_mismatch", contactId, name,

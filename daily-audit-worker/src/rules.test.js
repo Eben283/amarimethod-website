@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder, classifyInvoiceItems, isClientInitialSession, auditAppointments } from './rules.js';
+import { remainingIndicatesUndercredit, findAuditedProduct, isUnmappedHighValueOrder, classifyInvoiceItems, isClientInitialSession, auditAppointments, bookingPromptAfterAppointment } from './rules.js';
 import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 
 // Real GHL ids (kept in sync with ghl-products.js).
@@ -36,10 +36,8 @@ describe('findAuditedProduct (R3 — read NESTED item.product._id, scan all item
     expect(findAuditedProduct({ lineItems: [lineItem(EIGHT_SERIES_PRODUCT_ID)] })).toBeTruthy();
   });
 
-  // The OLD broken read used flat item.productId/item.priceId, which are absent
-  // on real orders — proving why the watchdog was blind. Nested-only is correct.
-  it('returns null for the old FLAT-field shape (item.productId, no nested product)', () => {
-    expect(findAuditedProduct({ items: [{ productId: EIGHT_SERIES_PRODUCT_ID }] })).toBe(null);
+  it('also resolves flat product ids from payment sources that omit nested objects', () => {
+    expect(findAuditedProduct({ items: [{ productId: EIGHT_SERIES_PRODUCT_ID }] })?.seriesType).toBe('8-session');
   });
 
   it('returns null when no line item is an audited product', () => {
@@ -135,6 +133,34 @@ describe('isUnmappedHighValueOrder (alert — paid order ≥ $400 with no known 
     expect(isUnmappedHighValueOrder({ status: 'paid' })).toBe(false);
     expect(isUnmappedHighValueOrder({ amount: 'abc', status: 'paid' })).toBe(false);
     expect(isUnmappedHighValueOrder(null)).toBe(false);
+  });
+});
+
+describe('bookingPromptAfterAppointment (post-send booked-state watch)', () => {
+  const appointment = { dateAdded: '2026-07-22T17:00:00.000Z' };
+
+  it('flags Michaela-style discovery-call CTA sent after an appointment was booked', () => {
+    const message = {
+      date: '2026-07-25T18:00:00.000Z',
+      body: 'Schedule your free 15-minute discovery call to get a clear next step.',
+    };
+    expect(bookingPromptAfterAppointment(message, appointment)).toBe('discovery-call CTA');
+  });
+
+  it('does not retroactively flag a legitimate pre-booking CTA', () => {
+    const message = {
+      date: '2026-07-22T16:59:59.000Z',
+      body: 'Schedule your free 15-minute discovery call to get a clear next step.',
+    };
+    expect(bookingPromptAfterAppointment(message, appointment)).toBe(null);
+  });
+
+  it('does not confuse an appointment confirmation with a CTA', () => {
+    const message = {
+      date: '2026-07-25T18:00:00.000Z',
+      body: 'Your free discovery call is booked. We will see you Tuesday.',
+    };
+    expect(bookingPromptAfterAppointment(message, appointment)).toBe(null);
   });
 });
 
