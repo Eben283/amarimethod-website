@@ -295,6 +295,13 @@ When you learn something new about ${userName}'s life, include:
 
 Examples: lorenzo.weight, routine.morning, stores.preferred_asian_mart
 
+## Local Field Visits
+When ${userName} says they just visited a local business, hung or checked an Amari study flyer, met an owner/manager, or explicitly asks to log a field visit, call \`record_field_visit\` before replying. This is the durable local-business relationship system. Extract useful facts from their dictated text and any attached storefront or business-card photos. Record only what is actually supplied or visible; do not invent a contact, address, or follow-up date. If the business name is missing, ask one short question instead of recording it.
+
+After a successful record, reply with a compact confirmation: business, relationship stage, what flyer/relationship signal was captured, and the next visit date if one exists. Do not create a GHL contact merely because a business hosted a flyer.
+
+When ${userName} asks who to revisit, what businesses have flyers, or which places are ready for workshop conversations, call \`list_field_partners\`.
+
 ## Controlling Spotify
 Include a SPOTIFY block to control music. These execute immediately — the music changes while ${userName} reads your response.
 <!--SPOTIFY:{"action":"play","query":"chill jazz playlist"}-->
@@ -839,8 +846,15 @@ export async function onRequestPost(context) {
   }
 
   const userMessage = (body.message || "").trim();
-  const userImage = body.image || null; // base64 data URI
-  if (!userMessage && !userImage) {
+  // `image` is the legacy single-photo payload. `images` supports a storefront
+  // and a business card in the same hands-free field visit.
+  const userImages = [
+    ...(Array.isArray(body.images) ? body.images : []),
+    ...(body.image ? [body.image] : []),
+  ]
+    .filter((image) => typeof image === "string" && image.length <= 2_000_000 && /^data:image\/(?:jpeg|jpg|png|webp);base64,/i.test(image))
+    .slice(0, 3);
+  if (!userMessage && userImages.length === 0) {
     return jsonResponse({ error: "Message is required" }, 400, origin);
   }
 
@@ -997,15 +1011,18 @@ export async function onRequestPost(context) {
   // Build the Anthropic messages array — system goes in body.system, not here
   const anthropicMessages = recentMessages.slice(0, -1).map(m => ({ role: m.role, content: m.content }));
 
-  // Add the latest user message — with image if present (Anthropic image block format)
-  if (userImage) {
-    const imageMatch = userImage.match(/^data:([^;]+);base64,(.+)$/);
+  // Add the latest user message — including every attached image in Anthropic's
+  // image-block format (typically storefront + business card for a field visit).
+  if (userImages.length > 0) {
     const userContent = [{ type: "text", text: userMessage || "What's in this image?" }];
-    if (imageMatch) {
-      userContent.push({
-        type: "image",
-        source: { type: "base64", media_type: imageMatch[1], data: imageMatch[2] },
-      });
+    for (const userImage of userImages) {
+      const imageMatch = userImage.match(/^data:([^;]+);base64,(.+)$/);
+      if (imageMatch) {
+        userContent.push({
+          type: "image",
+          source: { type: "base64", media_type: imageMatch[1], data: imageMatch[2] },
+        });
+      }
     }
     anthropicMessages.push({ role: "user", content: userContent });
   } else {
@@ -1091,7 +1108,7 @@ export async function onRequestPost(context) {
         },
         executeToolFn: async (name, input) => {
           console.log(`[cos-chat] tool call: ${name} input=${JSON.stringify(input).slice(0, 200)}`);
-          return await executeAnthropicTool(context, name, input, cosUser);
+          return await executeAnthropicTool(context, name, input, cosUser, userImages);
         },
       });
 

@@ -27,13 +27,13 @@ export default function ChatPage() {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
 
-  const handleSend = useCallback(async (text: string, image?: string) => {
+  const handleSend = useCallback(async (text: string, images?: string[]) => {
     if (isStreaming) return;
 
     const userMessage: ChatMessage = {
       id: generateId(),
       role: 'user',
-      content: image ? `${text}\n[Image attached]` : text,
+      content: images?.length ? `${text}\n[${images.length} image${images.length === 1 ? '' : 's'} attached]` : text,
       timestamp: Date.now(),
     };
 
@@ -45,7 +45,7 @@ export default function ChatPage() {
 
     await sendMessage(
       text,
-      image,
+      images,
       (chunk) => {
         fullContent += chunk;
         setStreamingContent(fullContent);

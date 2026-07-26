@@ -16,6 +16,7 @@ import {
   formatRulesForModel,
   formatSfSweepForModel,
 } from "./cos-parking.js";
+import { recordFieldVisit, listFieldPartners } from "./cos-field-visits.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-6";
@@ -100,6 +101,44 @@ export const TOOLS = [
     },
   },
   {
+    name: "record_field_visit",
+    description: "Create or update a durable local-business relationship record after a field-study flyer visit. Use whenever the user explicitly reports a visit to a business, putting up/checking a study flyer, speaking with an owner or manager, or asks to log a field visit. Read attached storefront/business-card images to fill contact details when visible. This is not a GHL contact write. Do not use it for a vague plan or a business merely mentioned in passing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        business_name: { type: "string", description: "Business name. Required." },
+        location: { type: "string", description: "Street address or neighborhood if known." },
+        study: { type: "string", description: "Study/flyer placed or discussed, e.g. Hand Study." },
+        flyer_location: { type: "string", description: "Where the flyer was placed, e.g. front desk or staff room." },
+        contact: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            role: { type: "string" },
+            phone: { type: "string" },
+            email: { type: "string" },
+          },
+        },
+        relationship_stage: { type: "string", enum: ["host", "engaged_host", "partner", "workshop_opportunity"], description: "host = lets Amari display a flyer; engaged_host = active conversation/interest; partner = intentionally shares or introduces; workshop_opportunity = a specific staff/workshop signal." },
+        notes: { type: "string", description: "What happened and the useful details, in plain language." },
+        workshop_signal: { type: "boolean", description: "True only if staff care, a workshop, or a team need genuinely came up." },
+        next_visit_on: { type: "string", description: "Next in-person touch as YYYY-MM-DD if the user supplied a date or clear timing; otherwise omit." },
+      },
+      required: ["business_name"],
+    },
+  },
+  {
+    name: "list_field_partners",
+    description: "List local business relationships captured through Chief of Staff field visits. Use when the user asks who to revisit, what businesses have flyers, which are workshop opportunities, or for a partner status review.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limit: { type: "integer", description: "Maximum results, default 25, max 100." },
+        stage: { type: "string", enum: ["host", "engaged_host", "partner", "workshop_opportunity"] },
+      },
+    },
+  },
+  {
     name: "record_park",
     description: "Record where the user just parked AND (if rule_type is given) save the posted parking rules for that block to the shared rules database, so future parks at the same location auto-recall them. Use whenever the user says they parked somewhere — even if they only mention the location. If they also describe the rule (street sweeping day/time, posted hour limit, RPP zone, overnight ban), include it; the rule gets merged into the database for next time.",
     input_schema: {
@@ -166,8 +205,46 @@ function pacificOffsetForDate(dateStr) {
 // `user` is the COS user ("Eben" or "Garrett") — needed for Google OAuth
 // scoped tools (Google Calendar list/cancel). Defaults to "Eben" so older
 // call sites keep working.
-export async function executeTool(context, toolName, input, user = "Eben") {
+export async function executeTool(context, toolName, input, user = "Eben", fieldVisitImages = []) {
   try {
+    if (toolName === "record_field_visit") {
+      const { partner, visit } = await recordFieldVisit(
+        context.env.PORTAL_KV,
+        user,
+        input,
+        fieldVisitImages,
+      );
+      return JSON.stringify({
+        recorded: true,
+        business: partner.business_name,
+        stage: partner.relationship_stage,
+        visits: partner.visit_count,
+        next_visit_on: partner.next_visit_on,
+        workshop_signal: partner.workshop_signal,
+        visit_images_saved: visit.image_keys.length,
+      });
+    }
+
+    if (toolName === "list_field_partners") {
+      const partners = await listFieldPartners(context.env.PORTAL_KV, user, input);
+      return JSON.stringify({
+        count: partners.length,
+        partners: partners.map((partner) => ({
+          business_name: partner.business_name,
+          location: partner.location,
+          study: partner.study,
+          contact: partner.contact,
+          relationship_stage: partner.relationship_stage,
+          workshop_signal: partner.workshop_signal,
+          next_visit_on: partner.next_visit_on,
+          latest_note: partner.latest_note,
+          latest_visit_at: partner.latest_visit_at,
+          visit_count: partner.visit_count,
+          photo_count: partner.image_keys?.length || 0,
+        })),
+      });
+    }
+
     if (toolName === "search_contacts") {
       const limit = Math.min(Number(input.limit) || 50, 100);
       const filters = [];

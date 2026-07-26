@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Camera, Image, X, Mic, MicOff } from 'lucide-react';
 
 interface Props {
-  onSend: (message: string, image?: string) => void;
+  onSend: (message: string, images?: string[]) => void;
   disabled: boolean;
 }
 
@@ -18,8 +18,7 @@ function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
 
 export default function ChatInput({ onSend, disabled }: Props) {
   const [text, setText] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [voiceSupported] = useState(() => !!getSpeechRecognition());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -29,6 +28,11 @@ export default function ChatInput({ onSend, disabled }: Props) {
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transcriptRef = useRef('');
   const autoSendRef = useRef(false);
+  const imagesRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -108,8 +112,9 @@ export default function ChatInput({ onSend, disabled }: Props) {
           if (finalText && !disabled) {
             recognition.stop();
             autoSendRef.current = true;
-            onSend(finalText);
+            onSend(finalText, imagesRef.current);
             setText('');
+            setImages([]);
             transcriptRef.current = '';
           }
         }, 1500);
@@ -157,17 +162,16 @@ export default function ChatInput({ onSend, disabled }: Props) {
 
   function handleSubmit() {
     const trimmed = text.trim();
-    if ((!trimmed && !imageBase64) || disabled) return;
+    if ((!trimmed && images.length === 0) || disabled) return;
 
     // Stop listening if active (manual send overrides auto-send)
     if (isListening) {
       stopListening();
     }
 
-    onSend(trimmed || "What's in this image?", imageBase64 || undefined);
+    onSend(trimmed || "What's in these images?", images.length > 0 ? images : undefined);
     setText('');
-    setImagePreview(null);
-    setImageBase64(null);
+    setImages([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -209,8 +213,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
           const base64 = canvas.toDataURL('image/jpeg', 0.8);
-          setImagePreview(base64);
-          setImageBase64(base64);
+          setImages((current) => current.length >= 3 ? current : [...current, base64]);
         }
       };
       img.src = reader.result as string;
@@ -221,27 +224,31 @@ export default function ChatInput({ onSend, disabled }: Props) {
     e.target.value = '';
   }
 
-  function clearImage() {
-    setImagePreview(null);
-    setImageBase64(null);
+  function clearImage(index: number) {
+    setImages((current) => current.filter((_, currentIndex) => currentIndex !== index));
   }
 
   return (
     <div className="border-t border-cos-border px-4 py-3 safe-bottom bg-cos-bg">
       {/* Image preview */}
-      {imagePreview && (
-        <div className="mb-2 relative inline-block">
-          <img
-            src={imagePreview}
-            alt="Attached"
-            className="h-20 rounded-lg border border-cos-border"
-          />
-          <button
-            onClick={clearImage}
-            className="absolute -top-2 -right-2 bg-cos-surface border border-cos-border rounded-full p-0.5"
-          >
-            <X className="w-3.5 h-3.5 text-cos-text-secondary" />
-          </button>
+      {images.length > 0 && (
+        <div className="mb-2 flex gap-2">
+          {images.map((image, index) => (
+            <div key={image.slice(-24)} className="relative inline-block">
+              <img
+                src={image}
+                alt={`Attached ${index + 1}`}
+                className="h-20 rounded-lg border border-cos-border"
+              />
+              <button
+                onClick={() => clearImage(index)}
+                className="absolute -top-2 -right-2 bg-cos-surface border border-cos-border rounded-full p-0.5"
+                aria-label={`Remove attached image ${index + 1}`}
+              >
+                <X className="w-3.5 h-3.5 text-cos-text-secondary" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -321,7 +328,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
         />
         <button
           onClick={handleSubmit}
-          disabled={disabled || (!text.trim() && !imageBase64)}
+          disabled={disabled || (!text.trim() && images.length === 0)}
           className="cos-btn-accent disabled:opacity-30 shrink-0"
         >
           <Send className="w-5 h-5" />
