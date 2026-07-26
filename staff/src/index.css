@@ -141,6 +141,23 @@
   @media (min-width: 540px) { .staff-home__tools { gap: 25px 18px; } .staff-home-tool__face { max-width: 90px; border-radius: 27px; } .staff-home-tool__face::after { border-radius: 21px; } }
   @media (prefers-reduced-motion: reduce) { .staff-home-tool { transition: none; } }
 
+  /* Operator work lives below the active tool tray: reachable, but visually
+     quieter so it does not compete with the work Garrett does in a session. */
+  .staff-backoffice { margin-top: 36px; padding: 17px 15px 15px; border: 1px solid #d7e0e2; border-radius: 18px; background: #eaf0f1; }
+  .staff-backoffice header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 3px 12px; }
+  .staff-backoffice header p { margin: 0; color: #506970; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .staff-backoffice header span { color: #7b9095; font-size: 10px; }
+  .staff-backoffice__links { display: grid; gap: 7px; }
+  .staff-backoffice__links button { display: grid; width: 100%; grid-template-columns: 30px 1fr 16px; align-items: center; gap: 10px; min-height: 58px; padding: 9px 10px; border: 1px solid #d4dfe1; border-radius: 12px; background: rgba(255,255,255,.48); color: #536a70; text-align: left; }
+  .staff-backoffice__links button:active { transform: scale(.985); }
+  .staff-backoffice__links button:focus-visible { outline: 3px solid #19343d; outline-offset: 2px; }
+  .staff-backoffice__icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #dce7e9; color: #607b82; }
+  .staff-backoffice__icon svg { width: 16px; height: 16px; stroke-width: 1.7; }
+  .staff-backoffice__copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .staff-backoffice__copy strong { color: #526a71; font-size: 12px; line-height: 1.2; }
+  .staff-backoffice__copy small { color: #82959a; font-size: 10px; }
+  .staff-backoffice__links > button > svg { width: 15px; height: 15px; color: #8da0a4; stroke-width: 1.8; }
+
   /* The single return pin replaces navigation chrome inside every Staff tool. */
   .staff-home-widget { position: fixed; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 60; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 13px 0 10px; border: 1px solid rgba(25,52,61,.16); border-radius: 999px; background: rgba(255,255,255,.92); box-shadow: 0 5px 16px rgba(25,52,61,.12); color: #19343d; font-size: 11px; font-weight: 700; line-height: 1; backdrop-filter: blur(10px); }
   .staff-home-widget svg { width: 17px; height: 17px; stroke-width: 1.8; }

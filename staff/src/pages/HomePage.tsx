@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Kanban, ListChecks, Loader2, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, Kanban, ListChecks, Loader2, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -22,9 +22,13 @@ const TOOLS: HomeTool[] = [
   { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
   { label: 'Funnel', detail: 'Lead flow', Icon: TrendingUp, to: '/funnel', tone: 'ochre' },
   { label: 'Pipeline', detail: 'Care flow', Icon: Kanban, to: '/pipeline', tone: 'lake' },
-  { label: 'Automations', detail: 'Message watch', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard', tone: 'ink' },
   { label: 'Write', detail: 'Drafts', Icon: PenLine, to: '/write', tone: 'coral' },
   { label: 'Playbooks', detail: 'Reference', Icon: BookOpen, to: '/playbook', tone: 'moss' },
+];
+
+const BACK_OFFICE = [
+  { label: 'Automation Watch', detail: 'Message review', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard' },
+  { label: 'CRM Mirror', detail: 'Reconciliation', Icon: Database, href: 'https://amari-crm-mirror.eben-fa2.workers.dev/' },
 ];
 
 type SessionDoor = { appointment: TodayAppointment; state: 'now' | 'next' };
@@ -169,6 +173,22 @@ export default function HomePage() {
             </button>
           );
         })}
+      </section>
+
+      <section className="staff-backoffice" aria-label="Back office dashboards">
+        <header>
+          <p>Back office</p>
+          <span>Operator dashboards</span>
+        </header>
+        <div className="staff-backoffice__links">
+          {BACK_OFFICE.map(({ label, detail, Icon, href }) => (
+            <button key={label} type="button" onClick={() => window.location.assign(href)}>
+              <span className="staff-backoffice__icon"><Icon aria-hidden="true" /></span>
+              <span className="staff-backoffice__copy"><strong>{label}</strong><small>{detail}</small></span>
+              <ArrowUpRight aria-label="Opens outside Staff" />
+            </button>
+          ))}
+        </div>
       </section>
 
     </main>
