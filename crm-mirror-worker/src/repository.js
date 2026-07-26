@@ -237,6 +237,86 @@ export async function mirrorStatus(db) {
   };
 }
 
+// This is an operator-facing read model, not a replacement session ledger.
+// Until the new CRM is the canonical writer, the imported GHL balance remains
+// the only balance shown here and is deliberately labeled as such in the UI.
+export async function activeClientOperations(db, limit, now) {
+  const [activeClients, upcomingAppointments, totals] = await db.batch([
+    db.prepare(
+      `SELECT
+         contact.id AS contact_id,
+         contact.display_name,
+         balance.attribute_value AS sessions_remaining,
+         series.attribute_value AS series_type,
+         appointment.starts_at AS next_appointment_at,
+         appointment.status AS next_appointment_status,
+         service.name AS next_service_name
+       FROM contacts contact
+       JOIN contact_attributes balance
+         ON balance.contact_id = contact.id
+        AND balance.source = 'ghl'
+        AND balance.attribute_key = 'wrQSkx6BhXwDGIn1d0V4'
+       LEFT JOIN contact_attributes series
+         ON series.contact_id = contact.id
+        AND series.source = 'ghl'
+        AND series.attribute_key = '3i93lTkmuAV49s9nh0q8'
+       LEFT JOIN appointments appointment
+         ON appointment.id = (
+           SELECT future.id
+           FROM appointments future
+           WHERE future.contact_id = contact.id
+             AND future.status IN ('booked', 'confirmed')
+             AND datetime(future.starts_at) >= datetime(?)
+           ORDER BY datetime(future.starts_at), future.id
+           LIMIT 1
+         )
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE CAST(TRIM(balance.attribute_value) AS INTEGER) > 0
+       ORDER BY appointment.starts_at IS NULL, datetime(appointment.starts_at), contact.display_name
+       LIMIT ?`,
+    ).bind(now, limit),
+    db.prepare(
+      `SELECT
+         appointment.id AS appointment_id,
+         appointment.starts_at,
+         appointment.status,
+         contact.id AS contact_id,
+         contact.display_name,
+         service.name AS service_name
+       FROM appointments appointment
+       JOIN contacts contact ON contact.id = appointment.contact_id
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.status IN ('booked', 'confirmed')
+         AND datetime(appointment.starts_at) >= datetime(?)
+       ORDER BY datetime(appointment.starts_at), appointment.id
+       LIMIT ?`,
+    ).bind(now, limit),
+    db.prepare(
+      `SELECT
+         (SELECT COUNT(*)
+          FROM contacts contact
+          JOIN contact_attributes balance
+            ON balance.contact_id = contact.id
+           AND balance.source = 'ghl'
+           AND balance.attribute_key = 'wrQSkx6BhXwDGIn1d0V4'
+          WHERE CAST(TRIM(balance.attribute_value) AS INTEGER) > 0) AS active_clients,
+         (SELECT COUNT(*)
+          FROM appointments appointment
+          WHERE appointment.status IN ('booked', 'confirmed')
+            AND datetime(appointment.starts_at) >= datetime(?)) AS upcoming_appointments`,
+    ).bind(now),
+  ]);
+  const summary = totals.results?.[0] || {};
+  return {
+    balanceSource: 'ghl_imported_fields',
+    automaticLedgerPosting: false,
+    totalActiveClients: Number(summary.active_clients || 0),
+    totalUpcomingAppointments: Number(summary.upcoming_appointments || 0),
+    activeClients: activeClients.results || [],
+    upcomingAppointments: upcomingAppointments.results || [],
+  };
+}
+
 // This intentionally reports only reconciliation state, never contact or purchase
 // details. A link is considered authoritative only when Stripe supplied the GHL
 // contact ID; unlinked charges stay out of the session ledger for manual review.

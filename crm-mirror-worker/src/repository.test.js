@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { reconciliationReview, reconciliationStatus } from "./repository.js";
+import { activeClientOperations, reconciliationReview, reconciliationStatus } from "./repository.js";
+
+describe("CRM mirror active-client operations", () => {
+  it("returns imported balance and upcoming-appointment views without creating a ledger", async () => {
+    const db = {
+      prepare: () => ({ bind: () => ({}) }),
+      batch: async () => [
+        { results: [{ contact_id: "c_1", sessions_remaining: "3", series_type: "8-session" }] },
+        { results: [{ appointment_id: "a_1", status: "confirmed" }] },
+        { results: [{ active_clients: 1, upcoming_appointments: 1 }] },
+      ],
+    };
+
+    await expect(activeClientOperations(db, 25, "2026-07-26T00:00:00.000Z")).resolves.toEqual({
+      balanceSource: "ghl_imported_fields",
+      automaticLedgerPosting: false,
+      totalActiveClients: 1,
+      totalUpcomingAppointments: 1,
+      activeClients: [{ contact_id: "c_1", sessions_remaining: "3", series_type: "8-session" }],
+      upcomingAppointments: [{ appointment_id: "a_1", status: "confirmed" }],
+    });
+  });
+});
 
 describe("CRM mirror reconciliation status", () => {
   it("reports pending review without exposing purchase details or posting a ledger entry", async () => {

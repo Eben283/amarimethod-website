@@ -2,6 +2,7 @@ import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-
 import { dashboardHtml } from "./dashboard.js";
 import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import {
+  activeClientOperations,
   classifyPurchase,
   decideReconciliationCandidate,
   mirrorStatus,
@@ -119,7 +120,7 @@ export default {
         );
         return json(200, { success: true, result });
       }
-      if (request.method === "GET" && ["/status", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname)) {
+      if (request.method === "GET" && ["/status", "/operations", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -128,6 +129,14 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB)) });
+      }
+      if (request.method === "GET" && url.pathname === "/operations") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await activeClientOperations(env.CRM_DB, limit, new Date().toISOString())),
+        });
       }
       if (request.method === "GET" && url.pathname === "/reconciliation") {
         return json(200, {

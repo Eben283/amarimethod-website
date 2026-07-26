@@ -8,6 +8,9 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('fetch("/dashboard-session"');
     expect(html).toContain('fetch("/review-session"');
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
+    expect(html).toContain('fetch("/operations?limit=25", { credentials: "same-origin" })');
+    expect(html).toContain("Active client operations");
+    expect(html).toContain("GHL-imported session fields");
     expect(html).toContain('fetch("/reconciliation", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/reconciliation/review?limit=50", { credentials: "same-origin" })');
     expect(html).toContain("Approve link");

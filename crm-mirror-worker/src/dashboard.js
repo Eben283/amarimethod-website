@@ -26,6 +26,7 @@ const DASHBOARD_HTML = `<!doctype html>
       .notice { display: flex; align-items: flex-start; gap: 12px; padding: 18px; border: 1px solid #694e26; border-radius: 14px; background: #2d2416; color: #f1d59b; line-height: 1.45; }
       .notice strong { color: #fff0c8; }
       .review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+      .operations-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
       .review-shell { padding: 5px; border-radius: 18px; background: #26362d; }
       .review-core { min-height: 220px; padding: 16px; border-radius: 14px; background: #172019; }
       .review-core h3 { margin: 0 0 6px; font-size: .94rem; }
@@ -45,7 +46,7 @@ const DASHBOARD_HTML = `<!doctype html>
       .action-row button:hover { transform: translateY(-1px); }
       .action-status { color: #f1d59b; font-size: .74rem; line-height: 1.4; }
       .footer { margin-top: 46px; color: #708378; font-size: .8rem; }
-      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid, .operations-grid { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -62,6 +63,19 @@ const DASHBOARD_HTML = `<!doctype html>
         <article class="card"><span class="label">Purchases</span><strong class="value" id="purchases">—</strong><span class="detail">Settled Stripe charges</span></article>
         <article class="card"><span class="label">Last import</span><strong class="value" id="last-import">—</strong><span class="detail" id="last-import-detail">No source status loaded</span></article>
       </div>
+
+      <section class="section">
+        <h2>Active client operations</h2>
+        <p>Current client balances are imported from GoHighLevel. They are displayed for daily work only; this mirror does not calculate, debit, or create a balance.</p>
+        <div class="grid">
+          <article class="card"><span class="label">Active balances</span><strong class="value" id="active-clients">—</strong><span class="detail">Positive, GHL-imported session fields</span></article>
+          <article class="card"><span class="label">Upcoming appointments</span><strong class="value" id="upcoming-appointments">—</strong><span class="detail">Booked or confirmed in the imported calendar</span></article>
+        </div>
+        <div class="operations-grid section">
+          <article class="review-shell"><div class="review-core"><h3>Clients with sessions remaining</h3><p>Imported balance and the next booked appointment, if any.</p><ul class="review-list" id="active-client-list"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Upcoming appointments</h3><p>Read-only schedule copied from GoHighLevel.</p><ul class="review-list" id="upcoming-appointment-list"></ul></div></article>
+        </div>
+      </section>
 
       <section class="section">
         <h2>Reconciliation queue</h2>
@@ -114,14 +128,16 @@ const DASHBOARD_HTML = `<!doctype html>
           if (token || reviewToken) {
             history.replaceState(null, "", location.pathname + location.search);
           }
-          const [statusResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
+          const [statusResponse, operationsResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
+            fetch("/operations?limit=25", { credentials: "same-origin" }),
             fetch("/reconciliation", { credentials: "same-origin" }),
             fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
             fetch("/review-session", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !operationsResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
+          const operations = await operationsResponse.json();
           const reconciliation = await reconciliationResponse.json();
           const review = await reviewResponse.json();
           const reviewSession = await reviewSessionResponse.json();
@@ -129,6 +145,8 @@ const DASHBOARD_HTML = `<!doctype html>
           set("contacts", status.contacts);
           set("appointments", status.appointments);
           set("purchases", status.purchases);
+          set("active-clients", operations.totalActiveClients);
+          set("upcoming-appointments", operations.totalUpcomingAppointments);
           set("pending-review", reconciliation.pendingLedgerReview);
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
@@ -138,6 +156,7 @@ const DASHBOARD_HTML = `<!doctype html>
             ? "GHL import " + status.lastSync.status + " · " + new Date(status.lastSync.finished_at).toLocaleString()
             : "No completed import reported";
           const money = (row) => new Intl.NumberFormat("en-US", { style: "currency", currency: (row.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format((row.amount_cents || 0) / 100);
+          const scheduleTime = (value) => value ? value.replace(" ", " · ").replace(/:00$/, "") : "No upcoming appointment";
           const reviewer = () => document.getElementById("reviewer-name").value.trim();
           const actionStatus = document.getElementById("review-action-status");
           actionStatus.textContent = reviewSession.active
@@ -182,6 +201,8 @@ const DASHBOARD_HTML = `<!doctype html>
               list.append(item);
             }
           };
+          render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
+          render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
           render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized, (item, row) => {
             const actions = document.createElement("div");
             actions.className = "action-row";
