@@ -55,6 +55,12 @@ function expectedChannel(channel) {
   return channel === "email" || channel === "sms" ? channel : null;
 }
 
+function isClientFacingExpected(event) {
+  // The event log stores a transport channel for internal alerts too. Their templates are
+  // named explicitly, so never compare them with the client's GHL conversation timeline.
+  return !!expectedChannel(event.channel) && !String(event.detail?.template || "").includes("internal");
+}
+
 function outboundChannel(message) {
   const type = String(message?.messageType || message?.type || "").toLowerCase();
   if (type.includes("email")) return "email";
@@ -116,7 +122,7 @@ async function resolveOutboundMessages(env, contactIds) {
 
 export function compareShadowEvents(events, messageData) {
   const expected = events
-    .filter((event) => event.outcome === "would_send" && event.contact_id && expectedChannel(event.channel))
+    .filter((event) => event.outcome === "would_send" && event.contact_id && isClientFacingExpected(event))
     .slice(0, MAX_COMPARED_EXPECTATIONS);
   const rows = [];
   const pairedMessages = new Set();
@@ -199,7 +205,7 @@ export async function handleDashboardData(request, env) {
     const parsedEvents = events.map(parse);
     const expectedContactIds = [...new Set(
       parsedEvents
-        .filter((event) => event.outcome === "would_send" && expectedChannel(event.channel))
+        .filter((event) => event.outcome === "would_send" && isClientFacingExpected(event))
         .slice(0, MAX_COMPARED_EXPECTATIONS)
         .map((event) => event.contact_id),
     )];

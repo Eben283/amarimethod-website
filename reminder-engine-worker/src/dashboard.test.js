@@ -78,6 +78,7 @@ describe("compareShadowEvents", () => {
       { id: 3, ts: now, contact_id: "missing", flow_key: "flow", channel: "email", outcome: "would_send", detail: { template: "c" } },
       { id: 4, ts: now, contact_id: "early", flow_key: "flow", channel: "email", outcome: "would_send", detail: { template: "d" } },
       { id: 5, ts: now, contact_id: "unavailable", flow_key: "flow", channel: "sms", outcome: "would_send", detail: { template: "e" } },
+      { id: 6, ts: now, contact_id: "internal", flow_key: "flow", channel: "sms", outcome: "would_send", detail: { template: "booked-internal" } },
     ];
     const comparison = compareShadowEvents(events, {
       available: true,
@@ -89,6 +90,7 @@ describe("compareShadowEvents", () => {
       },
     });
     expect(comparison.rows.map((row) => row.status)).toEqual(["matched", "late", "missing_in_ghl", "extra_in_ghl", "unavailable"]);
+    expect(comparison.compared).toBe(5);
     expect(comparison.summary).toMatchObject({ matched: 1, late: 1, missing_in_ghl: 1, extra_in_ghl: 1, unavailable: 1 });
   });
 });
