@@ -6,9 +6,12 @@ This Worker is the read-only import foundation for the internal Amari CRM. It ha
 
 - GHL contacts, tags, custom-field values, and contact appointments.
 - Stripe settled charges and refund metadata.
+- Review-only purchase-to-contact candidates when one Stripe billing email exactly matches one mirrored contact.
 - Existing service and package definitions seeded by the first D1 migration.
 
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
+
+An email candidate is evidence for staff review, not a purchase link. The importer never turns it into `purchases.contact_id`, never posts a ledger entry, and never sends a message.
 
 ## Provisioning and deployment
 
@@ -21,6 +24,8 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 ## Authenticated endpoints
 
 - `GET /status` — counts and last sync result; no client data.
+- `GET /reconciliation` — aggregate pending-review counts; no client data.
+- `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `POST /sync` with optional `{ "sources": ["ghl", "stripe"], "limit": 25 }` — bounded manual import. Both provider integrations use `GET` only.
 
 The normal first run is repeated bounded imports until both providers report `status: "succeeded"`, followed by reconciliation of unlinked purchases and the session ledger in a separate, reviewed change.

@@ -1,6 +1,6 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
-import { mirrorStatus, reconciliationStatus } from "./repository.js";
+import { mirrorStatus, reconciliationQueue, reconciliationStatus } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -29,6 +29,12 @@ function parseSyncRequest(payload) {
   return { sources, limit };
 }
 
+export function parseQueueLimit(value) {
+  if (value == null || value === "") return 25;
+  const requestedLimit = Number(value);
+  return Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -48,6 +54,14 @@ export default {
           success: true,
           worker: "amari-crm-mirror",
           ...(await reconciliationStatus(env.CRM_DB)),
+        });
+      }
+      if (request.method === "GET" && url.pathname === "/reconciliation/queue") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          candidates: await reconciliationQueue(env.CRM_DB, limit),
         });
       }
       if (request.method === "POST" && url.pathname === "/sync") {

@@ -7,6 +7,7 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain("Read-only operator view");
     expect(html).toContain('fetch("/status", { headers })');
     expect(html).toContain('fetch("/reconciliation", { headers })');
+    expect(html).toContain("Exact email evidence, pending review");
     expect(html).toContain("history.replaceState");
     expect(html).toContain("It cannot send email or SMS");
   });

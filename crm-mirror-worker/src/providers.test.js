@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
 
 const env = {
   GHL_LOCATION_ID: "location_1",
@@ -49,5 +49,12 @@ describe("GHL contact pagination", () => {
       json: async () => ({ events: [{ id: "appointment_1" }] }),
     });
     await expect(fetchGhlAppointmentsForContact(env, "contact_1")).resolves.toEqual([{ id: "appointment_1" }]);
+  });
+
+  it("reads a Stripe customer only when a source charge needs identity evidence", async () => {
+    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ id: "cus_1", email: "ada@example.com" }) });
+    await expect(fetchStripeCustomer({ STRIPE_SECRET_KEY: "sk_test" }, "cus_1"))
+      .resolves.toMatchObject({ id: "cus_1", email: "ada@example.com" });
+    expect(fetch.mock.calls[0][0]).toContain("/customers/cus_1");
   });
 });

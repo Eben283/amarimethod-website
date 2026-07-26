@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSyncRequest } from "./index.js";
+import { parseQueueLimit, parseSyncRequest } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -15,5 +15,11 @@ describe("CRM mirror request validation", () => {
 
   it("does not make reconciliation a sync source", () => {
     expect(() => parseSyncRequest({ sources: ["reconciliation"] })).toThrow("sources must contain ghl and/or stripe");
+  });
+
+  it("bounds the protected reconciliation review queue", () => {
+    expect(parseQueueLimit(null)).toBe(25);
+    expect(parseQueueLimit("0")).toBe(1);
+    expect(parseQueueLimit("99")).toBe(50);
   });
 });

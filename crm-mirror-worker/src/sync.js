@@ -8,8 +8,8 @@ import {
   upsertGhlContact,
   upsertStripeCharge,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeStripeCharge } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeChargesPage } from "./providers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
 
 function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
@@ -58,6 +58,7 @@ export async function syncStripe(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "stripe");
   const runId = await beginSyncRun(env.CRM_DB, "stripe", cursorBefore, now);
   const outcome = result();
+  const customerEmailCache = new Map();
   try {
     const page = await fetchStripeChargesPage(env, cursorBefore, limit);
     for (const rawCharge of page.charges) {
@@ -67,7 +68,28 @@ export async function syncStripe(env, limit, now) {
         outcome.recordsSkipped += 1;
         continue;
       }
-      const upserted = await upsertStripeCharge(env.CRM_DB, charge, now);
+      let enrichedCharge = charge;
+      // This only improves evidence for an otherwise-unlinked charge. A Stripe
+      // customer email can create a review candidate, never an automatic link.
+      if (!charge.contactExternalId && !charge.billingEmail && charge.customerExternalId) {
+        let customerEmail = customerEmailCache.get(charge.customerExternalId);
+        if (customerEmail === undefined) {
+          try {
+            const customer = await fetchStripeCustomer(env, charge.customerExternalId);
+            customerEmail = normalizedEmail(customer?.email);
+          } catch (error) {
+            customerEmail = null;
+            console.warn(JSON.stringify({
+              event: "crm_mirror_stripe_customer_lookup_failed",
+              customerId: charge.customerExternalId,
+              message: error instanceof Error ? error.message : String(error),
+            }));
+          }
+          customerEmailCache.set(charge.customerExternalId, customerEmail);
+        }
+        if (customerEmail) enrichedCharge = { ...charge, billingEmail: customerEmail };
+      }
+      const upserted = await upsertStripeCharge(env.CRM_DB, enrichedCharge, now);
       outcome.recordsWritten += 1;
       if (!upserted.linked) outcome.recordsSkipped += 1;
     }

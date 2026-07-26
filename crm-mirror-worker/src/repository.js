@@ -105,6 +105,32 @@ export async function findContactIdByGhlId(db, externalId) {
   return contactIdForExternalRecord(db, "ghl", "contact", externalId);
 }
 
+async function findUniqueContactIdByEmail(db, email) {
+  if (!email) return null;
+  const result = await db.prepare(
+    "SELECT id FROM contacts WHERE email_normalized = ? ORDER BY id LIMIT 2",
+  ).bind(email).all();
+  const rows = result.results || [];
+  return rows.length === 1 ? rows[0].id : null;
+}
+
+async function refreshEmailReconciliationCandidate(db, purchaseId, billingEmail, now) {
+  // Regeneration is intentionally narrow: this importer owns only its own
+  // pending email evidence. A future human review decision must never be erased.
+  await db.prepare(
+    "DELETE FROM purchase_reconciliation_candidates WHERE purchase_id = ? AND match_basis = 'unique_billing_email' AND state = 'pending_review'",
+  ).bind(purchaseId).run();
+  const contactId = await findUniqueContactIdByEmail(db, billingEmail);
+  if (!contactId) return false;
+  await db.prepare(
+    `INSERT INTO purchase_reconciliation_candidates
+     (id, purchase_id, contact_id, match_basis, state, created_at)
+     VALUES (?, ?, ?, 'unique_billing_email', 'pending_review', ?)
+     ON CONFLICT(purchase_id, contact_id, match_basis) DO NOTHING`,
+  ).bind(id(), purchaseId, contactId, now).run();
+  return true;
+}
+
 export async function upsertGhlAppointment(db, appointment, contactId, now) {
   const service = appointment.calendarId
     ? await db.prepare("SELECT id FROM services WHERE provider_calendar_id = ?").bind(appointment.calendarId).first()
@@ -146,31 +172,36 @@ export async function upsertGhlAppointment(db, appointment, contactId, now) {
 }
 
 export async function upsertStripeCharge(db, charge, now) {
-  const contactId = charge.contactExternalId
+  const sourceContactId = charge.contactExternalId
     ? await findContactIdByGhlId(db, charge.contactExternalId)
     : null;
-  const existing = await db.prepare("SELECT id FROM purchases WHERE provider_charge_id = ?").bind(charge.externalId).first();
+  const existing = await db.prepare(
+    "SELECT id, contact_id FROM purchases WHERE provider_charge_id = ?",
+  ).bind(charge.externalId).first();
+  // A direct GHL metadata stamp is authoritative. In every other case retain an
+  // existing human-accepted link; importing a charge must not erase it.
+  const contactId = sourceContactId || existing?.contact_id || null;
   const purchaseId = existing?.id || id();
   if (existing) {
     await db.prepare(
       `UPDATE purchases
        SET contact_id = ?, package_id = ?, provider_customer_id = ?, provider_status = ?, amount_cents = ?,
-           amount_refunded_cents = ?, currency = ?, purchased_at = ?, classification = ?, updated_at = ?
+           amount_refunded_cents = ?, currency = ?, purchased_at = ?, classification = ?, billing_email_normalized = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, charge.packageId, charge.customerExternalId, charge.providerStatus, charge.amountCents,
-      charge.amountRefundedCents, charge.currency, charge.purchasedAt, charge.classification, now, purchaseId,
+      charge.amountRefundedCents, charge.currency, charge.purchasedAt, charge.classification, charge.billingEmail, now, purchaseId,
     ).run();
   } else {
     await db.prepare(
       `INSERT INTO purchases
        (id, contact_id, package_id, provider_charge_id, provider_customer_id, provider_status, amount_cents,
-        amount_refunded_cents, currency, purchased_at, classification, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        amount_refunded_cents, currency, purchased_at, classification, billing_email_normalized, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       purchaseId, contactId, charge.packageId, charge.externalId, charge.customerExternalId, charge.providerStatus,
       charge.amountCents, charge.amountRefundedCents, charge.currency, charge.purchasedAt, charge.classification,
-      now, now,
+      charge.billingEmail, now, now,
     ).run();
   }
   await db.prepare(
@@ -180,7 +211,15 @@ export async function upsertStripeCharge(db, charge, now) {
      ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
        contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
   ).bind(id(), charge.externalId, contactId, purchaseId, now).run();
-  return { purchaseId, linked: Boolean(contactId) };
+  let hasEmailCandidate = false;
+  if (sourceContactId) {
+    await db.prepare(
+      "DELETE FROM purchase_reconciliation_candidates WHERE purchase_id = ? AND match_basis = 'unique_billing_email' AND state = 'pending_review'",
+    ).bind(purchaseId).run();
+  } else {
+    hasEmailCandidate = await refreshEmailReconciliationCandidate(db, purchaseId, charge.billingEmail, now);
+  }
+  return { purchaseId, linked: Boolean(contactId), hasEmailCandidate };
 }
 
 export async function mirrorStatus(db) {
@@ -202,7 +241,8 @@ export async function mirrorStatus(db) {
 // details. A link is considered authoritative only when Stripe supplied the GHL
 // contact ID; unlinked charges stay out of the session ledger for manual review.
 export async function reconciliationStatus(db) {
-  const row = await db.prepare(
+  const [purchaseRow, candidateRow] = await db.batch([
+    db.prepare(
     `SELECT
        COUNT(*) AS purchases_total,
        SUM(CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS contact_linked,
@@ -210,13 +250,47 @@ export async function reconciliationStatus(db) {
        SUM(CASE WHEN ledger_import_state = 'pending_reconciliation' THEN 1 ELSE 0 END) AS pending_ledger_review,
        SUM(CASE WHEN classification = 'unclassified' THEN 1 ELSE 0 END) AS unclassified
      FROM purchases`,
-  ).first();
+    ),
+    db.prepare(
+      `SELECT COUNT(*) AS pending_candidates
+       FROM purchase_reconciliation_candidates
+       WHERE state = 'pending_review'`,
+    ),
+  ]);
+  const row = purchaseRow.results?.[0] || null;
+  const pendingCandidates = Number(candidateRow.results?.[0]?.pending_candidates || 0);
   return {
     purchasesTotal: Number(row?.purchases_total || 0),
     contactLinked: Number(row?.contact_linked || 0),
     contactUnlinked: Number(row?.contact_unlinked || 0),
     pendingLedgerReview: Number(row?.pending_ledger_review || 0),
     unclassified: Number(row?.unclassified || 0),
+    pendingCandidates,
     automaticLedgerPosting: false,
   };
+}
+
+export async function reconciliationQueue(db, limit) {
+  const result = await db.prepare(
+    `SELECT
+       candidate.id AS candidate_id,
+       candidate.match_basis,
+       candidate.state,
+       purchase.provider_charge_id,
+       purchase.amount_cents,
+       purchase.currency,
+       purchase.purchased_at,
+       purchase.classification,
+       purchase.billing_email_normalized,
+       contact.id AS contact_id,
+       contact.display_name AS contact_display_name,
+       contact.email_normalized AS contact_email_normalized
+     FROM purchase_reconciliation_candidates candidate
+     JOIN purchases purchase ON purchase.id = candidate.purchase_id
+     JOIN contacts contact ON contact.id = candidate.contact_id
+     WHERE candidate.state = 'pending_review'
+     ORDER BY purchase.purchased_at DESC, candidate.created_at DESC
+     LIMIT ?`,
+  ).bind(limit).all();
+  return result.results || [];
 }

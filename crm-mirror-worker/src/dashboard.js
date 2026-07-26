@@ -49,7 +49,7 @@ const DASHBOARD_HTML = `<!doctype html>
         <p>Purchases stay out of the session ledger until an operator can account for them correctly.</p>
         <div class="grid">
           <article class="card"><span class="label">Pending review</span><strong class="value" id="pending-review">—</strong><span class="detail">No ledger entries have been created</span></article>
-          <article class="card"><span class="label">Unlinked purchases</span><strong class="value" id="unlinked">—</strong><span class="detail">No assumed customer-to-contact link</span></article>
+          <article class="card"><span class="label">Review candidates</span><strong class="value" id="candidates">—</strong><span class="detail">Exact email evidence, pending review</span></article>
           <article class="card"><span class="label">Unclassified</span><strong class="value" id="unclassified">—</strong><span class="detail">Needs package identification</span></article>
           <article class="card"><span class="label">Automatic posting</span><strong class="value" id="posting">Off</strong><span class="detail">Deliberately disabled</span></article>
         </div>
@@ -81,7 +81,7 @@ const DASHBOARD_HTML = `<!doctype html>
           set("appointments", status.appointments);
           set("purchases", status.purchases);
           set("pending-review", reconciliation.pendingLedgerReview);
-          set("unlinked", reconciliation.contactUnlinked);
+          set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
           set("posting", reconciliation.automaticLedgerPosting ? "On" : "Off");
           set("last-import", status.lastSync?.status === "succeeded" ? "Current" : "Review");

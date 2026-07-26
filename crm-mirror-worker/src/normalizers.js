@@ -116,6 +116,7 @@ export function normalizeStripeCharge(raw) {
     externalId: id,
     contactExternalId: text(raw.metadata?.contactId),
     customerExternalId: text(raw.customer),
+    billingEmail: normalizedEmail(raw.billing_details?.email || raw.receipt_email),
     providerStatus: raw.refunded ? "refunded" : "succeeded",
     amountCents: Number.isInteger(raw.amount) ? raw.amount : 0,
     amountRefundedCents: Number.isInteger(raw.amount_refunded) ? raw.amount_refunded : 0,

@@ -69,3 +69,15 @@ export async function fetchStripeChargesPage(env, cursor, limit) {
   const charges = Array.isArray(payload.data) ? payload.data.slice(0, limit) : [];
   return { charges, nextCursor: payload.has_more ? charges.at(-1)?.id || null : null };
 }
+
+export async function fetchStripeCustomer(env, customerExternalId) {
+  if (!env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
+  if (!customerExternalId) return null;
+  const response = await fetch(`${STRIPE_BASE}/customers/${encodeURIComponent(customerExternalId)}`, {
+    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+  });
+  // Deleted customers are not an import failure. The charge remains visible for
+  // review but contributes no identity evidence.
+  if (response.status === 404) return null;
+  return readJson(response, "Stripe customer");
+}

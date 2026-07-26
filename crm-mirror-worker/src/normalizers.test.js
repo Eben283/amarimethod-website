@@ -52,10 +52,12 @@ describe("CRM mirror normalizers", () => {
     expect(normalizeStripeCharge({
       id: "ch_1", paid: true, status: "succeeded", amount: 72000, amount_refunded: 0,
       currency: "usd", description: "4-Session Series", customer: "cus_1", created: 1,
+      billing_details: { email: " ADA@example.com " },
       metadata: { contactId: "ghl_1" },
     })).toMatchObject({
       externalId: "ch_1",
       contactExternalId: "ghl_1",
+      billingEmail: "ada@example.com",
       packageId: "four-session-series",
       classification: "4-Session Series",
     });
