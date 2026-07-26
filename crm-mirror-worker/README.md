@@ -10,14 +10,13 @@ This Worker is the read-only import foundation for the internal Amari CRM. It ha
 
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
-## Before a conscious deployment
+## Provisioning and deployment
 
-1. Create a dedicated D1 database: `npx wrangler d1 create amari-crm-mirror`.
-2. Replace the all-zero `database_id` in `wrangler.jsonc` with the returned ID.
-3. Set Worker secrets, never values in source: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, and `GHL_CLIENT_SECRET`.
-4. Confirm the `PORTAL_KV` binding is the shared read-only GHL token cache.
-5. Apply `migrations/0001_initial_schema.sql` to a disposable/local database first, then the dedicated remote database.
-6. Deploy only when explicitly authorized. There is no scheduler; every import requires an authenticated `POST /sync`.
+The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its initial schema migration has been applied. The deployed Worker remains deliberately dormant: it has no scheduler, and every import requires an authenticated `POST /sync`.
+
+Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, and `GHL_CLIENT_SECRET`. `PORTAL_KV` is the shared read-only GHL token cache.
+
+If this Worker is recreated, create a new dedicated D1 database and replace the binding ID before deploying. Never reuse the live automation database.
 
 ## Authenticated endpoints
 
