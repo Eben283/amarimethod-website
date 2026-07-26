@@ -4,11 +4,13 @@ import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSe
 import {
   activeClientOperations,
   classifyPurchase,
+  contactProfile,
   decideReconciliationCandidate,
   mirrorStatus,
   reconciliationQueue,
   reconciliationReview,
   reconciliationStatus,
+  searchContacts,
 } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
@@ -42,6 +44,13 @@ export function parseQueueLimit(value) {
   if (value == null || value === "") return 25;
   const requestedLimit = Number(value);
   return Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
+}
+
+export function parseContactSearch(value) {
+  const query = String(value || "").trim();
+  if (!query) return null;
+  if (query.length < 2) throw new Error("search needs at least 2 characters");
+  return query.slice(0, 100);
 }
 
 async function requireDashboardReadAuth(request, env) {
@@ -120,7 +129,8 @@ export default {
         );
         return json(200, { success: true, result });
       }
-      if (request.method === "GET" && ["/status", "/operations", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname)) {
+      const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -137,6 +147,27 @@ export default {
           worker: "amari-crm-mirror",
           ...(await activeClientOperations(env.CRM_DB, limit, new Date().toISOString())),
         });
+      }
+      if (request.method === "GET" && url.pathname === "/contacts") {
+        const query = parseContactSearch(url.searchParams.get("query"));
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          contacts: await searchContacts(env.CRM_DB, query, limit),
+        });
+      }
+      if (request.method === "GET" && contactDetail) {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const profile = await contactProfile(
+          env.CRM_DB,
+          decodeURIComponent(contactDetail[1]),
+          limit,
+          new Date().toISOString(),
+        );
+        return profile
+          ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })
+          : json(404, { error: "contact not found" });
       }
       if (request.method === "GET" && url.pathname === "/reconciliation") {
         return json(200, {

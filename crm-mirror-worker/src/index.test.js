@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseQueueLimit, parseSyncRequest } from "./index.js";
+import { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -21,6 +21,13 @@ describe("CRM mirror request validation", () => {
     expect(parseQueueLimit(null)).toBe(25);
     expect(parseQueueLimit("0")).toBe(1);
     expect(parseQueueLimit("99")).toBe(50);
+  });
+
+  it("requires a bounded contact search term", () => {
+    expect(parseContactSearch(null)).toBeNull();
+    expect(() => parseContactSearch("x")).toThrow("search needs at least 2 characters");
+    expect(parseContactSearch("  Eben  ")).toBe("Eben");
+    expect(parseContactSearch("a".repeat(120))).toHaveLength(100);
   });
 
   it("does not make approval actions a sync source", () => {

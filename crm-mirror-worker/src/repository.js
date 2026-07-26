@@ -2,6 +2,12 @@ function id() {
   return crypto.randomUUID();
 }
 
+const GHL_FIELD_IDS = Object.freeze({
+  sessionsRemaining: "wrQSkx6BhXwDGIn1d0V4",
+  sessionsCompleted: "TE0udwVH1Km5RsKaN5H0",
+  seriesType: "3i93lTkmuAV49s9nh0q8",
+});
+
 export async function beginSyncRun(db, provider, cursorBefore, now) {
   const runId = id();
   await db.prepare(
@@ -314,6 +320,84 @@ export async function activeClientOperations(db, limit, now) {
     totalUpcomingAppointments: Number(summary.upcoming_appointments || 0),
     activeClients: activeClients.results || [],
     upcomingAppointments: upcomingAppointments.results || [],
+  };
+}
+
+function likePattern(value) {
+  return `%${String(value).replace(/[\\%_]/g, "\\$&").toLowerCase()}%`;
+}
+
+export async function searchContacts(db, query, limit) {
+  if (!query) return [];
+  const result = await db.prepare(
+    `SELECT id, display_name, email_normalized, phone_e164
+     FROM contacts
+     WHERE lower(display_name) LIKE ? ESCAPE '\\'
+        OR lower(COALESCE(email_normalized, '')) LIKE ? ESCAPE '\\'
+        OR COALESCE(phone_e164, '') LIKE ? ESCAPE '\\'
+     ORDER BY display_name, id
+     LIMIT ?`,
+  ).bind(likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, limit).all();
+  return result.results || [];
+}
+
+export async function contactProfile(db, contactId, limit, now) {
+  const [contactResult, tagsResult, rolesResult, stateResult, nextAppointmentResult, appointmentsResult, purchasesResult] = await db.batch([
+    db.prepare(
+      `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
+       FROM contacts WHERE id = ?`,
+    ).bind(contactId),
+    db.prepare(
+      "SELECT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
+    ).bind(contactId),
+    db.prepare(
+      "SELECT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
+    ).bind(contactId),
+    db.prepare(
+      `SELECT
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS sessions_remaining,
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS sessions_completed,
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS series_type
+       FROM contact_attributes
+       WHERE contact_id = ? AND source = 'ghl'`,
+    ).bind(GHL_FIELD_IDS.sessionsRemaining, GHL_FIELD_IDS.sessionsCompleted, GHL_FIELD_IDS.seriesType, contactId),
+    db.prepare(
+      `SELECT appointment.starts_at, appointment.status, service.name AS service_name
+       FROM appointments appointment
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.contact_id = ?
+         AND appointment.status IN ('booked', 'confirmed')
+         AND datetime(appointment.starts_at) >= datetime(?)
+       ORDER BY datetime(appointment.starts_at), appointment.id
+       LIMIT 1`,
+    ).bind(contactId, now),
+    db.prepare(
+      `SELECT appointment.starts_at, appointment.ends_at, appointment.status, service.name AS service_name
+       FROM appointments appointment
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.contact_id = ?
+       ORDER BY datetime(appointment.starts_at) DESC, appointment.id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT amount_cents, amount_refunded_cents, currency, purchased_at, provider_status,
+              classification, classification_review_state
+       FROM purchases
+       WHERE contact_id = ?
+       ORDER BY datetime(purchased_at) DESC, id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+  ]);
+  const contact = contactResult.results?.[0] || null;
+  if (!contact) return null;
+  return {
+    contact,
+    tags: (tagsResult.results || []).map((row) => row.tag),
+    roles: (rolesResult.results || []).map((row) => row.role),
+    importedCurrentState: stateResult.results?.[0] || {},
+    nextAppointment: nextAppointmentResult.results?.[0] || null,
+    appointments: appointmentsResult.results || [],
+    purchases: purchasesResult.results || [],
   };
 }
 

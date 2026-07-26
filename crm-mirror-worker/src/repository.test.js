@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, reconciliationReview, reconciliationStatus } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, reconciliationReview, reconciliationStatus, searchContacts } from "./repository.js";
 
 describe("CRM mirror active-client operations", () => {
   it("returns imported balance and upcoming-appointment views without creating a ledger", async () => {
@@ -44,6 +44,38 @@ describe("CRM mirror historical package classification", () => {
       packageId: null,
     });
     expect(writes).toHaveLength(2);
+  });
+});
+
+describe("CRM mirror client profiles", () => {
+  it("keeps contact search and a read-only profile separate from the session ledger", async () => {
+    const searchDb = {
+      prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ id: "contact_1", display_name: "Eben" }] }) }) }),
+    };
+    await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben" }]);
+    await expect(searchContacts(searchDb, null, 25)).resolves.toEqual([]);
+
+    const profileDb = {
+      prepare: () => ({ bind: () => ({}) }),
+      batch: async () => [
+        { results: [{ id: "contact_1", display_name: "Eben" }] },
+        { results: [{ tag: "client" }] },
+        { results: [{ role: "client" }] },
+        { results: [{ sessions_remaining: "3", series_type: "8-session" }] },
+        { results: [{ starts_at: "2026-07-27 13:00:00" }] },
+        { results: [{ status: "confirmed" }] },
+        { results: [{ classification: "8-Session Series" }] },
+      ],
+    };
+    await expect(contactProfile(profileDb, "contact_1", 25, "2026-07-26T00:00:00.000Z")).resolves.toMatchObject({
+      contact: { id: "contact_1", display_name: "Eben" },
+      tags: ["client"],
+      roles: ["client"],
+      importedCurrentState: { sessions_remaining: "3", series_type: "8-session" },
+      nextAppointment: { starts_at: "2026-07-27 13:00:00" },
+      appointments: [{ status: "confirmed" }],
+      purchases: [{ classification: "8-Session Series" }],
+    });
   });
 });
 

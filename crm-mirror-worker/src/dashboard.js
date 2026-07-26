@@ -27,6 +27,19 @@ const DASHBOARD_HTML = `<!doctype html>
       .notice strong { color: #fff0c8; }
       .review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
       .operations-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+      .profile-grid { display: grid; grid-template-columns: minmax(250px, .8fr) minmax(0, 1.6fr); gap: 14px; }
+      .profile-input { width: 100%; min-height: 42px; padding: 9px 11px; border: 1px solid #385244; border-radius: 10px; background: #101813; color: #edf4ef; font: inherit; }
+      .profile-input:focus { outline: 2px solid #78d699; outline-offset: 2px; }
+      .profile-status { min-height: 20px; margin: 10px 0; color: #9caf9f; font-size: .78rem; }
+      .profile-button { width: 100%; padding: 10px; border: 1px solid #385b45; border-radius: 9px; background: #202c24; color: #e7f4ea; cursor: pointer; text-align: left; font: 650 .8rem/1.25 ui-sans-serif, system-ui, sans-serif; }
+      .profile-button span { display: block; margin-top: 4px; color: #9caf9f; font-size: .72rem; font-weight: 400; overflow-wrap: anywhere; }
+      .profile-panel { min-height: 300px; }
+      .profile-heading { margin: 0; font-size: 1.1rem; }
+      .profile-meta { margin: 7px 0 0; color: #9caf9f; font-size: .78rem; line-height: 1.45; overflow-wrap: anywhere; }
+      .profile-facts { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 0; }
+      .profile-fact { padding: 6px 8px; border-radius: 999px; background: #26362d; color: #c5ddcb; font-size: .72rem; }
+      .profile-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 22px; }
+      .profile-sections h4 { margin: 0 0 8px; font-size: .82rem; }
       .review-shell { padding: 5px; border-radius: 18px; background: #26362d; }
       .review-core { min-height: 220px; padding: 16px; border-radius: 14px; background: #172019; }
       .review-core h3 { margin: 0 0 6px; font-size: .94rem; }
@@ -46,7 +59,7 @@ const DASHBOARD_HTML = `<!doctype html>
       .action-row button:hover { transform: translateY(-1px); }
       .action-status { color: #f1d59b; font-size: .74rem; line-height: 1.4; }
       .footer { margin-top: 46px; color: #708378; font-size: .8rem; }
-      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid, .operations-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid, .operations-grid, .profile-grid, .profile-sections { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -74,6 +87,15 @@ const DASHBOARD_HTML = `<!doctype html>
         <div class="operations-grid section">
           <article class="review-shell"><div class="review-core"><h3>Clients with sessions remaining</h3><p>Imported balance and the next booked appointment, if any.</p><ul class="review-list" id="active-client-list"></ul></div></article>
           <article class="review-shell"><div class="review-core"><h3>Upcoming appointments</h3><p>Read-only schedule copied from GoHighLevel.</p><ul class="review-list" id="upcoming-appointment-list"></ul></div></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Client profiles</h2>
+        <p>Search a client to view the imported contact record, current GHL balance, purchases, and appointment timeline. This workspace is read-only.</p>
+        <div class="profile-grid">
+          <article class="review-shell"><div class="review-core"><h3>Find a client</h3><p>Search by name, email, or phone.</p><input class="profile-input" id="contact-search" type="search" autocomplete="off" placeholder="Type at least 2 characters" aria-label="Search clients" /><p class="profile-status" id="contact-search-status">Start typing to search.</p><ul class="review-list" id="contact-search-results"></ul></div></article>
+          <article class="review-shell"><div class="review-core profile-panel" id="contact-profile"><h3 class="profile-heading">Select a client</h3><p class="profile-meta">Their imported record will appear here. No profile action can change a balance, booking, or source system.</p></div></article>
         </div>
       </section>
 
@@ -201,6 +223,105 @@ const DASHBOARD_HTML = `<!doctype html>
               list.append(item);
             }
           };
+          const contactSearch = document.getElementById("contact-search");
+          const contactSearchStatus = document.getElementById("contact-search-status");
+          const contactSearchResults = document.getElementById("contact-search-results");
+          const contactProfilePanel = document.getElementById("contact-profile");
+          const textNode = (tag, value, className) => {
+            const node = document.createElement(tag);
+            if (className) node.className = className;
+            node.textContent = value;
+            return node;
+          };
+          const appendList = (parent, rows, format) => {
+            const list = document.createElement("ul");
+            list.className = "review-list";
+            if (!rows.length) {
+              list.append(textNode("li", "Nothing recorded.", "review-empty"));
+            } else {
+              for (const row of rows) {
+                const item = document.createElement("li");
+                item.className = "review-item";
+                const values = format(row);
+                item.append(textNode("strong", values[0]), textNode("span", values[1]));
+                list.append(item);
+              }
+            }
+            parent.append(list);
+          };
+          const loadProfile = async (contactId) => {
+            contactProfilePanel.replaceChildren(textNode("p", "Loading client profile…", "profile-meta"));
+            const response = await fetch("/contacts/" + encodeURIComponent(contactId) + "?limit=25", { credentials: "same-origin" });
+            if (!response.ok) {
+              contactProfilePanel.replaceChildren(textNode("p", "This client profile could not be loaded.", "profile-meta"));
+              return;
+            }
+            const profile = await response.json();
+            const contact = profile.contact;
+            contactProfilePanel.replaceChildren();
+            contactProfilePanel.append(textNode("h3", contact.display_name || "Unnamed client", "profile-heading"));
+            const contactDetail = [contact.email_normalized, contact.phone_e164, contact.referral_source_label].filter(Boolean).join(" · ") || "No imported contact details";
+            contactProfilePanel.append(textNode("p", contactDetail, "profile-meta"));
+            const facts = document.createElement("div");
+            facts.className = "profile-facts";
+            const stateFacts = [
+              profile.importedCurrentState.sessions_remaining != null ? profile.importedCurrentState.sessions_remaining + " imported sessions remaining" : "No imported balance",
+              profile.importedCurrentState.series_type || "No series type",
+              profile.nextAppointment ? "Next: " + scheduleTime(profile.nextAppointment.starts_at) : "No upcoming appointment",
+              ...profile.roles,
+              ...profile.tags,
+            ];
+            for (const fact of stateFacts) facts.append(textNode("span", fact, "profile-fact"));
+            contactProfilePanel.append(facts);
+            const sections = document.createElement("div");
+            sections.className = "profile-sections";
+            const appointments = document.createElement("div");
+            appointments.append(textNode("h4", "Appointment timeline"));
+            appendList(appointments, profile.appointments, (row) => [scheduleTime(row.starts_at), (row.service_name || "Unmapped service") + " · " + row.status]);
+            const purchases = document.createElement("div");
+            purchases.append(textNode("h4", "Purchase history"));
+            appendList(purchases, profile.purchases, (row) => [money(row) + " · " + (row.classification || "Unclassified"), scheduleTime(row.purchased_at) + " · " + row.provider_status]);
+            sections.append(appointments, purchases);
+            contactProfilePanel.append(sections);
+          };
+          let searchTimer;
+          let searchRequest = 0;
+          contactSearch.addEventListener("input", () => {
+            clearTimeout(searchTimer);
+            const query = contactSearch.value.trim();
+            if (!query) {
+              contactSearchStatus.textContent = "Start typing to search.";
+              contactSearchResults.replaceChildren();
+              return;
+            }
+            if (query.length < 2) {
+              contactSearchStatus.textContent = "Enter at least 2 characters.";
+              contactSearchResults.replaceChildren();
+              return;
+            }
+            searchTimer = setTimeout(async () => {
+              const requestId = ++searchRequest;
+              contactSearchStatus.textContent = "Searching…";
+              const response = await fetch("/contacts?limit=12&query=" + encodeURIComponent(query), { credentials: "same-origin" });
+              if (requestId !== searchRequest) return;
+              if (!response.ok) {
+                contactSearchStatus.textContent = "Search is unavailable.";
+                return;
+              }
+              const payload = await response.json();
+              contactSearchResults.replaceChildren();
+              contactSearchStatus.textContent = payload.contacts.length ? payload.contacts.length + " matching client" + (payload.contacts.length === 1 ? "" : "s") + "." : "No matching clients.";
+              for (const contact of payload.contacts) {
+                const item = document.createElement("li");
+                const button = document.createElement("button");
+                button.className = "profile-button";
+                button.append(textNode("span", contact.display_name || "Unnamed client"), textNode("span", contact.email_normalized || contact.phone_e164 || "No imported contact detail"));
+                button.addEventListener("click", () => loadProfile(contact.id));
+                item.append(button);
+                contactSearchResults.append(item);
+              }
+            }, 180);
+          });
           render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
           render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
           render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized, (item, row) => {

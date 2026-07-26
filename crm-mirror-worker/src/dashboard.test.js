@@ -10,6 +10,9 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/operations?limit=25", { credentials: "same-origin" })');
     expect(html).toContain("Active client operations");
+    expect(html).toContain("Client profiles");
+    expect(html).toContain('fetch("/contacts?limit=12&query="');
+    expect(html).toContain('fetch("/contacts/" + encodeURIComponent(contactId) + "?limit=25"');
     expect(html).toContain("GHL-imported session fields");
     expect(html).toContain("Purchase records");
     expect(html).toContain("this is not a work queue");
