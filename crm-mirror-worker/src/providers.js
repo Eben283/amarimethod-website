@@ -16,18 +16,44 @@ async function ghlGet(env, path) {
   return readJson(response, "GHL");
 }
 
+function parseGhlCursor(cursor) {
+  if (typeof cursor !== "string") return null;
+  try {
+    const parsed = JSON.parse(cursor);
+    if (!parsed || typeof parsed.afterId !== "string" || !parsed.afterId) return null;
+    if (parsed.after == null) return null;
+    return { afterId: parsed.afterId, after: parsed.after };
+  } catch {
+    // The first deployed version stored only an ID. Restarting that bounded import
+    // once is safe because contact upserts are idempotent; resuming it is not.
+    return null;
+  }
+}
+
+function nextGhlCursor(meta, contactCount, limit) {
+  if (contactCount < limit || !meta?.startAfterId || meta.startAfter == null) return null;
+  return JSON.stringify({ afterId: meta.startAfterId, after: meta.startAfter });
+}
+
 export async function fetchGhlContactsPage(env, cursor, limit) {
   const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, limit: String(limit) });
-  if (cursor) params.set("startAfterId", cursor);
+  const position = parseGhlCursor(cursor);
+  if (position) {
+    params.set("startAfterId", position.afterId);
+    params.set("startAfter", String(position.after));
+  }
   const payload = await ghlGet(env, `/contacts/?${params}`);
   const contacts = Array.isArray(payload.contacts) ? payload.contacts.slice(0, limit) : [];
-  const hasMore = Boolean(payload.meta?.nextPageUrl || payload.meta?.hasMore || contacts.length === limit);
-  return { contacts, nextCursor: hasMore ? contacts.at(-1)?.id || null : null };
+  return { contacts, nextCursor: nextGhlCursor(payload.meta, contacts.length, limit) };
 }
 
 export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}/appointments?limit=100`);
-  const appointments = Array.isArray(payload.appointments) ? payload.appointments : [];
+  const appointments = Array.isArray(payload.events)
+    ? payload.events
+    : Array.isArray(payload.appointments)
+      ? payload.appointments
+      : [];
   // This is deliberately bounded. An unexpectedly large history is a review condition, not a reason to buffer it all.
   return appointments.slice(0, 100);
 }

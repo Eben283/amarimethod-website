@@ -197,3 +197,26 @@ export async function mirrorStatus(db) {
     lastSync: lastSync.results?.[0] || null,
   };
 }
+
+// This intentionally reports only reconciliation state, never contact or purchase
+// details. A link is considered authoritative only when Stripe supplied the GHL
+// contact ID; unlinked charges stay out of the session ledger for manual review.
+export async function reconciliationStatus(db) {
+  const row = await db.prepare(
+    `SELECT
+       COUNT(*) AS purchases_total,
+       SUM(CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS contact_linked,
+       SUM(CASE WHEN contact_id IS NULL THEN 1 ELSE 0 END) AS contact_unlinked,
+       SUM(CASE WHEN ledger_import_state = 'pending_reconciliation' THEN 1 ELSE 0 END) AS pending_ledger_review,
+       SUM(CASE WHEN classification = 'unclassified' THEN 1 ELSE 0 END) AS unclassified
+     FROM purchases`,
+  ).first();
+  return {
+    purchasesTotal: Number(row?.purchases_total || 0),
+    contactLinked: Number(row?.contact_linked || 0),
+    contactUnlinked: Number(row?.contact_unlinked || 0),
+    pendingLedgerReview: Number(row?.pending_ledger_review || 0),
+    unclassified: Number(row?.unclassified || 0),
+    automaticLedgerPosting: false,
+  };
+}

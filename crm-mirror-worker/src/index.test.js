@@ -12,4 +12,8 @@ describe("CRM mirror request validation", () => {
   it("rejects an empty or unsupported source set", () => {
     expect(() => parseSyncRequest({ sources: ["gmail"] })).toThrow("sources must contain ghl and/or stripe");
   });
+
+  it("does not make reconciliation a sync source", () => {
+    expect(() => parseSyncRequest({ sources: ["reconciliation"] })).toThrow("sources must contain ghl and/or stripe");
+  });
 });

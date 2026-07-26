@@ -1,5 +1,5 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
-import { mirrorStatus } from "./repository.js";
+import { mirrorStatus, reconciliationStatus } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -27,6 +27,13 @@ export default {
     try {
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB)) });
+      }
+      if (request.method === "GET" && url.pathname === "/reconciliation") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await reconciliationStatus(env.CRM_DB)),
+        });
       }
       if (request.method === "POST" && url.pathname === "/sync") {
         const length = Number(request.headers.get("Content-Length") || 0);
