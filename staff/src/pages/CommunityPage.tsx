@@ -1,0 +1,94 @@
+import { Building2, CalendarClock, MapPin, RefreshCw, Sparkles, Users } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getCommunityRelationships } from '../lib/api';
+import type { CommunityRelationship, CommunityRelationshipStage } from '../types/staff';
+
+const STAGE: Record<CommunityRelationshipStage, { label: string; tone: string }> = {
+  host: { label: 'Flyer host', tone: 'host' },
+  engaged_host: { label: 'Building trust', tone: 'engaged' },
+  partner: { label: 'Partner', tone: 'partner' },
+  workshop_opportunity: { label: 'Workshop signal', tone: 'workshop' },
+};
+
+function localDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts();
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || '';
+  return `${value('year')}-${value('month')}-${value('day')}`;
+}
+
+function compactDate(value: string | null) {
+  if (!value) return null;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T12:00:00Z`));
+}
+
+function relativeDate(value: string | null) {
+  if (!value) return 'No revisit set';
+  const today = localDate();
+  if (value < today) return `Overdue · ${compactDate(value)}`;
+  if (value === today) return 'Revisit today';
+  return `Revisit ${compactDate(value)}`;
+}
+
+function RelationshipCard({ partner }: { partner: CommunityRelationship }) {
+  const stage = STAGE[partner.relationship_stage] || STAGE.host;
+  return <article className="community-card">
+    <div className="community-card__head">
+      <span className={`community-stage community-stage--${stage.tone}`}>{stage.label}</span>
+      <span className="community-card__visits">{partner.visit_count} visit{partner.visit_count === 1 ? '' : 's'}</span>
+    </div>
+    <h2>{partner.business_name}</h2>
+    {partner.location && <p className="community-card__location"><MapPin aria-hidden="true" /> {partner.location}</p>}
+    {(partner.study || partner.flyer_location) && <p className="community-card__study">{partner.study || 'Study flyer'}{partner.flyer_location ? ` · ${partner.flyer_location}` : ''}</p>}
+    {partner.latest_note && <p className="community-card__note">{partner.latest_note}</p>}
+    <footer>
+      <span className={partner.next_visit_on && partner.next_visit_on <= localDate() ? 'community-card__due community-card__due--now' : 'community-card__due'}><CalendarClock aria-hidden="true" /> {relativeDate(partner.next_visit_on)}</span>
+      {partner.contact?.name && <span className="community-card__contact"><Users aria-hidden="true" /> {partner.contact.name}{partner.contact.role ? ` · ${partner.contact.role}` : ''}</span>}
+      {partner.workshop_signal && <span className="community-card__workshop"><Sparkles aria-hidden="true" /> Workshop conversation</span>}
+    </footer>
+  </article>;
+}
+
+export default function CommunityPage() {
+  const [partners, setPartners] = useState<CommunityRelationship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try { setPartners(await getCommunityRelationships()); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Could not load field relationships.'); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const due = useMemo(() => partners.filter((partner) => partner.next_visit_on && partner.next_visit_on <= localDate()), [partners]);
+  // A return visit is the immediate next action. Keep each business in one
+  // lane, so a workshop signal does not hide a due relationship or duplicate
+  // the same card across the board.
+  const workshop = useMemo(() => partners.filter((partner) => !due.includes(partner) && (partner.workshop_signal || partner.relationship_stage === 'workshop_opportunity')), [partners, due]);
+  const building = useMemo(() => partners.filter((partner) => !due.includes(partner) && !workshop.includes(partner)), [partners, due, workshop]);
+
+  return <main className="community-page">
+    <header className="community-page__head">
+      <div>
+        <p>Field relationships</p>
+        <h1>Around town</h1>
+        <span>Places where a real conversation has started.</span>
+      </div>
+      <button type="button" onClick={() => void load()} disabled={loading}><RefreshCw aria-hidden="true" className={loading ? 'animate-spin' : ''} /> Refresh</button>
+    </header>
+
+    <section className="community-page__thesis">
+      <Building2 aria-hidden="true" />
+      <p>Google Maps is the prospect list. This board starts after a flyer visit, a real conversation, or a relationship signal.</p>
+    </section>
+
+    {error ? <section className="community-empty community-empty--error"><p>{error}</p><button type="button" onClick={() => void load()}>Try again</button></section> : loading ? <section className="community-empty"><RefreshCw className="animate-spin" aria-hidden="true" /><p>Loading field relationships…</p></section> : partners.length === 0 ? <section className="community-empty"><Building2 aria-hidden="true" /><h2>No field relationships yet</h2><p>After the first visit, log the business through Chief of Staff and it will appear here.</p></section> : <div className="community-lanes">
+      <section className="community-lane community-lane--due"><header><p>Revisit</p><span>{due.length} due</span></header>{due.length ? due.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">Nothing needs a return visit today.</p>}</section>
+      <section className="community-lane"><header><p>Building</p><span>{building.length} relationships</span></header>{building.length ? building.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">No active relationship notes yet.</p>}</section>
+      <section className="community-lane community-lane--workshop"><header><p>Deeper partnership</p><span>{workshop.length} signals</span></header>{workshop.length ? workshop.map((partner) => <RelationshipCard key={partner.id} partner={partner} />) : <p className="community-lane__empty">Workshop conversations will collect here.</p>}</section>
+    </div>}
+  </main>;
+}

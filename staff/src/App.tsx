@@ -14,6 +14,7 @@ import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
 import WritePage from './pages/WritePage';
 import FieldStudiesPage from './pages/FieldStudiesPage';
+import CommunityPage from './pages/CommunityPage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -181,6 +182,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout fullBleed>
               <FieldStudiesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/community"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <CommunityPage />
             </Layout>
           </ProtectedRoute>
         }

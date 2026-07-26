@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, Kanban, ListChecks, Loader2, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, Kanban, ListChecks, Loader2, MapPinned, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -27,6 +27,7 @@ const TOOLS: HomeTool[] = [
 ];
 
 const BACK_OFFICE = [
+  { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
   { label: 'Automation Watch', detail: 'Message review', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard' },
   { label: 'CRM Mirror', detail: 'Reconciliation', Icon: Database, href: 'https://amari-crm-mirror.eben-fa2.workers.dev/' },
 ];
@@ -114,6 +115,11 @@ export default function HomePage() {
     if (tool.href) window.location.assign(tool.href);
   }
 
+  function openBackOffice(tool: typeof BACK_OFFICE[number]) {
+    if ('to' in tool && tool.to) navigate(tool.to);
+    if ('href' in tool && tool.href) window.location.assign(tool.href);
+  }
+
   return (
     <main className="staff-home">
       <header className="staff-home__masthead">
@@ -181,13 +187,14 @@ export default function HomePage() {
           <span>Operator dashboards</span>
         </header>
         <div className="staff-backoffice__links">
-          {BACK_OFFICE.map(({ label, detail, Icon, href }) => (
-            <button key={label} type="button" onClick={() => window.location.assign(href)}>
+          {BACK_OFFICE.map((tool) => {
+            const { label, detail, Icon } = tool;
+            return <button key={label} type="button" onClick={() => openBackOffice(tool)}>
               <span className="staff-backoffice__icon"><Icon aria-hidden="true" /></span>
               <span className="staff-backoffice__copy"><strong>{label}</strong><small>{detail}</small></span>
-              <ArrowUpRight aria-label="Opens outside Staff" />
-            </button>
-          ))}
+              {tool.href ? <ArrowUpRight aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+            </button>;
+          })}
         </div>
       </section>
 

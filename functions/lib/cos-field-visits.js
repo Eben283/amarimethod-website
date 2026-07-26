@@ -180,7 +180,10 @@ export async function recordFieldVisit(kv, user, input, images = []) {
 export async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
   if (!kv) throw new Error("Field partners are unavailable: PORTAL_KV is not configured");
   const index = await loadIndex(kv, user);
-  const safeLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
+  // The relationship index retains up to MAX_INDEX_ENTRIES. Consumers that
+  // need an operational board (rather than a compact COS preview) must be
+  // able to read the whole index so older follow-ups do not disappear.
+  const safeLimit = Math.min(Math.max(Number(limit) || 25, 1), MAX_INDEX_ENTRIES);
   const matching = stage && STAGES.has(stage)
     ? index.filter((entry) => entry.relationship_stage === stage)
     : index;

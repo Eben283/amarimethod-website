@@ -3,6 +3,23 @@ export interface StaffAuthState {
   isLoading: boolean;
 }
 
+export type CommunityRelationshipStage = 'host' | 'engaged_host' | 'partner' | 'workshop_opportunity';
+
+export interface CommunityRelationship {
+  id: string;
+  business_name: string;
+  location: string | null;
+  study: string | null;
+  flyer_location: string | null;
+  contact: { name: string | null; role: string | null; phone: string | null; email: string | null } | null;
+  relationship_stage: CommunityRelationshipStage;
+  workshop_signal: boolean;
+  next_visit_on: string | null;
+  latest_note: string | null;
+  latest_visit_at: string | null;
+  visit_count: number;
+}
+
 // Per-session payment status, keyed per appointment (see functions/lib/session-payment.js).
 export type PaymentStatus =
   | 'paid'

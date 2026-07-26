@@ -763,6 +763,11 @@ export async function listFieldStudyParticipants(
   return r.records;
 }
 
+export async function getCommunityRelationships(): Promise<import('../types/staff').CommunityRelationship[]> {
+  const result = await fetchApi<{ partners: import('../types/staff').CommunityRelationship[] }>('/staff-community');
+  return result.partners;
+}
+
 export async function getFieldStudyParticipant(
   recordId: string,
 ): Promise<import('../types/staff').FieldStudyParticipant | null> {
