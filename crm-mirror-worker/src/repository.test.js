@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, reconciliationReview, reconciliationStatus, searchContacts } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts } from "./repository.js";
 
 describe("CRM mirror active-client operations", () => {
   it("returns imported balance and upcoming-appointment views without creating a ledger", async () => {
@@ -76,6 +76,42 @@ describe("CRM mirror client profiles", () => {
       appointments: [{ status: "confirmed" }],
       purchases: [{ classification: "8-Session Series" }],
     });
+  });
+});
+
+describe("CRM mirror ledger cutover review", () => {
+  it("shows proposed opening balances without creating a ledger entry", async () => {
+    const db = {
+      prepare: () => ({ bind: () => ({}) }),
+      batch: async () => [
+        { results: [{ candidate_id: "cutover_1", proposed_credits: 3 }] },
+        { results: [{ pending: 1, approved: 0, rejected: 0 }] },
+      ],
+    };
+    await expect(ledgerCutoverReview(db, 25)).resolves.toEqual({
+      candidates: [{ candidate_id: "cutover_1", proposed_credits: 3 }],
+      pending: 1,
+      approved: 0,
+      rejected: 0,
+      ledgerActivated: false,
+    });
+  });
+
+  it("approves a candidate with an audit event but no ledger entry", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: () => ({
+          first: async () => sql.startsWith("SELECT id") ? { id: "cutover_1", contact_id: "contact_1", proposed_credits: 3, state: "pending_review" } : null,
+          run: async () => { writes.push(sql); },
+        }),
+      }),
+    };
+    await expect(decideLedgerCutoverCandidate(db, "cutover_1", "approve", "Eben", "2026-07-26T00:00:00.000Z")).resolves.toEqual({
+      candidateId: "cutover_1", decision: "approve", state: "approved", ledgerEntryCreated: false,
+    });
+    expect(writes).toHaveLength(2);
+    expect(writes.join(" ")).not.toContain("session_ledger_entries");
   });
 });
 

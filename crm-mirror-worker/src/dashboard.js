@@ -91,6 +91,17 @@ const DASHBOARD_HTML = `<!doctype html>
       </section>
 
       <section class="section">
+        <h2>Ledger cutover review</h2>
+        <p>These are proposed opening balances copied from the current GHL fields. Approving a proposal only records the cutover decision—it does not create a ledger entry or change any client balance.</p>
+        <div class="grid">
+          <article class="card"><span class="label">Pending proposals</span><strong class="value" id="cutover-pending">—</strong><span class="detail">Active clients awaiting opening-balance review</span></article>
+          <article class="card"><span class="label">Approved proposals</span><strong class="value" id="cutover-approved">—</strong><span class="detail">Decision recorded; ledger still off</span></article>
+          <article class="card"><span class="label">Ledger activation</span><strong class="value" id="cutover-ledger">Off</strong><span class="detail">No opening entries or session credits exist yet</span></article>
+        </div>
+        <article class="review-shell section"><div class="review-core"><h3>Proposed opening balances</h3><p>Approve only after the imported current balance is correct. A separate elevated review session is required; neither outcome writes the ledger.</p><ul class="review-list" id="ledger-cutover-candidates"></ul></div></article>
+      </section>
+
+      <section class="section">
         <h2>Client profiles</h2>
         <p>Search a client to view the imported contact record, current GHL balance, purchases, and appointment timeline. This workspace is read-only.</p>
         <div class="profile-grid">
@@ -150,16 +161,18 @@ const DASHBOARD_HTML = `<!doctype html>
           if (token || reviewToken) {
             history.replaceState(null, "", location.pathname + location.search);
           }
-          const [statusResponse, operationsResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
+          const [statusResponse, operationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
             fetch("/operations?limit=25", { credentials: "same-origin" }),
+            fetch("/ledger-cutover?limit=25", { credentials: "same-origin" }),
             fetch("/reconciliation", { credentials: "same-origin" }),
             fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
             fetch("/review-session", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !operationsResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !operationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
           const operations = await operationsResponse.json();
+          const cutover = await cutoverResponse.json();
           const reconciliation = await reconciliationResponse.json();
           const review = await reviewResponse.json();
           const reviewSession = await reviewSessionResponse.json();
@@ -169,6 +182,9 @@ const DASHBOARD_HTML = `<!doctype html>
           set("purchases", status.purchases);
           set("active-clients", operations.totalActiveClients);
           set("upcoming-appointments", operations.totalUpcomingAppointments);
+          set("cutover-pending", cutover.pending);
+          set("cutover-approved", cutover.approved);
+          set("cutover-ledger", cutover.ledgerActivated ? "On" : "Off");
           set("pending-review", reconciliation.pendingLedgerReview);
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
@@ -324,6 +340,20 @@ const DASHBOARD_HTML = `<!doctype html>
           });
           render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
           render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
+          render("ledger-cutover-candidates", cutover.candidates, (row) => row.display_name || row.email_normalized || "Unnamed client", (row) => row.proposed_credits + " proposed opening sessions · " + row.state.replaceAll("_", " "), (item, row) => {
+            if (row.state !== "pending_review") return;
+            const actions = document.createElement("div");
+            actions.className = "action-row";
+            const approve = document.createElement("button");
+            approve.textContent = "Approve opening balance";
+            approve.addEventListener("click", () => perform("/ledger-cutover/candidates/" + encodeURIComponent(row.candidate_id) + "/decision", { decision: "approve" }));
+            const reject = document.createElement("button");
+            reject.className = "danger";
+            reject.textContent = "Reject";
+            reject.addEventListener("click", () => perform("/ledger-cutover/candidates/" + encodeURIComponent(row.candidate_id) + "/decision", { decision: "reject" }));
+            actions.append(approve, reject);
+            item.append(actions);
+          });
           render("review-candidates", review.candidates, (row) => row.contact_display_name || row.contact_email_normalized, (row) => money(row) + " · " + row.classification + " · " + row.billing_email_normalized, (item, row) => {
             const actions = document.createElement("div");
             actions.className = "action-row";

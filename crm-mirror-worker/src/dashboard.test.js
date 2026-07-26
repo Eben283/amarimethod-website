@@ -11,6 +11,9 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('fetch("/operations?limit=25", { credentials: "same-origin" })');
     expect(html).toContain("Active client operations");
     expect(html).toContain("Client profiles");
+    expect(html).toContain("Ledger cutover review");
+    expect(html).toContain('fetch("/ledger-cutover?limit=25"');
+    expect(html).toContain("Approve opening balance");
     expect(html).toContain('fetch("/contacts?limit=12&query="');
     expect(html).toContain('fetch("/contacts/" + encodeURIComponent(contactId) + "?limit=25"');
     expect(html).toContain("GHL-imported session fields");

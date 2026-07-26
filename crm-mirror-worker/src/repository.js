@@ -401,6 +401,36 @@ export async function contactProfile(db, contactId, limit, now) {
   };
 }
 
+export async function ledgerCutoverReview(db, limit) {
+  const [candidates, summary] = await db.batch([
+    db.prepare(
+      `SELECT candidate.id AS candidate_id, candidate.proposed_credits, candidate.source_updated_at,
+              candidate.state, candidate.reviewed_at, candidate.reviewed_by,
+              contact.display_name, contact.email_normalized
+       FROM ledger_cutover_candidates candidate
+       JOIN contacts contact ON contact.id = candidate.contact_id
+       ORDER BY CASE candidate.state WHEN 'pending_review' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+                contact.display_name
+       LIMIT ?`,
+    ).bind(limit),
+    db.prepare(
+      `SELECT
+         SUM(CASE WHEN state = 'pending_review' THEN 1 ELSE 0 END) AS pending,
+         SUM(CASE WHEN state = 'approved' THEN 1 ELSE 0 END) AS approved,
+         SUM(CASE WHEN state = 'rejected' THEN 1 ELSE 0 END) AS rejected
+       FROM ledger_cutover_candidates`,
+    ),
+  ]);
+  const totals = summary.results?.[0] || {};
+  return {
+    candidates: candidates.results || [],
+    pending: Number(totals.pending || 0),
+    approved: Number(totals.approved || 0),
+    rejected: Number(totals.rejected || 0),
+    ledgerActivated: false,
+  };
+}
+
 // This intentionally reports only reconciliation state, never contact or purchase
 // details. A link is considered authoritative only when Stripe supplied the GHL
 // contact ID; unlinked charges stay out of the session ledger for manual review.
@@ -533,6 +563,30 @@ async function recordOperationalEvent(db, eventType, entityType, entityId, detai
     `INSERT INTO operational_events (id, event_type, entity_type, entity_id, detail_json, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
   ).bind(id(), eventType, entityType, entityId, JSON.stringify(detail), now).run();
+}
+
+export async function decideLedgerCutoverCandidate(db, candidateId, decision, reviewedBy, now) {
+  if (decision !== "approve" && decision !== "reject") throw new Error("decision must be approve or reject");
+  const actor = reviewActor(reviewedBy);
+  const candidate = await db.prepare(
+    "SELECT id, contact_id, proposed_credits, state FROM ledger_cutover_candidates WHERE id = ?",
+  ).bind(candidateId).first();
+  if (!candidate || candidate.state !== "pending_review") throw new Error("cutover candidate is not pending review");
+  const state = decision === "approve" ? "approved" : "rejected";
+  await db.prepare(
+    `UPDATE ledger_cutover_candidates
+     SET state = ?, reviewed_at = ?, reviewed_by = ?, updated_at = ?
+     WHERE id = ?`,
+  ).bind(state, now, actor, now, candidateId).run();
+  await recordOperationalEvent(
+    db,
+    `ledger_cutover_candidate_${state}`,
+    "ledger_cutover_candidate",
+    candidateId,
+    { contactId: candidate.contact_id, proposedCredits: candidate.proposed_credits, reviewedBy: actor },
+    now,
+  );
+  return { candidateId, decision, state, ledgerEntryCreated: false };
 }
 
 export async function decideReconciliationCandidate(db, candidateId, decision, reviewedBy, now) {

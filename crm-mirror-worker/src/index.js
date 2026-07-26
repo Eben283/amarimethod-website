@@ -5,8 +5,10 @@ import {
   activeClientOperations,
   classifyPurchase,
   contactProfile,
+  decideLedgerCutoverCandidate,
   decideReconciliationCandidate,
   mirrorStatus,
+  ledgerCutoverReview,
   reconciliationQueue,
   reconciliationReview,
   reconciliationStatus,
@@ -129,8 +131,22 @@ export default {
         );
         return json(200, { success: true, result });
       }
+      const ledgerCutoverDecision = url.pathname.match(/^\/ledger-cutover\/candidates\/([^/]+)\/decision$/);
+      if (request.method === "POST" && ledgerCutoverDecision) {
+        const denied = await requireReviewWriteAuth(request, env);
+        if (denied) return denied;
+        const payload = await actionPayload(request);
+        const result = await decideLedgerCutoverCandidate(
+          env.CRM_DB,
+          decodeURIComponent(ledgerCutoverDecision[1]),
+          payload.decision,
+          payload.reviewedBy,
+          new Date().toISOString(),
+        );
+        return json(200, { success: true, result });
+      }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -147,6 +163,10 @@ export default {
           worker: "amari-crm-mirror",
           ...(await activeClientOperations(env.CRM_DB, limit, new Date().toISOString())),
         });
+      }
+      if (request.method === "GET" && url.pathname === "/ledger-cutover") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, { success: true, worker: "amari-crm-mirror", ...(await ledgerCutoverReview(env.CRM_DB, limit)) });
       }
       if (request.method === "GET" && url.pathname === "/contacts") {
         const query = parseContactSearch(url.searchParams.get("query"));
