@@ -163,6 +163,9 @@
   .community-page__head p { margin: 0; color: #6d8588; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
   .community-page__head h1 { margin: 12px 0 0; font-size: clamp(2.3rem, 8vw, 4.1rem); font-weight: 400; line-height: .93; letter-spacing: -.055em; }
   .community-page__head span { display: block; margin-top: 12px; color: #708387; font-size: 14px; }
+  .community-page__actions { display: flex; align-items: center; gap: 8px; }
+  .community-page__actions > a { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 12px; border: 1px solid #cad9dc; border-radius: 11px; background: #edf4f5; color: #3d6269; font-size: 12px; font-weight: 700; text-decoration: none; }
+  .community-page__actions > a svg { width: 15px; height: 15px; }
   .community-page__head > button { display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 12px; border: 1px solid #d6e0e2; border-radius: 11px; background: white; color: #526b70; font-size: 12px; font-weight: 700; }
   .community-page__head > button svg { width: 15px; height: 15px; }
   .community-page__head > button:disabled { opacity: .55; }
@@ -191,7 +194,7 @@
   .community-card footer svg { width: 13px; height: 13px; }.community-card__due--now { color: #a26d28!important; font-weight: 700; }.community-card__workshop { color: #7c6925!important; }
   .community-empty { display: flex; min-height: 230px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1px dashed #cbd9db; border-radius: 18px; color: #72878b; text-align: center; }.community-empty svg { width: 25px; height: 25px; }.community-empty h2 { margin: 5px 0 0; color: #405b60; font-size: 17px; }.community-empty p { max-width: 330px; margin: 0; font-size: 13px; line-height: 1.5; }.community-empty button { min-height: 40px; padding: 0 12px; border: 1px solid #c8d7d9; border-radius: 9px; background: white; color: #466b72; font-size: 12px; font-weight: 700; }
   .community-empty--error { border-color: #e5c5bd; background: #fff9f7; color: #9d6354; }
-  @media (max-width: 800px) { .community-lanes { grid-template-columns: 1fr; }.community-page__head { align-items: flex-start; }.community-page__head > button { flex: 0 0 auto; } }
+  @media (max-width: 800px) { .community-lanes { grid-template-columns: 1fr; }.community-page__head { align-items: flex-start; }.community-page__actions { flex: 0 0 auto; }.community-page__head > button { flex: 0 0 auto; } }
 
   /* The single return pin replaces navigation chrome inside every Staff tool. */
   .staff-home-widget { position: fixed; right: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); z-index: 60; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 13px 0 10px; border: 1px solid rgba(25,52,61,.16); border-radius: 999px; background: rgba(255,255,255,.92); box-shadow: 0 5px 16px rgba(25,52,61,.12); color: #19343d; font-size: 11px; font-weight: 700; line-height: 1; backdrop-filter: blur(10px); }

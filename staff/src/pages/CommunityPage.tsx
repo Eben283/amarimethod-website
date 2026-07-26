@@ -1,4 +1,4 @@
-import { Building2, CalendarClock, MapPin, RefreshCw, Sparkles, Users } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, MapPin, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCommunityRelationships } from '../lib/api';
 import type { CommunityRelationship, CommunityRelationshipStage } from '../types/staff';
@@ -77,7 +77,10 @@ export default function CommunityPage() {
         <h1>Around town</h1>
         <span>Places where a real conversation has started.</span>
       </div>
-      <button type="button" onClick={() => void load()} disabled={loading}><RefreshCw aria-hidden="true" className={loading ? 'animate-spin' : ''} /> Refresh</button>
+      <div className="community-page__actions">
+        <a href="https://www.amarimethod.com/field-signup" target="_blank" rel="noreferrer"><ArrowUpRight aria-hidden="true" /> Field signup</a>
+        <button type="button" onClick={() => void load()} disabled={loading}><RefreshCw aria-hidden="true" className={loading ? 'animate-spin' : ''} /> Refresh</button>
+      </div>
     </header>
 
     <section className="community-page__thesis">
