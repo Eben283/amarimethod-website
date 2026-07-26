@@ -17,6 +17,9 @@ import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
+const MATCH_WINDOW_MS = 15 * 60 * 1000;
+const REVIEW_WINDOW_MS = 6 * 60 * 60 * 1000;
+const MAX_COMPARED_EXPECTATIONS = 12;
 
 // ── data ──────────────────────────────────────────────────────────────────────
 
@@ -46,6 +49,116 @@ async function resolveNames(env, contactIds) {
     } catch { /* names are decoration — never fail the panel over them */ }
   }
   return out;
+}
+
+function expectedChannel(channel) {
+  return channel === "email" || channel === "sms" ? channel : null;
+}
+
+function outboundChannel(message) {
+  const type = String(message?.messageType || message?.type || "").toLowerCase();
+  if (type.includes("email")) return "email";
+  if (type.includes("sms")) return "sms";
+  return null;
+}
+
+function isOutbound(message) {
+  return message?.direction === 0 || message?.direction === "outbound";
+}
+
+// Only message metadata crosses this boundary. The dashboard needs timestamps and channels
+// to compare behavior; it never exposes client message bodies through its read-only API.
+async function resolveOutboundMessages(env, contactIds) {
+  const out = { available: false, messagesByContact: {}, unavailableContactIds: [] };
+  if (!env.PORTAL_KV || !contactIds.length) return out;
+
+  let token;
+  try {
+    token = await getAccessToken(env);
+  } catch {
+    return out;
+  }
+  out.available = true;
+
+  for (const contactId of contactIds) {
+    try {
+      const search = await fetch(`${GHL_API_BASE}/conversations/search?contactId=${contactId}&limit=3`, {
+        headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+      });
+      if (!search.ok) throw new Error(`conversation search ${search.status}`);
+      const data = await search.json();
+      const conversations = data.conversations || [];
+      const messages = [];
+      for (const conversation of conversations.slice(0, 3)) {
+        const response = await fetch(`${GHL_API_BASE}/conversations/${conversation.id}/messages?limit=100`, {
+          headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+        });
+        if (!response.ok) continue;
+        const payload = await response.json();
+        for (const message of payload.messages?.messages || []) {
+          const channel = outboundChannel(message);
+          const at = new Date(message.dateAdded || message.date).getTime();
+          if (!channel || !isOutbound(message) || !Number.isFinite(at)) continue;
+          messages.push({
+            id: message.id || `${conversation.id}:${message.dateAdded || message.date}:${message.messageType || message.type}`,
+            at,
+            channel,
+          });
+        }
+      }
+      out.messagesByContact[contactId] = messages;
+    } catch {
+      out.unavailableContactIds.push(contactId);
+    }
+  }
+  return out;
+}
+
+export function compareShadowEvents(events, messageData) {
+  const expected = events
+    .filter((event) => event.outcome === "would_send" && event.contact_id && expectedChannel(event.channel))
+    .slice(0, MAX_COMPARED_EXPECTATIONS);
+  const rows = [];
+  const pairedMessages = new Set();
+  const unavailable = new Set(messageData.unavailableContactIds || []);
+
+  for (const event of expected) {
+    const channel = expectedChannel(event.channel);
+    const base = {
+      eventId: event.id,
+      contactId: event.contact_id,
+      flowKey: event.flow_key,
+      template: event.detail?.template || null,
+      channel,
+      expectedAt: event.ts,
+    };
+    if (!messageData.available || unavailable.has(event.contact_id)) {
+      rows.push({ ...base, status: "unavailable" });
+      continue;
+    }
+    const candidates = (messageData.messagesByContact[event.contact_id] || [])
+      .filter((message) => message.channel === channel)
+      .map((message) => ({ ...message, deltaMs: message.at - event.ts, absoluteDeltaMs: Math.abs(message.at - event.ts) }))
+      .sort((a, b) => a.absoluteDeltaMs - b.absoluteDeltaMs);
+    const nearest = candidates[0];
+    if (!nearest || nearest.absoluteDeltaMs > REVIEW_WINDOW_MS) {
+      rows.push({ ...base, status: "missing_in_ghl" });
+      continue;
+    }
+    pairedMessages.add(nearest.id);
+    if (nearest.absoluteDeltaMs <= MATCH_WINDOW_MS) {
+      rows.push({ ...base, status: "matched", actualAt: nearest.at, deltaMs: nearest.deltaMs });
+    } else if (nearest.deltaMs > 0) {
+      rows.push({ ...base, status: "late", actualAt: nearest.at, deltaMs: nearest.deltaMs });
+    } else {
+      rows.push({ ...base, status: "extra_in_ghl", actualAt: nearest.at, deltaMs: nearest.deltaMs });
+    }
+  }
+
+  const summary = rows.reduce((counts, row) => ({ ...counts, [row.status]: (counts[row.status] || 0) + 1 }), {
+    matched: 0, late: 0, missing_in_ghl: 0, extra_in_ghl: 0, unavailable: 0,
+  });
+  return { compared: expected.length, rows, summary };
 }
 
 export async function handleDashboardData(request, env) {
@@ -83,20 +196,32 @@ export async function handleDashboardData(request, env) {
       try { detail = e.detail ? JSON.parse(e.detail) : null; } catch { detail = { raw: e.detail }; }
       return { ...e, detail };
     };
-    const names = await resolveNames(env, [
+    const parsedEvents = events.map(parse);
+    const expectedContactIds = [...new Set(
+      parsedEvents
+        .filter((event) => event.outcome === "would_send" && expectedChannel(event.channel))
+        .slice(0, MAX_COMPARED_EXPECTATIONS)
+        .map((event) => event.contact_id),
+    )];
+    const [names, outboundMessages] = await Promise.all([
+      resolveNames(env, [
       ...events.map((e) => e.contact_id),
       ...enrollments.map((e) => e.contact_id),
       ...dueSoon.map((e) => e.contact_id),
+      ]),
+      resolveOutboundMessages(env, expectedContactIds),
     ]);
+    const comparison = compareShadowEvents(parsedEvents, outboundMessages);
 
     return json(200, {
       generatedAt: Date.now(),
       hours,
       names,
-      events: events.map(parse),
+      events: parsedEvents,
       enrollments,
       dueSoon,
       failures: failures.map(parse),
+      comparison,
     });
   } catch (err) {
     return json(500, { error: String((err && err.message) || err) });
@@ -118,7 +243,7 @@ export const DASHBOARD_HTML = `<!doctype html>
   :root {
     --bg: #241B15; --panel: #2E241C; --line: #3E3128;
     --ink: #F2E9DD; --muted: #B5A491; --accent: #EBA584;
-    --shadowed: #A8B892; --fail: #D98873;
+    --shadowed: #A8B892; --fail: #D98873; --warn: #E8B56E; --good: #A8B892;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -161,6 +286,9 @@ export const DASHBOARD_HTML = `<!doctype html>
     border-radius: 4px; padding: 1px 7px 2px; margin-right: 8px; vertical-align: 1px;
   }
   .stamp.would { color: var(--bg); background: var(--shadowed); }
+  .stamp.match { color: var(--bg); background: var(--good); }
+  .stamp.late { color: var(--bg); background: var(--warn); }
+  .stamp.missing { color: var(--bg); background: var(--fail); }
   .stamp.info { color: var(--muted); border: 1px solid var(--line); }
   .stamp.fail { color: var(--bg); background: var(--fail); }
   .empty { color: var(--muted); padding: 16px 2px; }
@@ -191,6 +319,8 @@ export const DASHBOARD_HTML = `<!doctype html>
     <button data-hours="168" aria-pressed="false">7 days</button>
     <span id="updated" style="margin-left:auto"></span>
   </div>
+  <h2>GHL comparison <small>latest client-facing shadow sends</small></h2>
+  <div id="comparison"></div>
   <h2>Activity <small id="evcount"></small></h2>
   <div id="events"></div>
   <h2>Coming up <small>next 24 hours</small></h2>
@@ -247,15 +377,35 @@ export const DASHBOARD_HTML = `<!doctype html>
       text + "</span><span class=\\"who\\">" + esc(who) + "</span></div>";
   }
 
+  function comparisonLine(row, names) {
+    var stamp = { matched: "MATCHED", late: "LATE", missing_in_ghl: "MISSING", extra_in_ghl: "EXTRA", unavailable: "CHECK" }[row.status] || "CHECK";
+    var stampClass = { matched: "match", late: "late", missing_in_ghl: "missing", extra_in_ghl: "late", unavailable: "info" }[row.status] || "info";
+    var expected = row.template || row.flowKey || "message";
+    var detail = "";
+    if (row.status === "matched") detail = "GHL sent it on time";
+    else if (row.status === "late") detail = "GHL sent " + Math.round(row.deltaMs / 60000) + "m later";
+    else if (row.status === "missing_in_ghl") detail = "no same-channel GHL send within 6h";
+    else if (row.status === "extra_in_ghl") detail = "GHL sent " + Math.abs(Math.round(row.deltaMs / 60000)) + "m early";
+    else detail = "GHL timeline unavailable — not judged";
+    var who = names[row.contactId] || row.contactId || "";
+    return '<div class="row"><span class="when">' + fmt(row.expectedAt) + '</span><span class="what"><span class="stamp ' + stampClass + '">' + stamp + '</span>send ' + esc(expected) + '<br><span class="who">' + esc(detail) + '</span></span><span class="who">' + esc(who) + '</span></div>';
+  }
+
   function render(data) {
     var names = data.names || {};
     var el = function (id) { return document.getElementById(id); };
     var wouldCount = data.events.filter(function (e) { return String(e.outcome).indexOf("would") === 0; }).length;
+    var comparison = data.comparison || { rows: [], summary: {} };
+    var reviewCount = (comparison.summary.late || 0) + (comparison.summary.missing_in_ghl || 0) + (comparison.summary.extra_in_ghl || 0);
     el("stats").innerHTML =
       '<div class="stat"><div class="n">' + data.events.length + '</div><div class="l">events \\u00B7 ' + data.hours + "h</div></div>" +
       '<div class="stat"><div class="n">' + wouldCount + '</div><div class="l">would-haves</div></div>' +
+      '<div class="stat"><div class="n">' + reviewCount + '</div><div class="l">GHL differences</div></div>' +
       '<div class="stat"><div class="n">' + data.enrollments.length + '</div><div class="l">in a flow now</div></div>' +
       '<div class="stat"><div class="n">' + data.failures.length + '</div><div class="l">failures</div></div>';
+    el("comparison").innerHTML = comparison.rows.length
+      ? comparison.rows.map(function (row) { return comparisonLine(row, names); }).join("")
+      : '<p class="empty">No client-facing shadow sends in this window.</p>';
     el("evcount").textContent = data.events.length ? "" : "";
     el("events").innerHTML = data.events.length
       ? data.events.map(function (e) { return line(e, names); }).join("")

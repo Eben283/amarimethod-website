@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
 vi.mock("../../functions/lib/ghl-worker-token.js", () => ({ getAccessToken: vi.fn().mockResolvedValue("tok") }));
 
-import { DASHBOARD_HTML, handleDashboardData } from "./dashboard.js";
+import { compareShadowEvents, DASHBOARD_HTML, handleDashboardData } from "./dashboard.js";
 
 const KEY = "dash-key-123";
 
@@ -69,6 +69,30 @@ describe("GET /dashboard shell", () => {
   });
 });
 
+describe("compareShadowEvents", () => {
+  it("labels matched, late, missing, and early GHL sends without treating unavailable data as missing", () => {
+    const now = Date.now();
+    const events = [
+      { id: 1, ts: now, contact_id: "matched", flow_key: "flow", channel: "email", outcome: "would_send", detail: { template: "a" } },
+      { id: 2, ts: now, contact_id: "late", flow_key: "flow", channel: "sms", outcome: "would_send", detail: { template: "b" } },
+      { id: 3, ts: now, contact_id: "missing", flow_key: "flow", channel: "email", outcome: "would_send", detail: { template: "c" } },
+      { id: 4, ts: now, contact_id: "early", flow_key: "flow", channel: "email", outcome: "would_send", detail: { template: "d" } },
+      { id: 5, ts: now, contact_id: "unavailable", flow_key: "flow", channel: "sms", outcome: "would_send", detail: { template: "e" } },
+    ];
+    const comparison = compareShadowEvents(events, {
+      available: true,
+      unavailableContactIds: ["unavailable"],
+      messagesByContact: {
+        matched: [{ id: "m1", at: now + 5 * 60_000, channel: "email" }],
+        late: [{ id: "m2", at: now + 60 * 60_000, channel: "sms" }],
+        early: [{ id: "m3", at: now - 60 * 60_000, channel: "email" }],
+      },
+    });
+    expect(comparison.rows.map((row) => row.status)).toEqual(["matched", "late", "missing_in_ghl", "extra_in_ghl", "unavailable"]);
+    expect(comparison.summary).toMatchObject({ matched: 1, late: 1, missing_in_ghl: 1, extra_in_ghl: 1, unavailable: 1 });
+  });
+});
+
 describe("GET /dashboard-data — gated by the dedicated read-only key", () => {
   it("503s when no key is configured (fail closed)", async () => {
     const res = await handleDashboardData(req(KEY), { REMINDER_DB: fakeD1() });
@@ -90,6 +114,7 @@ describe("GET /dashboard-data — gated by the dedicated read-only key", () => {
     expect(body.enrollments).toEqual([expect.objectContaining({ engine: "nurture", key: "flow-1-quiz" })]);
     expect(body).toHaveProperty("dueSoon");
     expect(body).toHaveProperty("failures");
+    expect(body.comparison).toMatchObject({ compared: 0, summary: { matched: 0 } });
     expect(body).toHaveProperty("generatedAt");
   });
 
