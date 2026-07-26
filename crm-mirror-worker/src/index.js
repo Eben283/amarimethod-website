@@ -1,13 +1,14 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
+import { dashboardSessionCookie, hasDashboardSession } from "./dashboard-session.js";
 import { mirrorStatus, reconciliationQueue, reconciliationStatus } from "./repository.js";
 import { syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe"];
 
-function json(status, body) {
-  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
+function json(status, body, headers = {}) {
+  return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...headers } });
 }
 
 function html(body) {
@@ -35,6 +36,12 @@ export function parseQueueLimit(value) {
   return Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
 }
 
+async function requireDashboardReadAuth(request, env) {
+  const bearerDenied = requireWorkerAuth(request, env);
+  if (!bearerDenied || await hasDashboardSession(request, env)) return null;
+  return bearerDenied;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -42,10 +49,20 @@ export default {
     // and the fragment-held access token is stripped from browser history.
     if (request.method === "GET" && url.pathname === "/") return html(dashboardHtml());
 
-    const denied = requireWorkerAuth(request, env);
-    if (denied) return denied;
-
     try {
+      if (request.method === "POST" && url.pathname === "/dashboard-session") {
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+        const cookie = await dashboardSessionCookie(env);
+        return json(200, { success: true, expiresInSeconds: 8 * 60 * 60 }, { "Set-Cookie": cookie });
+      }
+      if (request.method === "GET" && ["/status", "/reconciliation", "/reconciliation/queue"].includes(url.pathname)) {
+        const denied = await requireDashboardReadAuth(request, env);
+        if (denied) return denied;
+      } else {
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+      }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB)) });
       }

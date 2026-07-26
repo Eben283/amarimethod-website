@@ -62,16 +62,19 @@ const DASHBOARD_HTML = `<!doctype html>
       (async () => {
         const token = new URLSearchParams(location.hash.slice(1)).get("access_token");
         const state = document.querySelector("#state span:last-child");
-        if (!token) {
-          state.textContent = "Open this view through the protected operator link";
-          return;
-        }
-        history.replaceState(null, "", location.pathname);
         try {
-          const headers = { Authorization: "Bearer " + token };
+          if (token) {
+            const sessionResponse = await fetch("/dashboard-session", {
+              method: "POST",
+              headers: { Authorization: "Bearer " + token },
+              credentials: "same-origin",
+            });
+            if (!sessionResponse.ok) throw new Error("operator access was denied");
+            history.replaceState(null, "", location.pathname);
+          }
           const [statusResponse, reconciliationResponse] = await Promise.all([
-            fetch("/status", { headers }),
-            fetch("/reconciliation", { headers }),
+            fetch("/status", { credentials: "same-origin" }),
+            fetch("/reconciliation", { credentials: "same-origin" }),
           ]);
           if (!statusResponse.ok || !reconciliationResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
@@ -90,7 +93,7 @@ const DASHBOARD_HTML = `<!doctype html>
             : "No completed import reported";
           state.textContent = "Protected data loaded · no sender actions available";
         } catch (error) {
-          state.textContent = "Unable to load protected mirror data";
+          state.textContent = "Protected operator session required";
         }
       })();
     </script>

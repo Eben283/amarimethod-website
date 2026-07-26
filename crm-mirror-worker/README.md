@@ -26,6 +26,8 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /status` — counts and last sync result; no client data.
 - `GET /reconciliation` — aggregate pending-review counts; no client data.
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
+
+The root dashboard exchanges an operator bearer credential for a signed, eight-hour HttpOnly browser session. That session can read only the dashboard's GET endpoints; `POST /sync` continues to require the bearer credential on every request.
 - `POST /sync` with optional `{ "sources": ["ghl", "stripe"], "limit": 25 }` — bounded manual import. Both provider integrations use `GET` only.
 
 The normal first run is repeated bounded imports until both providers report `status: "succeeded"`, followed by reconciliation of unlinked purchases and the session ledger in a separate, reviewed change.
