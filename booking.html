@@ -1,368 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Book with Garrett Hewstan. Initial session $225, 4-session series $720, 8-session series $1,295 (includes Living Practice). San Francisco and virtual.">
-<link rel="canonical" href="https://www.amarimethod.com/booking">
-
-<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<title>Book a Session | Amari Method</title>
-<!-- Open Graph / Twitter -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.amarimethod.com/booking">
-<meta property="og:title" content="Book a Session | Amari Method">
-<meta property="og:description" content="Book your first session with Garrett Hewstan. Every series starts with the $225 initial session, and if you continue that payment counts toward the series. San Francisco and virtual.">
-<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:url" content="https://www.amarimethod.com/booking">
-<meta name="twitter:title" content="Book a Session | Amari Method">
-<meta name="twitter:description" content="Book your first session with Garrett Hewstan. Every series starts with the $225 initial session, and if you continue that payment counts toward the series. San Francisco and virtual.">
-<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="/images/photos/pricing-man-wht54.jpg" fetchpriority="high">
-<link rel="dns-prefetch" href="https://link.amarimethod.com">
-<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
-<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=11">
-<style>
-  /* ---------- Pricing-page-specific styles ---------- */
-
-  /* Intro copy above the pricing cards */
-  .p-intro{padding:clamp(64px,7vw,92px) 0 clamp(40px,4vw,56px);text-align:center}
-  .p-intro .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);margin-bottom:26px}
-  .p-intro p{max-width:56ch;margin:0 auto 30px;font-size:1.05rem}
-  .p-intro h2{font-size:clamp(2rem,3.6vw,2.9rem);font-weight:500;max-width:20ch;margin:0 auto 22px}
-
-  /* Pricing cards grid */
-  .tiers{padding:0 0 clamp(60px,6vw,88px)}
-  /* 6-col base so the five standard cards read 3-up + a centered 2-up, and the featured tier spans full width. No orphan slot. */
-  .tiers-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:22px}
-  .tier{grid-column:span 2;background:var(--paper);border:1px solid rgba(33,29,25,.07);border-radius:4px;padding:36px 30px;display:flex;flex-direction:column;gap:14px;text-align:left;box-shadow:0 1px 2px rgba(33,29,25,.03),0 12px 32px -14px rgba(33,29,25,.16);transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
-  .tier:hover{transform:translateY(-4px);box-shadow:0 4px 10px -4px rgba(33,29,25,.10),0 22px 48px -18px rgba(33,29,25,.22)}
-  /* centered middle row */
-  .tier.mid-left{grid-column:2 / span 2}
-  .tier.mid-right{grid-column:4 / span 2}
-  .tier .cat{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--body)}
-  .tier h3{font-size:1.55rem;font-weight:500;line-height:1.2}
-  .tier .price{display:flex;align-items:baseline;gap:8px;margin-top:2px}
-  .tier .price b{font-family:var(--serif);font-size:2.5rem;font-weight:500;line-height:1;color:var(--ink)}
-  .tier .price span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
-  .tier p.desc{font-size:14.5px;margin-top:2px;color:var(--body)}
-  .tier ul{list-style:none;margin-top:6px;display:flex;flex-direction:column;gap:8px}
-  .tier ul li{font-size:14px;color:var(--body);padding-left:16px;position:relative}
-  .tier ul li::before{content:"";position:absolute;left:0;top:.65em;width:7px;height:1px;background:var(--ink)}
-  .tier .btn{margin-top:auto;padding-top:22px;align-self:flex-start}
-  /* Recommended tier: warm tinted full-width banner, distinguished by a badge and lift rather than a black slab */
-  .tier.feat{grid-column:1 / -1;background:linear-gradient(180deg,#F7E9DC 0%,#F1DBC7 100%);border:1px solid rgba(178,106,67,.34);box-shadow:0 2px 5px rgba(33,29,25,.05),0 20px 50px -20px rgba(160,92,54,.34);display:grid;grid-template-columns:1.2fr 1fr auto;gap:32px;align-items:center;padding:40px clamp(32px,4vw,52px)}
-  .tier.feat:hover{transform:translateY(-4px);box-shadow:0 6px 14px -6px rgba(160,92,54,.24),0 28px 60px -22px rgba(160,92,54,.40)}
-  .tier.feat p.desc{max-width:44ch}
-  .tier.feat .ribbon{display:inline-block;font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink);background:var(--peach);padding:6px 13px;border-radius:100px;margin-bottom:12px}
-  .tier.feat .btn{margin-top:0;justify-self:start}
-
-  @media (max-width:1000px){
-    .tiers-grid{grid-template-columns:repeat(4,1fr)}
-    .tier{grid-column:span 2}
-    .tier.mid-left{grid-column:span 2}
-    .tier.mid-right{grid-column:2 / span 2}
-    .tier.feat{grid-column:1 / -1;grid-template-columns:1fr;text-align:left;gap:18px}
-    .tier.feat .btn{justify-self:flex-start}
-  }
-  @media (max-width:640px){
-    .tiers-grid{grid-template-columns:1fr}
-    .tier,.tier.mid-left,.tier.mid-right,.tier.feat{grid-column:auto}
-  }
-
-  /* Trust strip (Affirm / experience / guarantee) */
-  .trust{padding:clamp(50px,6vw,72px) 0}
-  .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .tr{padding:34px clamp(20px,2.4vw,40px);border-right:1px solid var(--line)}
-  .tr:last-child{border-right:none}
-  .tr .lab{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--peach);display:block;margin-bottom:14px;position:relative;padding-top:18px}
-  .tr .lab::before{content:"";position:absolute;top:0;left:0;width:26px;height:2px;background:var(--peach)}
-  .tr h4{font-size:1.3rem;font-weight:500;color:var(--ink)}
-  .tr p{margin-top:10px;font-size:14.5px;color:var(--body)}
-
-  /* Thin CTA strip (Yinova's peach ribbon) */
-  .cta-strip{background:var(--peach);padding:26px 0;text-align:center}
-  .cta-strip p{margin:0;color:var(--ink);font-family:var(--sans);font-size:15px;font-weight:500;white-space:nowrap}
-  .cta-strip a{border-bottom:1.5px solid var(--ink);padding-bottom:2px;font-weight:600}
-  @media(max-width:680px){.cta-strip p{white-space:normal}}
-
-  /* Feature split: Living Practice video program */
-  .feature{padding:clamp(70px,9vw,110px) 0}
-  .feature-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(30px,5vw,60px);align-items:center;background:var(--cream-2);border-radius:2px;overflow:hidden}
-  .feature-copy{padding:clamp(40px,5vw,64px)}
-  .feature-copy .eyebrow{display:block;margin-bottom:16px}
-  .feature-copy h2{font-size:clamp(1.9rem,3.2vw,2.6rem);font-weight:500;max-width:16ch}
-  .feature-copy p{margin-top:18px;max-width:44ch}
-  .feature-copy .btn{margin-top:26px}
-  /* Same click-to-play player as /living-practice (Hand Balancer preview) */
-  .feature-video{position:relative;aspect-ratio:1314/720;background:#B98E63 center/cover no-repeat;margin:clamp(24px,4vw,40px) clamp(24px,4vw,40px) clamp(24px,4vw,40px) 0;border-radius:1px;overflow:hidden;cursor:pointer}
-  .feature-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-  .feature-video .play{position:absolute;inset:0;margin:auto;width:74px;height:74px;border-radius:50%;background:rgba(248,241,232,.92);display:flex;align-items:center;justify-content:center;box-shadow:none}
-  .feature-video .play::after{content:"";border-style:solid;border-width:12px 0 12px 20px;border-color:transparent transparent transparent var(--ink);margin-left:5px}
-  .feature-video .tag{position:absolute;left:20px;bottom:18px;font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)}
-
-  /* FAQ accordion */
-  .faq{padding:clamp(60px,7vw,92px) 0}
-  .faq .head{text-align:center;margin-bottom:clamp(36px,4vw,52px)}
-  .faq .head h2{font-size:clamp(2rem,3.6vw,2.9rem);font-weight:500}
-  .faq-list{max-width:800px;margin:0 auto}
-  .faq details{border-bottom:1px solid var(--line);padding:0}
-  .faq details:first-child{border-top:1px solid var(--line)}
-  .faq summary{padding:24px 4px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:20px;font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
-  .faq summary::-webkit-details-marker{display:none}
-  .faq summary .plus{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--body);flex-shrink:0;transition:transform .3s var(--ease)}
-  .faq details[open] summary .plus{transform:rotate(45deg)}
-  .faq .ans{padding:0 4px 26px;font-size:15px;color:var(--body);max-width:64ch}
-
-  /* Contact line */
-  .contact-line{padding:clamp(50px,6vw,72px) 0 clamp(70px,8vw,100px);text-align:center}
-  .contact-line p{max-width:48ch;margin:0 auto 26px}
-
-  @media (max-width:640px){
-    .trust-grid{grid-template-columns:1fr}
-    .tr{border-right:none;border-bottom:1px solid var(--line)}
-    .tr:last-child{border-bottom:none}
-    .feature-grid{grid-template-columns:1fr}
-    .feature-video{margin:0 clamp(24px,4vw,40px) clamp(24px,4vw,40px)}
-  }
-</style>
-
-<!-- Google Analytics 4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-DGQM32BMYZ');
-</script>
-<!-- Microsoft Clarity -->
-<script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Book a $29 Amari Assessment in San Francisco. A 40-minute, in-person visit with Garrett to explore what your body is asking for and decide on the right next step.">
+  <link rel="canonical" href="https://www.amarimethod.com/booking">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <title>Book a $29 Amari Assessment | Amari Method</title>
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.amarimethod.com/booking">
+  <meta property="og:title" content="Book a $29 Amari Assessment | Amari Method">
+  <meta property="og:description" content="A 40-minute, in-person visit with Garrett to explore what your body is asking for and decide on the right next step.">
+  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://www.amarimethod.com/booking">
+  <meta name="twitter:title" content="Book a $29 Amari Assessment | Amari Method">
+  <meta name="twitter:description" content="A 40-minute, in-person visit with Garrett to explore what your body is asking for and decide on the right next step.">
+  <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://link.amarimethod.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/site-v6.css?v=11">
+  <style>
+    main.assessment-page{display:block}
+    .assessment-page .assessment-intro{padding:clamp(64px,8vw,110px) 0}
+    .assessment-page .assessment-intro .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(36px,6vw,88px);align-items:start}
+    .assessment-page .assessment-intro h2{font-size:clamp(2.2rem,4vw,3.5rem);font-weight:500;max-width:14ch}
+    .assessment-page .assessment-intro p + p{margin-top:18px}
+    .assessment-page .assessment-steps{padding:clamp(64px,8vw,110px) 0;background:var(--cream-2)}
+    .assessment-page .section-head{max-width:54ch;margin-bottom:clamp(36px,5vw,56px)}
+    .assessment-page .section-head h2{font-size:clamp(2.1rem,3.9vw,3.25rem);font-weight:500;max-width:16ch}
+    .assessment-page .section-head p{margin-top:18px}
+    .assessment-page .steps{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .assessment-page .step{padding:34px clamp(22px,3vw,42px) 38px;border-right:1px solid var(--line)}
+    .assessment-page .step:last-child{border-right:0}
+    .assessment-page .step-num{display:block;font-family:var(--serif);font-size:1.3rem;color:var(--peach);letter-spacing:.08em;margin-bottom:18px}
+    .assessment-page .step h3{font-size:clamp(1.35rem,2.1vw,1.72rem);font-weight:500}
+    .assessment-page .step p{margin-top:12px;font-size:15px}
+    .assessment-page .assessment-details{padding:clamp(64px,8vw,110px) 0}
+    .assessment-page .details-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .assessment-page .detail{padding:32px clamp(22px,3vw,44px);border-right:1px solid var(--line)}
+    .assessment-page .detail:last-child{border-right:0}
+    .assessment-page .detail h3{font-size:1.4rem;font-weight:500}
+    .assessment-page .detail p{margin-top:12px;font-size:15px}
+    .assessment-page .calendar-section{padding:clamp(64px,8vw,110px);background:var(--cream-2)}
+    .assessment-page .calendar-wrap{max-width:920px;margin:0 auto}
+    .assessment-page .calendar-head{text-align:center;margin-bottom:30px}
+    .assessment-page .calendar-head h2{font-size:clamp(2.2rem,4vw,3.4rem);font-weight:500}
+    .assessment-page .calendar-head p{margin:18px auto 0;max-width:48ch}
+    .assessment-page .calendar-frame{background:var(--paper);border:1px solid var(--line);min-height:780px}
+    .assessment-page .calendar-frame iframe{display:block;width:100%;min-height:780px;border:0}
+    .assessment-page .assessment-foot{padding:clamp(64px,8vw,100px) 0;text-align:center}
+    .assessment-page .assessment-foot h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:500}
+    .assessment-page .assessment-foot p{margin:18px auto 0;max-width:48ch}
+    .assessment-page .assessment-foot .btn{margin-top:28px}
+    @media(max-width:760px){
+      .assessment-page .assessment-intro .split,.assessment-page .details-grid,.assessment-page .steps{grid-template-columns:1fr}
+      .assessment-page .step,.assessment-page .detail{border-right:0;border-bottom:1px solid var(--line)}
+      .assessment-page .step:last-child,.assessment-page .detail:last-child{border-bottom:0}
+      .assessment-page .calendar-section{padding-left:22px;padding-right:22px}
+      .assessment-page .calendar-frame,.assessment-page .calendar-frame iframe{min-height:860px}
+    }
+  </style>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-DGQM32BMYZ');
+  </script>
+  <script>
     (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-    })(window, document, "clarity", "script", "vuvx43xu8h");
-</script>
+      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;
+      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, 'clarity', 'script', 'vuvx43xu8h');
+  </script>
 </head>
 <body>
+<main class="assessment-page">
+  <section class="hero">
+    <div class="hero-bg" style="background-image:url('/images/v6/real/garrett-session-img-3348.jpg');background-position:center"></div>
+    <div class="hero-inner">
+      <span class="eyebrow light">Amari Assessment · San Francisco</span>
+      <h1>Start by listening to your <em>whole body.</em></h1>
+      <p>A 40-minute, in-person Assessment with Garrett to explore what you are noticing, move together, and get clear on the right next step.</p>
+      <a href="#calendar" class="btn btn-pale">Book your $29 Assessment</a>
+    </div>
+  </section>
 
-<!-- Header is injected by amari-mockup.js -->
-
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-bg" style="background-image:url('/images/photos/pricing-man-wht54.jpg');background-position:right center"></div>
-  <div class="hero-inner">
-    <span class="eyebrow light">Pricing &amp; Sessions</span>
-    <h1>Pay for one session. Keep only what's working.</h1>
-    <p>Every path starts the same way, one on one, in the room. From there you decide how far you want to take it.</p>
-    <a href="#tiers" class="btn btn-pale">See Sessions &amp; Pricing</a>
-  </div>
-</section>
-
-<!-- INTRO -->
-<section class="p-intro">
-  <div class="wrap reveal">
-    <h2 class="kicker">Sessions &amp; Series</h2>
-    <p>Most people don't know what they need until they've spent an hour in a session. That's why this isn't six tiers to sort through before you've even begun. You book one session, feel what your body does with it, and decide from there how deep you want to go.</p>
-  </div>
-</section>
-
-<!-- PRICING TIERS -->
-<section class="tiers" id="tiers">
-  <div class="wrap">
-    <div class="tiers-grid">
-
-      <div class="tier reveal">
-        <span class="cat">Before You Book</span>
-        <h3>Discovery Call</h3>
-        <div class="price"><b>Free</b><span>15 min</span></div>
-        <p class="desc">A short call before you commit to anything. Ask what a session looks like and whether it fits what you're dealing with.</p>
-        <a href="/book/discovery-call" class="btn btn-outline">Book the Call</a>
+  <section class="assessment-intro">
+    <div class="wrap split reveal">
+      <div>
+        <span class="eyebrow">Why begin here</span>
+        <h2>What hurts is rarely the whole story.</h2>
       </div>
-
-      <div class="tier reveal" style="transition-delay:.06s">
-        <span class="cat">Entry Point</span>
-        <h3>Initial Session</h3>
-        <div class="price"><b>$225</b><span>60 min</span></div>
-        <p class="desc">Your first session. Full history, a movement assessment, and your first protocol.</p>
-        <ul>
-          <li>Full history and assessment</li>
-          <li>First guided protocol</li>
-          <li>Take-home practice</li>
-        </ul>
-        <a href="/book/initial-in-person" class="btn">Book in person</a>
-        <a href="/book/initial-virtual" class="btn btn-outline" style="margin-top:10px">Book virtual</a>
+      <div>
+        <p>Your body is one connected system. What is happening at the ankles can affect the calves, low back, upper back, and the way you move through the day.</p>
+        <p>The Assessment gives Garrett time to understand what has been getting in the way, see how you move, and help you notice what your body responds to. It is a real visit, not a sales call.</p>
       </div>
+    </div>
+  </section>
 
-      <div class="tier reveal" style="transition-delay:.12s">
-        <span class="cat">Continuing Care</span>
-        <h3>Follow-up Session</h3>
-        <div class="price"><b>$190</b><span>50 min</span></div>
-        <p class="desc">For clients already in the work. A progress check-in, protocol refinement, and the next stage of the work.</p>
-        <a href="/portal/" class="btn btn-outline">Book from Portal</a>
+  <section class="assessment-steps">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="eyebrow">The 40 minutes</span>
+        <h2>Come in with a question. Leave with a clearer picture.</h2>
+        <p>You do not need to know what kind of practice you need before you arrive. That is what this visit is for.</p>
       </div>
-
-      <div class="tier mid-left reveal" style="transition-delay:.18s">
-        <span class="cat">Series</span>
-        <h3>4-Session Series</h3>
-        <div class="price"><b>$720</b><span>total</span></div>
-        <p class="desc">Initial session plus three follow-ups. A smaller commitment for people who want more than one visit.</p>
-        <a href="https://link.amarimethod.com/payment-link/69986ff988a3f0163e84003d" class="btn btn-outline">Start This Series</a>
-      </div>
-
-      <div class="tier mid-right reveal" style="transition-delay:.24s">
-        <span class="cat">Take It Home</span>
-        <h3>Living Practice</h3>
-        <div class="price"><b>$347</b><span>video program</span></div>
-        <p class="desc">The home practice on its own. Every protocol taught in session, recorded so you can keep going between visits.</p>
-        <a href="/living-practice" class="btn btn-outline">Explore the Practice</a>
-      </div>
-
-      <div class="tier feat reveal" style="transition-delay:.3s">
-        <div>
-          <span class="ribbon">Most Recommended</span>
-          <span class="cat">Full Series</span>
-          <h3>8-Session Series</h3>
+      <div class="steps reveal">
+        <div class="step">
+          <span class="step-num">01</span>
+          <h3>Talk through what is getting in the way.</h3>
+          <p>Share what you have been noticing, what you want more room for, and what you would like to get back to doing.</p>
         </div>
-        <div>
-          <div class="price"><b>$1,295</b><span>includes Living Practice</span></div>
-          <p class="desc">Initial session plus seven follow-ups, plus the Living Practice video program. The full path through all eight core protocols.</p>
+        <div class="step">
+          <span class="step-num">02</span>
+          <h3>Move and notice.</h3>
+          <p>Garrett will guide you through a few simple positions and pay attention with you to what feels available, useful, and good in your body.</p>
         </div>
-        <a href="https://link.amarimethod.com/payment-link/6998736ab409476885754915" class="btn">Start This Series</a>
-      </div>
-
-    </div>
-  </div>
-</section>
-
-<!-- TRUST STRIP -->
-<section class="trust">
-  <div class="wrap">
-    <div class="trust-grid reveal">
-      <div class="tr">
-        <span class="lab">Pay Your Way</span>
-        <h4>Affirm available.</h4>
-        <p>Pay over time on any series. Receipts on request.</p>
-      </div>
-      <div class="tr">
-        <span class="lab">25+ Years</span>
-        <h4>Every session is with Garrett.</h4>
-        <p>No handoffs to other practitioners. You work with him directly, every time.</p>
-      </div>
-      <div class="tr">
-        <span class="lab">The Guarantee</span>
-        <h4>If it doesn't work, we keep going.</h4>
-        <p>Most clients feel a difference in the first session. If you don't, we keep working with you at no additional charge.</p>
+        <div class="step">
+          <span class="step-num">03</span>
+          <h3>Get a recommendation.</h3>
+          <p>If a fuller Amari Practice is a fit, Garrett will explain what he recommends, why, and how you would work together. You decide from there.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- CTA STRIP -->
-<section class="cta-strip">
-  <div class="wrap reveal">
-    <p>Have a question about pricing? Email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> or <a href="/book/discovery-call">book a free call</a>.</p>
-  </div>
-</section>
-
-<!-- FEATURE: LIVING PRACTICE -->
-<section class="feature">
-  <div class="wrap">
-    <div class="feature-grid reveal">
-      <div class="feature-copy">
-        <span class="eyebrow">Take It Home</span>
-        <h2>Watch a protocol before you decide.</h2>
-        <p>The Living Practice is the same home practice every client leaves with, recorded so you can see how a protocol works before your first session, or keep going between visits after. Fifty-three guided videos, most under four minutes, yours to keep.</p>
-        <a href="/living-practice" class="btn">Explore Living Practice</a>
-      </div>
-      <div class="feature-video" id="booking-lp-preview" role="button" tabindex="0" aria-label="Play a preview lesson: Why This Is So Important, 2 minutes" style="background-image:url('https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/8e8d1092cfa166678fe53f2e2101f853/thumbnails/thumbnail.jpg?time=5s&height=720')">
-        <div class="play" aria-hidden="true"></div>
-        <span class="tag">Preview a lesson · Why This Is So Important · 2 min</span>
+  <section class="assessment-details">
+    <div class="wrap">
+      <div class="details-grid reveal">
+        <div class="detail">
+          <h3>$29, paid when you book.</h3>
+          <p>Your card reserves the Assessment. There is no package to choose or commit to online.</p>
+        </div>
+        <div class="detail">
+          <h3>In person in San Francisco.</h3>
+          <p>Wear clothes you can move comfortably in. The booking confirmation includes the studio details and everything else you need.</p>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- FAQ -->
-<section class="faq">
-  <div class="wrap">
-    <div class="head reveal">
-      <h2>Questions people ask before they book.</h2>
+  <section class="calendar-section" id="calendar">
+    <div class="calendar-wrap">
+      <div class="calendar-head reveal">
+        <span class="eyebrow">Choose a time</span>
+        <h2>Book your Amari Assessment.</h2>
+        <p>$29 · 40 minutes · in person in San Francisco</p>
+      </div>
+      <div class="calendar-frame reveal">
+        <iframe src="https://link.amarimethod.com/widget/booking/EM6vB2mq7EAdGCbUb3j1" title="Book an Amari Assessment" loading="eager"></iframe>
+      </div>
     </div>
-    <div class="faq-list reveal">
-      <details open>
-        <summary><span>What if I book the initial session and don't want to continue?</span><span class="plus">+</span></summary>
-        <div class="ans">There's no commitment beyond the $225. After your first session you'll know whether the method is right for your body. Most people want to keep going. Some don't, and that's fine either way. You leave with the take-home practice regardless.</div>
-      </details>
-      <details>
-        <summary><span>Can I start with the initial session and move into a series later?</span><span class="plus">+</span></summary>
-        <div class="ans">Yes. If you decide to continue after your first session, the $225 you already paid counts toward the 4-session or 8-session series, so you only pay the difference.</div>
-      </details>
-      <details>
-        <summary><span>Do unused sessions in a series expire?</span><span class="plus">+</span></summary>
-        <div class="ans">No. Your sessions stay on your account until you use them. Book them at whatever pace works for you.</div>
-      </details>
-      <details>
-        <summary><span>Do you accept insurance?</span><span class="plus">+</span></summary>
-        <div class="ans">We don't bill insurance directly, but we provide a superbill on request that you can submit for possible reimbursement. Affirm is available at checkout for series.</div>
-      </details>
-      <details>
-        <summary><span>What if the method doesn't work for me?</span><span class="plus">+</span></summary>
-        <div class="ans">If you don't experience noticeable relief after your first session, we keep working with you until you do, at no additional charge.</div>
-      </details>
+  </section>
+
+  <section class="assessment-foot">
+    <div class="wrap reveal">
+      <h2>Not sure whether it is the right time?</h2>
+      <p>Write to us at <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a>. If you are ready to explore the work, the Assessment is the place to begin.</p>
+      <a href="#calendar" class="btn">Book your $29 Assessment</a>
     </div>
-  </div>
-</section>
-
-<!-- CONTACT LINE -->
-<section class="contact-line">
-  <div class="wrap reveal">
-    <p>Still deciding what fits? Email Garrett directly or ask on a free call before you book anything.</p>
-    <a href="mailto:hello@amarimethod.com" class="btn btn-outline">Contact Us</a>
-  </div>
-</section>
-
-<!-- APPOINTMENT CTA -->
-<section class="appt" id="appt">
-  <div class="wrap">
-    <h2>Schedule your session online or email us</h2>
-    <p>In-person in San Francisco, with virtual follow-ups worldwide. Not ready yet? <a href="/book/discovery-call" class="txt">Book a free 15-minute call.</a></p>
-    <a href="/book/initial-in-person" class="btn">Book a Session</a>
-  </div>
-</section>
-
-<!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=15" data-nav="sessions"></script>
-<script>
-(function(){
-  var poster=document.getElementById('booking-lp-preview');
-  if(!poster)return;
-  var loaded=false;
-  function play(){
-    if(loaded)return;
-    loaded=true;
-    var f=document.createElement('iframe');
-    f.src='https://customer-rpdrpbjdh7nqb7ax.cloudflarestream.com/8e8d1092cfa166678fe53f2e2101f853/iframe?autoplay=true&preload=metadata';
-    f.allow='accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture';
-    f.allowFullscreen=true;
-    f.title='Living Practice preview lesson: Why This Is So Important';
-    poster.innerHTML='';
-    poster.appendChild(f);
-    poster.style.cursor='default';
-  }
-  poster.addEventListener('click',play);
-  poster.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();play();}});
-})();
-</script>
+  </section>
+</main>
+<script src="https://link.amarimethod.com/js/form_embed.js"></script>
+<script src="/js/site-v6.js?v=11" data-nav="sessions"></script>
 </body>
 </html>
