@@ -32,7 +32,7 @@ export function useShareResults(cardRef: RefObject<HTMLDivElement>) {
         setState('sharing');
         await navigator.share({
           title: 'My Amari Method Pain Pattern',
-          text: 'I took the Amari Method pain pattern assessment. See what yours says.',
+          text: 'I took the Amari Method pain pattern quiz. See what yours says.',
           files: [file],
         });
         setState('idle');

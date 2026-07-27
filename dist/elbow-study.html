@@ -1,350 +1,101 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
-  <title>The Elbow Reset Study: Sign Up</title>
-  <meta name="description" content="A free 3-session study for San Francisco tennis players with elbow pain, run by Amari Method.">
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="A free 3-session study for San Francisco adults with lingering elbow pain, run by Amari Method.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>The Elbow Pain Study: Sign Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<style>
 
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
+  main.study-page{display:block}
+  main.study-page .pagehead{background:var(--cream-2);padding:clamp(140px,16vw,180px) 0 clamp(40px,5vw,56px);text-align:center}
+  main.study-page .pagehead .eyebrow{display:block;margin-bottom:18px;color:var(--body)}
+  main.study-page .pagehead h1{font-size:clamp(2.2rem,4.6vw,3.4rem);font-weight:500;max-width:18ch;margin:0 auto;text-wrap:balance}
+  main.study-page .pagehead p{margin:20px auto 0;max-width:48ch}
+  main.study-page .body{padding:clamp(40px,5vw,72px) 0 clamp(72px,9vw,110px)}
+  main.study-page .study-shell{max-width:560px;margin:0 auto}
+  main.study-page details.learn{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 0 28px}
+  main.study-page details.learn summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink)}
+  main.study-page details.learn summary::-webkit-details-marker{display:none}
+  main.study-page details.learn summary::after{content:"+";font-size:18px;font-weight:400;line-height:1;color:var(--body)}
+  main.study-page details.learn[open] summary::after{content:"–"}
+  main.study-page .learn-body{padding:0 0 22px}
+  main.study-page .learn-block{margin:0 0 18px}
+  main.study-page .learn-block:last-child{margin:0}
+  main.study-page .learn-label{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:0 0 6px}
+  main.study-page .learn-text{font-size:15px;line-height:1.65;color:var(--ink);margin:0;max-width:none}
+  main.study-page .screen{border:1px solid var(--line);background:var(--paper);padding:18px 18px 14px;margin:8px 0 18px}
+  main.study-page .screen-title{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:0 0 14px}
+  main.study-page .screen-item{display:flex;align-items:flex-start;gap:12px;font-size:15px;line-height:1.45;color:var(--ink);margin:0 0 12px;cursor:pointer}
+  main.study-page .screen-item:last-child{margin-bottom:2px}
+  main.study-page .screen-item.publish-optin{margin:0 0 18px;padding:0}
+  main.study-page .screen-check{flex-shrink:0;width:18px;height:18px;margin:2px 0 0;accent-color:var(--ink);cursor:pointer}
+  main.study-page .field{margin-bottom:20px}
+  main.study-page .field label{display:block;font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin-bottom:9px}
+  main.study-page .field .opt{font-weight:500;letter-spacing:.08em;text-transform:none;opacity:.75}
+  main.study-page .field input[type="text"],
+  main.study-page .field input[type="tel"],
+  main.study-page .field input[type="email"]{width:100%;font-family:var(--sans);font-size:16px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:14px 16px;transition:border-color .3s var(--ease)}
+  main.study-page .field input:focus{outline:none;border-color:var(--ink)}
+  main.study-page .field-note{font-size:13px;color:var(--body);margin:8px 0 0;max-width:none}
+  main.study-page .choice-group{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  main.study-page .choice-group input{position:absolute;opacity:0;pointer-events:none}
+  main.study-page .choice-group label{display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:12px 4px;cursor:pointer;margin:0}
+  main.study-page .choice-group input:checked + label{background:var(--ink);border-color:var(--ink);color:#fff}
+  main.study-page .form-error{display:none;font-size:13px;color:#a13a2e;background:#fdf1ee;border:1px solid #f0c9c0;border-radius:2px;padding:12px 14px;margin-bottom:16px}
+  main.study-page .form-error.show{display:block}
+  main.study-page form .btn{width:100%;border:none;cursor:pointer;text-align:center}
+  main.study-page form .btn:disabled{opacity:.6;cursor:default;transform:none}
+  main.study-page .not-a-fit{margin:22px 0 0;font-size:14px;color:var(--body);text-align:center;max-width:none}
+  main.study-page .not-a-fit a{border-bottom:1px solid var(--ink);padding-bottom:2px;color:var(--ink);font-weight:600}
+  main.study-page .confirm{display:none;text-align:center;padding:12px 0 0}
+  main.study-page .confirm.show{display:block}
+  main.study-page .study-shell.confirmed .study-form,
+  main.study-page .study-shell.confirmed details.learn,
+  main.study-page .study-shell.confirmed .not-a-fit{display:none}
+  main.study-page .confirm-mark{width:44px;height:44px;border-radius:2px;background:var(--peach);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 18px}
+  main.study-page .confirm h2{font-size:clamp(1.6rem,3vw,2rem);font-weight:500;margin:0 0 12px}
+  main.study-page .confirm p{margin:0 auto 8px;max-width:36ch}
+  @media (max-width:640px){main.study-page .pagehead{padding-top:120px}}
 
-  <style>
-    :root {
-      --sand: #F5EFE8;
-      --sand-deep: #ECE2D3;
-      --charcoal: #3A3A3A;
-      --accent: #EBA584;
-      --accent-deep: #B5652E;
-      --stone-line: #DED2C0;
-      --stone-text: #8B7F6E;
-      --white: #FFFFFF;
-    }
+</style>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
 
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--sand);
-      background-image: radial-gradient(circle at 15% -10%, var(--sand-deep) 0%, transparent 45%);
-      color: var(--charcoal);
-      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 8vh 20px 60px;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    .card {
-      width: 100%;
-      max-width: 420px;
-      background: var(--white);
-      border-radius: 18px;
-      box-shadow: 0 1px 2px rgba(58,38,20,0.06), 0 18px 40px -20px rgba(58,38,20,0.28);
-      padding: 30px 26px 28px;
-    }
-
-    .eyebrow {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--stone-text);
-      margin: 0 0 10px;
-    }
-
-    h1 {
-      font-family: 'Bona Nova', Georgia, serif;
-      font-weight: 700;
-      font-size: clamp(26px, 6vw, 31px);
-      line-height: 1.15;
-      text-wrap: balance;
-      margin: 0 0 12px;
-      color: var(--charcoal);
-    }
-
-    .lede {
-      font-size: 15.5px;
-      line-height: 1.55;
-      color: var(--charcoal);
-      margin: 0 0 20px;
-    }
-
-    details {
-      border-top: 1px solid var(--stone-line);
-      border-bottom: 1px solid var(--stone-line);
-      margin: 0 0 24px;
-    }
-
-    summary {
-      list-style: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 13px 2px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--accent-deep);
-    }
-
-    summary::-webkit-details-marker { display: none; }
-
-    summary::after {
-      content: "＋";
-      font-size: 15px;
-      font-weight: 400;
-      color: var(--accent-deep);
-      transition: transform 0.2s ease;
-      flex-shrink: 0;
-      margin-left: 12px;
-    }
-
-    details[open] summary::after { transform: rotate(45deg); }
-
-    .learn-body {
-      padding: 2px 2px 18px;
-    }
-
-    .learn-block { margin-bottom: 14px; }
-    .learn-block:last-child { margin-bottom: 0; }
-
-    .learn-label {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--stone-text);
-      margin: 0 0 4px;
-    }
-
-    .learn-text {
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--charcoal);
-      margin: 0;
-    }
-
-    .qual-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .qual-list li {
-      font-size: 14px;
-      line-height: 1.5;
-      padding: 4px 0 4px 20px;
-      position: relative;
-      color: var(--charcoal);
-    }
-
-    .qual-list li::before {
-      content: "";
-      position: absolute;
-      left: 2px;
-      top: 12px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
-
-    form { display: flex; flex-direction: column; gap: 16px; }
-
-    .field label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--stone-text);
-      margin: 0 0 6px;
-    }
-
-    .field input[type="text"],
-    .field input[type="tel"],
-    .field input[type="email"] {
-      width: 100%;
-      font-size: 16px;
-      font-family: inherit;
-      color: var(--charcoal);
-      background: var(--sand);
-      border: 1.5px solid var(--stone-line);
-      border-radius: 10px;
-      padding: 13px 14px;
-    }
-
-    .field input:focus {
-      outline: none;
-      border-color: var(--accent-deep);
-      background: var(--white);
-    }
-
-    .field-note {
-      font-size: 11.5px;
-      color: var(--stone-text);
-      margin: 6px 2px 0;
-    }
-
-    .arm-group {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-
-    .arm-group input { position: absolute; opacity: 0; pointer-events: none; }
-
-    .arm-group label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13.5px;
-      font-weight: 600;
-      text-transform: none;
-      letter-spacing: 0;
-      color: var(--charcoal);
-      background: var(--sand);
-      border: 1.5px solid var(--stone-line);
-      border-radius: 10px;
-      padding: 11px 4px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .arm-group input:checked + label {
-      background: var(--accent);
-      border-color: var(--accent-deep);
-      color: var(--charcoal);
-    }
-
-    .optional-tag {
-      font-weight: 400;
-      text-transform: none;
-      letter-spacing: 0;
-      color: var(--stone-text);
-      font-size: 11.5px;
-    }
-
-    button.submit {
-      margin-top: 4px;
-      width: 100%;
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--white);
-      background: var(--accent-deep);
-      border: none;
-      border-radius: 12px;
-      padding: 16px;
-      cursor: pointer;
-      transition: background 0.15s ease, transform 0.05s ease;
-    }
-
-    button.submit:hover { background: #9c5527; }
-    button.submit:active { transform: scale(0.985); }
-    button.submit:disabled { opacity: 0.6; cursor: default; }
-
-    .form-error {
-      display: none;
-      font-size: 13px;
-      color: #a13a2e;
-      background: #fdf1ee;
-      border: 1px solid #f0c9c0;
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-
-    .form-error.show { display: block; }
-
-    .not-a-fit {
-      text-align: center;
-      font-size: 12.5px;
-      color: var(--stone-text);
-      margin: 18px 0 0;
-      line-height: 1.5;
-    }
-
-    .not-a-fit a {
-      color: var(--accent-deep);
-      font-weight: 600;
-      text-decoration: none;
-    }
-
-    .footer-line {
-      text-align: center;
-      font-size: 11.5px;
-      color: var(--stone-text);
-      margin: 20px 0 0;
-      letter-spacing: 0.02em;
-    }
-
-    .confirm {
-      display: none;
-      text-align: center;
-      padding: 20px 4px 6px;
-    }
-
-    .confirm.show { display: block; }
-    .card.confirmed form,
-    .card.confirmed .lede,
-    .card.confirmed details,
-    .card.confirmed .not-a-fit { display: none; }
-
-    .confirm-mark {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: var(--charcoal);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      margin: 0 auto 16px;
-    }
-
-    .confirm h2 {
-      font-family: 'Bona Nova', Georgia, serif;
-      font-weight: 700;
-      font-size: 22px;
-      margin: 0 0 10px;
-    }
-
-    .confirm p {
-      font-size: 14.5px;
-      line-height: 1.6;
-      color: var(--charcoal);
-      margin: 0 0 4px;
-    }
-  </style>
 </head>
 <body>
-  <div class="card" id="card">
-    <p class="eyebrow">Amari Method &middot; San Francisco</p>
-    <h1>The Elbow Reset Study</h1>
-    <p class="lede">A free 3-session study for SF tennis players with elbow pain. We track your pain score before and after.</p>
+<!-- Header is injected by site-v6.js -->
 
-    <details>
-      <summary>What&rsquo;s involved</summary>
+<main class="study-page">
+<section class="pagehead"><div class="wrap">
+  <span class="eyebrow">Amari Method &middot; Case Series</span>
+  <h1>The Elbow Pain Study</h1>
+  <p>A free 3-session study for SF adults with lingering elbow pain. We track your pain score before and after each session.</p>
+</div></section>
+
+<section class="body"><div class="wrap">
+  <div class="study-shell" id="card">
+    <details class="learn">
+      <summary>Study details</summary>
       <div class="learn-body">
         <div class="learn-block">
           <p class="learn-label">Why it works</p>
-          <p class="learn-text">Tennis elbow is rarely just the elbow. When the shoulder, upper back, or wrist isn&rsquo;t doing its share, the forearm takes the load instead. The Elbow Reset protocol works on those supporting areas directly.</p>
+          <p class="learn-text">Elbow pain like this is caused by one part of the forearm and elbow working too hard while another part isn&rsquo;t working enough. The protocol rebalances the two, which relieves the pain.</p>
         </div>
         <div class="learn-block">
           <p class="learn-label">Who&rsquo;s running it</p>
@@ -355,21 +106,13 @@
           <p class="learn-text">Three 15-minute sessions at our office, 662 8th Ave. No cost. No obligation past session 1 if it&rsquo;s not helping.</p>
         </div>
         <div class="learn-block">
-          <p class="learn-label">Who qualifies</p>
-          <ul class="qual-list">
-            <li>Tennis player, recreational or competitive</li>
-            <li>Elbow pain for 2+ weeks</li>
-            <li>Can get to 662 8th Ave, San Francisco 3 times</li>
-          </ul>
-        </div>
-        <div class="learn-block">
           <p class="learn-label">What happens with the results</p>
-          <p class="learn-text">After 30 participants, we&rsquo;ll publish a report of before-and-after pain scores at amarimethod.com. First names only, and only for participants who are comfortable being included.</p>
+          <p class="learn-text">When the study closes at 30 participants, we&rsquo;ll publish the full findings, the before-and-after pain scores across the whole cohort. Participants are identified by first name only, and only with their consent.</p>
         </div>
       </div>
     </details>
 
-    <form id="signupForm">
+    <form class="study-form" id="signupForm">
       <div class="field">
         <label for="name">Name</label>
         <input type="text" id="name" required autocomplete="name">
@@ -385,8 +128,8 @@
         <p class="field-note">Where we send your study results.</p>
       </div>
       <div class="field">
-        <label>Which arm <span class="optional-tag">(optional)</span></label>
-        <div class="arm-group">
+        <label>Which arm <span class="opt">(optional)</span></label>
+        <div class="choice-group">
           <input type="radio" name="arm" id="armLeft" value="left">
           <label for="armLeft">Left</label>
           <input type="radio" name="arm" id="armRight" value="right">
@@ -395,64 +138,82 @@
           <label for="armBoth">Both</label>
         </div>
       </div>
+
+      <div class="screen">
+        <p class="screen-title">Do you qualify?</p>
+        <label class="screen-item">
+          <input type="checkbox" class="screen-check" required>
+          <span>My elbow or forearm pain has lasted 2 weeks or more.</span>
+        </label>
+        <label class="screen-item">
+          <input type="checkbox" class="screen-check" required>
+          <span>I can get to 662 8th Ave three times.</span>
+        </label>
+      </div>
+
+      <label class="screen-item publish-optin">
+        <input type="checkbox" id="consentPublish" class="screen-check">
+        <span>You can use my first name and results in the published case series. <span class="opt">(optional)</span></span>
+      </label>
       <p class="form-error" id="formError"></p>
-      <button type="submit" class="submit" id="submitBtn">Join the study</button>
+      <button type="submit" class="btn" id="submitBtn">Join the study</button>
     </form>
 
     <div class="confirm" id="confirm">
       <div class="confirm-mark">&check;</div>
       <h2>You&rsquo;re enrolled.</h2>
       <p>We&rsquo;ll text you to schedule session 1.</p>
-      <p>Amari Method &middot; San Francisco</p>
     </div>
 
-    <p class="not-a-fit" id="notAFit">Not a fit for the study? <a href="/elbow-study-updates.html">Get notified when the results are published</a></p>
-
-    <p class="footer-line" id="footerLine">Amari Method &middot; San Francisco</p>
+    <p class="not-a-fit" id="notAFit">Not a fit for the study? <a href="/elbow-study-updates">Get notified when the results are published</a></p>
   </div>
+</div></section>
+</main>
 
-  <script>
-    var form = document.getElementById('signupForm');
-    var errorEl = document.getElementById('formError');
-    var submitBtn = document.getElementById('submitBtn');
+<!-- Footer is injected by site-v6.js -->
+<script src="/js/site-v6.js?v=18" data-nav=""></script>
+<script>
+  var form = document.getElementById('signupForm');
+  var errorEl = document.getElementById('formError');
+  var submitBtn = document.getElementById('submitBtn');
 
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      errorEl.classList.remove('show');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Joining…';
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Joining…';
 
-      var arm = document.querySelector('input[name="arm"]:checked');
+    var side = document.querySelector('input[name="arm"]:checked');
 
-      fetch('/api/elbow-study-signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: document.getElementById('name').value,
-          phone: document.getElementById('phone').value,
-          email: document.getElementById('email').value,
-          arm: arm ? arm.value : undefined,
-        }),
+    fetch('/api/elbow-study-signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        arm: side ? side.value : undefined,
+        publishOptIn: document.getElementById('consentPublish').checked,
+      }),
+    })
+      .then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
       })
-        .then(function (res) {
-          return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-        })
-        .then(function (result) {
-          if (!result.ok) {
-            throw new Error(result.data && result.data.error ? result.data.error : 'Something went wrong. Please try again.');
-          }
-          document.getElementById('card').classList.add('confirmed');
-          document.getElementById('confirm').classList.add('show');
-          document.getElementById('footerLine').style.display = 'none';
-          if (window.gtag) { gtag('event', 'elbow_study_signup'); }
-        })
-        .catch(function (err) {
-          errorEl.textContent = err.message || 'Something went wrong. Please try again.';
-          errorEl.classList.add('show');
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Join the study';
-        });
-    });
-  </script>
+      .then(function (result) {
+        if (!result.ok) {
+          throw new Error(result.data && result.data.error ? result.data.error : 'Something went wrong. Please try again.');
+        }
+        document.getElementById('card').classList.add('confirmed');
+        document.getElementById('confirm').classList.add('show');
+        if (window.gtag) { gtag('event', 'elbow_study_signup'); }
+      })
+      .catch(function (err) {
+        errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+        errorEl.classList.add('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Join the study';
+      });
+  });
+</script>
 </body>
 </html>

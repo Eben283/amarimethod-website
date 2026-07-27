@@ -52,6 +52,21 @@ const ALLOWED_BOOKINGS = {
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a00f80c1d5a394a682e3fcb",
   },
+  // Public first visit. This uses the native Amari calendar interface, then
+  // hands payment to the existing GHL payment link. The purchase webhook
+  // creates the selected Assessment appointment after payment, without
+  // changing a prepaid-session balance or portal access.
+  amari_assessment: {
+    calendarId: "EM6vB2mq7EAdGCbUb3j1",
+    productId: "6a66cf0103821ea09ea13f1b",
+    price: 29,
+    title: "Amari Assessment — In Person",
+    durationMinutes: 40,
+    pmaTag: "agreed-pma-v2026-06-16",
+    sessionTag: null,
+    paymentLinkUrl:
+      "https://link.amarimethod.com/payment-link/6a66cf107b99151a540409b3",
+  },
   // Free 15-min phone call. No Stripe payment link — we book the GHL
   // appointment directly in this handler and redirect to /book/success.
   discovery_call: {

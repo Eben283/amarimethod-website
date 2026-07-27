@@ -30,36 +30,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<link rel="stylesheet" href="/css/site-v6.css?v=12">
 <style>
   /* ---------- Homepage-specific styles ---------- */
   .hero p{max-width:46ch}
-  /* Assessment: the site's single new-client entry point. */
-  .assessment{padding:clamp(72px,9vw,126px) 0;background:var(--cream-2);scroll-margin-top:150px}
-  .assessment-grid{display:grid;grid-template-columns:minmax(260px,.72fr) minmax(0,1.28fr);gap:clamp(44px,7vw,104px);align-items:start}
-  .assessment-copy .eyebrow,.assessment-calendar .eyebrow{display:block;margin-bottom:18px}
-  .assessment-copy h2,.assessment-calendar h2{font-size:clamp(2.35rem,4.1vw,3.55rem);font-weight:500;max-width:12ch}
-  .assessment-copy > p{margin-top:22px;font-size:1.02rem}
-  .assessment-facts{margin-top:40px;border-top:1px solid var(--line)}
-  .assessment-fact{padding:20px 0;border-bottom:1px solid var(--line)}
-  .assessment-fact strong{display:block;font-family:var(--serif);font-size:1.35rem;font-weight:500;line-height:1.18}
-  .assessment-fact span{display:block;margin-top:7px;color:var(--body);font-size:14px;line-height:1.55}
-  .assessment-calendar h2{max-width:none}
-  .assessment-calendar > p{margin-top:12px;margin-bottom:26px;font-size:15px}
-  .calendar-frame{min-height:830px;background:var(--paper);border:1px solid var(--line)}
-  .calendar-frame iframe{display:block;width:100%;min-height:830px;border:0}
-  /* This Just In */
-  .justin{padding:clamp(64px,7vw,92px) 0 clamp(48px,5vw,68px);text-align:center}
-  .justin .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);margin-bottom:40px}
-  .cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px;text-align:center}
-  .jcard img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--cream-2);margin-bottom:22px}
-  .jph{position:relative;width:100%;aspect-ratio:4/3;margin-bottom:22px;border-radius:1px;overflow:hidden}
-  .jph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
-  .jcard{cursor:pointer}
-  .jcard:hover .jph img{transform:scale(1.045)}
-  .jcard .cat{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--body);font-weight:600}
-  .jcard h3{font-size:1.5rem;margin-top:12px;line-height:1.18;font-weight:500}
-
+  /* Assessment: the second half of the first-visit story. */
+  .assessment-intro{padding:clamp(76px,9vw,132px) 0;background:var(--cream-2)}
+  .assessment-intro-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);gap:clamp(44px,7vw,104px);align-items:center}
+  .assessment-intro-photo{position:relative;background:#d9c8b6;overflow:hidden}
+  .assessment-intro-photo img{display:block;width:100%;aspect-ratio:1.03/1;object-fit:cover;object-position:center}
+  .assessment-intro-copy{max-width:510px}
+  .assessment-intro-copy .eyebrow{display:block;margin-bottom:18px}
+  .assessment-intro-copy h2{font-size:clamp(2.65rem,4.25vw,4.15rem);font-weight:500;max-width:9ch}
+  .assessment-intro-copy > p{margin-top:22px;font-size:1.02rem;max-width:43ch}
+  .assessment-meta{display:flex;flex-wrap:wrap;gap:10px 14px;margin:28px 0 30px;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--ink)}
+  .assessment-meta span+span{padding-left:14px;border-left:1px solid var(--line)}
+  .assessment-steps{margin:0 0 34px;border-top:1px solid var(--line)}
+  .assessment-step{display:grid;grid-template-columns:42px 1fr;gap:14px;padding:16px 0;border-bottom:1px solid var(--line);align-items:start}
+  .assessment-step-num{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.35;color:var(--body)}
+  .assessment-step p{font-size:14px;line-height:1.55;color:var(--ink);max-width:38ch}
   /* Category tiles */
   .categories{padding:clamp(52px,6vw,80px) 0 clamp(60px,6vw,88px);text-align:center}
   .categories h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500;margin-bottom:40px}
@@ -98,15 +87,19 @@
   .faq-answer{margin-top:14px;color:var(--body);max-width:64ch;font-size:.98rem;line-height:1.7}
   .faq-updated{margin-top:36px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--body);opacity:.75}
 
-  @media (prefers-reduced-motion:reduce){.tile img,.jph img,.btn{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){.tile img,.btn{transition:none!important}}
   @media (max-width:1000px){
-    .cards4,.tiles,.assessment-grid{grid-template-columns:1fr 1fr}
+    .tiles{grid-template-columns:1fr 1fr}
+    .assessment-intro-grid{grid-template-columns:1fr 1fr;gap:42px}
     .shop-panel{grid-template-columns:1fr}
     .shop-panel img.prod{min-height:320px}
   }
   @media (max-width:640px){
-    .cards4,.tiles,.assessment-grid{grid-template-columns:1fr}
-    .calendar-frame,.calendar-frame iframe{min-height:880px}
+    .tiles{grid-template-columns:1fr}
+    .assessment-intro-grid{grid-template-columns:1fr;gap:36px}
+    .assessment-intro-photo{order:-1}
+    .assessment-intro-photo img{aspect-ratio:1.2/1}
+    .assessment-meta{margin:24px 0}
   }
   /* Yinova-style band: cutout person floating on the color field (not a boxed photo) */
   .band .band-fig{align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:540px}
@@ -150,68 +143,29 @@
   <div class="hero-inner">
     <h1>Most people forgot their body could feel like this.</h1>
     <p>Amari teaches you to bring your body back into balance yourself, so you don&rsquo;t stay dependent on someone else to fix you.</p>
-    <a href="#assessment" class="btn btn-pale">Book a $29 Assessment</a>
+    <a href="#book-assessment" class="btn btn-pale">Book a $29 Assessment</a>
   </div>
 </section>
 
-<!-- ASSESSMENT: the one new-client path, kept on the home page. -->
-<section class="assessment" id="assessment">
-  <div class="wrap assessment-grid">
-    <div class="assessment-copy reveal">
+<!-- ASSESSMENT: the concrete first step, before the rest of the site. -->
+<section class="assessment-intro" aria-labelledby="assessmentIntroTitle">
+  <div class="wrap assessment-intro-grid">
+    <figure class="assessment-intro-photo reveal">
+      <img src="/images/dr-garrett-hewstan-amari-method-session.jpg" alt="Garrett working one-on-one with an Amari client">
+    </figure>
+    <div class="assessment-intro-copy reveal">
       <span class="eyebrow">Amari Assessment · San Francisco</span>
-      <h2>A clear place to start.</h2>
-      <p>Spend 40 minutes with Garrett talking through what you are noticing, moving together, and seeing what your body responds to. You do not need to choose a package online.</p>
-      <div class="assessment-facts">
-        <div class="assessment-fact">
-          <strong>$29, paid when you book.</strong>
-          <span>Your card reserves the Assessment.</span>
-        </div>
-        <div class="assessment-fact">
-          <strong>40 minutes, in person.</strong>
-          <span>Wear clothes you can move comfortably in. Your confirmation includes the studio details.</span>
-        </div>
-        <div class="assessment-fact">
-          <strong>One connected body.</strong>
-          <span>The visit begins with the whole pattern, not just the part asking for attention today.</span>
-        </div>
+      <h2 id="assessmentIntroTitle">A clear place to start.</h2>
+      <p>Explore what you are noticing in your body, experience the work, and decide whether an Amari practice is the right next step.</p>
+      <div class="assessment-meta" aria-label="Assessment details">
+        <span>$29</span><span>40 minutes</span><span>In person</span>
       </div>
-    </div>
-    <div class="assessment-calendar reveal">
-      <span class="eyebrow">Choose a time</span>
-      <h2>Book your Assessment.</h2>
-      <p>$29 · 40 minutes · in person in San Francisco</p>
-      <div class="calendar-frame">
-        <iframe src="https://link.amarimethod.com/widget/booking/EM6vB2mq7EAdGCbUb3j1" title="Book an Amari Assessment" loading="eager"></iframe>
+      <div class="assessment-steps" aria-label="What happens in the Assessment">
+        <div class="assessment-step"><span class="assessment-step-num">01</span><p>40 minutes, in person in San Francisco.</p></div>
+        <div class="assessment-step"><span class="assessment-step-num">02</span><p>Move, notice, and experience the work directly.</p></div>
+        <div class="assessment-step"><span class="assessment-step-num">03</span><p>Leave with a clearer sense of what your body is asking for.</p></div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- THIS JUST IN -->
-<section class="justin">
-  <div class="wrap">
-    <h2 class="kicker reveal">This Just In</h2>
-    <div class="cards4">
-      <a class="jcard reveal" href="/blog-why-deep-tissue-doesnt-last">
-        <div class="jph" style="background:#D8BB86"><img src="/images/photos/partner-movement-man-his52.jpg" alt="" onerror="this.remove()"></div>
-        <div class="cat">Mechanics</div>
-        <h3>Why deep tissue doesn't last</h3>
-      </a>
-      <a class="jcard reveal" href="/blog-active-bridge-strength" style="transition-delay:.06s">
-        <div class="jph" style="background:#AFC1A9"><img src="/images/v6/real/active-bridge.jpg" alt="" onerror="this.remove()"></div>
-        <div class="cat">Protocol</div>
-        <h3>The active bridge</h3>
-      </a>
-      <a class="jcard reveal" href="/stories" style="transition-delay:.12s">
-        <div class="jph" style="background:#E1A98B"><img src="/images/v6/real/danielle-testimonial.jpg" alt="" onerror="this.remove()"></div>
-        <div class="cat">Stories</div>
-        <h3>&ldquo;I&rsquo;d tried everything&rdquo;</h3>
-      </a>
-      <a class="jcard reveal" href="/blog-sciatica-relief" style="transition-delay:.18s">
-        <div class="jph" style="background:#E7D8C4"><img src="/images/photos/sciatica-man-wht50.jpg" alt="" onerror="this.remove()"></div>
-        <div class="cat">Pattern</div>
-        <h3>Sciatica isn't a nerve problem</h3>
-      </a>
+      <a href="#book-assessment" class="btn">Book the $29 Assessment</a>
     </div>
   </div>
 </section>
@@ -261,7 +215,7 @@
 <!-- QUIZ LINE -->
 <section class="quizline">
   <div class="wrap reveal">
-    <p>Not sure where your pain comes from? <a href="/quiz/">Take the assessment&nbsp;&nbsp;&rsaquo;</a></p>
+    <p>Not sure where your pain comes from? <a href="/quiz/">Take the quiz&nbsp;&nbsp;&rsaquo;</a></p>
   </div>
 </section>
 
@@ -333,12 +287,12 @@
   <div class="wrap">
     <h2>Come explore what your body is asking for.</h2>
     <p>Start with a 40-minute, in-person Amari Assessment in San Francisco. You do not need to choose a package online.</p>
-    <a href="#assessment" class="btn">Book a $29 Assessment</a>
+    <a href="#book-assessment" class="btn">Book a $29 Assessment</a>
   </div>
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=17"></script>
+<script src="/js/site-v6.js?v=18"></script>
 
 <!-- ============================================================
      JSON-LD: MedicalBusiness + WebSite schema (no aggregateRating).

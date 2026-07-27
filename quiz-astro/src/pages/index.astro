@@ -1,32 +1,32 @@
 ---
 import QuizLayout from '@/layouts/QuizLayout.astro';
 
-// "Begin Assessment" CTAs route into the question flow.
+// "Begin Quiz" CTAs route into the question flow.
 // base: '/quiz/' is applied by Astro automatically to relative <a href> values
 // rendered through Astro components, but for plain <a> tags we write the
 // absolute path explicitly so behavior is unambiguous regardless of base.
 const beginHref = '/quiz/take/';
 ---
 <QuizLayout
-  title="Free Assessment | Amari Method"
+  title="Free Quiz | Amari Method"
   description="Twelve questions about where it hurts, how long it has, and what you've already tried. At the end you'll see the pattern behind it. Free, ~3 minutes."
   canonical="https://www.amarimethod.com/quiz"
 >
   <div class="topbar">
     <div class="row">
       <a class="wordmark" href="https://www.amarimethod.com/">AMARI</a>
-      <span class="meta">Free Assessment · Form 01</span>
+      <span class="meta">Free Quiz · Form 01</span>
     </div>
     <div class="rail"><div class="rail-fill" style="right:100%"></div></div>
   </div>
 
   <main class="stage page-cover">
     <section class="screen">
-      <span class="kicker eyebrow">Free Assessment · Form 01</span>
+      <span class="kicker eyebrow">Free Quiz · Form 01</span>
       <h1>Find out why your pain <em>keeps coming back.</em></h1>
       <p class="lede">Twelve questions about where it hurts, how long it has, and what you've already tried. At the end you'll see the pattern behind it and what tends to change it.</p>
       <div class="go">
-        <a class="btn" href={beginHref}>Begin assessment <span class="arrow">→</span></a>
+        <a class="btn" href={beginHref}>Begin quiz <span class="arrow">→</span></a>
       </div>
       <div class="facts">
         <div class="f"><b>12</b><span>Questions</span></div>
@@ -36,12 +36,12 @@ const beginHref = '/quiz/take/';
     </section>
   </main>
 
-  <footer class="qfoot">Amari Method · Free pain pattern assessment</footer>
+  <footer class="qfoot">Amari Method · Free pain pattern quiz</footer>
 
   <script is:inline>
     // Affiliate ?ref= capture. The legacy React quiz read ?ref from window.location
     // and persisted it to localStorage on mount. The static cover has no React, so we
-    // do the same persistence here and forward the param to the Begin Assessment links
+    // do the same persistence here and forward the param to the Begin Quiz links
     // so the React island at /quiz/take/ also sees it on first visit.
     (function () {
       try {

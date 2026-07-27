@@ -25,7 +25,7 @@ function topMetaLabel({
   if (isProcessing) return 'Reading your pattern';
   if (currentStep === 12) return 'Almost done';
   if (currentStep <= 11) return `Question ${currentStep + 1} of 12`;
-  return 'Free Assessment';
+  return 'Free Quiz';
 }
 
 const QuizContainer = () => {
@@ -110,7 +110,7 @@ const QuizContainer = () => {
     <section className="screen" style={{ textAlign: 'center' }}>
       <h2 className="q-title" style={{ color: 'var(--rust)' }}>Submission error</h2>
       <p className="q-desc" style={{ margin: '16px auto' }}>
-        {submissionError || 'There was an error submitting your assessment. Please try again.'}
+        {submissionError || 'There was an error submitting your quiz. Please try again.'}
       </p>
       <button type="button" onClick={retrySubmission} disabled={isSubmitting} className="btn">
         {isSubmitting ? 'Retrying…' : 'Try again'}

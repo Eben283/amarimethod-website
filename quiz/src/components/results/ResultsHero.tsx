@@ -102,7 +102,7 @@ const ResultsHero = ({ firstName, patternSignature, scores }: ResultsHeroProps) 
         Your Results Are Ready{firstName ? `, ${firstName}` : ''}
       </h1>
       <p className="text-base text-amari-text-light font-sans mb-8 max-w-lg mx-auto">
-        Here's your personalized Amari Method pain pattern assessment.
+        Here's your personalized Amari Method pain pattern.
       </p>
 
       {/* Hero card */}
@@ -129,7 +129,7 @@ const ResultsHero = ({ firstName, patternSignature, scores }: ResultsHeroProps) 
 
       {/* Scroll hint */}
       <div className="mt-8 flex flex-col items-center gap-1 text-amari-text-light">
-        <p className="text-sm font-sans">Scroll to see your full assessment</p>
+        <p className="text-sm font-sans">Scroll to see your full results</p>
         <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>

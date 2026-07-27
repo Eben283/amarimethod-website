@@ -12,8 +12,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 14 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(14);
+  it('contains 15 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(15);
   });
 
   it('every entry has required shape', () => {
@@ -60,11 +60,13 @@ describe('GHL_PRODUCTS catalog', () => {
     expect(eightUpgrade.sessionsRemaining).toBe(7);
   });
 
-  it('entrainment and living practice contribute 0 sessions', () => {
+  it('entrainment, living practice, and the Assessment contribute 0 sessions', () => {
     const entrainment = Object.values(GHL_PRODUCTS).find((p) => p.classification === 'entrainment');
     const livingPractice = Object.values(GHL_PRODUCTS).find((p) => p.classification === 'living-practice');
+    const assessment = Object.values(GHL_PRODUCTS).find((p) => p.classification === 'assessment');
     expect(entrainment.sessions).toBe(0);
     expect(livingPractice.sessions).toBe(0);
+    expect(assessment.sessions).toBe(0);
   });
 });
 
@@ -119,6 +121,8 @@ const ID = {
   prePurchased: '67b1299f080422451447bdd0', // draw-down
   entrainment: '69c5d29c4019ce8e80e2513b',
   livingPractice: '6998d7f2606fa79c54fa3ff5',
+  assessment: '6a66cf0103821ea09ea13f1b',
+  assessmentPrice: '6a66cf0103821e836fa13f20',
 };
 
 describe('any-id resolver (productId + priceId)', () => {
@@ -133,6 +137,11 @@ describe('any-id resolver (productId + priceId)', () => {
     expect(productIdForAnyId(ID.twelveWeek)).toBe(ID.twelveWeek);
     expect(productIdForAnyId(ID.twelveWeekPrice)).toBe(ID.twelveWeek);
     expect(productForAnyId(ID.twelveWeekPrice).name).toBe('The 12-Week Amari Practice');
+  });
+  it('resolves the $29 Amari Assessment product and its current price', () => {
+    expect(productIdForAnyId(ID.assessment)).toBe(ID.assessment);
+    expect(productIdForAnyId(ID.assessmentPrice)).toBe(ID.assessment);
+    expect(productForAnyId(ID.assessmentPrice).name).toBe('Amari Assessment');
   });
   it('resolves a HISTORICAL priceId too (the stale-id case the audit hit)', () => {
     expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
@@ -158,12 +167,13 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
     expect(PURCHASE_CREDIT_MAP[ID.initialIP]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
     expect(PURCHASE_CREDIT_MAP[ID.initialVirt]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
   });
-  it('NEVER credits draw-downs, entrainment, or living practice', () => {
+  it('NEVER credits draw-downs, entrainment, living practice, or the Assessment', () => {
     expect(PURCHASE_CREDIT_MAP[ID.fuIP]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.fuVirt]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.prePurchased]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.entrainment]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.livingPractice]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.assessment]).toBeUndefined();
   });
 });
 

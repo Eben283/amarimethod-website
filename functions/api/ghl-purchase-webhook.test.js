@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PRODUCT_MAP, KV_TTL_SECONDS, resolveOrderProductId, isCreditableOrder } from './ghl-purchase-webhook.js';
+import { PRODUCT_MAP, PAID_BOOKING_MAP, KV_TTL_SECONDS, resolveOrderProductId, isCreditableOrder } from './ghl-purchase-webhook.js';
 import { claimProcessedEvent } from '../lib/processed-events.js';
 
 const PID = {
@@ -17,6 +17,8 @@ const PID = {
   followupInPerson: '69aee204e80b62d627d8e922',
   followupVirtual: '69aee3ebcf9cf8ed9f6c928d',
   prePurchasedSession: '67b1299f080422451447bdd0',
+  assessment: '6a66cf0103821ea09ea13f1b',
+  assessmentPrice: '6a66cf0103821e836fa13f20',
 };
 
 describe('PRODUCT_MAP — purchase crediting', () => {
@@ -40,6 +42,13 @@ describe('PRODUCT_MAP — purchase crediting', () => {
     expect(PRODUCT_MAP[PID.followupInPerson]).toBeUndefined();
     expect(PRODUCT_MAP[PID.followupVirtual]).toBeUndefined();
     expect(PRODUCT_MAP[PID.prePurchasedSession]).toBeUndefined();
+    expect(PRODUCT_MAP[PID.assessment]).toBeUndefined();
+    expect(PAID_BOOKING_MAP[PID.assessment]).toMatchObject({
+      isNativePaidBooking: true,
+      isNonCreditBooking: true,
+      calendarId: 'EM6vB2mq7EAdGCbUb3j1',
+      durationMinutes: 40,
+    });
   });
 });
 
@@ -72,6 +81,9 @@ describe('resolveOrderProductId (R4 — fetchRecentOrder backup reads NESTED ids
   });
   it('resolves the 12-week practice from its current price id', () => {
     expect(resolveOrderProductId({ items: [{ price: { _id: PID.twelveWeekPrice } }] })).toBe(PID.twelveWeek);
+  });
+  it('resolves the Assessment from its current $29 price id for fulfillment, not session crediting', () => {
+    expect(resolveOrderProductId({ items: [{ price: { _id: PID.assessmentPrice } }] })).toBe(PID.assessment);
   });
 
   it('finds the package even when it is not the first line item', () => {

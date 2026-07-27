@@ -112,7 +112,7 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
           </h1>
 
           <p className="text-base md:text-lg text-amari-text-light font-sans leading-relaxed mb-8 max-w-md mx-auto">
-            Most people manage symptoms for years without addressing the real pattern. This assessment changes that.
+            Most people manage symptoms for years without addressing the real pattern. This quiz changes that.
           </p>
 
           {/* Feature card — Pattern Profile + Balance Equation preview */}
@@ -175,7 +175,7 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
 
           {/* CTA */}
           <button onClick={onStart} className="btn-primary w-full max-w-sm mx-auto block">
-            <span>Start My Assessment<span className="arrow">→</span></span>
+            <span>Start My Quiz<span className="arrow">→</span></span>
           </button>
 
           {/* Meta row */}
@@ -281,7 +281,7 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
 
           <div className="text-center">
             <button onClick={onStart} className="btn-primary">
-              <span>Start My Assessment<span className="arrow">→</span></span>
+              <span>Start My Quiz<span className="arrow">→</span></span>
             </button>
             <p className="text-xs text-amari-text-light font-sans mt-3">
               ~3 minutes · Free · No spam
