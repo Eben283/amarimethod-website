@@ -16,6 +16,7 @@ export const POS_CATALOG = Object.freeze({
   "upgrade-initial-to-4": { label: "Upgrade: Initial → 4-Session", amountCents: 49500, ghlProductId: "6998739230cc6054f9bba62d" },
   "upgrade-initial-to-8": { label: "Upgrade: Initial → 8-Session", amountCents: 107000, ghlProductId: "699873d6990b71ebc1fa26b4" },
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },
+  "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
   "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
 });

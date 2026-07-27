@@ -4,6 +4,7 @@ import { buildPosSale, normalizeCart, normalizePaymentLegs, POS_CATALOG } from "
 describe("staff POS model", () => {
   it("uses a server-owned catalog and rejects a browser-supplied price", () => {
     expect(POS_CATALOG["12-week-practice"].amountCents).toBe(550000);
+    expect(POS_CATALOG.entrainment).toMatchObject({ amountCents: 9000, label: "Entrainment" });
     expect(() => normalizeCart([{ productKey: "8-session-series", quantity: 1, amountCents: 1 }])).toThrow("Unknown cart field");
   });
 
