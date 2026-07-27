@@ -20,7 +20,8 @@
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
-    { key: 'about',      label: 'About',       href: '/about' }
+    { key: 'about',      label: 'About',       href: '/about' },
+    { key: 'journal',    label: 'Journal',     href: '/blog' }
   ];
 
   var BOOK_URL = '/#book-assessment';
@@ -85,7 +86,7 @@
     return '' +
       '<header class="site on-dark" id="hdr">\n' +
       '  <div class="hdr-row">\n' +
-      '    <div class="hdr-utility"><a href="/blog">Journal</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a></div>\n' +
+      '    <div class="hdr-utility"><a href="/portal/">Client Portal</a></div>\n' +
       '    <a href="/" class="brand-slot"><span class="wordmark">AMARI</span><img class="logomark" src="' + LOGOMARK + '" alt="Amari"></a>\n' +
       '    <div class="hdr-right">\n' +
       '      <button class="hdr-search" type="button" aria-label="Search the site">' +
@@ -96,7 +97,7 @@
       '  </div>\n' +
       '  <nav class="nav-row">\n    ' + navLinks() + '\n  </nav>\n' +
       '  <nav class="mobile-nav" id="mobilenav">\n    ' + navLinks() +
-      '\n    <a href="/blog">Journal</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a>' +
+      '\n    <a href="/portal/">Client Portal</a>' +
       '<a href="' + BOOK_URL + '" class="btn">Book Assessment</a>\n  </nav>\n' +
       '</header>';
   }
