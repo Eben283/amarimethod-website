@@ -503,6 +503,26 @@ export async function getFunnel(): Promise<FunnelData> {
   return fetchApi('/staff-funnel');
 }
 
+// ── Revenue (server-side Stripe aggregates; staff-authenticated) ───────────
+export interface StaffRevenueMonth {
+  month: string; // YYYY-MM, Pacific time
+  gross: number;
+  fees: number;
+  net: number;
+  chargeCount: number;
+}
+
+export interface StaffRevenueData {
+  generatedAt: string;
+  timezone: string;
+  thisMonth: StaffRevenueMonth;
+  trend: StaffRevenueMonth[];
+}
+
+export async function getStaffRevenue(): Promise<StaffRevenueData> {
+  return fetchApi('/staff-revenue');
+}
+
 export interface FunnelRefreshResult {
   triggered: boolean;
   summary?: {
