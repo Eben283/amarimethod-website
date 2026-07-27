@@ -70,6 +70,11 @@ export default function PosPage() {
   const [sale, setSale] = useState<PosSale | null>(null);
   const [category, setCategory] = useState<(typeof CATALOG)[number][3]>("Practice");
   const [productQuery, setProductQuery] = useState("");
+  const [quickAccess, setQuickAccess] = useState(true);
+  const [showCustomSale, setShowCustomSale] = useState(false);
+  const [customLabel, setCustomLabel] = useState("");
+  const [customReason, setCustomReason] = useState("");
+  const [customDollars, setCustomDollars] = useState("");
   const [checkoutStep, setCheckoutStep] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -124,6 +129,33 @@ export default function PosPage() {
 
   function addCatalog(productKey: string) {
     setCart((current) => [...current, { productKey, quantity: 1 }]);
+    setPreview(null);
+  }
+
+  function openCategory(nextCategory: (typeof CATALOG)[number][3]) {
+    setCategory(nextCategory);
+    setProductQuery("");
+    setShowCustomSale(false);
+    setQuickAccess(false);
+  }
+
+  function openCustomSale() {
+    setProductQuery("");
+    setShowCustomSale(true);
+    setQuickAccess(false);
+  }
+
+  function addCustomSale() {
+    const amountCents = Math.round(Number(customDollars) * 100);
+    if (!customLabel.trim() || !customReason.trim() || !Number.isSafeInteger(amountCents) || amountCents < 1) {
+      setNotice("Add a label, reason, and valid dollar amount.");
+      return;
+    }
+    setCart((current) => [...current, { customLabel: customLabel.trim(), customReason: customReason.trim(), customAmountCents: amountCents, quantity: 1 }]);
+    setCustomLabel("");
+    setCustomReason("");
+    setCustomDollars("");
+    setNotice("");
     setPreview(null);
   }
 
@@ -290,12 +322,19 @@ export default function PosPage() {
       <div className="pos-layout">
         <section className="pos-products-pane">
           <div className="pos-pane-head">
-            <div><p className="pos-label">Products</p><h1>Build cart</h1></div>
-            <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Search products" /><kbd>⌘ K</kbd></label>
+            <div><p className="pos-label">{quickAccess ? "Quick access" : "Products"}</p><h1>{quickAccess ? "Start a sale" : "Products"}</h1></div>
+            <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
           </div>
-          <div className="pos-categories">{(["Practice", "Series", "Upgrades", "Single sessions"] as const).map((name) => <button className={category === name && !productQuery ? "is-active" : ""} type="button" onClick={() => { setCategory(name); setProductQuery(""); }} key={name}>{name}</button>)}</div>
-          <div className="pos-products">{products.map(([key, label, amount, group]) => <button type="button" className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`} key={key} onClick={() => addCatalog(key)} aria-label={`Add ${label} for ${money(amount)}`}><div className="pos-product__mark">{key === "12-week-practice" ? "12" : group === "Upgrades" ? "↗" : "A"}</div><p>{group}</p><h3>{label}</h3>{key === "12-week-practice" && <span>24 sessions</span>}<footer><strong>{money(amount)}</strong></footer></button>)}</div>
-          {!products.length && <p className="pos-no-products">No products match “{productQuery}”.</p>}
+          {quickAccess ? <div className="pos-quick-access">
+            <button type="button" className="pos-quick-tile pos-quick-tile--practice" onClick={() => addCatalog("12-week-practice")}><span>12</span><strong>Amari Practice</strong><small>Add the 12-week practice</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--series" onClick={() => openCategory("Series")}><span>↗</span><strong>Series</strong><small>4- and 8-session options</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--upgrades" onClick={() => openCategory("Upgrades")}><span>＋</span><strong>Upgrades</strong><small>Continuation and add-ons</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--sessions" onClick={() => openCategory("Single sessions")}><span>○</span><strong>Single sessions</strong><small>Initials and follow-ups</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
+          </div> : <>
+            <div className="pos-catalog-tools"><button type="button" onClick={() => { setQuickAccess(true); setProductQuery(""); setShowCustomSale(false); }}>← Quick access</button><div className="pos-categories">{(["Practice", "Series", "Upgrades", "Single sessions"] as const).map((name) => <button className={category === name && !productQuery && !showCustomSale ? "is-active" : ""} type="button" onClick={() => openCategory(name)} key={name}>{name}</button>)}</div></div>
+            {showCustomSale ? <div className="pos-custom-sale"><p className="pos-label">Custom sale</p><h2>Add a labelled amount</h2><input value={customLabel} onChange={(event) => setCustomLabel(event.target.value)} placeholder="What is this for?" /><input value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Reason or category" /><input inputMode="decimal" value={customDollars} onChange={(event) => setCustomDollars(event.target.value)} placeholder="$0.00" /><button type="button" onClick={addCustomSale}>Add to cart →</button></div> : <><div className="pos-products">{products.map(([key, label, amount, group]) => <button type="button" className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`} key={key} onClick={() => addCatalog(key)} aria-label={`Add ${label} for ${money(amount)}`}><div className="pos-product__mark">{key === "12-week-practice" ? "12" : group === "Upgrades" ? "↗" : "A"}</div><p>{group}</p><h3>{label}</h3>{key === "12-week-practice" && <span>24 sessions</span>}<footer><strong>{money(amount)}</strong></footer></button>)}</div>{!products.length && <p className="pos-no-products">No products match “{productQuery}”.</p>}</>}
+          </>}
         </section>
         <aside className="pos-cart-pane">
           <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
