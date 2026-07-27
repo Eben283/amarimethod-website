@@ -3,25 +3,25 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Most clients feel relief in their first session. Amari teaches you to address your own pain through 8 core protocols. No drugs, no surgery, no dependency. San Francisco + virtual.">
+<meta name="description" content="Amari is a body movement-awareness practice in San Francisco. Begin with a 40-minute, in-person Amari Assessment for $29.">
 <link rel="canonical" href="https://www.amarimethod.com">
 
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
 <link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<title>Amari Method | Chronic Pain Relief in San Francisco</title>
+<title>Amari Method | Body Movement Awareness Practice in San Francisco</title>
 <!-- Open Graph / Twitter -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.amarimethod.com">
-<meta property="og:title" content="Amari Method | Chronic Pain Relief in San Francisco">
-<meta property="og:description" content="Most clients feel relief in their first session. Amari teaches you to address your own pain through 8 core protocols. No drugs, no surgery, no dependency. San Francisco + virtual.">
+<meta property="og:title" content="Amari Method | Body Movement Awareness Practice in San Francisco">
+<meta property="og:description" content="Begin with a 40-minute, in-person Amari Assessment for $29.">
 <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:url" content="https://www.amarimethod.com">
-<meta name="twitter:title" content="Amari Method | Chronic Pain Relief in San Francisco">
-<meta name="twitter:description" content="Most clients feel relief in their first session. Amari teaches you to address your own pain through 8 core protocols. No drugs, no surgery, no dependency. San Francisco + virtual.">
+<meta name="twitter:title" content="Amari Method | Body Movement Awareness Practice in San Francisco">
+<meta name="twitter:description" content="Begin with a 40-minute, in-person Amari Assessment for $29.">
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +34,20 @@
 <style>
   /* ---------- Homepage-specific styles ---------- */
   .hero p{max-width:46ch}
+  /* Assessment: the site's single new-client entry point. */
+  .assessment{padding:clamp(72px,9vw,126px) 0;background:var(--cream-2);scroll-margin-top:150px}
+  .assessment-grid{display:grid;grid-template-columns:minmax(260px,.72fr) minmax(0,1.28fr);gap:clamp(44px,7vw,104px);align-items:start}
+  .assessment-copy .eyebrow,.assessment-calendar .eyebrow{display:block;margin-bottom:18px}
+  .assessment-copy h2,.assessment-calendar h2{font-size:clamp(2.35rem,4.1vw,3.55rem);font-weight:500;max-width:12ch}
+  .assessment-copy > p{margin-top:22px;font-size:1.02rem}
+  .assessment-facts{margin-top:40px;border-top:1px solid var(--line)}
+  .assessment-fact{padding:20px 0;border-bottom:1px solid var(--line)}
+  .assessment-fact strong{display:block;font-family:var(--serif);font-size:1.35rem;font-weight:500;line-height:1.18}
+  .assessment-fact span{display:block;margin-top:7px;color:var(--body);font-size:14px;line-height:1.55}
+  .assessment-calendar h2{max-width:none}
+  .assessment-calendar > p{margin-top:12px;margin-bottom:26px;font-size:15px}
+  .calendar-frame{min-height:830px;background:var(--paper);border:1px solid var(--line)}
+  .calendar-frame iframe{display:block;width:100%;min-height:830px;border:0}
   /* This Just In */
   .justin{padding:clamp(64px,7vw,92px) 0 clamp(48px,5vw,68px);text-align:center}
   .justin .kicker{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--body);margin-bottom:40px}
@@ -86,12 +100,13 @@
 
   @media (prefers-reduced-motion:reduce){.tile img,.jph img,.btn{transition:none!important}}
   @media (max-width:1000px){
-    .cards4,.tiles{grid-template-columns:1fr 1fr}
+    .cards4,.tiles,.assessment-grid{grid-template-columns:1fr 1fr}
     .shop-panel{grid-template-columns:1fr}
     .shop-panel img.prod{min-height:320px}
   }
   @media (max-width:640px){
-    .cards4,.tiles{grid-template-columns:1fr}
+    .cards4,.tiles,.assessment-grid{grid-template-columns:1fr}
+    .calendar-frame,.calendar-frame iframe{min-height:880px}
   }
   /* Yinova-style band: cutout person floating on the color field (not a boxed photo) */
   .band .band-fig{align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:540px}
@@ -135,7 +150,40 @@
   <div class="hero-inner">
     <h1>Most people forgot their body could feel like this.</h1>
     <p>Amari teaches you to bring your body back into balance yourself, so you don&rsquo;t stay dependent on someone else to fix you.</p>
-    <a href="/booking" class="btn btn-pale">Book a $29 Assessment</a>
+    <a href="#assessment" class="btn btn-pale">Book a $29 Assessment</a>
+  </div>
+</section>
+
+<!-- ASSESSMENT: the one new-client path, kept on the home page. -->
+<section class="assessment" id="assessment">
+  <div class="wrap assessment-grid">
+    <div class="assessment-copy reveal">
+      <span class="eyebrow">Amari Assessment · San Francisco</span>
+      <h2>A clear place to start.</h2>
+      <p>Spend 40 minutes with Garrett talking through what you are noticing, moving together, and seeing what your body responds to. You do not need to choose a package online.</p>
+      <div class="assessment-facts">
+        <div class="assessment-fact">
+          <strong>$29, paid when you book.</strong>
+          <span>Your card reserves the Assessment.</span>
+        </div>
+        <div class="assessment-fact">
+          <strong>40 minutes, in person.</strong>
+          <span>Wear clothes you can move comfortably in. Your confirmation includes the studio details.</span>
+        </div>
+        <div class="assessment-fact">
+          <strong>One connected body.</strong>
+          <span>The visit begins with the whole pattern, not just the part asking for attention today.</span>
+        </div>
+      </div>
+    </div>
+    <div class="assessment-calendar reveal">
+      <span class="eyebrow">Choose a time</span>
+      <h2>Book your Assessment.</h2>
+      <p>$29 · 40 minutes · in person in San Francisco</p>
+      <div class="calendar-frame">
+        <iframe src="https://link.amarimethod.com/widget/booking/EM6vB2mq7EAdGCbUb3j1" title="Book an Amari Assessment" loading="eager"></iframe>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -285,12 +333,12 @@
   <div class="wrap">
     <h2>Come explore what your body is asking for.</h2>
     <p>Start with a 40-minute, in-person Amari Assessment in San Francisco. You do not need to choose a package online.</p>
-    <a href="/booking" class="btn">Book a $29 Assessment</a>
+    <a href="#assessment" class="btn">Book a $29 Assessment</a>
   </div>
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=15"></script>
+<script src="/js/site-v6.js?v=17"></script>
 
 <!-- ============================================================
      JSON-LD: MedicalBusiness + WebSite schema (no aggregateRating).
