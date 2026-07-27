@@ -242,6 +242,7 @@ export interface PosClient {
   id: string;
   name: string;
   phone: string | null;
+  email: string | null;
 }
 
 export interface PosDraftLineInput {

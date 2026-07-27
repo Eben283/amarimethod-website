@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPosSale, normalizeCart, normalizePaymentLegs, POS_CATALOG } from "./staff-pos.js";
+import { buildPosSale, normalizeCart, normalizeClient, normalizePaymentLegs, POS_CATALOG } from "./staff-pos.js";
 
 describe("staff POS model", () => {
   it("uses a server-owned catalog and rejects a browser-supplied price", () => {
@@ -30,5 +30,11 @@ describe("staff POS model", () => {
       reviewer: "Eben",
       now: "2026-07-27T12:00:00.000Z",
     })).toMatchObject({ totalCents: 22500, status: "draft", version: 1 });
+  });
+
+  it("keeps new-client contact details in a draft without needing a live CRM write", () => {
+    expect(normalizeClient({ id: "draft_12345678", name: "New Client", phone: "+15551234567", email: "NEW@EXAMPLE.COM" }))
+      .toMatchObject({ id: "draft_12345678", name: "New Client", phone: "+15551234567", email: "new@example.com" });
+    expect(() => normalizeClient({ id: "draft_12345678", name: "New Client" })).toThrow("phone number or email");
   });
 });

@@ -88,9 +88,12 @@ export function normalizeClient(raw) {
   const id = cleanText(raw.id, 100);
   const name = cleanText(raw.name, 160);
   const phone = cleanText(raw.phone, 40);
+  const email = cleanText(raw.email, 160).toLowerCase();
   if (!/^[A-Za-z0-9_-]{8,100}$/.test(id)) throw new Error("Invalid client");
   if (!name) throw new Error("Client name is required");
-  return Object.freeze({ id, name, phone: phone || null });
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Client email is invalid");
+  if (!phone && !email) throw new Error("Add a phone number or email address");
+  return Object.freeze({ id, name, phone: phone || null, email: email || null });
 }
 
 export function normalizePaymentLegs(rawLegs, totalCents) {

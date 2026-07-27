@@ -66,6 +66,10 @@ export default function PosPage() {
   const [matches, setMatches] = useState<ContactListItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [client, setClient] = useState<PosClient | null>(null);
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
   const [sale, setSale] = useState<PosSale | null>(null);
@@ -123,7 +127,30 @@ export default function PosPage() {
   }, [clientSearch]);
 
   function selectClient(contact: ContactListItem) {
-    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null });
+    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
+    setClientSearch("");
+    setMatches([]);
+    setShowNewClient(false);
+    setNotice("");
+  }
+
+  function selectNewClient() {
+    const name = newClientName.trim();
+    const phone = newClientPhone.trim();
+    const email = newClientEmail.trim().toLowerCase();
+    if (!name || (!phone && !email)) {
+      setNotice("Add their name and at least a phone number or email address.");
+      return;
+    }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setNotice("Add a valid email address or leave it blank.");
+      return;
+    }
+    setClient({ id: `draft_${crypto.randomUUID().replace(/-/g, "")}`, name, phone: phone || null, email: email || null });
+    setNewClientName("");
+    setNewClientPhone("");
+    setNewClientEmail("");
+    setShowNewClient(false);
     setClientSearch("");
     setMatches([]);
     setNotice("");
@@ -356,9 +383,11 @@ export default function PosPage() {
             <section className="pos-client">
               <div className="pos-client__head">
                 <h2>{client ? client.name : "Add client"}</h2>
-                {client && <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button>}
+                {client ? <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button> : <button type="button" onClick={() => { setShowNewClient((value) => !value); setNotice(""); }} className="pos-quiet">＋ New client</button>}
               </div>
-              {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
+              {client && <p className="pos-client-detail">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details needed before activation"}</p>}
+              {!client && !showNewClient && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
+              {!client && showNewClient && <form className="pos-new-client" onSubmit={(event) => { event.preventDefault(); selectNewClient(); }}><p className="pos-label">New client</p><h3>Add their details</h3><div><input value={newClientName} onChange={(event) => setNewClientName(event.target.value)} placeholder="Full name" autoComplete="name" autoFocus /><input value={newClientPhone} onChange={(event) => setNewClientPhone(event.target.value)} placeholder="Mobile number" inputMode="tel" autoComplete="tel" /><input value={newClientEmail} onChange={(event) => setNewClientEmail(event.target.value)} placeholder="Email address" inputMode="email" autoComplete="email" /></div><footer><small>Phone or email is required.</small><button type="submit">Use this client →</button></footer></form>}
               {searching && <p className="pos-searching">Searching clients…</p>}
               {matches.length > 0 && <div className="pos-client-results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>→</b></button>)}</div>}
             </section>
