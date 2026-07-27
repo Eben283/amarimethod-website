@@ -10,6 +10,8 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/operations?limit=25", { credentials: "same-origin" })');
     expect(html).toContain("Active client operations");
+    expect(html).toContain("Mirror readiness");
+    expect(html).toContain('fetch("/readiness", { credentials: "same-origin" })');
     expect(html).toContain("Client profiles");
     expect(html).toContain("Shadow operations");
     expect(html).toContain('fetch("/shadow-operations?limit=25"');

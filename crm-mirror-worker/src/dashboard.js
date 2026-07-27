@@ -91,6 +91,18 @@ const DASHBOARD_HTML = `<!doctype html>
       </section>
 
       <section class="section">
+        <h2>Mirror readiness</h2>
+        <p>Evidence that the mirror is complete enough to trust: full source passes, bounded communication and consent history, payment-identity exceptions, and Cloudflare recovery readiness. These are alerts, not live operating controls.</p>
+        <div class="grid">
+          <article class="card"><span class="label">GHL full pass</span><strong class="value" id="ready-ghl">—</strong><span class="detail" id="ready-ghl-detail">Waiting for the first tracked full pass</span></article>
+          <article class="card"><span class="label">Stripe full pass</span><strong class="value" id="ready-stripe">—</strong><span class="detail" id="ready-stripe-detail">Waiting for the first tracked full pass</span></article>
+          <article class="card"><span class="label">History mirrored</span><strong class="value" id="ready-history">—</strong><span class="detail">Communication and consent observations</span></article>
+          <article class="card"><span class="label">Open exceptions</span><strong class="value" id="ready-exceptions">—</strong><span class="detail" id="ready-exceptions-detail">Payment identity and mirror-health alerts</span></article>
+        </div>
+        <article class="review-shell section"><div class="review-core"><h3>Open mirror alerts</h3><p>These close only when a later observation is healthy. No alert changes source data.</p><ul class="review-list" id="ready-alerts"></ul></div></article>
+      </section>
+
+      <section class="section">
         <h2>Ledger cutover review</h2>
         <p>These are proposed opening balances copied from the current GHL fields. Approving a proposal only records the cutover decision—it does not create a ledger entry or change any client balance.</p>
         <div class="grid">
@@ -177,8 +189,9 @@ const DASHBOARD_HTML = `<!doctype html>
           if (token || reviewToken) {
             history.replaceState(null, "", location.pathname + location.search);
           }
-          const [statusResponse, operationsResponse, shadowOperationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
+          const [statusResponse, readinessResponse, operationsResponse, shadowOperationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
+            fetch("/readiness", { credentials: "same-origin" }),
             fetch("/operations?limit=25", { credentials: "same-origin" }),
             fetch("/shadow-operations?limit=25", { credentials: "same-origin" }),
             fetch("/ledger-cutover?limit=25", { credentials: "same-origin" }),
@@ -186,8 +199,9 @@ const DASHBOARD_HTML = `<!doctype html>
             fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
             fetch("/review-session", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !operationsResponse.ok || !shadowOperationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !readinessResponse.ok || !operationsResponse.ok || !shadowOperationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
+          const readiness = await readinessResponse.json();
           const operations = await operationsResponse.json();
           const shadowOperations = await shadowOperationsResponse.json();
           const cutover = await cutoverResponse.json();
@@ -207,6 +221,15 @@ const DASHBOARD_HTML = `<!doctype html>
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
           set("posting", reconciliation.automaticLedgerPosting ? "On" : "Off");
+          const completenessLabel = (source) => source?.state === "complete" ? "Complete" : source?.state === "review" ? "Review" : "Watching";
+          const completenessDetail = (source) => source?.state === "complete" ? source.records_seen + " / " + source.known_records + " known records" : "Waiting for the first tracked full pass";
+          set("ready-ghl", completenessLabel(readiness.completeness.ghl));
+          set("ready-stripe", completenessLabel(readiness.completeness.stripe));
+          document.getElementById("ready-ghl-detail").textContent = completenessDetail(readiness.completeness.ghl);
+          document.getElementById("ready-stripe-detail").textContent = completenessDetail(readiness.completeness.stripe);
+          set("ready-history", readiness.communications + " / " + readiness.consentObservations);
+          set("ready-exceptions", readiness.openPaymentIdentityExceptions + readiness.openHealthEvents.filter((event) => event.state !== "healthy").length);
+          document.getElementById("ready-exceptions-detail").textContent = (readiness.recovery.result === "ready" ? "Recovery check ready" : "Recovery check not yet recorded") + " · no source writes";
           set("shadow-balance-drift", shadowOperations.balances.driftCount);
           set("shadow-payment-events", shadowOperations.payments.sourceEventCount);
           set("shadow-outcome-gaps", shadowOperations.bookings.pastOutcomeGapCount);
@@ -366,6 +389,7 @@ const DASHBOARD_HTML = `<!doctype html>
           });
           render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
           render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
+          render("ready-alerts", readiness.openHealthEvents.filter((event) => event.state !== "healthy"), (row) => row.health_key.replaceAll(":", " · "), (row) => row.detail);
           render("shadow-balance-comparisons", shadowOperations.balances.comparisons, (row) => row.display_name || "Unnamed client", (row) => {
             if (row.state === "awaiting_source_observation") return row.shadow_credits + " shadow sessions · awaiting first GHL observation";
             if (row.state === "in_sync") return row.imported_sessions_remaining + " GHL sessions · matches shadow balance";

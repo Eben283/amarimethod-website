@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeGhlAppointment,
+  normalizeGhlConsents,
   normalizeGhlContact,
+  normalizeProviderDateTime,
   normalizeStripeCharge,
   normalizedPhone,
 } from "./normalizers.js";
@@ -28,8 +30,20 @@ describe("CRM mirror normalizers", () => {
       tags: ["affiliate-partner", "custom"],
       roles: ["affiliate_partner", "lead"],
       attributes: [["study_name", "Elbow"]],
+      consents: [
+        { channel: "sms", state: "unknown" },
+        { channel: "email", state: "unknown" },
+      ],
       referralSourceLabel: "Referral",
     });
+  });
+
+  it("normalizes a local GHL appointment timestamp and records DND without inferring opt-in", () => {
+    expect(normalizeProviderDateTime("2026-07-27 13:00:00", "America/Los_Angeles")).toBe("2026-07-27T20:00:00.000Z");
+    expect(normalizeGhlConsents({ dndSettings: { SMS: { status: "active" } } })).toEqual([
+      { channel: "sms", state: "revoked" },
+      { channel: "email", state: "unknown" },
+    ]);
   });
 
   it("normalizes appointment aliases and keeps unknown statuses visible", () => {

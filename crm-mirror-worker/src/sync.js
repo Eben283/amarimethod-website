@@ -1,15 +1,19 @@
 import {
   beginSyncRun,
+  beginMirrorSyncCycle,
+  completeMirrorSyncCycle,
   finishSyncRun,
   findContactIdByGhlId,
   getSyncCursor,
   setSyncCursor,
+  refreshMirrorHealth,
   upsertGhlAppointment,
   upsertGhlContact,
+  upsertGhlCommunication,
   upsertStripeCharge,
 } from "./repository.js";
 import { normalizeGhlAppointment, normalizeGhlContact, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlConversationsForContact, fetchGhlConversationMessages, fetchGhlContactsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
 
 function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
@@ -19,14 +23,30 @@ function result(status = "succeeded") {
 // cursor advances through the full mirror across runs instead of doing one large
 // provider read. This is observation-only: these functions write only CRM_DB.
 export const SCHEDULED_SYNC_LIMIT = 50;
+const COMMUNICATION_CONTACTS_PER_RUN = 3;
+
+async function syncContactCommunications(env, contactExternalId, contactId, now) {
+  try {
+    const conversations = await fetchGhlConversationsForContact(env, contactExternalId);
+    for (const conversation of conversations.slice(0, 3)) {
+      const messages = await fetchGhlConversationMessages(env, conversation.id);
+      for (const message of messages) await upsertGhlCommunication(env.CRM_DB, contactId, message, now);
+    }
+  } catch (error) {
+    // Communication history is an additional observation stream. A scope or
+    // transient conversation failure must not stop contact/balance mirroring.
+    console.warn(JSON.stringify({ event: "crm_mirror_communication_sync_failed", contactExternalId, message: error instanceof Error ? error.message : String(error) }));
+  }
+}
 
 export async function syncGhl(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "ghl");
+  const cycle = await beginMirrorSyncCycle(env.CRM_DB, "ghl", now, !cursorBefore);
   const runId = await beginSyncRun(env.CRM_DB, "ghl", cursorBefore, now);
   const outcome = result();
   try {
     const page = await fetchGhlContactsPage(env, cursorBefore, limit);
-    for (const rawContact of page.contacts) {
+    for (const [index, rawContact] of page.contacts.entries()) {
       outcome.recordsRead += 1;
       const contact = normalizeGhlContact(rawContact);
       if (!contact) {
@@ -35,6 +55,7 @@ export async function syncGhl(env, limit, now) {
       }
       const contactId = await upsertGhlContact(env.CRM_DB, contact, now);
       outcome.recordsWritten += 1;
+      if (index < COMMUNICATION_CONTACTS_PER_RUN) await syncContactCommunications(env, contact.externalId, contactId, now);
       const rawAppointments = await fetchGhlAppointmentsForContact(env, contact.externalId);
       for (const rawAppointment of rawAppointments) {
         outcome.recordsRead += 1;
@@ -50,6 +71,7 @@ export async function syncGhl(env, limit, now) {
     outcome.cursorAfter = page.nextCursor;
     outcome.status = page.nextCursor ? "partial" : "succeeded";
     await setSyncCursor(env.CRM_DB, "ghl", page.nextCursor, now);
+    if (!page.nextCursor) await completeMirrorSyncCycle(env.CRM_DB, cycle, "ghl", now);
   } catch (error) {
     outcome.status = "failed";
     outcome.failureDetail = error instanceof Error ? error.message : String(error);
@@ -61,6 +83,7 @@ export async function syncGhl(env, limit, now) {
 
 export async function syncStripe(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "stripe");
+  const cycle = await beginMirrorSyncCycle(env.CRM_DB, "stripe", now, !cursorBefore);
   const runId = await beginSyncRun(env.CRM_DB, "stripe", cursorBefore, now);
   const outcome = result();
   const customerEmailCache = new Map();
@@ -101,6 +124,7 @@ export async function syncStripe(env, limit, now) {
     outcome.cursorAfter = page.nextCursor;
     outcome.status = page.nextCursor ? "partial" : "succeeded";
     await setSyncCursor(env.CRM_DB, "stripe", page.nextCursor, now);
+    if (!page.nextCursor) await completeMirrorSyncCycle(env.CRM_DB, cycle, "stripe", now);
   } catch (error) {
     outcome.status = "failed";
     outcome.failureDetail = error instanceof Error ? error.message : String(error);
@@ -131,6 +155,11 @@ export async function runScheduledSync(env, now) {
         failureDetail: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+  try {
+    await refreshMirrorHealth(env.CRM_DB, now);
+  } catch (error) {
+    console.warn(JSON.stringify({ event: "crm_mirror_health_refresh_failed", message: error instanceof Error ? error.message : String(error) }));
   }
   console.log(JSON.stringify({ event: "crm_mirror_scheduled_sync", limit: SCHEDULED_SYNC_LIMIT, results }));
   return results;

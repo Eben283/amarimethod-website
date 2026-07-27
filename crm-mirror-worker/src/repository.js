@@ -47,6 +47,52 @@ export async function setSyncCursor(db, provider, cursor, now) {
   ).bind(provider, cursor || null, now).run();
 }
 
+export async function beginMirrorSyncCycle(db, provider, now, startsAtBeginning) {
+  const running = await db.prepare(
+    "SELECT id, started_at FROM mirror_sync_cycles WHERE provider = ? AND status = 'running' ORDER BY datetime(started_at) DESC LIMIT 1",
+  ).bind(provider).first();
+  if (running) return running;
+  // A cursor inherited from an earlier Worker version represents an unknown
+  // partial traversal. Do not certify it as a full pass; wait until the cursor
+  // resets and the next traversal demonstrably begins at the provider's head.
+  if (!startsAtBeginning) return null;
+  const cycle = { id: id(), started_at: now };
+  await db.prepare(
+    `INSERT INTO mirror_sync_cycles (id, provider, started_at, status)
+     VALUES (?, ?, ?, 'running')`,
+  ).bind(cycle.id, provider, cycle.started_at).run();
+  return cycle;
+}
+
+export async function completeMirrorSyncCycle(db, cycle, provider, now) {
+  if (!cycle) return;
+  const objectType = provider === "ghl" ? "contact" : "charge";
+  const totals = await db.prepare(
+    `SELECT COUNT(*) AS known_records,
+            SUM(CASE WHEN datetime(last_seen_at) >= datetime(?) THEN 1 ELSE 0 END) AS records_seen
+     FROM external_records WHERE provider = ? AND object_type = ?`,
+  ).bind(cycle.started_at, provider, objectType).first();
+  const knownRecords = Number(totals?.known_records || 0);
+  const recordsSeen = Number(totals?.records_seen || 0);
+  await db.prepare(
+    `UPDATE mirror_sync_cycles
+     SET status = 'completed', completed_at = ?, records_seen = ?, known_records = ?, missing_records = ?
+     WHERE id = ?`,
+  ).bind(now, recordsSeen, knownRecords, Math.max(0, knownRecords - recordsSeen), cycle.id).run();
+}
+
+export async function mirrorCompleteness(db) {
+  const result = await db.batch(["ghl", "stripe"].map((provider) => db.prepare(
+    `SELECT started_at, completed_at, records_seen, known_records, missing_records
+     FROM mirror_sync_cycles WHERE provider = ? AND status = 'completed'
+     ORDER BY datetime(completed_at) DESC LIMIT 1`,
+  ).bind(provider)));
+  return Object.fromEntries(["ghl", "stripe"].map((provider, index) => {
+    const row = result[index].results?.[0] || null;
+    return [provider, row ? { state: row.missing_records ? "review" : "complete", ...row } : { state: "in_progress" }];
+  }));
+}
+
 async function contactIdForExternalRecord(db, provider, objectType, externalId) {
   const row = await db.prepare(
     "SELECT contact_id FROM external_records WHERE provider = ? AND object_type = ? AND external_id = ?",
@@ -95,6 +141,20 @@ async function recordBalanceSourceObservation(db, contactId, contact, now) {
   ).bind(id(), contactId, sessionsRemaining, now, `ghl-balance:${contactId}:${now}`).run();
 }
 
+async function recordGhlConsentObservations(db, contactId, consents, now) {
+  for (const consent of consents || []) {
+    const latest = await db.prepare(
+      `SELECT state FROM consents WHERE contact_id = ? AND channel = ?
+       ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1`,
+    ).bind(contactId, consent.channel).first();
+    if (latest?.state === consent.state) continue;
+    await db.prepare(
+      `INSERT INTO consents (id, contact_id, channel, state, effective_at, source, evidence_ref, recorded_by)
+       VALUES (?, ?, ?, ?, ?, 'ghl_contact_dnd', 'GHL contact DND settings', 'crm-mirror-import')`,
+    ).bind(id(), contactId, consent.channel, consent.state, now).run();
+  }
+}
+
 export async function upsertGhlContact(db, contact, now) {
   let contactId = await contactIdForExternalRecord(db, "ghl", "contact", contact.externalId);
   if (contactId) {
@@ -127,6 +187,7 @@ export async function upsertGhlContact(db, contact, now) {
   }
   await replaceContactFacts(db, contactId, contact, now);
   await recordBalanceSourceObservation(db, contactId, contact, now);
+  await recordGhlConsentObservations(db, contactId, contact.consents, now);
   return contactId;
 }
 
@@ -248,6 +309,69 @@ async function recordPaymentSourceEvents(db, purchaseId, contactId, charge, now)
   ).run();
 }
 
+async function recordPaymentIdentityException(db, purchaseId, contactId, charge, now) {
+  const linked = contactId
+    ? await db.prepare("SELECT email_normalized FROM contacts WHERE id = ?").bind(contactId).first()
+    : null;
+  const exceptionType = !contactId
+    ? "unlinked_charge"
+    : charge.billingEmail && linked?.email_normalized && charge.billingEmail !== linked.email_normalized
+      ? "metadata_contact_email_conflict"
+      : null;
+  if (!exceptionType) return;
+  await db.prepare(
+    `INSERT INTO payment_identity_exceptions
+     (id, purchase_id, exception_type, state, detail_json, detected_at)
+     VALUES (?, ?, ?, 'open', ?, ?)
+     ON CONFLICT(purchase_id) DO UPDATE SET exception_type = excluded.exception_type,
+       detail_json = excluded.detail_json, detected_at = excluded.detected_at`,
+  ).bind(
+    id(), purchaseId, exceptionType,
+    JSON.stringify({ billingEmail: charge.billingEmail || null, linkedContactEmail: linked?.email_normalized || null, metadataContactId: charge.contactExternalId || null }),
+    now,
+  ).run();
+}
+
+function messageChannel(raw) {
+  const type = String(raw?.messageType || raw?.type || "").toUpperCase();
+  if (type.includes("EMAIL") || raw?.type === 3) return "email";
+  if (type.includes("SMS") || raw?.type === 2) return "sms";
+  return null;
+}
+
+function messageDirection(raw) {
+  if (raw?.direction === 1 || raw?.direction === "1" || raw?.direction === "inbound") return "inbound";
+  if (raw?.status === "received") return "inbound";
+  return "outbound";
+}
+
+export async function upsertGhlCommunication(db, contactId, raw, now) {
+  const externalId = String(raw?.id || "").trim();
+  const channel = messageChannel(raw);
+  if (!externalId || !channel) return false;
+  const existing = await db.prepare(
+    "SELECT record_id FROM external_records WHERE provider = 'ghl' AND object_type = 'message' AND external_id = ?",
+  ).bind(externalId).first();
+  if (existing?.record_id) return true;
+  const communicationId = id();
+  const occurred = raw.date || raw.dateAdded || raw.createdAt || now;
+  const preview = String(raw.body || raw.message || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500) || null;
+  await db.batch([
+    db.prepare(
+      `INSERT INTO communications
+       (id, contact_id, channel, direction, provider_status, occurred_at, recorded_by, subject_or_preview)
+       VALUES (?, ?, ?, ?, ?, ?, 'ghl_import', ?)`,
+    ).bind(communicationId, contactId, channel, messageDirection(raw), raw.status || raw.deliveryStatus || null, occurred, preview),
+    db.prepare(
+      `INSERT INTO external_records
+       (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+       VALUES (?, 'ghl', 'message', ?, ?, 'communication', ?, ?)
+       ON CONFLICT(provider, object_type, external_id) DO UPDATE SET last_seen_at = excluded.last_seen_at`,
+    ).bind(id(), externalId, contactId, communicationId, now),
+  ]);
+  return true;
+}
+
 export async function upsertStripeCharge(db, charge, now) {
   const sourceContactId = charge.contactExternalId
     ? await findContactIdByGhlId(db, charge.contactExternalId)
@@ -269,25 +393,29 @@ export async function upsertStripeCharge(db, charge, now) {
     await db.prepare(
       `UPDATE purchases
        SET contact_id = ?, package_id = ?, provider_customer_id = ?, provider_status = ?, amount_cents = ?,
-           amount_refunded_cents = ?, currency = ?, purchased_at = ?, classification = ?, billing_email_normalized = ?, updated_at = ?
+           amount_refunded_cents = ?, currency = ?, purchased_at = ?, classification = ?, billing_email_normalized = ?,
+           stripe_payment_intent_id = ?, ghl_invoice_id = ?, ghl_transaction_id = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, packageId, charge.customerExternalId, charge.providerStatus, charge.amountCents,
-      charge.amountRefundedCents, charge.currency, charge.purchasedAt, classification, charge.billingEmail, now, purchaseId,
+      charge.amountRefundedCents, charge.currency, charge.purchasedAt, classification, charge.billingEmail,
+      charge.stripePaymentIntentId, charge.ghlInvoiceId, charge.ghlTransactionId, now, purchaseId,
     ).run();
   } else {
     await db.prepare(
       `INSERT INTO purchases
        (id, contact_id, package_id, provider_charge_id, provider_customer_id, provider_status, amount_cents,
-        amount_refunded_cents, currency, purchased_at, classification, billing_email_normalized, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        amount_refunded_cents, currency, purchased_at, classification, billing_email_normalized,
+        stripe_payment_intent_id, ghl_invoice_id, ghl_transaction_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       purchaseId, contactId, packageId, charge.externalId, charge.customerExternalId, charge.providerStatus,
       charge.amountCents, charge.amountRefundedCents, charge.currency, charge.purchasedAt, classification,
-      charge.billingEmail, now, now,
+      charge.billingEmail, charge.stripePaymentIntentId, charge.ghlInvoiceId, charge.ghlTransactionId, now, now,
     ).run();
   }
   await recordPaymentSourceEvents(db, purchaseId, contactId, charge, now);
+  await recordPaymentIdentityException(db, purchaseId, contactId, charge, now);
   await db.prepare(
     `INSERT INTO external_records
      (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
@@ -350,6 +478,75 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
       stripe: latestStripe.results?.[0] || null,
     }, now),
   };
+}
+
+export async function mirrorReadiness(db) {
+  const [completeness, totals] = await Promise.all([
+    mirrorCompleteness(db),
+    db.batch([
+      db.prepare("SELECT COUNT(*) AS count FROM communications"),
+      db.prepare("SELECT COUNT(*) AS count FROM consents"),
+      db.prepare("SELECT COUNT(*) AS count FROM payment_identity_exceptions WHERE state = 'open'"),
+      db.prepare("SELECT result, checked_at, bookmark FROM mirror_recovery_checks ORDER BY datetime(checked_at) DESC LIMIT 1"),
+      db.prepare("SELECT health_key, state, detail, detected_at FROM mirror_health_events WHERE resolved_at IS NULL ORDER BY datetime(detected_at) DESC LIMIT 25"),
+    ]),
+  ]);
+  return {
+    completeness,
+    communications: Number(totals[0].results?.[0]?.count || 0),
+    consentObservations: Number(totals[1].results?.[0]?.count || 0),
+    openPaymentIdentityExceptions: Number(totals[2].results?.[0]?.count || 0),
+    recovery: totals[3].results?.[0] || { result: "unverified" },
+    openHealthEvents: totals[4].results || [],
+    shadowOnly: true,
+  };
+}
+
+async function recordMirrorHealthEvent(db, healthKey, state, detail, now) {
+  const open = await db.prepare(
+    `SELECT id, state, detail FROM mirror_health_events
+     WHERE health_key = ? AND resolved_at IS NULL ORDER BY datetime(detected_at) DESC LIMIT 1`,
+  ).bind(healthKey).first();
+  if (open?.state === state && open?.detail === detail) return;
+  const statements = [];
+  if (open) statements.push(db.prepare("UPDATE mirror_health_events SET resolved_at = ? WHERE id = ?").bind(now, open.id));
+  statements.push(db.prepare(
+    `INSERT INTO mirror_health_events (id, health_key, state, detail, detected_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).bind(id(), healthKey, state, detail, now));
+  await db.batch(statements);
+}
+
+export async function refreshMirrorHealth(db, now) {
+  const [readiness, operations] = await Promise.all([mirrorReadiness(db), shadowOperations(db, 1, now)]);
+  for (const provider of ["ghl", "stripe"]) {
+    const source = readiness.completeness[provider];
+    await recordMirrorHealthEvent(
+      db,
+      `completeness:${provider}`,
+      source.state === "complete" ? "healthy" : "review",
+      source.state === "complete"
+        ? `Latest full ${provider.toUpperCase()} pass saw ${source.records_seen}/${source.known_records} known records.`
+        : source.state === "review"
+          ? `Latest full ${provider.toUpperCase()} pass saw ${source.records_seen}/${source.known_records}; missing source records need review.`
+          : `${provider.toUpperCase()} full-pass completeness is still in progress.`,
+      now,
+    );
+  }
+  await recordMirrorHealthEvent(
+    db,
+    "balance-drift",
+    operations.balances.driftCount ? "review" : "healthy",
+    operations.balances.driftCount ? `${operations.balances.driftCount} approved opening balance comparison(s) differ.` : "Approved opening balances match imported GHL balances.",
+    now,
+  );
+  await recordMirrorHealthEvent(
+    db,
+    "payment-identity",
+    readiness.openPaymentIdentityExceptions ? "review" : "healthy",
+    readiness.openPaymentIdentityExceptions ? `${readiness.openPaymentIdentityExceptions} payment identity exception(s) need review.` : "No payment identity exceptions are open.",
+    now,
+  );
 }
 
 // This is an operator-facing read model, not a replacement session ledger.

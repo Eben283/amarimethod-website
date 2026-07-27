@@ -58,6 +58,18 @@ export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   return appointments.slice(0, 100);
 }
 
+export async function fetchGhlConversationsForContact(env, contactExternalId) {
+  const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, contactId: contactExternalId, limit: "10" });
+  const payload = await ghlGet(env, `/conversations/search?${params}`);
+  return Array.isArray(payload.conversations) ? payload.conversations.slice(0, 10) : [];
+}
+
+export async function fetchGhlConversationMessages(env, conversationExternalId) {
+  const payload = await ghlGet(env, `/conversations/${encodeURIComponent(conversationExternalId)}/messages?limit=100`);
+  const messages = payload.messages?.messages || payload.messages || [];
+  return Array.isArray(messages) ? messages.slice(0, 100) : [];
+}
+
 export async function fetchStripeChargesPage(env, cursor, limit) {
   if (!env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
   const params = new URLSearchParams({ limit: String(limit) });

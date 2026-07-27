@@ -7,6 +7,8 @@ This Worker is the read-only import foundation for the internal Amari CRM. A bou
 - GHL contacts, tags, custom-field values, and contact appointments.
 - Stripe settled charges and refund metadata.
 - Immutable source observations for imported GHL balances, Stripe charge/refund deltas, and booking-state changes. These are a shadow audit trail, not session-ledger entries.
+- Bounded GHL communication previews and explicit source DND observations. Missing consent is recorded as `unknown`, never treated as permission to send.
+- Full-pass completeness evidence, payment-identity exceptions, and open mirror-health alerts.
 - Review-only purchase-to-contact candidates when one Stripe billing email exactly matches one mirrored contact.
 - Existing service and package definitions seeded by the first D1 migration.
 
@@ -31,10 +33,11 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.
 - `GET /shadow-operations?limit=25` — authenticated read-only source comparisons: approved-opening-balance drift, immutable Stripe source events, and past bookings that still lack an outcome.
+- `GET /readiness` — authenticated mirror-readiness evidence: last completed GHL/Stripe passes, communication/consent counts, payment identity exceptions, recovery check, and open alerts.
 
 The root dashboard exchanges an operator bearer credential for a signed, eight-hour HttpOnly browser session. A protected `POST /dashboard-access-link` can mint a one-time five-minute handoff URL backed by an opaque high-entropy code in KV; it never exposes the Worker bearer secret in the browser URL. The root server-renders aggregate counts and source health once the session is present, so the health summary remains visible even in a browser that cannot run the dashboard JavaScript. That session can read only the dashboard's GET endpoints; `POST /sync` continues to require the bearer credential on every request.
 
 Approval actions require a separate signed 15-minute review session, created only with the bearer credential. Candidate acceptance/rejection and package classification record an `operational_events` audit record; neither action creates a ledger entry.
 - `POST /sync` with optional `{ "sources": ["ghl", "stripe"], "limit": 25 }` — bounded manual import. Both provider integrations use `GET` only.
 
-The normal first run is repeated bounded imports until both providers report `status: "succeeded"`, followed by observation and reconciliation of unlinked purchases. No source observation is a session-ledger entry: staff attendance, balance changes, booking writes, and payment-side actions stay disabled until a separately approved cutover.
+The normal first run is repeated bounded imports until both providers report `status: "succeeded"`, followed by observation and reconciliation of unlinked purchases. A provider is only marked complete after a tracked full pass; a record known to the mirror but not seen in that pass is surfaced for review rather than silently deleted. D1 Time Travel is the recovery strategy; a restore remains a destructive, explicitly approved operation. No source observation is a session-ledger entry: staff attendance, balance changes, booking writes, and payment-side actions stay disabled until a separately approved cutover.

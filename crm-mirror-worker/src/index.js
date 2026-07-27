@@ -8,10 +8,12 @@ import {
   decideLedgerCutoverCandidate,
   decideReconciliationCandidate,
   mirrorStatus,
+  mirrorReadiness,
   ledgerCutoverReview,
   reconciliationQueue,
   reconciliationReview,
   reconciliationStatus,
+  refreshMirrorHealth,
   searchContacts,
   shadowOperations,
 } from "./repository.js";
@@ -197,7 +199,7 @@ export default {
         return json(200, { success: true, result });
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/shadow-operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/operations", "/shadow-operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -206,6 +208,9 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB, new Date().toISOString())) });
+      }
+      if (request.method === "GET" && url.pathname === "/readiness") {
+        return json(200, { success: true, worker: "amari-crm-mirror", ...(await mirrorReadiness(env.CRM_DB)) });
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
@@ -282,6 +287,7 @@ export default {
         }
         const { sources, limit } = parseSyncRequest(payload);
         const results = await syncRequestedProviders(env, sources, limit, new Date().toISOString());
+        await refreshMirrorHealth(env.CRM_DB, new Date().toISOString());
         console.log(JSON.stringify({ event: "crm_mirror_sync", sources, limit, results }));
         return json(200, { success: true, sources, limit, results });
       }
