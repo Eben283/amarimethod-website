@@ -7,7 +7,7 @@
    Usage, at the end of <body>:
      <script src="js/site-v6.js" data-nav="method"></script>
    data-nav marks the current nav item: method | firstvisit |
-   sessions | stories | about | partners (omit on the homepage).
+   sessions | stories | about (omit on the homepage).
    ============================================================ */
 (function () {
   var script = document.currentScript;
@@ -20,8 +20,7 @@
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
-    { key: 'about',      label: 'About',       href: '/about' },
-    { key: 'partners',   label: 'Partners',    href: '/partners' }
+    { key: 'about',      label: 'About',       href: '/about' }
   ];
 
   var BOOK_URL = '/#book-assessment';
