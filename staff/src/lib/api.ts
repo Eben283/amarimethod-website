@@ -236,7 +236,7 @@ export async function createStripeCheckout(
 // ── Inactive Staff POS drafts ───────────────────────────────────────────────
 // These endpoints only persist staff-owned draft data. They do not charge,
 // create a Stripe checkout, send a text, or write to GHL.
-export type PosPaymentMethod = 'saved-card' | 'hsa-card' | 'checkout-link' | 'cash' | 'other';
+export type PosPaymentMethod = 'saved-card' | 'manual-card' | 'hsa-card' | 'checkout-link' | 'cash' | 'other';
 
 export interface PosClient {
   id: string;

@@ -21,7 +21,7 @@ export const POS_CATALOG = Object.freeze({
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
 });
 
-export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "hsa-card", "checkout-link", "cash", "other"]);
+export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);
 
 function cleanText(value, max) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";

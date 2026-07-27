@@ -33,6 +33,7 @@ const paymentLabels: Record<PosPaymentMethod, string> = {
   "checkout-link": "Checkout link",
   "hsa-card": "HSA / FSA card",
   "saved-card": "Saved card",
+  "manual-card": "Manual card entry",
   cash: "Cash",
   other: "Other payment",
 };
@@ -76,6 +77,7 @@ export default function PosPage() {
   const [customReason, setCustomReason] = useState("");
   const [customDollars, setCustomDollars] = useState("");
   const [checkoutStep, setCheckoutStep] = useState(false);
+  const [paymentStep, setPaymentStep] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [preview, setPreview] = useState<PosTextPreview | null>(null);
@@ -176,7 +178,17 @@ export default function PosPage() {
       return;
     }
     setNotice("");
+    setPaymentStep(false);
     setCheckoutStep(true);
+  }
+
+  function beginPayment() {
+    if (!client) {
+      setNotice("Select a client to continue.");
+      return;
+    }
+    setNotice("");
+    setPaymentStep(true);
   }
 
   function setPrimaryAllocation(method: PosPaymentMethod) {
@@ -276,12 +288,69 @@ export default function PosPage() {
     </div>
   );
 
+  if (paymentStep) {
+    const selectedMethod = legs.length === 1 ? legs[0].method : null;
+    const chooseMethod = (method: PosPaymentMethod) => setPrimaryAllocation(method);
+
+    return (
+      <main className="pos-shell">
+        <section className="pos-payment-screen">
+          <header className="pos-payment-screen__top">
+            <button type="button" className="pos-back" onClick={() => setPaymentStep(false)}>← Back</button>
+            <strong>Total {money(total)}</strong>
+            <span>{client?.name || "Client"}</span>
+          </header>
+
+          {notice && <div className="pos-notice pos-notice--payment">{notice}</div>}
+
+          <div className="pos-payment-screen__content">
+            <p className="pos-label">Accept payment</p>
+            <h1>Select payment option</h1>
+            <p className="pos-payment-screen__client">For {client?.name || "this client"}</p>
+
+            <div className="pos-payment-options">
+              {([
+                ["saved-card", "Saved card", "Use a card already stored securely with Stripe", "◒"],
+                ["manual-card", "Manual card entry", "Enter a card through Stripe’s secure card form", "▦"],
+                ["checkout-link", "Checkout link", "Send a secure payment link to their phone", "↗"],
+                ["hsa-card", "HSA / FSA card", "Use the exact eligible amount", "＋"],
+                ["cash", "Cash", "Record the exact amount received", "□"],
+              ] as const).map(([method, title, detail, mark]) => (
+                <button key={method} type="button" className={`pos-payment-option ${selectedMethod === method ? "is-active" : ""}`} onClick={() => chooseMethod(method)}>
+                  <span className="pos-payment-option__mark" aria-hidden="true">{mark}</span>
+                  <span><strong>{title}</strong><small>{detail}</small></span>
+                  <b aria-hidden="true">→</b>
+                </button>
+              ))}
+              <button type="button" className={`pos-payment-option pos-payment-option--split ${legs.length > 1 ? "is-active" : ""}`} onClick={addSplitAllocation} disabled={!total || legs.length >= 2}>
+                <span className="pos-payment-option__mark" aria-hidden="true">÷</span>
+                <span><strong>Split payment</strong><small>Use two payment methods for this sale</small></span>
+                <b aria-hidden="true">→</b>
+              </button>
+            </div>
+
+            {selectedMethod && <div className="pos-payment-selected"><span>Selected</span><strong>{paymentLabels[selectedMethod]}</strong><b>{money(total)}</b></div>}
+            {legs.length > 1 && <div className="pos-legs pos-legs--payment"><p>Enter the amount for each payment.</p>{legs.map((leg, index) => <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{Object.entries(paymentLabels).map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))} /></div>)}{allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}<button type="button" className="pos-one-payment" onClick={useOnePayment}>Use one payment instead</button></div>}
+
+            {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
+
+            <div className="pos-payment-screen__actions">
+              <button type="button" className="pos-checkout-bar" onClick={() => void saveDraft()} disabled={busy || !legs.length || allocation !== total}>{busy ? "Saving…" : "Save payment plan"}<span>{money(total)} →</span></button>
+              {sale && legs.some((leg) => leg.method === "checkout-link") && <button type="button" className="pos-preview-link" onClick={() => void prepareText()} disabled={busy}>Preview checkout text</button>}
+              <p>No payment will be taken and no message will be sent.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (checkoutStep) {
     return (
       <main className="pos-shell">
         <div className="pos-checkout-layout">
           <section className="pos-checkout-main">
-            <button type="button" className="pos-back" onClick={() => setCheckoutStep(false)}>← Products</button>
+            <button type="button" className="pos-back" onClick={() => { setPaymentStep(false); setCheckoutStep(false); }}>← Products</button>
             <h1>Checkout</h1>
             {notice && <div className="pos-notice">{notice}</div>}
             <section className="pos-client">
@@ -293,23 +362,12 @@ export default function PosPage() {
               {searching && <p className="pos-searching">Searching clients…</p>}
               {matches.length > 0 && <div className="pos-client-results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>→</b></button>)}</div>}
             </section>
-            <section className="pos-payment">
-              <p className="pos-label">Payment method</p>
-              <div className="pos-methods">
-                {([ ["checkout-link", "Checkout link"], ["hsa-card", "HSA / FSA card"], ["saved-card", "Saved card"], ["cash", "Cash"] ] as const).map(([method, label]) => <button key={method} type="button" onClick={() => setPrimaryAllocation(method)} className={legs.length === 1 && legs[0].method === method ? "is-active" : ""}>{label}</button>)}
-                <button type="button" onClick={addSplitAllocation} disabled={!total || legs.length >= 2}>＋ Two payment methods</button>
-              </div>
-              {legs.length === 1 && <p className="pos-payment-choice">{paymentLabels[legs[0].method]} · {money(total)}</p>}
-              {legs.length > 1 && <div className="pos-legs"><p>Enter the amount for each payment.</p>{legs.map((leg, index) => <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{Object.entries(paymentLabels).map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))} /></div>)}{allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}<button type="button" className="pos-one-payment" onClick={useOnePayment}>Use one payment instead</button></div>}
-            </section>
-            {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
           </section>
           <aside className="pos-cart-pane">
             <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
             {cartLines}
             <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
-            <button type="button" className="pos-checkout-bar" onClick={() => void saveDraft()} disabled={busy || !cart.length}>{busy ? "Saving…" : "Save checkout draft"}<span>{money(total)} →</span></button>
-            {sale && <button type="button" className="pos-preview-link" onClick={() => void prepareText()} disabled={busy}>Preview checkout text</button>}
+            <button type="button" className="pos-checkout-bar" onClick={beginPayment} disabled={!client || !cart.length}>Accept payment<span>{money(total)} →</span></button>
           </aside>
         </div>
       </main>
