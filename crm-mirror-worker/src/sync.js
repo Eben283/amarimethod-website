@@ -15,6 +15,11 @@ function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
 }
 
+// A cron pass remains deliberately bounded. GHL contacts are paginated, so the
+// cursor advances through the full mirror across runs instead of doing one large
+// provider read. This is observation-only: these functions write only CRM_DB.
+export const SCHEDULED_SYNC_LIMIT = 50;
+
 export async function syncGhl(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "ghl");
   const runId = await beginSyncRun(env.CRM_DB, "ghl", cursorBefore, now);
@@ -110,6 +115,24 @@ export async function syncRequestedProviders(env, sources, limit, now) {
   const results = {};
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
+  return results;
+}
+
+export async function runScheduledSync(env, now) {
+  const results = {};
+  for (const [provider, sync] of [["ghl", syncGhl], ["stripe", syncStripe]]) {
+    try {
+      results[provider] = await sync(env, SCHEDULED_SYNC_LIMIT, now);
+    } catch (error) {
+      // Each provider records its own failed sync run. Keep the other source
+      // moving so a transient GHL failure cannot make Stripe stale too.
+      results[provider] = {
+        status: "failed",
+        failureDetail: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+  console.log(JSON.stringify({ event: "crm_mirror_scheduled_sync", limit: SCHEDULED_SYNC_LIMIT, results }));
   return results;
 }
 

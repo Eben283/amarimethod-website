@@ -228,18 +228,49 @@ export async function upsertStripeCharge(db, charge, now) {
   return { purchaseId, linked: Boolean(contactId), hasEmailCandidate };
 }
 
-export async function mirrorStatus(db) {
-  const [contacts, appointments, purchases, lastSync] = await db.batch([
+export const SYNC_STALE_AFTER_MINUTES = 45;
+
+function providerSyncHealth(run, nowMs) {
+  if (!run?.finished_at) return { state: "missing", lastRun: run || null, ageMinutes: null };
+  const finishedMs = Date.parse(run.finished_at);
+  const ageMinutes = Number.isFinite(finishedMs) ? Math.max(0, Math.floor((nowMs - finishedMs) / 60000)) : null;
+  if (run.status === "failed") return { state: "failed", lastRun: run, ageMinutes };
+  if (ageMinutes == null || ageMinutes > SYNC_STALE_AFTER_MINUTES) return { state: "stale", lastRun: run, ageMinutes };
+  // A partial GHL run is normal while a bounded cursor works through contacts.
+  return { state: "healthy", lastRun: run, ageMinutes };
+}
+
+export function syncHealthForRuns(runs, now = new Date().toISOString()) {
+  const nowMs = Date.parse(now);
+  const providers = Object.fromEntries(
+    ["ghl", "stripe"].map((provider) => [provider, providerSyncHealth(runs?.[provider], nowMs)]),
+  );
+  const states = Object.values(providers).map((provider) => provider.state);
+  const overall = states.includes("failed") ? "failed"
+    : states.includes("stale") ? "stale"
+      : states.includes("missing") ? "waiting"
+        : "healthy";
+  return { overall, staleAfterMinutes: SYNC_STALE_AFTER_MINUTES, providers };
+}
+
+export async function mirrorStatus(db, now = new Date().toISOString()) {
+  const [contacts, appointments, purchases, lastSync, latestGhl, latestStripe] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
     db.prepare("SELECT COUNT(*) AS count FROM appointments"),
     db.prepare("SELECT COUNT(*) AS count FROM purchases"),
     db.prepare("SELECT provider, status, finished_at FROM sync_runs ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
   ]);
   return {
     contacts: Number(contacts.results?.[0]?.count || 0),
     appointments: Number(appointments.results?.[0]?.count || 0),
     purchases: Number(purchases.results?.[0]?.count || 0),
     lastSync: lastSync.results?.[0] || null,
+    syncHealth: syncHealthForRuns({
+      ghl: latestGhl.results?.[0] || null,
+      stripe: latestStripe.results?.[0] || null,
+    }, now),
   };
 }
 

@@ -1,6 +1,6 @@
 # Amari CRM mirror worker
 
-This Worker is the read-only import foundation for the internal Amari CRM. It has no cron trigger, no provider write path, and no email/SMS sender. Its only writes are inserts/updates to its own D1 database.
+This Worker is the read-only import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads GHL and Stripe into its own D1 database; it has no provider write path and no email/SMS sender. Its only writes are inserts/updates to its own D1 database.
 
 ## What it mirrors
 
@@ -15,7 +15,9 @@ An email candidate is evidence for staff review, not a purchase link. The import
 
 ## Provisioning and deployment
 
-The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its initial schema migration has been applied. The deployed Worker remains deliberately dormant: it has no scheduler, and every import requires an authenticated `POST /sync`.
+The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its initial schema migration has been applied. The scheduled sweep advances each provider cursor with a bounded read. An authenticated `POST /sync` remains available for an operator-requested import.
+
+`/status` reports separate GHL and Stripe health states, treating a paginated GHL pass as healthy while it advances through the cursor; a source is stale after 45 minutes.
 
 Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, and `GHL_CLIENT_SECRET`. `PORTAL_KV` is the shared read-only GHL token cache.
 

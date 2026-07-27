@@ -1,5 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns } from "./repository.js";
+
+describe("CRM mirror sync health", () => {
+  it("reports independent provider health and accepts an in-progress bounded GHL page", () => {
+    const health = syncHealthForRuns({
+      ghl: { status: "partial", finished_at: "2026-07-27T12:00:00.000Z" },
+      stripe: { status: "succeeded", finished_at: "2026-07-27T11:50:00.000Z" },
+    }, "2026-07-27T12:15:00.000Z");
+    expect(health).toMatchObject({ overall: "healthy" });
+    expect(health.providers.ghl).toMatchObject({ state: "healthy", ageMinutes: 15 });
+    expect(health.providers.stripe).toMatchObject({ state: "healthy", ageMinutes: 25 });
+  });
+
+  it("flags failed and never-run sources instead of hiding them behind the latest run", () => {
+    const health = syncHealthForRuns({
+      ghl: { status: "failed", finished_at: "2026-07-27T12:00:00.000Z" },
+      stripe: null,
+    }, "2026-07-27T13:00:00.000Z");
+    expect(health.overall).toBe("failed");
+    expect(health.providers.ghl.state).toBe("failed");
+    expect(health.providers.stripe.state).toBe("missing");
+  });
+});
 
 describe("CRM mirror active-client operations", () => {
   it("returns imported balance and upcoming-appointment views without creating a ledger", async () => {

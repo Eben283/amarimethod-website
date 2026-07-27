@@ -67,14 +67,14 @@ const DASHBOARD_HTML = `<!doctype html>
     <main>
       <div class="eyebrow">Read-only operator view</div>
       <h1>CRM mirror<br />health</h1>
-      <p class="lede">A focused view of the data copied from GoHighLevel and Stripe. It has no sending, scheduling, or automated ledger-posting capability.</p>
+      <p class="lede">A focused view of the data copied from GoHighLevel and Stripe. It has no client messaging, booking, or automated ledger-posting capability.</p>
       <div class="state" id="state"><span class="dot"></span><span>Waiting for operator access</span></div>
 
       <div class="grid" aria-label="Mirror data counts">
         <article class="card"><span class="label">Contacts</span><strong class="value" id="contacts">—</strong><span class="detail">Copied from GoHighLevel</span></article>
         <article class="card"><span class="label">Appointments</span><strong class="value" id="appointments">—</strong><span class="detail">Calendar records observed in GHL</span></article>
         <article class="card"><span class="label">Purchases</span><strong class="value" id="purchases">—</strong><span class="detail">Settled Stripe charges</span></article>
-        <article class="card"><span class="label">Last import</span><strong class="value" id="last-import">—</strong><span class="detail" id="last-import-detail">No source status loaded</span></article>
+        <article class="card"><span class="label">Sync health</span><strong class="value" id="last-import">—</strong><span class="detail" id="last-import-detail">No source status loaded</span></article>
       </div>
 
       <section class="section">
@@ -189,10 +189,14 @@ const DASHBOARD_HTML = `<!doctype html>
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
           set("posting", reconciliation.automaticLedgerPosting ? "On" : "Off");
-          set("last-import", status.lastSync?.status === "succeeded" ? "Current" : "Review");
-          document.getElementById("last-import-detail").textContent = status.lastSync?.finished_at
-            ? "GHL import " + status.lastSync.status + " · " + new Date(status.lastSync.finished_at).toLocaleString()
-            : "No completed import reported";
+          const syncHealth = status.syncHealth || { overall: "waiting", providers: {} };
+          set("last-import", syncHealth.overall === "healthy" ? "Healthy" : syncHealth.overall === "waiting" ? "Waiting" : "Review");
+          document.getElementById("last-import-detail").textContent = ["ghl", "stripe"].map((provider) => {
+            const source = syncHealth.providers?.[provider];
+            if (!source || source.state === "missing") return provider.toUpperCase() + " has not run";
+            const age = source.ageMinutes == null ? "time unavailable" : source.ageMinutes + "m ago";
+            return provider.toUpperCase() + " " + source.state + " · " + age;
+          }).join(" · ");
           const money = (row) => new Intl.NumberFormat("en-US", { style: "currency", currency: (row.currency || "usd").toUpperCase(), maximumFractionDigits: 0 }).format((row.amount_cents || 0) / 100);
           const scheduleTime = (value) => value ? value.replace(" ", " · ").replace(/:00$/, "") : "No upcoming appointment";
           const reviewer = () => document.getElementById("reviewer-name").value.trim();

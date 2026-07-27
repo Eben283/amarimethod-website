@@ -18,6 +18,9 @@
       "id": "79cff30d0e45419791b0d25cd81961df"
     }
   ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "vars": {
     "GHL_LOCATION_ID": "7pIO7FHVAyBT1jKGhfQM"
   },

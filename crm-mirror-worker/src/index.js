@@ -14,7 +14,7 @@ import {
   reconciliationStatus,
   searchContacts,
 } from "./repository.js";
-import { syncRequestedProviders } from "./sync.js";
+import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe"];
@@ -154,7 +154,7 @@ export default {
         if (denied) return denied;
       }
       if (request.method === "GET" && url.pathname === "/status") {
-        return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB)) });
+        return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB, new Date().toISOString())) });
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
@@ -232,6 +232,10 @@ export default {
       console.error(JSON.stringify({ event: "crm_mirror_error", path: url.pathname, message }));
       return json(500, { error: "CRM mirror request failed" });
     }
+  },
+
+  async scheduled(_controller, env, ctx) {
+    ctx.waitUntil(runScheduledSync(env, new Date().toISOString()));
   },
 };
 
