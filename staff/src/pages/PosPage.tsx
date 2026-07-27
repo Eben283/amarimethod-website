@@ -44,6 +44,8 @@ export default function PosPage() {
   const [customLabel, setCustomLabel] = useState('');
   const [customReason, setCustomReason] = useState('');
   const [customDollars, setCustomDollars] = useState('');
+  const [category, setCategory] = useState<typeof CATALOG[number][3]>('Practice');
+  const [showCustom, setShowCustom] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [preview, setPreview] = useState<PosTextPreview | null>(null);
@@ -139,10 +141,6 @@ export default function PosPage() {
         <span>Build one truthful cart, allocate exact amounts, and keep fulfillment locked until a future verified payment flow exists.</span>
       </section>
 
-      <nav className="pos-steps" aria-label="POS progress">
-        {['Select client', 'Build cart', 'Allocate payment', 'Save / preview'].map((label, index) => <span className={stage >= index + 1 ? 'is-active' : ''} key={label}><b>0{index + 1}</b>{label}</span>)}
-      </nav>
-
       <section className="pos-frame">
         <header className="pos-frame__head"><span><i /> Internal staff workspace</span><div>{[1, 2, 3, 4].map((step) => <b className={stage >= step ? 'is-active' : ''} key={step}>{step}</b>)}</div><span>Inactive · no payments</span></header>
         <div className="pos-canvas">
@@ -157,11 +155,11 @@ export default function PosPage() {
           <section className="pos-workspace">
             <div className="pos-catalog">
               <div className="pos-section-head"><div><p className="pos-label">02 · catalog</p><h2>Build the sale.</h2></div><span>Server-owned prices</span></div>
-              <div className="pos-categories"><button className="is-active" type="button">Practice</button><button type="button">Series</button><button type="button">Upgrades</button><button type="button">Single sessions</button><button type="button" onClick={() => document.getElementById('pos-custom-sale')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>＋ Custom sale</button></div>
+              <div className="pos-categories">{(['Practice', 'Series', 'Upgrades', 'Single sessions'] as const).map((name) => <button className={category === name ? 'is-active' : ''} type="button" onClick={() => setCategory(name)} key={name}>{name}</button>)}<button type="button" onClick={() => setShowCustom((value) => !value)}>＋ {showCustom ? 'Close custom sale' : 'Custom sale'}</button></div>
               <div className="pos-products">
-                {CATALOG.map(([key, label, amount, category]) => <article className={`pos-product ${key === '12-week-practice' ? 'pos-product--featured' : ''}`} key={key}><div className="pos-product__mark">{key === '12-week-practice' ? '12' : category === 'Upgrades' ? '↗' : 'A'}</div><p>{category}</p><h3>{label}</h3><span>{key === '12-week-practice' ? '24 sessions · Living Practice access' : key.includes('upgrade') ? 'Eligibility review before payment' : 'Catalog product'}</span><footer><strong>{money(amount)}</strong><button type="button" onClick={() => addCatalog(key)}>{cart.some((line) => line.productKey === key) ? 'Add another' : 'Add'} <b>→</b></button></footer></article>)}
+                {CATALOG.filter(([, , , group]) => group === category).map(([key, label, amount, group]) => <article className={`pos-product ${key === '12-week-practice' ? 'pos-product--featured' : ''}`} key={key}><div className="pos-product__mark">{key === '12-week-practice' ? '12' : group === 'Upgrades' ? '↗' : 'A'}</div><p>{group}</p><h3>{label}</h3><span>{key === '12-week-practice' ? '24 sessions · Living Practice access' : key.includes('upgrade') ? 'Eligibility review before payment' : 'Catalog product'}</span><footer><strong>{money(amount)}</strong><button type="button" onClick={() => addCatalog(key)}>{cart.some((line) => line.productKey === key) ? 'Add another' : 'Add'} <b>→</b></button></footer></article>)}
               </div>
-              <div className="pos-custom" id="pos-custom-sale"><p className="pos-label">Separate custom sale · no fulfillment</p><div><input value={customLabel} onChange={(event) => setCustomLabel(event.target.value)} placeholder="Custom amount label" /><input value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Category or reason" /><input inputMode="decimal" value={customDollars} onChange={(event) => setCustomDollars(event.target.value)} placeholder="$0.00" /><button type="button" onClick={addCustom}>Add custom line <b>→</b></button></div></div>
+              {showCustom && <div className="pos-custom" id="pos-custom-sale"><p className="pos-label">Separate custom sale · no fulfillment</p><div><input value={customLabel} onChange={(event) => setCustomLabel(event.target.value)} placeholder="Custom amount label" /><input value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Category or reason" /><input inputMode="decimal" value={customDollars} onChange={(event) => setCustomDollars(event.target.value)} placeholder="$0.00" /><button type="button" onClick={addCustom}>Add custom line <b>→</b></button></div></div>}
             </div>
 
             <aside className="pos-sale-card">
@@ -174,12 +172,12 @@ export default function PosPage() {
             </aside>
           </section>
 
-          <section className="pos-payment">
+          {cart.length > 0 && <section className="pos-payment">
             <div className="pos-payment__summary"><p className="pos-label">03 · exact payment allocation</p><h2>Split the exact balance.</h2><span>Each eventual checkout will be limited to its own exact amount.</span><strong>{money(total)}</strong></div>
             <div className="pos-payment__body"><div className="pos-methods">{([['checkout-link', 'Checkout link'], ['hsa-card', 'HSA / FSA card'], ['saved-card', 'Saved card'], ['cash', 'Cash']] as const).map(([method, label]) => <button key={method} type="button" onClick={() => setPrimaryAllocation(method)} className={legs.length === 1 && legs[0].method === method ? 'is-active' : ''}>{label}</button>)}<button type="button" onClick={addSplitAllocation} disabled={!total || legs.length >= 6}>＋ Split payment</button></div>{legs.length > 0 && <div className="pos-legs">{legs.map((leg, index) => <div key={`${leg.method}-${index}`}><span>0{index + 1}</span><select value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{['checkout-link', 'hsa-card', 'saved-card', 'cash', 'other'].map((method) => <option key={method} value={method}>{method.replace('-', ' ')}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, amountCents: Math.max(0, Math.round(Number(event.target.value) * 100) || 0) } : value))} /><button type="button" onClick={() => setLegs((current) => current.filter((_, i) => i !== index))} aria-label={`Remove payment ${index + 1}`}>×</button></div>)}<p className={allocation === total ? 'is-exact' : 'is-warning'}>{allocation === total ? `✓ Allocated exactly: ${money(total)}` : `Allocated ${money(allocation)} · ${money(Math.abs(total - allocation))} ${allocation < total ? 'remaining' : 'over'}`}</p></div>}</div>
-          </section>
+          </section>}
 
-          <section className="pos-actions"><div><p className="pos-label">04 · record safely</p><h2>{sale ? 'Save the new draft state.' : 'Save before any message preview.'}</h2><span>Saving creates no payment, checkout link, text, or GHL change.</span></div><div><button type="button" onClick={() => void saveDraft()} disabled={busy}>{busy ? 'Saving…' : sale ? 'Save changes' : 'Save as draft'} <b>→</b></button><button type="button" onClick={() => void prepareText()} disabled={busy || !sale}>Preview checkout text</button></div></section>
+          {cart.length > 0 && <section className="pos-actions"><div><p className="pos-label">04 · record safely</p><h2>{sale ? 'Save the new draft state.' : 'Save before any message preview.'}</h2><span>Saving creates no payment, checkout link, text, or GHL change.</span></div><div><button type="button" onClick={() => void saveDraft()} disabled={busy}>{busy ? 'Saving…' : sale ? 'Save changes' : 'Save as draft'} <b>→</b></button><button type="button" onClick={() => void prepareText()} disabled={busy || !sale}>Preview checkout text</button></div></section>}
           {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote><span>A future sender must refresh consent and DND, create a secure checkout, and record a final sender audit event.</span></section>}
           {sale && <p className="pos-audit">Saved {new Date(sale.updatedAt).toLocaleString()} · {sale.audit.length} audit events · {sale.id}</p>}
         </div>
