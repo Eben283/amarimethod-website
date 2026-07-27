@@ -13,6 +13,7 @@ import {
   reconciliationReview,
   reconciliationStatus,
   searchContacts,
+  shadowOperations,
 } from "./repository.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
@@ -196,7 +197,7 @@ export default {
         return json(200, { success: true, result });
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
+      if (request.method === "GET" && (["/status", "/operations", "/shadow-operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -212,6 +213,14 @@ export default {
           success: true,
           worker: "amari-crm-mirror",
           ...(await activeClientOperations(env.CRM_DB, limit, new Date().toISOString())),
+        });
+      }
+      if (request.method === "GET" && url.pathname === "/shadow-operations") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await shadowOperations(env.CRM_DB, limit, new Date().toISOString())),
         });
       }
       if (request.method === "GET" && url.pathname === "/ledger-cutover") {

@@ -73,6 +73,28 @@ async function replaceContactFacts(db, contactId, contact, now) {
   await db.batch(statements);
 }
 
+function importedSessionsRemaining(contact) {
+  const value = contact.attributes.find(([key]) => key === GHL_FIELD_IDS.sessionsRemaining)?.[1];
+  if (typeof value !== "string" || !/^\d+$/.test(value.trim())) return null;
+  const sessions = Number(value.trim());
+  return Number.isSafeInteger(sessions) ? sessions : null;
+}
+
+async function recordBalanceSourceObservation(db, contactId, contact, now) {
+  const sessionsRemaining = importedSessionsRemaining(contact);
+  if (sessionsRemaining == null) return;
+  const latest = await db.prepare(
+    `SELECT sessions_remaining FROM balance_source_observations
+     WHERE contact_id = ? ORDER BY datetime(observed_at) DESC, id DESC LIMIT 1`,
+  ).bind(contactId).first();
+  if (Number(latest?.sessions_remaining) === sessionsRemaining) return;
+  await db.prepare(
+    `INSERT INTO balance_source_observations
+     (id, contact_id, source, sessions_remaining, observed_at, source_key)
+     VALUES (?, ?, 'ghl', ?, ?, ?)`,
+  ).bind(id(), contactId, sessionsRemaining, now, `ghl-balance:${contactId}:${now}`).run();
+}
+
 export async function upsertGhlContact(db, contact, now) {
   let contactId = await contactIdForExternalRecord(db, "ghl", "contact", contact.externalId);
   if (contactId) {
@@ -104,6 +126,7 @@ export async function upsertGhlContact(db, contact, now) {
     ]);
   }
   await replaceContactFacts(db, contactId, contact, now);
+  await recordBalanceSourceObservation(db, contactId, contact, now);
   return contactId;
 }
 
@@ -174,7 +197,55 @@ export async function upsertGhlAppointment(db, appointment, contactId, now) {
      ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
        contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
   ).bind(id(), appointment.externalId, contactId, appointmentId, now).run();
+  const latestObservation = await db.prepare(
+    `SELECT provider_calendar_id, status, starts_at, ends_at
+     FROM appointment_source_observations
+     WHERE appointment_id = ? ORDER BY datetime(observed_at) DESC, id DESC LIMIT 1`,
+  ).bind(appointmentId).first();
+  const unchanged = latestObservation
+    && latestObservation.provider_calendar_id === appointment.calendarId
+    && latestObservation.status === appointment.status
+    && latestObservation.starts_at === appointment.startsAt
+    && latestObservation.ends_at === appointment.endsAt;
+  if (!unchanged) {
+    await db.prepare(
+      `INSERT INTO appointment_source_observations
+       (id, appointment_id, contact_id, source, provider_calendar_id, status, starts_at, ends_at, observed_at, source_key)
+       VALUES (?, ?, ?, 'ghl', ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      id(), appointmentId, contactId, appointment.calendarId, appointment.status,
+      appointment.startsAt, appointment.endsAt, now, `ghl-appointment:${appointmentId}:${now}`,
+    ).run();
+  }
   return appointmentId;
+}
+
+async function recordPaymentSourceEvents(db, purchaseId, contactId, charge, now) {
+  // The charge event is idempotently backfilled on the next import after this
+  // migration. Refunds are recorded only as the newly observed cumulative delta.
+  await db.prepare(
+    `INSERT OR IGNORE INTO payment_source_events
+     (id, purchase_id, contact_id, source, event_type, amount_cents, currency, occurred_at, observed_at, source_key)
+     VALUES (?, ?, ?, 'stripe', 'charge', ?, ?, ?, ?, ?)`,
+  ).bind(
+    id(), purchaseId, contactId, charge.amountCents, charge.currency, charge.purchasedAt, now,
+    `stripe-charge:${charge.externalId}`,
+  ).run();
+  const refunds = await db.prepare(
+    `SELECT COALESCE(-SUM(amount_cents), 0) AS refunded_cents
+     FROM payment_source_events WHERE purchase_id = ? AND event_type = 'refund_delta'`,
+  ).bind(purchaseId).first();
+  const alreadyObserved = Number(refunds?.refunded_cents || 0);
+  const refundDelta = charge.amountRefundedCents - alreadyObserved;
+  if (refundDelta <= 0) return;
+  await db.prepare(
+    `INSERT INTO payment_source_events
+     (id, purchase_id, contact_id, source, event_type, amount_cents, currency, occurred_at, observed_at, source_key)
+     VALUES (?, ?, ?, 'stripe', 'refund_delta', ?, ?, ?, ?, ?)`,
+  ).bind(
+    id(), purchaseId, contactId, -refundDelta, charge.currency, charge.purchasedAt, now,
+    `stripe-refund:${charge.externalId}:${charge.amountRefundedCents}`,
+  ).run();
 }
 
 export async function upsertStripeCharge(db, charge, now) {
@@ -216,6 +287,7 @@ export async function upsertStripeCharge(db, charge, now) {
       charge.billingEmail, now, now,
     ).run();
   }
+  await recordPaymentSourceEvents(db, purchaseId, contactId, charge, now);
   await db.prepare(
     `INSERT INTO external_records
      (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
@@ -357,6 +429,125 @@ export async function activeClientOperations(db, limit, now) {
     totalUpcomingAppointments: Number(summary.upcoming_appointments || 0),
     activeClients: activeClients.results || [],
     upcomingAppointments: upcomingAppointments.results || [],
+  };
+}
+
+// This is the pre-cutover staff-operations view. It deliberately exposes
+// source observations and gaps, rather than offering attendance or balance
+// controls. A "showed" appointment is evidence from GHL, not permission to
+// infer a session debit in the shadow ledger.
+export async function shadowOperations(db, limit, now) {
+  const [balanceComparisons, paymentTotals, paymentEvents, pastOutcomeGaps, pastOutcomeTotal, upcomingBookings] = await db.batch([
+    db.prepare(
+      `SELECT candidate.contact_id, contact.display_name, contact.email_normalized,
+              ledger.credits AS shadow_credits,
+              observation.sessions_remaining AS imported_sessions_remaining,
+              observation.observed_at
+       FROM ledger_cutover_candidates candidate
+       JOIN contacts contact ON contact.id = candidate.contact_id
+       LEFT JOIN (
+         SELECT contact_id, SUM(credits) AS credits
+         FROM session_ledger_entries
+         GROUP BY contact_id
+       ) ledger ON ledger.contact_id = candidate.contact_id
+       LEFT JOIN balance_source_observations observation ON observation.id = (
+         SELECT latest.id
+         FROM balance_source_observations latest
+         WHERE latest.contact_id = candidate.contact_id
+         ORDER BY datetime(latest.observed_at) DESC, latest.id DESC
+         LIMIT 1
+       )
+       WHERE candidate.state = 'approved'
+       ORDER BY contact.display_name
+       LIMIT ?`,
+    ).bind(limit),
+    db.prepare(
+      `SELECT
+         COUNT(*) AS event_count,
+         COALESCE(SUM(CASE WHEN event_type = 'charge' THEN amount_cents ELSE 0 END), 0) AS charges_cents,
+         COALESCE(SUM(CASE WHEN event_type = 'refund_delta' THEN -amount_cents ELSE 0 END), 0) AS refunds_cents
+       FROM payment_source_events`,
+    ),
+    db.prepare(
+      `SELECT event.event_type, event.amount_cents, event.currency, event.occurred_at, event.observed_at,
+              purchase.classification, purchase.provider_status,
+              contact.display_name, contact.email_normalized
+       FROM payment_source_events event
+       JOIN purchases purchase ON purchase.id = event.purchase_id
+       LEFT JOIN contacts contact ON contact.id = event.contact_id
+       ORDER BY datetime(event.observed_at) DESC, event.id DESC
+       LIMIT ?`,
+    ).bind(limit),
+    db.prepare(
+      `SELECT appointment.id AS appointment_id, appointment.starts_at, appointment.status,
+              service.name AS service_name, contact.display_name
+       FROM appointments appointment
+       JOIN contacts contact ON contact.id = appointment.contact_id
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.status IN ('booked', 'confirmed')
+         AND appointment.starts_at IS NOT NULL
+         AND datetime(appointment.starts_at) < datetime(?)
+       ORDER BY datetime(appointment.starts_at) DESC, appointment.id DESC
+       LIMIT ?`,
+    ).bind(now, limit),
+    db.prepare(
+      `SELECT COUNT(*) AS count
+       FROM appointments appointment
+       WHERE appointment.status IN ('booked', 'confirmed')
+         AND appointment.starts_at IS NOT NULL
+         AND datetime(appointment.starts_at) < datetime(?)`,
+    ).bind(now),
+    db.prepare(
+      `SELECT appointment.id AS appointment_id, appointment.starts_at, appointment.status,
+              service.name AS service_name, contact.display_name
+       FROM appointments appointment
+       JOIN contacts contact ON contact.id = appointment.contact_id
+       LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.status IN ('booked', 'confirmed')
+         AND appointment.starts_at IS NOT NULL
+         AND datetime(appointment.starts_at) >= datetime(?)
+       ORDER BY datetime(appointment.starts_at), appointment.id
+       LIMIT ?`,
+    ).bind(now, limit),
+  ]);
+  const comparisons = (balanceComparisons.results || []).map((row) => {
+    const shadowCredits = Number(row.shadow_credits || 0);
+    const importedSessionsRemaining = row.imported_sessions_remaining == null
+      ? null
+      : Number(row.imported_sessions_remaining);
+    return {
+      ...row,
+      shadow_credits: shadowCredits,
+      imported_sessions_remaining: importedSessionsRemaining,
+      difference: importedSessionsRemaining == null ? null : importedSessionsRemaining - shadowCredits,
+      state: importedSessionsRemaining == null ? "awaiting_source_observation"
+        : importedSessionsRemaining === shadowCredits ? "in_sync"
+          : "drift_review",
+    };
+  });
+  const totals = paymentTotals.results?.[0] || {};
+  const chargesCents = Number(totals.charges_cents || 0);
+  const refundsCents = Number(totals.refunds_cents || 0);
+  return {
+    shadowOnly: true,
+    automaticLedgerPosting: false,
+    balances: {
+      comparisons,
+      driftCount: comparisons.filter((row) => row.state === "drift_review").length,
+      awaitingObservationCount: comparisons.filter((row) => row.state === "awaiting_source_observation").length,
+    },
+    payments: {
+      sourceEventCount: Number(totals.event_count || 0),
+      chargesCents,
+      refundsCents,
+      netCents: chargesCents - refundsCents,
+      events: paymentEvents.results || [],
+    },
+    bookings: {
+      pastOutcomeGaps: pastOutcomeGaps.results || [],
+      pastOutcomeGapCount: Number(pastOutcomeTotal.results?.[0]?.count || 0),
+      upcoming: upcomingBookings.results || [],
+    },
   };
 }
 

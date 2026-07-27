@@ -111,6 +111,22 @@ const DASHBOARD_HTML = `<!doctype html>
       </section>
 
       <section class="section">
+        <h2>Shadow operations</h2>
+        <p>Three pre-cutover foundations: compare approved opening balances with observed GHL balances, retain an immutable Stripe charge/refund trail, and surface bookings without a recorded outcome. This is observation only—there are no attendance, balance, booking, or payment controls here.</p>
+        <div class="grid">
+          <article class="card"><span class="label">Balance drift</span><strong class="value" id="shadow-balance-drift">—</strong><span class="detail">Observed GHL balance vs. shadow ledger</span></article>
+          <article class="card"><span class="label">Stripe source events</span><strong class="value" id="shadow-payment-events">—</strong><span class="detail">Immutable charges and refund deltas</span></article>
+          <article class="card"><span class="label">Booking outcomes missing</span><strong class="value" id="shadow-outcome-gaps">—</strong><span class="detail">Past booking still marked booked/confirmed</span></article>
+          <article class="card"><span class="label">Ledger posting</span><strong class="value" id="shadow-ledger-posting">Off</strong><span class="detail">No inferred credits or attendance debits</span></article>
+        </div>
+        <div class="review-grid section">
+          <article class="review-shell"><div class="review-core"><h3>Balance comparisons</h3><p>Only the seven approved opening balances are compared. A difference is a review signal, not a correction.</p><ul class="review-list" id="shadow-balance-comparisons"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Booking outcome gaps</h3><p>GHL has not yet reported attended, cancelled, or no-show. No session debit is inferred.</p><ul class="review-list" id="shadow-outcome-list"></ul></div></article>
+          <article class="review-shell"><div class="review-core"><h3>Recent source money events</h3><p>Stripe facts only. They do not create package credits in the shadow ledger.</p><ul class="review-list" id="shadow-payment-list"></ul></div></article>
+        </div>
+      </section>
+
+      <section class="section">
         <h2>Purchase records</h2>
         <p>Stripe purchases are imported as records. Session-ledger posting is deliberately off during the mirror phase, so this is not a work queue.</p>
         <div class="grid">
@@ -161,17 +177,19 @@ const DASHBOARD_HTML = `<!doctype html>
           if (token || reviewToken) {
             history.replaceState(null, "", location.pathname + location.search);
           }
-          const [statusResponse, operationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
+          const [statusResponse, operationsResponse, shadowOperationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
             fetch("/operations?limit=25", { credentials: "same-origin" }),
+            fetch("/shadow-operations?limit=25", { credentials: "same-origin" }),
             fetch("/ledger-cutover?limit=25", { credentials: "same-origin" }),
             fetch("/reconciliation", { credentials: "same-origin" }),
             fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
             fetch("/review-session", { credentials: "same-origin" }),
           ]);
-          if (!statusResponse.ok || !operationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !operationsResponse.ok || !shadowOperationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
           const operations = await operationsResponse.json();
+          const shadowOperations = await shadowOperationsResponse.json();
           const cutover = await cutoverResponse.json();
           const reconciliation = await reconciliationResponse.json();
           const review = await reviewResponse.json();
@@ -189,6 +207,10 @@ const DASHBOARD_HTML = `<!doctype html>
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
           set("posting", reconciliation.automaticLedgerPosting ? "On" : "Off");
+          set("shadow-balance-drift", shadowOperations.balances.driftCount);
+          set("shadow-payment-events", shadowOperations.payments.sourceEventCount);
+          set("shadow-outcome-gaps", shadowOperations.bookings.pastOutcomeGapCount);
+          set("shadow-ledger-posting", shadowOperations.automaticLedgerPosting ? "On" : "Off");
           const syncHealth = status.syncHealth || { overall: "waiting", providers: {} };
           set("last-import", syncHealth.overall === "healthy" ? "Healthy" : syncHealth.overall === "waiting" ? "Waiting" : "Review");
           document.getElementById("last-import-detail").textContent = ["ghl", "stripe"].map((provider) => {
@@ -344,6 +366,13 @@ const DASHBOARD_HTML = `<!doctype html>
           });
           render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
           render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
+          render("shadow-balance-comparisons", shadowOperations.balances.comparisons, (row) => row.display_name || "Unnamed client", (row) => {
+            if (row.state === "awaiting_source_observation") return row.shadow_credits + " shadow sessions · awaiting first GHL observation";
+            if (row.state === "in_sync") return row.imported_sessions_remaining + " GHL sessions · matches shadow balance";
+            return row.imported_sessions_remaining + " GHL sessions vs " + row.shadow_credits + " shadow · " + Math.abs(row.difference) + " session difference";
+          });
+          render("shadow-outcome-list", shadowOperations.bookings.pastOutcomeGaps, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · still " + row.status);
+          render("shadow-payment-list", shadowOperations.payments.events, (row) => (row.display_name || "Identity unresolved") + " · " + row.event_type.replaceAll("_", " "), (row) => money(row) + " · " + row.classification + " · observed " + scheduleTime(row.observed_at));
           render("ledger-cutover-candidates", cutover.candidates, (row) => row.display_name || row.email_normalized || "Unnamed client", (row) => row.proposed_credits + " proposed opening sessions · " + row.state.replaceAll("_", " "), (item, row) => {
             if (row.state !== "pending_review") return;
             const actions = document.createElement("div");

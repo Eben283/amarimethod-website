@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, shadowOperations, syncHealthForRuns, upsertStripeCharge } from "./repository.js";
 
 describe("CRM mirror sync health", () => {
   it("reports independent provider health and accepts an in-progress bounded GHL page", () => {
@@ -41,6 +41,49 @@ describe("CRM mirror active-client operations", () => {
       totalUpcomingAppointments: 1,
       activeClients: [{ contact_id: "c_1", sessions_remaining: "3", series_type: "8-session" }],
       upcomingAppointments: [{ appointment_id: "a_1", status: "confirmed" }],
+    });
+  });
+});
+
+describe("CRM mirror shadow operations", () => {
+  it("compares source balances and preserves payments and bookings as observation only", async () => {
+    const db = {
+      prepare: () => ({ bind: () => ({}) }),
+      batch: async () => [
+        { results: [
+          { contact_id: "contact_1", display_name: "Albert", shadow_credits: 4, imported_sessions_remaining: 4 },
+          { contact_id: "contact_2", display_name: "Betsy", shadow_credits: 4, imported_sessions_remaining: 3 },
+        ] },
+        { results: [{ event_count: 3, charges_cents: 129500, refunds_cents: 20000 }] },
+        { results: [{ event_type: "charge", amount_cents: 129500, classification: "8-Session Series" }] },
+        { results: [{ appointment_id: "appointment_1", status: "confirmed" }] },
+        { results: [{ count: 1 }] },
+        { results: [{ appointment_id: "appointment_2", status: "booked" }] },
+      ],
+    };
+    await expect(shadowOperations(db, 25, "2026-07-27T00:00:00.000Z")).resolves.toEqual({
+      shadowOnly: true,
+      automaticLedgerPosting: false,
+      balances: {
+        comparisons: [
+          { contact_id: "contact_1", display_name: "Albert", shadow_credits: 4, imported_sessions_remaining: 4, difference: 0, state: "in_sync" },
+          { contact_id: "contact_2", display_name: "Betsy", shadow_credits: 4, imported_sessions_remaining: 3, difference: -1, state: "drift_review" },
+        ],
+        driftCount: 1,
+        awaitingObservationCount: 0,
+      },
+      payments: {
+        sourceEventCount: 3,
+        chargesCents: 129500,
+        refundsCents: 20000,
+        netCents: 109500,
+        events: [{ event_type: "charge", amount_cents: 129500, classification: "8-Session Series" }],
+      },
+      bookings: {
+        pastOutcomeGaps: [{ appointment_id: "appointment_1", status: "confirmed" }],
+        pastOutcomeGapCount: 1,
+        upcoming: [{ appointment_id: "appointment_2", status: "booked" }],
+      },
     });
   });
 });
