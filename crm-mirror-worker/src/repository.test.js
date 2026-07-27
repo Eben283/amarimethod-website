@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertStripeCharge } from "./repository.js";
 
 describe("CRM mirror sync health", () => {
   it("reports independent provider health and accepts an in-progress bounded GHL page", () => {
@@ -66,6 +66,29 @@ describe("CRM mirror historical package classification", () => {
       packageId: null,
     });
     expect(writes).toHaveLength(2);
+  });
+
+  it("does not let a later Stripe import erase a reviewed legacy classification", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({
+          first: async () => sql.startsWith("SELECT id, contact_id")
+            ? { id: "purchase_1", contact_id: "contact_1", package_id: null, classification: "Legacy package — pre-current pricing", classification_review_state: "confirmed" }
+            : null,
+          all: async () => ({ results: [] }),
+          run: async () => { writes.push({ sql, values }); },
+        }),
+      }),
+    };
+    await upsertStripeCharge(db, {
+      externalId: "charge_1", contactExternalId: null, packageId: null, customerExternalId: null,
+      providerStatus: "succeeded", amountCents: 20000, amountRefundedCents: 0, currency: "usd",
+      purchasedAt: "2026-07-27T00:00:00.000Z", classification: "unclassified", billingEmail: null,
+    }, "2026-07-27T00:00:00.000Z");
+    const purchaseUpdate = writes.find((write) => write.sql.startsWith("UPDATE purchases"));
+    expect(purchaseUpdate.values[1]).toBe(null);
+    expect(purchaseUpdate.values[8]).toBe("Legacy package — pre-current pricing");
   });
 });
 

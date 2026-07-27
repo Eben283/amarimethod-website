@@ -182,12 +182,18 @@ export async function upsertStripeCharge(db, charge, now) {
     ? await findContactIdByGhlId(db, charge.contactExternalId)
     : null;
   const existing = await db.prepare(
-    "SELECT id, contact_id FROM purchases WHERE provider_charge_id = ?",
+    "SELECT id, contact_id, package_id, classification, classification_review_state FROM purchases WHERE provider_charge_id = ?",
   ).bind(charge.externalId).first();
   // A direct GHL metadata stamp is authoritative. In every other case retain an
   // existing human-accepted link; importing a charge must not erase it.
   const contactId = sourceContactId || existing?.contact_id || null;
   const purchaseId = existing?.id || id();
+  // A human classification is durable mirror data. Provider normalization can
+  // improve an unreviewed row, but it must never turn a reviewed legacy record
+  // back into "unclassified" on the next Stripe sweep.
+  const keepReviewedClassification = Boolean(existing && existing.classification_review_state !== "pending_review");
+  const packageId = keepReviewedClassification ? existing.package_id : charge.packageId;
+  const classification = keepReviewedClassification ? existing.classification : charge.classification;
   if (existing) {
     await db.prepare(
       `UPDATE purchases
@@ -195,8 +201,8 @@ export async function upsertStripeCharge(db, charge, now) {
            amount_refunded_cents = ?, currency = ?, purchased_at = ?, classification = ?, billing_email_normalized = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(
-      contactId, charge.packageId, charge.customerExternalId, charge.providerStatus, charge.amountCents,
-      charge.amountRefundedCents, charge.currency, charge.purchasedAt, charge.classification, charge.billingEmail, now, purchaseId,
+      contactId, packageId, charge.customerExternalId, charge.providerStatus, charge.amountCents,
+      charge.amountRefundedCents, charge.currency, charge.purchasedAt, classification, charge.billingEmail, now, purchaseId,
     ).run();
   } else {
     await db.prepare(
@@ -205,8 +211,8 @@ export async function upsertStripeCharge(db, charge, now) {
         amount_refunded_cents, currency, purchased_at, classification, billing_email_normalized, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
-      purchaseId, contactId, charge.packageId, charge.externalId, charge.customerExternalId, charge.providerStatus,
-      charge.amountCents, charge.amountRefundedCents, charge.currency, charge.purchasedAt, charge.classification,
+      purchaseId, contactId, packageId, charge.externalId, charge.customerExternalId, charge.providerStatus,
+      charge.amountCents, charge.amountRefundedCents, charge.currency, charge.purchasedAt, classification,
       charge.billingEmail, now, now,
     ).run();
   }
@@ -478,7 +484,7 @@ export async function reconciliationStatus(db) {
        SUM(CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS contact_linked,
        SUM(CASE WHEN contact_id IS NULL THEN 1 ELSE 0 END) AS contact_unlinked,
        SUM(CASE WHEN ledger_import_state = 'pending_reconciliation' THEN 1 ELSE 0 END) AS pending_ledger_review,
-       SUM(CASE WHEN classification = 'unclassified' THEN 1 ELSE 0 END) AS unclassified
+       SUM(CASE WHEN classification = 'unclassified' AND classification_review_state = 'pending_review' THEN 1 ELSE 0 END) AS unclassified
      FROM purchases`,
     ),
     db.prepare(
@@ -573,6 +579,7 @@ export async function reconciliationReview(db, limit) {
          ON candidate.purchase_id = purchase.id AND candidate.state = 'pending_review'
        LEFT JOIN contacts contact ON contact.id = COALESCE(purchase.contact_id, candidate.contact_id)
        WHERE purchase.classification = 'unclassified'
+         AND purchase.classification_review_state = 'pending_review'
        ORDER BY purchase.purchased_at DESC
        LIMIT ?`,
     ).bind(limit),
