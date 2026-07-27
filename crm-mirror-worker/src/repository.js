@@ -402,7 +402,7 @@ export async function contactProfile(db, contactId, limit, now) {
 }
 
 export async function ledgerCutoverReview(db, limit) {
-  const [candidates, summary] = await db.batch([
+  const [candidates, summary, shadowLedger] = await db.batch([
     db.prepare(
       `SELECT candidate.id AS candidate_id, candidate.proposed_credits, candidate.source_updated_at,
               candidate.state, candidate.reviewed_at, candidate.reviewed_by,
@@ -420,14 +420,19 @@ export async function ledgerCutoverReview(db, limit) {
          SUM(CASE WHEN state = 'rejected' THEN 1 ELSE 0 END) AS rejected
        FROM ledger_cutover_candidates`,
     ),
+    db.prepare(
+      "SELECT COUNT(*) AS opening_entries FROM session_ledger_entries WHERE entry_type = 'cutover_opening_balance'",
+    ),
   ]);
   const totals = summary.results?.[0] || {};
+  const ledger = shadowLedger.results?.[0] || {};
   return {
     candidates: candidates.results || [],
     pending: Number(totals.pending || 0),
     approved: Number(totals.approved || 0),
     rejected: Number(totals.rejected || 0),
-    ledgerActivated: false,
+    shadowOnly: true,
+    shadowOpeningEntries: Number(ledger.opening_entries || 0),
   };
 }
 

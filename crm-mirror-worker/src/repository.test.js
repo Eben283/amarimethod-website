@@ -86,6 +86,7 @@ describe("CRM mirror ledger cutover review", () => {
       batch: async () => [
         { results: [{ candidate_id: "cutover_1", proposed_credits: 3 }] },
         { results: [{ pending: 1, approved: 0, rejected: 0 }] },
+        { results: [{ opening_entries: 0 }] },
       ],
     };
     await expect(ledgerCutoverReview(db, 25)).resolves.toEqual({
@@ -93,7 +94,8 @@ describe("CRM mirror ledger cutover review", () => {
       pending: 1,
       approved: 0,
       rejected: 0,
-      ledgerActivated: false,
+      shadowOnly: true,
+      shadowOpeningEntries: 0,
     });
   });
 

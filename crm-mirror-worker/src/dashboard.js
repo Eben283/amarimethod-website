@@ -96,7 +96,7 @@ const DASHBOARD_HTML = `<!doctype html>
         <div class="grid">
           <article class="card"><span class="label">Pending proposals</span><strong class="value" id="cutover-pending">—</strong><span class="detail">Active clients awaiting opening-balance review</span></article>
           <article class="card"><span class="label">Approved proposals</span><strong class="value" id="cutover-approved">—</strong><span class="detail">Decision recorded; ledger still off</span></article>
-          <article class="card"><span class="label">Ledger activation</span><strong class="value" id="cutover-ledger">Off</strong><span class="detail">No opening entries or session credits exist yet</span></article>
+          <article class="card"><span class="label">Shadow ledger entries</span><strong class="value" id="cutover-ledger">—</strong><span class="detail">Monitoring only; GHL remains production</span></article>
         </div>
         <article class="review-shell section"><div class="review-core"><h3>Proposed opening balances</h3><p>Approve only after the imported current balance is correct. A separate elevated review session is required; neither outcome writes the ledger.</p><ul class="review-list" id="ledger-cutover-candidates"></ul></div></article>
       </section>
@@ -184,7 +184,7 @@ const DASHBOARD_HTML = `<!doctype html>
           set("upcoming-appointments", operations.totalUpcomingAppointments);
           set("cutover-pending", cutover.pending);
           set("cutover-approved", cutover.approved);
-          set("cutover-ledger", cutover.ledgerActivated ? "On" : "Off");
+          set("cutover-ledger", cutover.shadowOpeningEntries);
           set("pending-review", reconciliation.pendingLedgerReview);
           set("candidates", reconciliation.pendingCandidates);
           set("unclassified", reconciliation.unclassified);
