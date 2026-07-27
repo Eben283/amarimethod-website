@@ -36,21 +36,23 @@
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
 
 # === Booking redirects ===
-# Phase 1 cutover (commit-after this one): initial-in-person + initial-
-# virtual now route to the native booking flow at /book/<variant>. The
-# native flow uses GHL payment links for payment so cards still save to
-# the GHL contact's native Payment Methods panel.
-/book-initial-in-person /book/initial-in-person 301
-/book-initial-virtual /book/initial-virtual 301
-/book-discovery-call /book/discovery-call 301
-# Discovery call now uses the native flow at /book/discovery-call (free
-# booking — appointment created directly via GHL Calendar API, no Stripe).
+# Assessment-first booking path. Public acquisition routes land on the one
+# paid Assessment calendar; existing clients continue to book follow-ups in
+# the portal.
+/book-initial-in-person /booking 301
+/book/initial-in-person /booking 301
+/book-initial-virtual /booking 301
+/book/initial-virtual /booking 301
+/book-discovery-call /booking 301
+/book/discovery-call /booking 301
+/first-visit /booking 301
+/in-person-sessions /booking 301
+/virtual-sessions /booking 301
 # Follow-ups are pre-purchased via 4/8-session packages, so legacy
 # /book-follow-up URLs land at the portal where series clients book their
 # pre-paid sessions via the in-portal BookingModal (no separate $190 path).
 /book-follow-up /portal/ 301
 /book-follow-up-virtual /portal/ 301
-/book-discovery-call /book/discovery-call 301
 
 # === SEO 301s — old URLs Google still indexes (recover crawl signals) ===
 # Old blog post structure: /blog/<long-slug> → topic match where possible, else /blog

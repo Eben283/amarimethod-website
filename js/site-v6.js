@@ -19,14 +19,13 @@
   var NAV_ITEMS = [
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
-    { key: 'sessions',   label: 'Pricing',     href: '/booking' },
+    { key: 'sessions',   label: 'Start Here',  href: '/booking' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
     { key: 'about',      label: 'About',       href: '/about' },
     { key: 'partners',   label: 'Partners',    href: '/partners' }
   ];
 
   var BOOK_URL = '/booking';
-  var CALL_URL = '/book/discovery-call';
 
   /* Search index: every public page. Titles (t) are shown in results.
      Optional aliases (a) catch what visitors actually type — portal,
@@ -35,14 +34,11 @@
     { t: 'Home', u: '/' },
     { t: 'Our Method: How It Works', u: '/how-it-works', a: ['method', 'how it works', 'what is amari'] },
     { t: 'Your First Visit', u: '/first-visit', a: ['first session', 'what to expect', 'new client'] },
-    { t: 'Sessions & Pricing', u: '/booking', a: ['buy', 'buying', 'purchase', 'pricing', 'price', 'cost', 'packages', 'pay', 'payment', 'book', 'booking', 'rates'] },
+    { t: 'Amari Assessment', u: '/booking', a: ['assessment', 'consultation', 'consult', 'book', 'booking', 'appointment', 'price', 'cost', 'payment'] },
     { t: 'Client Portal', u: '/portal/', a: ['portal', 'client portal', 'login', 'log in', 'sign in', 'account', 'my account', 'dashboard'] },
     { t: 'FAQ', u: '/faq', a: ['insurance', 'hsa', 'fsa', 'receipt', 'receipts', 'superbill', 'billing', 'reimbursement', 'affirm', 'payment plan', 'questions'] },
     { t: 'Client Stories', u: '/stories', a: ['testimonials', 'reviews', 'results'] },
     { t: 'About Garrett', u: '/about', a: ['garrett', 'practitioner', 'who'] },
-    { t: 'Book a Session', u: '/book/initial-in-person', a: ['schedule', 'appointment'] },
-    { t: 'Book a Virtual Session', u: '/book/initial-virtual', a: ['online', 'zoom', 'remote'] },
-    { t: 'Free 15-Minute Call', u: '/book/discovery-call', a: ['discovery call', 'consult', 'consultation', 'free call'] },
     { t: 'Conditions We Work With', u: '/conditions', a: ['conditions', 'pain', 'issues'] },
     { t: 'Lower Back Pain', u: '/lower-back-pain-san-francisco' },
     { t: 'Neck Pain', u: '/neck-pain-san-francisco' },
@@ -91,19 +87,19 @@
     return '' +
       '<header class="site on-dark" id="hdr">\n' +
       '  <div class="hdr-row">\n' +
-      '    <div class="hdr-utility"><a href="/blog">Journal</a><a href="' + CALL_URL + '">Free 15-min call</a><a href="/portal/">Client Portal</a></div>\n' +
+      '    <div class="hdr-utility"><a href="/blog">Journal</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a></div>\n' +
       '    <a href="/" class="brand-slot"><span class="wordmark">AMARI</span><img class="logomark" src="' + LOGOMARK + '" alt="Amari"></a>\n' +
       '    <div class="hdr-right">\n' +
       '      <button class="hdr-search" type="button" aria-label="Search the site">' +
       '<svg class="hdr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="15.5" y1="15.5" x2="21" y2="21"/></svg></button>\n' +
-      '      <a href="' + BOOK_URL + '" class="btn hdr-book">Book Now</a>\n' +
+      '      <a href="' + BOOK_URL + '" class="btn hdr-book">Book Assessment</a>\n' +
       '      <button class="hdr-menu" type="button" aria-label="Menu" aria-expanded="false"><span></span><span></span></button>\n' +
       '    </div>\n' +
       '  </div>\n' +
       '  <nav class="nav-row">\n    ' + navLinks() + '\n  </nav>\n' +
       '  <nav class="mobile-nav" id="mobilenav">\n    ' + navLinks() +
-      '\n    <a href="/blog">Journal</a><a href="' + CALL_URL + '">Free 15-min call</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a>' +
-      '<a href="' + BOOK_URL + '" class="btn">Book Now</a>\n  </nav>\n' +
+      '\n    <a href="/blog">Journal</a><a href="/contact">Contact</a><a href="/portal/">Client Portal</a>' +
+      '<a href="' + BOOK_URL + '" class="btn">Book Assessment</a>\n  </nav>\n' +
       '</header>';
   }
 
@@ -129,8 +125,7 @@
       '      <div class="foot-col foot-locs">\n' +
       '        <h3>Amari</h3>\n' +
       '        <a href="/contact">Contact</a>\n' +
-      '        <a href="' + BOOK_URL + '">Book a session</a>\n' +
-      '        <a href="' + CALL_URL + '">Free 15-minute call</a>\n' +
+      '        <a href="' + BOOK_URL + '">Book a $29 Assessment</a>\n' +
       '        <a href="/portal/">Client portal</a>\n' +
       '        <a href="/partners">Partners</a>\n' +
       '      </div>\n' +
