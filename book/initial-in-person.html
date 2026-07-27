@@ -349,11 +349,14 @@
     (function () {
       var isEmbedded = new URLSearchParams(window.location.search).get('embed') === '1';
       if (isEmbedded) document.documentElement.classList.add('booking-embed');
-      var siteShell = document.createElement('script');
-      siteShell.src = '/js/site-v6.js?v=18';
-      siteShell.setAttribute('data-nav', '');
-      if (isEmbedded) siteShell.setAttribute('data-no-shell', '');
-      document.body.appendChild(siteShell);
+      // The embedded Assessment already sits inside the homepage shell. Loading
+      // site-v6 again here could create a second booking modal inside the iframe.
+      if (!isEmbedded) {
+        var siteShell = document.createElement('script');
+        siteShell.src = '/js/site-v6.js?v=24';
+        siteShell.setAttribute('data-nav', '');
+        document.body.appendChild(siteShell);
+      }
     })();
   </script>
 

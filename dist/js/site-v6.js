@@ -407,7 +407,9 @@
     if (!noShell) {
       initSearch();
       initMobileMenu();
-      initAssessmentBooking();
+      // The booking page is embedded inside this modal. Never let an iframe
+      // create another copy of the modal inside itself.
+      if (window.top === window) initAssessmentBooking();
     }
     initAnalytics();
   }
