@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
+import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -32,5 +32,33 @@ describe("CRM mirror request validation", () => {
 
   it("does not make approval actions a sync source", () => {
     expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain ghl and/or stripe");
+  });
+});
+
+describe("CRM mirror dashboard access handoff", () => {
+  it("exchanges an opaque one-time link for an HttpOnly dashboard session without exposing the bearer secret", async () => {
+    const values = new Map();
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+    };
+    const minted = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(minted.status).toBe(200);
+    const body = await minted.json();
+    expect(body.url).toContain("/dashboard-access/");
+    expect(body.url).not.toContain("test-secret");
+    const handoff = await worker.fetch(new Request(body.url), env);
+    expect(handoff.status).toBe(302);
+    expect(handoff.headers.get("Location")).toBe("/");
+    expect(handoff.headers.get("Set-Cookie")).toContain("HttpOnly");
+    const replay = await worker.fetch(new Request(body.url), env);
+    expect(replay.status).toBe(200);
+    expect(await replay.text()).toContain("expired");
   });
 });

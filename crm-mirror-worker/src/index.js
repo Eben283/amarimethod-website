@@ -1,6 +1,6 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
-import { dashboardAccessLinkToken, dashboardSessionCookie, hasDashboardAccessLink, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import {
   activeClientOperations,
   classifyPurchase,
@@ -18,6 +18,13 @@ import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe"];
+const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+const DASHBOARD_ACCESS_WORDS = Object.freeze([
+  "aloe", "amber", "apricot", "arc", "ash", "bay", "birch", "bloom", "brook", "cedar", "clay", "cove", "dawn", "dune", "elm", "fern",
+  "field", "flint", "glen", "gold", "grove", "harbor", "hazel", "iris", "jade", "lark", "laurel", "leaf", "lilac", "moss", "ocean", "olive",
+  "orchid", "pearl", "pine", "plum", "quartz", "reed", "river", "rose", "sage", "sand", "shore", "sienna", "sky", "slate", "sol", "spruce",
+  "stone", "teal", "thistle", "timber", "vale", "violet", "wave", "willow", "wind", "wren", "yarrow", "zinc", "zen", "zest", "zephyr",
+]);
 
 function json(status, body, headers = {}) {
   return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...headers } });
@@ -31,6 +38,17 @@ function html(body) {
       "X-Content-Type-Options": "nosniff",
     },
   });
+}
+
+function dashboardAccessCode() {
+  const values = new Uint32Array(5);
+  crypto.getRandomValues(values);
+  const words = Array.from(values.slice(0, 4), (value) => DASHBOARD_ACCESS_WORDS[value % DASHBOARD_ACCESS_WORDS.length]);
+  return `${words.join("-")}-${String(values[4] % 10_000).padStart(4, "0")}`;
+}
+
+function dashboardAccessKey(code) {
+  return `crm-dashboard-access:${code}`;
 }
 
 function parseSyncRequest(payload) {
@@ -84,8 +102,11 @@ export default {
     // and the fragment-held access token is stripped from browser history.
     const dashboardAccess = url.pathname.match(/^\/dashboard-access\/([^/]+)$/);
     if (request.method === "GET" && dashboardAccess) {
-      const valid = await hasDashboardAccessLink(decodeURIComponent(dashboardAccess[1]), env);
+      const code = decodeURIComponent(dashboardAccess[1]);
+      const accessKey = dashboardAccessKey(code);
+      const valid = await env.PORTAL_KV.get(accessKey);
       if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
+      await env.PORTAL_KV.delete(accessKey);
       return new Response(null, {
         status: 302,
         headers: {
@@ -112,12 +133,12 @@ export default {
       if (request.method === "POST" && url.pathname === "/dashboard-access-link") {
         const denied = requireWorkerAuth(request, env);
         if (denied) return denied;
-        const token = await dashboardAccessLinkToken(env);
-        if (!token) return json(503, { error: "dashboard access is not configured" });
+        const code = dashboardAccessCode();
+        await env.PORTAL_KV.put(dashboardAccessKey(code), "1", { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS });
         return json(200, {
           success: true,
-          expiresInSeconds: 5 * 60,
-          url: `${url.origin}/dashboard-access/${token}`,
+          expiresInSeconds: DASHBOARD_ACCESS_TTL_SECONDS,
+          url: `${url.origin}/dashboard-access/${code}`,
         }, { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" });
       }
       if (request.method === "POST" && url.pathname === "/review-session") {
