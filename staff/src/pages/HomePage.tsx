@@ -1,4 +1,4 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -21,6 +21,7 @@ const TOOLS: HomeTool[] = [
   { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
   { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
   { label: 'Revenue', detail: 'Stripe sales', Icon: CircleDollarSign, to: '/revenue', tone: 'ink' },
+  { label: 'Staff POS', detail: 'Draft checkout', Icon: ShoppingBag, to: '/pos', tone: 'ink' },
   { label: 'Funnel', detail: 'Lead flow', Icon: TrendingUp, to: '/funnel', tone: 'ochre' },
   { label: 'Pipeline', detail: 'Care flow', Icon: Kanban, to: '/pipeline', tone: 'lake' },
   { label: 'Write', detail: 'Drafts', Icon: PenLine, to: '/write', tone: 'coral' },

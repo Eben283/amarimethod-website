@@ -212,6 +212,87 @@ export async function sendPayLink(
   });
 }
 
+export interface StripeSavedCard {
+  brand: string;
+  last4: string;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
+export async function getStripeSavedCards(contactId: string): Promise<{ available: boolean; cards: StripeSavedCard[] }> {
+  return fetchApi(`/staff-stripe-cards?contactId=${encodeURIComponent(contactId)}`);
+}
+
+export async function createStripeCheckout(
+  contactId: string,
+  offer: PayLinkProduct,
+): Promise<{ checkout: { id: string; url: string; expiresAt: number | null } }> {
+  return fetchApi('/staff-create-stripe-checkout', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, offer }),
+  });
+}
+
+// ── Inactive Staff POS drafts ───────────────────────────────────────────────
+// These endpoints only persist staff-owned draft data. They do not charge,
+// create a Stripe checkout, send a text, or write to GHL.
+export type PosPaymentMethod = 'saved-card' | 'hsa-card' | 'checkout-link' | 'cash' | 'other';
+
+export interface PosClient {
+  id: string;
+  name: string;
+  phone: string | null;
+}
+
+export interface PosDraftLineInput {
+  productKey?: string;
+  quantity?: number;
+  customLabel?: string;
+  customReason?: string;
+  customAmountCents?: number;
+}
+
+export interface PosPaymentLegInput {
+  method: PosPaymentMethod;
+  amountCents: number;
+}
+
+export interface PosSale {
+  id: string;
+  status: 'draft';
+  version: number;
+  client: PosClient;
+  cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number }>;
+  totalCents: number;
+  paymentLegs: Array<{ id: string; method: PosPaymentMethod; amountCents: number; status: 'planned' }>;
+  createdAt: string;
+  updatedAt: string;
+  audit: Array<{ at: string; actor: string; action: string; detail: string }>;
+}
+
+export interface PosTextPreview {
+  recipient: string;
+  amountCents: number;
+  message: string;
+  sendingEnabled: false;
+}
+
+export async function getPosSale(id: string): Promise<{ sale: PosSale }> {
+  return fetchApi(`/staff-pos-sales?id=${encodeURIComponent(id)}`);
+}
+
+export async function createPosSale(input: { client: PosClient; cart: PosDraftLineInput[]; paymentLegs: PosPaymentLegInput[] }): Promise<{ sale: PosSale }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'create', ...input }) });
+}
+
+export async function savePosSale(input: { id: string; version: number; client: PosClient; cart: PosDraftLineInput[]; paymentLegs: PosPaymentLegInput[] }): Promise<{ sale: PosSale }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'save', ...input }) });
+}
+
+export async function previewPosCheckoutText(id: string): Promise<{ sale: PosSale; preview: PosTextPreview }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'preview-checkout-text', id }) });
+}
+
 // ── Garrett's Day tasks (Schedule tab directive list) ───────────────────────
 export interface StaffTask {
   id: string;
