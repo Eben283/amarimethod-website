@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
+  ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send, CreditCard, Copy, Link2,
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, getStripeSavedCards, createStripeCheckout, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus, type StripeSavedCard } from '../lib/api';
 import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
@@ -110,6 +110,11 @@ export default function ClientDetailPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
   const [showMorePayLinks, setShowMorePayLinks] = useState(false);
+  const [stripeAvailable, setStripeAvailable] = useState(false);
+  const [stripeCards, setStripeCards] = useState<StripeSavedCard[]>([]);
+  const [stripeOpen, setStripeOpen] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState<Record<string, 'idle' | 'creating' | 'error'>>({});
+  const [stripeLink, setStripeLink] = useState<string | null>(null);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,6 +214,27 @@ export default function ClientDetailPage() {
     }
   }
 
+  async function handleCreateStripeCheckout(product: PayLinkProduct) {
+    if (!client || stripeStatus[product] === 'creating') return;
+    setStripeStatus((s) => ({ ...s, [product]: 'creating' }));
+    try {
+      const result = await createStripeCheckout(client.id, product);
+      setStripeLink(result.checkout.url);
+      setStripeStatus((s) => ({ ...s, [product]: 'idle' }));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setStripeStatus((s) => ({ ...s, [product]: 'error' }));
+    }
+  }
+
+  async function copyStripeLink() {
+    if (!stripeLink) return;
+    try { await navigator.clipboard.writeText(stripeLink); } catch { /* Staff can still open the secure link. */ }
+  }
+
   function renderPayRow(product: PayLinkProduct, label: string, price: string) {
     const status = payLinkStatus[product] || 'idle';
     const isSending = status === 'sending';
@@ -251,6 +277,21 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     loadClient();
+  }, [id]);
+
+  // The server returns available:false until Stripe checkout is deliberately
+  // activated. That keeps this entirely invisible during the inactive build.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    getStripeSavedCards(id)
+      .then((result) => {
+        if (cancelled) return;
+        setStripeAvailable(result.available);
+        setStripeCards(result.cards);
+      })
+      .catch(() => { if (!cancelled) { setStripeAvailable(false); setStripeCards([]); } });
+    return () => { cancelled = true; };
   }, [id]);
 
   // Lazy-load Stripe-grounded owed status (separate, non-blocking — a Stripe
@@ -457,6 +498,41 @@ export default function ClientDetailPage() {
                   </>
                 )}
                 <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {stripeAvailable && (
+          <div>
+            <button className={`sa-paytrigger${stripeOpen ? ' open' : ''}`} onClick={() => setStripeOpen((v) => !v)}>
+              <span className="ic"><CreditCard size={17} /></span>
+              <span className="tx"><b>Create secure Stripe checkout</b><span>Card on file + Affirm when eligible</span></span>
+              <span className="cv"><ChevronRight size={18} /></span>
+            </button>
+            <div className={`sa-collapse${stripeOpen ? ' open' : ''}`}>
+              <div className="sa-collapse-in">
+                {stripeCards.length > 0 && <p style={{ margin: '4px 2px 9px', fontSize: 12, color: '#52616b' }}>Card on file: {stripeCards.map((card) => `${card.brand} •••• ${card.last4}`).join(', ')}</p>}
+                {stripeLink && (
+                  <div style={{ display: 'flex', gap: 8, margin: '0 0 9px' }}>
+                    <button className="sa-note-add" onClick={copyStripeLink}><Copy size={13} />Copy secure link</button>
+                    <a className="sa-note-add" href={stripeLink} target="_blank" rel="noopener noreferrer"><ExternalLink size={13} />Open</a>
+                  </div>
+                )}
+                {[
+                  ['8-session-series', '8-Pack', '$1,295'], ['4-session-series', '4-Pack', '$720'],
+                  ['initial-in-person', 'Initial — In Person', '$225'], ['initial-virtual', 'Initial — Virtual', '$225'],
+                  ['follow-up', 'Follow-up', '$190'], ['living-practice', 'Living Practice', '$347'],
+                  ['upgrade-initial-to-4', 'Upgrade Initial → 4', '$495'], ['upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070'],
+                  ['upgrade-4-to-8', 'Upgrade 4 → 8', '$575'],
+                ].map(([product, label, price]) => {
+                  const key = product as PayLinkProduct;
+                  const status = stripeStatus[key] || 'idle';
+                  return <button key={key} className={`sa-pay-row${status === 'error' ? ' is-error' : ''}`} disabled={status === 'creating'} onClick={() => handleCreateStripeCheckout(key)}>
+                    <span className="ic">{status === 'creating' ? <Loader2 size={15} className="sa-spin" /> : <Link2 size={15} />}</span>
+                    <span className="nm">{status === 'creating' ? `Creating ${label}…` : status === 'error' ? `${label} — retry` : `Create ${label}`}</span><span className="pr">{price}</span>
+                  </button>;
+                })}
               </div>
             </div>
           </div>

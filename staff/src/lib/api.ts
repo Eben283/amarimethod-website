@@ -212,6 +212,27 @@ export async function sendPayLink(
   });
 }
 
+export interface StripeSavedCard {
+  brand: string;
+  last4: string;
+  expMonth: number | null;
+  expYear: number | null;
+}
+
+export async function getStripeSavedCards(contactId: string): Promise<{ available: boolean; cards: StripeSavedCard[] }> {
+  return fetchApi(`/staff-stripe-cards?contactId=${encodeURIComponent(contactId)}`);
+}
+
+export async function createStripeCheckout(
+  contactId: string,
+  offer: PayLinkProduct,
+): Promise<{ checkout: { id: string; url: string; expiresAt: number | null } }> {
+  return fetchApi('/staff-create-stripe-checkout', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, offer }),
+  });
+}
+
 // ── Garrett's Day tasks (Schedule tab directive list) ───────────────────────
 export interface StaffTask {
   id: string;
