@@ -68,8 +68,9 @@ async function stripeJson(secretKey, path, fetchImpl) {
   return data;
 }
 
-export async function getStaffRevenue(secretKey, { now = new Date(), fetchImpl = fetch } = {}) {
-  const monthKeys = recentPacificMonthKeys(now);
+export async function getStaffRevenue(secretKey, { now = new Date(), months = MONTH_COUNT, fetchImpl = fetch } = {}) {
+  const monthCount = [6, 12, 24].includes(months) ? months : MONTH_COUNT;
+  const monthKeys = recentPacificMonthKeys(now, monthCount);
   const cutoff = Math.floor(Date.UTC(Number(monthKeys[0].slice(0, 4)), Number(monthKeys[0].slice(5, 7)) - 1, 1) / 1000);
   const charges = [];
   let cursor = null;

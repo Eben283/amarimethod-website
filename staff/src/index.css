@@ -121,33 +121,53 @@
   .staff-session-door__loading { display: flex; min-height: 132px; align-items: center; gap: 9px; padding: 18px 20px; color: #cadde0; font-size: 13px; }
   .staff-session-door__loading svg { width: 17px; height: 17px; animation: staff-spin 1s linear infinite; }
   @keyframes staff-spin { to { transform: rotate(360deg); } }
-  /* Revenue is a quiet instrument panel: live money at a glance without
-     competing with the active session door above it. */
-  .staff-revenue { min-height: 156px; margin: 0 0 31px; padding: 17px 18px 14px; border: 1px solid #c6d7d5; border-radius: 19px; background: linear-gradient(135deg, #eef4f0, #e5efee); }
-  .staff-revenue__summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-  .staff-revenue__summary p { margin: 0; color: #52747c; font: 700 9px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
-  .staff-revenue__summary strong { display: block; margin-top: 7px; color: #19343d; font-family: 'Bona Nova', Georgia, serif; font-size: 30px; font-weight: 400; letter-spacing: -.045em; line-height: .95; }
-  .staff-revenue__summary > div > span { display: block; margin-top: 7px; color: #61777a; font-size: 10px; line-height: 1.3; }
-  .staff-revenue__summary dl { display: grid; gap: 8px; margin: 1px 0 0; text-align: right; }
-  .staff-revenue__summary dl div { display: grid; gap: 2px; }
-  .staff-revenue__summary dt { color: #71858a; font: 700 8px/1 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
-  .staff-revenue__summary dd { margin: 0; color: #35575b; font-size: 11px; font-weight: 700; }
-  .staff-revenue__chart { margin-top: 12px; }
-  .staff-revenue__chart svg { display: block; width: 100%; height: 60px; overflow: visible; }
-  .staff-revenue__baseline { fill: none; stroke: #b5cbc7; stroke-width: 1; }
-  .staff-revenue__line { fill: none; stroke: #22777a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3; vector-effect: non-scaling-stroke; }
-  .staff-revenue__chart circle { fill: #eef4f0; stroke: #22777a; stroke-width: 2; vector-effect: non-scaling-stroke; }
-  .staff-revenue__chart circle:focus { outline: none; stroke: #19343d; stroke-width: 3; }
-  .staff-revenue__months { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 4px; color: #688084; font: 700 8px/1 'DM Mono', monospace; letter-spacing: .02em; text-align: center; }
-  .staff-revenue__months span:first-child { text-align: left; }
-  .staff-revenue__months span:last-child { text-align: right; }
-  .staff-revenue__loading, .staff-revenue__retry { display: flex; width: 100%; min-height: 125px; flex-direction: column; justify-content: center; border: 0; background: transparent; color: #52747c; font-size: 12px; text-align: left; }
-  .staff-revenue__loading { flex-direction: row; align-items: center; gap: 8px; }
-  .staff-revenue__loading svg { width: 16px; height: 16px; animation: staff-spin 1s linear infinite; }
-  .staff-revenue__retry { cursor: pointer; }
-  .staff-revenue__retry small { display: flex; align-items: center; gap: 5px; margin-top: 6px; color: #2d7980; font-size: 11px; }
-  .staff-revenue__retry small svg { width: 13px; height: 13px; }
-  .staff-revenue__retry:focus-visible { outline: 3px solid #19343d; outline-offset: 4px; border-radius: 12px; }
+  /* Revenue is deliberately a separate instrument page: financial detail needs
+     a stable drawing surface, not a compressed card competing with operations. */
+  .staff-revenue-page { max-width: 960px; margin: 0 auto; padding: 28px 20px 48px; color: #19343d; }
+  .staff-revenue-page__header { display: grid; grid-template-columns: 1fr auto; gap: 22px; align-items: end; padding-bottom: 26px; }
+  .staff-revenue-page__back { grid-column: 1 / -1; display: inline-flex; width: fit-content; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #52747c; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
+  .staff-revenue-page__back svg { width: 14px; height: 14px; }
+  .staff-revenue-page__back:focus-visible, .staff-revenue-page__range button:focus-visible, .staff-revenue-table button:focus-visible { outline: 3px solid #19343d; outline-offset: 3px; }
+  .staff-revenue-page__header p, .staff-revenue-hero p, .staff-revenue-table header p { margin: 0; color: #52747c; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
+  .staff-revenue-page__header h1 { margin: 9px 0 0; font-family: 'Bona Nova', Georgia, serif; font-size: clamp(38px, 7vw, 58px); font-weight: 400; letter-spacing: -.055em; line-height: .94; }
+  .staff-revenue-page__header > div > span { display: block; margin-top: 11px; color: #64777d; font-size: 13px; }
+  .staff-revenue-page__range { display: flex; overflow: hidden; border: 1px solid #b8cbca; border-radius: 999px; background: #eff5f2; }
+  .staff-revenue-page__range button { min-width: 58px; padding: 9px 10px; border: 0; background: transparent; color: #607b7d; font: 700 10px/1 'DM Mono', monospace; }
+  .staff-revenue-page__range button[aria-pressed="true"] { background: #19343d; color: #fff; }
+  .staff-revenue-hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding: 25px 27px; border: 1px solid #c7d8d6; border-radius: 22px 22px 0 0; background: #eaf2ef; }
+  .staff-revenue-hero strong { display: block; margin-top: 11px; font-family: 'Bona Nova', Georgia, serif; font-size: clamp(48px, 9vw, 76px); font-weight: 400; letter-spacing: -.065em; line-height: .84; }
+  .staff-revenue-hero > div > span { display: block; margin-top: 13px; color: #60777a; font-size: 12px; }
+  .staff-revenue-hero dl { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 18px; margin: 0; }
+  .staff-revenue-hero dl div { display: grid; gap: 5px; }
+  .staff-revenue-hero dt { color: #617a7d; font: 700 8px/1.2 'DM Mono', monospace; letter-spacing: .09em; text-transform: uppercase; }
+  .staff-revenue-hero dd { margin: 0; color: #244951; font-size: 15px; font-weight: 700; white-space: nowrap; }
+  .staff-revenue-plot { border: 1px solid #c7d8d6; border-top: 0; background: #f8fbf9; overflow: hidden; }
+  .staff-revenue-plot__scroll { overflow-x: auto; padding: 16px 12px 0; }
+  .staff-revenue-plot svg { display: block; min-width: 680px; width: 100%; height: auto; }
+  .staff-revenue-plot__grid { stroke: #c4d6d2; stroke-dasharray: 4 7; }
+  .staff-revenue-plot__axis, .staff-revenue-plot__month { fill: #6d8585; font: 700 11px 'DM Mono', monospace; }
+  .staff-revenue-plot__area { fill: #d9e9e3; opacity: .9; }
+  .staff-revenue-plot__line { fill: none; stroke: #19767a; stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; vector-effect: non-scaling-stroke; }
+  .staff-revenue-plot__hit { fill: transparent; cursor: pointer; }
+  .staff-revenue-plot__dot { fill: #f8fbf9; stroke: #19767a; stroke-width: 3; vector-effect: non-scaling-stroke; transition: r 150ms ease, fill 150ms ease; }
+  .staff-revenue-plot__point.is-active .staff-revenue-plot__dot, .staff-revenue-plot__point:hover .staff-revenue-plot__dot { fill: #d7a63f; stroke: #19343d; }
+  .staff-revenue-plot__point:focus { outline: none; }
+  .staff-revenue-plot__point:focus .staff-revenue-plot__dot { stroke: #19343d; stroke-width: 5; }
+  .staff-revenue-table { margin-top: 25px; border-top: 1px solid #c7d8d6; }
+  .staff-revenue-table header { display: flex; justify-content: space-between; gap: 16px; padding: 15px 3px 12px; }
+  .staff-revenue-table header span { color: #72888b; font-size: 11px; }
+  .staff-revenue-table > div { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+  .staff-revenue-table button { display: grid; gap: 5px; padding: 14px; border: 1px solid #d2dfdd; border-radius: 13px; background: #fff; color: #19343d; text-align: left; }
+  .staff-revenue-table button.is-active { border-color: #19767a; background: #eaf2ef; }
+  .staff-revenue-table button > span { color: #647c7f; font: 700 9px/1 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
+  .staff-revenue-table button strong { font-family: 'Bona Nova', Georgia, serif; font-size: 24px; font-weight: 400; letter-spacing: -.035em; }
+  .staff-revenue-table button small { color: #627a7d; font-size: 10px; line-height: 1.35; }
+  .staff-revenue-page__state { display: flex; min-height: 280px; align-items: center; justify-content: center; gap: 9px; border: 1px solid #c7d8d6; border-radius: 22px; background: #f8fbf9; color: #52747c; font-size: 13px; }
+  .staff-revenue-page__state svg { width: 18px; height: 18px; animation: staff-spin 1s linear infinite; }
+  .staff-revenue-page__state--error { flex-direction: column; }
+  .staff-revenue-page__state--error button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; color: #19767a; font-weight: 700; }
+  .staff-revenue-page__state--error button svg { width: 14px; height: 14px; animation: none; }
+  @media (max-width: 640px) { .staff-revenue-page { padding: 22px 14px 40px; } .staff-revenue-page__header { grid-template-columns: 1fr; gap: 18px; } .staff-revenue-page__range { width: fit-content; } .staff-revenue-hero { display: grid; padding: 22px 19px; } .staff-revenue-hero dl { grid-template-columns: repeat(3, 1fr); gap: 10px; } .staff-revenue-hero dd { font-size: 12px; } .staff-revenue-hero > div > span { font-size: 11px; } }
   .staff-home__tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 21px 12px; }
   .staff-home-tool { position: relative; display: flex; min-width: 0; flex-direction: column; align-items: center; border: 0; background: transparent; color: #19343d; text-align: center; transition: transform 180ms ease; }
   .staff-home-tool:active { transform: scale(.94); }

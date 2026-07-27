@@ -15,6 +15,7 @@ import CosPage from './pages/CosPage';
 import WritePage from './pages/WritePage';
 import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
+import RevenuePage from './pages/RevenuePage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -99,6 +100,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <BalancesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/revenue"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <RevenuePage />
             </Layout>
           </ProtectedRoute>
         }

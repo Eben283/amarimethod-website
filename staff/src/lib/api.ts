@@ -519,8 +519,8 @@ export interface StaffRevenueData {
   trend: StaffRevenueMonth[];
 }
 
-export async function getStaffRevenue(): Promise<StaffRevenueData> {
-  return fetchApi('/staff-revenue');
+export async function getStaffRevenue(months = 12): Promise<StaffRevenueData> {
+  return fetchApi(`/staff-revenue?months=${encodeURIComponent(months)}`);
 }
 
 export interface FunnelRefreshResult {

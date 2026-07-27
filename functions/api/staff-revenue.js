@@ -23,7 +23,10 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ error: 'Stripe revenue is not configured' }), { status: 500, headers });
     }
 
-    const summary = await getStaffRevenue(context.env.STRIPE_SECRET_KEY);
+    const requestedMonths = Number(new URL(context.request.url).searchParams.get('months'));
+    const summary = await getStaffRevenue(context.env.STRIPE_SECRET_KEY, {
+      months: [6, 12, 24].includes(requestedMonths) ? requestedMonths : 12,
+    });
     return new Response(JSON.stringify(summary), { status: 200, headers });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
