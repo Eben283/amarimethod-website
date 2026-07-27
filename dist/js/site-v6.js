@@ -275,7 +275,10 @@
     var modal = document.getElementById('assessmentBookingModal');
     var panel = modal.querySelector('.assessment-booking-panel');
     var frame = document.getElementById('assessmentBookingFrame');
-    var bookingFrameUrl = '/book/initial-in-person.html?assessment=1&embed=1';
+    // This dedicated static page avoids the legacy /book/initial-in-person
+    // redirect, which otherwise reloads the homepage booking modal inside
+    // this iframe.
+    var bookingFrameUrl = '/assessment-booking?assessment=1&embed=1';
     var lastFocusedElement = null;
 
     function setHash(open) {
