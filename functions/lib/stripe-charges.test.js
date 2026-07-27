@@ -24,11 +24,13 @@ const charge = (o = {}) => ({
 describe('classifyCharge', () => {
   it('matches by product name in the description', () => {
     expect(classifyCharge(charge({ amount: 72000, description: '4-Session Series ($720)' }))).toMatchObject({ sessions: 4, kind: 'matched-description' });
+    expect(classifyCharge(charge({ amount: 550000, description: 'The 12-Week Amari Practice ($5,500)' }))).toMatchObject({ sessions: 24, kind: 'matched-description' });
     expect(classifyCharge(charge({ amount: 9000, description: 'Entrainment (via calendars) ($90)' }))).toMatchObject({ sessions: 0, kind: 'matched-description' });
   });
   it('falls back to the paid amount when the description is generic', () => {
     expect(classifyCharge(charge({ amount: 129500, description: 'Payment for invoice 000136' }))).toMatchObject({ sessions: 8, kind: 'matched-amount' });
     expect(classifyCharge(charge({ amount: 19000, description: 'Payment for invoice 000200' }))).toMatchObject({ sessions: 1, kind: 'matched-amount' });
+    expect(classifyCharge(charge({ amount: 550000, description: 'Payment for invoice 000201' }))).toMatchObject({ sessions: 24, kind: 'matched-amount' });
   });
   it('returns unknown (never guesses) for an unrecognized amount + description', () => {
     const c = classifyCharge(charge({ amount: 5500, description: 'Payment for invoice 000999' }));
@@ -38,6 +40,7 @@ describe('classifyCharge', () => {
   it('exposes the known price→sessions map', () => {
     expect(AMOUNT_TO_SESSIONS[1295].sessions).toBe(8);
     expect(AMOUNT_TO_SESSIONS[720].sessions).toBe(4);
+    expect(AMOUNT_TO_SESSIONS[5500].sessions).toBe(24);
   });
 });
 
@@ -46,9 +49,9 @@ describe('summarizeCharges', () => {
     const s = summarizeCharges([
       charge({ id: 'a', amount: 129500, description: '8-Session Series ($1295)' }),
       charge({ id: 'b', amount: 9000, description: 'Entrainment ($90)' }),
-      charge({ id: 'c', amount: 5500, description: 'Payment for invoice X' }),
+      charge({ id: 'c', amount: 12300, description: 'Payment for invoice X' }),
     ]);
-    expect(s.totalPaid).toBe(1440); // 1295 + 90 + 55 — unknowns are still real money
+    expect(s.totalPaid).toBe(1508); // 1295 + 90 + 123 — unknowns are still real money
     expect(s.sessionsPurchased).toBe(8); // 8 + 0 (entrainment); unknown not counted toward sessions
     expect(s.unknownCount).toBe(1);
     expect(s.unknown[0].id).toBe('c');

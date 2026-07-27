@@ -6,6 +6,8 @@ const PID = {
   // package purchases (SET sessions_remaining)
   fourSeries: '69986faa724ecd2343ebaa6e',
   eightSeries: '69987357c839790426996114',
+  twelveWeek: '6a66cde7ef7b07f122ad46fb',
+  twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
   // à-la-carte standalone follow-up ($190) — SHOULD credit +1 (ADD)
   singleFollowupSession: '6998ace59dfde469ecb2aab6',
   retiredFollowup: '67f57171b6b1019c7b0233cc',
@@ -28,6 +30,7 @@ describe('PRODUCT_MAP — purchase crediting', () => {
   it('credits package series with the right session counts', () => {
     expect(PRODUCT_MAP[PID.fourSeries].sessionsToAdd).toBe(4);
     expect(PRODUCT_MAP[PID.eightSeries].sessionsToAdd).toBe(8);
+    expect(PRODUCT_MAP[PID.twelveWeek]).toMatchObject({ sessionsToAdd: 24, seriesType: '12-week', livingPractice: true });
   });
 
   // The trap: a future "add the missing follow-up IDs" change would inflate
@@ -66,6 +69,9 @@ describe('resolveOrderProductId (R4 — fetchRecentOrder backup reads NESTED ids
 
   it('normalizes a nested item.price._id (priceId) to its productId', () => {
     expect(resolveOrderProductId({ items: [{ price: { _id: UPGRADE_4TO8_PRICE } }] })).toBe(UPGRADE_4TO8_PRODUCT);
+  });
+  it('resolves the 12-week practice from its current price id', () => {
+    expect(resolveOrderProductId({ items: [{ price: { _id: PID.twelveWeekPrice } }] })).toBe(PID.twelveWeek);
   });
 
   it('finds the package even when it is not the first line item', () => {

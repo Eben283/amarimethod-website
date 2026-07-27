@@ -20,6 +20,7 @@
 // Known product prices (DOLLARS) → package session-equivalents. Mirrors
 // reconcile.js PACKAGE_PRODUCTS + the pricing table in CLAUDE.md.
 export const AMOUNT_TO_SESSIONS = Object.freeze({
+  5500: { sessions: 24, label: 'The 12-Week Amari Practice' },
   1295: { sessions: 8, label: '8-Session Series' },
   720:  { sessions: 4, label: '4-Session Series' },
   1070: { sessions: 7, label: 'Upgrade Initial→8' },
@@ -41,6 +42,7 @@ export function classifyCharge(charge) {
   const amount = ((charge.amount || 0) - (charge.amount_refunded || 0)) / 100;
   const desc = charge.description || '';
   const byDesc =
+    /12.?week|24.?session/i.test(desc) ? { sessions: 24, label: 'The 12-Week Amari Practice' } :
     /8-session/i.test(desc) ? { sessions: 8, label: '8-Session Series' } :
     /4-session/i.test(desc) ? { sessions: 4, label: '4-Session Series' } :
     /entrainment/i.test(desc) ? { sessions: 0, label: 'Entrainment' } :

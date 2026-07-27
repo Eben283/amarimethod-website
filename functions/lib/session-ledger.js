@@ -17,7 +17,7 @@ import { ghlFetch } from "./ghl.js";
 // Import straight from the lib helper (not ../api/portal-data.js) — a lib file
 // reaching back into an api route created a circular import.
 import { getCustomField } from "./portal-helpers.js";
-import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES } from "./ghl-products.js";
+import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES, productIdForAnyId } from "./ghl-products.js";
 import { hydrateOrders as hydrateOrdersShared } from "./ghl-orders.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -89,7 +89,9 @@ export function classifyOrder(order) {
   // POS (mobile_app) orders carry product info in items[0] but a blank/odd
   // sourceName — must fall through to productId-based classification below.
   const firstItem = (order.items || [])[0] || {};
-  const itemProductId = firstItem.product?._id || firstItem.productId || null;
+  const itemProductId = productIdForAnyId(
+    firstItem.product?._id || firstItem.price?._id || firstItem.productId || firstItem.priceId || null,
+  );
   const itemName = (firstItem.product?.name || firstItem.name || "").toLowerCase();
   const name = sourceName || itemName;
   const hydrationFailed = order.__hydration_failed === true;
@@ -128,6 +130,9 @@ export function classifyOrder(order) {
     // $495   = upgrade to 4-session (adds 3 to existing 1 initial)
     if (amount >= 1000) return { type: "8-upgrade", sessions: 7, name, amount };
     return { type: "4-upgrade", sessions: 3, name, amount };
+  }
+  if (/12.?week|24.?session/i.test(name)) {
+    return { type: "12-week", sessions: 24, name, amount };
   }
   if (/8.?session|eight.?session/i.test(name)) {
     return { type: "8-series", sessions: 8, name, amount };
@@ -191,7 +196,7 @@ export function classifyInvoice(invoice) {
     return { type: "ignored", sessions: 0, name, amount: amountPaid, date: null };
   }
 
-  const productId = firstItem.productId || null;
+  const productId = productIdForAnyId(firstItem.productId || firstItem.priceId || null);
   if (productId && ACTIVE_PRODUCTS[productId]) {
     const entry = ACTIVE_PRODUCTS[productId];
     return { type: entry.type, sessions: entry.sessions, name, amount: amountPaid, date };
@@ -207,6 +212,8 @@ export function classifyInvoice(invoice) {
 export function determineSeriesType(classifications) {
   // Most authoritative: explicit series purchases. The 4→8 upgrade lands the
   // client on the 8-session series, so it must count toward has8 (not has4).
+  const has12Week = classifications.some((c) => c.type === "12-week");
+  if (has12Week) return "12-week";
   const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade" || c.type === "4-to-8-upgrade");
   if (has8) return "8-session";
   const has4 = classifications.some((c) => c.type === "4-series" || c.type === "4-upgrade");

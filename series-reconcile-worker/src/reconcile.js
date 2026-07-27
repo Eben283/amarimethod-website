@@ -4,7 +4,7 @@
 // workflow set of actions changes in GHL, update this file.
 
 import { getContact, patchContact, addContactNote, removeContactTags, ghlGet, getOrderDetail, LOCATION_ID } from "./ghl.js";
-import { PACKAGE_MAP } from "../../functions/lib/ghl-products.js";
+import { PACKAGE_MAP, productIdForAnyId } from "../../functions/lib/ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
@@ -23,7 +23,7 @@ const WORKFLOW_CODES = {
 };
 
 export const PACKAGE_PRODUCTS = Object.fromEntries(
-  Object.entries(PACKAGE_MAP).map(([id, p]) => [id, { ...p, workflowCode: WORKFLOW_CODES[id] }]),
+  Object.entries(PACKAGE_MAP).map(([id, p]) => [id, { ...p, workflowCode: WORKFLOW_CODES[id] || "purchase automation" }]),
 );
 
 export const FIELD_IDS = {
@@ -73,7 +73,9 @@ function isCheckedCheckbox(value) {
 // or null if no line item maps to a package product.
 export function selectPackageProduct(items) {
   for (const item of items || []) {
-    const productId = item?.product?._id;
+    const productId = productIdForAnyId(
+      item?.product?._id || item?.price?._id || item?.productId || item?.priceId,
+    );
     const pkg = productId ? PACKAGE_PRODUCTS[productId] : null;
     if (pkg) return { productId, pkg };
   }

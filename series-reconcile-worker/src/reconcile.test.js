@@ -5,6 +5,8 @@ import { selectPackageProduct, isReconcileAlreadyApplied, remainingWasWritten } 
 const PID = {
   fourSeries: '69986faa724ecd2343ebaa6e',
   eightSeries: '69987357c839790426996114',
+  twelveWeek: '6a66cde7ef7b07f122ad46fb',
+  twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
   followupInPerson: '69aee204e80b62d627d8e922', // a single session — NOT a package
   initialInPerson: '688a1cd770362828afbf08a2', // NOT a package
 };
@@ -30,6 +32,12 @@ describe('selectPackageProduct', () => {
     expect(r).not.toBe(null);
     expect(r.productId).toBe(PID.fourSeries);
     expect(r.pkg.name).toBe('4-Session Series');
+  });
+  it('resolves the 12-week practice from its nested current price id', () => {
+    const r = selectPackageProduct([{ price: { _id: PID.twelveWeekPrice } }]);
+    expect(r).not.toBe(null);
+    expect(r.productId).toBe(PID.twelveWeek);
+    expect(r.pkg).toMatchObject({ sessionsToSet: 24, seriesType: '12-week', livingPractice: true });
   });
 
   it('returns null when no line item is a package product', () => {

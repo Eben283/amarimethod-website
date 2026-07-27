@@ -39,22 +39,25 @@ describe('determineSeriesType', () => {
     expect(determineSeriesType([{ type: '8-series' }])).toBe('8-session');
     expect(determineSeriesType([{ type: '8-upgrade' }])).toBe('8-session');
   });
+  it('the 12-week practice takes precedence over older package history', () => {
+    expect(determineSeriesType([{ type: '8-series' }, { type: '12-week' }])).toBe('12-week');
+  });
 });
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 
-function order({ sourceName, amount, status = 'completed', sourceType = 'payment_link', createdAt = '2026-03-13T00:00:00Z' }) {
-  return { sourceName, amount, status, sourceType, createdAt };
+function order({ sourceName, amount, status = 'completed', sourceType = 'payment_link', createdAt = '2026-03-13T00:00:00Z', items = undefined }) {
+  return { sourceName, amount, status, sourceType, createdAt, ...(items ? { items } : {}) };
 }
 
-function invoice({ productId = null, itemName = 'Item', amountPaid, status = 'paid', issueDate = '2026-03-13T00:00:00Z', total = null }) {
+function invoice({ productId = null, priceId = null, itemName = 'Item', amountPaid, status = 'paid', issueDate = '2026-03-13T00:00:00Z', total = null }) {
   return {
     name: 'New Invoice',
     status,
     amountPaid,
     total: total ?? amountPaid,
     issueDate,
-    invoiceItems: [{ name: itemName, productId, amount: amountPaid, qty: 1 }],
+    invoiceItems: [{ name: itemName, productId, priceId, amount: amountPaid, qty: 1 }],
   };
 }
 
@@ -70,6 +73,8 @@ function contact({ customFields = [] } = {}) {
 const PID = {
   eightSeries: '69987357c839790426996114',
   fourSeries: '69986faa724ecd2343ebaa6e',
+  twelveWeek: '6a66cde7ef7b07f122ad46fb',
+  twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
   eightUpgrade: '699873d6990b71ebc1fa26b4',
   fourUpgrade: '6998739230cc6054f9bba62d',
   initialInPerson: '688a1cd770362828afbf08a2',
@@ -116,6 +121,12 @@ describe('classifyOrder', () => {
   it('classifies 8-session series', () => {
     expect(classifyOrder(order({ sourceName: '8-Session Series', amount: 1295 })))
       .toMatchObject({ type: '8-series', sessions: 8 });
+  });
+  it('classifies the 12-Week Practice by name and by current price id', () => {
+    expect(classifyOrder(order({ sourceName: 'The 12-Week Amari Practice', amount: 5500 })))
+      .toMatchObject({ type: '12-week', sessions: 24 });
+    expect(classifyOrder(order({ sourceName: '', amount: 5500, items: [{ price: { _id: PID.twelveWeekPrice } }] })))
+      .toMatchObject({ type: '12-week', sessions: 24 });
   });
 
   it('classifies upgrade to 4-session by amount', () => {
@@ -244,6 +255,12 @@ describe('classifyInvoice', () => {
       classifyInvoice(invoice({ productId: PID.fourSeries, itemName: '4-Session Series', amountPaid: 720 })),
     ).toMatchObject({ type: '4-series', sessions: 4 });
   });
+  it('classifies the 12-Week Practice by productId or current priceId', () => {
+    expect(classifyInvoice(invoice({ productId: PID.twelveWeek, amountPaid: 5500 })))
+      .toMatchObject({ type: '12-week', sessions: 24 });
+    expect(classifyInvoice(invoice({ priceId: PID.twelveWeekPrice, amountPaid: 5500 })))
+      .toMatchObject({ type: '12-week', sessions: 24 });
+  });
 
   it('classifies 4-upgrade and 8-upgrade by productId', () => {
     expect(
@@ -322,8 +339,8 @@ describe('classifyInvoice', () => {
 // ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
 
 describe('ACTIVE_PRODUCTS map', () => {
-  it('contains the 13 currently-sold products', () => {
-    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(13);
+  it('contains the 14 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(14);
   });
 
   it('contains the canonical 8-Session and 4-Session Series IDs', () => {
@@ -363,6 +380,15 @@ describe('deriveLedger — clean cases', () => {
     expect(result.attended).toBe(0);
     expect(result.remaining).toBe(8);
     expect(result.seriesType).toBe('8-session');
+  });
+  it('12-week practice with two attended visits → remaining 22', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [order({ sourceName: 'The 12-Week Amari Practice', amount: 5500 })],
+      appointments: [appt({ calendarId: CAL.initial }), appt({ calendarId: CAL.followup })],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result).toMatchObject({ purchased: 24, attended: 2, remaining: 22, seriesType: '12-week', confidence: 'high' });
   });
 
   it('upgrade path: initial + upgrade order = 4 purchased', () => {

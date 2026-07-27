@@ -11,6 +11,7 @@ import { claimProcessedEvent } from '../lib/processed-events.js';
 const PID = {
   eightSeries: '69987357c839790426996114',
   fourSeries: '69986faa724ecd2343ebaa6e',
+  twelveWeek: '6a66cde7ef7b07f122ad46fb',
   eightUpgrade: '699873d6990b71ebc1fa26b4',
   fourUpgrade: '6998739230cc6054f9bba62d',
   followupInPerson: '69aee204e80b62d627d8e922',
@@ -56,6 +57,14 @@ describe('classifyInvoiceProduct', () => {
       livingPractice: false,
     });
   });
+  it('classifies the 12-Week Amari Practice', () => {
+    expect(classifyInvoiceProduct(PID.twelveWeek)).toMatchObject({
+      name: 'The 12-Week Amari Practice',
+      sessionsRemaining: 24,
+      seriesType: '12-week',
+      livingPractice: true,
+    });
+  });
 
   it('classifies Upgrade → 8', () => {
     expect(classifyInvoiceProduct(PID.eightUpgrade)).toMatchObject({
@@ -92,10 +101,10 @@ describe('classifyInvoiceProduct', () => {
 });
 
 describe('INVOICE_PURCHASE_PRODUCTS map', () => {
-  it('has exactly 5 entries (2 series + 3 upgrades)', () => {
+  it('has exactly 6 entries (3 practices + 3 upgrades)', () => {
     // 4→8 upgrade ($575) added to ghl-products.js 2026-05-10; this assertion was
     // never bumped from 4 and sat red unnoticed (no CI gate — audit HIGH #7).
-    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(5);
+    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(6);
   });
 
   it('does NOT include single-session products, entrainment, or living practice', () => {

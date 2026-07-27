@@ -4,6 +4,8 @@ import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 
 // Real GHL ids (kept in sync with ghl-products.js).
 const EIGHT_SERIES_PRODUCT_ID = '69987357c839790426996114'; // 8-Session Series
+const TWELVE_WEEK_PRODUCT_ID = '6a66cde7ef7b07f122ad46fb'; // The 12-Week Amari Practice
+const TWELVE_WEEK_PRICE_ID = '6a66cde7ef7b076d15ad4700'; // current $5,500 price
 const UPGRADE_4TO8_PRICE_ID = '6a010952e41b44dab12d3c06';   // a priceId, not a productId
 const FOLLOWUP_PRODUCT_ID = '69aee204e80b62d627d8e922';     // single follow-up — not a package
 const lineItem = (id) => ({ product: { _id: id } });
@@ -13,6 +15,8 @@ describe('findAuditedProduct (R3 — read NESTED item.product._id, scan all item
   it('the test productId + priceId resolve in AUDIT_INCREMENT_MAP', () => {
     expect(AUDIT_INCREMENT_MAP[EIGHT_SERIES_PRODUCT_ID]).toBeTruthy();
     expect(AUDIT_INCREMENT_MAP[UPGRADE_4TO8_PRICE_ID]).toBeTruthy();
+    expect(AUDIT_INCREMENT_MAP[TWELVE_WEEK_PRODUCT_ID]).toMatchObject({ increment: 24, seriesType: '12-week' });
+    expect(AUDIT_INCREMENT_MAP[TWELVE_WEEK_PRICE_ID]).toMatchObject({ increment: 24, seriesType: '12-week' });
   });
 
   it('resolves a package from the NESTED item.product._id (the real order shape)', () => {
@@ -24,6 +28,10 @@ describe('findAuditedProduct (R3 — read NESTED item.product._id, scan all item
   it('resolves via a NESTED item.price._id too (map keyed by both)', () => {
     const cfg = findAuditedProduct({ items: [{ price: { _id: UPGRADE_4TO8_PRICE_ID } }] });
     expect(cfg).toBeTruthy();
+  });
+  it('resolves the 12-week practice by productId and current priceId', () => {
+    expect(findAuditedProduct({ items: [lineItem(TWELVE_WEEK_PRODUCT_ID)] })).toMatchObject({ increment: 24, seriesType: '12-week' });
+    expect(findAuditedProduct({ items: [{ price: { _id: TWELVE_WEEK_PRICE_ID } }] })).toMatchObject({ increment: 24, seriesType: '12-week' });
   });
 
   // THE R3 BUG: a package at index 1+ used to be skipped (items[0]-only).

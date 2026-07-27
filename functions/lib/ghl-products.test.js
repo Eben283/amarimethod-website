@@ -12,8 +12,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 13 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(13);
+  it('contains 14 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(14);
   });
 
   it('every entry has required shape', () => {
@@ -37,19 +37,19 @@ describe('GHL_PRODUCTS catalog', () => {
     }
   });
 
-  it('has exactly 5 package-purchase entries (2 series + 3 upgrades)', () => {
+  it('has exactly 6 package-purchase entries (3 practices + 3 upgrades)', () => {
     const packages = Object.values(GHL_PRODUCTS).filter((p) => p.isPackagePurchase);
-    expect(packages.length).toBe(5);
+    expect(packages.length).toBe(6);
     const classifications = packages.map((p) => p.classification).sort();
-    expect(classifications).toEqual(['4-series', '4-to-8-upgrade', '4-upgrade', '8-series', '8-upgrade']);
+    expect(classifications).toEqual(['12-week', '4-series', '4-to-8-upgrade', '4-upgrade', '8-series', '8-upgrade']);
   });
 
-  it('Living Practice access tracks the resulting series: every 8-session package grants it, 4-session ones do not', () => {
+  it('includes the protocol library with the 8-session and 12-week practices', () => {
     for (const p of Object.values(GHL_PRODUCTS)) {
       if (!p.isPackagePurchase) continue;
       // The real rule is seriesType, not classification name — the 4→8 upgrade
       // lands a client on the 8-session series, so it unlocks Living Practice.
-      expect(p.livingPractice).toBe(p.seriesType === '8-session');
+      expect(p.livingPractice).toBe(['8-session', '12-week'].includes(p.seriesType));
     }
   });
 
@@ -82,7 +82,7 @@ describe('LEDGER_PRODUCT_MAP (session-ledger consumer)', () => {
 
 describe('WEBHOOK_PURCHASE_MAP (invoice webhook consumer)', () => {
   it('only contains package-purchase entries', () => {
-    expect(Object.keys(WEBHOOK_PURCHASE_MAP).length).toBe(5);
+    expect(Object.keys(WEBHOOK_PURCHASE_MAP).length).toBe(6);
   });
 
   it('exposes name, sessionsRemaining, seriesType, livingPractice', () => {
@@ -106,6 +106,8 @@ const ID = {
   eightSeriesPriceOld: '699873074d5b8cc0bc0e3b5a',
   fourSeries: '69986faa724ecd2343ebaa6e',
   fourSeriesPriceOld: '699872e130cc6054f9bba617',
+  twelveWeek: '6a66cde7ef7b07f122ad46fb',
+  twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
   upInit8: '699873d6990b71ebc1fa26b4',
   upInit4: '6998739230cc6054f9bba62d',
   up4to8: '6a010952e41b442c862d3c01',
@@ -127,6 +129,11 @@ describe('any-id resolver (productId + priceId)', () => {
     expect(productIdForAnyId(ID.eightSeriesPrice)).toBe(ID.eightSeries);
     expect(productForAnyId(ID.eightSeriesPrice).name).toBe('8-Session Series');
   });
+  it('resolves the 12-Week Practice product and its current $5,500 price', () => {
+    expect(productIdForAnyId(ID.twelveWeek)).toBe(ID.twelveWeek);
+    expect(productIdForAnyId(ID.twelveWeekPrice)).toBe(ID.twelveWeek);
+    expect(productForAnyId(ID.twelveWeekPrice).name).toBe('The 12-Week Amari Practice');
+  });
   it('resolves a HISTORICAL priceId too (the stale-id case the audit hit)', () => {
     expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
     expect(productIdForAnyId(ID.fourSeriesPriceOld)).toBe(ID.fourSeries);
@@ -144,6 +151,7 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
     expect(PURCHASE_CREDIT_MAP[ID.upInit8]).toMatchObject({ sessionsToAdd: 7, seriesType: '8-session' });
     expect(PURCHASE_CREDIT_MAP[ID.upInit4]).toMatchObject({ sessionsToAdd: 3, seriesType: '4-session' });
     expect(PURCHASE_CREDIT_MAP[ID.up4to8]).toMatchObject({ sessionsToAdd: 4, seriesType: '8-session', livingPractice: true });
+    expect(PURCHASE_CREDIT_MAP[ID.twelveWeek]).toMatchObject({ sessionsToAdd: 24, seriesType: '12-week', livingPractice: true });
   });
   it('credits à-la-carte singles +1 with no series change', () => {
     expect(PURCHASE_CREDIT_MAP[ID.singleFU]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
@@ -160,10 +168,11 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
 });
 
 describe('PACKAGE_MAP (reconcile worker consumer)', () => {
-  it('has the 5 packages with sessionsToSet', () => {
-    expect(Object.keys(PACKAGE_MAP).length).toBe(5);
+  it('has the 6 packages with sessionsToSet', () => {
+    expect(Object.keys(PACKAGE_MAP).length).toBe(6);
     expect(PACKAGE_MAP[ID.eightSeries]).toMatchObject({ sessionsToSet: 8, seriesType: '8-session', livingPractice: true });
     expect(PACKAGE_MAP[ID.up4to8]).toMatchObject({ sessionsToSet: 4, seriesType: '8-session' });
+    expect(PACKAGE_MAP[ID.twelveWeek]).toMatchObject({ sessionsToSet: 24, seriesType: '12-week', livingPractice: true });
   });
   it('excludes singles + draw-downs', () => {
     expect(PACKAGE_MAP[ID.singleFU]).toBeUndefined();
@@ -201,6 +210,8 @@ describe('AUDIT_INCREMENT_MAP (daily-audit consumer)', () => {
     expect(AUDIT_INCREMENT_MAP[ID.eightSeries]).toMatchObject({ increment: 8 });
     expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPrice]).toMatchObject({ increment: 8 });
     expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPriceOld]).toMatchObject({ increment: 8 });
+    expect(AUDIT_INCREMENT_MAP[ID.twelveWeek]).toMatchObject({ increment: 24, seriesType: '12-week' });
+    expect(AUDIT_INCREMENT_MAP[ID.twelveWeekPrice]).toMatchObject({ increment: 24, seriesType: '12-week' });
   });
   it('now covers the 4→8 upgrade (the prior blind spot)', () => {
     expect(AUDIT_INCREMENT_MAP[ID.up4to8]).toMatchObject({ increment: 4, seriesType: '8-session' });
