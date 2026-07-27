@@ -15,6 +15,7 @@ import CosPage from './pages/CosPage';
 import WritePage from './pages/WritePage';
 import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
+import PosPage from './pages/PosPage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -192,6 +193,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <CommunityPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <PosPage />
             </Layout>
           </ProtectedRoute>
         }
