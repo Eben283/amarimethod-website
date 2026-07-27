@@ -1,7 +1,8 @@
-import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { ArrowUpRight, BookOpen, CalendarDays, ChevronRight, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, RefreshCw, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDayData } from '../lib/api';
+import { getDayData, getStaffRevenue } from '../lib/api';
+import type { StaffRevenueData } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 
 type HomeTool = {
@@ -63,11 +64,32 @@ function appointmentTime(iso: string) {
   return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' }).format(new Date(appointmentMs(iso)));
 }
 
+const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const currencyExact = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function revenueMonthLabel(month: string) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(new Date(`${month}-15T12:00:00Z`));
+}
+
+function revenuePath(trend: StaffRevenueData['trend']) {
+  const width = 300;
+  const height = 72;
+  const peak = Math.max(...trend.map((point) => point.gross), 1);
+  return trend.map((point, index) => {
+    const x = trend.length === 1 ? width / 2 : (index / (trend.length - 1)) * width;
+    const y = height - (point.gross / peak) * (height - 7) - 3;
+    return `${index ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)}`;
+  }).join(' ');
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [sessionDoor, setSessionDoor] = useState<SessionDoor | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  const [revenue, setRevenue] = useState<StaffRevenueData | null>(null);
+  const [revenueLoading, setRevenueLoading] = useState(true);
+  const [revenueError, setRevenueError] = useState(false);
 
   const loadSessionDoor = useCallback(async () => {
     try {
@@ -109,6 +131,19 @@ export default function HomePage() {
     document.addEventListener('visibilitychange', onVisible);
     return () => { disposed = true; if (timer) window.clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); };
   }, [loadSessionDoor]);
+
+  const loadRevenue = useCallback(async () => {
+    try {
+      setRevenueError(false);
+      setRevenue(await getStaffRevenue());
+    } catch {
+      setRevenueError(true);
+    } finally {
+      setRevenueLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadRevenue(); }, [loadRevenue]);
 
   function open(tool: HomeTool) {
     if (tool.to) navigate(tool.to);
@@ -157,6 +192,46 @@ export default function HomePage() {
             <span className="staff-session-door__person">Open today’s schedule</span>
             <span className="staff-session-door__meta">Find the next client <ChevronRight aria-hidden="true" /></span>
           </button>
+        )}
+      </section>
+
+      <section className="staff-revenue" aria-label="Stripe revenue">
+        {revenueLoading ? (
+          <div className="staff-revenue__loading"><Loader2 aria-hidden="true" /> Loading Stripe revenue…</div>
+        ) : revenueError ? (
+          <button type="button" className="staff-revenue__retry" onClick={() => { setRevenueLoading(true); void loadRevenue(); }}>
+            <span>Stripe revenue is unavailable</span>
+            <small>Tap to try again <RefreshCw aria-hidden="true" /></small>
+          </button>
+        ) : revenue && (
+          <>
+            <div className="staff-revenue__summary">
+              <div>
+                <p>Stripe revenue</p>
+                <strong>{currency.format(revenue.thisMonth.gross)}</strong>
+                <span>{revenueMonthLabel(revenue.thisMonth.month)} gross · {revenue.thisMonth.chargeCount} successful {revenue.thisMonth.chargeCount === 1 ? 'charge' : 'charges'}</span>
+              </div>
+              <dl>
+                <div><dt>Fees</dt><dd>{currencyExact.format(revenue.thisMonth.fees)}</dd></div>
+                <div><dt>Net</dt><dd>{currencyExact.format(revenue.thisMonth.net)}</dd></div>
+              </dl>
+            </div>
+            <div className="staff-revenue__chart">
+              <svg viewBox="0 0 300 72" role="img" aria-label={`Six-month Stripe gross-sales trend ending ${revenueMonthLabel(revenue.thisMonth.month)}`} preserveAspectRatio="none">
+                <path className="staff-revenue__baseline" d="M 0 69 H 300" />
+                <path className="staff-revenue__line" d={revenuePath(revenue.trend)} />
+                {revenue.trend.map((point, index) => {
+                  const peak = Math.max(...revenue.trend.map((item) => item.gross), 1);
+                  const x = revenue.trend.length === 1 ? 150 : (index / (revenue.trend.length - 1)) * 300;
+                  const y = 72 - (point.gross / peak) * 65 - 3;
+                  return <circle key={point.month} cx={x} cy={y} r="3" tabIndex={0}><title>{`${revenueMonthLabel(point.month)}: ${currencyExact.format(point.gross)} gross`}</title></circle>;
+                })}
+              </svg>
+              <div className="staff-revenue__months" aria-hidden="true">
+                {revenue.trend.map((point) => <span key={point.month}>{revenueMonthLabel(point.month)}</span>)}
+              </div>
+            </div>
+          </>
         )}
       </section>
 
