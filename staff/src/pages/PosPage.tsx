@@ -412,13 +412,7 @@ export default function PosPage() {
                       </div>
                       <p>{group}</p>
                       <h3>{label}</h3>
-                      <span>
-                        {key === "12-week-practice"
-                          ? "24 sessions"
-                          : group === "Upgrades"
-                            ? "Eligibility review before payment"
-                            : "Catalog product"}
-                      </span>
+                      {key === "12-week-practice" && <span>24 sessions</span>}
                       <footer>
                         <strong>{money(amount)}</strong>
                       </footer>
