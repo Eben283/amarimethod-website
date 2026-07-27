@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   createPosSale,
   getPosSale,
@@ -39,42 +38,29 @@ const paymentLabels: Record<PosPaymentMethod, string> = {
 };
 
 const money = (cents: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    cents / 100,
-  );
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 const draftStorageKey = "amari_staff_pos_draft";
 
 function toDraftCart(sale: PosSale): PosDraftLineInput[] {
   return sale.cart.map((line) =>
     line.kind === "catalog"
       ? { productKey: line.productKey || undefined, quantity: line.quantity }
-      : {
-          customLabel: line.label,
-          customReason: line.reason || "",
-          customAmountCents: line.unitAmountCents,
-          quantity: line.quantity,
-        },
+      : { customLabel: line.label, customReason: line.reason || "", customAmountCents: line.unitAmountCents, quantity: line.quantity },
   );
 }
 
 function toDraftLegs(sale: PosSale): PosPaymentLegInput[] {
-  return sale.paymentLegs.map(({ method, amountCents }) => ({
-    method,
-    amountCents,
-  }));
+  return sale.paymentLegs.map(({ method, amountCents }) => ({ method, amountCents }));
 }
 
 function calculateTotal(cart: PosDraftLineInput[]) {
   return cart.reduce((sum, line) => {
-    const price = line.productKey
-      ? CATALOG.find(([key]) => key === line.productKey)?.[2] || 0
-      : line.customAmountCents || 0;
+    const price = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[2] || 0 : line.customAmountCents || 0;
     return sum + price * (line.quantity || 1);
   }, 0);
 }
 
 export default function PosPage() {
-  const navigate = useNavigate();
   const [clientSearch, setClientSearch] = useState("");
   const [matches, setMatches] = useState<ContactListItem[]>([]);
   const [searching, setSearching] = useState(false);
@@ -82,21 +68,21 @@ export default function PosPage() {
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
   const [sale, setSale] = useState<PosSale | null>(null);
-  const [customLabel, setCustomLabel] = useState("");
-  const [customReason, setCustomReason] = useState("");
-  const [customDollars, setCustomDollars] = useState("");
-  const [category, setCategory] =
-    useState<(typeof CATALOG)[number][3]>("Practice");
-  const [showCustom, setShowCustom] = useState(false);
+  const [category, setCategory] = useState<(typeof CATALOG)[number][3]>("Practice");
+  const [productQuery, setProductQuery] = useState("");
+  const [checkoutStep, setCheckoutStep] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [preview, setPreview] = useState<PosTextPreview | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const total = useMemo(() => calculateTotal(cart), [cart]);
-  const allocation = useMemo(
-    () => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0),
-    [legs],
-  );
+  const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
+  const products = useMemo(() => {
+    const query = productQuery.trim().toLowerCase();
+    return CATALOG.filter(([, label, , group]) =>
+      query ? `${label} ${group}`.toLowerCase().includes(query) : group === category,
+    );
+  }, [category, productQuery]);
 
   useEffect(() => {
     const id = localStorage.getItem(draftStorageKey);
@@ -130,11 +116,7 @@ export default function PosPage() {
   }, [clientSearch]);
 
   function selectClient(contact: ContactListItem) {
-    setClient({
-      id: contact.id,
-      name: contact.name,
-      phone: contact.phone || null,
-    });
+    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null });
     setClientSearch("");
     setMatches([]);
     setNotice("");
@@ -145,40 +127,9 @@ export default function PosPage() {
     setPreview(null);
   }
 
-  function addCustom() {
-    const amountCents = Math.round(Number(customDollars) * 100);
-    if (
-      !customLabel.trim() ||
-      !customReason.trim() ||
-      !Number.isSafeInteger(amountCents) ||
-      amountCents < 1
-    ) {
-      setNotice(
-        "Add a label, category/reason, and valid custom dollar amount.",
-      );
-      return;
-    }
-    setCart((current) => [
-      ...current,
-      {
-        customLabel: customLabel.trim(),
-        customReason: customReason.trim(),
-        customAmountCents: amountCents,
-        quantity: 1,
-      },
-    ]);
-    setCustomLabel("");
-    setCustomReason("");
-    setCustomDollars("");
-    setNotice("");
-    setPreview(null);
-  }
-
   function updateQuantity(index: number, quantity: number) {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) return;
-    setCart((current) =>
-      current.map((line, i) => (i === index ? { ...line, quantity } : line)),
-    );
+    setCart((current) => current.map((line, i) => (i === index ? { ...line, quantity } : line)));
     setPreview(null);
   }
 
@@ -186,18 +137,25 @@ export default function PosPage() {
     setCart((current) => current.filter((_, i) => i !== index));
     setPreview(null);
   }
+
+  function beginCheckout() {
+    if (!cart.length) {
+      setNotice("Add at least one product before checkout.");
+      return;
+    }
+    setNotice("");
+    setCheckoutStep(true);
+  }
+
   function setPrimaryAllocation(method: PosPaymentMethod) {
     setLegs(total ? [{ method, amountCents: total }] : []);
     setPreview(null);
   }
+
   function addSplitAllocation() {
     setLegs((current) => {
       if (!total || current.length >= 2) return current;
-      if (!current.length)
-        return [
-          { method: "hsa-card", amountCents: 0 },
-          { method: "checkout-link", amountCents: total },
-        ];
+      if (!current.length) return [{ method: "hsa-card", amountCents: 0 }, { method: "checkout-link", amountCents: total }];
       return [...current, { method: "hsa-card", amountCents: 0 }];
     });
     setPreview(null);
@@ -205,15 +163,10 @@ export default function PosPage() {
 
   function updateSplitAmount(index: number, amountCents: number) {
     setLegs((current) => {
-      const next = current.map((leg, i) =>
-        i === index ? { ...leg, amountCents } : leg,
-      );
+      const next = current.map((leg, i) => (i === index ? { ...leg, amountCents } : leg));
       if (next.length === 2) {
         const otherIndex = index === 0 ? 1 : 0;
-        next[otherIndex] = {
-          ...next[otherIndex],
-          amountCents: Math.max(total - amountCents, 0),
-        };
+        next[otherIndex] = { ...next[otherIndex], amountCents: Math.max(total - amountCents, 0) };
       }
       return next;
     });
@@ -227,36 +180,24 @@ export default function PosPage() {
 
   async function saveDraft() {
     if (!client) {
-      setNotice("Select a client before saving the cart.");
-      return;
-    }
-    if (!cart.length) {
-      setNotice("Add at least one item to the cart.");
+      setNotice("Select a client to continue.");
       return;
     }
     if (legs.length && allocation !== total) {
-      setNotice("Payment allocations must equal the total before saving.");
+      setNotice("Payment amounts need to equal the cart total.");
       return;
     }
     setBusy(true);
     setNotice("");
     try {
       const result = sale
-        ? await savePosSale({
-            id: sale.id,
-            version: sale.version,
-            client,
-            cart,
-            paymentLegs: legs,
-          })
+        ? await savePosSale({ id: sale.id, version: sale.version, client, cart, paymentLegs: legs })
         : await createPosSale({ client, cart, paymentLegs: legs });
       setSale(result.sale);
       localStorage.setItem(draftStorageKey, result.sale.id);
-      setNotice("Saved cart. No payment or message has been created.");
+      setNotice("Checkout draft saved. No payment or message has been created.");
     } catch (error) {
-      setNotice(
-        error instanceof Error ? error.message : "Could not save this cart.",
-      );
+      setNotice(error instanceof Error ? error.message : "Could not save this checkout draft.");
     } finally {
       setBusy(false);
     }
@@ -264,9 +205,7 @@ export default function PosPage() {
 
   async function prepareText() {
     if (!sale) {
-      setNotice(
-        "Save the cart first so the checkout text has an audit record.",
-      );
+      setNotice("Save this checkout draft first.");
       return;
     }
     setBusy(true);
@@ -277,408 +216,94 @@ export default function PosPage() {
       setPreview(result.preview);
       setNotice("Preview recorded. Sending remains disabled.");
     } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "Could not prepare the text preview.",
-      );
+      setNotice(error instanceof Error ? error.message : "Could not prepare the text preview.");
     } finally {
       setBusy(false);
     }
   }
 
+  const cartLines = (
+    <div className="pos-cart-lines">
+      {cart.length ? cart.map((line, index) => {
+        const label = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[1] : line.customLabel;
+        const unit = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[2] || 0 : line.customAmountCents || 0;
+        return (
+          <div className="pos-cart-line" key={`${line.productKey || line.customLabel}-${index}`}>
+            <div>
+              <span>{line.quantity || 1}</span>
+              <p><strong>{label}</strong><small>{money(unit)} each</small></p>
+            </div>
+            <div>
+              <input aria-label={`Quantity for ${label}`} type="number" min="1" max="20" value={line.quantity || 1} onChange={(event) => updateQuantity(index, Number(event.target.value))} />
+              <b>{money(unit * (line.quantity || 1))}</b>
+              <button type="button" onClick={() => removeLine(index)} aria-label={`Remove ${label}`}>×</button>
+            </div>
+          </div>
+        );
+      }) : <p className="pos-empty">Select products to begin.</p>}
+    </div>
+  );
+
+  if (checkoutStep) {
+    return (
+      <main className="pos-shell">
+        <div className="pos-checkout-layout">
+          <section className="pos-checkout-main">
+            <button type="button" className="pos-back" onClick={() => setCheckoutStep(false)}>← Products</button>
+            <h1>Checkout</h1>
+            {notice && <div className="pos-notice">{notice}</div>}
+            <section className="pos-client">
+              <div className="pos-client__head">
+                <h2>{client ? client.name : "Add client"}</h2>
+                {client && <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button>}
+              </div>
+              {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
+              {searching && <p className="pos-searching">Searching clients…</p>}
+              {matches.length > 0 && <div className="pos-client-results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>→</b></button>)}</div>}
+            </section>
+            <section className="pos-payment">
+              <p className="pos-label">Payment method</p>
+              <div className="pos-methods">
+                {([ ["checkout-link", "Checkout link"], ["hsa-card", "HSA / FSA card"], ["saved-card", "Saved card"], ["cash", "Cash"] ] as const).map(([method, label]) => <button key={method} type="button" onClick={() => setPrimaryAllocation(method)} className={legs.length === 1 && legs[0].method === method ? "is-active" : ""}>{label}</button>)}
+                <button type="button" onClick={addSplitAllocation} disabled={!total || legs.length >= 2}>＋ Two payment methods</button>
+              </div>
+              {legs.length === 1 && <p className="pos-payment-choice">{paymentLabels[legs[0].method]} · {money(total)}</p>}
+              {legs.length > 1 && <div className="pos-legs"><p>Enter the amount for each payment.</p>{legs.map((leg, index) => <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{Object.entries(paymentLabels).map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))} /></div>)}{allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}<button type="button" className="pos-one-payment" onClick={useOnePayment}>Use one payment instead</button></div>}
+            </section>
+            {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
+          </section>
+          <aside className="pos-cart-pane">
+            <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
+            {cartLines}
+            <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
+            <button type="button" className="pos-checkout-bar" onClick={() => void saveDraft()} disabled={busy || !cart.length}>{busy ? "Saving…" : "Save checkout draft"}<span>{money(total)} →</span></button>
+            {sale && <button type="button" className="pos-preview-link" onClick={() => void prepareText()} disabled={busy}>Preview checkout text</button>}
+          </aside>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="pos-shell">
-      <header className="pos-topbar">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="pos-brand"
-        >
-          <span className="pos-brand__mark">A</span>
-          <span>
-            Amari <em>Method</em>
-          </span>
-        </button>
-        <div className="pos-topbar__right">
-          <span className="pos-status">
-            <i /> Draft workspace
-          </span>
-          <span className="pos-operator">Staff · inactive</span>
-        </div>
-      </header>
-
-      <section className="pos-frame">
-        <div className="pos-canvas">
-          {notice && <div className="pos-notice">{notice}</div>}
-          <section className="pos-client">
-            <div className="pos-client__head">
-              <div>
-                <h2>{client ? client.name : "Select client"}</h2>
-              </div>
-              {client && (
-                <button
-                  type="button"
-                  onClick={() => setClient(null)}
-                  className="pos-quiet"
-                >
-                  Change client
-                </button>
-              )}
-            </div>
-            {!client && (
-              <div className="pos-search">
-                <span>⌕</span>
-                <input
-                  value={clientSearch}
-                  onChange={(event) => setClientSearch(event.target.value)}
-                  placeholder="Search by name, email, or phone"
-                  autoComplete="off"
-                />
-                <kbd>⌘ K</kbd>
-              </div>
-            )}
-            {searching && (
-              <p className="pos-searching">Searching existing clients…</p>
-            )}
-            {matches.length > 0 && (
-              <div className="pos-client-results">
-                {matches.map((contact) => (
-                  <button
-                    type="button"
-                    key={contact.id}
-                    onClick={() => selectClient(contact)}
-                  >
-                    <span className="pos-avatar">
-                      {contact.name.slice(0, 2).toUpperCase()}
-                    </span>
-                    <span>
-                      <strong>{contact.name}</strong>
-                      <small>
-                        {contact.phone || contact.email || "No contact detail"}
-                      </small>
-                    </span>
-                    <b>→</b>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="pos-workspace">
-            <div className="pos-catalog">
-              <div className="pos-section-head">
-                <div>
-                  <h2>Add items</h2>
-                </div>
-              </div>
-              <div className="pos-categories">
-                {(
-                  ["Practice", "Series", "Upgrades", "Single sessions"] as const
-                ).map((name) => (
-                  <button
-                    className={category === name ? "is-active" : ""}
-                    type="button"
-                    onClick={() => setCategory(name)}
-                    key={name}
-                  >
-                    {name}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setShowCustom((value) => !value)}
-                >
-                  ＋ {showCustom ? "Close custom sale" : "Custom sale"}
-                </button>
-              </div>
-              <div className="pos-products">
-                {CATALOG.filter(([, , , group]) => group === category).map(
-                  ([key, label, amount, group]) => (
-                    <button
-                      type="button"
-                      className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`}
-                      key={key}
-                      onClick={() => addCatalog(key)}
-                      aria-label={`Add ${label} for ${money(amount)}`}
-                      style={{ width: "100%", textAlign: "left", font: "inherit", cursor: "pointer" }}
-                    >
-                      <div className="pos-product__mark">
-                        {key === "12-week-practice"
-                          ? "12"
-                          : group === "Upgrades"
-                            ? "↗"
-                            : "A"}
-                      </div>
-                      <p>{group}</p>
-                      <h3>{label}</h3>
-                      {key === "12-week-practice" && <span>24 sessions</span>}
-                      <footer>
-                        <strong>{money(amount)}</strong>
-                      </footer>
-                    </button>
-                  ),
-                )}
-              </div>
-              {showCustom && (
-                <div className="pos-custom" id="pos-custom-sale">
-                  <p className="pos-label">
-                    Separate custom sale · no fulfillment
-                  </p>
-                  <div>
-                    <input
-                      value={customLabel}
-                      onChange={(event) => setCustomLabel(event.target.value)}
-                      placeholder="Custom amount label"
-                    />
-                    <input
-                      value={customReason}
-                      onChange={(event) => setCustomReason(event.target.value)}
-                      placeholder="Category or reason"
-                    />
-                    <input
-                      inputMode="decimal"
-                      value={customDollars}
-                      onChange={(event) => setCustomDollars(event.target.value)}
-                      placeholder="$0.00"
-                    />
-                    <button type="button" onClick={addCustom}>
-                      Add custom line <b>→</b>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <aside className="pos-sale-card">
-              <div className="pos-sale-card__inner">
-                <div className="pos-sale-card__head">
-                  <div>
-                    <p className="pos-label">Current sale</p>
-                    <h2>{sale ? `Sale · ${sale.status}` : "Sale · Draft"}</h2>
-                  </div>
-                  <span>
-                    {cart.length} {cart.length === 1 ? "line" : "lines"}
-                  </span>
-                </div>
-                <div className="pos-cart-lines">
-                  {cart.length ? (
-                    cart.map((line, index) => {
-                      const label = line.productKey
-                        ? CATALOG.find(([key]) => key === line.productKey)?.[1]
-                        : line.customLabel;
-                      const unit = line.productKey
-                        ? CATALOG.find(
-                            ([key]) => key === line.productKey,
-                          )?.[2] || 0
-                        : line.customAmountCents || 0;
-                      return (
-                        <div
-                          className="pos-cart-line"
-                          key={`${line.productKey || line.customLabel}-${index}`}
-                        >
-                          <div>
-                            <span>{line.quantity || 1}</span>
-                            <p>
-                              <strong>{label}</strong>
-                              <small>
-                                {line.productKey
-                                  ? "Catalog product"
-                                  : `${line.customReason} · custom sale`}{" "}
-                                · {money(unit)} each
-                              </small>
-                            </p>
-                          </div>
-                          <div>
-                            <input
-                              aria-label={`Quantity for ${label}`}
-                              type="number"
-                              min="1"
-                              max="20"
-                              value={line.quantity || 1}
-                              onChange={(event) =>
-                                updateQuantity(
-                                  index,
-                                  Number(event.target.value),
-                                )
-                              }
-                            />
-                            <b>{money(unit * (line.quantity || 1))}</b>
-                            <button
-                              type="button"
-                              onClick={() => removeLine(index)}
-                              aria-label={`Remove ${label}`}
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <p className="pos-empty">
-                      Choose a catalog product or add a carefully labelled
-                      custom sale.
-                    </p>
-                  )}
-                </div>
-                <div className="pos-total">
-                  <span>Total due</span>
-                  <strong>{money(total)}</strong>
-                </div>
-                <div className="pos-lock">
-                  ◌ No sessions or access are granted from this draft.
-                </div>
-              </div>
-            </aside>
-          </section>
-
-          {cart.length > 0 && (
-            <section className="pos-payment" style={{ display: "block" }}>
-              <p className="pos-label">Payment</p>
-              <div className="pos-payment__body">
-                <div className="pos-methods">
-                  {(
-                    [
-                      ["checkout-link", "Checkout link"],
-                      ["hsa-card", "HSA / FSA card"],
-                      ["saved-card", "Saved card"],
-                      ["cash", "Cash"],
-                    ] as const
-                  ).map(([method, label]) => (
-                    <button
-                      key={method}
-                      type="button"
-                      onClick={() => setPrimaryAllocation(method)}
-                      className={
-                        legs.length === 1 && legs[0].method === method
-                          ? "is-active"
-                          : ""
-                      }
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addSplitAllocation}
-                    disabled={!total || legs.length >= 2}
-                  >
-                    ＋ Use two payment methods
-                  </button>
-                </div>
-                {legs.length === 1 && (
-                  <p className="pos-payment-choice">
-                    {paymentLabels[legs[0].method]} · {money(total)}
-                  </p>
-                )}
-                {legs.length > 1 && (
-                  <div className="pos-legs">
-                    <p>Enter the amount for each payment.</p>
-                    {legs.map((leg, index) => (
-                      <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}>
-                        <select
-                          aria-label={`Payment method ${index + 1}`}
-                          value={leg.method}
-                          onChange={(event) =>
-                            setLegs((current) =>
-                              current.map((value, i) =>
-                                i === index
-                                  ? {
-                                      ...value,
-                                      method: event.target
-                                        .value as PosPaymentMethod,
-                                    }
-                                  : value,
-                              ),
-                            )
-                          }
-                        >
-                          {[
-                            "checkout-link",
-                            "hsa-card",
-                            "saved-card",
-                            "cash",
-                            "other",
-                          ].map((method) => (
-                            <option key={method} value={method}>
-                              {method.replace("-", " ")}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          aria-label={`Amount for payment ${index + 1}`}
-                          type="number"
-                          min="0.00"
-                          step="0.01"
-                          value={(leg.amountCents / 100).toFixed(2)}
-                          onChange={(event) =>
-                            updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))
-                          }
-                        />
-                      </div>
-                    ))}
-                    {allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}
-                    <button type="button" className="pos-one-payment" onClick={useOnePayment} style={{ border: 0, background: "transparent", color: "#48676c", padding: 0, textAlign: "left", fontSize: 11, fontWeight: 700 }}>Use one payment instead</button>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {cart.length > 0 && (
-            <section className="pos-actions">
-              <div>
-                <p className="pos-label">04 · record safely</p>
-                <h2>
-                  {sale
-                    ? "Save the new draft state."
-                    : "Save before any message preview."}
-                </h2>
-                <span>
-                  Saving creates no payment, checkout link, text, or GHL change.
-                </span>
-              </div>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => void saveDraft()}
-                  disabled={busy}
-                >
-                  {busy ? "Saving…" : sale ? "Save changes" : "Save as draft"}{" "}
-                  <b>→</b>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void prepareText()}
-                  disabled={busy || !sale}
-                >
-                  Preview checkout text
-                </button>
-              </div>
-            </section>
-          )}
-          {preview && (
-            <section className="pos-text-preview">
-              <p className="pos-label">Preview only · no message sent</p>
-              <h3>
-                To {preview.recipient} · {money(preview.amountCents)}
-              </h3>
-              <blockquote>{preview.message}</blockquote>
-              <span>
-                A future sender must refresh consent and DND, create a secure
-                checkout, and record a final sender audit event.
-              </span>
-            </section>
-          )}
-          {sale && (
-            <p className="pos-audit">
-              Saved {new Date(sale.updatedAt).toLocaleString()} ·{" "}
-              {sale.audit.length} audit events · {sale.id}
-            </p>
-          )}
-        </div>
-      </section>
+      {notice && <div className="pos-notice">{notice}</div>}
+      <div className="pos-layout">
+        <section className="pos-products-pane">
+          <div className="pos-pane-head">
+            <div><p className="pos-label">Products</p><h1>Build cart</h1></div>
+            <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Search products" /><kbd>⌘ K</kbd></label>
+          </div>
+          <div className="pos-categories">{(["Practice", "Series", "Upgrades", "Single sessions"] as const).map((name) => <button className={category === name && !productQuery ? "is-active" : ""} type="button" onClick={() => { setCategory(name); setProductQuery(""); }} key={name}>{name}</button>)}</div>
+          <div className="pos-products">{products.map(([key, label, amount, group]) => <button type="button" className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`} key={key} onClick={() => addCatalog(key)} aria-label={`Add ${label} for ${money(amount)}`}><div className="pos-product__mark">{key === "12-week-practice" ? "12" : group === "Upgrades" ? "↗" : "A"}</div><p>{group}</p><h3>{label}</h3>{key === "12-week-practice" && <span>24 sessions</span>}<footer><strong>{money(amount)}</strong></footer></button>)}</div>
+          {!products.length && <p className="pos-no-products">No products match “{productQuery}”.</p>}
+        </section>
+        <aside className="pos-cart-pane">
+          <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
+          {cartLines}
+          <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
+          <button type="button" className="pos-checkout-bar" onClick={beginCheckout} disabled={!cart.length}>Checkout products<span>{money(total)} →</span></button>
+        </aside>
+      </div>
     </main>
   );
 }
