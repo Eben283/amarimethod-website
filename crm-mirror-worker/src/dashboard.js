@@ -68,13 +68,13 @@ const DASHBOARD_HTML = `<!doctype html>
       <div class="eyebrow">Read-only operator view</div>
       <h1>CRM mirror<br />health</h1>
       <p class="lede">A focused view of the data copied from GoHighLevel and Stripe. It has no client messaging, booking, or automated ledger-posting capability.</p>
-      <div class="state" id="state"><span class="dot"></span><span>Waiting for operator access</span></div>
+      <div class="state" id="state"><span class="dot"></span><span>__SERVER_STATE__</span></div>
 
       <div class="grid" aria-label="Mirror data counts">
-        <article class="card"><span class="label">Contacts</span><strong class="value" id="contacts">—</strong><span class="detail">Copied from GoHighLevel</span></article>
-        <article class="card"><span class="label">Appointments</span><strong class="value" id="appointments">—</strong><span class="detail">Calendar records observed in GHL</span></article>
-        <article class="card"><span class="label">Purchases</span><strong class="value" id="purchases">—</strong><span class="detail">Settled Stripe charges</span></article>
-        <article class="card"><span class="label">Sync health</span><strong class="value" id="last-import">—</strong><span class="detail" id="last-import-detail">No source status loaded</span></article>
+        <article class="card"><span class="label">Contacts</span><strong class="value" id="contacts">__SERVER_CONTACTS__</strong><span class="detail">Copied from GoHighLevel</span></article>
+        <article class="card"><span class="label">Appointments</span><strong class="value" id="appointments">__SERVER_APPOINTMENTS__</strong><span class="detail">Calendar records observed in GHL</span></article>
+        <article class="card"><span class="label">Purchases</span><strong class="value" id="purchases">__SERVER_PURCHASES__</strong><span class="detail">Settled Stripe charges</span></article>
+        <article class="card"><span class="label">Sync health</span><strong class="value" id="last-import">__SERVER_SYNC_HEALTH__</strong><span class="detail" id="last-import-detail">__SERVER_SYNC_DETAIL__</span></article>
       </div>
 
       <section class="section">
@@ -411,6 +411,41 @@ const DASHBOARD_HTML = `<!doctype html>
   </body>
 </html>`;
 
-export function dashboardHtml() {
-  return DASHBOARD_HTML;
+function initialSummary(status) {
+  if (!status) {
+    return {
+      state: "Waiting for operator access",
+      contacts: "—",
+      appointments: "—",
+      purchases: "—",
+      health: "—",
+      healthDetail: "Open a protected operator session to load source health",
+    };
+  }
+  const health = status.syncHealth || { overall: "waiting", providers: {} };
+  const sourceDetail = ["ghl", "stripe"].map((provider) => {
+    const source = health.providers?.[provider];
+    if (!source || source.state === "missing") return `${provider.toUpperCase()} has not run`;
+    const age = source.ageMinutes == null ? "time unavailable" : `${source.ageMinutes}m ago`;
+    return `${provider.toUpperCase()} ${source.state} · ${age}`;
+  }).join(" · ");
+  return {
+    state: "Protected server summary loaded · no sender actions available",
+    contacts: String(status.contacts ?? "—"),
+    appointments: String(status.appointments ?? "—"),
+    purchases: String(status.purchases ?? "—"),
+    health: health.overall === "healthy" ? "Healthy" : health.overall === "waiting" ? "Waiting" : "Review",
+    healthDetail: sourceDetail,
+  };
+}
+
+export function dashboardHtml(status = null) {
+  const summary = initialSummary(status);
+  return DASHBOARD_HTML
+    .replaceAll("__SERVER_STATE__", summary.state)
+    .replaceAll("__SERVER_CONTACTS__", summary.contacts)
+    .replaceAll("__SERVER_APPOINTMENTS__", summary.appointments)
+    .replaceAll("__SERVER_PURCHASES__", summary.purchases)
+    .replaceAll("__SERVER_SYNC_HEALTH__", summary.health)
+    .replaceAll("__SERVER_SYNC_DETAIL__", summary.healthDetail);
 }

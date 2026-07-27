@@ -1,6 +1,6 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
-import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { dashboardAccessLinkToken, dashboardSessionCookie, hasDashboardAccessLink, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import {
   activeClientOperations,
   classifyPurchase,
@@ -82,7 +82,25 @@ export default {
     const url = new URL(request.url);
     // The shell has no data or action controls. Data endpoints remain protected,
     // and the fragment-held access token is stripped from browser history.
-    if (request.method === "GET" && url.pathname === "/") return html(dashboardHtml());
+    const dashboardAccess = url.pathname.match(/^\/dashboard-access\/([^/]+)$/);
+    if (request.method === "GET" && dashboardAccess) {
+      const valid = await hasDashboardAccessLink(decodeURIComponent(dashboardAccess[1]), env);
+      if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/",
+          "Set-Cookie": await dashboardSessionCookie(env),
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
+    if (request.method === "GET" && url.pathname === "/") {
+      const denied = await requireDashboardReadAuth(request, env);
+      const status = denied ? null : await mirrorStatus(env.CRM_DB, new Date().toISOString());
+      return html(dashboardHtml(status));
+    }
 
     try {
       if (request.method === "POST" && url.pathname === "/dashboard-session") {
@@ -90,6 +108,17 @@ export default {
         if (denied) return denied;
         const cookie = await dashboardSessionCookie(env);
         return json(200, { success: true, expiresInSeconds: 8 * 60 * 60 }, { "Set-Cookie": cookie });
+      }
+      if (request.method === "POST" && url.pathname === "/dashboard-access-link") {
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+        const token = await dashboardAccessLinkToken(env);
+        if (!token) return json(503, { error: "dashboard access is not configured" });
+        return json(200, {
+          success: true,
+          expiresInSeconds: 5 * 60,
+          url: `${url.origin}/dashboard-access/${token}`,
+        }, { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" });
       }
       if (request.method === "POST" && url.pathname === "/review-session") {
         const denied = requireWorkerAuth(request, env);

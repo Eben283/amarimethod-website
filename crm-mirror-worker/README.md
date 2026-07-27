@@ -30,7 +30,7 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.
 
-The root dashboard exchanges an operator bearer credential for a signed, eight-hour HttpOnly browser session. That session can read only the dashboard's GET endpoints; `POST /sync` continues to require the bearer credential on every request.
+The root dashboard exchanges an operator bearer credential for a signed, eight-hour HttpOnly browser session. A protected `POST /dashboard-access-link` can mint a short-lived handoff URL that exchanges only a signed five-minute token for that session; it never exposes the Worker bearer secret in the browser URL. The root server-renders aggregate counts and source health once the session is present, so the health summary remains visible even in a browser that cannot run the dashboard JavaScript. That session can read only the dashboard's GET endpoints; `POST /sync` continues to require the bearer credential on every request.
 
 Approval actions require a separate signed 15-minute review session, created only with the bearer credential. Candidate acceptance/rejection and package classification record an `operational_events` audit record; neither action creates a ledger entry.
 - `POST /sync` with optional `{ "sources": ["ghl", "stripe"], "limit": 25 }` — bounded manual import. Both provider integrations use `GET` only.

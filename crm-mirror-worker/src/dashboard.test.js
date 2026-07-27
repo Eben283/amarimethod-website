@@ -30,4 +30,25 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain("history.replaceState");
     expect(html).toContain("It cannot send email or SMS");
   });
+
+  it("renders only aggregate source health when the Worker has an authenticated session", () => {
+    const html = dashboardHtml({
+      contacts: 718,
+      appointments: 202,
+      purchases: 52,
+      syncHealth: {
+        overall: "healthy",
+        providers: {
+          ghl: { state: "healthy", ageMinutes: 3 },
+          stripe: { state: "healthy", ageMinutes: 4 },
+        },
+      },
+    });
+    expect(html).toContain("Protected server summary loaded");
+    expect(html).toContain('id="contacts">718');
+    expect(html).toContain('id="appointments">202');
+    expect(html).toContain('id="purchases">52');
+    expect(html).toContain('id="last-import">Healthy');
+    expect(html).not.toContain("__SERVER_");
+  });
 });

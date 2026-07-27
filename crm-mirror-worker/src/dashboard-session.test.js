@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { dashboardAccessLinkToken, dashboardSessionCookie, hasDashboardAccessLink, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 
 const env = { WORKER_AUTH_SECRET: "test-secret" };
 
@@ -27,5 +27,13 @@ describe("CRM mirror dashboard sessions", () => {
     await expect(hasReviewSession(request, env, 1_001)).resolves.toBe(true);
     await expect(hasDashboardSession(request, env, 1_001)).resolves.toBe(false);
     await expect(hasReviewSession(request, env, 1_000 + 15 * 60)).resolves.toBe(false);
+  });
+
+  it("mints a short-lived handoff token that cannot be used as the Worker bearer secret", async () => {
+    const token = await dashboardAccessLinkToken(env, 1_000);
+    expect(token).not.toContain(env.WORKER_AUTH_SECRET);
+    await expect(hasDashboardAccessLink(token, env, 1_001)).resolves.toBe(true);
+    await expect(hasDashboardAccessLink(token, env, 1_000 + 5 * 60)).resolves.toBe(false);
+    await expect(hasDashboardAccessLink(`${token}x`, env, 1_001)).resolves.toBe(false);
   });
 });
