@@ -1,380 +1,272 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Garrett Hewstan | Creator of the Amari Method | San Francisco</title>
-  <meta name="description" content="Meet Garrett Hewstan, creator of the Amari Method. After 25 years of practice, he built a system that teaches you to address your own pain.">
-  <meta name="keywords" content="Garrett Hewstan, Amari Method founder, chronic pain relief, pain relief expert San Francisco">
-  <meta name="author" content="Amari Method">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Meet Garrett Hewstan, creator of the Amari Method. After 25 years of practice, he built a system that teaches you to address your own pain.">
+<link rel="canonical" href="https://www.amarimethod.com/about">
 
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/about">
-  <meta property="og:title" content="About Garrett | Amari Method">
-  <meta property="og:description" content="Learn the story of Garrett Hewstan and how the Amari Method was created.">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Garrett Hewstan | Creator of the Amari Method | San Francisco</title>
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/about">
+<meta property="og:title" content="Garrett Hewstan | Creator of the Amari Method | San Francisco">
+<meta property="og:description" content="Meet Garrett Hewstan, creator of the Amari Method. After 25 years of practice, he built a system that teaches you to address your own pain.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/about">
+<meta name="twitter:title" content="Garrett Hewstan | Creator of the Amari Method | San Francisco">
+<meta name="twitter:description" content="Meet Garrett Hewstan, creator of the Amari Method. After 25 years of practice, he built a system that teaches you to address your own pain.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
+<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<style>
+  /* ---------- About-page-specific styles ---------- */
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.amarimethod.com/about">
-  <meta property="twitter:title" content="About Garrett | Amari Method">
-  <meta property="twitter:description" content="Learn the story of Garrett Hewstan and how the Amari Method was created.">
-  <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  /* About hero: split portrait (face never covered) */
+  .hero.hero-about{min-height:86vh;display:block;padding:0;text-align:left;background:var(--ink);overflow:hidden}
+  .hero-about-grid{display:grid;grid-template-columns:1.02fr .98fr;min-height:86vh}
+  .hero-about-copy{align-self:center;padding:clamp(130px,15vh,180px) clamp(30px,4.5vw,76px) clamp(56px,8vh,80px);color:#fff;max-width:none}
+  .hero-about-copy .eyebrow{display:block;margin-bottom:22px}
+  .hero-about-copy h1{color:#fff;font-size:clamp(2.4rem,4.4vw,4rem);font-weight:500;line-height:1.1;max-width:15ch;margin:0}
+  .hero-about-copy p{color:rgba(255,255,255,.84);max-width:46ch;margin:26px 0 0;font-size:clamp(1.02rem,1.3vw,1.15rem)}
+  .hero-about-copy .btn{margin-top:36px}
+  .hero-about-portrait{position:relative;background-size:cover;background-position:center 22%;background-color:#2b2723;min-height:86vh}
+  .hero-about-portrait::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(33,29,25,.42),rgba(33,29,25,0) 26%),linear-gradient(90deg,rgba(33,29,25,.42),rgba(33,29,25,0) 20%)}
 
-  <!-- Favicon & Icons -->
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/about">
+  /* In a session (two column text + photo) */
+  .split{padding:clamp(64px,8vw,110px) 0}
+  .split-inner{display:grid;grid-template-columns:1fr 1fr;gap:clamp(40px,6vw,90px);align-items:center}
+  .split .label{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--body);margin-bottom:18px;display:block}
+  .split h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:500;max-width:14ch}
+  .split .txt p{margin-top:20px;max-width:52ch}
+  .split .photo{aspect-ratio:4/5;background-size:cover;background-position:center;background-color:var(--cream-2);border-radius:1px}
+  .split-inner.reverse .photo{order:-1}
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,100..900;1,9..40,100..900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  /* Credentials grid */
+  .creds{padding:clamp(56px,7vw,92px) 0}
+  .creds-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line)}
+  .cred{padding:40px clamp(20px,2.2vw,34px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+  .cred:first-child{border-left:1px solid var(--line)}
+  .cred b{font-family:var(--serif);font-weight:500;font-size:clamp(2.4rem,4vw,3.2rem);line-height:1;display:block;color:var(--ink)}
+  .cred .h{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:16px 0 12px}
+  .cred p{font-size:14.5px;max-width:34ch}
 
-  <!-- Google Analytics 4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
+  /* Origin story */
+  .origin{padding:clamp(70px,9vw,120px) 0;background:var(--cream-2)}
+  .origin-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:clamp(40px,6vw,80px);align-items:center}
+  .origin h2{font-size:clamp(2.2rem,4vw,3.3rem);font-weight:500;max-width:16ch;margin-bottom:28px}
+  .origin .lead{font-family:var(--serif);font-size:clamp(1.25rem,1.9vw,1.5rem);font-style:italic;color:var(--ink);max-width:46ch;margin-bottom:22px;line-height:1.4}
+  .origin p{margin-top:18px;max-width:52ch}
+  .origin figure{margin:0}
+  .origin .photo{aspect-ratio:3/4;background-size:cover;background-position:center;background-color:var(--tan);border-radius:1px}
+  .origin figcaption{font-family:var(--sans);font-size:12px;letter-spacing:.06em;color:var(--body);margin-top:14px;text-align:center;font-style:normal}
 
-  <!-- Schema Markup - Person (Garrett) -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "@id": "https://www.amarimethod.com/about#dr-garrett",
-    "name": "Garrett Hewstan",
-    "jobTitle": "Creator of the Amari Method",
-    "description": "Garrett Hewstan developed the Amari Method after 25 years of practice. He teaches clients to address their own pain through 8 core rebalancing protocols.",
-    "knowsAbout": [
-      "Chronic pain relief",
-      "Body rebalancing",
-      "Movement assessment",
-      "Active and passive tension patterns",
-      "Musculoskeletal health"
-    ],
-    "affiliation": {
-      "@type": "MedicalBusiness",
-      "@id": "https://www.amarimethod.com/#business",
-      "name": "Amari Method"
-    },
-    "worksFor": {
-      "@type": "MedicalBusiness",
-      "@id": "https://www.amarimethod.com/#business"
-    },
-    "areaServed": [
-      { "@type": "City", "name": "San Francisco" },
-      { "@type": "Country", "name": "United States" }
-    ],
-    "url": "https://www.amarimethod.com/about",
-    "sameAs": [
-      "https://www.linkedin.com/in/garrett-hewstan-dc-4bb940183/"
-    ]
+  /* Approach (numbered) — editorial sticky rail + tightened list */
+  .approach{padding:clamp(64px,8vw,110px) 0}
+  .approach-inner{display:grid;grid-template-columns:.82fr 1.18fr;gap:clamp(40px,5.5vw,80px);align-items:start}
+  .approach-rail{position:sticky;top:96px}
+  .approach-rail h2{font-size:clamp(2rem,3.6vw,3rem);font-weight:500;max-width:13ch}
+  .approach-rail p{margin:20px 0 30px;max-width:40ch}
+  .approach-photo{aspect-ratio:4/5;background-size:cover;background-position:center 32%;background-color:var(--peach);border-radius:1px}
+  .approach-list{list-style:none;border-top:1px solid var(--line)}
+  .approach-list .ap{padding:clamp(30px,3.4vw,42px) 0;border-bottom:1px solid var(--line)}
+  .ap .num{font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:14px}
+  .ap h3{font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:24ch}
+  .ap p{margin-top:14px;max-width:56ch}
+
+  @media (max-width:1000px){
+    .split-inner,.origin-grid{grid-template-columns:1fr}
+    .split .photo{order:-1;max-width:520px}
+    .origin figure{max-width:420px;margin:0 auto}
+    .creds-grid{grid-template-columns:1fr 1fr}
+    .approach-inner{grid-template-columns:1fr;gap:clamp(30px,5vw,48px)}
+    .approach-rail{position:static}
+    .approach-photo{max-width:440px}
   }
-  </script>
-
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
-        <!-- BreadcrumbList Schema -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Amari Method", "item": "https://www.amarimethod.com/" },
-      { "@type": "ListItem", "position": 2, "name": "About", "item": "https://www.amarimethod.com/about" }
-    ]
+  @media (max-width:900px){
+    .hero.hero-about{min-height:0}
+    .hero-about-grid{grid-template-columns:1fr;min-height:0}
+    .hero-about-portrait{min-height:54vh;order:-1;background-position:center 20%}
+    .hero-about-portrait::after{background:linear-gradient(180deg,rgba(33,29,25,.5),rgba(33,29,25,0) 34%)}
+    .hero-about-copy{padding:clamp(48px,7vh,64px) clamp(22px,6vw,44px) clamp(56px,9vh,72px)}
   }
-  </script>
+  @media (max-width:640px){
+    .creds-grid{grid-template-columns:1fr}
+    .cred{border-left:1px solid var(--line)}
+  }
+</style>
 
-  <!-- Microsoft Clarity -->
-    <script type="text/javascript">
-        (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "vuvx43xu8h");
-    </script>
-  <style>
-    body { background: #F7F2E8 !important; }
-    body nav { background: #F7F2E8 !important; border-bottom: 1px solid #E0D7C2; }
-    main .about-hero { background: #F7F2E8 !important; }
-    main .about-hero h1 { font-size: clamp(36px, 5vw, 72px) !important; line-height: 1; letter-spacing: -0.03em; max-width: 18ch; }
-  </style>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<!-- Microsoft Clarity -->
+<script>
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "vuvx43xu8h");
+</script>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </nav>
-<main>
-  <!-- Hero -->
-  <header class="about-hero">
-    <h1>Teaching you to fix it <em>yourself.</em></h1>
-    <p class="about-hero-sub">Creator of the Amari Method. 25 years of hands-on practice. San Francisco + virtual.</p>
-    <div class="about-hero-meta">
-      <p style="font-family: var(--font-serif-primary, Georgia, serif); font-size: 22px; line-height: 1.4; color: var(--amari-charcoal, #3A3A3A); max-width: 40ch;">Not a prescription. Not a treatment you wait out. A method you learn, practice, and take home.</p>
-      <div>
-        <div class="about-stat">25<em>+</em></div>
-        <div class="about-stat-label">Years of hands-on practice</div>
-      </div>
-      <div>
-        <div class="about-stat">8</div>
-        <div class="about-stat-label">Core protocols</div>
-      </div>
-    </div>
-  </header>
+<!-- Header is injected by amari-mockup.js -->
 
-  <!-- Split Portrait -->
-  <section class="about-split">
-    <div class="about-split-inner">
-      <div class="about-split-photo">
-        <img src="images/Dr-Garrett-Headshot-2.avif" alt="Garrett Hewstan, creator of the Amari Method" width="854" height="1280" loading="lazy">
-        <div class="about-split-caption">
-          <span>Garrett Hewstan</span>
-          <span>San Francisco</span>
-        </div>
-      </div>
-      <div class="about-split-pull">
-        <span class="section-eyebrow">Method, not treatment</span>
-        <h2>I saw that every traditional approach kept people <em>passive.</em> Someone else was always in charge. So I built a method that puts the work back in your hands.</h2>
-        <div class="about-split-attrib"><b>Garrett Hewstan</b> &middot; Creator of the Amari Method</div>
-      </div>
+<!-- HERO — split: portrait beside the copy, so Garrett's face is never covered -->
+<section class="hero hero-about">
+  <div class="hero-about-grid">
+    <div class="hero-about-copy">
+      <span class="eyebrow light">Creator of the Amari Method</span>
+      <h1>Your body transforms through <em>self-discovery.</em></h1>
+      <p>You're guided through a range of protocols and movements to restore balance in your body. Most clients feel relief in their first session. From there, we develop a plan to help your body move out of defensive physiology.</p>
+      <a href="/booking" class="btn btn-pale">Book a $29 Assessment</a>
     </div>
-  </section>
+    <div class="hero-about-portrait" style="background-image:url('/images/v6/real/garrett-face-1200.jpg')"></div>
+  </div>
+</section>
 
-  <!-- Intro: what happens in a session -->
-  <section class="about-intro">
-    <div class="about-intro-inner">
-      <div>
-        <div class="about-intro-label">In a session</div>
-        <h3>He watches how your body <em>responds</em>.</h3>
-      </div>
-      <div class="about-intro-body">
-        <p>Garrett guides you through protocols using simple props while he watches how your body responds. He's not doing the work for you. He's showing you where your body is <em>out of balance</em> and how to correct it yourself.</p>
-        <p>After 25 years, he can see things in how you move that nobody else has caught. Every approach he trained in kept people passive, waiting to be fixed. But only your body can heal you. So he built a method that teaches you how.</p>
-      </div>
-    </div>
-  </section>
+<!-- SPLIT PORTRAIT — pull quote (Garrett, first person) -->
+<section class="band tan">
+  <div class="band-copy quote reveal">
+    <span class="eyebrow">Why he built it</span>
+    <span class="mark">&ldquo;</span>
+    <h2>I wanted to change the culture of the medical model and help people move from dependence to <em>self-empowerment.</em></h2>
+    <cite>Garrett Hewstan · Creator of the Amari Method</cite>
+  </div>
+  <div class="band-photo" style="background-image:url('/images/v6/real/garrett-session-img-3348.jpg')"></div>
+</section>
 
-  <!-- Credentials -->
-  <section class="about-cred">
-    <div class="about-cred-grid">
-      <div class="about-cred-item">
-        <div class="about-cred-big">25<sup>+</sup></div>
-        <div class="about-cred-lbl">Years of hands-on practice</div>
-        <p>Two-and-a-half decades working with bodies in pain, across every age and every kind of life.</p>
+<!-- IN A SESSION -->
+<section class="split">
+  <div class="wrap">
+    <div class="split-inner reverse">
+      <div class="txt reveal">
+        <span class="label">In a session</span>
+        <h2>We watch how your body <em>responds.</em></h2>
+        <p>We teach your body a new language. You move from linear movements to spontaneous, inspired micro-movements. You experience real change in real time, and the pieces begin to fall into place. We don't fix anything. We let your body show us what it wants.</p>
+        <p>Your nervous system settles. Your breath deepens. You experience safety in your body again. This work is an invitation to your body, not a demand. You are having a conversation with your body and listening to what it is saying.</p>
       </div>
-      <div class="about-cred-item">
-        <div class="about-cred-big">8</div>
-        <div class="about-cred-lbl">Core protocols</div>
-        <p>A complete method: eight core rebalancing protocols you learn in session and take home with you.</p>
-      </div>
-      <div class="about-cred-item">
-        <div class="about-cred-big">4<em>.9</em></div>
-        <div class="about-cred-lbl">Average client rating</div>
-        <p>Nearly every client leaves the first session feeling a difference. Many say it's the first thing that's actually worked.</p>
-      </div>
-      <div class="about-cred-item">
-        <div class="about-cred-big"><em>&check;</em></div>
-        <div class="about-cred-lbl">Satisfaction guaranteed</div>
-        <p>If you don't feel noticeable relief after your first session, we keep working with you until you do, at no additional charge.</p>
-      </div>
+      <div class="photo reveal" style="background-image:url('/images/photos/detail-crops/shoulder-forearm-gym.jpg')"></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Origin Story -->
-  <section class="about-origin">
-    <div class="about-origin-head">
-      <h2>Named for a boy whose story changed <em>everything.</em></h2>
-    </div>
-    <div class="about-origin-body">
-      <p class="about-origin-lead">Garrett Hewstan knows firsthand the power of natural healing. As a child, he spent countless nights in hospital oxygen tents, struggling to breathe through severe asthma. Everything changed when his mother took him to a practitioner who helped him get off medication and gave him the freedom to thrive. That experience set him on the path to studying the body professionally.</p>
-      <p>Years later, during his final year of training, Garrett had an experience that would shape his life's mission. A woman named Phyllis shared heartbreaking news: her 11-year-old grandson, Amari, had just passed away from complications of asthma.</p>
-      <p>The story struck Garrett deeply. Amari was the same age he had been when natural care saved his life. Garrett couldn't help but wonder: <em>What if I could have helped him?</em></p>
-      <div class="about-origin-divider">&middot; &middot; &middot;</div>
-    </div>
-    <figure class="about-amari-photo">
-      <div class="about-amari-frame">
-        <img src="images/Amari-child.webp" alt="Amari, the boy who inspired the Amari Method" loading="lazy" width="1024" height="1536">
+<!-- CREDENTIALS GRID -->
+<section class="creds">
+  <div class="wrap">
+    <div class="creds-grid reveal">
+      <div class="cred">
+        <b>25+</b>
+        <div class="h">Years of hands-on practice</div>
+        <p>Two and a half decades of working with every type of body and every type of challenge.</p>
       </div>
-      <figcaption class="about-amari-caption">
-        <span class="about-amari-dash"></span>
-        <span>Amari, the boy who inspired the method</span>
-      </figcaption>
-    </figure>
-  </section>
+      <div class="cred">
+        <b>8</b>
+        <div class="h">Core protocols</div>
+        <p>Eight core rebalancing protocols. Through them, your body learns a new language.</p>
+      </div>
+      <div class="cred">
+        <b>10 min</b>
+        <div class="h">A day at home</div>
+        <p>These protocols are designed to inspire you to develop a home practice.</p>
+      </div>
+      <div class="cred">
+        <b>We</b>
+        <div class="h">Do the work</div>
+        <p>We do the work together. You leave with a complete understanding of what works—and what doesn't—for your body.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- Promise -->
-  <section class="about-promise">
-    <div class="about-promise-inner">
-      <span class="section-eyebrow" style="color: #C9BEA9;">The Promise</span>
-      <blockquote>In that moment, Garrett made a promise, to Amari, to his younger self, and to every person struggling with chronic pain, that he would dedicate his life to making natural healing <em>accessible, effective,</em> and <em>empowering.</em></blockquote>
-      <div class="about-promise-sig">
-        <span class="about-promise-dash"></span>
-        <b>Garrett Hewstan</b>
-        <span class="about-promise-dash"></span>
+<!-- ORIGIN STORY -->
+<section class="origin">
+  <div class="wrap">
+    <div class="origin-grid">
+      <div class="reveal">
+        <h2>Named for a boy who inspired <em>change.</em></h2>
+        <p class="lead">Garrett felt an immediate connection to Amari, a boy he never met. Both faced life-threatening complications from asthma at the same age; Garrett survived, while Amari did not. Amari's passing gave Garrett's work deeper meaning and purpose: to remind people that, with the right guidance, the body has a remarkable capacity to heal—and that care should move people toward self-empowerment, not dependence.</p>
       </div>
+      <figure class="reveal">
+        <div class="photo" style="background-image:url('/images/v6/real/Amari-child.jpg')"></div>
+        <figcaption>Amari, the boy who inspired the method</figcaption>
+      </figure>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Why the Name -->
-  <section class="about-why-name">
-    <div class="about-why-name-inner">
-      <div>
-        <div class="about-why-label">Why "Amari"</div>
-        <h2>Every person who finds freedom through this method <em>carries his name forward.</em></h2>
+<!-- WHAT MAKES THE METHOD DIFFERENT -->
+<section class="approach">
+  <div class="wrap">
+    <div class="approach-inner">
+      <div class="approach-rail reveal">
+        <h2>What makes the Amari Method <em>different.</em></h2>
+        <div class="approach-photo" style="background-image:url('/images/photos/detail-crops/hand-reaching-open.jpg')"></div>
       </div>
-      <div>
-        <p class="about-why-first">Every person who finds freedom through the Amari Method carries forward the spirit of that promise, and honors the boy whose name reminds us why this work matters.</p>
-        <p>The Amari Method exists because of one child's story, and it continues to transform lives in his honor.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- What Makes the Method Different -->
-  <section class="about-approach">
-    <div class="about-approach-head">
-      <h2>What makes the method <em>different.</em></h2>
-      <p class="about-approach-lead">Four things that set the Amari Method apart from every other approach Garrett trained in over 25 years. Each one is a deliberate inversion of how most care is delivered.</p>
-    </div>
-    <div class="about-approach-list">
-      <div class="about-ap-item">
-        <div class="about-ap-num">01</div>
-        <div>
-          <h3>You learn the method, not a prescription.</h3>
-          <p>Most clients feel relief in their first session. But the goal is bigger than relief. It's skill. You leave knowing how to rebalance your own body.</p>
-        </div>
-      </div>
-      <div class="about-ap-item">
-        <div class="about-ap-num">02</div>
-        <div>
-          <h3>Simple props, guided by 25 years of hands-on experience.</h3>
-          <p>Yoga blocks, foam rollers, gymnastic rings. Garrett sees what you can't and guides you through it.</p>
-        </div>
-      </div>
-      <div class="about-ap-item">
-        <div class="about-ap-num">03</div>
-        <div>
-          <h3>No drugs, no surgery, no dependency.</h3>
-          <p>You don't come back forever. The home practice is about five minutes a day on your living room floor.</p>
-        </div>
-      </div>
-      <div class="about-ap-item">
-        <div class="about-ap-num">04</div>
-        <div>
+      <ol class="approach-list reveal">
+        <li class="ap">
+          <span class="num">01</span>
+          <h3>Your relationship with your body changes.</h3>
+          <p>Instead of fighting your body, you begin listening to it with curiosity. You stop telling your body what to do and start letting your body show you what it needs. The method is about learning an entirely different somatic language.</p>
+        </li>
+        <li class="ap">
+          <span class="num">02</span>
+          <h3>Sessions are dynamic.</h3>
+          <p>You are guided through the protocol your body needs in that moment. You move around the room: some protocols take place on the floor, while others use gymnastic rings or stairs. You are never confined to a treatment table.</p>
+        </li>
+        <li class="ap">
+          <span class="num">03</span>
+          <h3>We don't force. We work through rapport.</h3>
+          <p>No drugs. No surgery. Your body moves and reorganizes itself with ease, and you learn how to transition into a home practice.</p>
+        </li>
+        <li class="ap">
+          <span class="num">04</span>
           <h3>If you don't feel a difference, we keep working.</h3>
           <p>If you don't experience noticeable relief after your first session, we keep working with you until you do, at no additional charge.</p>
-        </div>
-      </div>
+        </li>
+      </ol>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Tyler Testimonial -->
-  <section class="about-rami">
-    <div class="about-rami-inner">
-      <div class="about-rami-mark">&ldquo;</div>
-      <blockquote>I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.</blockquote>
-      <div class="about-rami-by">
-        <span class="about-rami-dash"></span>
-        <b>Tyler</b>
-        <span style="color: var(--color-text-muted, #888);">Photographer</span>
-      </div>
+<!-- TESTIMONIAL -->
+<section class="pullquote" style="background-image:url('/images/photos/materials/jaw-neck-soft.jpg')">
+  <div class="wrap reveal">
+    <span class="mark">//</span>
+    <blockquote>I finally understand <em>WHY</em> my neck has been hurting. That's worth more than any treatment I've ever had.</blockquote>
+    <cite>Tyler · Photographer</cite>
+  </div>
+</section>
+
+<!-- APPOINTMENT CTA -->
+<section class="appt" id="appt">
+  <div class="wrap">
+    <h2>Ready to <em>feel the difference?</em></h2>
+    <p>Your first session is 60 minutes with Garrett. Follow-ups are 50 minutes, and most people continue in a series of 4 or 8 sessions.</p>
+    <div class="btn-row">
+      <a href="/booking" class="btn">Book a $29 Assessment</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free quiz</a>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CTA -->
-  <section class="about-cta">
-    <div class="about-cta-inner">
-      <h2>Ready to experience the <em>Amari Method?</em></h2>
-      <p>Book your first session with Garrett. Most clients feel a difference before they leave. If you don't, we keep working until you do.</p>
-      <div class="about-cta-actions">
-        <a href="/book-initial-in-person" class="btn-primary"><span class="btn-content"><span class="btn-text">Book your first session</span><span class="arrow">→</span></span></a>
-        <a href="/quiz/" class="btn-secondary"><span class="btn-content"><span class="btn-text">Take the free assessment</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </section>
-</main>
-
-    <footer>
-        <!-- Footer Top: Logo + Contact -->
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Teaching you to fix it yourself.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
-        </div>
-        <!-- Footer Links -->
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/#why">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/#how">How It Works</a></li>
-                    <li><a href="/#results">Results & Reviews</a></li>
-                    <li><a href="affiliate">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/#services">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-        </div>
-    </footer>
-<script src="js/main.js?v=5" defer></script>
+<!-- Footer is injected by amari-mockup.js -->
+<script src="/js/site-v6.js?v=18" data-nav="about"></script>
 </body>
 </html>

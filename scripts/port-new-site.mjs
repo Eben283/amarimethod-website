@@ -167,7 +167,7 @@ function transform(html, target) {
   const CTA_FIXES = [
     ['<a href="#" class="btn">Book your first session</a>', '<a href="/book/initial-in-person" class="btn">Book your first session</a>'],
     ['<a href="#" class="btn btn-outline">Book your first session</a>', '<a href="/book/initial-in-person" class="btn btn-outline">Book your first session</a>'],
-    ['<a href="#" class="btn btn-outline">Take the free assessment</a>', '<a href="/quiz/" class="btn btn-outline">Take the free assessment</a>'],
+    ['<a href="#" class="btn btn-outline">Take the free quiz</a>', '<a href="/quiz/" class="btn btn-outline">Take the free quiz</a>'],
     ['<a href="#" class="btn">Book Your Virtual Session</a>', '<a href="/book/initial-virtual" class="btn">Book Your Virtual Session</a>'],
     ['<a href="#" class="btn">Book Your In-Person Session</a>', '<a href="/book/initial-in-person" class="btn">Book Your In-Person Session</a>'],
     ['<a href="#" class="btn">Book the free call</a>', '<a href="/book/discovery-call" class="btn">Book the free call</a>'],

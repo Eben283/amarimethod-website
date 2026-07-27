@@ -136,6 +136,12 @@ export const GHL_PRODUCTS = {
     sessions: 0, // standalone video program
     isPackagePurchase: false,
   },
+  "6a66cf0103821ea09ea13f1b": {
+    name: "Amari Assessment",
+    classification: "assessment",
+    sessions: 0, // a paid first visit, never a prepaid practice session
+    isPackagePurchase: false,
+  },
 };
 
 // Convenience: derived map for the session-ledger's classifyInvoice function.
@@ -184,6 +190,7 @@ export const PRICE_IDS = {
   "67b1299f080422451447bdd0": ["67b1299f0804221b3947bdd4"], // Pre Purchased (draw-down)
   "69c5d29c4019ce8e80e2513b": ["69c5d29c5b50e82344c2d6ec"], // Entrainment
   "6998d7f2606fa79c54fa3ff5": ["6998d7f2606fa7edc0fa3ffa"], // Living Practice
+  "6a66cf0103821ea09ea13f1b": ["6a66cf0103821e836fa13f20"], // Amari Assessment ($29)
 };
 
 // Follow-up productIds that are DRAW-DOWNS — booked against an existing package,
@@ -215,7 +222,11 @@ export const productForAnyId = (anyId) => {
 // Living Practice do not.
 function creditsOnPurchase(productId, p) {
   if (DRAW_DOWN_PRODUCT_IDS.has(productId)) return false;
-  if (p.classification === "entrainment" || p.classification === "living-practice") return false;
+  if (
+    p.classification === "entrainment" ||
+    p.classification === "living-practice" ||
+    p.classification === "assessment"
+  ) return false;
   return p.isPackagePurchase || p.sessions >= 1;
 }
 

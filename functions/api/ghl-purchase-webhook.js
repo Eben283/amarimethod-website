@@ -38,25 +38,37 @@ const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // Crediting now DERIVES from the single source of truth (functions/lib/
 // ghl-products.js → PURCHASE_CREDIT_MAP). This file only overlays the two
 // webhook-specific things the catalog doesn't carry:
-//   1. booking metadata for the native-booking Initials (calendar, title, tag)
+//   1. booking metadata for native paid visits (calendar, title, tag)
 //   2. the RETIRED legacy follow-up (67f57171), kept so old orders still credit.
 // Draw-down follow-ups (69aee204 / 69aee3eb / 67b1299f) are excluded by the
 // catalog itself (DRAW_DOWN_PRODUCT_IDS) — crediting them would inflate balances.
 
-const INITIAL_BOOKING_META = {
+export const PAID_BOOKING_MAP = {
   "688a1cd770362828afbf08a2": {
-    isInitialBooking: true,
+    isNativePaidBooking: true,
     calendarId: "G7OAnnJuFbMF6nQSlZVQ",
+    duplicateCalendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "ySmht5hx4uZGEpgZrlCw"],
     durationMinutes: 60,
     sessionTitle: "Amari Method Initial Session — In Person",
     sessionTag: "booked-initial-in-person",
   },
   "690b6b4d333ffa59d40c1823": {
-    isInitialBooking: true,
+    isNativePaidBooking: true,
     calendarId: "ySmht5hx4uZGEpgZrlCw",
+    duplicateCalendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "ySmht5hx4uZGEpgZrlCw"],
     durationMinutes: 60,
     sessionTitle: "Amari Method Initial Session — Virtual",
     sessionTag: "booked-initial-virtual",
+  },
+  "6a66cf0103821ea09ea13f1b": {
+    isNativePaidBooking: true,
+    isNonCreditBooking: true,
+    name: "Amari Assessment",
+    calendarId: "EM6vB2mq7EAdGCbUb3j1",
+    duplicateCalendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
+    durationMinutes: 40,
+    sessionTitle: "Amari Assessment — In Person",
+    sessionTag: null,
   },
 };
 
@@ -69,20 +81,23 @@ const LEGACY_CREDITS = {
 export const PRODUCT_MAP = (() => {
   const m = { ...LEGACY_CREDITS };
   for (const [id, entry] of Object.entries(PURCHASE_CREDIT_MAP)) {
-    m[id] = INITIAL_BOOKING_META[id] ? { ...entry, ...INITIAL_BOOKING_META[id] } : { ...entry };
+    m[id] = PAID_BOOKING_MAP[id] ? { ...entry, ...PAID_BOOKING_MAP[id] } : { ...entry };
   }
   return m;
 })();
+
+function isRecognizedPurchaseProduct(productId) {
+  return !!(PRODUCT_MAP[productId] || PAID_BOOKING_MAP[productId]);
+}
 
 // Pure: the productId of a credited product on an order, or null. (R4 fix,
 // 2026-06-08.) Reads the NESTED ids GHL actually sends — `item.product._id`
 // (= productId) and `item.price._id` (= priceId) — plus legacy flat fallbacks,
 // and normalizes ANY id → productId via productIdForAnyId so a priceId resolves
-// against the productId-keyed PRODUCT_MAP. The prior `fetchRecentOrder`
-// extraction never read `item.product._id` and treated `item._id` (the LINE-ITEM
-// id) as a product, so on a real order the Orders-API backup couldn't resolve a
-// product and silently skipped crediting. PRODUCT_MAP excludes draw-downs, so an
-// order that's only a draw-down correctly returns null.
+// against the productId-keyed catalog. The prior `fetchRecentOrder` extraction
+// never read `item.product._id` and treated `item._id` (the LINE-ITEM id) as a
+// product, so on a real order the Orders-API backup couldn't resolve a product
+// and silently skipped crediting. Draw-down-only orders still return null.
 export function resolveOrderProductId(order) {
   const items = order?.items || order?.lineItems || order?.line_items || [];
   for (const item of items) {
@@ -90,7 +105,7 @@ export function resolveOrderProductId(order) {
       item?.product?._id || item?.price?._id ||
       item?.product_id || item?.productId || item?.priceId;
     const productId = productIdForAnyId(rawId);
-    if (productId && PRODUCT_MAP[productId]) return productId;
+    if (productId && isRecognizedPurchaseProduct(productId)) return productId;
   }
   return null;
 }
@@ -121,14 +136,6 @@ const REQUESTED_SLOT_FIELD_KEYS = [
   "requested_session_type",
 ];
 
-// Calendar IDs for Initial Session products — derived from PRODUCT_MAP so this
-// stays in sync if products change. Used to detect when a contact already has
-// an Initial Session on the calendar (e.g., booked manually during a disco
-// call) so the webhook doesn't auto-book a duplicate from stale slot data.
-const INITIAL_CALENDAR_IDS = Object.values(PRODUCT_MAP)
-  .filter((p) => p.isInitialBooking)
-  .map((p) => p.calendarId);
-
 /**
  * Read a custom field value from a GHL contact object by FIELD KEY
  * (not ID). The contact's customFields array entries may have `fieldKey`
@@ -150,20 +157,30 @@ function getCustomFieldValueByKey(contact, fieldKey) {
  * came from an old-style GHL funnel (which booked the appointment itself)
  * so we skip and return null without erroring.
  */
-async function bookInitialSessionAppointment(context, contact, pkg, token) {
+async function bookPaidBookingAppointment(context, contact, booking, token) {
   const slot = getCustomFieldValueByKey(contact, "requested_session_slot");
   if (!slot) {
     console.log(
-      `[ghl-purchase-webhook] No requested_session_slot on contact ${contact.id} — assuming legacy funnel purchase, skipping appointment creation`,
+      `[ghl-purchase-webhook] No requested_session_slot on contact ${contact.id} — assuming calendar checkout or legacy funnel purchase, skipping appointment creation`,
+    );
+    return null;
+  }
+
+  const requestedCalendar = getCustomFieldValueByKey(
+    contact,
+    "requested_session_calendar",
+  );
+  if (requestedCalendar && requestedCalendar !== booking.calendarId) {
+    console.warn(
+      `[ghl-purchase-webhook] Requested calendar ${requestedCalendar} does not match ${booking.calendarId} for ${contact.id} — skipping stale slot`,
     );
     return null;
   }
 
   // Guard against duplicate-booking: if the contact already has an upcoming
-  // appointment on an Initial Session calendar (e.g., Garrett booked it
-  // manually during a disco call), skip the auto-book. requested_session_slot
-  // can be stale from an abandoned website booking flow, which would
-  // otherwise cause a second appointment for a slot the customer never picked.
+  // appointment for this booking type, skip the auto-book. A requested slot
+  // can be stale from an abandoned website flow, which would otherwise create
+  // a second appointment for a slot the customer never paid to reserve.
   try {
     const apptRes = await ghlFetch(
       context,
@@ -174,7 +191,7 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
       const appointments = apptData.events || apptData.appointments || [];
       const now = Date.now();
       const existing = appointments.find((a) => {
-        if (!INITIAL_CALENDAR_IDS.includes(a.calendarId)) return false;
+        if (!(booking.duplicateCalendarIds || [booking.calendarId]).includes(a.calendarId)) return false;
         // Naive-Pacific parse: a raw UTC parse made a later-today initial
         // read as PAST from ~8am PT, so the future-booking check missed it.
         const startMs = parsePacificWallClock(a.startTime || "");
@@ -185,7 +202,7 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
       });
       if (existing) {
         console.log(
-          `[ghl-purchase-webhook] Contact ${contact.id} already has upcoming Initial Session appointment (${existing.id} at ${existing.startTime}) — skipping auto-book to avoid duplicate`,
+          `[ghl-purchase-webhook] Contact ${contact.id} already has an upcoming matching appointment (${existing.id} at ${existing.startTime}) — skipping auto-book to avoid duplicate`,
         );
         return existing;
       }
@@ -200,16 +217,16 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
   // Compute endTime, preserving both the instant (start + duration) and the
   // slot's timezone offset (GHL rejects appointments where the offset is
   // stripped). See functions/lib/datetime.js.
-  const endTime = appointmentEndTime(slot, pkg.durationMinutes);
+  const endTime = appointmentEndTime(slot, booking.durationMinutes);
 
   const payload = {
-    calendarId: pkg.calendarId,
+    calendarId: booking.calendarId,
     locationId: LOCATION_ID,
     contactId: contact.id,
     startTime: slot,
     endTime,
     selectedTimezone: "America/Los_Angeles", // safe default; appointment's local TZ
-    title: pkg.sessionTitle,
+    title: booking.sessionTitle,
     appointmentStatus: "confirmed",
     firstName: contact.firstName || "",
     lastName: contact.lastName || "",
@@ -235,7 +252,7 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
 
   const data = await res.json();
   console.log(
-    `[ghl-purchase-webhook] Booked initial session appointment for ${contact.id} at ${slot} (apptId: ${data.id || data.appointment?.id})`,
+    `[ghl-purchase-webhook] Booked paid native appointment for ${contact.id} at ${slot} (apptId: ${data.id || data.appointment?.id})`,
   );
 
   return data;
@@ -245,16 +262,16 @@ async function bookInitialSessionAppointment(context, contact, pkg, token) {
  * After booking, apply tags + write a confirmation note. Best-effort —
  * non-fatal if any fail.
  */
-async function recordInitialSessionPaid(context, contactId, pkg, appointment) {
+async function recordPaidBooking(context, contactId, booking, appointment) {
+  const tags = ["paid-via-native-checkout"];
+  if (booking.sessionTag) tags.unshift(booking.sessionTag);
   try {
     await ghlFetch(
       context,
       `${GHL_API_BASE}/contacts/${contactId}/tags`,
       {
         method: "POST",
-        body: JSON.stringify({
-          tags: [pkg.sessionTag, "paid-via-native-checkout"],
-        }),
+        body: JSON.stringify({ tags }),
       },
     );
   } catch (err) {
@@ -272,9 +289,9 @@ async function recordInitialSessionPaid(context, contactId, pkg, appointment) {
           body: [
             `Native booking payment received — appointment booked`,
             ``,
-            `Session: ${pkg.name}`,
+            `Booking: ${booking.name || booking.sessionTitle}`,
             `Appointment id: ${apptId}`,
-            `Calendar: ${pkg.calendarId}`,
+            `Calendar: ${booking.calendarId}`,
             `Card saved on this contact's GHL Payment Methods (visible in`,
             `the contact's Payments panel — chargeable for future purchases).`,
           ].join("\n"),
@@ -459,7 +476,7 @@ export async function onRequestPost(context) {
     let resolvedProductId = productId;
     let resolvedOrderId = orderId;
 
-    if (!resolvedProductId || !PRODUCT_MAP[resolvedProductId]) {
+    if (!resolvedProductId || !isRecognizedPurchaseProduct(resolvedProductId)) {
       console.log(`[ghl-purchase-webhook] Product ID missing or unrecognized in payload (${productId}) — querying GHL Orders API`);
       const orderLookup = await fetchRecentOrder(context, contactId);
       if (orderLookup) {
@@ -475,8 +492,14 @@ export async function onRequestPost(context) {
       }
     }
 
-    const pkg = PRODUCT_MAP[resolvedProductId];
-    console.log(`[ghl-purchase-webhook] Matched product: ${pkg.name} (add ${pkg.sessionsToAdd} sessions)`);
+    const pkg = PRODUCT_MAP[resolvedProductId] || null;
+    const booking = PAID_BOOKING_MAP[resolvedProductId] || null;
+    const productName = pkg?.name || booking?.name || booking?.sessionTitle || resolvedProductId;
+    console.log(
+      pkg
+        ? `[ghl-purchase-webhook] Matched product: ${pkg.name} (add ${pkg.sessionsToAdd} sessions)`
+        : `[ghl-purchase-webhook] Matched non-credit paid booking: ${productName}`,
+    );
 
     // ── 4. Idempotency check ──
     // Primary: D1 atomic INSERT — race-safe (two concurrent requests can't both
@@ -536,8 +559,8 @@ export async function onRequestPost(context) {
     if (!contactRes.ok) {
       console.error(`[ghl-purchase-webhook] Contact fetch failed: ${sanitizedContactId} (${contactRes.status})`);
       context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
-        "Contact fetch failed after payment — sessions_remaining NOT updated",
-        { contactId: sanitizedContactId, status: contactRes.status, product: pkg.name }));
+        "Contact fetch failed after payment — fulfillment not completed",
+        { contactId: sanitizedContactId, status: contactRes.status, product: productName }));
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
         { status: 404, headers }
@@ -546,6 +569,78 @@ export async function onRequestPost(context) {
 
     const contactData = await contactRes.json();
     const contact = contactData.contact;
+
+    // ── 5b. Native Assessment purchase: book only, never credit ──
+    // The $29 Assessment is a paid booking, not a prepaid session package.
+    // It must not change sessions_remaining, series_type, portal access, or
+    // the at-home-practice access. It uses the same selected-slot handoff as
+    // native Initial bookings so the existing confirmed-only reminder and
+    // cancellation workflows own all client communication.
+    if (booking?.isNonCreditBooking) {
+      const token = await getGhlToken(context);
+      let appointment = null;
+      try {
+        appointment = await bookPaidBookingAppointment(context, contact, booking, token);
+        if (appointment) {
+          await recordPaidBooking(context, sanitizedContactId, booking, appointment);
+        }
+      } catch (err) {
+        console.error(
+          "[ghl-purchase-webhook] Assessment appointment booking failed:",
+          err.message,
+        );
+        context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+          "Assessment payment received, but appointment did not auto-book",
+          { contactId: sanitizedContactId, product: productName, error: String(err.message).slice(0, 300) }));
+        try {
+          await ghlFetch(
+            context,
+            `${GHL_API_BASE}/contacts/${sanitizedContactId}/notes`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                body: [
+                  "URGENT — RECONCILE NEEDED",
+                  "",
+                  `${productName} payment received, but the appointment failed to auto-book.`,
+                  "",
+                  `Error: ${err.message}`,
+                  "",
+                  `Action: manually book the selected Assessment slot on ${booking.calendarId}.`,
+                  "Check the requested_session_slot custom field first.",
+                ].join("\n"),
+              }),
+            },
+          );
+        } catch (noteErr) {
+          console.error("[ghl-purchase-webhook] Assessment recovery note failed:", noteErr);
+        }
+      }
+
+      if (kv && idempotencyKey) {
+        try {
+          await kv.put(idempotencyKey, JSON.stringify({
+            contactId: sanitizedContactId,
+            product: productName,
+            sessionsAdded: 0,
+            processedAt: new Date().toISOString(),
+          }), { expirationTtl: KV_TTL_SECONDS });
+        } catch (err) {
+          console.warn(`[ghl-purchase-webhook] KV write failed: ${err.message} — Assessment booking processed but not recorded`);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          contactId: sanitizedContactId,
+          product: productName,
+          appointmentId: appointment?.id || appointment?.appointment?.id || null,
+          sessionsAdded: 0,
+        }),
+        { status: 200, headers },
+      );
+    }
 
     // ── 6. Compute new sessions_remaining ──
     // Series purchases and upgrades: SET to the package value (clean reset).
@@ -667,16 +762,16 @@ export async function onRequestPost(context) {
     // contact has requested_session_slot/calendar/type fields with the slot
     // they picked. Create the appointment on the calendar + tag the
     // contact. Legacy GHL-funnel purchases skip this branch (slot missing).
-    if (pkg.isInitialBooking) {
+    if (pkg.isNativePaidBooking) {
       try {
-        const appointment = await bookInitialSessionAppointment(
+        const appointment = await bookPaidBookingAppointment(
           context,
           contact,
           pkg,
           token,
         );
         if (appointment) {
-          await recordInitialSessionPaid(
+          await recordPaidBooking(
             context,
             sanitizedContactId,
             pkg,

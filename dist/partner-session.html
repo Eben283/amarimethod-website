@@ -1,545 +1,219 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>
-    if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
-    window.scrollTo(0, 0);
-    window.addEventListener('load', function () { window.scrollTo(0, 0); });
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
-  <title>Your Complimentary Session | Amari Method</title>
-  <meta name="description" content="Here's the session we talked about. Come in, feel it, no pressure.">
-  <meta name="author" content="Amari Method">
-  <meta name="robots" content="noindex, nofollow">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Your complimentary Amari Method session. Book a free 60-minute session with Garrett and experience the work for yourself.">
+<link rel="canonical" href="https://www.amarimethod.com/partner-session">
+<meta name="robots" content="noindex, nofollow">
 
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.amarimethod.com/partner-session">
-  <meta property="og:title" content="Your Complimentary Session | Amari Method">
-  <meta property="og:description" content="Here's the session we talked about. On us.">
-  <meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<title>Your Complimentary Session | Amari Method</title>
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.amarimethod.com/partner-session">
+<meta property="og:title" content="Your Complimentary Session | Amari Method">
+<meta property="og:description" content="Your complimentary Amari Method session. Book a free 60-minute session with Garrett and experience the work for yourself.">
+<meta property="og:image" content="https://www.amarimethod.com/social-preview.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://www.amarimethod.com/partner-session">
+<meta name="twitter:title" content="Your Complimentary Session | Amari Method">
+<meta name="twitter:description" content="Your complimentary Amari Method session. Book a free 60-minute session with Garrett and experience the work for yourself.">
+<meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<style>
+  main.ps-page{display:block}
 
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="https://www.amarimethod.com/partner-session">
-  <meta property="twitter:title" content="Your Complimentary Session | Amari Method">
-  <meta property="twitter:description" content="Here's the session we talked about. On us.">
-  <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
+  .hero-meta{display:flex;gap:18px;justify-content:center;align-items:center;margin-top:34px;flex-wrap:wrap;color:rgba(255,255,255,.78);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;font-family:var(--sans)}
+  .hero-meta .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.55)}
+  .hero .btn{margin-top:34px}
+  .hero-bg::after{background:linear-gradient(90deg,rgba(26,18,11,.74) 0%,rgba(26,18,11,.64) 42%,rgba(26,18,11,.34) 66%,rgba(26,18,11,.08) 100%)}
 
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-light.png" media="(prefers-color-scheme: light)">
-  <link rel="icon" type="image/png" sizes="64x64" href="favicon-dark.png" media="(prefers-color-scheme: dark)">
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-  <link rel="canonical" href="https://www.amarimethod.com/partner-session">
+  .sec-head{text-align:center;margin-bottom:clamp(44px,5vw,64px)}
+  .sec-head .eyebrow{display:block;margin-bottom:16px}
+  .sec-head h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500}
+  .sec-head p{margin:20px auto 0;max-width:56ch}
 
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-DGQM32BMYZ');
-  </script>
+  .narrative{padding:clamp(60px,7vw,96px) 0}
+  .narrative .body{max-width:60ch;margin:0 auto;text-align:center}
+  .narrative .body p{font-size:clamp(1.05rem,1.5vw,1.2rem);color:var(--body);margin:0 auto}
+  .narrative .kicker{font-family:var(--serif);font-size:clamp(1.5rem,2.6vw,2.1rem);font-weight:500;color:var(--ink);margin-top:34px}
 
-  <link rel="stylesheet" href="css/style-v5.css?v=37">
-  <script type="text/javascript">
+  .trio{padding:clamp(56px,7vw,92px) 0;background:var(--cream-2)}
+  .trio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(28px,4vw,56px);max-width:1080px;margin:0 auto}
+  .trio-item{text-align:center;padding:0 12px}
+  .trio-item .num{font-family:var(--serif);font-weight:500;color:var(--peach);font-size:clamp(2.6rem,4vw,3.4rem);line-height:1;letter-spacing:.02em;display:block;margin:0 0 14px}
+  .trio-item h3{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+  .trio-item p{margin:12px auto 0;max-width:34ch;font-size:14px}
+
+  .values{background:var(--peach);padding:clamp(64px,8vw,104px) 0}
+  .values .vhead{text-align:center;margin:0 auto clamp(36px,5vw,56px)}
+  .values .vhead h2{font-size:clamp(2.1rem,3.9vw,3.2rem);font-weight:500;color:var(--ink);max-width:22ch;margin:0 auto}
+  .values .vhead p{margin:18px auto 0;color:rgba(33,29,25,.72);max-width:48ch}
+  .values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(24px,4vw,48px);max-width:1080px;margin:0 auto}
+  .val{text-align:center}
+  .val h4{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);margin-bottom:9px}
+  .val p{font-size:14px;line-height:1.55;color:rgba(33,29,25,.74);max-width:30ch;margin:0 auto}
+
+  .split{padding:clamp(64px,8vw,110px) 0}
+  .split-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(36px,6vw,84px);align-items:center}
+  .split-cell h3{font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:500;max-width:16ch}
+  .split-cell p{margin-top:16px}
+  .notlist{list-style:none;margin-top:22px;padding:0}
+  .notlist li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:15px;color:var(--body)}
+  .notlist li:last-child{border-bottom:1px solid var(--line)}
+  .notlist .ck{color:var(--peach);font-weight:600}
+
+  .price-line{margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)}
+  .price-line b{color:var(--ink);font-weight:600}
+
+  @media (max-width:1000px){
+    .trio-grid,.values-grid,.split-grid{grid-template-columns:1fr;gap:40px}
+  }
+  @media (max-width:640px){
+    .hero-meta{gap:12px}
+  }
+</style>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-DGQM32BMYZ');
+</script>
+<script>
     (function(c,l,a,r,i,t,y){
-      c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-      t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-      y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
-  </script>
-
-  <style>
-    :root {
-      --paper:#F7F2E8; --paper-2:#F0E9D8; --ink:#1F1D1A; --ink-2:#3A3733;
-      --mute:#7A746B; --line:#E0D7C2; --line-2:#CCC1A8; --accent:#C56B4E;
-      --display:'Bona Nova','Fraunces',Georgia,serif;
-      --sans-partner:'Inter',system-ui,sans-serif;
-      --mono:'JetBrains Mono',ui-monospace,monospace;
-    }
-    body:has(main.partner-page) { background: var(--paper); }
-    body:has(main.partner-page) nav { background: var(--paper) !important; border-bottom: 1px solid var(--line); }
-    main.partner-page { font-family: var(--sans-partner); color: var(--ink); font-size: 17px; line-height: 1.55; background: var(--paper); }
-    main.partner-page h1, main.partner-page h2, main.partner-page h3, main.partner-page h4 { font-family: var(--display); font-weight: 400; letter-spacing: -0.02em; line-height: 1.02; color: var(--ink); text-wrap: balance; }
-    main.partner-page p { text-wrap: pretty; }
-    main.partner-page em { font-style: italic; color: var(--accent); }
-    main.partner-page img { display: block; max-width: 100%; }
-    main.partner-page a { color: inherit; text-decoration: none; }
-
-    main.partner-page .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); display: inline-flex; align-items: center; gap: 10px; }
-    main.partner-page .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--ink-2); }
-    main.partner-page .wrap { max-width: 1360px; margin: 0 auto; padding: 0 32px; }
-
-    main.partner-page .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 999px; font-size: 14px; font-weight: 500; transition: transform .25s, background .25s, color .25s, border-color .25s; border: 1px solid transparent; cursor: pointer; }
-    main.partner-page .btn-primary { background: var(--ink); color: var(--paper); }
-    main.partner-page .btn-primary:hover { background: var(--accent); transform: translateY(-1px); }
-    main.partner-page .btn-ghost { border-color: var(--line-2); color: var(--ink); }
-    main.partner-page .btn-ghost:hover { border-color: var(--ink); background: var(--ink); color: var(--paper); }
-    main.partner-page .btn .arrow { transition: transform .25s; display: inline-block; }
-    main.partner-page .btn:hover .arrow { transform: translateX(3px); }
-
-    /* HERO */
-    main.partner-page .hero { max-width: 1360px; margin: 0 auto; padding: 96px 32px 100px; position: relative; text-align: left; background: transparent; border-bottom: 0; }
-    main.partner-page .hero-stats { justify-items: start; }
-    main.partner-page .hero-label { display: block; background: transparent; color: var(--ink-2); padding: 0; border-radius: 0; font-size: inherit; font-weight: inherit; margin: 0 0 32px; letter-spacing: normal; text-transform: none; text-align: left; width: auto; }
-    main.partner-page .hero h1 { font-size: clamp(44px, 6.5vw, 96px); font-weight: 300; letter-spacing: -0.04em; line-height: 0.96; max-width: 16ch; }
-    main.partner-page .hero h1 em { font-style: italic; font-weight: 300; }
-    main.partner-page .hero-sub { margin-top: 32px; max-width: 54ch; font-size: 20px; color: var(--ink-2); line-height: 1.5; }
-    main.partner-page .hero-stats { margin-top: 80px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 48px; border-top: 1px solid var(--line); padding-top: 40px; align-items: start; }
-    main.partner-page .hero-stats .stat { font-family: var(--display); font-size: 64px; font-weight: 300; letter-spacing: -0.025em; line-height: 1; color: var(--ink); }
-    main.partner-page .hero-stats .stat em { font-style: italic; color: var(--accent); font-weight: 300; }
-    main.partner-page .hero-stats .stat-label { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); margin-top: 14px; max-width: 24ch; line-height: 1.5; }
-    main.partner-page .hero-cta { margin-top: 48px; display: flex; gap: 12px; flex-wrap: wrap; }
-
-    /* SPLIT */
-    main.partner-page .split { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    main.partner-page .split-inner { max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 5fr 7fr; min-height: 640px; }
-    main.partner-page .split .photo { background: #2a2520; position: relative; overflow: hidden; }
-    main.partner-page .split .photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: saturate(.92) contrast(1.02); }
-    main.partner-page .split .photo-caption { position: absolute; left: 28px; bottom: 28px; right: 28px; color: var(--paper); font-family: var(--mono); font-size: 11px; letter-spacing: .15em; text-transform: uppercase; display: flex; justify-content: space-between; gap: 16px; text-shadow: 0 1px 8px rgba(0,0,0,.4); }
-    main.partner-page .split .photo-caption .fig { opacity: .85; }
-    main.partner-page .split .pull { padding: 96px 80px; display: flex; flex-direction: column; justify-content: center; gap: 36px; }
-    main.partner-page .split .pull .eyebrow { color: var(--mute); }
-    main.partner-page .split .pull h2 { font-family: var(--display); font-size: clamp(30px, 3.4vw, 50px); font-weight: 300; font-style: italic; letter-spacing: -0.02em; line-height: 1.18; color: var(--ink); }
-    main.partner-page .split .pull h2 em { font-style: normal; color: var(--accent); }
-    main.partner-page .split .pull .attrib { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
-    main.partner-page .split .pull .attrib b { color: var(--ink); font-weight: 600; letter-spacing: .12em; }
-
-    /* INTRO */
-    main.partner-page .intro-block { padding: 140px 0; border-bottom: 1px solid var(--line); }
-    main.partner-page .intro-inner { max-width: 1360px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 1.4fr; gap: 96px; align-items: start; }
-    main.partner-page .intro-inner .label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
-    main.partner-page .intro-inner .label-row { margin-bottom: 24px; }
-    main.partner-page .intro-inner h3 { font-family: var(--display); font-size: clamp(32px, 3.4vw, 52px); font-weight: 300; line-height: 1.12; letter-spacing: -0.02em; max-width: 14ch; }
-    main.partner-page .intro-inner h3 em { font-style: italic; color: var(--accent); }
-    main.partner-page .intro-body p { font-family: var(--display); font-size: 22px; line-height: 1.55; color: var(--ink); margin-bottom: 28px; max-width: 54ch; font-weight: 400; }
-    main.partner-page .intro-body p:last-child { margin-bottom: 0; }
-    main.partner-page .intro-body em { font-style: italic; color: var(--accent); }
-    main.partner-page .intro-body p.kicker { font-size: 24px; color: var(--ink); font-weight: 400; }
-    main.partner-page .intro-body p.kicker em { font-style: italic; }
-
-    /* APPROACH */
-    main.partner-page .approach { padding: 140px 0; background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    main.partner-page .approach-head { max-width: 1360px; margin: 0 auto 64px; padding: 0 32px; display: grid; grid-template-columns: 1fr 1.3fr; gap: 48px; align-items: end; }
-    main.partner-page .approach-head h2 { font-size: clamp(40px, 5vw, 72px); font-weight: 300; letter-spacing: -0.025em; line-height: 1.02; }
-    main.partner-page .approach-head h2 em { font-style: italic; color: var(--accent); }
-    main.partner-page .approach-head .lead { font-size: 18px; color: var(--ink-2); max-width: 50ch; line-height: 1.55; }
-    main.partner-page .approach-list { max-width: 1360px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
-    main.partner-page .ap-item { padding: 56px 48px; border-top: 1px solid var(--line); background: var(--paper); display: grid; grid-template-columns: 64px 1fr; gap: 32px; align-items: start; }
-    main.partner-page .ap-item:nth-child(odd) { border-right: 1px solid var(--line); }
-    main.partner-page .ap-item .num { font-family: var(--display); font-size: 48px; font-weight: 300; font-style: italic; color: var(--accent); line-height: 1; }
-    main.partner-page .ap-item h3 { font-family: var(--display); font-size: 26px; font-weight: 400; letter-spacing: -0.01em; margin-bottom: 14px; line-height: 1.2; }
-    main.partner-page .ap-item p { font-size: 15px; color: var(--ink-2); line-height: 1.6; max-width: 42ch; }
-
-    /* PRICING */
-    main.partner-page .pricing { padding: 140px 0; background: var(--paper); }
-    main.partner-page .pricing-head { max-width: 1100px; margin: 0 auto 72px; padding: 0 32px; text-align: center; }
-    main.partner-page .pricing-head .eyebrow { justify-content: center; margin: 0 auto 24px; display: inline-flex; }
-    main.partner-page .pricing-head h2 { font-family: var(--display); font-size: clamp(44px, 6vw, 88px); font-weight: 300; letter-spacing: -0.03em; line-height: 1.02; max-width: 18ch; margin: 0 auto; }
-    main.partner-page .pricing-head h2 em { font-style: italic; color: var(--accent); }
-    main.partner-page .pricing-head .lead { margin-top: 24px; font-size: 18px; color: var(--ink-2); max-width: 54ch; margin-left: auto; margin-right: auto; line-height: 1.55; }
-
-    main.partner-page .tiers { max-width: 1100px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    main.partner-page .tier { background: var(--paper); border: 1px solid var(--line); padding: 40px 32px; display: flex; flex-direction: column; gap: 18px; transition: border-color .25s, transform .25s; position: relative; min-height: 340px; }
-    main.partner-page .tier:hover { border-color: var(--ink-2); }
-    main.partner-page .tier .cat { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--mute); }
-    main.partner-page .tier h3 { font-family: var(--display); font-size: 24px; font-weight: 400; letter-spacing: -0.01em; }
-    main.partner-page .tier .price { font-family: var(--display); font-size: 64px; font-weight: 300; letter-spacing: -0.03em; line-height: 1; color: var(--ink); }
-    main.partner-page .tier .price-unit { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); margin-top: 6px; }
-    main.partner-page .tier p { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin-top: auto; }
-    main.partner-page .tier.feat { background: var(--ink); color: var(--paper); border-color: var(--ink); position: relative; overflow: hidden; }
-    main.partner-page .tier.feat::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 80% 0%, rgba(197,107,78,.18), transparent 60%); pointer-events: none; }
-    main.partner-page .tier.feat > * { position: relative; }
-    main.partner-page .tier.feat .cat { color: #E8A38A; }
-    main.partner-page .tier.feat h3 { color: var(--paper); }
-    main.partner-page .tier.feat .price { color: var(--paper); }
-    main.partner-page .tier.feat .price-unit { color: #C9BEA9; }
-    main.partner-page .tier.feat p { color: #C9BEA9; }
-    main.partner-page .tier .ribbon { position: absolute; top: 16px; right: 16px; font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: #E8A38A; border: 1px solid rgba(232,163,138,.3); padding: 4px 10px; border-radius: 999px; }
-
-    main.partner-page .bundle { max-width: 1100px; margin: 24px auto 0; padding: 0 32px; }
-    main.partner-page .bundle-card { background: var(--paper-2); border-left: 3px solid var(--accent); padding: 24px 32px; display: flex; flex-direction: column; gap: 8px; }
-    main.partner-page .bundle-card .lab { font-family: var(--display); font-style: italic; font-size: 18px; color: var(--accent); }
-    main.partner-page .bundle-card p { font-size: 15px; color: var(--ink-2); line-height: 1.6; max-width: 64ch; }
-    main.partner-page .bundle-card p b { color: var(--ink); font-weight: 500; }
-
-    main.partner-page .referral-note { max-width: 1100px; margin: 16px auto 0; padding: 0 32px; }
-    main.partner-page .referral-note p { font-size: 14px; color: var(--mute); line-height: 1.6; font-style: italic; max-width: 64ch; }
-    main.partner-page .referral-note p b { color: var(--ink-2); font-weight: 500; font-style: normal; }
-
-    /* CRED */
-    main.partner-page .cred { padding: 120px 0; border-top: 1px solid var(--line); background: var(--paper); }
-    main.partner-page .cred-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border-top: 1px solid var(--line); max-width: 1360px; margin: 0 auto; padding: 0 32px; }
-    main.partner-page .cred-item { padding: 48px 28px 40px 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; min-height: 260px; }
-    main.partner-page .cred-item:first-child { padding-left: 0; }
-    main.partner-page .cred-item:last-child { border-right: 0; padding-right: 0; }
-    main.partner-page .cred-item .big { font-family: var(--display); font-size: 76px; font-weight: 300; letter-spacing: -0.03em; line-height: .95; color: var(--ink); }
-    main.partner-page .cred-item .big em { font-style: italic; color: var(--accent); }
-    main.partner-page .cred-item .big sup { font-size: 36px; vertical-align: super; }
-    main.partner-page .cred-item .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--mute); }
-    main.partner-page .cred-item p { font-size: 14px; color: var(--ink-2); line-height: 1.55; margin-top: auto; padding-top: 24px; max-width: 26ch; }
-
-    /* LANE */
-    main.partner-page .lane { padding: 140px 0; background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-    main.partner-page .lane-inner { max-width: 1100px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 1.3fr; gap: 80px; align-items: start; }
-    main.partner-page .lane .label { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
-    main.partner-page .lane h2 { font-family: var(--display); font-size: clamp(36px, 4.5vw, 60px); font-weight: 300; letter-spacing: -0.025em; line-height: 1.08; margin-top: 24px; max-width: 14ch; }
-    main.partner-page .lane h2 em { font-style: italic; color: var(--accent); }
-    main.partner-page .lane p { font-size: 17px; color: var(--ink-2); line-height: 1.65; margin-bottom: 20px; max-width: 56ch; }
-    main.partner-page .lane p.first { font-family: var(--display); font-size: 22px; color: var(--ink); line-height: 1.5; font-weight: 400; }
-    main.partner-page .lane p:last-child { margin-bottom: 0; }
-
-    /* AUDIENCE */
-    main.partner-page .audience { padding: 140px 0; background: var(--paper); }
-    main.partner-page .audience-head { max-width: 1100px; margin: 0 auto 64px; padding: 0 32px; text-align: center; }
-    main.partner-page .audience-head .eyebrow { justify-content: center; margin: 0 auto 24px; display: inline-flex; }
-    main.partner-page .audience-head h2 { font-family: var(--display); font-size: clamp(40px, 5vw, 72px); font-weight: 300; letter-spacing: -0.025em; line-height: 1.05; max-width: 20ch; margin: 0 auto; }
-    main.partner-page .audience-head h2 em { font-style: italic; color: var(--accent); }
-    main.partner-page .audience-grid { max-width: 1100px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border-top: 1px solid var(--line); }
-    main.partner-page .aud-item { padding: 40px 32px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
-    main.partner-page .aud-item:nth-child(odd) { border-right: 1px solid var(--line); }
-    main.partner-page .aud-item h3 { font-family: var(--display); font-size: 24px; font-weight: 400; letter-spacing: -0.01em; }
-    main.partner-page .aud-item p { font-size: 15px; color: var(--ink-2); line-height: 1.6; max-width: 38ch; }
-
-    /* CTA */
-    main.partner-page section.cta { padding: 160px 0; background: var(--ink); color: var(--paper); text-align: center; position: relative; overflow: hidden; }
-    main.partner-page section.cta::before { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, rgba(197,107,78,.2), transparent 60%); }
-    main.partner-page section.cta .wrap { position: relative; max-width: 900px; }
-    main.partner-page section.cta .eyebrow { color: #C9BEA9; justify-content: center; margin: 0 auto 28px; display: inline-flex; }
-    main.partner-page section.cta .eyebrow::before { background: #C9BEA9; }
-    main.partner-page section.cta h2 { color: var(--paper); font-size: clamp(44px, 7vw, 96px); font-weight: 300; letter-spacing: -0.035em; line-height: 1; max-width: 14ch; margin: 0 auto; }
-    main.partner-page section.cta h2 em { font-style: italic; color: #E8A38A; }
-    main.partner-page section.cta p { color: #C9BEA9; font-size: 18px; margin-top: 28px; max-width: 52ch; margin-left: auto; margin-right: auto; line-height: 1.5; }
-    main.partner-page .cta-actions { margin-top: 48px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; align-items: center; }
-    main.partner-page section.cta .btn-primary { background: var(--paper); color: var(--ink); padding: 18px 28px; font-size: 15px; }
-    main.partner-page section.cta .btn-primary:hover { background: var(--accent); color: var(--paper); }
-    main.partner-page section.cta .btn-text { color: #E8A38A; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(232,163,138,.3); transition: border-color .25s, color .25s; }
-    main.partner-page section.cta .btn-text:hover { border-bottom-color: #E8A38A; color: var(--paper); }
-    main.partner-page section.cta .btn-text .arrow { transition: transform .25s; display: inline-block; }
-    main.partner-page section.cta .btn-text:hover .arrow { transform: translateX(3px); }
-
-    @media (max-width: 960px) {
-      main.partner-page .hero { padding: 48px 24px 64px; }
-      main.partner-page .hero-stats { grid-template-columns: 1fr; gap: 28px; }
-      main.partner-page .split-inner { grid-template-columns: 1fr; }
-      main.partner-page .split .photo { aspect-ratio: 4/3; }
-      main.partner-page .split .pull { padding: 64px 24px; }
-      main.partner-page .intro-block, main.partner-page .approach, main.partner-page .pricing, main.partner-page .cred, main.partner-page .lane, main.partner-page .audience { padding: 80px 0; }
-      main.partner-page .intro-inner, main.partner-page .approach-head, main.partner-page .lane-inner { grid-template-columns: 1fr; gap: 32px; }
-      main.partner-page .approach-list, main.partner-page .audience-grid { grid-template-columns: 1fr; }
-      main.partner-page .ap-item:nth-child(odd) { border-right: 0; }
-      main.partner-page .aud-item:nth-child(odd) { border-right: 0; }
-      main.partner-page .tiers { grid-template-columns: 1fr; gap: 12px; }
-      main.partner-page .cred-grid { grid-template-columns: 1fr 1fr; }
-      main.partner-page .cred-item { border-right: 0; border-bottom: 1px solid var(--line); min-height: auto; padding: 32px 20px 32px 0; }
-      main.partner-page .cred-item:nth-child(odd) { border-right: 1px solid var(--line); }
-      main.partner-page .cred-item:first-child, main.partner-page .cred-item:nth-child(3) { padding-left: 0; }
-      main.partner-page .cred-item:nth-child(2), main.partner-page .cred-item:last-child { padding-right: 0; }
-      main.partner-page section.cta { padding: 96px 0; }
-    }
-  </style>
+</script>
 </head>
 <body>
 
-  <nav>
-    <div class="nav-inner">
-      <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-      <a href="index.html" class="logo" style="text-decoration: none;">
-        <img src="images/AmariLogo.avif" alt="Amari Method Logo" width="100" height="40" style="height: 40px; width: auto;">
-      </a>
-      <ul class="nav-menu">
-        <li><a href="index.html#why">Why Amari Method</a></li>
-        <li><a href="how-it-works">How It Works</a></li>
-        <li><a href="index.html#journey">The Journey</a></li>
-        <li><a href="index.html#testimonials">Stories</a></li>
-        <li><a href="booking">Pricing</a></li>
-        <li><a href="blog">Free Resources</a></li>
-      </ul>
-      <div class="nav-right">
-        <a href="/portal/" class="nav-login">Login</a>
-        <a href="index.html#services" class="btn-primary"><span class="btn-content"><span class="btn-text">Book a session</span><span class="arrow">→</span></span></a>
-      </div>
-    </div>
-  </nav>
+<!-- Header is injected by site-v6.js -->
 
-<main class="partner-page">
+<main class="ps-page">
 
-  <!-- HERO -->
-  <header class="hero">
-    <h1>Your <em>complimentary</em> session.</h1>
-    <p class="hero-sub">An introductory, 60-minute session with Garrett. Experience the work for yourself first.</p>
-    <div class="hero-stats">
-      <div>
-        <div class="stat">60<em> min</em></div>
-        <div class="stat-label">Hands-on with Garrett</div>
-      </div>
-      <div>
-        <div class="stat">$0</div>
-        <div class="stat-label">Your cost</div>
-      </div>
-      <div>
-        <div class="stat">4<em>.9</em></div>
-        <div class="stat-label">Average client rating</div>
-      </div>
+<section class="hero">
+  <div class="hero-bg" style="background-image:url('/images/photos/partner-woman-his41.jpg');background-position:right center"></div>
+  <div class="hero-inner">
+    <span class="eyebrow light">Amari Method · Partner invite</span>
+    <h1>Your complimentary session.</h1>
+    <p>A free 60-minute session with Garrett. Experience the work yourself, then decide if you would like to partner with us.</p>
+    <div class="hero-meta">
+      <span>60 minutes</span>
+      <span class="dot"></span>
+      <span>$0 for you</span>
+      <span class="dot"></span>
+      <span>In person or virtual</span>
     </div>
-    <div class="hero-cta">
-      <a class="btn btn-primary" href="https://partners.amarimethod.com/partner-booking-initial-session"><span>Book here</span><span class="arrow">→</span></a>
-    </div>
-  </header>
+    <a href="https://partners.amarimethod.com/partner-booking-initial-session" class="btn btn-pale">Book your free session</a>
+  </div>
+</section>
 
-  <!-- SPLIT PORTRAIT -->
-  <section class="split">
-    <div class="split-inner">
-      <div class="photo">
-        <img src="images/Dr-Garrett-Headshot-2.avif" alt="Garrett Hewstan, creator of the Amari Method" width="854" height="1280" loading="lazy">
-        <div class="photo-caption">
-          <span class="fig">Garrett Hewstan</span>
-          <span>San Francisco, CA</span>
-        </div>
-      </div>
-      <div class="pull">
-        <span class="eyebrow">For wellness professionals</span>
-        <h2>I show your clients how to correct their own structural imbalances so they come back to you <em>stronger &amp; pain-free.</em></h2>
-        <div class="attrib"><b>Garrett Hewstan</b> &nbsp;·&nbsp; Creator of the Amari Method</div>
-      </div>
+<section class="narrative">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Experience the work for yourself to see if we are a <em>match.</em></h2>
     </div>
-  </section>
+    <div class="body">
+      <p>A training client whose shoulder won't let them press overhead. A yoga student with recurring knee pain. A coaching client who would move more if their back didn't hurt. Let us bring our expertise to your clients' structural challenges.</p>
+    </div>
+  </div>
+</section>
 
-  <!-- THE PROBLEM -->
-  <section class="intro-block">
-    <div class="intro-inner">
-      <div>
-        <div class="label-row"><span class="label">The problem</span></div>
-        <h3>You see it <em>all the time.</em></h3>
+<section class="trio">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">After your session</span>
+      <h2>If it's a fit...</h2>
+    </div>
+    <div class="trio-grid">
+      <div class="trio-item">
+        <span class="num">01</span>
+        <h3>Offer it to your clients</h3>
+        <p>Set your own price, bundle it with your services, or pass it through at cost. You charge them directly.</p>
       </div>
-      <div class="intro-body">
-        <p>A training client whose shoulder won't let them press overhead. A yoga student with recurring knee pain. A coaching client who says, <em>"I'd exercise more if my back didn't hurt so much."</em></p>
-        <p>You do your best, but something still isn't changing. You refer them out, and either they don't follow through, or they cycle from one provider to the next without much relief.</p>
-        <p class="kicker">What if you could solve it for them?</p>
+      <div class="trio-item">
+        <span class="num">02</span>
+        <h3>Send the referral</h3>
+        <p>Submit their info in the partner toolkit. We reach out, book the session, and prepare them for what to expect.</p>
+      </div>
+      <div class="trio-item">
+        <span class="num">03</span>
+        <h3>We handle the rest</h3>
+        <p>We deliver the session and the follow-up. They stay your client, and they come back more capable.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- HOW IT WORKS -->
-  <section class="approach">
-    <div class="approach-head">
-      <h2>How the partnership <em>works.</em></h2>
-      <p class="lead">Four steps. You keep doing what you do. We handle the rest.</p>
+<section class="values">
+  <div class="wrap">
+    <div class="vhead">
+      <h2>You set the price. You keep every dollar.</h2>
+      <p>This isn't a referral fee. You decide what to charge your client, and every dollar they pay stays with you.</p>
     </div>
-    <div class="approach-list">
-      <div class="ap-item">
-        <div class="num">01</div>
-        <div>
-          <h3>Reserve your spot.</h3>
-          <p>Your complimentary 60-minute session with Garrett is waiting. Experience the work for yourself.</p>
-        </div>
+    <div class="values-grid">
+      <div class="val">
+        <h4>Your cost</h4>
+        <p>$0. You pay us nothing.</p>
       </div>
-      <div class="ap-item">
-        <div class="num">02</div>
-        <div>
-          <h3>Offer it to your clients.</h3>
-          <p>Set your own price, bundle it with your services, or pass it through at cost. You charge your clients directly and keep 100% of what they pay you.</p>
-        </div>
+      <div class="val">
+        <h4>You charge</h4>
+        <p>Set your own price, fold the work into a package, or offer it as a premium add-on.</p>
       </div>
-      <div class="ap-item">
-        <div class="num">03</div>
-        <div>
-          <h3>Send the referral.</h3>
-          <p>Submit your client's info through your partner portal. We reach out, book the session, and prepare them for what to expect.</p>
-        </div>
-      </div>
-      <div class="ap-item">
-        <div class="num">04</div>
-        <div>
-          <h3>We handle the rest.</h3>
-          <p>We deliver the session, follow up, and let you stay in your role. They come back to you stronger and more capable, still your client.</p>
-        </div>
+      <div class="val">
+        <h4>You keep</h4>
+        <p>Every dollar your client pays you. We never touch it.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- PRICING -->
-  <section class="pricing">
-    <div class="pricing-head">
-      <span class="eyebrow">The financial model</span>
-      <h2>You set the price. You keep <em>every dollar.</em></h2>
-      <p class="lead">This isn't a referral fee. You're adding a premium service to your offering. Pick the model that fits your practice.</p>
+<section class="split">
+  <div class="wrap">
+    <div class="split-grid">
+      <div class="split-cell">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">What you get in the session</span>
+        <h3>A full hour with Garrett.</h3>
+        <p>Sixty minutes, in person in San Francisco or over video. You'll experience a full-body assessment and gain a clearer understanding of your body's particular challenges. You'll leave knowing whether you're inspired to share this work.</p>
+      </div>
+      <div class="split-cell">
+        <span class="eyebrow" style="display:block;margin-bottom:14px">What you're not on the hook for later</span>
+        <ul class="notlist">
+          <li><span class="ck">✓</span><span>Delivering client sessions</span></li>
+          <li><span class="ck">✓</span><span>Following up or upselling</span></li>
+          <li><span class="ck">✓</span><span>Scheduling and logistics</span></li>
+          <li><span class="ck">✓</span><span>Whether the work lands for them</span></li>
+        </ul>
+      </div>
     </div>
+  </div>
+</section>
 
-    <div class="tiers">
-      <div class="tier">
-        <span class="cat">Pass-through</span>
-        <h3>Cost-only</h3>
-        <div>
-          <div class="price">$225</div>
-          <div class="price-unit">Pass it through · $0 markup</div>
-        </div>
-        <p>For clients you want to support without adding cost. Pure relationship value, no friction.</p>
-      </div>
-      <div class="tier feat">
-        <span class="ribbon">Most partners pick this</span>
-        <span class="cat">Bundle</span>
-        <h3>Build a package</h3>
-        <div>
-          <div class="price">$500<em>+</em></div>
-          <div class="price-unit">Bundle with your services · keep everything</div>
-        </div>
-        <p>Combine an Amari session with your own work. Your client sees one price, one outcome, and you keep the full margin.</p>
-      </div>
-      <div class="tier">
-        <span class="cat">Markup</span>
-        <h3>Mark it up</h3>
-        <div>
-          <div class="price">$300</div>
-          <div class="price-unit">$75 to you · per referral</div>
-        </div>
-        <p>Position it as a premium add-on. Margin without changing what you do.</p>
-      </div>
+<section class="appt" id="book">
+  <div class="wrap">
+    <span class="eyebrow">Your complimentary session</span>
+    <h2>Ready when <em>you are.</em></h2>
+    <p>Book the free hour. If it's a fit, you can start offering it through your practice from the partner toolkit.</p>
+    <div class="btn-row">
+      <a href="https://partners.amarimethod.com/partner-booking-initial-session" class="btn">Book your free session</a>
+      <a href="/partner-app" class="btn btn-outline">Already a partner? Open toolkit</a>
     </div>
-
-    <div class="referral-note">
-      <p>Just want to <b>refer the occasional client</b>? You can do that too: $50 for every person you send who books their first session within 90 days.</p>
-    </div>
-  </section>
-
-  <!-- CREDENTIALS -->
-  <section class="cred">
-    <div class="cred-grid">
-      <div class="cred-item">
-        <div class="big">25<sup>+</sup></div>
-        <div class="lbl">Years of hands-on practice</div>
-        <p>Two-and-a-half decades working with bodies in pain. Your clients are in capable hands.</p>
-      </div>
-      <div class="cred-item">
-        <div class="big">8</div>
-        <div class="lbl">Core protocols</div>
-        <p>A complete method clients learn in session and take home, not a cycle of return visits.</p>
-      </div>
-      <div class="cred-item">
-        <div class="big">4<em>.9</em></div>
-        <div class="lbl">Average client rating</div>
-        <p>Most clients feel a difference in their first session. Many say it's the first thing that's worked.</p>
-      </div>
-      <div class="cred-item">
-        <div class="big"><em>100%</em></div>
-        <div class="lbl">Satisfaction guarantee</div>
-        <p>If they don't feel a noticeable difference after the first session, we keep working until they do, at no extra charge.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- YOUR ROLE -->
-  <section class="lane">
-    <div class="lane-inner">
-      <div>
-        <span class="label">Your role</span>
-        <h2>You keep doing what you do. <em>We handle the rest.</em></h2>
-      </div>
-      <div>
-        <p class="first">You're not responsible for delivering the session, that's Garrett. You're not responsible for follow-up or upselling, that's our team. You're not responsible for the results, that's the method.</p>
-        <p>Your only job is to recognize when a client is stuck and make the introduction. We do the rest.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- AUDIENCE -->
-  <section class="audience">
-    <div class="audience-head">
-      <span class="eyebrow">Built for</span>
-      <h2>Built for the professionals your clients <em>already trust.</em></h2>
-    </div>
-    <div class="audience-grid">
-      <div class="aud-item">
-        <h3>Personal trainers</h3>
-        <p>Clients who get sidelined with chronic pain and structural imbalances.</p>
-      </div>
-      <div class="aud-item">
-        <h3>Yoga instructors</h3>
-        <p>Students who need help fine-tuning dynamic movement.</p>
-      </div>
-      <div class="aud-item">
-        <h3>Health coaches</h3>
-        <p>Clients whose physical pain undermines every other goal you set together.</p>
-      </div>
-      <div class="aud-item">
-        <h3>Movement teachers</h3>
-        <p>Clients who need rebalancing work before they can do the movement work.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA -->
-  <section class="cta">
-    <div class="wrap">
-      <span class="eyebrow">Your session is waiting</span>
-      <h2>Ready when <em>you are.</em></h2>
-      <p>1-hour session with Garrett at our studio. 662 8th Ave, Inner Richmond, San Francisco.</p>
-      <div class="cta-actions">
-        <a class="btn btn-primary" href="https://partners.amarimethod.com/partner-booking-initial-session"><span>Book here</span><span class="arrow">→</span></a>
-      </div>
-    </div>
-  </section>
+    <p class="price-line"><b>$0 for partners</b> · 60 minutes · San Francisco + virtual</p>
+  </div>
+</section>
 
 </main>
 
-    <footer>
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2.5rem 2.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem; border-bottom: 1px solid var(--color-border, #e5e5e5);">
-            <div style="display: flex; align-items: center; gap: 1.25rem;">
-                <img src="images/AmariLogo.avif" alt="Amari Method Logo" style="height: 34px; width: auto;" loading="lazy">
-                <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">Teaching you to fix it yourself.</p>
-            </div>
-            <p style="font-size: 0.88rem; color: var(--color-text-light, #888); margin: 0;">
-                (628) 877-7673 &nbsp;·&nbsp; hello@amarimethod.com &nbsp;·&nbsp; San Francisco, CA
-            </p>
-        </div>
-        <div class="footer-content" style="padding-top: 2.5rem;">
-            <div class="footer-section">
-                <h3>Services</h3>
-                <ul>
-                    <li><a href="in-person-sessions">In-Person Sessions</a></li>
-                    <li><a href="virtual-sessions">Virtual Sessions</a></li>
-                    <li><a href="booking">Online Program</a></li>
-                    <li><a href="ongoing-care">Ongoing Care</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Conditions</h3>
-                <ul>
-                    <li><a href="neck-pain-san-francisco">Neck Pain</a></li>
-                    <li><a href="shoulder-pain-san-francisco">Shoulder Pain</a></li>
-                    <li><a href="hip-pain-san-francisco">Hip Pain</a></li>
-                    <li><a href="knee-pain-san-francisco">Knee Pain</a></li>
-                    <li><a href="lower-back-pain-san-francisco">Lower Back Pain</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>About</h3>
-                <ul>
-                    <li><a href="/#why">Why Amari Method</a></li>
-                    <li><a href="about.html">About Garrett</a></li>
-                    <li><a href="/#how">How It Works</a></li>
-                    <li><a href="/#results">Results & Reviews</a></li>
-                    <li><a href="affiliate">Partnership Program</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Get Started</h3>
-                <ul>
-                    <li><a href="/book-discovery-call">Free Discovery Call</a></li>
-                    <li><a href="client-info.html">Client Information</a></li>
-                    <li><a href="booking">View Pricing & Packages</a></li>
-                    <li><a href="/#services">Book Your Session</a></li>
-                    <li><a href="/portal">Client Portal</a></li>
-                    <li><a href="/#faq">FAQ</a></li>
-                    <li><a href="tools.html">Tools</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>Made by <a href="https://fieldcraftstudio.co" target="_blank" rel="noopener">Fieldcraft</a> | <a href="privacy-policy.html">Privacy Policy</a> | <a href="terms-of-use.html">Terms of Use</a> | &copy; <script>document.write(new Date().getFullYear())</script> Amari Method</p>
-        </div>
-    </footer>
-<script src="js/main.js?v=5" defer></script>
+<!-- Standalone landing page: shared behaviors load without the site header or footer. -->
+<script src="/js/site-v6.js?v=18" data-nav="" data-no-shell></script>
 </body>
 </html>

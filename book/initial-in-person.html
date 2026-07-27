@@ -25,7 +25,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="/css/site-v6.css?v=11">
+  <link rel="stylesheet" href="/css/site-v6.css?v=12">
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
   <script>
@@ -168,6 +168,17 @@
     .ft-option .ft-detail { font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.65; margin-top: 2px; }
     .ft-option:not(.ft-active):hover { background: rgba(0,0,0,0.04); color: var(--ink); }
     .ft-option.ft-active { background: var(--ink); color: #fff; pointer-events: none; }
+
+    /* The Assessment opens this same native calendar inside the site popup. */
+    html.booking-embed .book-page { max-width: 760px; padding: 42px 34px 56px; }
+    html.booking-embed .book-header { margin-bottom: 30px; }
+    html.booking-embed .format-toggle { display: none; }
+    @media (max-width: 720px) {
+      html.booking-embed .book-page { padding: 28px 20px 40px; }
+    }
+    @media (max-width: 480px) {
+      html.booking-embed .book-page { padding: 24px 16px 36px; }
+    }
   </style>
 </head>
 <body>
@@ -178,17 +189,17 @@
     <div class="book-page">
 
       <section class="book-header">
-        <p class="book-kicker">Initial session · San Francisco</p>
-        <h1 class="book-headline">Book your <em>first session.</em></h1>
-        <p class="book-sub">60 minutes with Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
+        <p class="book-kicker" id="bookKicker">Initial session · San Francisco</p>
+        <h1 class="book-headline" id="bookHeadline">Book your <em>first session.</em></h1>
+        <p class="book-sub" id="bookSub">60 minutes with Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
         <div class="book-meta">
-          <span>$225</span>
+          <span id="bookPrice">$225</span>
           <span class="dot"></span>
-          <span>Pay over time with Affirm</span>
+          <span id="bookMetaSecondary">Pay over time with Affirm</span>
         </div>
       </section>
 
-      <nav class="format-toggle" aria-label="Session format">
+      <nav class="format-toggle" id="formatToggle" aria-label="Session format">
         <div class="format-toggle-inner" role="tablist">
           <a href="/book/initial-in-person" class="ft-option ft-active" role="tab" aria-selected="true" aria-current="page">
             <span class="ft-label">In person</span>
@@ -261,9 +272,9 @@
 
         <div class="order-summary" id="orderSummaryStep1" hidden>
           <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session · In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span data-booking-label>Initial Session · In Person</span><span data-booking-price>$225</span></div>
           <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-          <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><span data-booking-price>$225</span></div>
         </div>
 
         <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled>
@@ -280,9 +291,9 @@
 
         <div class="order-summary" id="orderSummaryStep2" hidden style="margin-top: 0;">
           <p class="order-summary-title">Your booking</p>
-          <div class="order-summary-row"><span>Initial Session · In Person</span><span>$225</span></div>
+          <div class="order-summary-row"><span data-booking-label>Initial Session · In Person</span><span data-booking-price>$225</span></div>
           <div class="order-summary-row"><span class="summary-datetime">—</span></div>
-          <div class="order-summary-row order-summary-total"><span>Total today</span><span>$225</span></div>
+          <div class="order-summary-row order-summary-total"><span>Total today</span><span data-booking-price>$225</span></div>
         </div>
 
         <form id="clientForm" novalidate style="margin-top: 28px;">
@@ -333,20 +344,56 @@
     </div>
   </main>
 
-  <!-- Footer is injected by site-v6.js -->
-  <script src="/js/site-v6.js?v=17" data-nav=""></script>
+  <!-- The embedded Assessment has no duplicated site chrome. The normal first-session page keeps it. -->
+  <script>
+    (function () {
+      var isEmbedded = new URLSearchParams(window.location.search).get('embed') === '1';
+      if (isEmbedded) document.documentElement.classList.add('booking-embed');
+      var siteShell = document.createElement('script');
+      siteShell.src = '/js/site-v6.js?v=18';
+      siteShell.setAttribute('data-nav', '');
+      if (isEmbedded) siteShell.setAttribute('data-no-shell', '');
+      document.body.appendChild(siteShell);
+    })();
+  </script>
 
   <script>
     (function() {
       'use strict';
 
       // ---------- config ----------
-      const CALENDAR_ID = 'G7OAnnJuFbMF6nQSlZVQ';
-      const SESSION_TYPE = 'initial_in_person';
-      const SESSION_PRICE = 225;
+      const query = new URLSearchParams(window.location.search);
+      const IS_ASSESSMENT = query.get('assessment') === '1';
+      const IS_EMBEDDED = query.get('embed') === '1';
+      const BOOKING = IS_ASSESSMENT ? {
+        calendarId: 'EM6vB2mq7EAdGCbUb3j1',
+        sessionType: 'amari_assessment',
+        price: 29,
+        agreementVersion: 'agreed-pma-v2026-06-16',
+        kicker: 'Amari Assessment · San Francisco',
+        headline: 'Explore what your <em>body is asking for.</em>',
+        sub: 'A 40-minute, in-person Amari Assessment with Garrett. Explore what you are noticing in your body, experience the work, and decide whether an Amari practice is the right next step.',
+        meta: '40 minutes · In person',
+        summaryLabel: 'Amari Assessment · In Person',
+        title: 'Book an Amari Assessment | Amari Method'
+      } : {
+        calendarId: 'G7OAnnJuFbMF6nQSlZVQ',
+        sessionType: 'initial_in_person',
+        price: 225,
+        agreementVersion: 'missed-appointment-v2026-06-16',
+        kicker: 'Initial session · San Francisco',
+        headline: 'Book your <em>first session.</em>',
+        sub: '60 minutes with Garrett. Full assessment, your first guided protocol, and a take-home practice.',
+        meta: 'Pay over time with Affirm',
+        summaryLabel: 'Initial Session · In Person',
+        title: 'Book Your First Session · In Person | Amari Method'
+      };
+      const CALENDAR_ID = BOOKING.calendarId;
+      const SESSION_TYPE = BOOKING.sessionType;
+      const SESSION_PRICE = BOOKING.price;
       const SLOTS_API = '/api/book/public-slots';
       const CHECKOUT_API = '/api/book/create-checkout';
-      const AGREEMENT_VERSION = 'missed-appointment-v2026-06-16';
+      const AGREEMENT_VERSION = BOOKING.agreementVersion;
       const LOOKAHEAD_DAYS = 60;
 
       // ---------- state ----------
@@ -395,6 +442,26 @@
         step2SubmitBtn: $('step2SubmitBtn'),
         step2SubmitLabel: $('step2SubmitLabel'),
       };
+
+      function applyBookingCopy() {
+        $('bookKicker').textContent = BOOKING.kicker;
+        $('bookHeadline').innerHTML = BOOKING.headline;
+        $('bookSub').textContent = BOOKING.sub;
+        $('bookPrice').textContent = '$' + SESSION_PRICE;
+        $('bookMetaSecondary').textContent = BOOKING.meta;
+        document.querySelectorAll('[data-booking-label]').forEach(function (el) {
+          el.textContent = BOOKING.summaryLabel;
+        });
+        document.querySelectorAll('[data-booking-price]').forEach(function (el) {
+          el.textContent = '$' + SESSION_PRICE;
+        });
+        $('step2SubmitLabel').textContent = 'Continue to payment · $' + SESSION_PRICE;
+        document.title = BOOKING.title;
+        if (IS_ASSESSMENT) {
+          $('formatToggle').hidden = true;
+          $('formatToggle').setAttribute('aria-hidden', 'true');
+        }
+      }
 
       function track(event, params) {
         if (window.gtag) {
@@ -715,6 +782,13 @@
             throw new Error(body.error || ('checkout_failed_' + res.status));
           }
           track('book_checkout_initiated');
+          if (IS_EMBEDDED && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'amari-assessment-checkout',
+              checkoutUrl: body.checkoutUrl,
+            }, window.location.origin);
+            return;
+          }
           window.location.href = body.checkoutUrl;
         } catch (err) {
           state.submitting = false;
@@ -725,6 +799,7 @@
       });
 
       // ---------- init ----------
+      applyBookingCopy();
       track('book_page_view');
       loadSlots();
     })();

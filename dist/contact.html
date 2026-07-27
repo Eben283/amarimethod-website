@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=11">
+<link rel="stylesheet" href="/css/site-v6.css?v=12">
 <style>
   /* ---------- Contact-page-specific styles ---------- */
 
@@ -119,8 +119,8 @@
   <div class="hero-inner">
     <span class="eyebrow light">Contact</span>
     <h1>Whenever you're ready, we'll find a <em>time.</em></h1>
-    <p>Maybe you have a question about how the work goes, or you already know you want to come in. Either way, here is how to reach us and get your first session on the calendar.</p>
-    <a href="/book/initial-in-person" class="btn btn-pale">Book your first session</a>
+    <p>Maybe you have a question about the work, or you already know you want to come in. Either way, here is how to reach us and get an Assessment on the calendar.</p>
+    <a href="/booking" class="btn btn-pale">Book a $29 Assessment</a>
   </div>
 </section>
 
@@ -129,32 +129,32 @@
   <div class="wrap">
     <div class="head reveal">
       <h2>Ways to <em>reach us.</em></h2>
-      <p>Pick whichever feels easiest. If you're not sure where to start, the free call is the low-stakes way in.</p>
+      <p>Pick whichever feels easiest. If you are ready to explore the work in person, the Assessment is the place to start.</p>
     </div>
     <div class="reach-grid">
       <div class="r reveal">
         <span class="num">01</span>
-        <h3>Book a session</h3>
-        <p>Your first session is 60 minutes, one on one. Choose a time that works for you and you're set.</p>
-        <a href="/book/initial-in-person" class="txt">Book a session</a>
+        <h3>Book an Assessment</h3>
+        <p>A 40-minute, in-person visit with Garrett. Move together, talk through what you are noticing, and get a clear next step.</p>
+        <a href="/booking" class="txt">Book a $29 Assessment</a>
       </div>
       <div class="r reveal">
         <span class="num">02</span>
-        <h3>Free 15-minute call</h3>
-        <p>Not sure it's for you? Talk it through with Garrett first. No cost, and no obligation to book after.</p>
-        <a href="/book/discovery-call" class="txt">Book the free call</a>
-      </div>
-      <div class="r reveal">
-        <span class="num">03</span>
-        <h3>Client portal</h3>
-        <p>Already working with us? Your sessions and home protocols live in your portal.</p>
+        <h3>Already a client?</h3>
+        <p>Your sessions and home protocols live in your portal. Use it to manage the practice you already have.</p>
         <a href="/portal/" class="txt">Open the portal</a>
       </div>
       <div class="r reveal">
-        <span class="num">04</span>
-        <h3>Email</h3>
-        <p>Prefer to write? Send a note and we will get back to you within a day or two.</p>
+        <span class="num">03</span>
+        <h3>Questions before you book?</h3>
+        <p>Write to us and we will get back to you within a day or two.</p>
         <a href="mailto:hello@amarimethod.com" class="txt">hello@amarimethod.com</a>
+      </div>
+      <div class="r reveal">
+        <span class="num">04</span>
+        <h3>San Francisco studio</h3>
+        <p>Assessment details, including the studio address and directions, arrive with your booking confirmation.</p>
+        <a href="/booking" class="txt">Choose a time</a>
       </div>
     </div>
   </div>
@@ -215,7 +215,7 @@
               }
               form.reset();
               btn.disabled = false;
-              status.textContent = 'Thanks, your message came through. If it’s time-sensitive, the free 15-minute call above is the fastest route.';
+              status.textContent = 'Thanks, your message came through. If you are ready to begin, you can also book a $29 Assessment.';
             }).catch(function (err) {
               btn.disabled = false;
               status.textContent = (err && err.message)
@@ -232,7 +232,7 @@
           <h3>Where to find us</h3>
           <div class="row">
             <div class="k">Location</div>
-            <div class="v">San Francisco, CA. Exact address and directions come with your booking confirmation.</div>
+            <div class="v"><a href="https://maps.google.com/?q=662+8th+Ave,+San+Francisco,+CA+94118" target="_blank" rel="noopener">662 8th Ave, San Francisco, CA 94118</a></div>
           </div>
           <div class="row">
             <div class="k">Hours</div>
@@ -240,7 +240,7 @@
           </div>
           <div class="row">
             <div class="k">Not sure yet?</div>
-            <div class="v">Take the <a href="/quiz/">free assessment</a> and see where the work would start for you.</div>
+            <div class="v">Take the <a href="/quiz/">free movement quiz</a> for a little more context before you book.</div>
           </div>
         </div>
       </aside>
@@ -251,18 +251,15 @@
 <!-- CLOSING CTA -->
 <section class="appt" id="appt">
   <div class="wrap">
-    <h2>Start with a <em>free 15-minute call.</em></h2>
-    <p>Talk it through with Garrett, ask anything, and decide from there. If you already know you want to come in, book your first session instead.</p>
-    <div class="btn-row">
-      <a href="/book/discovery-call" class="btn">Book the free call</a>
-      <a href="/book/initial-in-person" class="btn btn-outline">Book your first session</a>
-    </div>
+    <h2>Start with an <em>Amari Assessment.</em></h2>
+    <p>Meet Garrett in person, explore what your body is asking for, and decide what makes sense from there.</p>
+    <a href="/booking" class="btn">Book a $29 Assessment</a>
   </div>
 </section>
 
 </main>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=13" data-nav=""></script>
+<script src="/js/site-v6.js?v=18" data-nav=""></script>
 </body>
 </html>

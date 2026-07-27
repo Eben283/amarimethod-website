@@ -522,7 +522,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           </a>
           <div className="center">Your result · Returned from Form 01</div>
           <div className="right">
-            <a href="/quiz/take/">← Retake assessment</a>
+            <a href="/quiz/take/">← Retake quiz</a>
           </div>
         </div>
       </div>

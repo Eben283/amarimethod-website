@@ -27,6 +27,8 @@ const FIELD = {
 const seriesEntry = Object.entries(PRODUCT_MAP).find(([, p]) => p.seriesType === '8-session');
 const [SERIES_ID, seriesPkg] = seriesEntry;
 const SINGLE_ID = '67f57171b6b1019c7b0233cc'; // legacy single follow-up — ADD +1, seriesType null
+const ASSESSMENT_ID = '6a66cf0103821ea09ea13f1b';
+const ASSESSMENT_CALENDAR_ID = 'EM6vB2mq7EAdGCbUb3j1';
 
 let fetchCalls;
 
@@ -108,5 +110,58 @@ describe('purchase-webhook — write orchestration', () => {
     expect(res.status).toBe(200);
     expect(JSON.parse(await res.text()).alreadyProcessed).toBe(true);
     expect(putToContact()).toBeFalsy();
+  });
+
+  it('Assessment payment → books its selected 40-minute appointment, with no session or portal-field writes', async () => {
+    const contact = {
+      id: 'assessment-contact',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      email: 'ada@example.com',
+      phone: '4155550100',
+      customFields: [
+        { fieldKey: 'requested_session_slot', value: '2026-08-03T10:00:00-07:00' },
+        { fieldKey: 'requested_session_calendar', value: ASSESSMENT_CALENDAR_ID },
+        { fieldKey: 'requested_session_type', value: 'amari_assessment' },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-order-1' },
+      contact,
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(await res.text())).toMatchObject({
+      success: true,
+      product: 'Amari Assessment',
+      sessionsAdded: 0,
+    });
+    expect(putToContact()).toBeFalsy();
+
+    const appointmentCreate = fetchCalls.find((call) =>
+      call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
+    );
+    expect(appointmentCreate).toBeTruthy();
+    expect(JSON.parse(appointmentCreate.opts.body)).toMatchObject({
+      calendarId: ASSESSMENT_CALENDAR_ID,
+      contactId: contact.id,
+      startTime: '2026-08-03T10:00:00-07:00',
+      endTime: '2026-08-03T10:40:00-07:00',
+      title: 'Amari Assessment — In Person',
+      appointmentStatus: 'confirmed',
+    });
+
+    expect(ghlFetch).toHaveBeenCalledWith(
+      ctx,
+      expect.stringContaining(`/contacts/${contact.id}/tags`),
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ tags: ['paid-via-native-checkout'] }) }),
+    );
+    expect(ctx.env.PURCHASE_KV.put).toHaveBeenCalledWith(
+      'order:assessment-order-1',
+      expect.stringContaining('"sessionsAdded":0'),
+      expect.objectContaining({ expirationTtl: KV_TTL_SECONDS }),
+    );
   });
 });

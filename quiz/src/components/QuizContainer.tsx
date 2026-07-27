@@ -91,7 +91,7 @@ const QuizContainer = () => {
       <Loader2 className="h-12 w-12 text-amari-pine-teal animate-spin mb-4" />
       <h3 className="text-xl font-medium mb-2">Processing your results...</h3>
       <p className="text-gray-600">
-        We're analyzing your responses to generate a personalized pain assessment.
+        We're analyzing your responses to generate a personalized pain pattern.
       </p>
     </div>
   );
@@ -103,7 +103,7 @@ const QuizContainer = () => {
       </svg>
       <h3 className="text-xl font-medium mb-2 text-red-700">Submission Error</h3>
       <p className="text-red-600 mb-4">
-        {submissionError || 'There was an error submitting your assessment. Please try again.'}
+        {submissionError || 'There was an error submitting your quiz. Please try again.'}
       </p>
       <Button
         onClick={retrySubmission}

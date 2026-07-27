@@ -81,7 +81,7 @@ Attribution: Tyler · Photographer
 H2: Ready to experience the *Amari Method?*
 Body: Your first session is 60 minutes with Garrett, and most clients feel a difference before they leave. If you don't, we keep working with you until you do. Follow-ups are 50 minutes, and most people continue in a series of 4 or 8 sessions.
 Button 1: Book your first session
-Button 2: Take the free assessment
+Button 2: Take the free quiz
 
 ## NOTES
 - Repositioned the whole page off the "fix your own pain" DIY frame. Pain relief now reads as the front door, with the physical, then nervous-system, then emotional throughline carried in the hero blurb, the session section, and approach item 01.
