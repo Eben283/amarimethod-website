@@ -19,13 +19,12 @@
   var NAV_ITEMS = [
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
-    { key: 'sessions',   label: 'Start Here',  href: '/booking' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
     { key: 'about',      label: 'About',       href: '/about' },
     { key: 'partners',   label: 'Partners',    href: '/partners' }
   ];
 
-  var BOOK_URL = '/booking';
+  var BOOK_URL = '/#assessment';
 
   /* Search index: every public page. Titles (t) are shown in results.
      Optional aliases (a) catch what visitors actually type — portal,
@@ -34,7 +33,7 @@
     { t: 'Home', u: '/' },
     { t: 'Our Method: How It Works', u: '/how-it-works', a: ['method', 'how it works', 'what is amari'] },
     { t: 'Your First Visit', u: '/first-visit', a: ['first session', 'what to expect', 'new client'] },
-    { t: 'Amari Assessment', u: '/booking', a: ['assessment', 'consultation', 'consult', 'book', 'booking', 'appointment', 'price', 'cost', 'payment'] },
+    { t: 'Amari Assessment', u: '/#assessment', a: ['assessment', 'consultation', 'consult', 'book', 'booking', 'appointment', 'price', 'cost', 'payment'] },
     { t: 'Client Portal', u: '/portal/', a: ['portal', 'client portal', 'login', 'log in', 'sign in', 'account', 'my account', 'dashboard'] },
     { t: 'FAQ', u: '/faq', a: ['insurance', 'hsa', 'fsa', 'receipt', 'receipts', 'superbill', 'billing', 'reimbursement', 'affirm', 'payment plan', 'questions'] },
     { t: 'Client Stories', u: '/stories', a: ['testimonials', 'reviews', 'results'] },
@@ -360,12 +359,14 @@
         window.gtag('event', 'click_discovery_call', params);
       } else if (
         href.indexOf('/booking') !== -1 ||
+        href.indexOf('#assessment') !== -1 ||
         href.indexOf('/book/') !== -1 ||
+        text.indexOf('assessment') !== -1 ||
         text.indexOf('book session') !== -1 ||
         text.indexOf('book now') !== -1 ||
         text.indexOf('book a session') !== -1
       ) {
-        window.gtag('event', 'click_book_session', params);
+        window.gtag('event', 'click_book_assessment', params);
       }
     });
 
