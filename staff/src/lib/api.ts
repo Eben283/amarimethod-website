@@ -213,13 +213,14 @@ export async function sendPayLink(
 }
 
 export interface StripeSavedCard {
+  id: string;
   brand: string;
   last4: string;
   expMonth: number | null;
   expYear: number | null;
 }
 
-export async function getStripeSavedCards(contactId: string): Promise<{ available: boolean; cards: StripeSavedCard[] }> {
+export async function getStripeSavedCards(contactId: string): Promise<{ available: boolean; reason?: string | null; cards: StripeSavedCard[] }> {
   return fetchApi(`/staff-stripe-cards?contactId=${encodeURIComponent(contactId)}`);
 }
 
@@ -326,6 +327,19 @@ export async function startPosCheckout(input: {
   paymentLegs: PosPaymentLegInput[];
 }): Promise<{ sale: PosSale; checkouts: PosCheckoutOpen[] }> {
   return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'start-checkout', ...input }) });
+}
+
+export async function chargePosSavedCard(input: {
+  id?: string;
+  version?: number;
+  client: PosClient;
+  cart: PosDraftLineInput[];
+  paymentLegs: PosPaymentLegInput[];
+  paymentMethodId: string;
+  paymentLegId?: string;
+  confirmed: true;
+}): Promise<{ sale: PosSale; fulfillment?: Record<string, unknown>; card?: { brand: string; last4: string } }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'charge-saved-card', ...input }) });
 }
 
 export async function recordPosCash(input: {

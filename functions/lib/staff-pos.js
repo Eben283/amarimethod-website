@@ -22,12 +22,16 @@ export const POS_CATALOG = Object.freeze({
 });
 
 export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);
-export const STRIPE_CHECKOUT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link"]);
+export const STRIPE_CHECKOUT_METHODS = Object.freeze(["manual-card", "hsa-card", "checkout-link"]);
 export const POS_SALE_STATUSES = Object.freeze(["draft", "awaiting_payment", "partially_paid", "paid"]);
 export const POS_LEG_STATUSES = Object.freeze(["planned", "checkout_open", "paid", "failed"]);
 
 export function isStripeCheckoutMethod(method) {
   return STRIPE_CHECKOUT_METHODS.includes(method);
+}
+
+export function isSavedCardMethod(method) {
+  return method === "saved-card";
 }
 
 function cleanText(value, max) {
