@@ -506,7 +506,7 @@ export default function PosPage() {
       const first = result.checkouts[0];
       if (first?.url) {
         window.open(first.url, "_blank", "noopener,noreferrer");
-        setNotice("Stripe Checkout opened. Pay there, then tap Check payment.");
+        setNotice("Stripe window opened. When they’ve paid, tap Check payment.");
       } else {
         setNotice("Checkout saved. No Stripe link was returned.");
       }
@@ -697,7 +697,7 @@ export default function PosPage() {
         setPanel("checkout");
       } else {
         setPanel("checkout");
-        setNotice("Stripe Checkout opened. Pay there, then tap Check payment.");
+        setNotice("Stripe window opened. When they’ve paid, tap Check payment.");
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not start split checkout.");
@@ -765,7 +765,11 @@ export default function PosPage() {
           : "Ready";
 
   const awaitingPayment = Boolean(
-    sale && (sale.status === "awaiting_payment" || sale.status === "partially_paid"),
+    sale &&
+      (sale.status === "awaiting_payment" ||
+        sale.status === "partially_paid" ||
+        checkouts.some((item) => Boolean(item.url)) ||
+        (sale.paymentLegs || []).some((leg) => Boolean(leg.stripeCheckoutUrl) && leg.status !== "paid")),
   );
 
   const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
@@ -1102,7 +1106,9 @@ export default function PosPage() {
               <>
                 <h1 className="pos-panel-title">Waiting for payment</h1>
                 <p className="pos-muted">
-                  Finish each portion below. Card opens Stripe; cash is recorded here after you receive it.
+                  {(sale?.paymentLegs || []).filter((leg) => leg.status !== "paid").length > 1
+                    ? "Finish each unpaid portion below. When Stripe is done, check payment status."
+                    : "Finish payment in the Stripe window. Come back here and check status when it’s done."}
                 </p>
                 <section className="pos-await-legs">
                   {(sale?.paymentLegs || []).map((leg) => {
@@ -1112,23 +1118,33 @@ export default function PosPage() {
                         ? { legId: leg.id, url: leg.stripeCheckoutUrl, sessionId: leg.stripeCheckoutSessionId || "" }
                         : null);
                     const paid = leg.status === "paid";
+                    const stripeLike = leg.method !== "cash" && leg.method !== "other" && leg.method !== "saved-card";
                     return (
                       <article className={`pos-await-leg ${paid ? "is-paid" : ""}`} key={leg.id}>
                         <div className="pos-await-leg__meta">
                           <strong>{paymentLabels[leg.method] || leg.method}</strong>
                           <span>{money(leg.amountCents)}</span>
-                          <small>{paid ? "Paid" : leg.method === "cash" ? "Collect cash" : "Pay in Stripe"}</small>
+                          <small>
+                            {paid
+                              ? "Paid"
+                              : leg.method === "cash"
+                                ? "Collect cash"
+                                : leg.method === "saved-card"
+                                  ? "Charge card on file"
+                                  : "Pay in Stripe window"}
+                          </small>
                         </div>
-                        {!paid && checkout?.url && (
-                          <div className="pos-checkout-link-row">
+                        {!paid && checkout?.url && stripeLike && (
+                          <div className="pos-await-recovery">
                             <button
                               type="button"
-                              className="pos-secondary-btn"
+                              className="pos-text-btn"
                               onClick={() => window.open(checkout.url, "_blank", "noopener,noreferrer")}
                             >
-                              Open Stripe
+                              Open again
                             </button>
-                            <button type="button" className="pos-secondary-btn" onClick={() => copyCheckout(checkout.url)}>
+                            <span aria-hidden="true">·</span>
+                            <button type="button" className="pos-text-btn" onClick={() => copyCheckout(checkout.url)}>
                               Copy link
                             </button>
                           </div>

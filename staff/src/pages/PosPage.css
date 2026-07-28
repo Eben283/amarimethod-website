@@ -532,6 +532,30 @@
   font-size: 13px;
 }
 
+.pos-await-recovery {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--pos-muted);
+  font-size: 13px;
+}
+
+.pos-text-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--pos-blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pos-text-btn:hover {
+  text-decoration: underline;
+}
+
 .pos-checkout-link-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
