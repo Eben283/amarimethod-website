@@ -408,8 +408,8 @@ export default function PosPage() {
       {notice && <div className="pos-notice">{notice}</div>}
       <div className="pos-layout">
         <section className="pos-products-pane">
-          <div className="pos-pane-head">
-            <div><p className="pos-label">{quickAccess ? "Quick access" : "Products"}</p><h1>{quickAccess ? "Start a sale" : "Products"}</h1></div>
+          <div className={`pos-pane-head ${quickAccess ? "pos-pane-head--quick" : ""}`}>
+            {!quickAccess && <div><p className="pos-label">Products</p><h1>Products</h1></div>}
             <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
           </div>
           {quickAccess ? <div className="pos-quick-access">
