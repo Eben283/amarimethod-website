@@ -212,7 +212,7 @@ function AppRoutes() {
         path="/pos"
         element={
           <ProtectedRoute>
-            <Layout>
+            <Layout fullBleed>
               <PosPage />
             </Layout>
           </ProtectedRoute>

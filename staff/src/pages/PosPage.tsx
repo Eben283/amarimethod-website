@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   createPosSale,
   getOwedStatus,
   getPosSale,
-  previewPosCheckoutText,
   savePosSale,
   searchContacts,
   type PosClient,
@@ -11,52 +11,88 @@ import {
   type PosPaymentLegInput,
   type PosPaymentMethod,
   type PosSale,
-  type PosTextPreview,
   type PurchaseEntry,
 } from "../lib/api";
 import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
 const CATALOG = [
-  ["initial-in-person", "Initial — in person", 22500, "Single sessions"],
-  ["initial-virtual", "Initial — virtual", 22500, "Single sessions"],
-  ["4-session-series", "4-session series", 72000, "Series"],
-  ["8-session-series", "8-session series", 129500, "Series"],
-  ["12-week-practice", "The 12-Week Amari Practice", 550000, "Practice"],
-  ["upgrade-initial-to-4", "Initial → 4 upgrade", 49500, "Upgrades"],
-  ["upgrade-initial-to-8", "Initial → 8 upgrade", 107000, "Upgrades"],
-  ["upgrade-4-to-8", "4 → 8 upgrade", 57500, "Upgrades"],
-  ["entrainment", "Entrainment", 9000, "Upgrades"],
-  ["living-practice", "Living Practice", 34700, "Upgrades"],
-  ["follow-up", "Single follow-up", 19000, "Single sessions"],
+  ["12-week-practice", "Amari Practice", 550000, "Practice", "12-week · 24 sessions"],
+  ["8-session-series", "8-session series", 129500, "Series", "Series"],
+  ["4-session-series", "4-session series", 72000, "Series", "Series"],
+  ["initial-in-person", "Initial — in person", 22500, "Single sessions", "Single session"],
+  ["initial-virtual", "Initial — virtual", 22500, "Single sessions", "Single session"],
+  ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],
+  ["upgrade-initial-to-4", "Initial → 4 upgrade", 49500, "Upgrades", "Upgrade"],
+  ["upgrade-initial-to-8", "Initial → 8 upgrade", 107000, "Upgrades", "Upgrade"],
+  ["upgrade-4-to-8", "4 → 8 upgrade", 57500, "Upgrades", "Upgrade"],
+  ["entrainment", "Entrainment", 9000, "Upgrades", "Add-on"],
+  ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],
 ] as const;
+
+type CatalogKey = (typeof CATALOG)[number][0];
+type CatalogGroup = (typeof CATALOG)[number][3];
+type Panel =
+  | null
+  | "search"
+  | "customer"
+  | "customer-new"
+  | "customer-detail"
+  | "custom-sale"
+  | "category"
+  | "more"
+  | "checkout"
+  | "cash"
+  | "split"
+  | "complete";
 
 const paymentLabels: Record<PosPaymentMethod, string> = {
   "checkout-link": "Checkout link",
-  "hsa-card": "Card — HSA / FSA",
+  "hsa-card": "HSA / FSA card",
   "saved-card": "Saved card",
-  "manual-card": "Card payment",
+  "manual-card": "Card",
   cash: "Cash",
-  other: "Other payment",
+  other: "Other",
 };
-
-const splitPaymentOptions: Array<[PosPaymentMethod, string]> = [
-  ["manual-card", "Card payment"],
-  ["hsa-card", "HSA / FSA card"],
-  ["checkout-link", "Checkout link"],
-  ["cash", "Cash"],
-  ["other", "Other payment"],
-];
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
 const draftStorageKey = "amari_staff_pos_draft";
+
+function catalogEntry(key: string) {
+  return CATALOG.find(([k]) => k === key);
+}
+
+function lineUnitCents(line: PosDraftLineInput) {
+  if (line.productKey) return catalogEntry(line.productKey)?.[2] || 0;
+  return line.customAmountCents || 0;
+}
+
+function lineLabel(line: PosDraftLineInput) {
+  if (line.productKey) return catalogEntry(line.productKey)?.[1] || line.productKey;
+  return line.customLabel || "Custom sale";
+}
+
+function lineKey(line: PosDraftLineInput) {
+  if (line.productKey) return `catalog:${line.productKey}`;
+  return `custom:${line.customLabel}|${line.customReason}|${line.customAmountCents}`;
+}
+
+function calculateTotal(cart: PosDraftLineInput[]) {
+  return cart.reduce((sum, line) => sum + lineUnitCents(line) * (line.quantity || 1), 0);
+}
 
 function toDraftCart(sale: PosSale): PosDraftLineInput[] {
   return sale.cart.map((line) =>
     line.kind === "catalog"
       ? { productKey: line.productKey || undefined, quantity: line.quantity }
-      : { customLabel: line.label, customReason: line.reason || "", customAmountCents: line.unitAmountCents, quantity: line.quantity },
+      : {
+          customLabel: line.label,
+          customReason: line.reason || "",
+          customAmountCents: line.unitAmountCents,
+          quantity: line.quantity,
+        },
   );
 }
 
@@ -64,53 +100,55 @@ function toDraftLegs(sale: PosSale): PosPaymentLegInput[] {
   return sale.paymentLegs.map(({ method, amountCents }) => ({ method, amountCents }));
 }
 
-function calculateTotal(cart: PosDraftLineInput[]) {
-  return cart.reduce((sum, line) => {
-    const price = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[2] || 0 : line.customAmountCents || 0;
-    return sum + price * (line.quantity || 1);
-  }, 0);
+function cashSuggestions(totalCents: number) {
+  if (totalCents < 1) return [];
+  const exact = totalCents;
+  const values = new Set<number>([exact]);
+  const dollars = Math.ceil(totalCents / 100);
+  values.add(dollars * 100);
+  for (const step of [1, 5, 10, 20, 50, 100]) {
+    const rounded = Math.ceil(dollars / step) * step * 100;
+    if (rounded >= totalCents) values.add(rounded);
+  }
+  return [...values].sort((a, b) => a - b).slice(0, 4);
 }
 
 export default function PosPage() {
-  const [clientSearch, setClientSearch] = useState("");
-  const [matches, setMatches] = useState<ContactListItem[]>([]);
-  const [searching, setSearching] = useState(false);
+  const navigate = useNavigate();
+  const [panel, setPanel] = useState<Panel>(null);
+  const [category, setCategory] = useState<CatalogGroup>("Series");
   const [client, setClient] = useState<PosClient | null>(null);
-  const [customerDetailStep, setCustomerDetailStep] = useState(false);
-  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
-  const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
-  const [newCustomerStep, setNewCustomerStep] = useState(false);
-  const [creatingCustomer, setCreatingCustomer] = useState(false);
-  const [newCustomerFirstName, setNewCustomerFirstName] = useState("");
-  const [newCustomerLastName, setNewCustomerLastName] = useState("");
-  const [newCustomerPhone, setNewCustomerPhone] = useState("");
-  const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
   const [sale, setSale] = useState<PosSale | null>(null);
-  const [category, setCategory] = useState<(typeof CATALOG)[number][3]>("Practice");
-  const [productQuery, setProductQuery] = useState("");
-  const [quickAccess, setQuickAccess] = useState(true);
-  const [showCustomSale, setShowCustomSale] = useState(false);
-  const [customLabel, setCustomLabel] = useState("");
-  const [customReason, setCustomReason] = useState("");
-  const [customDollars, setCustomDollars] = useState("");
-  const [checkoutStep, setCheckoutStep] = useState(false);
-  const [paymentStep, setPaymentStep] = useState(false);
-  const [paymentAction, setPaymentAction] = useState<"checkout-link" | "cash" | "split" | null>(null);
-  const [cashDollars, setCashDollars] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
-  const [preview, setPreview] = useState<PosTextPreview | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [matches, setMatches] = useState<ContactListItem[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [productMatches, setProductMatches] = useState<typeof CATALOG[number][]>([]);
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
+  const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
+  const [detailClient, setDetailClient] = useState<PosClient | null>(null);
+  const [customLabel, setCustomLabel] = useState("");
+  const [customReason, setCustomReason] = useState("Custom sale");
+  const [customDollars, setCustomDollars] = useState("");
+  const [customQty, setCustomQty] = useState("1");
+  const [newFirst, setNewFirst] = useState("");
+  const [newLast, setNewLast] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [cashDollars, setCashDollars] = useState("");
+  const [cashReceivedCents, setCashReceivedCents] = useState(0);
+  const [selectedPayment, setSelectedPayment] = useState<PosPaymentMethod | "split" | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const customerTimer = useRef<ReturnType<typeof setTimeout>>();
+
   const total = useMemo(() => calculateTotal(cart), [cart]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
-  const products = useMemo(() => {
-    const query = productQuery.trim().toLowerCase();
-    return CATALOG.filter(([, label, , group]) =>
-      query ? `${label} ${group}`.toLowerCase().includes(query) : group === category,
-    );
-  }, [category, productQuery]);
+  const suggestions = useMemo(() => cashSuggestions(total), [total]);
+  const inCheckout = panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete";
 
   useEffect(() => {
     const id = localStorage.getItem(draftStorageKey);
@@ -126,14 +164,21 @@ export default function PosPage() {
   }, []);
 
   useEffect(() => {
+    if (panel !== "search") return;
+    const query = searchQuery.trim().toLowerCase();
+    setProductMatches(
+      query.length < 1
+        ? []
+        : CATALOG.filter(([, label, , group]) => `${label} ${group}`.toLowerCase().includes(query)),
+    );
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (clientSearch.trim().length < 2) {
+    if (query.length < 2) {
       setMatches([]);
       return;
     }
     searchTimer.current = setTimeout(() => {
       setSearching(true);
-      void searchContacts(clientSearch.trim())
+      void searchContacts(searchQuery.trim())
         .then(setMatches)
         .catch(() => setMatches([]))
         .finally(() => setSearching(false));
@@ -141,148 +186,190 @@ export default function PosPage() {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [clientSearch]);
+  }, [panel, searchQuery]);
 
   useEffect(() => {
-    if (!client || client.id.startsWith("draft_")) {
-      setPurchaseHistory(client ? [] : null);
+    if (panel !== "customer" && panel !== "customer-new") return;
+    if (customerTimer.current) clearTimeout(customerTimer.current);
+    if (customerQuery.trim().length < 2) {
+      setMatches([]);
+      return;
+    }
+    customerTimer.current = setTimeout(() => {
+      setSearching(true);
+      void searchContacts(customerQuery.trim())
+        .then(setMatches)
+        .catch(() => setMatches([]))
+        .finally(() => setSearching(false));
+    }, 300);
+    return () => {
+      if (customerTimer.current) clearTimeout(customerTimer.current);
+    };
+  }, [panel, customerQuery]);
+
+  useEffect(() => {
+    const target = detailClient || (panel === "customer-detail" ? client : null);
+    if (!target || target.id.startsWith("draft_")) {
+      setPurchaseHistory(target ? [] : null);
       setPurchaseHistoryError("");
       return;
     }
     let cancelled = false;
     setPurchaseHistory(null);
     setPurchaseHistoryError("");
-    void getOwedStatus(client.id)
+    void getOwedStatus(target.id)
       .then((result) => {
         if (!cancelled) setPurchaseHistory(result.purchases || []);
       })
       .catch(() => {
         if (!cancelled) setPurchaseHistoryError("Purchase history is unavailable right now.");
       });
-    return () => { cancelled = true; };
-  }, [client?.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [detailClient?.id, client?.id, panel]);
 
-  function selectClient(contact: ContactListItem) {
-    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
-    setClientSearch("");
+  function closePanel() {
+    setPanel(null);
+    setNotice("");
+    setSearchQuery("");
+    setCustomerQuery("");
+    setDetailClient(null);
+    setSelectedPayment(null);
+  }
+
+  function openSearch() {
+    setNotice("");
+    setSearchQuery("");
     setMatches([]);
-    setCustomerDetailStep(false);
-    setNewCustomerStep(false);
-    setCreatingCustomer(false);
+    setProductMatches([]);
+    setPanel("search");
+  }
+
+  function openCustomer() {
+    setNotice("");
+    setCustomerQuery("");
+    setMatches([]);
+    setPanel("customer");
+  }
+
+  function openCategory(next: CatalogGroup) {
+    setCategory(next);
+    setPanel("category");
+  }
+
+  function addOrIncrementCatalog(productKey: CatalogKey) {
+    setCart((current) => {
+      const index = current.findIndex((line) => line.productKey === productKey);
+      if (index === -1) return [...current, { productKey, quantity: 1 }];
+      return current.map((line, i) =>
+        i === index ? { ...line, quantity: Math.min(20, (line.quantity || 1) + 1) } : line,
+      );
+    });
     setNotice("");
   }
 
-  function viewCustomerDetails(contact: ContactListItem) {
-    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
-    setClientSearch("");
-    setMatches([]);
-    setNewCustomerStep(false);
-    setCreatingCustomer(false);
-    setCustomerDetailStep(true);
+  function addCustomSale() {
+    const amountCents = Math.round(Number(customDollars) * 100);
+    const quantity = Number(customQty);
+    if (!customLabel.trim() || !Number.isSafeInteger(amountCents) || amountCents < 1) {
+      setNotice("Add a name and a valid price.");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+      setNotice("Quantity must be between 1 and 20.");
+      return;
+    }
+    setCart((current) => [
+      ...current,
+      {
+        customLabel: customLabel.trim(),
+        customReason: customReason.trim() || "Custom sale",
+        customAmountCents: amountCents,
+        quantity,
+      },
+    ]);
+    setCustomLabel("");
+    setCustomReason("Custom sale");
+    setCustomDollars("");
+    setCustomQty("1");
     setNotice("");
+    setPanel(null);
   }
 
-  function openCustomerPicker() {
-    setClientSearch("");
-    setMatches([]);
-    setCreatingCustomer(false);
+  function removeLine(index: number) {
+    setCart((current) => current.filter((_, i) => i !== index));
+  }
+
+  function clearCart() {
+    setCart([]);
+    setLegs([]);
+    setSale(null);
     setNotice("");
-    setNewCustomerStep(true);
+    setSelectedPayment(null);
+    localStorage.removeItem(draftStorageKey);
+    if (inCheckout) setPanel(null);
   }
 
   function removeCustomer() {
     setClient(null);
+    setDetailClient(null);
     setPurchaseHistory(null);
-    setPurchaseHistoryError("");
-    setCustomerDetailStep(false);
     setNotice("");
   }
 
-  function cancelNewCustomer() {
-    setNewCustomerFirstName("");
-    setNewCustomerLastName("");
-    setNewCustomerPhone("");
-    setNewCustomerEmail("");
-    setClientSearch("");
-    setMatches([]);
-    setCreatingCustomer(false);
-    setNotice("");
-    setNewCustomerStep(false);
+  function selectClient(contact: ContactListItem, attach = true) {
+    const next = {
+      id: contact.id,
+      name: contact.name,
+      phone: contact.phone || null,
+      email: contact.email || null,
+    };
+    if (attach) {
+      setClient(next);
+      setPanel(null);
+      setCustomerQuery("");
+      setSearchQuery("");
+      setMatches([]);
+      setNotice("");
+      return;
+    }
+    setDetailClient(next);
+    setPanel("customer-detail");
   }
 
-  function beginCustomerDetails() {
-    const [firstName = "", ...lastName] = clientSearch.trim().split(/\s+/);
-    setNewCustomerFirstName((current) => current || firstName);
-    setNewCustomerLastName((current) => current || lastName.join(" "));
+  function attachDetailClient() {
+    if (!detailClient) return;
+    setClient(detailClient);
+    setDetailClient(null);
+    setPanel(null);
     setNotice("");
-    setCreatingCustomer(true);
-  }
-
-  function returnToCustomerSearch() {
-    setNotice("");
-    setCreatingCustomer(false);
   }
 
   function saveNewCustomer() {
-    const name = [newCustomerFirstName.trim(), newCustomerLastName.trim()].filter(Boolean).join(" ");
-    const phone = newCustomerPhone.trim();
-    const email = newCustomerEmail.trim().toLowerCase();
+    const name = [newFirst.trim(), newLast.trim()].filter(Boolean).join(" ");
+    const phone = newPhone.trim();
+    const email = newEmail.trim().toLowerCase();
     if (!name || (!phone && !email)) {
-      setNotice("Add a first name and at least a phone number or email address.");
+      setNotice("Add a first name and at least a phone number or email.");
       return;
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setNotice("Add a valid email address or leave it blank.");
       return;
     }
-    setClient({ id: `draft_${crypto.randomUUID().replace(/-/g, "")}`, name, phone: phone || null, email: email || null });
-    setClientSearch("");
-    setMatches([]);
-    setCustomerDetailStep(false);
-    cancelNewCustomer();
-  }
-
-  function addCatalog(productKey: string) {
-    setCart((current) => [...current, { productKey, quantity: 1 }]);
-    setPreview(null);
-  }
-
-  function openCategory(nextCategory: (typeof CATALOG)[number][3]) {
-    setCategory(nextCategory);
-    setProductQuery("");
-    setShowCustomSale(false);
-    setQuickAccess(false);
-  }
-
-  function openCustomSale() {
-    setProductQuery("");
-    setShowCustomSale(true);
-    setQuickAccess(false);
-  }
-
-  function addCustomSale() {
-    const amountCents = Math.round(Number(customDollars) * 100);
-    if (!customLabel.trim() || !customReason.trim() || !Number.isSafeInteger(amountCents) || amountCents < 1) {
-      setNotice("Add a label, reason, and valid dollar amount.");
-      return;
-    }
-    setCart((current) => [...current, { customLabel: customLabel.trim(), customReason: customReason.trim(), customAmountCents: amountCents, quantity: 1 }]);
-    setCustomLabel("");
-    setCustomReason("");
-    setCustomDollars("");
+    setClient({
+      id: `draft_${crypto.randomUUID().replace(/-/g, "")}`,
+      name,
+      phone: phone || null,
+      email: email || null,
+    });
+    setNewFirst("");
+    setNewLast("");
+    setNewPhone("");
+    setNewEmail("");
     setNotice("");
-    setPreview(null);
-  }
-
-  function updateQuantity(index: number, quantity: number) {
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) return;
-    setCart((current) => current.map((line, i) => (i === index ? { ...line, quantity } : line)));
-    setPreview(null);
-  }
-
-  function removeLine(index: number) {
-    setCart((current) => current.filter((_, i) => i !== index));
-    setPreview(null);
+    setPanel(null);
   }
 
   function beginCheckout() {
@@ -290,26 +377,18 @@ export default function PosPage() {
       setNotice("Add at least one product before checkout.");
       return;
     }
-    setNotice("");
-    setPaymentStep(false);
-    setCheckoutStep(true);
-  }
-
-  function beginPayment() {
     if (!client) {
-      setNotice("Select a client to continue.");
+      setNotice("Add a customer before checkout.");
+      openCustomer();
       return;
     }
     setNotice("");
-    setPaymentStep(true);
+    setSelectedPayment(null);
+    setPanel("checkout");
   }
 
-  async function choosePrimaryPayment(method: PosPaymentMethod) {
-    const paymentLegs = total ? [{ method, amountCents: total }] : [];
-    setLegs(paymentLegs);
-    setPreview(null);
+  async function persistLegs(paymentLegs: PosPaymentLegInput[]) {
     if (!client || !cart.length) return false;
-
     setBusy(true);
     setNotice("");
     try {
@@ -317,44 +396,66 @@ export default function PosPage() {
         ? await savePosSale({ id: sale.id, version: sale.version, client, cart, paymentLegs })
         : await createPosSale({ client, cart, paymentLegs });
       setSale(result.sale);
+      setLegs(paymentLegs);
       localStorage.setItem(draftStorageKey, result.sale.id);
-      setNotice(`${paymentLabels[method]} selected. No payment or message has been created.`);
       return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save this payment choice.");
+      setNotice(error instanceof Error ? error.message : "Could not save this draft.");
       return false;
     } finally {
       setBusy(false);
     }
   }
 
-  function beginPaymentAction(method: "checkout-link" | "cash" | "split") {
-    setNotice("");
-    if (method === "cash") setCashDollars((total / 100).toFixed(2));
-    if (method === "split") {
-      const existing = legs.length === 2 ? legs : [{ method: "hsa-card" as const, amountCents: 0 }, { method: "checkout-link" as const, amountCents: total }];
-      setLegs(existing);
+  async function chooseCard() {
+    setSelectedPayment("manual-card");
+    const paymentLegs = total ? [{ method: "manual-card" as const, amountCents: total }] : [];
+    if (await persistLegs(paymentLegs)) {
+      setNotice("Card selected. Stripe card entry will open here when payments go live. Draft only for now.");
     }
-    setPaymentAction(method);
   }
 
-  function sendCheckoutLink() {
-    if (!client?.phone) {
-      setNotice("Add a mobile number before sending a checkout link.");
-      return;
+  async function chooseCheckoutLink() {
+    setSelectedPayment("checkout-link");
+    const paymentLegs = total ? [{ method: "checkout-link" as const, amountCents: total }] : [];
+    if (await persistLegs(paymentLegs)) {
+      setNotice(
+        client?.phone
+          ? "Checkout link selected. Sending remains disabled while this is a draft mirror."
+          : "Checkout link selected. Add a mobile number before activation.",
+      );
     }
-    setNotice("Checkout-link sending is disabled during the mirror observation period. No message has been sent.");
   }
 
-  async function confirmCashReceived() {
-    const amountCents = Math.round(Number(cashDollars) * 100);
+  function openCash() {
+    setSelectedPayment("cash");
+    setCashDollars((total / 100).toFixed(2));
+    setPanel("cash");
+  }
+
+  function openSplit() {
+    setSelectedPayment("split");
+    const existing =
+      legs.length === 2
+        ? legs
+        : [
+            { method: "manual-card" as const, amountCents: Math.floor(total / 2) },
+            { method: "cash" as const, amountCents: total - Math.floor(total / 2) },
+          ];
+    setLegs(existing);
+    setPanel("split");
+  }
+
+  async function confirmCash(amountCents = Math.round(Number(cashDollars) * 100)) {
     if (!Number.isSafeInteger(amountCents) || amountCents < total) {
-      setNotice(`Cash received needs to cover ${money(total)}. Use Split payment for a partial cash amount.`);
+      setNotice(`Cash received needs to cover ${money(total)}. Use Split for a partial amount.`);
       return;
     }
-    if (await choosePrimaryPayment("cash")) {
-      setPaymentAction(null);
-      setNotice(`Cash receipt plan saved. Change due: ${money(amountCents - total)}. Cash is not marked received until activation.`);
+    const paymentLegs = total ? [{ method: "cash" as const, amountCents: total }] : [];
+    if (await persistLegs(paymentLegs)) {
+      setCashReceivedCents(amountCents);
+      setPanel("complete");
+      setNotice("");
     }
   }
 
@@ -363,303 +464,587 @@ export default function PosPage() {
       const exactAmount = Math.min(Math.max(0, amountCents), total);
       const next = current.map((leg, i) => (i === index ? { ...leg, amountCents: exactAmount } : leg));
       if (next.length === 2) {
-        const otherIndex = index === 0 ? 1 : 0;
-        next[otherIndex] = { ...next[otherIndex], amountCents: total - exactAmount };
+        const other = index === 0 ? 1 : 0;
+        next[other] = { ...next[other], amountCents: total - exactAmount };
       }
       return next;
     });
-    setPreview(null);
   }
 
-  async function saveSplitPayment() {
-    if (!client) {
-      setNotice("Select a client to continue.");
-      return false;
-    }
+  async function confirmSplit() {
     if (legs.length !== 2 || allocation !== total) {
       setNotice("Payment amounts need to equal the cart total.");
-      return false;
-    }
-    setBusy(true);
-    setNotice("");
-    try {
-      const result = sale
-        ? await savePosSale({ id: sale.id, version: sale.version, client, cart, paymentLegs: legs })
-        : await createPosSale({ client, cart, paymentLegs: legs });
-      setSale(result.sale);
-      localStorage.setItem(draftStorageKey, result.sale.id);
-      return true;
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save this split payment plan.");
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function confirmSplitPayment() {
-    if (await saveSplitPayment()) {
-      setPaymentAction(null);
-      setNotice("Split payment plan saved. No payment or message has been created.");
-    }
-  }
-
-  async function prepareText() {
-    if (!sale) {
-      setNotice("Save this checkout draft first.");
       return;
     }
-    setBusy(true);
-    setNotice("");
-    try {
-      const result = await previewPosCheckoutText(sale.id);
-      setSale(result.sale);
-      setPreview(result.preview);
-      setNotice("Preview recorded. Sending remains disabled.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not prepare the text preview.");
-    } finally {
-      setBusy(false);
+    if (await persistLegs(legs)) {
+      setCashReceivedCents(total);
+      setPanel("complete");
+      setNotice("");
     }
   }
 
-  const cartLines = (
-    <div className="pos-cart-lines">
-      {cart.length ? cart.map((line, index) => {
-        const label = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[1] : line.customLabel;
-        const unit = line.productKey ? CATALOG.find(([key]) => key === line.productKey)?.[2] || 0 : line.customAmountCents || 0;
-        return (
-          <div className="pos-cart-line" key={`${line.productKey || line.customLabel}-${index}`}>
-            <div>
-              <span>{line.quantity || 1}</span>
-              <p><strong>{label}</strong><small>{money(unit)} each</small></p>
-            </div>
-            <div>
-              <input aria-label={`Quantity for ${label}`} type="number" min="1" max="20" value={line.quantity || 1} onChange={(event) => updateQuantity(index, Number(event.target.value))} />
-              <b>{money(unit * (line.quantity || 1))}</b>
-              <button type="button" onClick={() => removeLine(index)} aria-label={`Remove ${label}`}>×</button>
-            </div>
-          </div>
-        );
-      }) : <p className="pos-empty">Select products to begin.</p>}
-    </div>
-  );
-
-  const customerInCart = client && (
-    <button type="button" className="pos-cart-customer" onClick={() => setCustomerDetailStep(true)}>
-      <span>Customer</span>
-      <strong>{client.name}</strong>
-      <small>View purchases →</small>
-    </button>
-  );
-
-  if (customerDetailStep && client) {
-    const isDraftCustomer = client.id.startsWith("draft_");
-    return (
-      <main className="pos-shell">
-        <section className="pos-customer-detail-screen">
-          <header className="pos-new-customer-screen__top">
-            <button type="button" onClick={() => setCustomerDetailStep(false)}>Back</button>
-            <strong>Customer</strong>
-            <button type="button" onClick={removeCustomer}>Remove</button>
-          </header>
-          <div className="pos-customer-detail-content">
-            <p className="pos-label">Current customer</p>
-            <h1>{client.name}</h1>
-            <p className="pos-customer-contact">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details not added"}</p>
-            <button type="button" className="pos-customer-add" onClick={() => setCustomerDetailStep(false)}>Add to cart <span>→</span></button>
-            <section className="pos-customer-history" aria-live="polite">
-              <p className="pos-label">Purchase history</p>
-              {isDraftCustomer ? <p className="pos-customer-history__empty">This new customer has no purchase history yet.</p>
-                : purchaseHistory === null ? <p className="pos-customer-history__empty">Loading verified purchases…</p>
-                  : purchaseHistoryError ? <p className="pos-customer-history__empty">{purchaseHistoryError}</p>
-                    : purchaseHistory.length ? <div className="pos-customer-history__list">{purchaseHistory.map((purchase, index) => <article key={`${purchase.date || "unknown"}-${purchase.label}-${index}`}><div><strong>{purchase.label}</strong><small>{purchase.date ? new Date(`${purchase.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Date unavailable"}</small></div><b>{money(Math.round(purchase.amount * 100))}</b></article>)}</div>
-                      : <p className="pos-customer-history__empty">No verified purchases found for this customer.</p>}
-            </section>
-          </div>
-        </section>
-      </main>
-    );
+  function finishSale() {
+    setCart([]);
+    setClient(null);
+    setLegs([]);
+    setSale(null);
+    setCashReceivedCents(0);
+    setSelectedPayment(null);
+    setNotice("");
+    localStorage.removeItem(draftStorageKey);
+    setPanel(null);
   }
 
-  if (newCustomerStep) {
-    return (
-      <main className="pos-shell">
-        <section className="pos-new-customer-screen">
-          <header className="pos-new-customer-screen__top">
-            <button type="button" onClick={creatingCustomer ? returnToCustomerSearch : cancelNewCustomer}>{creatingCustomer ? "Back" : "Cancel"}</button>
-            <strong>Add customer</strong>
-            <span aria-hidden="true" />
-          </header>
-          {creatingCustomer ? <form id="new-customer-form" className="pos-new-customer-form" onSubmit={(event) => { event.preventDefault(); saveNewCustomer(); }}>
-              {notice && <div className="pos-notice pos-notice--customer">{notice}</div>}
-              <p className="pos-label">Customer details</p>
-              <div className="pos-new-customer-form__fields">
-                <label>First name<input value={newCustomerFirstName} onChange={(event) => setNewCustomerFirstName(event.target.value)} autoComplete="given-name" autoFocus /><small>Required</small></label>
-                <label>Last name<input value={newCustomerLastName} onChange={(event) => setNewCustomerLastName(event.target.value)} autoComplete="family-name" /></label>
-                <label>Mobile number<input value={newCustomerPhone} onChange={(event) => setNewCustomerPhone(event.target.value)} inputMode="tel" autoComplete="tel" /></label>
-                <label>Email address<input value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} inputMode="email" autoComplete="email" /></label>
-              </div>
-              <p className="pos-new-customer-form__note">A phone number or email address is required.</p>
-              <button type="submit" className="pos-new-customer-form__save">Use this customer <span aria-hidden="true">→</span></button>
-            </form> : <div className="pos-customer-picker">
-              <p className="pos-label">Find a customer</p>
-              <label className="pos-picker-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search name, email, or phone" autoComplete="off" autoFocus /><button type="button" aria-label="Clear customer search" onClick={() => setClientSearch("")}>×</button></label>
-              {searching && <p className="pos-customer-picker__status">Searching customers…</p>}
-              <button type="button" className="pos-customer-picker__create" onClick={beginCustomerDetails}>New customer</button>
-              {clientSearch.trim().length < 2 ? <p className="pos-customer-picker__status">Start typing to find an existing customer.</p>
-                : matches.length ? <div className="pos-customer-picker__results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => viewCustomerDetails(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>View details</b></button>)}</div>
-                  : !searching && <p className="pos-customer-picker__status">No existing customer found.</p>}
-            </div>}
-        </section>
-      </main>
-    );
-  }
-
-  if (paymentAction) {
-    const isCheckoutLink = paymentAction === "checkout-link";
-    const isSplitPayment = paymentAction === "split";
-    const hasMobile = Boolean(client?.phone);
-    const cashReceivedCents = Math.round(Number(cashDollars) * 100);
-    const hasValidCashInput = Number.isSafeInteger(cashReceivedCents) && cashReceivedCents >= 0;
-    const cashDifferenceCents = hasValidCashInput ? cashReceivedCents - total : -total;
-    return (
-      <main className="pos-shell">
-        <section className="pos-payment-action-screen">
-          <header className="pos-payment-screen__top">
-            <button type="button" className="pos-back" onClick={() => { setNotice(""); setPaymentAction(null); }}>← Back</button>
-            <strong>Total {money(total)}</strong>
-            <span>{client?.name || "Client"}</span>
-          </header>
-          <div className="pos-payment-action-content">
-            {notice && <div className="pos-notice pos-notice--action">{notice}</div>}
-            <p className="pos-label">{isSplitPayment ? "Split payment" : isCheckoutLink ? "Checkout link" : "Cash payment"}</p>
-            <h1>{isSplitPayment ? "Split the total" : isCheckoutLink ? "Send checkout link" : "Record cash received"}</h1>
-            {isSplitPayment ? <>
-              <p className="pos-payment-action-intro">Choose two methods. When one amount changes, the other automatically carries the remaining balance.</p>
-              <div className="pos-split-plan">
-                {legs.slice(0, 2).map((leg, index) => <section className="pos-split-plan__leg" key={`split-${index}`}>
-                  <p>Payment {index + 1}</p>
-                  <label><span>Method</span><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{splitPaymentOptions.map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select></label>
-                  <label><span>Exact amount</span><input aria-label={`Amount for payment ${index + 1}`} type="number" inputMode="decimal" min="0.00" max={(total / 100).toFixed(2)} step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.round(Number(event.target.value) * 100) || 0)} /><b>USD</b></label>
-                </section>)}
-              </div>
-              <div className={`pos-split-total ${allocation === total ? "is-complete" : ""}`}><span>{allocation === total ? "Allocated exactly" : allocation < total ? "Remaining" : "Over by"}</span><strong>{money(Math.abs(total - allocation))}</strong></div>
-              {legs.some((leg) => leg.method === "checkout-link") && !hasMobile && <p className="pos-split-warning">Checkout link needs a mobile number on this client before activation.</p>}
-            </> : <><div className="pos-cash-entry"><label><span>Cash received</span><div><b>$</b><input aria-label="Cash received" inputMode="decimal" type="number" min="0.00" step="0.01" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} autoFocus /></div></label></div><div className="pos-payment-review">
-              <div><span>Customer</span><strong>{client?.name || "Client"}</strong></div>
-              {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><div><span>Amount due</span><strong>{money(total)}</strong></div><div className={cashDifferenceCents >= 0 ? "pos-cash-difference is-change" : "pos-cash-difference is-remaining"}><span>{cashDifferenceCents >= 0 ? "Change due" : "Still due"}</span><strong>{money(Math.abs(cashDifferenceCents))}</strong></div>{cashDifferenceCents < 0 && <p>For a partial cash payment, use Split payment instead.</p>}</>}
-            </div></>}
-            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? sendCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (!isSplitPayment && !isCheckoutLink && (!hasValidCashInput || cashDifferenceCents < 0)) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Send checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
-            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "Sending is intentionally disabled while this remains a mirror." : "Cash tendered and change are displayed here; the mirror still does not mark cash received or fulfill anything."}</p>
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  if (paymentStep) {
-    const chooseMethod = (method: PosPaymentMethod) => { void choosePrimaryPayment(method); };
-
-    return (
-      <main className="pos-shell">
-        <section className="pos-payment-screen">
-          <header className="pos-payment-screen__top">
-            <button type="button" className="pos-back" onClick={() => setPaymentStep(false)}>← Back</button>
-            <strong>Total {money(total)}</strong>
-            <span>{client?.name || "Client"}</span>
-          </header>
-
-          {notice && <div className="pos-notice pos-notice--payment">{notice}</div>}
-
-          <div className="pos-payment-screen__content">
-            <p className="pos-label">Accept payment</p>
-            <h1>Select payment option</h1>
-            <p className="pos-payment-screen__client">For {client?.name || "this client"}</p>
-
-            <div className="pos-payment-options">
-              {([
-                ["manual-card", "Card payment", "Enter any card, including HSA / FSA", "▦"],
-                ["checkout-link", "Checkout link", "Send a secure payment link to their phone", "↗"],
-                ["cash", "Cash", "Record the exact amount received", "□"],
-              ] as const).map(([method, title, detail, mark]) => (
-                <button key={method} type="button" className={`pos-payment-option ${legs.length === 1 && legs[0].method === method ? "is-active" : ""}`} onClick={() => method === "checkout-link" || method === "cash" ? beginPaymentAction(method) : chooseMethod(method)} disabled={busy}>
-                  <span className="pos-payment-option__mark" aria-hidden="true">{mark}</span>
-                  <span><strong>{title}</strong><small>{detail}</small></span>
-                  <b aria-hidden="true">→</b>
-                </button>
-              ))}
-              <button type="button" className={`pos-payment-option pos-payment-option--split ${legs.length > 1 ? "is-active" : ""}`} onClick={() => beginPaymentAction("split")} disabled={!total}>
-                <span className="pos-payment-option__mark" aria-hidden="true">÷</span>
-                <span><strong>Split payment</strong><small>Use two payment methods for this sale</small></span>
-                <b aria-hidden="true">→</b>
-              </button>
-            </div>
-
-            {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
-          </div>
-        </section>
-      </main>
-    );
-  }
-
-  if (checkoutStep) {
-    return (
-      <main className="pos-shell">
-        <div className="pos-checkout-layout">
-          <section className="pos-checkout-main">
-            <button type="button" className="pos-back" onClick={() => { setPaymentStep(false); setCheckoutStep(false); }}>← Products</button>
-            {notice && <div className="pos-notice">{notice}</div>}
-            <section className="pos-client">
-              <div className="pos-client__head">
-                <h2>{client ? client.name : "Add client"}</h2>
-                {client ? <button type="button" onClick={removeCustomer} className="pos-quiet">Change</button> : <button type="button" onClick={openCustomerPicker} className="pos-quiet">Add customer</button>}
-              </div>
-              {client && <p className="pos-client-detail">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details needed before activation"}</p>}
-              {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
-              {searching && <p className="pos-searching">Searching clients…</p>}
-              {matches.length > 0 && <div className="pos-client-results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>→</b></button>)}</div>}
-            </section>
-          </section>
-          <aside className="pos-cart-pane">
-            <div className="pos-cart-head"><div>{customerInCart}<p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
-            {cartLines}
-            <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
-            <button type="button" className="pos-checkout-bar" onClick={beginPayment} disabled={!client || !cart.length}>Accept payment<span>{money(total)} →</span></button>
-          </aside>
-        </div>
-      </main>
-    );
-  }
+  const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
 
   return (
-    <main className="pos-shell">
-      {notice && <div className="pos-notice">{notice}</div>}
-      <div className="pos-layout">
-        <section className="pos-products-pane">
-          <div className={`pos-pane-head ${quickAccess ? "pos-pane-head--quick" : ""}`}>
-            {!quickAccess && <div><p className="pos-label">Products</p><h1>Products</h1></div>}
-            <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
+    <main className="pos-shell" data-theme="dark">
+      <aside className="pos-nav" aria-label="POS navigation">
+        <button type="button" className="pos-nav__btn" onClick={() => navigate("/")} aria-label="Home">
+          <span aria-hidden="true">⌂</span>
+          <small>Home</small>
+        </button>
+        <button type="button" className="pos-nav__btn" onClick={openSearch} aria-label="Search">
+          <span aria-hidden="true">⌕</span>
+          <small>Search</small>
+        </button>
+        <button type="button" className="pos-nav__btn" onClick={() => setPanel("more")} aria-label="More actions">
+          <span aria-hidden="true">···</span>
+          <small>More</small>
+        </button>
+      </aside>
+
+      <section className="pos-main">
+        <header className="pos-top">
+          <strong>Amari POS</strong>
+          <span className="pos-top__status">Draft mirror</span>
+        </header>
+
+        {notice && !panel && <div className="pos-notice">{notice}</div>}
+
+        {panel === null && (
+          <div className="pos-grid-wrap">
+            <button type="button" className="pos-search-launch" onClick={openSearch}>
+              <span aria-hidden="true">⌕</span>
+              Search products or customers
+            </button>
+            <div className="pos-smart-grid">
+              <button
+                type="button"
+                className={`pos-tile pos-tile--customer ${client ? "is-remove" : ""}`}
+                onClick={client ? removeCustomer : openCustomer}
+              >
+                <strong>{client ? "Remove customer" : "Add customer"}</strong>
+                <small>{client ? client.name : "Search or create"}</small>
+              </button>
+              <button type="button" className="pos-tile pos-tile--custom" onClick={() => setPanel("custom-sale")}>
+                <strong>Custom sale</strong>
+                <small>Name, qty, price</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--practice"
+                onClick={() => addOrIncrementCatalog("12-week-practice")}
+              >
+                <strong>Amari Practice</strong>
+                <small>{money(550000)}</small>
+              </button>
+              <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
+                <strong>Series</strong>
+                <small>4- and 8-session</small>
+              </button>
+              <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("Upgrades")}>
+                <strong>Upgrades</strong>
+                <small>Continuation</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--sessions"
+                onClick={() => openCategory("Single sessions")}
+              >
+                <strong>Single sessions</strong>
+                <small>Initials & follow-ups</small>
+              </button>
+            </div>
           </div>
-          {quickAccess ? <div className="pos-quick-access">
-            <button type="button" className={`pos-quick-tile ${client ? "pos-quick-tile--remove-customer" : "pos-quick-tile--customer"}`} onClick={client ? removeCustomer : openCustomerPicker}><span>{client ? "−" : "◌"}</span><strong>{client ? "Remove customer" : "Add customer"}</strong><small>{client ? "Remove from this cart" : "Find an existing customer or add their details"}</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--practice" onClick={() => addCatalog("12-week-practice")}><span>12</span><strong>Amari Practice</strong><small>Add the 12-week practice</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--series" onClick={() => openCategory("Series")}><span>↗</span><strong>Series</strong><small>4- and 8-session options</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--upgrades" onClick={() => openCategory("Upgrades")}><span>＋</span><strong>Upgrades</strong><small>Continuation and add-ons</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--sessions" onClick={() => openCategory("Single sessions")}><span>○</span><strong>Single sessions</strong><small>Initials and follow-ups</small></button>
-          </div> : <>
-            <div className="pos-catalog-tools"><button type="button" onClick={() => { setQuickAccess(true); setProductQuery(""); setShowCustomSale(false); }}>← Quick access</button><div className="pos-categories">{(["Practice", "Series", "Upgrades", "Single sessions"] as const).map((name) => <button className={category === name && !productQuery && !showCustomSale ? "is-active" : ""} type="button" onClick={() => openCategory(name)} key={name}>{name}</button>)}</div></div>
-            {showCustomSale ? <div className="pos-custom-sale"><p className="pos-label">Custom sale</p><h2>Add a labelled amount</h2><input value={customLabel} onChange={(event) => setCustomLabel(event.target.value)} placeholder="What is this for?" /><input value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Reason or category" /><input inputMode="decimal" value={customDollars} onChange={(event) => setCustomDollars(event.target.value)} placeholder="$0.00" /><button type="button" onClick={addCustomSale}>Add to cart →</button></div> : <><div className="pos-products">{products.map(([key, label, amount, group]) => <button type="button" className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`} key={key} onClick={() => addCatalog(key)} aria-label={`Add ${label} for ${money(amount)}`}><div className="pos-product__mark">{key === "12-week-practice" ? "12" : group === "Upgrades" ? "↗" : "A"}</div><p>{group}</p><h3>{label}</h3>{key === "12-week-practice" && <span>24 sessions</span>}<footer><strong>{money(amount)}</strong></footer></button>)}</div>{!products.length && <p className="pos-no-products">No products match “{productQuery}”.</p>}</>}
-          </>}
-        </section>
-        <aside className="pos-cart-pane">
-          <div className="pos-cart-head"><div>{customerInCart}<p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
-          {cartLines}
-          <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
-          <button type="button" className="pos-checkout-bar" onClick={beginCheckout} disabled={!cart.length}>Checkout products<span>{money(total)} →</span></button>
-        </aside>
-      </div>
+        )}
+
+        {panel === "search" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={closePanel}>Back</button>
+              <strong>Search</strong>
+              <span />
+            </div>
+            <label className="pos-field-search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products or customers"
+                autoFocus
+              />
+              {searchQuery && (
+                <button type="button" aria-label="Clear search" onClick={() => setSearchQuery("")}>
+                  ×
+                </button>
+              )}
+            </label>
+            {searching && <p className="pos-muted">Searching…</p>}
+            {productMatches.length > 0 && (
+              <section className="pos-result-block">
+                <p className="pos-section-label">Products</p>
+                {productMatches.map(([key, label, amount, , detail]) => (
+                  <button type="button" className="pos-result-row" key={key} onClick={() => { addOrIncrementCatalog(key); closePanel(); }}>
+                    <span>
+                      <strong>{label}</strong>
+                      <small>{detail}</small>
+                    </span>
+                    <b>{money(amount)}</b>
+                  </button>
+                ))}
+              </section>
+            )}
+            {matches.length > 0 && (
+              <section className="pos-result-block">
+                <p className="pos-section-label">Customers</p>
+                {matches.map((contact) => (
+                  <button type="button" className="pos-result-row" key={contact.id} onClick={() => selectClient(contact, false)}>
+                    <span>
+                      <strong>{contact.name}</strong>
+                      <small>{contact.phone || contact.email || "No contact detail"}</small>
+                    </span>
+                    <b>View</b>
+                  </button>
+                ))}
+              </section>
+            )}
+            {searchQuery.trim().length >= 2 && !searching && !productMatches.length && !matches.length && (
+              <p className="pos-muted">No products or customers matched.</p>
+            )}
+          </div>
+        )}
+
+        {panel === "category" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={closePanel}>Back</button>
+              <strong>{category}</strong>
+              <span />
+            </div>
+            <div className="pos-product-list">
+              {categoryProducts.map(([key, label, amount, , detail]) => (
+                <button type="button" className="pos-product-row" key={key} onClick={() => addOrIncrementCatalog(key)}>
+                  <span>
+                    <strong>{label}</strong>
+                    <small>{detail}</small>
+                  </span>
+                  <b>{money(amount)}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {panel === "customer" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={closePanel}>Cancel</button>
+              <strong>Add customer</strong>
+              <span />
+            </div>
+            <label className="pos-field-search">
+              <span aria-hidden="true">⌕</span>
+              <input
+                value={customerQuery}
+                onChange={(e) => setCustomerQuery(e.target.value)}
+                placeholder="Search customers…"
+                autoFocus
+              />
+            </label>
+            <button type="button" className="pos-secondary-btn" onClick={() => { setNotice(""); setPanel("customer-new"); }}>
+              New customer
+            </button>
+            {searching && <p className="pos-muted">Searching…</p>}
+            {matches.map((contact) => (
+              <button type="button" className="pos-result-row" key={contact.id} onClick={() => selectClient(contact, false)}>
+                <span>
+                  <strong>{contact.name}</strong>
+                  <small>{contact.phone || contact.email || "No contact detail"}</small>
+                </span>
+                <b>View details</b>
+              </button>
+            ))}
+            {customerQuery.trim().length >= 2 && !searching && !matches.length && (
+              <p className="pos-muted">No existing customer found.</p>
+            )}
+          </div>
+        )}
+
+        {panel === "customer-new" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={() => setPanel("customer")}>Cancel</button>
+              <strong>New customer</strong>
+              <button type="button" onClick={saveNewCustomer}>Save</button>
+            </div>
+            {notice && <div className="pos-notice">{notice}</div>}
+            <p className="pos-section-label">Contact information</p>
+            <label className="pos-input-row">
+              First name
+              <input value={newFirst} onChange={(e) => setNewFirst(e.target.value)} autoComplete="given-name" autoFocus />
+              <small>Required</small>
+            </label>
+            <label className="pos-input-row">
+              Last name
+              <input value={newLast} onChange={(e) => setNewLast(e.target.value)} autoComplete="family-name" />
+            </label>
+            <label className="pos-input-row">
+              Email address
+              <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} inputMode="email" autoComplete="email" />
+            </label>
+            <label className="pos-input-row">
+              Phone number
+              <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} inputMode="tel" autoComplete="tel" />
+            </label>
+            <p className="pos-muted">Phone or email is required. Customer is added to this cart on save.</p>
+          </div>
+        )}
+
+        {panel === "customer-detail" && (detailClient || client) && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={() => { setDetailClient(null); setPanel(client ? null : "customer"); }}>Back</button>
+              <strong>Customer</strong>
+              <button type="button" className="is-danger" onClick={() => { removeCustomer(); closePanel(); }}>Remove</button>
+            </div>
+            <h1 className="pos-panel-title">{(detailClient || client)?.name}</h1>
+            <p className="pos-muted">
+              {[ (detailClient || client)?.phone, (detailClient || client)?.email ].filter(Boolean).join(" · ") || "No contact detail"}
+            </p>
+            <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
+              Add to cart
+            </button>
+            <p className="pos-section-label">Orders</p>
+            {(detailClient || client)?.id.startsWith("draft_") ? (
+              <p className="pos-muted">No purchase history yet.</p>
+            ) : purchaseHistory === null ? (
+              <p className="pos-muted">Loading…</p>
+            ) : purchaseHistoryError ? (
+              <p className="pos-muted">{purchaseHistoryError}</p>
+            ) : purchaseHistory.length ? (
+              <div className="pos-orders">
+                {purchaseHistory.map((purchase, index) => (
+                  <article key={`${purchase.date}-${purchase.label}-${index}`}>
+                    <span>
+                      <strong>{purchase.label}</strong>
+                      <small>
+                        {purchase.date
+                          ? new Date(`${purchase.date}T12:00:00`).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "Date unavailable"}
+                      </small>
+                    </span>
+                    <b>{money(Math.round(purchase.amount * 100))}</b>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="pos-muted">No verified purchases found.</p>
+            )}
+          </div>
+        )}
+
+        {panel === "custom-sale" && (
+          <div className="pos-modal-scrim" role="presentation" onClick={closePanel}>
+            <div className="pos-modal" role="dialog" aria-labelledby="custom-sale-title" onClick={(e) => e.stopPropagation()}>
+              <h2 id="custom-sale-title">Custom sale</h2>
+              {notice && <div className="pos-notice">{notice}</div>}
+              <label>
+                Product name
+                <input value={customLabel} onChange={(e) => setCustomLabel(e.target.value)} placeholder="Gift wrap service" autoFocus />
+              </label>
+              <label>
+                Quantity
+                <input value={customQty} onChange={(e) => setCustomQty(e.target.value)} inputMode="numeric" />
+              </label>
+              <label>
+                Price
+                <input value={customDollars} onChange={(e) => setCustomDollars(e.target.value)} inputMode="decimal" placeholder="0.00" />
+              </label>
+              <label>
+                Reason
+                <input value={customReason} onChange={(e) => setCustomReason(e.target.value)} placeholder="Custom sale" />
+              </label>
+              <button type="button" className="pos-primary-btn" onClick={addCustomSale}>Add to cart</button>
+              <button type="button" className="pos-ghost-btn" onClick={closePanel}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {panel === "more" && (
+          <div className="pos-modal-scrim" role="presentation" onClick={closePanel}>
+            <div className="pos-modal pos-modal--sheet" role="dialog" aria-labelledby="more-title" onClick={(e) => e.stopPropagation()}>
+              <h2 id="more-title">More actions</h2>
+              <button type="button" className="pos-sheet-row" onClick={() => { setPanel(null); openCustomer(); }}>
+                Add customer
+              </button>
+              <button type="button" className="pos-sheet-row" onClick={() => { setPanel(null); setPanel("custom-sale"); }}>
+                Custom sale
+              </button>
+              <button type="button" className="pos-sheet-row is-danger" onClick={() => { clearCart(); closePanel(); }} disabled={!cart.length && !client}>
+                Clear cart
+              </button>
+              <button type="button" className="pos-ghost-btn" onClick={closePanel}>Close</button>
+            </div>
+          </div>
+        )}
+
+        {panel === "checkout" && (
+          <div className="pos-panel pos-panel--checkout">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={() => setPanel(null)}>Cancel</button>
+              <strong>Total {money(total)}</strong>
+              <span />
+            </div>
+            {notice && <div className="pos-notice">{notice}</div>}
+            <p className="pos-checkout-prompt">Select payment option</p>
+            <div className="pos-pay-grid">
+              <button
+                type="button"
+                className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
+                onClick={() => void chooseCard()}
+                disabled={busy}
+              >
+                Card
+                <small>Stripe entry later</small>
+              </button>
+              <button
+                type="button"
+                className={`pos-pay-tile ${selectedPayment === "cash" ? "is-active" : ""}`}
+                onClick={openCash}
+                disabled={busy}
+              >
+                Cash
+              </button>
+              <button
+                type="button"
+                className={`pos-pay-tile ${selectedPayment === "checkout-link" ? "is-active" : ""}`}
+                onClick={() => void chooseCheckoutLink()}
+                disabled={busy}
+              >
+                Checkout link
+                <small>Text when live</small>
+              </button>
+              <button
+                type="button"
+                className={`pos-pay-tile ${selectedPayment === "split" ? "is-active" : ""}`}
+                onClick={openSplit}
+                disabled={busy || !total}
+              >
+                Split payment
+              </button>
+            </div>
+            <p className="pos-muted">No tap to pay. Card will use Stripe’s card form when payments activate.</p>
+          </div>
+        )}
+
+        {panel === "cash" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={() => setPanel("checkout")}>Back</button>
+              <strong>Total {money(total)}</strong>
+              <span>Accept cash</span>
+            </div>
+            {notice && <div className="pos-notice">{notice}</div>}
+            <h1 className="pos-panel-title">Accept cash</h1>
+            <p className="pos-section-label">Amount received</p>
+            <div className="pos-cash-suggestions">
+              {suggestions.map((cents) => (
+                <button type="button" key={cents} onClick={() => void confirmCash(cents)} disabled={busy}>
+                  {money(cents)}
+                </button>
+              ))}
+            </div>
+            <label className="pos-input-row">
+              Other amount
+              <div className="pos-cash-other">
+                <b>$</b>
+                <input
+                  value={cashDollars}
+                  onChange={(e) => setCashDollars(e.target.value)}
+                  inputMode="decimal"
+                  autoFocus
+                />
+              </div>
+            </label>
+            <button type="button" className="pos-primary-btn" onClick={() => void confirmCash()} disabled={busy}>
+              {busy ? "Saving…" : "Record cash received"}
+            </button>
+          </div>
+        )}
+
+        {panel === "split" && (
+          <div className="pos-panel">
+            <div className="pos-panel__bar">
+              <button type="button" onClick={() => setPanel("checkout")}>Back</button>
+              <strong>Total {money(total)}</strong>
+              <span>Split</span>
+            </div>
+            {notice && <div className="pos-notice">{notice}</div>}
+            <h1 className="pos-panel-title">Split payment</h1>
+            <div className="pos-split-legs">
+              {legs.slice(0, 2).map((leg, index) => (
+                <section key={`split-${index}`}>
+                  <p className="pos-section-label">Payment {index + 1}</p>
+                  <label className="pos-input-row">
+                    Method
+                    <select
+                      value={leg.method}
+                      onChange={(e) =>
+                        setLegs((current) =>
+                          current.map((value, i) =>
+                            i === index ? { ...value, method: e.target.value as PosPaymentMethod } : value,
+                          ),
+                        )
+                      }
+                    >
+                      {(["manual-card", "checkout-link", "cash", "hsa-card", "other"] as PosPaymentMethod[]).map((method) => (
+                        <option key={method} value={method}>{paymentLabels[method]}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="pos-input-row">
+                    Exact amount
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={(leg.amountCents / 100).toFixed(2)}
+                      onChange={(e) => updateSplitAmount(index, Math.round(Number(e.target.value) * 100) || 0)}
+                    />
+                  </label>
+                </section>
+              ))}
+            </div>
+            <div className={`pos-split-status ${allocation === total ? "is-ok" : ""}`}>
+              <span>{allocation === total ? "Allocated exactly" : allocation < total ? "Remaining" : "Over by"}</span>
+              <strong>{money(Math.abs(total - allocation))}</strong>
+            </div>
+            <button type="button" className="pos-primary-btn" onClick={() => void confirmSplit()} disabled={busy || allocation !== total}>
+              {busy ? "Saving…" : "Confirm split plan"}
+            </button>
+          </div>
+        )}
+
+        {panel === "complete" && (
+          <div className="pos-panel pos-panel--complete">
+            <div className="pos-complete-mark" aria-hidden="true">✓</div>
+            <h1 className="pos-panel-title">Order complete</h1>
+            <p className="pos-complete-sub">
+              {selectedPayment === "cash"
+                ? `Change due: ${money(Math.max(0, cashReceivedCents - total))}`
+                : "Payment plan saved (draft mirror)"}
+            </p>
+            {client && (
+              <section className="pos-complete-customer">
+                <p className="pos-section-label">Customer</p>
+                <strong>{client.name}</strong>
+                <small>{[client.phone, client.email].filter(Boolean).join(" · ")}</small>
+              </section>
+            )}
+            <p className="pos-muted">Receipts and live charging stay disabled until activation.</p>
+            <button type="button" className="pos-primary-btn" onClick={finishSale}>Done</button>
+          </div>
+        )}
+      </section>
+
+      <aside className="pos-cart" aria-label="Cart">
+        <div className="pos-cart__head">
+          <strong>{inCheckout ? "Checkout" : "Cart"}</strong>
+          <div className="pos-cart__head-actions">
+            <button type="button" className="pos-cart__clear" onClick={clearCart} disabled={!cart.length && !client}>
+              Clear
+            </button>
+            <button type="button" className="pos-cart__more" onClick={() => setPanel("more")}>
+              More
+            </button>
+          </div>
+        </div>
+
+        {client ? (
+          <button
+            type="button"
+            className="pos-customer-pill"
+            onClick={() => {
+              setDetailClient(client);
+              setPanel("customer-detail");
+            }}
+          >
+            {client.name}
+          </button>
+        ) : (
+          <button type="button" className="pos-add-customer-link" onClick={openCustomer}>
+            + Add customer
+          </button>
+        )}
+
+        <div className="pos-cart__lines">
+          {cart.length ? (
+            cart.map((line, index) => {
+              const unit = lineUnitCents(line);
+              const qty = line.quantity || 1;
+              return (
+                <div className="pos-cart-line" key={`${lineKey(line)}-${index}`}>
+                  <div className="pos-cart-line__mark" aria-hidden="true">
+                    {(line.productKey === "12-week-practice" ? "12" : "A")}
+                    <span>{qty}</span>
+                  </div>
+                  <div className="pos-cart-line__body">
+                    <strong>{lineLabel(line)}</strong>
+                    <small>Qty: {qty}</small>
+                    {line.customReason && line.customLabel && <small>{line.customReason}</small>}
+                  </div>
+                  <div className="pos-cart-line__meta">
+                    <b>{money(unit * qty)}</b>
+                    <button type="button" aria-label={`Remove ${lineLabel(line)}`} onClick={() => removeLine(index)}>
+                      ×
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="pos-cart-empty">Tap a product to start a sale.</p>
+          )}
+        </div>
+
+        <div className="pos-cart__footer">
+          <div className="pos-cart__subtotal">
+            <span>Subtotal</span>
+            <span>{money(total)}</span>
+          </div>
+          <div className="pos-cart__total">
+            <span>Total</span>
+            <strong>{money(total)}</strong>
+          </div>
+          {!inCheckout ? (
+            <button type="button" className="pos-checkout-btn" onClick={beginCheckout} disabled={!cart.length}>
+              Checkout →
+            </button>
+          ) : panel === "complete" ? (
+            <button type="button" className="pos-checkout-btn" onClick={finishSale}>
+              Done
+            </button>
+          ) : (
+            <div className="pos-checkout-btn pos-checkout-btn--static">{money(total)}</div>
+          )}
+        </div>
+      </aside>
     </main>
   );
 }
