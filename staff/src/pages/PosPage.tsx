@@ -1005,7 +1005,13 @@ export default function PosPage() {
                   ? `Card on file: ${cardLabel(primarySavedCard)}`
                   : savedCardsReason === "loading"
                     ? "Checking card on file…"
-                    : "No proven card on file"}
+                    : savedCardsReason === "no_cards"
+                      ? "No reusable card saved in Stripe"
+                      : savedCardsReason === "no_proven_customer"
+                        ? "No linked Stripe customer for this contact"
+                        : savedCardsReason === "lookup_failed"
+                          ? "Card lookup failed — try again"
+                          : "No proven card on file"}
               </p>
             )}
             <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
@@ -1393,16 +1399,33 @@ export default function PosPage() {
         </div>
 
         {client ? (
-          <button
-            type="button"
-            className="pos-customer-pill"
-            onClick={() => {
-              setDetailClient(client);
-              setPanel("customer-detail");
-            }}
-          >
-            {client.name}
-          </button>
+          <div className="pos-customer-block">
+            <button
+              type="button"
+              className="pos-customer-pill"
+              onClick={() => {
+                setDetailClient(client);
+                setPanel("customer-detail");
+              }}
+            >
+              {client.name}
+            </button>
+            {!client.id.startsWith("draft_") && (
+              <p className={`pos-customer-card ${primarySavedCard ? "is-ready" : ""}`}>
+                {savedCardsReason === "loading"
+                  ? "Checking card on file…"
+                  : primarySavedCard
+                    ? `Card on file · ${cardLabel(primarySavedCard)}`
+                    : savedCardsReason === "no_cards"
+                      ? "Paid before, no reusable card saved"
+                      : savedCardsReason === "no_proven_customer"
+                        ? "No Stripe customer linked yet"
+                        : savedCardsReason === "lookup_failed"
+                          ? "Couldn’t check card on file"
+                          : "No card on file"}
+              </p>
+            )}
+          </div>
         ) : (
           <button type="button" className="pos-add-customer-link" onClick={openCustomer}>
             + Add customer
