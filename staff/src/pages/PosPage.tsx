@@ -272,15 +272,12 @@ export default function PosPage() {
     setPaymentAction(method);
   }
 
-  async function confirmCheckoutLink() {
+  function sendCheckoutLink() {
     if (!client?.phone) {
-      setNotice("Add a mobile number before preparing a checkout link.");
+      setNotice("Add a mobile number before sending a checkout link.");
       return;
     }
-    if (await choosePrimaryPayment("checkout-link")) {
-      setPaymentAction(null);
-      setNotice("Checkout-link confirmation saved. Sending remains disabled.");
-    }
+    setNotice("Checkout-link sending is disabled during the mirror observation period. No message has been sent.");
   }
 
   async function confirmCashReceived() {
@@ -423,7 +420,7 @@ export default function PosPage() {
           <div className="pos-payment-action-content">
             {notice && <div className="pos-notice pos-notice--action">{notice}</div>}
             <p className="pos-label">{isSplitPayment ? "Split payment" : isCheckoutLink ? "Checkout link" : "Cash payment"}</p>
-            <h1>{isSplitPayment ? "Split the total" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}</h1>
+            <h1>{isSplitPayment ? "Split the total" : isCheckoutLink ? "Send checkout link" : "Record cash received"}</h1>
             {isSplitPayment ? <>
               <p className="pos-payment-action-intro">Choose two methods. When one amount changes, the other automatically carries the remaining balance.</p>
               <div className="pos-split-plan">
@@ -439,8 +436,8 @@ export default function PosPage() {
               <div><span>Customer</span><strong>{client?.name || "Client"}</strong></div>
               {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><label><span>Cash received</span><input aria-label="Cash received" inputMode="decimal" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} /><b>USD</b></label><div><span>Amount due</span><strong>{money(total)}</strong></div><p>For a partial cash payment, use Split payment instead.</p></>}
             </div>}
-            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? confirmCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
-            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "This preview cannot create a link or send a message yet." : "This draft does not mark cash as received or fulfill anything yet."}</p>
+            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? sendCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Send checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
+            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "Sending is intentionally disabled while this remains a mirror." : "This draft does not mark cash as received or fulfill anything yet."}</p>
           </div>
         </section>
       </main>
