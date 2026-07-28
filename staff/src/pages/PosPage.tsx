@@ -1208,7 +1208,9 @@ export default function PosPage() {
                     ? "Card on file charges immediately after you confirm. New card opens hosted Stripe Checkout and saves the card for next time."
                     : savedCardsReason === "loading"
                       ? "Checking for a card on file…"
-                      : "No proven card on file yet. Use New card once — it will save for next time."}
+                      : savedCardsReason === "no_cards"
+                        ? "This customer has paid before, but Stripe has no reusable card saved. Use New card once to save one."
+                        : "No proven card on file yet. Use New card once — it will save for next time."}
                 </p>
               </>
             )}
