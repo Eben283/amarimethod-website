@@ -114,6 +114,38 @@ describe("resolveProvenStripeCustomer", () => {
       id: "cus_pay",
     });
   });
+
+  it("resolves via GHL Customer metadata.id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, init) => {
+        const u = String(url);
+        if (u.includes("/customers/search") && u.includes("contactId")) {
+          return { ok: true, status: 200, json: async () => ({ data: [] }) };
+        }
+        if (u.includes("/customers/search") && decodeURIComponent(u).includes('metadata["id"]')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [{ id: "cus_ghl", metadata: { id: "ghl_1", location: "loc" } }],
+            }),
+          };
+        }
+        if (u.includes("/customers/cus_ghl") && init?.method === "POST") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "cus_ghl", metadata: { id: "ghl_1", contactId: "ghl_1" } }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ data: [] }) };
+      }),
+    );
+    await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
+      id: "cus_ghl",
+    });
+  });
 });
 
 describe("listCustomerCards", () => {

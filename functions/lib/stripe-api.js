@@ -120,14 +120,20 @@ function safeCardDescriptor(pm) {
 export async function resolveProvenStripeCustomer(secretKey, { contactId, storedCustomerId } = {}) {
   if (!contactId || String(contactId).startsWith("draft_")) return null;
 
+  const belongsToContact = (customer) => {
+    if (!customer || customer.deleted) return false;
+    const meta = customer.metadata || {};
+    // GHL commonly stamps the contact as metadata.id; we also use metadata.contactId.
+    if (meta.contactId && meta.contactId !== contactId) return false;
+    if (meta.id && meta.id !== contactId) return false;
+    return true;
+  };
+
   const loadCustomer = async (customerId) => {
     if (!customerId) return null;
     try {
       const customer = await stripeRequest(secretKey, "GET", `/customers/${customerId}`);
-      if (!customer || customer.deleted) return null;
-      // Refuse a stored/found customer explicitly tagged to someone else.
-      if (customer.metadata?.contactId && customer.metadata.contactId !== contactId) return null;
-      return customer;
+      return belongsToContact(customer) ? customer : null;
     } catch {
       return null;
     }
@@ -147,9 +153,17 @@ export async function resolveProvenStripeCustomer(secretKey, { contactId, stored
 
   if (storedCustomerId) {
     const stored = await loadCustomer(storedCustomerId);
-    if (stored) return stampContactId(stored);
+    // Stored key is only trusted when the customer still carries matching GHL id evidence,
+    // or carries no conflicting identity fields (legacy empty metadata).
+    if (stored) {
+      const meta = stored.metadata || {};
+      if (meta.contactId === contactId || meta.id === contactId || (!meta.contactId && !meta.id)) {
+        return stampContactId(stored);
+      }
+    }
   }
 
+  // Prefer Customer metadata.contactId when present (POS / our stamps).
   try {
     const found = await stripeRequest(secretKey, "GET", "/customers/search", {
       query: `metadata["contactId"]:"${contactId}"`,
@@ -158,11 +172,22 @@ export async function resolveProvenStripeCustomer(secretKey, { contactId, stored
     const match = (found.data || []).find((c) => c && !c.deleted && c.metadata?.contactId === contactId);
     if (match) return match;
   } catch {
-    // Customer Search may be unavailable on some keys — continue to charge evidence.
+    // continue
   }
 
-  // Most historical GHL/Stripe payments stamp contactId on the Charge, not the Customer.
-  // That charge metadata is proven identity (same rule staff-owed uses).
+  // GHL's native Stripe sync stamps the GHL contact id as Customer metadata.id.
+  try {
+    const found = await stripeRequest(secretKey, "GET", "/customers/search", {
+      query: `metadata["id"]:"${contactId}"`,
+      limit: 5,
+    });
+    const match = (found.data || []).find((c) => c && !c.deleted && c.metadata?.id === contactId);
+    if (match) return stampContactId(match);
+  } catch {
+    // continue
+  }
+
+  // Fallback: charges often carry metadata.contactId even when the Customer only has metadata.id.
   try {
     const charges = await stripeRequest(secretKey, "GET", "/charges/search", {
       query: `metadata["contactId"]:"${contactId}"`,
