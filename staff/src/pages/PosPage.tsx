@@ -378,7 +378,6 @@ export default function PosPage() {
         <div className="pos-checkout-layout">
           <section className="pos-checkout-main">
             <button type="button" className="pos-back" onClick={() => { setPaymentStep(false); setCheckoutStep(false); }}>← Products</button>
-            <h1>Checkout</h1>
             {notice && <div className="pos-notice">{notice}</div>}
             <section className="pos-client">
               <div className="pos-client__head">

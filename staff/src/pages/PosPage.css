@@ -26,7 +26,7 @@
 .pos-products-pane, .pos-checkout-main { min-width: 0; }
 .pos-pane-head, .pos-cart-head, .pos-client__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
 .pos-label { margin: 0; color: var(--teal); font: 600 10px "DM Mono", monospace; letter-spacing: .15em; text-transform: uppercase; }
-.pos-pane-head h1, .pos-checkout-main > h1, .pos-cart-head h2, .pos-client h2 { margin: 8px 0 0; font: 400 clamp(31px, 4vw, 48px)/.95 "Bona Nova", Georgia, serif; letter-spacing: -.05em; }
+.pos-pane-head h1, .pos-cart-head h2, .pos-client h2 { margin: 8px 0 0; font: 400 clamp(31px, 4vw, 48px)/.95 "Bona Nova", Georgia, serif; letter-spacing: -.05em; }
 .pos-cart-head h2 { font-size: 28px; }
 
 .pos-product-search, .pos-search { display: flex; align-items: center; gap: 9px; min-width: min(300px, 42vw); border-bottom: 1px solid #bbcfcd; padding: 7px 0; color: #84a0a3; }
@@ -89,7 +89,7 @@
 
 .pos-back, .pos-quiet, .pos-preview-link, .pos-one-payment { border: 0; background: transparent; color: #447378; font: 700 12px "DM Sans", system-ui, sans-serif; }
 .pos-back { margin: 0 0 27px; padding: 0; }
-.pos-client { margin: 32px 0; border-bottom: 1px solid var(--line); padding-bottom: 26px; }
+.pos-client { margin: 32px 0; border-bottom: 1px solid var(--line); padding-bottom: 26px; }.pos-checkout-main > .pos-client { margin-top: 14px; }
 .pos-client h2 { font-size: 34px; }
 .pos-client-detail { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .pos-search { min-width: 0; margin-top: 20px; }
