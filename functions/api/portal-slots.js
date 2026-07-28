@@ -6,6 +6,7 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
+import { applyLookBusy } from "../lib/look-busy.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -121,7 +122,11 @@ export async function onRequestGet(context) {
       }
     }
 
-    return json({ slots }, 200, origin);
+    return json(
+      { slots: applyLookBusy(slots, { calendarId }) },
+      200,
+      origin,
+    );
   } catch (err) {
     console.error('portal-slots error:', err);
     return json({ error: 'Internal server error' }, 500, origin);

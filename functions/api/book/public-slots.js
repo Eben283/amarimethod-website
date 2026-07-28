@@ -8,6 +8,7 @@
  */
 
 import { ghlFetch } from "../../lib/ghl.js";
+import { applyLookBusy } from "../../lib/look-busy.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 
@@ -184,5 +185,11 @@ export async function onRequestGet(context) {
     }
   }
 
-  return json({ slots }, 200, origin);
+  // GHL lookBusy is off — thin here so gaps rotate weekly and the earliest
+  // real slot on a day always stays bookable.
+  return json(
+    { slots: applyLookBusy(slots, { calendarId }) },
+    200,
+    origin,
+  );
 }
