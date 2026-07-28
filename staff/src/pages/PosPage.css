@@ -137,3 +137,26 @@
 @media (max-width: 620px) {
   .pos-shell { padding: 22px 18px; }.pos-pane-head { align-items: flex-start; flex-direction: column; }.pos-product-search { min-width: 100%; }.pos-products, .pos-quick-access { grid-template-columns: 1fr; }.pos-product { min-height: 165px; }.pos-custom-sale { grid-template-columns: 1fr; }.pos-cart-line > div:last-child { grid-template-columns: 36px auto 18px; }.pos-cart-total strong { font-size: 32px; }.pos-payment-screen__top, .pos-new-customer-screen__top { grid-template-columns: 1fr auto; }.pos-payment-screen__top > span { display: none; }.pos-payment-screen__content, .pos-payment-action-content, .pos-new-customer-form { padding-top: 45px; }.pos-payment-option { grid-template-columns: 32px minmax(0, 1fr) 18px; gap: 11px; }.pos-payment-option > span:nth-child(2) small { font-size: 11px; }.pos-split-plan__leg { grid-template-columns: 1fr; gap: 12px; }.pos-split-plan__leg > p { margin: 0; }.pos-split-plan__leg input { font-size: 21px; }
 }
+
+/* POS is used while staff are serving someone: no low-contrast or tiny utility text. */
+.pos-shell { --muted: #4f696e; }
+.pos-label { color: #176673; font-size: 12px; font-weight: 700; letter-spacing: .13em; }
+.pos-product-search input, .pos-search input { font-size: 17px; }
+.pos-quick-tile small { color: #365a60; font-size: 14px; line-height: 1.3; }
+.pos-product p { color: #476a70; font-size: 12px; font-weight: 700; }
+.pos-product > span { font-size: 13px; }
+.pos-cart-customer strong { font-size: 20px; }
+.pos-cart-customer small { color: #365a60; font-size: 13px; }
+.pos-cart-line strong { font-size: 15px; }
+.pos-cart-line small { color: var(--muted); font-size: 13px; }
+.pos-cart-line input { width: 44px; border-color: #b7cfcc; padding: 6px; background: #fff; font-size: 14px; }
+.pos-cart-line b { font-size: 15px; }
+.pos-empty { font-size: 15px; }
+.pos-client-detail { font-size: 14px; }
+.pos-client-results strong { font-size: 16px; }
+.pos-client-results small { font-size: 13px; }
+.pos-new-customer-form__fields label { border-color: #b9d0cd; color: #365a60; font-size: 14px; }
+.pos-new-customer-form__fields input { font-size: 20px; }
+.pos-new-customer-form__note { font-size: 14px; }
+.pos-payment-option > span:nth-child(2) small { font-size: 14px; line-height: 1.35; }
+@media (max-width: 620px) { .pos-payment-option > span:nth-child(2) small { font-size: 13px; } }
