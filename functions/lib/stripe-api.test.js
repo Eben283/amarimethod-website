@@ -35,6 +35,10 @@ describe("resolveProvenStripeCustomer", () => {
     vi.unstubAllGlobals();
   });
 
+  function jsonOk(body) {
+    return { ok: true, status: 200, json: async () => body };
+  }
+
   it("returns null for draft contacts", async () => {
     await expect(resolveProvenStripeCustomer("sk", { contactId: "draft_1" })).resolves.toBeNull();
   });
@@ -42,11 +46,12 @@ describe("resolveProvenStripeCustomer", () => {
   it("accepts a stored customer when metadata contactId matches", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: "cus_1", metadata: { contactId: "ghl_1" } }),
-      })),
+      vi.fn(async (url) => {
+        const u = String(url);
+        if (u.includes("/payment_methods")) return jsonOk({ data: [] });
+        if (u.includes("/customers/search") || u.includes("/charges/search")) return jsonOk({ data: [] });
+        return jsonOk({ id: "cus_1", metadata: { contactId: "ghl_1" } });
+      }),
     );
     await expect(
       resolveProvenStripeCustomer("sk", { contactId: "ghl_1", storedCustomerId: "cus_1" }),
@@ -58,17 +63,9 @@ describe("resolveProvenStripeCustomer", () => {
       "fetch",
       vi.fn(async (url) => {
         if (String(url).includes("/customers/cus_wrong")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ id: "cus_wrong", metadata: { contactId: "other" } }),
-          };
+          return jsonOk({ id: "cus_wrong", metadata: { contactId: "other" } });
         }
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ data: [] }),
-        };
+        return jsonOk({ data: [] });
       }),
     );
     await expect(
@@ -81,33 +78,18 @@ describe("resolveProvenStripeCustomer", () => {
       "fetch",
       vi.fn(async (url, init) => {
         const u = String(url);
-        if (u.includes("/customers/search")) {
-          return { ok: true, status: 200, json: async () => ({ data: [] }) };
-        }
+        if (u.includes("/customers/search")) return jsonOk({ data: [] });
         if (u.includes("/charges/search")) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
-              data: [{ id: "ch_1", customer: "cus_pay", metadata: { contactId: "ghl_1" } }],
-            }),
-          };
+          return jsonOk({
+            data: [{ id: "ch_1", customer: "cus_pay", metadata: { contactId: "ghl_1" } }],
+          });
         }
-        if (u.includes("/customers/cus_pay") && (!init || init.method === "GET" || !init.method)) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ id: "cus_pay", metadata: {} }),
-          };
-        }
+        if (u.includes("/payment_methods")) return jsonOk({ data: [] });
         if (u.includes("/customers/cus_pay") && init?.method === "POST") {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ id: "cus_pay", metadata: { contactId: "ghl_1" } }),
-          };
+          return jsonOk({ id: "cus_pay", metadata: { contactId: "ghl_1" } });
         }
-        return { ok: true, status: 200, json: async () => ({ data: [] }) };
+        if (u.includes("/customers/cus_pay")) return jsonOk({ id: "cus_pay", metadata: {} });
+        return jsonOk({ data: [] });
       }),
     );
     await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
@@ -120,31 +102,84 @@ describe("resolveProvenStripeCustomer", () => {
       "fetch",
       vi.fn(async (url, init) => {
         const u = String(url);
-        if (u.includes("/customers/search") && u.includes("contactId")) {
-          return { ok: true, status: 200, json: async () => ({ data: [] }) };
-        }
+        if (u.includes("/customers/search") && u.includes("contactId")) return jsonOk({ data: [] });
         if (u.includes("/customers/search") && decodeURIComponent(u).includes('metadata["id"]')) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
-              data: [{ id: "cus_ghl", metadata: { id: "ghl_1", location: "loc" } }],
-            }),
-          };
+          return jsonOk({
+            data: [{ id: "cus_ghl", metadata: { id: "ghl_1", location: "loc" } }],
+          });
         }
+        if (u.includes("/payment_methods")) return jsonOk({ data: [] });
+        if (u.includes("/charges/search")) return jsonOk({ data: [] });
         if (u.includes("/customers/cus_ghl") && init?.method === "POST") {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ id: "cus_ghl", metadata: { id: "ghl_1", contactId: "ghl_1" } }),
-          };
+          return jsonOk({ id: "cus_ghl", metadata: { id: "ghl_1", contactId: "ghl_1" } });
         }
-        return { ok: true, status: 200, json: async () => ({ data: [] }) };
+        if (u.includes("/customers/cus_ghl")) return jsonOk({ id: "cus_ghl", metadata: { id: "ghl_1" } });
+        return jsonOk({ data: [] });
       }),
     );
     await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
       id: "cus_ghl",
     });
+  });
+
+  it("prefers the proven customer that already has a reusable card", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        const u = String(url);
+        if (u.includes("/customers/search") && u.includes("contactId")) {
+          return jsonOk({ data: [{ id: "cus_empty", metadata: { contactId: "ghl_1" } }] });
+        }
+        if (u.includes("/customers/search") && decodeURIComponent(u).includes('metadata["id"]')) {
+          return jsonOk({ data: [{ id: "cus_carded", metadata: { id: "ghl_1" } }] });
+        }
+        if (u.includes("/charges/search")) return jsonOk({ data: [] });
+        if (u.includes("/payment_methods") && u.includes("cus_carded")) {
+          return jsonOk({
+            data: [{ id: "pm_1", card: { brand: "mastercard", last4: "5420", exp_month: 11, exp_year: 2030 } }],
+          });
+        }
+        if (u.includes("/payment_methods")) return jsonOk({ data: [] });
+        if (u.includes("/customers/cus_carded")) return jsonOk({ id: "cus_carded", metadata: { id: "ghl_1" }, invoice_settings: {} });
+        if (u.includes("/customers/cus_empty")) return jsonOk({ id: "cus_empty", metadata: { contactId: "ghl_1" }, invoice_settings: {} });
+        return jsonOk({ data: [] });
+      }),
+    );
+    await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
+      id: "cus_carded",
+    });
+  });
+
+  it("does not stop at a stored empty customer when another proven customer has a card", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url) => {
+        const u = String(url);
+        if (u.includes("/customers/cus_empty")) {
+          return jsonOk({ id: "cus_empty", metadata: { contactId: "ghl_1" }, invoice_settings: {} });
+        }
+        if (u.includes("/customers/search") && u.includes("contactId")) {
+          return jsonOk({ data: [{ id: "cus_empty", metadata: { contactId: "ghl_1" } }] });
+        }
+        if (u.includes("/customers/search") && decodeURIComponent(u).includes('metadata["id"]')) {
+          return jsonOk({ data: [{ id: "cus_carded", metadata: { id: "ghl_1" } }] });
+        }
+        if (u.includes("/charges/search")) return jsonOk({ data: [] });
+        if (u.includes("/payment_methods") && u.includes("cus_carded")) {
+          return jsonOk({
+            data: [{ id: "pm_1", card: { brand: "mastercard", last4: "5420", exp_month: 11, exp_year: 2030 } }],
+          });
+        }
+        if (u.includes("/payment_methods")) return jsonOk({ data: [] });
+        if (u.includes("/customers/cus_carded")) {
+          return jsonOk({ id: "cus_carded", metadata: { id: "ghl_1" }, invoice_settings: {} });
+        }
+        return jsonOk({ data: [] });
+      }),
+    );
+    await expect(
+      resolveProvenStripeCustomer("sk", { contactId: "ghl_1", storedCustomerId: "cus_empty" }),
+    ).resolves.toMatchObject({ id: "cus_carded" });
   });
 });
 
@@ -156,18 +191,27 @@ describe("listCustomerCards", () => {
   it("returns safe brand/last4 descriptors only", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          data: [
-            {
-              id: "pm_1",
-              card: { brand: "visa", last4: "4242", exp_month: 12, exp_year: 2030 },
-            },
-          ],
-        }),
-      })),
+      vi.fn(async (url) => {
+        if (String(url).includes("/payment_methods")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [
+                {
+                  id: "pm_1",
+                  card: { brand: "visa", last4: "4242", exp_month: 12, exp_year: 2030 },
+                },
+              ],
+            }),
+          };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "cus_1", invoice_settings: {} }),
+        };
+      }),
     );
     await expect(listCustomerCards("sk", "cus_1")).resolves.toEqual([
       { id: "pm_1", brand: "visa", last4: "4242", expMonth: 12, expYear: 2030 },
