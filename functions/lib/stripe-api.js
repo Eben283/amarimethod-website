@@ -120,19 +120,50 @@ function safeCardDescriptor(pm) {
 export async function resolveProvenStripeCustomer(secretKey, { contactId, storedCustomerId } = {}) {
   if (!contactId || String(contactId).startsWith("draft_")) return null;
 
-  if (storedCustomerId) {
+  const belongsToContact = (customer) => {
+    if (!customer || customer.deleted) return false;
+    const meta = customer.metadata || {};
+    // GHL commonly stamps the contact as metadata.id; we also use metadata.contactId.
+    if (meta.contactId && meta.contactId !== contactId) return false;
+    if (meta.id && meta.id !== contactId) return false;
+    return true;
+  };
+
+  const loadCustomer = async (customerId) => {
+    if (!customerId) return null;
     try {
-      const customer = await stripeRequest(secretKey, "GET", `/customers/${storedCustomerId}`);
-      if (customer && !customer.deleted) {
-        if (!customer.metadata?.contactId || customer.metadata.contactId === contactId) {
-          return customer;
-        }
-      }
+      const customer = await stripeRequest(secretKey, "GET", `/customers/${customerId}`);
+      return belongsToContact(customer) ? customer : null;
     } catch {
-      // fall through to search
+      return null;
+    }
+  };
+
+  const stampContactId = async (customer) => {
+    if (!customer?.id) return customer;
+    if (customer.metadata?.contactId === contactId) return customer;
+    try {
+      return await stripeRequest(secretKey, "POST", `/customers/${customer.id}`, {
+        "metadata[contactId]": contactId,
+      });
+    } catch {
+      return customer;
+    }
+  };
+
+  if (storedCustomerId) {
+    const stored = await loadCustomer(storedCustomerId);
+    // Stored key is only trusted when the customer still carries matching GHL id evidence,
+    // or carries no conflicting identity fields (legacy empty metadata).
+    if (stored) {
+      const meta = stored.metadata || {};
+      if (meta.contactId === contactId || meta.id === contactId || (!meta.contactId && !meta.id)) {
+        return stampContactId(stored);
+      }
     }
   }
 
+  // Prefer Customer metadata.contactId when present (POS / our stamps).
   try {
     const found = await stripeRequest(secretKey, "GET", "/customers/search", {
       query: `metadata["contactId"]:"${contactId}"`,
@@ -141,8 +172,37 @@ export async function resolveProvenStripeCustomer(secretKey, { contactId, stored
     const match = (found.data || []).find((c) => c && !c.deleted && c.metadata?.contactId === contactId);
     if (match) return match;
   } catch {
-    // Customer Search may be unavailable on some keys — fail closed (no charge).
+    // continue
   }
+
+  // GHL's native Stripe sync stamps the GHL contact id as Customer metadata.id.
+  try {
+    const found = await stripeRequest(secretKey, "GET", "/customers/search", {
+      query: `metadata["id"]:"${contactId}"`,
+      limit: 5,
+    });
+    const match = (found.data || []).find((c) => c && !c.deleted && c.metadata?.id === contactId);
+    if (match) return stampContactId(match);
+  } catch {
+    // continue
+  }
+
+  // Fallback: charges often carry metadata.contactId even when the Customer only has metadata.id.
+  try {
+    const charges = await stripeRequest(secretKey, "GET", "/charges/search", {
+      query: `metadata["contactId"]:"${contactId}"`,
+      limit: 20,
+    });
+    for (const charge of charges.data || []) {
+      if (!charge?.customer) continue;
+      if (charge.metadata?.contactId && charge.metadata.contactId !== contactId) continue;
+      const fromCharge = await loadCustomer(charge.customer);
+      if (fromCharge) return stampContactId(fromCharge);
+    }
+  } catch {
+    // Charge Search unavailable — fail closed.
+  }
+
   return null;
 }
 

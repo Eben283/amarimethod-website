@@ -75,6 +75,77 @@ describe("resolveProvenStripeCustomer", () => {
       resolveProvenStripeCustomer("sk", { contactId: "ghl_1", storedCustomerId: "cus_wrong" }),
     ).resolves.toBeNull();
   });
+
+  it("resolves via charge metadata.contactId when the Customer has no contactId", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, init) => {
+        const u = String(url);
+        if (u.includes("/customers/search")) {
+          return { ok: true, status: 200, json: async () => ({ data: [] }) };
+        }
+        if (u.includes("/charges/search")) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [{ id: "ch_1", customer: "cus_pay", metadata: { contactId: "ghl_1" } }],
+            }),
+          };
+        }
+        if (u.includes("/customers/cus_pay") && (!init || init.method === "GET" || !init.method)) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "cus_pay", metadata: {} }),
+          };
+        }
+        if (u.includes("/customers/cus_pay") && init?.method === "POST") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "cus_pay", metadata: { contactId: "ghl_1" } }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ data: [] }) };
+      }),
+    );
+    await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
+      id: "cus_pay",
+    });
+  });
+
+  it("resolves via GHL Customer metadata.id", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, init) => {
+        const u = String(url);
+        if (u.includes("/customers/search") && u.includes("contactId")) {
+          return { ok: true, status: 200, json: async () => ({ data: [] }) };
+        }
+        if (u.includes("/customers/search") && decodeURIComponent(u).includes('metadata["id"]')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              data: [{ id: "cus_ghl", metadata: { id: "ghl_1", location: "loc" } }],
+            }),
+          };
+        }
+        if (u.includes("/customers/cus_ghl") && init?.method === "POST") {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ id: "cus_ghl", metadata: { id: "ghl_1", contactId: "ghl_1" } }),
+          };
+        }
+        return { ok: true, status: 200, json: async () => ({ data: [] }) };
+      }),
+    );
+    await expect(resolveProvenStripeCustomer("sk", { contactId: "ghl_1" })).resolves.toMatchObject({
+      id: "cus_ghl",
+    });
+  });
 });
 
 describe("listCustomerCards", () => {
