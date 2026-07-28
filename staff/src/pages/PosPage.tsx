@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   createPosSale,
+  getOwedStatus,
   getPosSale,
   previewPosCheckoutText,
   savePosSale,
@@ -11,6 +12,7 @@ import {
   type PosPaymentMethod,
   type PosSale,
   type PosTextPreview,
+  type PurchaseEntry,
 } from "../lib/api";
 import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
@@ -74,6 +76,9 @@ export default function PosPage() {
   const [matches, setMatches] = useState<ContactListItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [client, setClient] = useState<PosClient | null>(null);
+  const [customerDetailStep, setCustomerDetailStep] = useState(false);
+  const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
+  const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
   const [newCustomerStep, setNewCustomerStep] = useState(false);
   const [newCustomerFirstName, setNewCustomerFirstName] = useState("");
   const [newCustomerLastName, setNewCustomerLastName] = useState("");
@@ -137,16 +142,44 @@ export default function PosPage() {
     };
   }, [clientSearch]);
 
+  useEffect(() => {
+    if (!client || client.id.startsWith("draft_")) {
+      setPurchaseHistory(client ? [] : null);
+      setPurchaseHistoryError("");
+      return;
+    }
+    let cancelled = false;
+    setPurchaseHistory(null);
+    setPurchaseHistoryError("");
+    void getOwedStatus(client.id)
+      .then((result) => {
+        if (!cancelled) setPurchaseHistory(result.purchases || []);
+      })
+      .catch(() => {
+        if (!cancelled) setPurchaseHistoryError("Purchase history is unavailable right now.");
+      });
+    return () => { cancelled = true; };
+  }, [client?.id]);
+
   function selectClient(contact: ContactListItem) {
     setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
     setClientSearch("");
     setMatches([]);
+    setCustomerDetailStep(false);
     setNotice("");
   }
 
   function openNewCustomer() {
     setNotice("");
     setNewCustomerStep(true);
+  }
+
+  function removeCustomer() {
+    setClient(null);
+    setPurchaseHistory(null);
+    setPurchaseHistoryError("");
+    setCustomerDetailStep(false);
+    setNotice("");
   }
 
   function cancelNewCustomer() {
@@ -173,6 +206,7 @@ export default function PosPage() {
     setClient({ id: `draft_${crypto.randomUUID().replace(/-/g, "")}`, name, phone: phone || null, email: email || null });
     setClientSearch("");
     setMatches([]);
+    setCustomerDetailStep(false);
     cancelNewCustomer();
   }
 
@@ -379,6 +413,43 @@ export default function PosPage() {
     </div>
   );
 
+  const customerInCart = client && (
+    <button type="button" className="pos-cart-customer" onClick={() => setCustomerDetailStep(true)}>
+      <span>Customer</span>
+      <strong>{client.name}</strong>
+      <small>View purchases →</small>
+    </button>
+  );
+
+  if (customerDetailStep && client) {
+    const isDraftCustomer = client.id.startsWith("draft_");
+    return (
+      <main className="pos-shell">
+        <section className="pos-customer-detail-screen">
+          <header className="pos-new-customer-screen__top">
+            <button type="button" onClick={() => setCustomerDetailStep(false)}>Back</button>
+            <strong>Customer</strong>
+            <button type="button" onClick={removeCustomer}>Remove</button>
+          </header>
+          <div className="pos-customer-detail-content">
+            <p className="pos-label">Current customer</p>
+            <h1>{client.name}</h1>
+            <p className="pos-customer-contact">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details not added"}</p>
+            <button type="button" className="pos-customer-add" onClick={() => setCustomerDetailStep(false)}>Add to cart <span>→</span></button>
+            <section className="pos-customer-history" aria-live="polite">
+              <p className="pos-label">Purchase history</p>
+              {isDraftCustomer ? <p className="pos-customer-history__empty">This new customer has no purchase history yet.</p>
+                : purchaseHistory === null ? <p className="pos-customer-history__empty">Loading verified purchases…</p>
+                  : purchaseHistoryError ? <p className="pos-customer-history__empty">{purchaseHistoryError}</p>
+                    : purchaseHistory.length ? <div className="pos-customer-history__list">{purchaseHistory.map((purchase, index) => <article key={`${purchase.date || "unknown"}-${purchase.label}-${index}`}><div><strong>{purchase.label}</strong><small>{purchase.date ? new Date(`${purchase.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Date unavailable"}</small></div><b>{money(Math.round(purchase.amount * 100))}</b></article>)}</div>
+                      : <p className="pos-customer-history__empty">No verified purchases found for this customer.</p>}
+            </section>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (newCustomerStep) {
     return (
       <main className="pos-shell">
@@ -502,7 +573,7 @@ export default function PosPage() {
             <section className="pos-client">
               <div className="pos-client__head">
                 <h2>{client ? client.name : "Add client"}</h2>
-                {client ? <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button> : <button type="button" onClick={openNewCustomer} className="pos-quiet">＋ New client</button>}
+                {client ? <button type="button" onClick={removeCustomer} className="pos-quiet">Change</button> : <button type="button" onClick={openNewCustomer} className="pos-quiet">＋ New client</button>}
               </div>
               {client && <p className="pos-client-detail">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details needed before activation"}</p>}
               {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
@@ -511,7 +582,7 @@ export default function PosPage() {
             </section>
           </section>
           <aside className="pos-cart-pane">
-            <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
+            <div className="pos-cart-head"><div>{customerInCart}<p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
             {cartLines}
             <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
             <button type="button" className="pos-checkout-bar" onClick={beginPayment} disabled={!client || !cart.length}>Accept payment<span>{money(total)} →</span></button>
@@ -531,7 +602,7 @@ export default function PosPage() {
             <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
           </div>
           {quickAccess ? <div className="pos-quick-access">
-            <button type="button" className="pos-quick-tile pos-quick-tile--customer" onClick={openNewCustomer}><span>◌</span><strong>Add customer</strong><small>Name and contact details</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--customer" onClick={client ? () => setCustomerDetailStep(true) : openNewCustomer}><span>{client ? "✓" : "◌"}</span><strong>{client ? client.name : "Add customer"}</strong><small>{client ? "View purchases or change customer" : "Name and contact details"}</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--practice" onClick={() => addCatalog("12-week-practice")}><span>12</span><strong>Amari Practice</strong><small>Add the 12-week practice</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--series" onClick={() => openCategory("Series")}><span>↗</span><strong>Series</strong><small>4- and 8-session options</small></button>
@@ -543,7 +614,7 @@ export default function PosPage() {
           </>}
         </section>
         <aside className="pos-cart-pane">
-          <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2>{client && <small className="pos-cart-client">Customer · {client.name}</small>}</div><strong>{money(total)}</strong></div>
+          <div className="pos-cart-head"><div>{customerInCart}<p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
           {cartLines}
           <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
           <button type="button" className="pos-checkout-bar" onClick={beginCheckout} disabled={!cart.length}>Checkout products<span>{money(total)} →</span></button>
