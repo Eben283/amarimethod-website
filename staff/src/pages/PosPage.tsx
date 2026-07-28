@@ -389,7 +389,7 @@ export default function PosPage() {
           <header className="pos-new-customer-screen__top">
             <button type="button" onClick={cancelNewCustomer}>Cancel</button>
             <strong>Add new customer</strong>
-            <button type="submit" form="new-customer-form">Save</button>
+            <span aria-hidden="true" />
           </header>
           <form id="new-customer-form" className="pos-new-customer-form" onSubmit={(event) => { event.preventDefault(); saveNewCustomer(); }}>
             {notice && <div className="pos-notice pos-notice--customer">{notice}</div>}
@@ -401,6 +401,7 @@ export default function PosPage() {
               <label>Email address<input value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} inputMode="email" autoComplete="email" /></label>
             </div>
             <p className="pos-new-customer-form__note">A phone number or email address is required.</p>
+            <button type="submit" className="pos-new-customer-form__save">Save customer <span aria-hidden="true">→</span></button>
           </form>
         </section>
       </main>
