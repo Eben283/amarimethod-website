@@ -172,6 +172,16 @@ export default function PosPage() {
     setNotice("");
   }
 
+  function viewCustomerDetails(contact: ContactListItem) {
+    setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
+    setClientSearch("");
+    setMatches([]);
+    setNewCustomerStep(false);
+    setCreatingCustomer(false);
+    setCustomerDetailStep(true);
+    setNotice("");
+  }
+
   function openCustomerPicker() {
     setClientSearch("");
     setMatches([]);
@@ -496,10 +506,10 @@ export default function PosPage() {
               <p className="pos-label">Find a customer</p>
               <label className="pos-picker-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search name, email, or phone" autoComplete="off" autoFocus /><button type="button" aria-label="Clear customer search" onClick={() => setClientSearch("")}>×</button></label>
               {searching && <p className="pos-customer-picker__status">Searching customers…</p>}
+              <button type="button" className="pos-customer-picker__create" onClick={beginCustomerDetails}>New customer</button>
               {clientSearch.trim().length < 2 ? <p className="pos-customer-picker__status">Start typing to find an existing customer.</p>
-                : matches.length ? <div className="pos-customer-picker__results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>Use customer →</b></button>)}</div>
+                : matches.length ? <div className="pos-customer-picker__results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => viewCustomerDetails(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>View details</b></button>)}</div>
                   : !searching && <p className="pos-customer-picker__status">No existing customer found.</p>}
-              <button type="button" className="pos-customer-picker__create" onClick={beginCustomerDetails}>Can’t find them? Add their details <span>→</span></button>
             </div>}
         </section>
       </main>
