@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildPosSale, normalizeCart, normalizePaymentLegs, POS_CATALOG } from "./staff-pos.js";
+import {
+  attachCheckoutSession,
+  buildPosSale,
+  markLegPaid,
+  normalizeCart,
+  normalizePaymentLegs,
+  POS_CATALOG,
+  recomputeSaleStatus,
+} from "./staff-pos.js";
 
 describe("staff POS model", () => {
   it("uses a server-owned catalog and rejects a browser-supplied price", () => {
@@ -15,7 +23,6 @@ describe("staff POS model", () => {
   });
 
   it("requires payment allocations to equal the calculated cart total", () => {
-    const cart = normalizeCart([{ productKey: "initial-in-person" }]);
     expect(() => normalizePaymentLegs([{ method: "hsa-card", amountCents: 20000 }], 22500)).toThrow("must equal the sale total");
     expect(normalizePaymentLegs([
       { method: "hsa-card", amountCents: 3000 },
@@ -29,5 +36,26 @@ describe("staff POS model", () => {
       reviewer: "Eben",
       now: "2026-07-27T12:00:00.000Z",
     })).toMatchObject({ totalCents: 22500, status: "draft", version: 1 });
+  });
+
+  it("marks a sale paid only after every payment leg settles", () => {
+    const sale = buildPosSale({
+      id: "pos_abcdefgh",
+      client: { id: "contact_abcdefgh", name: "Jordan Lee", email: "j@example.com" },
+      cart: [{ productKey: "initial-in-person" }],
+      paymentLegs: [
+        { method: "hsa-card", amountCents: 10000 },
+        { method: "manual-card", amountCents: 12500 },
+      ],
+      reviewer: "Eben",
+    });
+    const opened = attachCheckoutSession(sale, "leg-1", { id: "cs_test_1", url: "https://checkout.stripe.com/c/pay/cs_test_1" }, "Eben");
+    expect(opened.status).toBe("awaiting_payment");
+    const partial = markLegPaid(opened, "leg-1", { paymentIntentId: "pi_1", source: "webhook" });
+    expect(partial.status).toBe("partially_paid");
+    expect(recomputeSaleStatus(partial)).toBe("partially_paid");
+    const paid = markLegPaid(partial, "leg-2", { paymentIntentId: "pi_2", source: "webhook" });
+    expect(paid.status).toBe("paid");
+    expect(paid.fulfillmentStatus).toBe("pending");
   });
 });

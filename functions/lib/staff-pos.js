@@ -1,6 +1,6 @@
-// Inactive staff POS domain model. This owns draft-cart persistence and all
-// server-side prices/allocation math. It deliberately creates neither a
-// Stripe object nor a GHL order, message, note, or contact update.
+// Staff POS domain model. Owns cart/sale persistence, server-side prices, and
+// payment-leg state. Stripe Checkout Sessions are created by staff-pos-sales;
+// signed webhooks mark legs paid. GHL fulfillment is separate and gated.
 
 const MAX_CART_LINES = 24;
 const MAX_AMOUNT_CENTS = 2_000_000;
@@ -22,6 +22,13 @@ export const POS_CATALOG = Object.freeze({
 });
 
 export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);
+export const STRIPE_CHECKOUT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link"]);
+export const POS_SALE_STATUSES = Object.freeze(["draft", "awaiting_payment", "partially_paid", "paid"]);
+export const POS_LEG_STATUSES = Object.freeze(["planned", "checkout_open", "paid", "failed"]);
+
+export function isStripeCheckoutMethod(method) {
+  return STRIPE_CHECKOUT_METHODS.includes(method);
+}
 
 function cleanText(value, max) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -104,12 +111,132 @@ export function normalizePaymentLegs(rawLegs, totalCents) {
     const method = cleanText(raw.method, 40);
     if (!POS_PAYMENT_METHODS.includes(method)) throw new Error("Unknown payment method");
     if (!validCents(raw.amountCents)) throw new Error("Payment allocation must be a whole number of cents");
-    return Object.freeze({ id: `leg-${index + 1}`, method, amountCents: raw.amountCents, status: "planned" });
+    const status = cleanText(raw.status, 40) || "planned";
+    if (!POS_LEG_STATUSES.includes(status)) throw new Error("Unknown payment leg status");
+    return Object.freeze({
+      id: cleanText(raw.id, 40) || `leg-${index + 1}`,
+      method,
+      amountCents: raw.amountCents,
+      status,
+      stripeCheckoutSessionId: cleanText(raw.stripeCheckoutSessionId, 120) || null,
+      stripeCheckoutUrl: cleanText(raw.stripeCheckoutUrl, 500) || null,
+      stripePaymentIntentId: cleanText(raw.stripePaymentIntentId, 120) || null,
+      cashReceivedCents: Number.isSafeInteger(raw.cashReceivedCents) ? raw.cashReceivedCents : null,
+      paidAt: cleanText(raw.paidAt, 40) || null,
+    });
   });
   if (legs.length && legs.reduce((sum, leg) => sum + leg.amountCents, 0) !== totalCents) {
     throw new Error("Payment allocations must equal the sale total");
   }
   return legs;
+}
+
+export function salePaidCents(sale) {
+  return (sale?.paymentLegs || [])
+    .filter((leg) => leg.status === "paid")
+    .reduce((sum, leg) => sum + (leg.amountCents || 0), 0);
+}
+
+export function recomputeSaleStatus(sale) {
+  const legs = sale?.paymentLegs || [];
+  if (!legs.length) return "draft";
+  const paidCount = legs.filter((leg) => leg.status === "paid").length;
+  if (paidCount === legs.length) return "paid";
+  if (paidCount > 0) return "partially_paid";
+  if (legs.some((leg) => leg.status === "checkout_open")) return "awaiting_payment";
+  return sale.status === "draft" ? "draft" : "awaiting_payment";
+}
+
+export function attachCheckoutSession(sale, paymentLegId, session, reviewer, now) {
+  const at = now || new Date().toISOString();
+  const actor = cleanText(reviewer, 80) || "Staff";
+  let found = false;
+  const paymentLegs = (sale.paymentLegs || []).map((leg) => {
+    if (leg.id !== paymentLegId) return leg;
+    found = true;
+    if (leg.status === "paid") return leg;
+    return {
+      ...leg,
+      status: "checkout_open",
+      stripeCheckoutSessionId: session.id,
+      stripeCheckoutUrl: session.url,
+    };
+  });
+  if (!found) throw new Error("Payment leg not found");
+  const next = {
+    ...sale,
+    paymentLegs,
+    updatedAt: at,
+    status: "awaiting_payment",
+    audit: [
+      ...(sale.audit || []),
+      {
+        at,
+        actor,
+        action: "checkout_session_created",
+        detail: `Stripe Checkout opened for ${paymentLegId} (${session.id}).`,
+      },
+    ],
+  };
+  next.status = recomputeSaleStatus(next);
+  return next;
+}
+
+export function markLegPaid(sale, paymentLegId, { paymentIntentId, cashReceivedCents, reviewer, now, source } = {}) {
+  const at = now || new Date().toISOString();
+  const actor = cleanText(reviewer, 80) || source || "Stripe";
+  let found = false;
+  const paymentLegs = (sale.paymentLegs || []).map((leg) => {
+    if (leg.id !== paymentLegId) return leg;
+    found = true;
+    if (leg.status === "paid") return leg;
+    return {
+      ...leg,
+      status: "paid",
+      paidAt: at,
+      stripePaymentIntentId: paymentIntentId || leg.stripePaymentIntentId || null,
+      cashReceivedCents: cashReceivedCents ?? leg.cashReceivedCents,
+    };
+  });
+  if (!found) throw new Error("Payment leg not found");
+  const next = {
+    ...sale,
+    paymentLegs,
+    updatedAt: at,
+    version: (Number.isInteger(sale.version) ? sale.version : 0) + 1,
+    audit: [
+      ...(sale.audit || []),
+      {
+        at,
+        actor,
+        action: "payment_leg_paid",
+        detail: `Payment leg ${paymentLegId} marked paid via ${source || "webhook"}.`,
+      },
+    ],
+  };
+  next.status = recomputeSaleStatus(next);
+  if (next.status === "paid" && !next.fulfillmentStatus) {
+    next.fulfillmentStatus = "pending";
+    next.audit.push({
+      at,
+      actor,
+      action: "sale_paid",
+      detail: "All payment legs settled. GHL fulfillment is pending.",
+    });
+  }
+  return next;
+}
+
+export function cartSummaryLabel(sale) {
+  const lines = sale?.cart || [];
+  if (!lines.length) return "Amari Method purchase";
+  if (lines.length === 1) return lines[0].label;
+  return `${lines[0].label} + ${lines.length - 1} more`;
+}
+
+export function posSessionKey(sessionId) {
+  if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId || "")) throw new Error("Invalid Checkout Session id");
+  return `staff-pos:session:${sessionId}`;
 }
 
 export function posSaleKey(id) {
@@ -141,16 +268,45 @@ export function buildPosSale({ id, client, cart, paymentLegs, reviewer, now }) {
 
 export function updatePosSale(existing, { client, cart, paymentLegs, reviewer, now }) {
   if (!existing?.id) throw new Error("Sale not found");
+  if (existing.status === "paid") throw new Error("This sale is already paid and cannot be edited");
   const next = buildPosSale({ id: existing.id, client, cart, paymentLegs, reviewer, now });
   const at = next.updatedAt;
-  return {
+  // Preserve Stripe/cash settlement fields when the staff client re-saves allocations.
+  const priorByKey = new Map(
+    (existing.paymentLegs || []).map((leg) => [`${leg.method}:${leg.amountCents}:${leg.id}`, leg]),
+  );
+  const priorByMethodAmount = new Map(
+    (existing.paymentLegs || []).map((leg) => [`${leg.method}:${leg.amountCents}`, leg]),
+  );
+  const mergedLegs = next.paymentLegs.map((leg, index) => {
+    const prior =
+      priorByKey.get(`${leg.method}:${leg.amountCents}:${leg.id}`) ||
+      priorByMethodAmount.get(`${leg.method}:${leg.amountCents}`) ||
+      existing.paymentLegs?.[index];
+    if (!prior) return leg;
+    return {
+      ...leg,
+      id: prior.id || leg.id,
+      status: prior.status === "paid" || prior.status === "checkout_open" ? prior.status : leg.status,
+      stripeCheckoutSessionId: prior.stripeCheckoutSessionId || null,
+      stripeCheckoutUrl: prior.stripeCheckoutUrl || null,
+      stripePaymentIntentId: prior.stripePaymentIntentId || null,
+      cashReceivedCents: prior.cashReceivedCents,
+      paidAt: prior.paidAt || null,
+    };
+  });
+  const merged = {
     ...next,
+    paymentLegs: mergedLegs,
     status: existing.status === "draft" ? "draft" : existing.status,
     version: (Number.isInteger(existing.version) ? existing.version : 0) + 1,
     createdAt: existing.createdAt || at,
     createdBy: existing.createdBy || next.createdBy,
-    audit: [...(Array.isArray(existing.audit) ? existing.audit : []), { at, actor: next.createdBy, action: "draft_saved", detail: "Draft cart or payment plan updated. No payment, text, or GHL change was made." }],
+    fulfillmentStatus: existing.fulfillmentStatus || null,
+    audit: [...(Array.isArray(existing.audit) ? existing.audit : []), { at, actor: next.createdBy, action: "draft_saved", detail: "Draft cart or payment plan updated." }],
   };
+  merged.status = recomputeSaleStatus(merged);
+  return merged;
 }
 
 export function buildInactiveTextPreview(sale, reviewer, now) {

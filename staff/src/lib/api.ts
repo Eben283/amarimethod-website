@@ -233,10 +233,11 @@ export async function createStripeCheckout(
   });
 }
 
-// ── Inactive Staff POS drafts ───────────────────────────────────────────────
-// These endpoints only persist staff-owned draft data. They do not charge,
-// create a Stripe checkout, send a text, or write to GHL.
+// ── Staff POS sales ─────────────────────────────────────────────────────────
+// Durable drafts + Stripe Checkout Session creation per payment leg.
 export type PosPaymentMethod = 'saved-card' | 'manual-card' | 'hsa-card' | 'checkout-link' | 'cash' | 'other';
+export type PosSaleStatus = 'draft' | 'awaiting_payment' | 'partially_paid' | 'paid';
+export type PosLegStatus = 'planned' | 'checkout_open' | 'paid' | 'failed';
 
 export interface PosClient {
   id: string;
@@ -258,14 +259,27 @@ export interface PosPaymentLegInput {
   amountCents: number;
 }
 
+export interface PosPaymentLeg {
+  id: string;
+  method: PosPaymentMethod;
+  amountCents: number;
+  status: PosLegStatus;
+  stripeCheckoutSessionId?: string | null;
+  stripeCheckoutUrl?: string | null;
+  stripePaymentIntentId?: string | null;
+  cashReceivedCents?: number | null;
+  paidAt?: string | null;
+}
+
 export interface PosSale {
   id: string;
-  status: 'draft';
+  status: PosSaleStatus;
   version: number;
   client: PosClient;
   cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number }>;
   totalCents: number;
-  paymentLegs: Array<{ id: string; method: PosPaymentMethod; amountCents: number; status: 'planned' }>;
+  paymentLegs: PosPaymentLeg[];
+  fulfillmentStatus?: string | null;
   createdAt: string;
   updatedAt: string;
   audit: Array<{ at: string; actor: string; action: string; detail: string }>;
@@ -278,6 +292,12 @@ export interface PosTextPreview {
   sendingEnabled: false;
 }
 
+export interface PosCheckoutOpen {
+  legId: string;
+  url: string;
+  sessionId: string;
+}
+
 export async function getPosSale(id: string): Promise<{ sale: PosSale }> {
   return fetchApi(`/staff-pos-sales?id=${encodeURIComponent(id)}`);
 }
@@ -288,6 +308,28 @@ export async function createPosSale(input: { client: PosClient; cart: PosDraftLi
 
 export async function savePosSale(input: { id: string; version: number; client: PosClient; cart: PosDraftLineInput[]; paymentLegs: PosPaymentLegInput[] }): Promise<{ sale: PosSale }> {
   return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'save', ...input }) });
+}
+
+export async function startPosCheckout(input: {
+  id?: string;
+  version?: number;
+  client: PosClient;
+  cart: PosDraftLineInput[];
+  paymentLegs: PosPaymentLegInput[];
+}): Promise<{ sale: PosSale; checkouts: PosCheckoutOpen[] }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'start-checkout', ...input }) });
+}
+
+export async function recordPosCash(input: {
+  id?: string;
+  version?: number;
+  client: PosClient;
+  cart: PosDraftLineInput[];
+  paymentLegs: PosPaymentLegInput[];
+  paymentLegId?: string;
+  cashReceivedCents: number;
+}): Promise<{ sale: PosSale }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'record-cash', ...input }) });
 }
 
 export async function previewPosCheckoutText(id: string): Promise<{ sale: PosSale; preview: PosTextPreview }> {

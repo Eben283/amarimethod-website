@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  createPosSale,
   getOwedStatus,
   getPosSale,
-  savePosSale,
+  recordPosCash,
   searchContacts,
+  startPosCheckout,
   type PosClient,
+  type PosCheckoutOpen,
   type PosDraftLineInput,
   type PosPaymentLegInput,
   type PosPaymentMethod,
@@ -115,12 +116,14 @@ function cashSuggestions(totalCents: number) {
 
 export default function PosPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [panel, setPanel] = useState<Panel>(null);
   const [category, setCategory] = useState<CatalogGroup>("Series");
   const [client, setClient] = useState<PosClient | null>(null);
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
   const [sale, setSale] = useState<PosSale | null>(null);
+  const [checkouts, setCheckouts] = useState<PosCheckoutOpen[]>([]);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,6 +147,7 @@ export default function PosPage() {
   const [selectedPayment, setSelectedPayment] = useState<PosPaymentMethod | "split" | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const customerTimer = useRef<ReturnType<typeof setTimeout>>();
+  const hydratedSale = useRef<string | null>(null);
 
   const total = useMemo(() => calculateTotal(cart), [cart]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
@@ -151,17 +155,45 @@ export default function PosPage() {
   const inCheckout = panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete";
 
   useEffect(() => {
-    const id = localStorage.getItem(draftStorageKey);
-    if (!id) return;
+    const fromQuery = searchParams.get("sale");
+    const checkoutState = searchParams.get("checkout");
+    const id = fromQuery || localStorage.getItem(draftStorageKey);
+    if (!id || hydratedSale.current === id) return;
+    hydratedSale.current = id;
     void getPosSale(id)
       .then(({ sale: loaded }) => {
         setSale(loaded);
         setClient(loaded.client);
         setCart(toDraftCart(loaded));
         setLegs(toDraftLegs(loaded));
+        localStorage.setItem(draftStorageKey, loaded.id);
+        const openUrls = (loaded.paymentLegs || [])
+          .filter((leg) => leg.stripeCheckoutUrl)
+          .map((leg) => ({
+            legId: leg.id,
+            url: leg.stripeCheckoutUrl as string,
+            sessionId: leg.stripeCheckoutSessionId || "",
+          }));
+        setCheckouts(openUrls);
+        if (loaded.status === "paid") {
+          setPanel("complete");
+          setNotice("Payment received.");
+        } else if (checkoutState === "success") {
+          setPanel("checkout");
+          setNotice("If payment succeeded, this sale will show paid after Stripe’s webhook lands. Pull to refresh or reopen the sale.");
+        } else if (openUrls.length) {
+          setPanel("checkout");
+        }
       })
-      .catch(() => localStorage.removeItem(draftStorageKey));
-  }, []);
+      .catch(() => {
+        if (!fromQuery) localStorage.removeItem(draftStorageKey);
+      })
+      .finally(() => {
+        if (fromQuery || checkoutState) {
+          setSearchParams({}, { replace: true });
+        }
+      });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (panel !== "search") return;
@@ -305,8 +337,10 @@ export default function PosPage() {
     setCart([]);
     setLegs([]);
     setSale(null);
+    setCheckouts([]);
     setNotice("");
     setSelectedPayment(null);
+    hydratedSale.current = null;
     localStorage.removeItem(draftStorageKey);
     if (inCheckout) setPanel(null);
   }
@@ -387,20 +421,55 @@ export default function PosPage() {
     setPanel("checkout");
   }
 
-  async function persistLegs(paymentLegs: PosPaymentLegInput[]) {
+  function applySale(next: PosSale, opened: PosCheckoutOpen[] = []) {
+    setSale(next);
+    setClient(next.client);
+    setCart(toDraftCart(next));
+    setLegs(toDraftLegs(next));
+    localStorage.setItem(draftStorageKey, next.id);
+    if (opened.length) setCheckouts(opened);
+    else {
+      setCheckouts(
+        (next.paymentLegs || [])
+          .filter((leg) => leg.stripeCheckoutUrl)
+          .map((leg) => ({
+            legId: leg.id,
+            url: leg.stripeCheckoutUrl as string,
+            sessionId: leg.stripeCheckoutSessionId || "",
+          })),
+      );
+    }
+    if (next.status === "paid") setPanel("complete");
+  }
+
+  async function startStripeCheckout(paymentLegs: PosPaymentLegInput[]) {
     if (!client || !cart.length) return false;
+    if (client.id.startsWith("draft_")) {
+      setNotice("Select an existing GHL customer before taking card payment.");
+      openCustomer();
+      return false;
+    }
     setBusy(true);
     setNotice("");
     try {
-      const result = sale
-        ? await savePosSale({ id: sale.id, version: sale.version, client, cart, paymentLegs })
-        : await createPosSale({ client, cart, paymentLegs });
-      setSale(result.sale);
-      setLegs(paymentLegs);
-      localStorage.setItem(draftStorageKey, result.sale.id);
+      const result = await startPosCheckout({
+        id: sale?.id,
+        version: sale?.version,
+        client,
+        cart,
+        paymentLegs,
+      });
+      applySale(result.sale, result.checkouts);
+      const first = result.checkouts[0];
+      if (first?.url) {
+        window.open(first.url, "_blank", "noopener,noreferrer");
+        setNotice("Stripe Checkout opened. Copy the link if the client pays on another device.");
+      } else {
+        setNotice("Checkout saved. No Stripe link was returned.");
+      }
       return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save this draft.");
+      setNotice(error instanceof Error ? error.message : "Could not start Stripe Checkout.");
       return false;
     } finally {
       setBusy(false);
@@ -410,21 +479,19 @@ export default function PosPage() {
   async function chooseCard() {
     setSelectedPayment("manual-card");
     const paymentLegs = total ? [{ method: "manual-card" as const, amountCents: total }] : [];
-    if (await persistLegs(paymentLegs)) {
-      setNotice("Card selected. Stripe card entry will open here when payments go live. Draft only for now.");
-    }
+    setLegs(paymentLegs);
+    await startStripeCheckout(paymentLegs);
   }
 
   async function chooseCheckoutLink() {
     setSelectedPayment("checkout-link");
     const paymentLegs = total ? [{ method: "checkout-link" as const, amountCents: total }] : [];
-    if (await persistLegs(paymentLegs)) {
-      setNotice(
-        client?.phone
-          ? "Checkout link selected. Sending remains disabled while this is a draft mirror."
-          : "Checkout link selected. Add a mobile number before activation.",
-      );
+    setLegs(paymentLegs);
+    if (!client?.phone && !client?.email) {
+      setNotice("Add a phone or email before creating a checkout link.");
+      return;
     }
+    await startStripeCheckout(paymentLegs);
   }
 
   function openCash() {
@@ -447,15 +514,30 @@ export default function PosPage() {
   }
 
   async function confirmCash(amountCents = Math.round(Number(cashDollars) * 100)) {
+    if (!client || !cart.length) return;
     if (!Number.isSafeInteger(amountCents) || amountCents < total) {
       setNotice(`Cash received needs to cover ${money(total)}. Use Split for a partial amount.`);
       return;
     }
     const paymentLegs = total ? [{ method: "cash" as const, amountCents: total }] : [];
-    if (await persistLegs(paymentLegs)) {
+    setBusy(true);
+    setNotice("");
+    try {
+      const result = await recordPosCash({
+        id: sale?.id,
+        version: sale?.version,
+        client,
+        cart,
+        paymentLegs,
+        cashReceivedCents: amountCents,
+      });
       setCashReceivedCents(amountCents);
-      setPanel("complete");
+      applySale(result.sale);
       setNotice("");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not record cash.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -472,15 +554,78 @@ export default function PosPage() {
   }
 
   async function confirmSplit() {
+    if (!client) {
+      setNotice("Select a client to continue.");
+      return;
+    }
     if (legs.length !== 2 || allocation !== total) {
       setNotice("Payment amounts need to equal the cart total.");
       return;
     }
-    if (await persistLegs(legs)) {
-      setCashReceivedCents(total);
-      setPanel("complete");
-      setNotice("");
+    const stripeLegs = legs.filter((leg) => leg.method !== "cash" && leg.method !== "other");
+    const cashLeg = legs.find((leg) => leg.method === "cash");
+
+    setBusy(true);
+    setNotice("");
+    try {
+      let currentSale = sale;
+      if (stripeLegs.length) {
+        const result = await startPosCheckout({
+          id: currentSale?.id,
+          version: currentSale?.version,
+          client,
+          cart,
+          paymentLegs: legs,
+        });
+        applySale(result.sale, result.checkouts);
+        currentSale = result.sale;
+        const first = result.checkouts[0];
+        if (first?.url) window.open(first.url, "_blank", "noopener,noreferrer");
+      }
+      if (cashLeg && !stripeLegs.length) {
+        const result = await recordPosCash({
+          id: currentSale?.id,
+          version: currentSale?.version,
+          client,
+          cart,
+          paymentLegs: legs,
+          cashReceivedCents: cashLeg.amountCents,
+        });
+        setCashReceivedCents(cashLeg.amountCents);
+        applySale(result.sale);
+      } else if (cashLeg && stripeLegs.length) {
+        setNotice("Card Checkout opened. After it pays, use Cash to record the cash leg on a follow-up — or keep both legs as card for now.");
+        setPanel("checkout");
+      } else {
+        setPanel("checkout");
+        setNotice("Stripe Checkout opened for each card leg.");
+      }
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not start split checkout.");
+    } finally {
+      setBusy(false);
     }
+  }
+
+  async function refreshSale() {
+    if (!sale?.id) return;
+    setBusy(true);
+    try {
+      const result = await getPosSale(sale.id);
+      applySale(result.sale);
+      setNotice(result.sale.status === "paid" ? "Payment received." : `Sale status: ${result.sale.status.replace(/_/g, " ")}`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not refresh sale.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function copyCheckout(url: string) {
+    void navigator.clipboard.writeText(url).then(
+      () => setNotice("Checkout link copied."),
+      () => setNotice(url),
+    );
   }
 
   function finishSale() {
@@ -488,12 +633,22 @@ export default function PosPage() {
     setClient(null);
     setLegs([]);
     setSale(null);
+    setCheckouts([]);
     setCashReceivedCents(0);
     setSelectedPayment(null);
     setNotice("");
+    hydratedSale.current = null;
     localStorage.removeItem(draftStorageKey);
     setPanel(null);
   }
+
+  const statusLabel = sale?.status === "paid"
+    ? "Paid"
+    : sale?.status === "partially_paid"
+      ? "Partially paid"
+      : sale?.status === "awaiting_payment"
+        ? "Awaiting payment"
+        : "Ready";
 
   const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
 
@@ -517,7 +672,7 @@ export default function PosPage() {
       <section className="pos-main">
         <header className="pos-top">
           <strong>Amari POS</strong>
-          <span className="pos-top__status">Draft mirror</span>
+          <span className="pos-top__status">{statusLabel}</span>
         </header>
 
         {notice && !panel && <div className="pos-notice">{notice}</div>}
@@ -808,7 +963,7 @@ export default function PosPage() {
             <div className="pos-panel__bar">
               <button type="button" onClick={() => setPanel(null)}>Cancel</button>
               <strong>Total {money(total)}</strong>
-              <span />
+              <button type="button" onClick={() => void refreshSale()} disabled={busy || !sale}>Refresh</button>
             </div>
             {notice && <div className="pos-notice">{notice}</div>}
             <p className="pos-checkout-prompt">Select payment option</p>
@@ -820,7 +975,7 @@ export default function PosPage() {
                 disabled={busy}
               >
                 Card
-                <small>Stripe entry later</small>
+                <small>Stripe Checkout</small>
               </button>
               <button
                 type="button"
@@ -837,7 +992,7 @@ export default function PosPage() {
                 disabled={busy}
               >
                 Checkout link
-                <small>Text when live</small>
+                <small>Open or copy URL</small>
               </button>
               <button
                 type="button"
@@ -848,7 +1003,22 @@ export default function PosPage() {
                 Split payment
               </button>
             </div>
-            <p className="pos-muted">No tap to pay. Card will use Stripe’s card form when payments activate.</p>
+            {checkouts.length > 0 && (
+              <section className="pos-checkout-links">
+                <p className="pos-section-label">Open Checkout</p>
+                {checkouts.map((item) => (
+                  <div className="pos-checkout-link-row" key={item.legId}>
+                    <button type="button" className="pos-secondary-btn" onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}>
+                      Open Stripe
+                    </button>
+                    <button type="button" className="pos-ghost-btn" onClick={() => copyCheckout(item.url)}>
+                      Copy link
+                    </button>
+                  </div>
+                ))}
+              </section>
+            )}
+            <p className="pos-muted">No tap to pay. Card opens hosted Stripe Checkout. Webhook marks the sale paid.</p>
           </div>
         )}
 
@@ -945,10 +1115,12 @@ export default function PosPage() {
           <div className="pos-panel pos-panel--complete">
             <div className="pos-complete-mark" aria-hidden="true">✓</div>
             <h1 className="pos-panel-title">Order complete</h1>
-            <p className="pos-complete-sub">
+            <p className="pos-muted">
               {selectedPayment === "cash"
                 ? `Change due: ${money(Math.max(0, cashReceivedCents - total))}`
-                : "Payment plan saved (draft mirror)"}
+                : sale?.status === "paid"
+                  ? "Payment received. GHL fulfillment still pending."
+                  : "Payment plan saved"}
             </p>
             {client && (
               <section className="pos-complete-customer">
@@ -957,7 +1129,7 @@ export default function PosPage() {
                 <small>{[client.phone, client.email].filter(Boolean).join(" · ")}</small>
               </section>
             )}
-            <p className="pos-muted">Receipts and live charging stay disabled until activation.</p>
+            <p className="pos-muted">Receipt email/SMS stays off until we turn it on. Session credits still need the GHL fulfillment bridge.</p>
             <button type="button" className="pos-primary-btn" onClick={finishSale}>Done</button>
           </div>
         )}
