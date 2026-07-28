@@ -3,8 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getOwedStatus,
   getPosSale,
+  getStripeSavedCards,
   recordPosCash,
   fulfillPosSale,
+  chargePosSavedCard,
   searchContacts,
   startPosCheckout,
   type PosClient,
@@ -14,6 +16,7 @@ import {
   type PosPaymentMethod,
   type PosSale,
   type PurchaseEntry,
+  type StripeSavedCard,
 } from "../lib/api";
 import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
@@ -46,7 +49,8 @@ type Panel =
   | "checkout"
   | "cash"
   | "split"
-  | "complete";
+  | "complete"
+  | "charge-confirm";
 
 const paymentLabels: Record<PosPaymentMethod, string> = {
   "checkout-link": "Checkout link",
@@ -59,6 +63,11 @@ const paymentLabels: Record<PosPaymentMethod, string> = {
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+function cardLabel(card: StripeSavedCard) {
+  const brand = (card.brand || "card").replace(/^./, (c) => c.toUpperCase());
+  return `${brand} •••• ${card.last4}`;
+}
 
 const draftStorageKey = "amari_staff_pos_draft";
 
@@ -146,6 +155,9 @@ export default function PosPage() {
   const [cashDollars, setCashDollars] = useState("");
   const [cashReceivedCents, setCashReceivedCents] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<PosPaymentMethod | "split" | null>(null);
+  const [savedCards, setSavedCards] = useState<StripeSavedCard[]>([]);
+  const [savedCardsReason, setSavedCardsReason] = useState<string | null>(null);
+  const [pendingChargeCard, setPendingChargeCard] = useState<StripeSavedCard | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const customerTimer = useRef<ReturnType<typeof setTimeout>>();
   const hydratedSale = useRef<string | null>(null);
@@ -155,7 +167,9 @@ export default function PosPage() {
   const unpaidCashLeg = sale?.paymentLegs?.find((leg) => leg.method === "cash" && leg.status !== "paid");
   const cashTargetCents = unpaidCashLeg?.amountCents ?? total;
   const suggestions = useMemo(() => cashSuggestions(cashTargetCents), [cashTargetCents]);
-  const inCheckout = panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete";
+  const primarySavedCard = savedCards[0] || null;
+  const inCheckout =
+    panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete" || panel === "charge-confirm";
 
   useEffect(() => {
     const fromQuery = searchParams.get("sale");
@@ -264,6 +278,31 @@ export default function PosPage() {
     };
   }, [detailClient?.id, client?.id, panel]);
 
+  useEffect(() => {
+    if (!client || client.id.startsWith("draft_")) {
+      setSavedCards([]);
+      setSavedCardsReason(client ? "draft_client" : null);
+      return;
+    }
+    let cancelled = false;
+    setSavedCards([]);
+    setSavedCardsReason("loading");
+    void getStripeSavedCards(client.id)
+      .then((result) => {
+        if (cancelled) return;
+        setSavedCards(result.cards || []);
+        setSavedCardsReason(result.available ? null : result.reason || "no_cards");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSavedCards([]);
+        setSavedCardsReason("lookup_failed");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client?.id]);
+
   function closePanel() {
     setPanel(null);
     setNotice("");
@@ -271,6 +310,7 @@ export default function PosPage() {
     setCustomerQuery("");
     setDetailClient(null);
     setSelectedPayment(null);
+    setPendingChargeCard(null);
   }
 
   function openSearch() {
@@ -484,6 +524,49 @@ export default function PosPage() {
     const paymentLegs = total ? [{ method: "manual-card" as const, amountCents: total }] : [];
     setLegs(paymentLegs);
     await startStripeCheckout(paymentLegs);
+  }
+
+  function chooseSavedCard() {
+    if (!primarySavedCard) {
+      setNotice("No proven card on file for this customer. Use Card (Checkout) first.");
+      return;
+    }
+    setSelectedPayment("saved-card");
+    const paymentLegs = total ? [{ method: "saved-card" as const, amountCents: total }] : [];
+    setLegs(paymentLegs);
+    setPendingChargeCard(primarySavedCard);
+    setPanel("charge-confirm");
+  }
+
+  async function confirmSavedCardCharge() {
+    if (!client || !cart.length || !pendingChargeCard) return;
+    const paymentLegs = legs.length ? legs : total ? [{ method: "saved-card" as const, amountCents: total }] : [];
+    const label = cardLabel(pendingChargeCard);
+    setBusy(true);
+    setNotice("");
+    try {
+      const result = await chargePosSavedCard({
+        id: sale?.id,
+        version: sale?.version,
+        client,
+        cart,
+        paymentLegs,
+        paymentMethodId: pendingChargeCard.id,
+        confirmed: true,
+      });
+      applySale(result.sale);
+      setPendingChargeCard(null);
+      setNotice(
+        result.sale.fulfillmentStatus === "fulfilled"
+          ? `Charged ${label}. GHL updated.`
+          : `Charged ${label}.`,
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not charge card on file.");
+      setPanel("checkout");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function chooseCheckoutLink() {
@@ -912,6 +995,15 @@ export default function PosPage() {
             <p className="pos-muted">
               {[ (detailClient || client)?.phone, (detailClient || client)?.email ].filter(Boolean).join(" · ") || "No contact detail"}
             </p>
+            {client && (detailClient || client)?.id === client.id && (
+              <p className="pos-card-on-file">
+                {primarySavedCard
+                  ? `Card on file: ${cardLabel(primarySavedCard)}`
+                  : savedCardsReason === "loading"
+                    ? "Checking card on file…"
+                    : "No proven card on file"}
+              </p>
+            )}
             <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
               Add to cart
             </button>
@@ -1062,14 +1154,26 @@ export default function PosPage() {
             ) : (
               <>
                 <p className="pos-checkout-prompt">How is this being paid?</p>
+                {primarySavedCard && (
+                  <p className="pos-card-on-file">Card on file: {cardLabel(primarySavedCard)}</p>
+                )}
                 <div className="pos-pay-grid">
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "saved-card" ? "is-active" : ""}`}
+                    onClick={chooseSavedCard}
+                    disabled={busy || !primarySavedCard || !total}
+                  >
+                    Card on file
+                    <small>{primarySavedCard ? cardLabel(primarySavedCard) : "None linked yet"}</small>
+                  </button>
                   <button
                     type="button"
                     className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
                     onClick={() => void chooseCard()}
                     disabled={busy}
                   >
-                    Card
+                    New card
                     <small>Opens Stripe Checkout</small>
                   </button>
                   <button
@@ -1099,9 +1203,35 @@ export default function PosPage() {
                     <small>Card + cash, etc.</small>
                   </button>
                 </div>
-                <p className="pos-muted">No tap to pay. Card opens hosted Stripe Checkout.</p>
+                <p className="pos-muted">
+                  {primarySavedCard
+                    ? "Card on file charges immediately after you confirm. New card opens hosted Stripe Checkout and saves the card for next time."
+                    : savedCardsReason === "loading"
+                      ? "Checking for a card on file…"
+                      : "No proven card on file yet. Use New card once — it will save for next time."}
+                </p>
               </>
             )}
+          </div>
+        )}
+
+        {panel === "charge-confirm" && pendingChargeCard && (
+          <div className="pos-modal-scrim" role="presentation" onClick={() => !busy && setPanel("checkout")}>
+            <div className="pos-modal" role="dialog" aria-labelledby="charge-confirm-title" onClick={(e) => e.stopPropagation()}>
+              <h2 id="charge-confirm-title">Charge card on file?</h2>
+              <p className="pos-muted">
+                Charge <strong>{cardLabel(pendingChargeCard)}</strong> for <strong>{money(total)}</strong> on{" "}
+                <strong>{client?.name || "this customer"}</strong>?
+              </p>
+              <p className="pos-muted">This runs immediately. It is not a Checkout link.</p>
+              {notice && <div className="pos-notice">{notice}</div>}
+              <button type="button" className="pos-primary-btn" onClick={() => void confirmSavedCardCharge()} disabled={busy}>
+                {busy ? "Charging…" : `Charge ${money(total)}`}
+              </button>
+              <button type="button" className="pos-ghost-btn" onClick={() => { setPendingChargeCard(null); setPanel("checkout"); }} disabled={busy}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
