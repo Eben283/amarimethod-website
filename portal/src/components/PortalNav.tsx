@@ -5,9 +5,10 @@ interface PortalNavProps {
   firstName?: string;
   hasLivingPractice?: boolean;
   onOpenSettings?: () => void;
+  practiceMode?: boolean;
 }
 
-export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings }: PortalNavProps) {
+export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings, practiceMode = false }: PortalNavProps) {
   const { email, logout } = useAuth();
   const displayName = firstName || email?.split('@')[0] || '';
 
@@ -21,7 +22,7 @@ export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings
         <img src="/images/AmariLogo.avif" alt="Amari Method" className="cp-seal-logo" />
       </a>
       <nav className="cp-topnav">
-        <Link to="/" className="cp-topnav-link cp-current">Dashboard</Link>
+        <Link to="/" className="cp-topnav-link cp-current">{practiceMode ? 'Your Practice' : 'Dashboard'}</Link>
         {hasLivingPractice && (
           <Link to="/practice" className="cp-topnav-link">Living Practice</Link>
         )}

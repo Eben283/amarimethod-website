@@ -9,6 +9,7 @@ import ProgressTracker from '../components/ProgressTracker';
 import SessionHistory from '../components/SessionHistory';
 import BookingModal from '../components/BookingModal';
 import ReferralCard from '../components/ReferralCard';
+import PracticeDashboardPage from './PracticeDashboardPage';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -66,6 +67,14 @@ export default function DashboardPage() {
   }
 
   if (!data) return null;
+
+  // The 12-Week Amari Practice is a distinct client experience. Founder’s
+  // Circle 4- and 8-session clients continue through this existing dashboard.
+  // The route is driven by the verified, purchase-derived series type returned
+  // by portal-data — never by a session count or Living Practice flag.
+  if (data.client.seriesType === '12-week') {
+    return <PracticeDashboardPage data={data} onRefetch={refetch} />;
+  }
 
   const { client, appointments, upcomingAppointments } = data;
   // Trust appointment data over the sessions_completed custom field — Garrett

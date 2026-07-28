@@ -31,11 +31,13 @@ export function isChecked(raw) {
 }
 
 /**
- * Living Practice access compute. 8-session series always includes Living
- * Practice — don't require the field to be set explicitly.
+ * Living Practice access compute. The 8-session series and 12-Week Amari
+ * Practice include Living Practice — don't require the field to be set
+ * explicitly.
  */
 export function computeHasLivingPractice(lpRaw, tags, seriesType) {
   return isChecked(lpRaw) ||
     (tags || []).includes("living-practice-access") ||
-    seriesType === "8-session";
+    seriesType === "8-session" ||
+    seriesType === "12-week";
 }

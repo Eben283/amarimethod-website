@@ -6,6 +6,7 @@ export type PreviewState =
   | 'empty'        // brand new, no purchases
   | 'active'       // pay-as-you-go (no series, has past sessions)
   | 'series'       // mid 8-pack (4 done, 4 left)
+  | 'practice'     // mid 12-week Amari Practice
   | 'last-left'    // 1 session left, soft re-up prompt
   | 'completed'    // 0 left, time to re-up
   | 'reup'         // mid second package, lifetime > package size
@@ -14,7 +15,7 @@ export type PreviewState =
   | 'error';
 
 const VALID_STATES: PreviewState[] = [
-  'empty', 'active', 'series', 'last-left', 'completed', 'reup', 'low-confidence', 'loading', 'error',
+  'empty', 'active', 'series', 'practice', 'last-left', 'completed', 'reup', 'low-confidence', 'loading', 'error',
 ];
 
 export function getPreviewState(): PreviewState | null {
@@ -150,6 +151,53 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
       },
       appointments: past,
       upcomingAppointments: [next, ...more],
+    };
+  }
+
+  if (state === 'practice') {
+    const next: Appointment = {
+      id: 'practice-next',
+      title: 'Follow-up session',
+      startTime: addDays(now, 2, 10, 0),
+      endTime: addDays(now, 2, 10, 50),
+      status: 'confirmed',
+      appointmentType: 'Follow-up In-Person',
+    };
+    const later: Appointment = {
+      id: 'practice-later',
+      title: 'Follow-up session',
+      startTime: addDays(now, 5, 14, 0),
+      endTime: addDays(now, 5, 14, 50),
+      status: 'confirmed',
+      appointmentType: 'Follow-up In-Person',
+    };
+    const past: Appointment[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `practice-past-${i}`,
+      title: 'Follow-up session',
+      startTime: subDays(now, (8 - i) * 6, 10, 0),
+      endTime: subDays(now, (8 - i) * 6, 10, 50),
+      status: 'completed',
+      appointmentType: 'Follow-up In-Person',
+    }));
+    return {
+      client: {
+        contactId: 'preview-practice',
+        firstName: 'Maya',
+        lastName: '',
+        email: 'preview@amarimethod.com',
+        seriesType: '12-week',
+        sessionsCompleted: 8,
+        sessionsRemaining: 16,
+        packageSize: 24,
+        attendedAgainstPackage: 8,
+        ledgerConfidence: 'high',
+        ledgerSource: 'orders+invoices+appointments',
+        hasLivingPractice: true,
+        portalAccess: true,
+        isPartner: false,
+      },
+      appointments: past,
+      upcomingAppointments: [next, later],
     };
   }
 
