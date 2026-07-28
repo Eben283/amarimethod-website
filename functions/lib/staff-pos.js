@@ -16,11 +16,12 @@ export const POS_CATALOG = Object.freeze({
   "upgrade-initial-to-4": { label: "Upgrade: Initial → 4-Session", amountCents: 49500, ghlProductId: "6998739230cc6054f9bba62d" },
   "upgrade-initial-to-8": { label: "Upgrade: Initial → 8-Session", amountCents: 107000, ghlProductId: "699873d6990b71ebc1fa26b4" },
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },
+  "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
   "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
 });
 
-export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "hsa-card", "checkout-link", "cash", "other"]);
+export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);
 
 function cleanText(value, max) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -87,9 +88,12 @@ export function normalizeClient(raw) {
   const id = cleanText(raw.id, 100);
   const name = cleanText(raw.name, 160);
   const phone = cleanText(raw.phone, 40);
+  const email = cleanText(raw.email, 160).toLowerCase();
   if (!/^[A-Za-z0-9_-]{8,100}$/.test(id)) throw new Error("Invalid client");
   if (!name) throw new Error("Client name is required");
-  return Object.freeze({ id, name, phone: phone || null });
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Client email is invalid");
+  if (!phone && !email) throw new Error("Add a phone number or email address");
+  return Object.freeze({ id, name, phone: phone || null, email: email || null });
 }
 
 export function normalizePaymentLegs(rawLegs, totalCents) {
