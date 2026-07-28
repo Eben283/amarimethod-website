@@ -518,7 +518,7 @@
 .cp-cal-empty{height:40px}
 .cp-cal-day{position:relative;height:40px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;font-family:var(--cp-sans);font-size:14px;color:var(--cp-ink);cursor:pointer;transition:background .15s,color .15s;font-weight:400}
 .cp-cal-day:hover:not(:disabled){background:var(--cp-paper-2)}
-.cp-cal-day.is-disabled,.cp-cal-day:disabled{color:var(--cp-line-2);cursor:default}
+.cp-cal-day.is-disabled,.cp-cal-day:disabled{color:#8a8176;opacity:.72;cursor:default}
 .cp-cal-day.has-slots{color:var(--cp-ink);font-weight:500}
 .cp-cal-day.is-today{box-shadow:inset 0 0 0 1px var(--cp-line-2)}
 .cp-cal-day.is-selected{background:var(--cp-ink);color:var(--cp-paper);font-weight:500}

@@ -130,6 +130,9 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
   const slotsForDate = selectedDate
     ? slots.filter((s) => s.date === selectedDate).sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
     : [];
+  // A long unstructured time list is hard to scan. Show the first twelve
+  // chronological openings consistently for every follow-up calendar/day.
+  const visibleSlotsForDate = slotsForDate.slice(0, 12);
 
   const firstOfMonth = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
@@ -377,7 +380,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                     <p className="cp-bm-empty">No times available for this date.</p>
                   ) : (
                     <div className="cp-bm-times-grid">
-                      {slotsForDate.map((slot) => {
+                      {visibleSlotsForDate.map((slot) => {
                         const isSelected = selectedSlot?.datetime === slot.datetime;
                         return (
                           <button
