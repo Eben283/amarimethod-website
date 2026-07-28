@@ -282,13 +282,13 @@ export default function PosPage() {
 
   async function confirmCashReceived() {
     const amountCents = Math.round(Number(cashDollars) * 100);
-    if (!Number.isSafeInteger(amountCents) || amountCents !== total) {
-      setNotice(`Cash needs to equal ${money(total)}. Use split payment for a partial cash amount.`);
+    if (!Number.isSafeInteger(amountCents) || amountCents < total) {
+      setNotice(`Cash received needs to cover ${money(total)}. Use Split payment for a partial cash amount.`);
       return;
     }
     if (await choosePrimaryPayment("cash")) {
       setPaymentAction(null);
-      setNotice("Cash receipt confirmation saved. Cash is not marked received until activation.");
+      setNotice(`Cash receipt plan saved. Change due: ${money(amountCents - total)}. Cash is not marked received until activation.`);
     }
   }
 
@@ -409,6 +409,9 @@ export default function PosPage() {
     const isCheckoutLink = paymentAction === "checkout-link";
     const isSplitPayment = paymentAction === "split";
     const hasMobile = Boolean(client?.phone);
+    const cashReceivedCents = Math.round(Number(cashDollars) * 100);
+    const hasValidCashInput = Number.isSafeInteger(cashReceivedCents) && cashReceivedCents >= 0;
+    const cashDifferenceCents = hasValidCashInput ? cashReceivedCents - total : -total;
     return (
       <main className="pos-shell">
         <section className="pos-payment-action-screen">
@@ -432,12 +435,12 @@ export default function PosPage() {
               </div>
               <div className={`pos-split-total ${allocation === total ? "is-complete" : ""}`}><span>{allocation === total ? "Allocated exactly" : allocation < total ? "Remaining" : "Over by"}</span><strong>{money(Math.abs(total - allocation))}</strong></div>
               {legs.some((leg) => leg.method === "checkout-link") && !hasMobile && <p className="pos-split-warning">Checkout link needs a mobile number on this client before activation.</p>}
-            </> : <div className="pos-payment-review">
+            </> : <><div className="pos-cash-entry"><label><span>Cash received</span><div><b>$</b><input aria-label="Cash received" inputMode="decimal" type="number" min="0.00" step="0.01" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} autoFocus /></div></label></div><div className="pos-payment-review">
               <div><span>Customer</span><strong>{client?.name || "Client"}</strong></div>
-              {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><label><span>Cash received</span><input aria-label="Cash received" inputMode="decimal" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} /><b>USD</b></label><div><span>Amount due</span><strong>{money(total)}</strong></div><p>For a partial cash payment, use Split payment instead.</p></>}
-            </div>}
-            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? sendCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Send checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
-            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "Sending is intentionally disabled while this remains a mirror." : "This draft does not mark cash as received or fulfill anything yet."}</p>
+              {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><div><span>Amount due</span><strong>{money(total)}</strong></div><div className={cashDifferenceCents >= 0 ? "pos-cash-difference is-change" : "pos-cash-difference is-remaining"}><span>{cashDifferenceCents >= 0 ? "Change due" : "Still due"}</span><strong>{money(Math.abs(cashDifferenceCents))}</strong></div>{cashDifferenceCents < 0 && <p>For a partial cash payment, use Split payment instead.</p>}</>}
+            </div></>}
+            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? sendCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (!isSplitPayment && !isCheckoutLink && (!hasValidCashInput || cashDifferenceCents < 0)) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Send checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
+            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "Sending is intentionally disabled while this remains a mirror." : "Cash tendered and change are displayed here; the mirror still does not mark cash received or fulfill anything."}</p>
           </div>
         </section>
       </main>
