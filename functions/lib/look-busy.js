@@ -8,7 +8,8 @@
  * - Stable within a calendar week (same visitor, same day → same options)
  * - Rotates weekly so which gaps appear changes over time
  * - Day-to-day hide rate wobbles (~40–65%) so some days look fuller
- * - Always keeps the earliest slot on a day (promised / first-choice times survive)
+ * - Always keeps the first slot of each availability cluster (gap > 45 min),
+ *   so promised first-of-day and first-after-lunch opens survive
  * - Never empties a day that had real availability (keeps at least two when possible)
  */
 
@@ -88,16 +89,29 @@ export function applyLookBusy(slots, opts) {
       Math.ceil((sorted.length * (100 - hidePercent)) / 100),
     );
 
-    // Always keep the earliest slot; score the rest for this ISO week.
+    // Always keep the first slot of each availability cluster (gap > 45 min).
+    // That protects promised first-of-day times and first-after-lunch opens
+    // (e.g. Assessment Aug 4 11:00, Aug 21 14:30) from thinning.
     const week = isoWeekKey(date);
-    const earliest = sorted[0];
-    const rest = sorted.slice(1).map((slot) => ({
-      slot,
-      score: hash32(`${calendarId}|${week}|${slot.datetime}`),
-    }));
+    const mustKeep = new Set();
+    let prevMs = null;
+    for (const slot of sorted) {
+      const ms = Date.parse(slot.datetime);
+      if (prevMs == null || !Number.isFinite(ms) || ms - prevMs > 45 * 60 * 1000) {
+        mustKeep.add(slot.datetime);
+      }
+      if (Number.isFinite(ms)) prevMs = ms;
+    }
+
+    const rest = sorted
+      .filter((slot) => !mustKeep.has(slot.datetime))
+      .map((slot) => ({
+        slot,
+        score: hash32(`${calendarId}|${week}|${slot.datetime}`),
+      }));
     rest.sort((a, b) => b.score - a.score);
 
-    const selected = [earliest];
+    const selected = sorted.filter((slot) => mustKeep.has(slot.datetime));
     for (const { slot } of rest) {
       if (selected.length >= keepTarget) break;
       selected.push(slot);

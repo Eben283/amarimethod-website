@@ -72,6 +72,27 @@ describe("applyLookBusy", () => {
     expect(out.length).toBeLessThan(slots.length);
   });
 
+  it("keeps the first slot after a long gap (afternoon open)", () => {
+    const times = [
+      "10:00",
+      "10:40",
+      "11:20",
+      "12:00",
+      "12:40",
+      "13:20",
+      "14:30",
+      "15:10",
+      "15:50",
+      "16:30",
+      "17:10",
+      "17:50",
+    ];
+    const slots = times.map((t) => slot("2026-08-21", t));
+    const out = applyLookBusy(slots, { calendarId: cal, hidePercent: 70 });
+    expect(out.some((s) => s.time === "10:00")).toBe(true);
+    expect(out.some((s) => s.time === "14:30")).toBe(true);
+  });
+
   it("is stable within the same week and calendar", () => {
     const times = ["10:00", "10:40", "11:20", "12:00", "12:40", "13:20", "14:00", "14:40"];
     const slots = times.map((t) => slot("2026-08-05", t));
