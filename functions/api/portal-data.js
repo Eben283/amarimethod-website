@@ -196,13 +196,19 @@ export async function onRequestGet(context) {
     // their historical purchase ledger reflects the product. Keep the ledger
     // as the source for every other series type and for session math.
     const contactSeriesType = getCustomField(contact, "series_type", fieldDefs);
-    const portalSeriesType = contactSeriesType === "12-week" ? "12-week" : seriesType;
+    const isDesignatedTwelveWeekPractice = contactSeriesType === "12-week";
+    const portalSeriesType = isDesignatedTwelveWeekPractice ? "12-week" : seriesType;
+    const contactRemainingRaw = getCustomField(contact, "sessions_remaining", fieldDefs);
+    const contactRemaining = parseInt(contactRemainingRaw, 10);
+    const portalSessionsRemaining = isDesignatedTwelveWeekPractice && Number.isFinite(contactRemaining) && contactRemaining >= 0
+      ? contactRemaining
+      : ledger.display.remaining;
 
     // Two distinct counters per UX decision 2026-05-29:
     //   sessionsRemaining — prepaid package balance ("when do I need to act?")
     //   sessionsCompleted — lifetime journey ("how far have I come?")
     // These are independent. They don't sum to a package size.
-    const sessionsRemaining = ledger.display.remaining;
+    const sessionsRemaining = portalSessionsRemaining;
     // Lifetime journey count. Per Eben's 2026-06-03 clarification:
     //   - Entrainments count as total sessions
     //   - Phone-style appointments (discovery, consultation, 15-min, pain
