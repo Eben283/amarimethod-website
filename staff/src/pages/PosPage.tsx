@@ -38,6 +38,14 @@ const paymentLabels: Record<PosPaymentMethod, string> = {
   other: "Other payment",
 };
 
+const splitPaymentOptions: Array<[PosPaymentMethod, string]> = [
+  ["manual-card", "Card payment"],
+  ["hsa-card", "HSA / FSA card"],
+  ["checkout-link", "Checkout link"],
+  ["cash", "Cash"],
+  ["other", "Other payment"],
+];
+
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 const draftStorageKey = "amari_staff_pos_draft";
@@ -83,7 +91,7 @@ export default function PosPage() {
   const [customDollars, setCustomDollars] = useState("");
   const [checkoutStep, setCheckoutStep] = useState(false);
   const [paymentStep, setPaymentStep] = useState(false);
-  const [paymentAction, setPaymentAction] = useState<"checkout-link" | "cash" | null>(null);
+  const [paymentAction, setPaymentAction] = useState<"checkout-link" | "cash" | "split" | null>(null);
   const [cashDollars, setCashDollars] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -230,11 +238,6 @@ export default function PosPage() {
     setPaymentStep(true);
   }
 
-  function setPrimaryAllocation(method: PosPaymentMethod) {
-    setLegs(total ? [{ method, amountCents: total }] : []);
-    setPreview(null);
-  }
-
   async function choosePrimaryPayment(method: PosPaymentMethod) {
     const paymentLegs = total ? [{ method, amountCents: total }] : [];
     setLegs(paymentLegs);
@@ -259,9 +262,13 @@ export default function PosPage() {
     }
   }
 
-  function beginPaymentAction(method: "checkout-link" | "cash") {
+  function beginPaymentAction(method: "checkout-link" | "cash" | "split") {
     setNotice("");
     if (method === "cash") setCashDollars((total / 100).toFixed(2));
+    if (method === "split") {
+      const existing = legs.length === 2 ? legs : [{ method: "hsa-card" as const, amountCents: 0 }, { method: "checkout-link" as const, amountCents: total }];
+      setLegs(existing);
+    }
     setPaymentAction(method);
   }
 
@@ -288,40 +295,27 @@ export default function PosPage() {
     }
   }
 
-  function addSplitAllocation() {
-    setLegs((current) => {
-      if (!total || current.length >= 2) return current;
-      if (!current.length) return [{ method: "hsa-card", amountCents: 0 }, { method: "checkout-link", amountCents: total }];
-      return [...current, { method: "hsa-card", amountCents: 0 }];
-    });
-    setPreview(null);
-  }
-
   function updateSplitAmount(index: number, amountCents: number) {
     setLegs((current) => {
-      const next = current.map((leg, i) => (i === index ? { ...leg, amountCents } : leg));
+      const exactAmount = Math.min(Math.max(0, amountCents), total);
+      const next = current.map((leg, i) => (i === index ? { ...leg, amountCents: exactAmount } : leg));
       if (next.length === 2) {
         const otherIndex = index === 0 ? 1 : 0;
-        next[otherIndex] = { ...next[otherIndex], amountCents: Math.max(total - amountCents, 0) };
+        next[otherIndex] = { ...next[otherIndex], amountCents: total - exactAmount };
       }
       return next;
     });
     setPreview(null);
   }
 
-  function useOnePayment() {
-    setLegs(total ? [{ method: legs[0]?.method || "checkout-link", amountCents: total }] : []);
-    setPreview(null);
-  }
-
-  async function saveDraft() {
+  async function saveSplitPayment() {
     if (!client) {
       setNotice("Select a client to continue.");
-      return;
+      return false;
     }
-    if (legs.length && allocation !== total) {
+    if (legs.length !== 2 || allocation !== total) {
       setNotice("Payment amounts need to equal the cart total.");
-      return;
+      return false;
     }
     setBusy(true);
     setNotice("");
@@ -331,11 +325,19 @@ export default function PosPage() {
         : await createPosSale({ client, cart, paymentLegs: legs });
       setSale(result.sale);
       localStorage.setItem(draftStorageKey, result.sale.id);
-      setNotice("Checkout draft saved. No payment or message has been created.");
+      return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not save this checkout draft.");
+      setNotice(error instanceof Error ? error.message : "Could not save this split payment plan.");
+      return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function confirmSplitPayment() {
+    if (await saveSplitPayment()) {
+      setPaymentAction(null);
+      setNotice("Split payment plan saved. No payment or message has been created.");
     }
   }
 
@@ -407,6 +409,7 @@ export default function PosPage() {
 
   if (paymentAction) {
     const isCheckoutLink = paymentAction === "checkout-link";
+    const isSplitPayment = paymentAction === "split";
     const hasMobile = Boolean(client?.phone);
     return (
       <main className="pos-shell">
@@ -418,14 +421,25 @@ export default function PosPage() {
           </header>
           <div className="pos-payment-action-content">
             {notice && <div className="pos-notice pos-notice--action">{notice}</div>}
-            <p className="pos-label">{isCheckoutLink ? "Checkout link" : "Cash payment"}</p>
-            <h1>{isCheckoutLink ? "Confirm checkout link" : "Record cash received"}</h1>
-            <div className="pos-payment-review">
+            <p className="pos-label">{isSplitPayment ? "Split payment" : isCheckoutLink ? "Checkout link" : "Cash payment"}</p>
+            <h1>{isSplitPayment ? "Split the total" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}</h1>
+            {isSplitPayment ? <>
+              <p className="pos-payment-action-intro">Choose two methods. When one amount changes, the other automatically carries the remaining balance.</p>
+              <div className="pos-split-plan">
+                {legs.slice(0, 2).map((leg, index) => <section className="pos-split-plan__leg" key={`split-${index}`}>
+                  <p>Payment {index + 1}</p>
+                  <label><span>Method</span><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{splitPaymentOptions.map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select></label>
+                  <label><span>Exact amount</span><input aria-label={`Amount for payment ${index + 1}`} type="number" inputMode="decimal" min="0.00" max={(total / 100).toFixed(2)} step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.round(Number(event.target.value) * 100) || 0)} /><b>USD</b></label>
+                </section>)}
+              </div>
+              <div className={`pos-split-total ${allocation === total ? "is-complete" : ""}`}><span>{allocation === total ? "Allocated exactly" : allocation < total ? "Remaining" : "Over by"}</span><strong>{money(Math.abs(total - allocation))}</strong></div>
+              {legs.some((leg) => leg.method === "checkout-link") && !hasMobile && <p className="pos-split-warning">Checkout link needs a mobile number on this client before activation.</p>}
+            </> : <div className="pos-payment-review">
               <div><span>Customer</span><strong>{client?.name || "Client"}</strong></div>
               {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><label><span>Cash received</span><input aria-label="Cash received" inputMode="decimal" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} /><b>USD</b></label><div><span>Amount due</span><strong>{money(total)}</strong></div><p>For a partial cash payment, use Split payment instead.</p></>}
-            </div>
-            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isCheckoutLink ? confirmCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile)}>{busy ? "Saving…" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
-            <p className="pos-payment-action-note">{isCheckoutLink ? "This preview cannot create a link or send a message yet." : "This draft does not mark cash as received or fulfill anything yet."}</p>
+            </div>}
+            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isSplitPayment ? confirmSplitPayment() : isCheckoutLink ? confirmCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile) || (isSplitPayment && (allocation !== total || (legs.some((leg) => leg.method === "checkout-link") && !hasMobile)))}>{busy ? "Saving…" : isSplitPayment ? "Confirm split plan" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
+            <p className="pos-payment-action-note">{isSplitPayment ? "This stores only the exact draft allocation; no payment is taken and no message is sent." : isCheckoutLink ? "This preview cannot create a link or send a message yet." : "This draft does not mark cash as received or fulfill anything yet."}</p>
           </div>
         </section>
       </main>
@@ -463,14 +477,12 @@ export default function PosPage() {
                   <b aria-hidden="true">→</b>
                 </button>
               ))}
-              <button type="button" className={`pos-payment-option pos-payment-option--split ${legs.length > 1 ? "is-active" : ""}`} onClick={addSplitAllocation} disabled={!total || legs.length >= 2}>
+              <button type="button" className={`pos-payment-option pos-payment-option--split ${legs.length > 1 ? "is-active" : ""}`} onClick={() => beginPaymentAction("split")} disabled={!total}>
                 <span className="pos-payment-option__mark" aria-hidden="true">÷</span>
                 <span><strong>Split payment</strong><small>Use two payment methods for this sale</small></span>
                 <b aria-hidden="true">→</b>
               </button>
             </div>
-
-            {legs.length > 1 && <div className="pos-legs pos-legs--payment"><p>Enter the amount for each payment.</p>{legs.map((leg, index) => <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{Object.entries(paymentLabels).map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))} /></div>)}{allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}<button type="button" className="pos-one-payment" onClick={useOnePayment}>Use one payment instead</button></div>}
 
             {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
           </div>
