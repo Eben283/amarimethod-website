@@ -83,6 +83,8 @@ export default function PosPage() {
   const [customDollars, setCustomDollars] = useState("");
   const [checkoutStep, setCheckoutStep] = useState(false);
   const [paymentStep, setPaymentStep] = useState(false);
+  const [paymentAction, setPaymentAction] = useState<"checkout-link" | "cash" | null>(null);
+  const [cashDollars, setCashDollars] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [preview, setPreview] = useState<PosTextPreview | null>(null);
@@ -237,7 +239,7 @@ export default function PosPage() {
     const paymentLegs = total ? [{ method, amountCents: total }] : [];
     setLegs(paymentLegs);
     setPreview(null);
-    if (!client || !cart.length) return;
+    if (!client || !cart.length) return false;
 
     setBusy(true);
     setNotice("");
@@ -248,10 +250,41 @@ export default function PosPage() {
       setSale(result.sale);
       localStorage.setItem(draftStorageKey, result.sale.id);
       setNotice(`${paymentLabels[method]} selected. No payment or message has been created.`);
+      return true;
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save this payment choice.");
+      return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  function beginPaymentAction(method: "checkout-link" | "cash") {
+    setNotice("");
+    if (method === "cash") setCashDollars((total / 100).toFixed(2));
+    setPaymentAction(method);
+  }
+
+  async function confirmCheckoutLink() {
+    if (!client?.phone) {
+      setNotice("Add a mobile number before preparing a checkout link.");
+      return;
+    }
+    if (await choosePrimaryPayment("checkout-link")) {
+      setPaymentAction(null);
+      setNotice("Checkout-link confirmation saved. Sending remains disabled.");
+    }
+  }
+
+  async function confirmCashReceived() {
+    const amountCents = Math.round(Number(cashDollars) * 100);
+    if (!Number.isSafeInteger(amountCents) || amountCents !== total) {
+      setNotice(`Cash needs to equal ${money(total)}. Use split payment for a partial cash amount.`);
+      return;
+    }
+    if (await choosePrimaryPayment("cash")) {
+      setPaymentAction(null);
+      setNotice("Cash receipt confirmation saved. Cash is not marked received until activation.");
     }
   }
 
@@ -372,6 +405,33 @@ export default function PosPage() {
     );
   }
 
+  if (paymentAction) {
+    const isCheckoutLink = paymentAction === "checkout-link";
+    const hasMobile = Boolean(client?.phone);
+    return (
+      <main className="pos-shell">
+        <section className="pos-payment-action-screen">
+          <header className="pos-payment-screen__top">
+            <button type="button" className="pos-back" onClick={() => { setNotice(""); setPaymentAction(null); }}>← Back</button>
+            <strong>Total {money(total)}</strong>
+            <span>{client?.name || "Client"}</span>
+          </header>
+          <div className="pos-payment-action-content">
+            {notice && <div className="pos-notice pos-notice--action">{notice}</div>}
+            <p className="pos-label">{isCheckoutLink ? "Checkout link" : "Cash payment"}</p>
+            <h1>{isCheckoutLink ? "Confirm checkout link" : "Record cash received"}</h1>
+            <div className="pos-payment-review">
+              <div><span>Customer</span><strong>{client?.name || "Client"}</strong></div>
+              {isCheckoutLink ? <><div><span>Send to</span><strong>{client?.phone || "Mobile number needed"}</strong></div><div><span>Link expires</span><strong>24 hours after sending</strong></div><div className="pos-payment-review__message"><span>Message preview</span><strong>Amari Method: complete your payment of {money(total)} securely from this link.</strong></div></> : <><label><span>Cash received</span><input aria-label="Cash received" inputMode="decimal" value={cashDollars} onChange={(event) => setCashDollars(event.target.value)} /><b>USD</b></label><div><span>Amount due</span><strong>{money(total)}</strong></div><p>For a partial cash payment, use Split payment instead.</p></>}
+            </div>
+            <button type="button" className="pos-checkout-bar pos-payment-action-button" onClick={() => void (isCheckoutLink ? confirmCheckoutLink() : confirmCashReceived())} disabled={busy || (isCheckoutLink && !hasMobile)}>{busy ? "Saving…" : isCheckoutLink ? "Confirm checkout link" : "Record cash received"}<span>{money(total)} →</span></button>
+            <p className="pos-payment-action-note">{isCheckoutLink ? "This preview cannot create a link or send a message yet." : "This draft does not mark cash as received or fulfill anything yet."}</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   if (paymentStep) {
     const chooseMethod = (method: PosPaymentMethod) => { void choosePrimaryPayment(method); };
 
@@ -397,7 +457,7 @@ export default function PosPage() {
                 ["checkout-link", "Checkout link", "Send a secure payment link to their phone", "↗"],
                 ["cash", "Cash", "Record the exact amount received", "□"],
               ] as const).map(([method, title, detail, mark]) => (
-                <button key={method} type="button" className={`pos-payment-option ${legs.length === 1 && legs[0].method === method ? "is-active" : ""}`} onClick={() => chooseMethod(method)} disabled={busy}>
+                <button key={method} type="button" className={`pos-payment-option ${legs.length === 1 && legs[0].method === method ? "is-active" : ""}`} onClick={() => method === "checkout-link" || method === "cash" ? beginPaymentAction(method) : chooseMethod(method)} disabled={busy}>
                   <span className="pos-payment-option__mark" aria-hidden="true">{mark}</span>
                   <span><strong>{title}</strong><small>{detail}</small></span>
                   <b aria-hidden="true">→</b>
