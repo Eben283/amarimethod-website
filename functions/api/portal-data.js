@@ -190,6 +190,13 @@ export async function onRequestGet(context) {
     // when manualLock=true OR confidence="low". See session-ledger.js
     // → display block.
     const seriesType = ledger.display.seriesType;
+    // The 12-Week Amari Practice has its own portal experience. Its explicit
+    // contact designation is authoritative for that presentation choice: a
+    // client can be intentionally moved into the new practice before (or if)
+    // their historical purchase ledger reflects the product. Keep the ledger
+    // as the source for every other series type and for session math.
+    const contactSeriesType = getCustomField(contact, "series_type", fieldDefs);
+    const portalSeriesType = contactSeriesType === "12-week" ? "12-week" : seriesType;
 
     // Two distinct counters per UX decision 2026-05-29:
     //   sessionsRemaining — prepaid package balance ("when do I need to act?")
@@ -300,7 +307,7 @@ export async function onRequestGet(context) {
           lastName: capitalize(contact.lastName) || "",
           email: contact.email || tokenPayload.email,
           phone: contact.phone || undefined,
-          seriesType,
+          seriesType: portalSeriesType,
           sessionsCompleted,
           sessionsRemaining,
           // ── New ledger-derived fields (2026-05-29 portal redesign) ──
