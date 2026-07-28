@@ -55,6 +55,18 @@ function toYMD(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+function slotDisplayLimit(date: string, today: Date): number {
+  const [year, month, day] = date.split('-').map(Number);
+  const target = new Date(year, month - 1, day);
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const daysAhead = Math.max(0, Math.floor((target.getTime() - startOfToday.getTime()) / 86_400_000));
+
+  // Keep near-term choices focused, then reveal one additional option about
+  // every nine days across the normal eight-week booking window. That reaches
+  // twelve only at the far end rather than crowding the near-term view.
+  return Math.min(12, 6 + Math.floor(daysAhead / 9));
+}
+
 export default function BookingModal({ onClose, rescheduleFor }: BookingModalProps) {
   const [sessionType, setSessionType] = useState<SessionType>('in-person');
   const [step, setStep] = useState<ModalStep>('select');
@@ -130,9 +142,9 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
   const slotsForDate = selectedDate
     ? slots.filter((s) => s.date === selectedDate).sort((a, b) => a.hour * 60 + a.minute - (b.hour * 60 + b.minute))
     : [];
-  // A long unstructured time list is hard to scan. Show the first twelve
-  // chronological openings consistently for every follow-up calendar/day.
-  const visibleSlotsForDate = slotsForDate.slice(0, 12);
+  // A long unstructured time list is hard to scan. Keep near-term choices
+  // focused, then offer more flexibility farther out on every calendar.
+  const visibleSlotsForDate = slotsForDate.slice(0, selectedDate ? slotDisplayLimit(selectedDate, today) : 6);
 
   const firstOfMonth = new Date(calYear, calMonth, 1);
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
