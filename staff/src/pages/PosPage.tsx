@@ -31,9 +31,9 @@ const CATALOG = [
 
 const paymentLabels: Record<PosPaymentMethod, string> = {
   "checkout-link": "Checkout link",
-  "hsa-card": "HSA / FSA card",
+  "hsa-card": "Card — HSA / FSA",
   "saved-card": "Saved card",
-  "manual-card": "Manual card entry",
+  "manual-card": "Card payment",
   cash: "Cash",
   other: "Other payment",
 };
@@ -233,6 +233,28 @@ export default function PosPage() {
     setPreview(null);
   }
 
+  async function choosePrimaryPayment(method: PosPaymentMethod) {
+    const paymentLegs = total ? [{ method, amountCents: total }] : [];
+    setLegs(paymentLegs);
+    setPreview(null);
+    if (!client || !cart.length) return;
+
+    setBusy(true);
+    setNotice("");
+    try {
+      const result = sale
+        ? await savePosSale({ id: sale.id, version: sale.version, client, cart, paymentLegs })
+        : await createPosSale({ client, cart, paymentLegs });
+      setSale(result.sale);
+      localStorage.setItem(draftStorageKey, result.sale.id);
+      setNotice(`${paymentLabels[method]} selected. No payment or message has been created.`);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save this payment choice.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function addSplitAllocation() {
     setLegs((current) => {
       if (!total || current.length >= 2) return current;
@@ -351,8 +373,7 @@ export default function PosPage() {
   }
 
   if (paymentStep) {
-    const selectedMethod = legs.length === 1 ? legs[0].method : null;
-    const chooseMethod = (method: PosPaymentMethod) => setPrimaryAllocation(method);
+    const chooseMethod = (method: PosPaymentMethod) => { void choosePrimaryPayment(method); };
 
     return (
       <main className="pos-shell">
@@ -372,13 +393,11 @@ export default function PosPage() {
 
             <div className="pos-payment-options">
               {([
-                ["saved-card", "Saved card", "Use a card already stored securely with Stripe", "◒"],
-                ["manual-card", "Manual card entry", "Enter a card through Stripe’s secure card form", "▦"],
+                ["manual-card", "Card payment", "Enter any card, including HSA / FSA", "▦"],
                 ["checkout-link", "Checkout link", "Send a secure payment link to their phone", "↗"],
-                ["hsa-card", "HSA / FSA card", "Use the exact eligible amount", "＋"],
                 ["cash", "Cash", "Record the exact amount received", "□"],
               ] as const).map(([method, title, detail, mark]) => (
-                <button key={method} type="button" className={`pos-payment-option ${selectedMethod === method ? "is-active" : ""}`} onClick={() => chooseMethod(method)}>
+                <button key={method} type="button" className={`pos-payment-option ${legs.length === 1 && legs[0].method === method ? "is-active" : ""}`} onClick={() => chooseMethod(method)} disabled={busy}>
                   <span className="pos-payment-option__mark" aria-hidden="true">{mark}</span>
                   <span><strong>{title}</strong><small>{detail}</small></span>
                   <b aria-hidden="true">→</b>
@@ -391,16 +410,9 @@ export default function PosPage() {
               </button>
             </div>
 
-            {selectedMethod && <div className="pos-payment-selected"><span>Selected</span><strong>{paymentLabels[selectedMethod]}</strong><b>{money(total)}</b></div>}
             {legs.length > 1 && <div className="pos-legs pos-legs--payment"><p>Enter the amount for each payment.</p>{legs.map((leg, index) => <div key={`${leg.method}-${index}`} style={{ gridTemplateColumns: "minmax(0, 1fr) 116px" }}><select aria-label={`Payment method ${index + 1}`} value={leg.method} onChange={(event) => setLegs((current) => current.map((value, i) => i === index ? { ...value, method: event.target.value as PosPaymentMethod } : value))}>{Object.entries(paymentLabels).map(([method, label]) => <option key={method} value={method}>{label}</option>)}</select><input aria-label={`Amount for payment ${index + 1}`} type="number" min="0.00" step="0.01" value={(leg.amountCents / 100).toFixed(2)} onChange={(event) => updateSplitAmount(index, Math.max(0, Math.round(Number(event.target.value) * 100) || 0))} /></div>)}{allocation !== total && <p className="is-warning">{money(Math.abs(total - allocation))} {allocation < total ? "remaining" : "over"}</p>}<button type="button" className="pos-one-payment" onClick={useOnePayment}>Use one payment instead</button></div>}
 
             {preview && <section className="pos-text-preview"><p className="pos-label">Preview only · no message sent</p><h3>To {preview.recipient} · {money(preview.amountCents)}</h3><blockquote>{preview.message}</blockquote></section>}
-
-            <div className="pos-payment-screen__actions">
-              <button type="button" className="pos-checkout-bar" onClick={() => void saveDraft()} disabled={busy || !legs.length || allocation !== total}>{busy ? "Saving…" : "Save payment plan"}<span>{money(total)} →</span></button>
-              {sale && legs.some((leg) => leg.method === "checkout-link") && <button type="button" className="pos-preview-link" onClick={() => void prepareText()} disabled={busy}>Preview checkout text</button>}
-              <p>No payment will be taken and no message will be sent.</p>
-            </div>
           </div>
         </section>
       </main>
