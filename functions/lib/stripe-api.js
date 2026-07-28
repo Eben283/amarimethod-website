@@ -29,7 +29,11 @@ export async function stripeRequest(secretKey, method, path, params) {
   const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
-    const message = data?.error?.message || `Stripe ${method} ${path} failed (${res.status})`;
+    let message = data?.error?.message || `Stripe ${method} ${path} failed (${res.status})`;
+    // Stripe echoes key fragments in this error — never surface them to staff UI.
+    if (/invalid api key/i.test(message)) {
+      message = "Stripe API key is invalid. Update STRIPE_SECRET_KEY in Cloudflare Pages.";
+    }
     const err = new Error(message);
     err.status = res.status;
     err.stripe = data.error || null;
