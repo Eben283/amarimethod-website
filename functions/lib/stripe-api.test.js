@@ -1,5 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { verifyStripeWebhookSignature } from "./stripe-api.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { stripeRequest, verifyStripeWebhookSignature } from "./stripe-api.js";
+
+describe("stripeRequest", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("sanitizes invalid API key errors so key fragments are not returned", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: false,
+        status: 401,
+        json: async () => ({
+          error: { message: 'Invalid API Key provided: "Taket************************"' },
+        }),
+      })),
+    );
+    await expect(stripeRequest("bad-key", "GET", "/customers")).rejects.toThrow(
+      /Update STRIPE_SECRET_KEY/i,
+    );
+    await expect(stripeRequest("bad-key", "GET", "/customers")).rejects.not.toThrow(/Taket/);
+  });
+});
 
 describe("verifyStripeWebhookSignature", () => {
   it("accepts a valid HMAC signature", async () => {

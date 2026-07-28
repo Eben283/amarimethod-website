@@ -15,7 +15,10 @@
   --pos-tile: #222226;
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr) minmax(300px, 380px);
+  width: 100%;
+  max-width: 100%;
   min-height: 100dvh;
+  overflow: hidden;
   background: var(--pos-bg);
   color: var(--pos-text);
   font-family: "DM Sans", system-ui, sans-serif;
@@ -62,7 +65,9 @@
 .pos-main {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   flex-direction: column;
+  overflow-x: hidden;
   padding: 18px 22px 28px;
   background: var(--pos-panel);
 }
@@ -163,7 +168,9 @@
   display: grid;
   gap: 12px;
   align-content: start;
+  min-width: 0;
   min-height: 0;
+  max-width: 100%;
 }
 
 .pos-panel__bar {
@@ -476,16 +483,58 @@
   margin-top: 18px;
 }
 
-.pos-checkout-link-row {
+.pos-await-legs {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 18px;
+}
+
+.pos-await-leg {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--pos-line);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--pos-elevated);
+}
+
+.pos-await-leg.is-paid {
+  opacity: 0.72;
+}
+
+.pos-await-leg__meta {
   display: grid;
   grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+
+.pos-await-leg__meta strong {
+  font-size: 16px;
+}
+
+.pos-await-leg__meta span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pos-await-leg__meta small {
+  grid-column: 1 / -1;
+  color: var(--pos-muted);
+  font-size: 13px;
+}
+
+.pos-checkout-link-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   align-items: center;
 }
 
 .pos-checkout-link-row .pos-secondary-btn,
 .pos-checkout-link-row .pos-ghost-btn {
-  width: auto;
+  width: 100%;
+  text-align: center;
 }
 
 .pos-pay-grid {
@@ -629,7 +678,9 @@
 .pos-cart {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 100dvh;
+  overflow: hidden;
   border-left: 1px solid var(--pos-line);
   background: #101012;
   padding: 18px 16px 16px;
@@ -840,6 +891,8 @@
   background: #0b1f33;
   color: #c7e2ff;
   font-size: 13px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (max-width: 980px) {

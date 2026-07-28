@@ -152,7 +152,9 @@ export default function PosPage() {
 
   const total = useMemo(() => calculateTotal(cart), [cart]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
-  const suggestions = useMemo(() => cashSuggestions(total), [total]);
+  const unpaidCashLeg = sale?.paymentLegs?.find((leg) => leg.method === "cash" && leg.status !== "paid");
+  const cashTargetCents = unpaidCashLeg?.amountCents ?? total;
+  const suggestions = useMemo(() => cashSuggestions(cashTargetCents), [cashTargetCents]);
   const inCheckout = panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete";
 
   useEffect(() => {
@@ -464,7 +466,7 @@ export default function PosPage() {
       const first = result.checkouts[0];
       if (first?.url) {
         window.open(first.url, "_blank", "noopener,noreferrer");
-        setNotice("Stripe Checkout opened. Copy the link if the client pays on another device.");
+        setNotice("Stripe Checkout opened. Pay there, then tap Check payment.");
       } else {
         setNotice("Checkout saved. No Stripe link was returned.");
       }
@@ -516,11 +518,17 @@ export default function PosPage() {
 
   async function confirmCash(amountCents = Math.round(Number(cashDollars) * 100)) {
     if (!client || !cart.length) return;
-    if (!Number.isSafeInteger(amountCents) || amountCents < total) {
-      setNotice(`Cash received needs to cover ${money(total)}. Use Split for a partial amount.`);
+    const requiredCents = unpaidCashLeg?.amountCents ?? total;
+    if (!Number.isSafeInteger(amountCents) || amountCents < requiredCents) {
+      setNotice(`Cash received needs to cover ${money(requiredCents)}.`);
       return;
     }
-    const paymentLegs = total ? [{ method: "cash" as const, amountCents: total }] : [];
+    const paymentLegs =
+      sale?.paymentLegs?.length
+        ? toDraftLegs(sale)
+        : total
+          ? [{ method: "cash" as const, amountCents: total }]
+          : [];
     setBusy(true);
     setNotice("");
     try {
@@ -530,6 +538,7 @@ export default function PosPage() {
         client,
         cart,
         paymentLegs,
+        paymentLegId: unpaidCashLeg?.id,
         cashReceivedCents: amountCents,
       });
       setCashReceivedCents(amountCents);
@@ -540,6 +549,12 @@ export default function PosPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function openCashForLeg(legAmountCents: number) {
+    setSelectedPayment("cash");
+    setCashDollars((legAmountCents / 100).toFixed(2));
+    setPanel("cash");
   }
 
   function updateSplitAmount(index: number, amountCents: number) {
@@ -595,11 +610,11 @@ export default function PosPage() {
         setCashReceivedCents(cashLeg.amountCents);
         applySale(result.sale);
       } else if (cashLeg && stripeLegs.length) {
-        setNotice("Card Checkout opened. After it pays, use Cash to record the cash leg on a follow-up — or keep both legs as card for now.");
+        setNotice("Card portion opened in Stripe. When that pays, record the cash portion here.");
         setPanel("checkout");
       } else {
         setPanel("checkout");
-        setNotice("Stripe Checkout opened for each card leg.");
+        setNotice("Stripe Checkout opened. Pay there, then tap Check payment.");
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not start split checkout.");
@@ -665,6 +680,10 @@ export default function PosPage() {
         : sale?.status === "awaiting_payment"
           ? "Awaiting payment"
           : "Ready";
+
+  const awaitingPayment = Boolean(
+    sale && (sale.status === "awaiting_payment" || sale.status === "partially_paid"),
+  );
 
   const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
 
@@ -979,62 +998,110 @@ export default function PosPage() {
             <div className="pos-panel__bar">
               <button type="button" onClick={() => setPanel(null)}>Cancel</button>
               <strong>Total {money(total)}</strong>
-              <button type="button" onClick={() => void refreshSale()} disabled={busy || !sale}>Refresh</button>
+              {awaitingPayment ? (
+                <button type="button" onClick={() => void refreshSale()} disabled={busy || !sale}>Refresh</button>
+              ) : (
+                <span />
+              )}
             </div>
             {notice && <div className="pos-notice">{notice}</div>}
-            <p className="pos-checkout-prompt">Select payment option</p>
-            <div className="pos-pay-grid">
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
-                onClick={() => void chooseCard()}
-                disabled={busy}
-              >
-                Card
-                <small>Stripe Checkout</small>
-              </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "cash" ? "is-active" : ""}`}
-                onClick={openCash}
-                disabled={busy}
-              >
-                Cash
-              </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "checkout-link" ? "is-active" : ""}`}
-                onClick={() => void chooseCheckoutLink()}
-                disabled={busy}
-              >
-                Checkout link
-                <small>Open or copy URL</small>
-              </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "split" ? "is-active" : ""}`}
-                onClick={openSplit}
-                disabled={busy || !total}
-              >
-                Split payment
-              </button>
-            </div>
-            {checkouts.length > 0 && (
-              <section className="pos-checkout-links">
-                <p className="pos-section-label">Open Checkout</p>
-                {checkouts.map((item) => (
-                  <div className="pos-checkout-link-row" key={item.legId}>
-                    <button type="button" className="pos-secondary-btn" onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}>
-                      Open Stripe
-                    </button>
-                    <button type="button" className="pos-ghost-btn" onClick={() => copyCheckout(item.url)}>
-                      Copy link
-                    </button>
-                  </div>
-                ))}
-              </section>
+
+            {awaitingPayment ? (
+              <>
+                <h1 className="pos-panel-title">Waiting for payment</h1>
+                <p className="pos-muted">
+                  Finish each portion below. Card opens Stripe; cash is recorded here after you receive it.
+                </p>
+                <section className="pos-await-legs">
+                  {(sale?.paymentLegs || []).map((leg) => {
+                    const checkout =
+                      checkouts.find((item) => item.legId === leg.id) ||
+                      (leg.stripeCheckoutUrl
+                        ? { legId: leg.id, url: leg.stripeCheckoutUrl, sessionId: leg.stripeCheckoutSessionId || "" }
+                        : null);
+                    const paid = leg.status === "paid";
+                    return (
+                      <article className={`pos-await-leg ${paid ? "is-paid" : ""}`} key={leg.id}>
+                        <div className="pos-await-leg__meta">
+                          <strong>{paymentLabels[leg.method] || leg.method}</strong>
+                          <span>{money(leg.amountCents)}</span>
+                          <small>{paid ? "Paid" : leg.method === "cash" ? "Collect cash" : "Pay in Stripe"}</small>
+                        </div>
+                        {!paid && checkout?.url && (
+                          <div className="pos-checkout-link-row">
+                            <button
+                              type="button"
+                              className="pos-secondary-btn"
+                              onClick={() => window.open(checkout.url, "_blank", "noopener,noreferrer")}
+                            >
+                              Open Stripe
+                            </button>
+                            <button type="button" className="pos-secondary-btn" onClick={() => copyCheckout(checkout.url)}>
+                              Copy link
+                            </button>
+                          </div>
+                        )}
+                        {!paid && leg.method === "cash" && (
+                          <button
+                            type="button"
+                            className="pos-primary-btn"
+                            onClick={() => openCashForLeg(leg.amountCents)}
+                            disabled={busy}
+                          >
+                            Record cash {money(leg.amountCents)}
+                          </button>
+                        )}
+                      </article>
+                    );
+                  })}
+                </section>
+                <button type="button" className="pos-primary-btn" onClick={() => void refreshSale()} disabled={busy || !sale}>
+                  {busy ? "Checking…" : "Check payment status"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="pos-checkout-prompt">How is this being paid?</p>
+                <div className="pos-pay-grid">
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
+                    onClick={() => void chooseCard()}
+                    disabled={busy}
+                  >
+                    Card
+                    <small>Opens Stripe Checkout</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "cash" ? "is-active" : ""}`}
+                    onClick={openCash}
+                    disabled={busy}
+                  >
+                    Cash
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "checkout-link" ? "is-active" : ""}`}
+                    onClick={() => void chooseCheckoutLink()}
+                    disabled={busy}
+                  >
+                    Checkout link
+                    <small>Open or copy URL</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "split" ? "is-active" : ""}`}
+                    onClick={openSplit}
+                    disabled={busy || !total}
+                  >
+                    Split payment
+                    <small>Card + cash, etc.</small>
+                  </button>
+                </div>
+                <p className="pos-muted">No tap to pay. Card opens hosted Stripe Checkout.</p>
+              </>
             )}
-            <p className="pos-muted">No tap to pay. Card opens hosted Stripe Checkout. Webhook marks the sale paid.</p>
           </div>
         )}
 
@@ -1047,6 +1114,11 @@ export default function PosPage() {
             </div>
             {notice && <div className="pos-notice">{notice}</div>}
             <h1 className="pos-panel-title">Accept cash</h1>
+            <p className="pos-muted">
+              {unpaidCashLeg
+                ? `Cash portion of this sale: ${money(unpaidCashLeg.amountCents)}.`
+                : `Full sale total ${money(total)}.`}
+            </p>
             <p className="pos-section-label">Amount received</p>
             <div className="pos-cash-suggestions">
               {suggestions.map((cents) => (
@@ -1236,8 +1308,12 @@ export default function PosPage() {
             <button type="button" className="pos-checkout-btn" onClick={finishSale}>
               Done
             </button>
+          ) : awaitingPayment ? (
+            <button type="button" className="pos-checkout-btn" onClick={() => void refreshSale()} disabled={busy || !sale}>
+              {busy ? "Checking…" : "Check payment"}
+            </button>
           ) : (
-            <div className="pos-checkout-btn pos-checkout-btn--static">{money(total)}</div>
+            <div className="pos-checkout-btn pos-checkout-btn--static">Choose payment</div>
           )}
         </div>
       </aside>
