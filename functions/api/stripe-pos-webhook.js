@@ -1,7 +1,8 @@
 // Cloudflare Pages Function: POST /api/stripe-pos-webhook
-// Stripe → Staff POS payment-leg settlement. Fulfillment to GHL is not done here.
+// Stripe → Staff POS payment-leg settlement → GHL fulfillment when fully paid.
 
 import { claimProcessedEvent } from "../lib/processed-events.js";
+import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
 import { markLegPaid, posSessionKey, readPosSale, writePosSale } from "../lib/staff-pos.js";
 import { verifyStripeWebhookSignature } from "../lib/stripe-api.js";
 
@@ -18,6 +19,13 @@ async function loadSaleForSession(kv, session) {
   return readPosSale(kv, saleId);
 }
 
+async function maybeFulfill(context, sale) {
+  if (!sale || sale.status !== "paid") return sale;
+  const { sale: fulfilled } = await fulfillPaidPosSale(context, sale, { actor: "Stripe" });
+  await writePosSale(context.env.PORTAL_KV, fulfilled);
+  return fulfilled;
+}
+
 async function settleSession(context, session, source) {
   if (!session || session.payment_status !== "paid") {
     return { skipped: true, reason: "not_paid" };
@@ -30,20 +38,37 @@ async function settleSession(context, session, source) {
 
   const leg = sale.paymentLegs?.find((item) => item.id === legId);
   if (!leg) return { skipped: true, reason: "leg_not_found" };
-  if (leg.status === "paid") return { ok: true, duplicate: true, saleId: sale.id, legId };
+  if (leg.status === "paid") {
+    const refreshed = await maybeFulfill(context, sale);
+    return {
+      ok: true,
+      duplicate: true,
+      saleId: refreshed.id,
+      legId,
+      status: refreshed.status,
+      fulfillmentStatus: refreshed.fulfillmentStatus || null,
+    };
+  }
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : session.payment_intent?.id || null;
 
-  const next = markLegPaid(sale, legId, {
+  let next = markLegPaid(sale, legId, {
     paymentIntentId,
     source,
     reviewer: "Stripe",
   });
   await writePosSale(context.env.PORTAL_KV, next);
-  return { ok: true, saleId: next.id, legId, status: next.status };
+  next = await maybeFulfill(context, next);
+  return {
+    ok: true,
+    saleId: next.id,
+    legId,
+    status: next.status,
+    fulfillmentStatus: next.fulfillmentStatus || null,
+  };
 }
 
 export async function onRequestPost(context) {

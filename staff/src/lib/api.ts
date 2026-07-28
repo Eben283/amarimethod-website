@@ -280,6 +280,14 @@ export interface PosSale {
   totalCents: number;
   paymentLegs: PosPaymentLeg[];
   fulfillmentStatus?: string | null;
+  fulfillmentError?: string | null;
+  fulfilledAt?: string | null;
+  fulfillment?: {
+    remaining?: number;
+    seriesType?: string | null;
+    notes?: string[];
+    packagePurchased?: boolean;
+  } | null;
   createdAt: string;
   updatedAt: string;
   audit: Array<{ at: string; actor: string; action: string; detail: string }>;
@@ -328,8 +336,12 @@ export async function recordPosCash(input: {
   paymentLegs: PosPaymentLegInput[];
   paymentLegId?: string;
   cashReceivedCents: number;
-}): Promise<{ sale: PosSale }> {
+}): Promise<{ sale: PosSale; fulfillment?: Record<string, unknown> }> {
   return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'record-cash', ...input }) });
+}
+
+export async function fulfillPosSale(id: string): Promise<{ sale: PosSale; fulfillment?: Record<string, unknown> }> {
+  return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'fulfill', id }) });
 }
 
 export async function previewPosCheckoutText(id: string): Promise<{ sale: PosSale; preview: PosTextPreview }> {

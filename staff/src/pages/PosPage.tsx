@@ -4,6 +4,7 @@ import {
   getOwedStatus,
   getPosSale,
   recordPosCash,
+  fulfillPosSale,
   searchContacts,
   startPosCheckout,
   type PosClient,
@@ -611,9 +612,22 @@ export default function PosPage() {
     if (!sale?.id) return;
     setBusy(true);
     try {
-      const result = await getPosSale(sale.id);
+      let result = await getPosSale(sale.id);
+      if (result.sale.status === "paid" && result.sale.fulfillmentStatus !== "fulfilled") {
+        try {
+          result = await fulfillPosSale(result.sale.id);
+        } catch {
+          // Keep the refreshed sale even if retry fails.
+        }
+      }
       applySale(result.sale);
-      setNotice(result.sale.status === "paid" ? "Payment received." : `Sale status: ${result.sale.status.replace(/_/g, " ")}`);
+      setNotice(
+        result.sale.fulfillmentStatus === "fulfilled"
+          ? "Payment received and GHL updated."
+          : result.sale.status === "paid"
+            ? "Payment received."
+            : `Sale status: ${result.sale.status.replace(/_/g, " ")}`,
+      );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not refresh sale.");
     } finally {
@@ -642,13 +656,15 @@ export default function PosPage() {
     setPanel(null);
   }
 
-  const statusLabel = sale?.status === "paid"
-    ? "Paid"
-    : sale?.status === "partially_paid"
-      ? "Partially paid"
-      : sale?.status === "awaiting_payment"
-        ? "Awaiting payment"
-        : "Ready";
+  const statusLabel = sale?.fulfillmentStatus === "fulfilled"
+    ? "Fulfilled"
+    : sale?.status === "paid"
+      ? "Paid"
+      : sale?.status === "partially_paid"
+        ? "Partially paid"
+        : sale?.status === "awaiting_payment"
+          ? "Awaiting payment"
+          : "Ready";
 
   const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
 
@@ -1115,12 +1131,16 @@ export default function PosPage() {
           <div className="pos-panel pos-panel--complete">
             <div className="pos-complete-mark" aria-hidden="true">✓</div>
             <h1 className="pos-panel-title">Order complete</h1>
-            <p className="pos-muted">
+            <p className="pos-complete-sub">
               {selectedPayment === "cash"
                 ? `Change due: ${money(Math.max(0, cashReceivedCents - total))}`
-                : sale?.status === "paid"
-                  ? "Payment received. GHL fulfillment still pending."
-                  : "Payment plan saved"}
+                : sale?.fulfillmentStatus === "fulfilled"
+                  ? "Payment received and GHL updated."
+                  : sale?.fulfillmentStatus === "failed"
+                    ? "Payment received, but GHL fulfillment failed — retry from sale refresh."
+                    : sale?.status === "paid"
+                      ? "Payment received. Fulfillment in progress."
+                      : "Payment recorded"}
             </p>
             {client && (
               <section className="pos-complete-customer">
@@ -1129,7 +1149,11 @@ export default function PosPage() {
                 <small>{[client.phone, client.email].filter(Boolean).join(" · ")}</small>
               </section>
             )}
-            <p className="pos-muted">Receipt email/SMS stays off until we turn it on. Session credits still need the GHL fulfillment bridge.</p>
+            <p className="pos-muted">
+              {sale?.fulfillmentStatus === "fulfilled"
+                ? "Session credits / portal access applied when the cart included catalog products."
+                : "Receipt email/SMS stays off until we turn it on."}
+            </p>
             <button type="button" className="pos-primary-btn" onClick={finishSale}>Done</button>
           </div>
         )}

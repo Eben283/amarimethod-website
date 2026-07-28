@@ -14,6 +14,7 @@ import {
   updatePosSale,
   writePosSale,
 } from "../lib/staff-pos.js";
+import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
 import { createPosCheckoutSession, findOrCreateStripeCustomer } from "../lib/stripe-api.js";
 
 function json(data, status, headers) {
@@ -177,7 +178,22 @@ export async function onRequestPost(context) {
         source: "cash",
       });
       await writePosSale(context.env.PORTAL_KV, next);
+      if (next.status === "paid") {
+        const { sale: fulfilled, result } = await fulfillPaidPosSale(context, next, { actor: reviewer });
+        await writePosSale(context.env.PORTAL_KV, fulfilled);
+        return json({ sale: fulfilled, fulfillment: result }, 200, headers);
+      }
       return json({ sale: next }, 200, headers);
+    }
+
+    if (action === "fulfill") {
+      const id = typeof body.id === "string" ? body.id : "";
+      const existing = await readPosSale(context.env.PORTAL_KV, id);
+      if (!existing) return json({ error: "Saved cart not found" }, 404, headers);
+      if (existing.status !== "paid") return json({ error: "Sale must be fully paid before fulfillment" }, 400, headers);
+      const { sale: fulfilled, result } = await fulfillPaidPosSale(context, existing, { actor: reviewer });
+      await writePosSale(context.env.PORTAL_KV, fulfilled);
+      return json({ sale: fulfilled, fulfillment: result }, 200, headers);
     }
 
     const id = typeof body.id === "string" ? body.id : "";
