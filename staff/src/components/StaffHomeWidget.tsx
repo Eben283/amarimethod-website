@@ -2,7 +2,7 @@ import { House } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const NO_WIDGET_ROUTES = new Set(['/', '/login', '/field-studies']);
+const NO_WIDGET_ROUTES = new Set(['/', '/login', '/field-studies', '/pos']);
 
 export default function StaffHomeWidget() {
   const { isAuthenticated } = useAuth();
