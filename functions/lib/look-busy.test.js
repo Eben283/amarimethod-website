@@ -4,9 +4,11 @@ import {
   daysFromAsOf,
   hash32,
   hidePercentForDate,
-  horizonHideBias,
   isPinnedSlot,
   isoWeekKey,
+  keepTargetForDay,
+  MAX_SLOTS_PER_DAY,
+  targetFullPercent,
 } from "../lib/look-busy.js";
 
 function slot(date, time) {
@@ -50,20 +52,29 @@ describe("look-busy helpers", () => {
     expect(daysFromAsOf("2026-08-21", "2026-07-28")).toBe(24);
   });
 
-  it("biases hide rate down as the horizon opens", () => {
-    expect(horizonHideBias(1)).toBeGreaterThan(horizonHideBias(10));
-    expect(horizonHideBias(10)).toBeGreaterThan(horizonHideBias(30));
+  it("uses the intended fullness curve", () => {
+    expect(targetFullPercent(0)).toBe(75);
+    expect(targetFullPercent(5)).toBe(75);
+    expect(targetFullPercent(6)).toBe(55);
+    expect(targetFullPercent(14)).toBe(30);
+    expect(targetFullPercent(30)).toBe(0);
   });
 
-  it("hides more near-term than far-out for the same base", () => {
+  it("maps 75% full on a 12-slot day to about 3 shown", () => {
+    expect(keepTargetForDay(12, 75)).toBe(3);
+    expect(keepTargetForDay(12, 0)).toBe(MAX_SLOTS_PER_DAY);
+    expect(keepTargetForDay(20, 0)).toBe(MAX_SLOTS_PER_DAY);
+  });
+
+  it("hides more near-term than far-out", () => {
     const asOf = "2026-07-28";
-    const near = hidePercentForDate("2026-07-30", 55, asOf);
-    const mid = hidePercentForDate("2026-08-08", 55, asOf);
-    const far = hidePercentForDate("2026-09-15", 55, asOf);
+    const near = hidePercentForDate("2026-07-30", undefined, asOf);
+    const mid = hidePercentForDate("2026-08-08", undefined, asOf);
+    const far = hidePercentForDate("2026-09-15", undefined, asOf);
+    expect(near).toBeGreaterThanOrEqual(70);
+    expect(near).toBeLessThanOrEqual(80);
     expect(near).toBeGreaterThan(mid);
     expect(mid).toBeGreaterThan(far);
-    expect(near).toBeLessThanOrEqual(85);
-    expect(far).toBeGreaterThanOrEqual(15);
   });
 
   it("recognizes pinned promised slots", () => {
@@ -86,29 +97,6 @@ describe("applyLookBusy", () => {
   it("keeps short days intact", () => {
     const slots = [slot("2026-08-04", "11:00"), slot("2026-08-04", "11:40")];
     expect(applyLookBusy(slots, { calendarId: cal, asOfDate: asOf })).toEqual(slots);
-  });
-
-  it("always keeps the earliest slot on a busy day", () => {
-    const times = [
-      "11:00",
-      "11:40",
-      "12:20",
-      "13:00",
-      "13:40",
-      "14:20",
-      "15:00",
-      "15:40",
-      "16:20",
-      "17:00",
-      "17:40",
-      "18:20",
-    ];
-    const day = times.map((t) => slot("2026-08-04", t));
-    const out = applyLookBusy(day, { calendarId: cal, hidePercent: 55, asOfDate: asOf });
-    expect(out[0].time).toBe("11:00");
-    expect(out.some((s) => s.time === "11:00")).toBe(true);
-    expect(out.length).toBeGreaterThanOrEqual(2);
-    expect(out.length).toBeLessThan(day.length);
   });
 
   it("keeps pinned Aug 4 11:00 and Aug 21 14:30 under heavy thinning", () => {
@@ -148,19 +136,40 @@ describe("applyLookBusy", () => {
     expect(out21.some((s) => s.time === "10:00")).toBe(true);
   });
 
-  it("shows fewer slots near-term than far-out for the same underlying day", () => {
-    const nearDate = "2026-07-30";
-    const farDate = "2026-09-10";
+  it("shows ~3 slots in the first 5 days on a 12-slot day", () => {
     const near = applyLookBusy(
-      DAY_TIMES.map((t) => slot(nearDate, t)),
+      DAY_TIMES.map((t) => slot("2026-07-30", t)),
+      { calendarId: cal, asOfDate: asOf },
+    );
+    expect(near.length).toBeGreaterThanOrEqual(2);
+    expect(near.length).toBeLessThanOrEqual(4);
+  });
+
+  it("caps far-out days at 12 even when underlying has more", () => {
+    const many = [];
+    for (let h = 8; h <= 18; h++) {
+      for (const m of [0, 20, 40]) {
+        many.push(slot("2026-09-15", `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`));
+      }
+    }
+    expect(many.length).toBeGreaterThan(12);
+    const far = applyLookBusy(many, { calendarId: cal, asOfDate: asOf });
+    expect(far.length).toBeLessThanOrEqual(MAX_SLOTS_PER_DAY);
+    expect(far.length).toBeGreaterThan(nearTermCount(asOf));
+  });
+
+  it("shows fewer slots near-term than far-out", () => {
+    const near = applyLookBusy(
+      DAY_TIMES.map((t) => slot("2026-07-30", t)),
       { calendarId: cal, asOfDate: asOf },
     );
     const far = applyLookBusy(
-      DAY_TIMES.map((t) => slot(farDate, t)),
+      DAY_TIMES.map((t) => slot("2026-09-10", t)),
       { calendarId: cal, asOfDate: asOf },
     );
     expect(near.length).toBeLessThan(far.length);
-    expect(far.length).toBeGreaterThanOrEqual(Math.ceil(DAY_TIMES.length * 0.5));
+    expect(far.length).toBeGreaterThanOrEqual(9);
+    expect(far.length).toBeLessThanOrEqual(12);
   });
 
   it("is stable within the same week and calendar", () => {
@@ -171,3 +180,10 @@ describe("applyLookBusy", () => {
     expect(a).toEqual(b);
   });
 });
+
+function nearTermCount(asOf) {
+  return applyLookBusy(
+    DAY_TIMES.map((t) => slot("2026-07-30", t)),
+    { calendarId: "EM6vB2mq7EAdGCbUb3j1", asOfDate: asOf },
+  ).length;
+}

@@ -1,20 +1,37 @@
 /**
  * Dynamic look-busy for booking slot lists.
  *
- * GHL's built-in lookBusy hides a fixed ~55% of free slots forever (same times
- * always disappear). That blocked a promised Assessment time and feels static.
- * We turn GHL lookBusy off and thin slots here instead:
+ * GHL's built-in lookBusy hides a fixed % forever. We thin here instead with a
+ * natural horizon matrix (scarce near-term → opener further out):
  *
- * - Scarcer near today, opener further out (natural booking matrix)
- * - Stable within a calendar week (same visitor, same day → same options)
- * - Rotates weekly so which gaps appear changes over time
- * - Day-to-day hide rate wobbles slightly so days don't look cloned
- * - Always keeps the first slot of each availability cluster (gap > 45 min)
- * - Explicitly keeps pinned promised times (Assessment Aug 4 11:00, Aug 21 14:30)
- * - Never empties a day that had real availability (keeps at least two when possible)
+ * | Days out | Looks ~full | Shown of a typical 12-slot day |
+ * |----------|-------------|-------------------------------|
+ * | 0–5      | 75%         | ~3                            |
+ * | 6–13     | 55%         | ~5–6                          |
+ * | 14–27    | 30%         | ~8–9                          |
+ * | 28+      | ~0%         | up to 12 (hard cap)           |
+ *
+ * Also: weekly-rotating which gaps appear, cluster/pinned must-keeps
+ * (Assessment Aug 4 11:00, Aug 21 14:30), never empties a real day.
  */
 
-const DEFAULT_BASE_PERCENT = 55;
+/** Hard ceiling on how many slots one day can show, even far out. */
+export const MAX_SLOTS_PER_DAY = 12;
+
+/** Minimum slots to leave on a day that had real availability. */
+const MIN_SLOTS_PER_DAY = 2;
+
+/**
+ * Target "looks full" % by days from today (Pacific).
+ * 75% full ⇒ hide 75% of free slots ⇒ show 25%.
+ */
+export function targetFullPercent(daysOut) {
+  if (daysOut < 0) return 75;
+  if (daysOut <= 5) return 75;
+  if (daysOut <= 13) return 55;
+  if (daysOut <= 27) return 30;
+  return 0; // many weeks out: show everything, capped at MAX_SLOTS_PER_DAY
+}
 
 /** Pacific calendar date YYYY-MM-DD for an instant (Amari is SF-local). */
 export function pacificDateKey(ms = Date.now()) {
@@ -35,16 +52,9 @@ export function daysFromAsOf(dateStr, asOfDate) {
   return Math.round((b - a) / 86400000);
 }
 
-/**
- * Horizon bias: hide more when close, less when far.
- * 0–3d ≈ +22, 4–7d ≈ +12, 8–14d ≈ 0, 15–28d ≈ −15, 29+ ≈ −28
- */
+/** @deprecated use targetFullPercent — kept as alias for older tests/imports */
 export function horizonHideBias(daysOut) {
-  if (daysOut <= 3) return 22;
-  if (daysOut <= 7) return 12;
-  if (daysOut <= 14) return 0;
-  if (daysOut <= 28) return -15;
-  return -28;
+  return targetFullPercent(daysOut) - 75;
 }
 
 /**
@@ -86,7 +96,6 @@ export function hash32(input) {
 export function isoWeekKey(dateStr) {
   const [y, m, d] = dateStr.split("-").map(Number);
   const utc = new Date(Date.UTC(y, m - 1, d));
-  // Thursday of this week determines the ISO week-year.
   const day = utc.getUTCDay() || 7;
   utc.setUTCDate(utc.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
@@ -95,28 +104,34 @@ export function isoWeekKey(dateStr) {
 }
 
 /**
- * Hide rate for one day: horizon bias + small date wobble, clamped.
- * Near dates look scarce; further-out dates open up.
+ * Hide/"looks full" % for one day: horizon target + tiny wobble (±3).
  *
  * @param {string} dateStr
- * @param {number} [basePercent]
+ * @param {number} [_ignoredBase] unused — horizon targets are absolute
  * @param {string} [asOfDate] YYYY-MM-DD (defaults to today Pacific)
  */
-export function hidePercentForDate(
-  dateStr,
-  basePercent = DEFAULT_BASE_PERCENT,
-  asOfDate = pacificDateKey(),
-) {
+export function hidePercentForDate(dateStr, _ignoredBase, asOfDate = pacificDateKey()) {
   const daysOut = daysFromAsOf(dateStr, asOfDate);
-  // Past / same-day booking windows: still scarce if somehow present.
-  const bias = daysOut < 0 ? 22 : horizonHideBias(daysOut);
-  const wobble = (hash32(`busy-rate|${dateStr}`) % 11) - 5; // -5 … +5
-  return Math.max(15, Math.min(85, basePercent + bias + wobble));
+  const target = targetFullPercent(daysOut);
+  const wobble = (hash32(`busy-rate|${dateStr}`) % 7) - 3; // -3 … +3
+  return Math.max(5, Math.min(85, target + wobble));
+}
+
+/**
+ * How many slots to show for a day given underlying count and hide %.
+ * Always ≥ MIN, always ≤ MAX_SLOTS_PER_DAY.
+ */
+export function keepTargetForDay(slotCount, hidePercent) {
+  if (slotCount <= MIN_SLOTS_PER_DAY) return slotCount;
+  const fromPercent = Math.ceil((slotCount * (100 - hidePercent)) / 100);
+  return Math.min(
+    MAX_SLOTS_PER_DAY,
+    Math.max(MIN_SLOTS_PER_DAY, fromPercent),
+  );
 }
 
 /**
  * Filter a flat slot array ({ date, datetime, ... }) with dynamic look-busy.
- * Slots without date/datetime are passed through unchanged.
  *
  * @param {Array<{date?: string, datetime?: string, time?: string}>} slots
  * @param {{ calendarId: string, hidePercent?: number, asOfDate?: string }} opts
@@ -125,12 +140,13 @@ export function applyLookBusy(slots, opts) {
   if (!Array.isArray(slots) || slots.length === 0) return slots;
   const calendarId = opts && opts.calendarId;
   if (!calendarId) return slots;
-  const basePercent =
-    typeof opts.hidePercent === "number" ? opts.hidePercent : DEFAULT_BASE_PERCENT;
   const asOfDate =
     opts && typeof opts.asOfDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(opts.asOfDate)
       ? opts.asOfDate
       : pacificDateKey();
+  // Optional override: force one hide % for tests (skips horizon).
+  const forcedHide =
+    opts && typeof opts.hidePercent === "number" ? opts.hidePercent : null;
 
   const byDate = new Map();
   const passthrough = [];
@@ -148,16 +164,14 @@ export function applyLookBusy(slots, opts) {
     const sorted = daySlots
       .slice()
       .sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
-    if (sorted.length <= 2) {
+    if (sorted.length <= MIN_SLOTS_PER_DAY) {
       kept.push(...sorted);
       continue;
     }
 
-    const hidePercent = hidePercentForDate(date, basePercent, asOfDate);
-    const keepTarget = Math.max(
-      2,
-      Math.ceil((sorted.length * (100 - hidePercent)) / 100),
-    );
+    const hidePercent =
+      forcedHide != null ? forcedHide : hidePercentForDate(date, undefined, asOfDate);
+    const keepTarget = keepTargetForDay(sorted.length, hidePercent);
 
     // Always keep the first slot of each availability cluster (gap > 45 min)
     // plus any explicitly pinned promised times.
@@ -186,8 +200,23 @@ export function applyLookBusy(slots, opts) {
       if (selected.length >= keepTarget) break;
       selected.push(slot);
     }
-    selected.sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
-    kept.push(...selected);
+    // Cap even must-keep-heavy days at MAX, but never drop pinned/cluster seeds
+    // below what's already selected if under the cap — must-keeps win if few.
+    if (selected.length > MAX_SLOTS_PER_DAY) {
+      const pinned = selected.filter(isPinnedSlot);
+      const seeds = selected.filter((s) => mustKeep.has(s.datetime) && !isPinnedSlot(s));
+      const others = selected.filter((s) => !mustKeep.has(s.datetime));
+      const capped = [...pinned, ...seeds].slice(0, MAX_SLOTS_PER_DAY);
+      for (const s of others) {
+        if (capped.length >= MAX_SLOTS_PER_DAY) break;
+        capped.push(s);
+      }
+      capped.sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
+      kept.push(...capped);
+    } else {
+      selected.sort((a, b) => String(a.datetime).localeCompare(String(b.datetime)));
+      kept.push(...selected);
+    }
   }
 
   kept.sort((a, b) => {
