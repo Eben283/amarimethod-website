@@ -1,5 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("CRM mirror GHL contact last_seen", () => {
+  it("refreshes external_records.last_seen_at when an existing contact is re-imported", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({
+          first: async () => (
+            sql.includes("SELECT contact_id FROM external_records")
+              ? { contact_id: "contact_1" }
+              : null
+          ),
+          run: async () => { writes.push({ sql, values }); },
+        }),
+      }),
+      batch: async (statements) => { writes.push(...statements.map((s) => ({ sql: "batch", values: s }))); },
+    };
+
+    await upsertGhlContact(db, {
+      externalId: "ghl_1",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      displayName: "Ada Lovelace",
+      email: "ada@example.com",
+      phone: null,
+      referralSourceLabel: null,
+      tags: [],
+      roles: [],
+      attributes: [],
+    }, "2026-07-28T19:00:00.000Z");
+
+    expect(writes.some((w) => typeof w.sql === "string" && w.sql.includes("UPDATE contacts"))).toBe(true);
+    const externalUpsert = writes.find((w) => typeof w.sql === "string" && w.sql.includes("INSERT INTO external_records") && w.sql.includes("ON CONFLICT"));
+    expect(externalUpsert).toBeTruthy();
+    expect(externalUpsert.values).toEqual(expect.arrayContaining(["ghl_1", "contact_1", "2026-07-28T19:00:00.000Z"]));
+  });
+});
 
 describe("CRM mirror sync health", () => {
   it("reports independent provider health and accepts an in-progress bounded GHL page", () => {
