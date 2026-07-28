@@ -207,7 +207,7 @@ export default function HomePage() {
         </header>
         <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
           <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>$5,500 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
+          <span className="staff-resources__copy"><strong>$5,400 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
       </section>
