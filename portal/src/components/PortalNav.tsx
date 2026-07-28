@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface PortalNavProps {
@@ -22,9 +22,20 @@ export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings
         <img src="/images/AmariLogo.avif" alt="Amari Method" className="cp-seal-logo" />
       </a>
       <nav className="cp-topnav">
-        <Link to="/" className="cp-topnav-link cp-current">{practiceMode ? 'Your Practice' : 'Dashboard'}</Link>
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => `cp-topnav-link${isActive ? ' cp-current' : ''}`}
+        >
+          {practiceMode ? 'Your Practice' : 'Dashboard'}
+        </NavLink>
         {hasLivingPractice && (
-          <Link to="/practice" className="cp-topnav-link">Living Practice</Link>
+          <NavLink
+            to="/practice"
+            className={({ isActive }) => `cp-topnav-link${isActive ? ' cp-current' : ''}`}
+          >
+            Living Practice
+          </NavLink>
         )}
       </nav>
       <div className="cp-account">
