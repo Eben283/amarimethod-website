@@ -66,10 +66,11 @@ export default function PosPage() {
   const [matches, setMatches] = useState<ContactListItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [client, setClient] = useState<PosClient | null>(null);
-  const [showNewClient, setShowNewClient] = useState(false);
-  const [newClientName, setNewClientName] = useState("");
-  const [newClientPhone, setNewClientPhone] = useState("");
-  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newCustomerStep, setNewCustomerStep] = useState(false);
+  const [newCustomerFirstName, setNewCustomerFirstName] = useState("");
+  const [newCustomerLastName, setNewCustomerLastName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [newCustomerEmail, setNewCustomerEmail] = useState("");
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
   const [sale, setSale] = useState<PosSale | null>(null);
@@ -130,16 +131,29 @@ export default function PosPage() {
     setClient({ id: contact.id, name: contact.name, phone: contact.phone || null, email: contact.email || null });
     setClientSearch("");
     setMatches([]);
-    setShowNewClient(false);
     setNotice("");
   }
 
-  function selectNewClient() {
-    const name = newClientName.trim();
-    const phone = newClientPhone.trim();
-    const email = newClientEmail.trim().toLowerCase();
+  function openNewCustomer() {
+    setNotice("");
+    setNewCustomerStep(true);
+  }
+
+  function cancelNewCustomer() {
+    setNewCustomerFirstName("");
+    setNewCustomerLastName("");
+    setNewCustomerPhone("");
+    setNewCustomerEmail("");
+    setNotice("");
+    setNewCustomerStep(false);
+  }
+
+  function saveNewCustomer() {
+    const name = [newCustomerFirstName.trim(), newCustomerLastName.trim()].filter(Boolean).join(" ");
+    const phone = newCustomerPhone.trim();
+    const email = newCustomerEmail.trim().toLowerCase();
     if (!name || (!phone && !email)) {
-      setNotice("Add their name and at least a phone number or email address.");
+      setNotice("Add a first name and at least a phone number or email address.");
       return;
     }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -147,13 +161,9 @@ export default function PosPage() {
       return;
     }
     setClient({ id: `draft_${crypto.randomUUID().replace(/-/g, "")}`, name, phone: phone || null, email: email || null });
-    setNewClientName("");
-    setNewClientPhone("");
-    setNewClientEmail("");
-    setShowNewClient(false);
     setClientSearch("");
     setMatches([]);
-    setNotice("");
+    cancelNewCustomer();
   }
 
   function addCatalog(productKey: string) {
@@ -315,6 +325,31 @@ export default function PosPage() {
     </div>
   );
 
+  if (newCustomerStep) {
+    return (
+      <main className="pos-shell">
+        <section className="pos-new-customer-screen">
+          <header className="pos-new-customer-screen__top">
+            <button type="button" onClick={cancelNewCustomer}>Cancel</button>
+            <strong>Add new customer</strong>
+            <button type="submit" form="new-customer-form">Save</button>
+          </header>
+          <form id="new-customer-form" className="pos-new-customer-form" onSubmit={(event) => { event.preventDefault(); saveNewCustomer(); }}>
+            {notice && <div className="pos-notice pos-notice--customer">{notice}</div>}
+            <p className="pos-label">Contact information</p>
+            <div className="pos-new-customer-form__fields">
+              <label>First name<input value={newCustomerFirstName} onChange={(event) => setNewCustomerFirstName(event.target.value)} autoComplete="given-name" autoFocus /><small>Required</small></label>
+              <label>Last name<input value={newCustomerLastName} onChange={(event) => setNewCustomerLastName(event.target.value)} autoComplete="family-name" /></label>
+              <label>Mobile number<input value={newCustomerPhone} onChange={(event) => setNewCustomerPhone(event.target.value)} inputMode="tel" autoComplete="tel" /></label>
+              <label>Email address<input value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} inputMode="email" autoComplete="email" /></label>
+            </div>
+            <p className="pos-new-customer-form__note">A phone number or email address is required.</p>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   if (paymentStep) {
     const selectedMethod = legs.length === 1 ? legs[0].method : null;
     const chooseMethod = (method: PosPaymentMethod) => setPrimaryAllocation(method);
@@ -382,11 +417,10 @@ export default function PosPage() {
             <section className="pos-client">
               <div className="pos-client__head">
                 <h2>{client ? client.name : "Add client"}</h2>
-                {client ? <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button> : <button type="button" onClick={() => { setShowNewClient((value) => !value); setNotice(""); }} className="pos-quiet">＋ New client</button>}
+                {client ? <button type="button" onClick={() => setClient(null)} className="pos-quiet">Change</button> : <button type="button" onClick={openNewCustomer} className="pos-quiet">＋ New client</button>}
               </div>
               {client && <p className="pos-client-detail">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details needed before activation"}</p>}
-              {!client && !showNewClient && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
-              {!client && showNewClient && <form className="pos-new-client" onSubmit={(event) => { event.preventDefault(); selectNewClient(); }}><p className="pos-label">New client</p><h3>Add their details</h3><div><input value={newClientName} onChange={(event) => setNewClientName(event.target.value)} placeholder="Full name" autoComplete="name" autoFocus /><input value={newClientPhone} onChange={(event) => setNewClientPhone(event.target.value)} placeholder="Mobile number" inputMode="tel" autoComplete="tel" /><input value={newClientEmail} onChange={(event) => setNewClientEmail(event.target.value)} placeholder="Email address" inputMode="email" autoComplete="email" /></div><footer><small>Phone or email is required.</small><button type="submit">Use this client →</button></footer></form>}
+              {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
               {searching && <p className="pos-searching">Searching clients…</p>}
               {matches.length > 0 && <div className="pos-client-results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>→</b></button>)}</div>}
             </section>
@@ -412,18 +446,19 @@ export default function PosPage() {
             <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
           </div>
           {quickAccess ? <div className="pos-quick-access">
+            <button type="button" className="pos-quick-tile pos-quick-tile--customer" onClick={openNewCustomer}><span>◌</span><strong>Add customer</strong><small>Name and contact details</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--practice" onClick={() => addCatalog("12-week-practice")}><span>12</span><strong>Amari Practice</strong><small>Add the 12-week practice</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--series" onClick={() => openCategory("Series")}><span>↗</span><strong>Series</strong><small>4- and 8-session options</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--upgrades" onClick={() => openCategory("Upgrades")}><span>＋</span><strong>Upgrades</strong><small>Continuation and add-ons</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--sessions" onClick={() => openCategory("Single sessions")}><span>○</span><strong>Single sessions</strong><small>Initials and follow-ups</small></button>
-            <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
           </div> : <>
             <div className="pos-catalog-tools"><button type="button" onClick={() => { setQuickAccess(true); setProductQuery(""); setShowCustomSale(false); }}>← Quick access</button><div className="pos-categories">{(["Practice", "Series", "Upgrades", "Single sessions"] as const).map((name) => <button className={category === name && !productQuery && !showCustomSale ? "is-active" : ""} type="button" onClick={() => openCategory(name)} key={name}>{name}</button>)}</div></div>
             {showCustomSale ? <div className="pos-custom-sale"><p className="pos-label">Custom sale</p><h2>Add a labelled amount</h2><input value={customLabel} onChange={(event) => setCustomLabel(event.target.value)} placeholder="What is this for?" /><input value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Reason or category" /><input inputMode="decimal" value={customDollars} onChange={(event) => setCustomDollars(event.target.value)} placeholder="$0.00" /><button type="button" onClick={addCustomSale}>Add to cart →</button></div> : <><div className="pos-products">{products.map(([key, label, amount, group]) => <button type="button" className={`pos-product ${key === "12-week-practice" ? "pos-product--featured" : ""}`} key={key} onClick={() => addCatalog(key)} aria-label={`Add ${label} for ${money(amount)}`}><div className="pos-product__mark">{key === "12-week-practice" ? "12" : group === "Upgrades" ? "↗" : "A"}</div><p>{group}</p><h3>{label}</h3>{key === "12-week-practice" && <span>24 sessions</span>}<footer><strong>{money(amount)}</strong></footer></button>)}</div>{!products.length && <p className="pos-no-products">No products match “{productQuery}”.</p>}</>}
           </>}
         </section>
         <aside className="pos-cart-pane">
-          <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2></div><strong>{money(total)}</strong></div>
+          <div className="pos-cart-head"><div><p className="pos-label">Cart</p><h2>{cart.length} {cart.length === 1 ? "product" : "products"}</h2>{client && <small className="pos-cart-client">Customer · {client.name}</small>}</div><strong>{money(total)}</strong></div>
           {cartLines}
           <div className="pos-cart-total"><span>Total</span><strong>{money(total)}</strong></div>
           <button type="button" className="pos-checkout-bar" onClick={beginCheckout} disabled={!cart.length}>Checkout products<span>{money(total)} →</span></button>
