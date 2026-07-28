@@ -80,6 +80,7 @@ export default function PosPage() {
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
   const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
   const [newCustomerStep, setNewCustomerStep] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [newCustomerFirstName, setNewCustomerFirstName] = useState("");
   const [newCustomerLastName, setNewCustomerLastName] = useState("");
   const [newCustomerPhone, setNewCustomerPhone] = useState("");
@@ -166,10 +167,15 @@ export default function PosPage() {
     setClientSearch("");
     setMatches([]);
     setCustomerDetailStep(false);
+    setNewCustomerStep(false);
+    setCreatingCustomer(false);
     setNotice("");
   }
 
-  function openNewCustomer() {
+  function openCustomerPicker() {
+    setClientSearch("");
+    setMatches([]);
+    setCreatingCustomer(false);
     setNotice("");
     setNewCustomerStep(true);
   }
@@ -187,8 +193,24 @@ export default function PosPage() {
     setNewCustomerLastName("");
     setNewCustomerPhone("");
     setNewCustomerEmail("");
+    setClientSearch("");
+    setMatches([]);
+    setCreatingCustomer(false);
     setNotice("");
     setNewCustomerStep(false);
+  }
+
+  function beginCustomerDetails() {
+    const [firstName = "", ...lastName] = clientSearch.trim().split(/\s+/);
+    setNewCustomerFirstName((current) => current || firstName);
+    setNewCustomerLastName((current) => current || lastName.join(" "));
+    setNotice("");
+    setCreatingCustomer(true);
+  }
+
+  function returnToCustomerSearch() {
+    setNotice("");
+    setCreatingCustomer(false);
   }
 
   function saveNewCustomer() {
@@ -455,22 +477,30 @@ export default function PosPage() {
       <main className="pos-shell">
         <section className="pos-new-customer-screen">
           <header className="pos-new-customer-screen__top">
-            <button type="button" onClick={cancelNewCustomer}>Cancel</button>
-            <strong>Add new customer</strong>
+            <button type="button" onClick={creatingCustomer ? returnToCustomerSearch : cancelNewCustomer}>{creatingCustomer ? "Back" : "Cancel"}</button>
+            <strong>Add customer</strong>
             <span aria-hidden="true" />
           </header>
-          <form id="new-customer-form" className="pos-new-customer-form" onSubmit={(event) => { event.preventDefault(); saveNewCustomer(); }}>
-            {notice && <div className="pos-notice pos-notice--customer">{notice}</div>}
-            <p className="pos-label">Contact information</p>
-            <div className="pos-new-customer-form__fields">
-              <label>First name<input value={newCustomerFirstName} onChange={(event) => setNewCustomerFirstName(event.target.value)} autoComplete="given-name" autoFocus /><small>Required</small></label>
-              <label>Last name<input value={newCustomerLastName} onChange={(event) => setNewCustomerLastName(event.target.value)} autoComplete="family-name" /></label>
-              <label>Mobile number<input value={newCustomerPhone} onChange={(event) => setNewCustomerPhone(event.target.value)} inputMode="tel" autoComplete="tel" /></label>
-              <label>Email address<input value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} inputMode="email" autoComplete="email" /></label>
-            </div>
-            <p className="pos-new-customer-form__note">A phone number or email address is required.</p>
-            <button type="submit" className="pos-new-customer-form__save">Save customer <span aria-hidden="true">→</span></button>
-          </form>
+          {creatingCustomer ? <form id="new-customer-form" className="pos-new-customer-form" onSubmit={(event) => { event.preventDefault(); saveNewCustomer(); }}>
+              {notice && <div className="pos-notice pos-notice--customer">{notice}</div>}
+              <p className="pos-label">Customer details</p>
+              <div className="pos-new-customer-form__fields">
+                <label>First name<input value={newCustomerFirstName} onChange={(event) => setNewCustomerFirstName(event.target.value)} autoComplete="given-name" autoFocus /><small>Required</small></label>
+                <label>Last name<input value={newCustomerLastName} onChange={(event) => setNewCustomerLastName(event.target.value)} autoComplete="family-name" /></label>
+                <label>Mobile number<input value={newCustomerPhone} onChange={(event) => setNewCustomerPhone(event.target.value)} inputMode="tel" autoComplete="tel" /></label>
+                <label>Email address<input value={newCustomerEmail} onChange={(event) => setNewCustomerEmail(event.target.value)} inputMode="email" autoComplete="email" /></label>
+              </div>
+              <p className="pos-new-customer-form__note">A phone number or email address is required.</p>
+              <button type="submit" className="pos-new-customer-form__save">Use this customer <span aria-hidden="true">→</span></button>
+            </form> : <div className="pos-customer-picker">
+              <p className="pos-label">Find a customer</p>
+              <label className="pos-picker-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search name, email, or phone" autoComplete="off" autoFocus /><button type="button" aria-label="Clear customer search" onClick={() => setClientSearch("")}>×</button></label>
+              {searching && <p className="pos-customer-picker__status">Searching customers…</p>}
+              {clientSearch.trim().length < 2 ? <p className="pos-customer-picker__status">Start typing to find an existing customer.</p>
+                : matches.length ? <div className="pos-customer-picker__results">{matches.map((contact) => <button type="button" key={contact.id} onClick={() => selectClient(contact)}><span className="pos-avatar">{contact.name.slice(0, 2).toUpperCase()}</span><span><strong>{contact.name}</strong><small>{contact.phone || contact.email || "No contact detail"}</small></span><b>Use customer →</b></button>)}</div>
+                  : !searching && <p className="pos-customer-picker__status">No existing customer found.</p>}
+              <button type="button" className="pos-customer-picker__create" onClick={beginCustomerDetails}>Can’t find them? Add their details <span>→</span></button>
+            </div>}
         </section>
       </main>
     );
@@ -573,7 +603,7 @@ export default function PosPage() {
             <section className="pos-client">
               <div className="pos-client__head">
                 <h2>{client ? client.name : "Add client"}</h2>
-                {client ? <button type="button" onClick={removeCustomer} className="pos-quiet">Change</button> : <button type="button" onClick={openNewCustomer} className="pos-quiet">＋ New client</button>}
+                {client ? <button type="button" onClick={removeCustomer} className="pos-quiet">Change</button> : <button type="button" onClick={openCustomerPicker} className="pos-quiet">Add customer</button>}
               </div>
               {client && <p className="pos-client-detail">{[client.phone, client.email].filter(Boolean).join(" · ") || "Contact details needed before activation"}</p>}
               {!client && <div className="pos-search"><span>⌕</span><input value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Search by name, email, or phone" autoComplete="off" /></div>}
@@ -602,7 +632,7 @@ export default function PosPage() {
             <label className="pos-product-search"><span>⌕</span><input value={productQuery} onChange={(event) => { setProductQuery(event.target.value); setQuickAccess(false); setShowCustomSale(false); }} placeholder="Search products" /><kbd>⌘ K</kbd></label>
           </div>
           {quickAccess ? <div className="pos-quick-access">
-            <button type="button" className="pos-quick-tile pos-quick-tile--customer" onClick={client ? () => setCustomerDetailStep(true) : openNewCustomer}><span>{client ? "✓" : "◌"}</span><strong>{client ? client.name : "Add customer"}</strong><small>{client ? "View purchases or change customer" : "Name and contact details"}</small></button>
+            <button type="button" className="pos-quick-tile pos-quick-tile--customer" onClick={client ? () => setCustomerDetailStep(true) : openCustomerPicker}><span>{client ? "✓" : "◌"}</span><strong>{client ? client.name : "Add customer"}</strong><small>{client ? "View purchases or change customer" : "Find an existing customer or add their details"}</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--custom" onClick={openCustomSale}><span>＋</span><strong>Custom sale</strong><small>Labelled custom amount</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--practice" onClick={() => addCatalog("12-week-practice")}><span>12</span><strong>Amari Practice</strong><small>Add the 12-week practice</small></button>
             <button type="button" className="pos-quick-tile pos-quick-tile--series" onClick={() => openCategory("Series")}><span>↗</span><strong>Series</strong><small>4- and 8-session options</small></button>
