@@ -117,6 +117,17 @@ export async function bookAppointment(payload: BookAppointmentPayload): Promise<
   });
 }
 
+export async function startPaidFollowupCheckout(payload: {
+  startTime: string;
+  timezone: string;
+  sessionType: 'in-person' | 'virtual';
+}): Promise<{ success: boolean; paymentUrl: string; calendarId: string; amountCents: number }> {
+  return fetchApi('/portal-pay-followup', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 // The reimbursement-packet endpoint returns an HTML document (not JSON), so it
 // can't go through fetchApi. Fetch the HTML text with the auth header; on a
 // non-OK response the body is JSON ({ error }), which we surface as an ApiError.

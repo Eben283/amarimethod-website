@@ -97,7 +97,11 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
       />
 
       {(showBooking || rescheduleFor) && (
-        <BookingModal rescheduleFor={rescheduleFor} onClose={closeBooking} />
+        <BookingModal
+          rescheduleFor={rescheduleFor}
+          payPerSession={!(client.sessionsRemaining > 0)}
+          onClose={closeBooking}
+        />
       )}
 
       {showSettings && (

@@ -70,6 +70,17 @@ export const PAID_BOOKING_MAP = {
     sessionTitle: "Amari Assessment — In Person",
     sessionTag: null,
   },
+  // Existing $190 Single Follow-up product + payment link (staff-send-paylink).
+  // One product covers in-person + virtual; calendar comes from requested_session_calendar.
+  "6998ace59dfde469ecb2aab6": {
+    isNativePaidBooking: true,
+    calendarId: "SKDVOL8wtUN6Ne0ppbC9",
+    duplicateCalendarIds: ["SKDVOL8wtUN6Ne0ppbC9", "oVn77FcecFY16iS2pHyP"],
+    allowRequestedCalendar: true,
+    durationMinutes: 50,
+    sessionTitle: "Amari Method Follow-up Session",
+    sessionTag: "booked-followup-paid",
+  },
 };
 
 const LEGACY_CREDITS = {
@@ -170,12 +181,27 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
     contact,
     "requested_session_calendar",
   );
-  if (requestedCalendar && requestedCalendar !== booking.calendarId) {
-    console.warn(
-      `[ghl-purchase-webhook] Requested calendar ${requestedCalendar} does not match ${booking.calendarId} for ${contact.id} — skipping stale slot`,
-    );
-    return null;
+  const allowedCalendars = booking.duplicateCalendarIds || [booking.calendarId];
+  let calendarId = booking.calendarId;
+  if (requestedCalendar) {
+    if (allowedCalendars.includes(requestedCalendar)) {
+      // Single follow-up (and similar) products serve multiple calendars; honor
+      // the calendar the client picked in the Amari booking UI.
+      calendarId = requestedCalendar;
+    } else if (requestedCalendar !== booking.calendarId) {
+      console.warn(
+        `[ghl-purchase-webhook] Requested calendar ${requestedCalendar} does not match ${booking.calendarId} for ${contact.id} — skipping stale slot`,
+      );
+      return null;
+    }
   }
+
+  const sessionTitle =
+    calendarId === "oVn77FcecFY16iS2pHyP"
+      ? "Amari Method Follow-up Session — Virtual"
+      : calendarId === "SKDVOL8wtUN6Ne0ppbC9"
+        ? "Amari Method Follow-up Session — In Person"
+        : booking.sessionTitle;
 
   // Guard against duplicate-booking: if the contact already has an upcoming
   // appointment for this booking type, skip the auto-book. A requested slot
@@ -191,7 +217,7 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
       const appointments = apptData.events || apptData.appointments || [];
       const now = Date.now();
       const existing = appointments.find((a) => {
-        if (!(booking.duplicateCalendarIds || [booking.calendarId]).includes(a.calendarId)) return false;
+        if (!allowedCalendars.includes(a.calendarId)) return false;
         // Naive-Pacific parse: a raw UTC parse made a later-today initial
         // read as PAST from ~8am PT, so the future-booking check missed it.
         const startMs = parsePacificWallClock(a.startTime || "");
@@ -220,13 +246,13 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
   const endTime = appointmentEndTime(slot, booking.durationMinutes);
 
   const payload = {
-    calendarId: booking.calendarId,
+    calendarId,
     locationId: LOCATION_ID,
     contactId: contact.id,
     startTime: slot,
     endTime,
     selectedTimezone: "America/Los_Angeles", // safe default; appointment's local TZ
-    title: booking.sessionTitle,
+    title: sessionTitle,
     appointmentStatus: "confirmed",
     firstName: contact.firstName || "",
     lastName: contact.lastName || "",
@@ -252,7 +278,7 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
 
   const data = await res.json();
   console.log(
-    `[ghl-purchase-webhook] Booked paid native appointment for ${contact.id} at ${slot} (apptId: ${data.id || data.appointment?.id})`,
+    `[ghl-purchase-webhook] Booked paid native appointment for ${contact.id} at ${slot} on ${calendarId} (apptId: ${data.id || data.appointment?.id})`,
   );
 
   return data;

@@ -1,13 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AmariMonthGrid, AmariTimeSlots, toYmd } from '@amari/calendar';
-import { getAvailableSlots, bookAppointment, cancelAppointment } from '../lib/api';
+import { getAvailableSlots, bookAppointment, cancelAppointment, startPaidFollowupCheckout } from '../lib/api';
 import type { Appointment } from '../types/portal';
 import '../../../css/amari-calendar.css';
 
-// Calendar IDs
-const CALENDARS = {
+// Package draw-down calendars (prepaid balance)
+const PACKAGE_CALENDARS = {
   followup_inperson: 'ZO1jlGfy01rsxVqicoSB',
   followup_virtual:  'bJFkhVP35Ecwh4tLnSmy',
+};
+
+// Existing pay-as-you-go $190 calendars (same as old GHL widgets)
+const PAID_CALENDARS = {
+  followup_inperson: 'SKDVOL8wtUN6Ne0ppbC9',
+  followup_virtual:  'oVn77FcecFY16iS2pHyP',
 };
 
 type SessionType = 'in-person' | 'virtual';
@@ -25,6 +31,12 @@ interface BookingModalProps {
   onClose: () => void;
   /** If set, this is a reschedule — old appointment is cancelled after the new one books. */
   rescheduleFor?: Appointment | null;
+  /**
+   * No prepaid sessions left: pick a slot on the Amari calendar, then pay the
+   * existing $190 Single Follow-up link. Webhook books after payment.
+   * Reschedule always uses prepaid book (never pay-again).
+   */
+  payPerSession?: boolean;
 }
 
 function getUserTimezone(): string {
@@ -56,9 +68,12 @@ function slotDisplayLimit(date: string, today: Date): number {
   return Math.min(12, 6 + Math.floor(daysAhead / 9));
 }
 
-export default function BookingModal({ onClose, rescheduleFor }: BookingModalProps) {
+export default function BookingModal({ onClose, rescheduleFor, payPerSession = false }: BookingModalProps) {
   const [sessionType, setSessionType] = useState<SessionType>('in-person');
   const [step, setStep] = useState<ModalStep>('select');
+  // Reschedule never re-charges; only a fresh book with no package balance pays.
+  const needsPayment = Boolean(payPerSession && !rescheduleFor);
+  const calendars = needsPayment ? PAID_CALENDARS : PACKAGE_CALENDARS;
 
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
@@ -87,8 +102,8 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
     setSelectedSlot(null);
 
     const calendarId = sessionType === 'in-person'
-      ? CALENDARS.followup_inperson
-      : CALENDARS.followup_virtual;
+      ? calendars.followup_inperson
+      : calendars.followup_virtual;
 
     const firstDay = new Date(calYear, calMonth, 1);
     const lastDay  = new Date(calYear, calMonth + 1, 0);
@@ -104,7 +119,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
     } finally {
       setSlotsLoading(false);
     }
-  }, [sessionType, calYear, calMonth, timezone]);
+  }, [sessionType, calYear, calMonth, timezone, calendars.followup_inperson, calendars.followup_virtual]);
 
   useEffect(() => {
     fetchSlots();
@@ -150,17 +165,27 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
     if (!selectedSlot) return;
     setStep('loading');
 
-    // Generate a key on the first attempt; reuse it on retries so duplicate
-    // submits return the already-created appointment instead of double-booking.
-    if (!idempotencyKeyRef.current) {
-      idempotencyKeyRef.current = crypto.randomUUID();
-    }
-
-    const calendarId = sessionType === 'in-person'
-      ? CALENDARS.followup_inperson
-      : CALENDARS.followup_virtual;
-
     try {
+      if (needsPayment) {
+        const result = await startPaidFollowupCheckout({
+          startTime: selectedSlot.datetime,
+          timezone,
+          sessionType,
+        });
+        window.location.assign(result.paymentUrl);
+        return;
+      }
+
+      // Generate a key on the first attempt; reuse it on retries so duplicate
+      // submits return the already-created appointment instead of double-booking.
+      if (!idempotencyKeyRef.current) {
+        idempotencyKeyRef.current = crypto.randomUUID();
+      }
+
+      const calendarId = sessionType === 'in-person'
+        ? calendars.followup_inperson
+        : calendars.followup_virtual;
+
       const result = await bookAppointment({
         calendarId,
         startTime: selectedSlot.datetime,
@@ -202,11 +227,15 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
       <div className="cp-modal cp-modal-sm" role="dialog" aria-label="Book a session">
         <header className="cp-modal-head">
           <div>
-            <span className="cp-mono">{rescheduleFor ? 'Reschedule' : 'Book a session'}</span>
+            <span className="cp-mono">
+              {rescheduleFor ? 'Reschedule' : needsPayment ? 'Book & pay' : 'Book a session'}
+            </span>
             <h2 className="cp-modal-title">
               {rescheduleFor
                 ? <>Pick a <em>new time.</em></>
-                : <>Find a time <em>that works.</em></>}
+                : needsPayment
+                  ? <>Pick a time, then <em>pay $190.</em></>
+                  : <>Find a time <em>that works.</em></>}
             </h2>
           </div>
           <button type="button" className="cp-modal-close" aria-label="Close" onClick={requestClose} disabled={step === 'loading'}>✕</button>
@@ -247,14 +276,14 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
           {step === 'loading' && (
             <div className="cp-bm-loading">
               <span className="cp-verify-spinner" aria-hidden="true"></span>
-              <p>Booking your session…</p>
+              <p>{needsPayment ? 'Opening secure payment…' : 'Booking your session…'}</p>
             </div>
           )}
 
           {/* Confirm */}
           {step === 'confirm' && selectedSlot && (
             <div className="cp-bm-confirm">
-              <span className="cp-mono cp-accent">Confirm</span>
+              <span className="cp-mono cp-accent">{needsPayment ? 'Confirm & pay' : 'Confirm'}</span>
               <h3 className="cp-bm-confirm-h">
                 {sessionType === 'in-person' ? 'Follow-up · In person' : 'Follow-up · Virtual'}
               </h3>
@@ -262,7 +291,13 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                 <div><span className="cp-mono">Date</span><b>{formatDateDisplay(selectedSlot.date)}</b></div>
                 <div><span className="cp-mono">Time</span><b><em>{formatTime(selectedSlot.hour, selectedSlot.minute)}</em></b></div>
                 <div><span className="cp-mono">Timezone</span><b>{timezone.replace(/_/g, ' ')}</b></div>
+                {needsPayment && (
+                  <div><span className="cp-mono">Total</span><b>$190</b></div>
+                )}
               </div>
+              {needsPayment && (
+                <p className="cp-bm-note">You’ll pay on the next screen. After payment, your session is booked automatically.</p>
+              )}
               {sessionType === 'virtual' && (
                 <p className="cp-bm-note">A Google Meet link will be emailed and added to your calendar invite.</p>
               )}
@@ -344,7 +379,7 @@ export default function BookingModal({ onClose, rescheduleFor }: BookingModalPro
                 className="cp-btn cp-btn-primary"
                 onClick={handleConfirm}
               >
-                <span>Confirm booking</span><span className="cp-arrow">→</span>
+                <span>{needsPayment ? 'Pay $190' : 'Confirm booking'}</span><span className="cp-arrow">→</span>
               </button>
             </>
           )}
