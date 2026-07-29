@@ -18,8 +18,10 @@
     "noFallthroughCasesInSwitch": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@amari/calendar": ["../shared/amari-calendar"],
+      "@amari/calendar/*": ["../shared/amari-calendar/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../shared/amari-calendar"]
 }

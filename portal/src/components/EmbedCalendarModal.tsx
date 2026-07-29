@@ -2,6 +2,12 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, MapPin, Video, Phone } from 'lucide-react';
 
+/**
+ * LEGACY — GHL iframe calendar wrapper.
+ * Do not use for new booking UI. Prefer portal BookingModal (native Amari calendar).
+ * See SYSTEM.md ("Canonical calendar" + EmbedCalendarModal row).
+ */
+
 const EMBED_SCRIPT_URL = 'https://link.amarimethod.com/js/form_embed.js';
 const SCRIPT_ID = 'ghl-form-embed-script';
 
