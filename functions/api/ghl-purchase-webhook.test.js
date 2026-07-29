@@ -52,6 +52,16 @@ describe('PRODUCT_MAP — purchase crediting', () => {
       calendarId: 'EM6vB2mq7EAdGCbUb3j1',
       durationMinutes: 40,
     });
+    // Existing $190 Single Follow-up — credits +1 AND native-books from requested slot.
+    expect(PRODUCT_MAP[PID.singleFollowupSession]).toMatchObject({
+      isNativePaidBooking: true,
+      sessionsToAdd: 1,
+      allowRequestedCalendar: true,
+    });
+    expect(PAID_BOOKING_MAP[PID.singleFollowupSession].duplicateCalendarIds).toEqual([
+      'SKDVOL8wtUN6Ne0ppbC9',
+      'oVn77FcecFY16iS2pHyP',
+    ]);
   });
 });
 

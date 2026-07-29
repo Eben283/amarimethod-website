@@ -122,6 +122,7 @@ export default function DashboardPage() {
       {(showBookingModal || rescheduleAppt) && (
         <BookingModal
           rescheduleFor={rescheduleAppt}
+          payPerSession={!(client.sessionsRemaining > 0)}
           onClose={() => {
             setShowBookingModal(false);
             setRescheduleAppt(null);
