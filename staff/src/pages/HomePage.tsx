@@ -15,7 +15,7 @@ type HomeTool = {
 
 const TOOLS: HomeTool[] = [
   { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
-  { label: 'Triage', detail: 'Breaks', Icon: AlertTriangle, to: '/triage', tone: 'coral' },
+  { label: 'Desk', detail: 'Morning list', Icon: AlertTriangle, to: '/triage', tone: 'coral' },
   { label: 'Follow-Up', detail: 'Outreach', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
   { label: 'Clients', detail: 'People', Icon: Users, to: '/clients', tone: 'lake' },
   { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
