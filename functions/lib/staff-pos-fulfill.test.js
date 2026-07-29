@@ -59,6 +59,24 @@ describe("staff POS fulfillment planning", () => {
     expect(plan.packagePurchased).toBe(false);
   });
 
+  it("records the $29 assessment as a note and never credits a session", () => {
+    const effects = buildPosFulfillmentEffects([
+      {
+        kind: "catalog",
+        ghlProductId: "6a66cf0103821ea09ea13f1b",
+        label: "Amari Assessment ($29)",
+        quantity: 1,
+        lineTotalCents: 2900,
+      },
+    ]);
+    expect(effects).toEqual([expect.objectContaining({ type: "note", label: "Amari Assessment" })]);
+    const plan = computeFulfillmentFields(effects, {
+      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "0" }],
+    });
+    expect(plan.remaining).toBe(0);
+    expect(plan.packagePurchased).toBe(false);
+  });
+
   it("adds for the additive 4→8 upgrade instead of wiping unused balance", () => {
     const effects = buildPosFulfillmentEffects([
       {

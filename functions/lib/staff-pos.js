@@ -8,6 +8,7 @@ const MAX_CUSTOM_LABEL = 120;
 const MAX_LEGS = 6;
 
 export const POS_CATALOG = Object.freeze({
+  "amari-assessment": { label: "Amari Assessment ($29)", amountCents: 2900, ghlProductId: "6a66cf0103821ea09ea13f1b" },
   "initial-in-person": { label: "Initial Session — In Person", amountCents: 22500, ghlProductId: "688a1cd770362828afbf08a2" },
   "initial-virtual": { label: "Initial Session — Virtual", amountCents: 22500, ghlProductId: "690b6b4d333ffa59d40c1823" },
   "4-session-series": { label: "4-Session Series", amountCents: 72000, ghlProductId: "69986faa724ecd2343ebaa6e" },

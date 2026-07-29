@@ -25,6 +25,7 @@ const CATALOG = [
   ["12-week-practice", "Amari Practice", 550000, "Practice", "12-week · 24 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
+  ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
   ["initial-in-person", "Initial — in person", 22500, "Single sessions", "Single session"],
   ["initial-virtual", "Initial — virtual", 22500, "Single sessions", "Single session"],
   ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],
@@ -840,7 +841,7 @@ export default function PosPage() {
                 onClick={() => openCategory("Single sessions")}
               >
                 <strong>Single sessions</strong>
-                <small>Initials & follow-ups</small>
+                <small>$29 intro, initials & follow-ups</small>
               </button>
             </div>
           </div>
