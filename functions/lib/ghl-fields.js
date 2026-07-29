@@ -40,4 +40,12 @@ export const FIELD_IDS = {
   portal_access: "O0xmwyRqeNK2EA1GGGye",
   // Living Practice video-program access checkbox.
   living_practice_access: "1EnVtI70jC5MTshZjWvw",
+
+  // Native paid-booking handoff fields (written by /api/book/create-checkout,
+  // read by ghl-purchase-webhook after payment). Contact GET returns these as
+  // `{ id, value }` only — no fieldKey — so consumers must resolve by id.
+  requested_session_slot: "U4CngR3hNQFlGHIh8TkM", // DATE in GHL — truncates time
+  requested_session_slot_iso: "Qj3v47KwlOkLwmCWkqAW", // TEXT — full ISO with offset
+  requested_session_calendar: "vDAcRQ998BBVeHcdAnkl",
+  requested_session_type: "4UZAVKtF7aGFPM51XUz4",
 };

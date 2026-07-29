@@ -164,4 +164,124 @@ describe('purchase-webhook — write orchestration', () => {
       expect.objectContaining({ expirationTtl: KV_TTL_SECONDS }),
     );
   });
+
+  // Holly Brinkman 2026-07-29: GHL contact GET returns `{id,value}` only (no
+  // fieldKey), and the DATE slot field truncates to YYYY-MM-DD. Webhook must
+  // still book from requested_session_slot_iso (TEXT) resolved by field id.
+  it('Assessment payment with id-only custom fields + slot_iso TEXT still auto-books', async () => {
+    const contact = {
+      id: 'holly-shape',
+      firstName: 'Holly',
+      lastName: 'Brinkman',
+      email: 'holly@example.com',
+      phone: '4155550199',
+      tags: ['native-booking-started', 'agreed-pma-v2026-06-16'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'U4CngR3hNQFlGHIh8TkM', value: '2026-08-04' }, // DATE truncation
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: '2026-08-04T11:00:00-07:00' }, // TEXT iso
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'holly-order' },
+      contact,
+    });
+    ctx.waitUntil = vi.fn();
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    const body = JSON.parse(await res.text());
+    expect(body.success).toBe(true);
+    expect(body.sessionsAdded).toBe(0);
+
+    const appointmentCreate = fetchCalls.find((call) =>
+      call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
+    );
+    expect(appointmentCreate).toBeTruthy();
+    expect(JSON.parse(appointmentCreate.opts.body)).toMatchObject({
+      calendarId: ASSESSMENT_CALENDAR_ID,
+      contactId: contact.id,
+      startTime: '2026-08-04T11:00:00-07:00',
+      endTime: '2026-08-04T11:40:00-07:00',
+    });
+  });
+
+  it('Assessment payment with date-only slot recovers time from checkout note', async () => {
+    const contact = {
+      id: 'note-fallback',
+      firstName: 'Note',
+      lastName: 'Fallback',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'U4CngR3hNQFlGHIh8TkM', value: '2026-08-04' },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'note-order' },
+      contact,
+    });
+    ctx.waitUntil = vi.fn();
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.includes('/contacts/') && url.includes('/notes')) {
+        return {
+          ok: true,
+          json: async () => ({
+            notes: [{
+              body: [
+                'Native booking flow — checkout initiated',
+                '',
+                'Requested slot: 2026-08-04T11:00:00-07:00 (America/Los_Angeles)',
+              ].join('\n'),
+            }],
+          }),
+        };
+      }
+      if (url.includes('/contacts/') && !/\/(appointments|notes|tags)/.test(url)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    const appointmentCreate = fetchCalls.find((call) =>
+      call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
+    );
+    expect(appointmentCreate).toBeTruthy();
+    expect(JSON.parse(appointmentCreate.opts.body).startTime).toBe('2026-08-04T11:00:00-07:00');
+  });
+
+  it('Assessment native checkout with no bookable slot posts URGENT reconcile note', async () => {
+    const contact = {
+      id: 'no-slot',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'U4CngR3hNQFlGHIh8TkM', value: '2026-08-04' }, // date only, no iso, no note
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'noslot-order' },
+      contact,
+    });
+    ctx.waitUntil = vi.fn();
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    const body = JSON.parse(await res.text());
+    expect(body.appointmentId).toBeNull();
+
+    const urgentNote = [...ghlFetch.mock.calls].find(([, url, opts]) =>
+      url.includes('/notes') && opts?.method === 'POST' &&
+      String(opts.body || '').includes('URGENT — RECONCILE NEEDED'),
+    );
+    expect(urgentNote).toBeTruthy();
+    const appointmentCreate = fetchCalls.find((call) =>
+      call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
+    );
+    expect(appointmentCreate).toBeFalsy();
+  });
 });
