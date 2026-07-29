@@ -13,8 +13,7 @@ import PracticeDashboardPage from './PracticeDashboardPage';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 
-function resolvePortalHome(client: { seriesType: string; isFoundersCircle?: boolean }) {
-  if (client.seriesType === '12-week' || client.seriesType === '6-week') return 'practice';
+function resolvePortalHome(client: { isFoundersCircle?: boolean }) {
   if (client.isFoundersCircle) return 'founders';
   return 'practice';
 }
@@ -75,8 +74,7 @@ export default function DashboardPage() {
   if (!data) return null;
 
   // Portal v2 (Practice home) is the default. Portal v1 (Founder's Circle —
-  // pack repurchase CTAs) is only for contacts tagged founders-circle, and
-  // never for 6/12-week Practice products.
+  // pack repurchase CTAs) is only for contacts tagged founders-circle.
   if (resolvePortalHome(data.client) === 'practice') {
     return <PracticeDashboardPage data={data} onRefetch={refetch} />;
   }

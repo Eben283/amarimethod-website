@@ -52,13 +52,11 @@ export function hasFoundersCircleTag(tags = []) {
 }
 
 /**
- * Portal home routing:
- * - Practice products (12-week / 6-week) always use the Practice (v2) home.
- * - Founder's Circle tag keeps legacy 4/8 clients on the pack-buy (v1) home.
- * - Everyone else gets Practice (v2) — no 4/8 repurchase CTAs.
+ * Portal home routing — Founder's Circle tag is the only v1 gate.
+ * Untagged clients (including 6/12-week Practice buyers) get Practice (v2).
+ * Legacy 4/8 pack-buy CTAs stay on v1 only.
  */
-export function resolvePortalHome({ seriesType, isFoundersCircle }) {
-  if (seriesType === "12-week" || seriesType === "6-week") return "practice";
+export function resolvePortalHome({ isFoundersCircle }) {
   if (isFoundersCircle) return "founders";
   return "practice";
 }

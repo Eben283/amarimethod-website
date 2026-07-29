@@ -59,8 +59,9 @@ export interface ClientData {
   portalAccess: boolean;
   isPartner: boolean;
   /**
-   * Legacy 4/8-session clients tagged `founders-circle` keep portal v1
-   * (Founder's Circle home with pack repurchase). Untagged clients get v2.
+   * Legacy clients tagged `founders-circle` keep portal v1 (Founder's Circle
+   * home with pack repurchase). Untagged clients get v2. This replaced the
+   * old seriesType === '12-week' gate.
    */
   isFoundersCircle?: boolean;
   referralCount?: number;
