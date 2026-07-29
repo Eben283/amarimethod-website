@@ -42,3 +42,30 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
     seriesType === "6-week" ||
     seriesType === "12-week";
 }
+
+/** GHL tag that grandfather's legacy 4/8-session clients onto portal v1 (Founder's Circle). */
+export const FOUNDERS_CIRCLE_TAG = "founders-circle";
+
+/** series_type values that belong to the Founder's Circle product line (not 6/12-week Practice). */
+export const FOUNDERS_CIRCLE_SERIES_TYPES = new Set(["4-session", "8-session"]);
+
+export function hasFoundersCircleTag(tags = []) {
+  return (tags || []).some((t) => String(t).toLowerCase() === FOUNDERS_CIRCLE_TAG);
+}
+
+export function shouldGrantFoundersCircle(seriesType) {
+  return FOUNDERS_CIRCLE_SERIES_TYPES.has(seriesType);
+}
+
+/**
+ * Portal home routing:
+ * - Practice products (12-week / 6-week) always use the Practice (v2) home.
+ * - Founder's Circle tag keeps legacy 4/8 clients on the pack-buy (v1) home.
+ * - Everyone else gets Practice (v2) — no 4/8 repurchase CTAs.
+ */
+export function resolvePortalHome({ seriesType, isFoundersCircle }) {
+  if (seriesType === "12-week" || seriesType === "6-week") return "practice";
+  if (isFoundersCircle) return "founders";
+  return "practice";
+}
+

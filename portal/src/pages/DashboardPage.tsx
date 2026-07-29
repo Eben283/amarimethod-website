@@ -13,6 +13,12 @@ import PracticeDashboardPage from './PracticeDashboardPage';
 import { useClientData } from '../hooks/useClientData';
 import { useAuth } from '../contexts/AuthContext';
 
+function resolvePortalHome(client: { seriesType: string; isFoundersCircle?: boolean }) {
+  if (client.seriesType === '12-week' || client.seriesType === '6-week') return 'practice';
+  if (client.isFoundersCircle) return 'founders';
+  return 'practice';
+}
+
 export default function DashboardPage() {
   const { email } = useAuth();
   const { data, isLoading, error, refetch } = useClientData();
@@ -68,11 +74,10 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  // The 12-Week Amari Practice is a distinct client experience. Founder’s
-  // Circle 4- and 8-session clients continue through this existing dashboard.
-  // The route is driven by the verified, purchase-derived series type returned
-  // by portal-data — never by a session count or Living Practice flag.
-  if (data.client.seriesType === '12-week') {
+  // Portal v2 (Practice home) is the default. Portal v1 (Founder's Circle —
+  // pack repurchase CTAs) is only for contacts tagged founders-circle, and
+  // never for 6/12-week Practice products.
+  if (resolvePortalHome(data.client) === 'practice') {
     return <PracticeDashboardPage data={data} onRefetch={refetch} />;
   }
 

@@ -40,6 +40,7 @@
 // 12. Store invoice id in KV for idempotency
 
 import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
+import { FOUNDERS_CIRCLE_TAG, shouldGrantFoundersCircle } from "../lib/portal-helpers.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { WEBHOOK_PURCHASE_MAP, GHL_PRODUCTS } from "../lib/ghl-products.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
@@ -383,11 +384,14 @@ export async function onRequestPost(context) {
     //     workflow tag writes survive. Safe to retry: add of a present tag /
     //     remove of an absent tag are no-ops.
     const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
+    const tagsToAdd = [];
+    if (!existingTags.includes(DOWNSTREAM_TRIGGER_TAG)) tagsToAdd.push(DOWNSTREAM_TRIGGER_TAG);
+    if (shouldGrantFoundersCircle(pkg.seriesType) && !existingTags.map((t) => String(t).toLowerCase()).includes(FOUNDERS_CIRCLE_TAG)) {
+      tagsToAdd.push(FOUNDERS_CIRCLE_TAG);
+    }
     try {
       await applyTagDelta(context, sanitizedContactId, {
-        add: existingTags.includes(DOWNSTREAM_TRIGGER_TAG)
-          ? []
-          : [DOWNSTREAM_TRIGGER_TAG],
+        add: tagsToAdd,
         remove: TAGS_TO_REMOVE.filter((t) => existingTags.includes(t)),
       });
     } catch (err) {

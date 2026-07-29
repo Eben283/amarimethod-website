@@ -5,7 +5,7 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { requireOwner } from "../lib/owned-access.js";
 import { deriveLedger, hydrateOrders, classifyOrder, classifyInvoice } from "../lib/session-ledger.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
-import { getCustomField, isChecked, computeHasLivingPractice } from "../lib/portal-helpers.js";
+import { getCustomField, isChecked, computeHasLivingPractice, hasFoundersCircleTag } from "../lib/portal-helpers.js";
 import { parsePacificWallClock, normalizeGhlTimestamp } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -245,6 +245,7 @@ export async function onRequestGet(context) {
     const hasLivingPractice = computeHasLivingPractice(lpRaw, contact.tags || [], seriesType);
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
     const isPartner = (contact.tags || []).includes("affiliate-partner");
+    const isFoundersCircle = hasFoundersCircleTag(contact.tags);
 
     const referralCountRaw = getCustomField(contact, "client_referral_count", fieldDefs);
     const referralCount = Math.max(0, parseInt(referralCountRaw ?? "0", 10) || 0);
@@ -325,6 +326,7 @@ export async function onRequestGet(context) {
           hasLivingPractice,
           portalAccess,
           isPartner,
+          isFoundersCircle,
           referralCount,
           rewardCode,
           reminderPreference,

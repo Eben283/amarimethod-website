@@ -1,6 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { getCustomField, isChecked, computeHasLivingPractice } from '../lib/portal-helpers.js';
+import { getCustomField, isChecked, computeHasLivingPractice, hasFoundersCircleTag, resolvePortalHome, FOUNDERS_CIRCLE_TAG } from '../lib/portal-helpers.js';
 import { countLifetimeCompleted } from './portal-data.js';
+
+describe('Founders Circle portal home routing', () => {
+  it('routes tagged 4/8 clients to founders home', () => {
+    expect(resolvePortalHome({ seriesType: '8-session', isFoundersCircle: true })).toBe('founders');
+    expect(resolvePortalHome({ seriesType: '4-session', isFoundersCircle: true })).toBe('founders');
+  });
+  it('routes untagged clients to practice home (v2)', () => {
+    expect(resolvePortalHome({ seriesType: '8-session', isFoundersCircle: false })).toBe('practice');
+    expect(resolvePortalHome({ seriesType: 'none', isFoundersCircle: false })).toBe('practice');
+  });
+  it('always routes practice products to practice home', () => {
+    expect(resolvePortalHome({ seriesType: '12-week', isFoundersCircle: true })).toBe('practice');
+    expect(resolvePortalHome({ seriesType: '6-week', isFoundersCircle: false })).toBe('practice');
+  });
+  it('detects the founders-circle tag case-insensitively', () => {
+    expect(hasFoundersCircleTag(['founders-circle'])).toBe(true);
+    expect(hasFoundersCircleTag(['Founders-Circle'])).toBe(true);
+    expect(hasFoundersCircleTag(['affiliate-partner'])).toBe(false);
+    expect(FOUNDERS_CIRCLE_TAG).toBe('founders-circle');
+  });
+});
 
 describe('countLifetimeCompleted', () => {
   const NOW = Date.parse('2026-06-06T12:00:00Z');

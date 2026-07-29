@@ -11,6 +11,7 @@ import {
   GHL_PRODUCTS,
   PURCHASE_CREDIT_MAP,
 } from "./ghl-products.js";
+import { FOUNDERS_CIRCLE_TAG, shouldGrantFoundersCircle } from "./portal-helpers.js";
 import { claimProcessedEvent } from "./processed-events.js";
 import { recordOpsError } from "./ops-alert.js";
 import { recordSeriesPurchase } from "./purchase-confirmations.js";
@@ -249,8 +250,10 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
     }
 
     if (plan.packagePurchased) {
+      const addTags = [PACKAGE_TRIGGER_TAG];
+      if (shouldGrantFoundersCircle(plan.seriesType)) addTags.push(FOUNDERS_CIRCLE_TAG);
       await applyTagDelta(context, contactId, {
-        add: [PACKAGE_TRIGGER_TAG],
+        add: addTags,
         remove: TAGS_TO_REMOVE,
       }).catch((err) => {
         console.warn(`[staff-pos-fulfill] tag delta failed: ${err instanceof Error ? err.message : err}`);

@@ -67,6 +67,8 @@ export interface ContactListItem {
   lastAppointment: string | null;
   sessionsRemaining: number;
   seriesType: string;
+  /** Legacy 4/8 package clients tagged founders-circle. */
+  isFoundersCircle?: boolean;
 }
 
 export interface ContactDetail {
@@ -81,6 +83,7 @@ export interface ContactDetail {
   sessionPrepaid: boolean;
   agreementSigned?: boolean;
   tags: string[];
+  isFoundersCircle?: boolean;
   dateAdded: string;
   lastAppointment: string | null;
   appointments: ContactAppointment[];
