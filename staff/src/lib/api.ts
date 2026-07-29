@@ -1040,4 +1040,27 @@ export async function bookFieldStudyFollowup(
   });
 }
 
+export type TriageItem = {
+  id: string;
+  kind: 'break' | 'money' | 'ops';
+  title: string;
+  blurb: string;
+  source: string;
+  at: string | null;
+  contactId: string | null;
+  product: string | null;
+  actions: Array<'open_client' | 'open_ghl' | 'open_balances' | 'open_pos' | 'dismiss'>;
+};
+
+export async function getExceptions(): Promise<{ items: TriageItem[]; count: number; generatedAt: string }> {
+  return fetchApi('/staff-exceptions');
+}
+
+export async function dismissException(key: string): Promise<{ ok: boolean; key: string }> {
+  return fetchApi('/staff-exceptions', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'dismiss', key }),
+  });
+}
+
 export { ApiError };

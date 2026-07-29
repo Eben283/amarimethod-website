@@ -12,6 +12,7 @@
 # to avoid Cloudflare's trailing-slash canonicalization.
 /staff/messages /staff/ 200
 /staff/today /staff/ 200
+/staff/triage /staff/ 200
 /staff/balances /staff/ 200
 /staff/clients /staff/ 200
 /staff/client/* /staff/ 200
