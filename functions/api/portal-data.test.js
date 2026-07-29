@@ -125,6 +125,9 @@ describe('computeHasLivingPractice', () => {
   it('returns true when seriesType is "12-week" regardless of lpRaw', () => {
     expect(computeHasLivingPractice('false', [], '12-week')).toBe(true);
   });
+  it('returns true when seriesType is "6-week" regardless of lpRaw', () => {
+    expect(computeHasLivingPractice('false', [], '6-week')).toBe(true);
+  });
 
   it('returns false when none of the three conditions apply', () => {
     expect(computeHasLivingPractice(null, [], 'none')).toBe(false);

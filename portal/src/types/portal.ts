@@ -8,7 +8,7 @@ export interface ClientData {
    * Derived from real purchases (orders + invoices), not the GHL custom field.
    * The custom field can lag or be wrong; the ledger reflects what was bought.
    */
-  seriesType: 'none' | '4-session' | '8-session' | '12-week' | 'Single';
+  seriesType: 'none' | '4-session' | '6-week' | '8-session' | '12-week' | 'Single';
   /**
    * Lifetime journey counter: total past appointments with status
    * showed/completed/confirmed. Grows monotonically across packages.

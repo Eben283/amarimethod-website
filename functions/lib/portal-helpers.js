@@ -39,5 +39,6 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
   return isChecked(lpRaw) ||
     (tags || []).includes("living-practice-access") ||
     seriesType === "8-session" ||
+    seriesType === "6-week" ||
     seriesType === "12-week";
 }

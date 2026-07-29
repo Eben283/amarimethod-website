@@ -22,6 +22,7 @@
 export const AMOUNT_TO_SESSIONS = Object.freeze({
   5400: { sessions: 24, label: 'The 12-Week Amari Practice' },
   5500: { sessions: 24, label: 'The 12-Week Amari Practice' }, // historical pre-$5,400 price
+  3000: { sessions: 12, label: 'The 6-Week Amari Practice' },
   1295: { sessions: 8, label: '8-Session Series' },
   720:  { sessions: 4, label: '4-Session Series' },
   1070: { sessions: 7, label: 'Upgrade Initial→8' },
@@ -44,6 +45,7 @@ export function classifyCharge(charge) {
   const desc = charge.description || '';
   const byDesc =
     /12.?week|24.?session/i.test(desc) ? { sessions: 24, label: 'The 12-Week Amari Practice' } :
+    /6.?week/i.test(desc) ? { sessions: 12, label: 'The 6-Week Amari Practice' } :
     /8-session/i.test(desc) ? { sessions: 8, label: '8-Session Series' } :
     /4-session/i.test(desc) ? { sessions: 4, label: '4-Session Series' } :
     /entrainment/i.test(desc) ? { sessions: 0, label: 'Entrainment' } :

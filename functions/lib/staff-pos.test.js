@@ -12,17 +12,17 @@ import {
 describe("staff POS model", () => {
   it("uses a server-owned catalog and rejects a browser-supplied price", () => {
     expect(POS_CATALOG["12-week-practice"].amountCents).toBe(540000);
-    expect(POS_CATALOG["12-week-practice-3000"]).toMatchObject({
+    expect(POS_CATALOG["6-week-practice"]).toMatchObject({
       amountCents: 300000,
-      ghlProductId: "6a66cde7ef7b07f122ad46fb",
+      ghlProductId: "6a683360017263178d05d1a3",
     });
-    expect(normalizeCart([{ productKey: "12-week-practice-3000", quantity: 1 }])).toEqual([
+    expect(normalizeCart([{ productKey: "6-week-practice", quantity: 1 }])).toEqual([
       expect.objectContaining({
         kind: "catalog",
-        productKey: "12-week-practice-3000",
+        productKey: "6-week-practice",
         unitAmountCents: 300000,
         lineTotalCents: 300000,
-        ghlProductId: "6a66cde7ef7b07f122ad46fb",
+        ghlProductId: "6a683360017263178d05d1a3",
       }),
     ]);
     expect(POS_CATALOG["amari-assessment"]).toMatchObject({

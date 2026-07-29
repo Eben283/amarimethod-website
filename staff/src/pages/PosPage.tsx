@@ -22,8 +22,8 @@ import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
 const CATALOG = [
-  ["12-week-practice", "Amari Practice — $5,400", 540000, "Practice", "12-week · 24 sessions"],
-  ["12-week-practice-3000", "Amari Practice — $3,000", 300000, "Practice", "12-week · 24 sessions"],
+  ["12-week-practice", "12-Week Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
+  ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
@@ -822,7 +822,7 @@ export default function PosPage() {
               </button>
               <button type="button" className="pos-tile pos-tile--practice" onClick={() => openCategory("Practice")}>
                 <strong>Amari Practice</strong>
-                <small>$5,400 or $3,000</small>
+                <small>12-week or 6-week</small>
               </button>
               <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
                 <strong>Series</strong>
@@ -1438,7 +1438,7 @@ export default function PosPage() {
               return (
                 <div className="pos-cart-line" key={`${lineKey(line)}-${index}`}>
                   <div className="pos-cart-line__mark" aria-hidden="true">
-                    {(line.productKey?.startsWith("12-week-practice") ? "12" : "A")}
+                    {(line.productKey === "12-week-practice" ? "12" : line.productKey === "6-week-practice" ? "6" : "A")}
                     <span>{qty}</span>
                   </div>
                   <div className="pos-cart-line__body">

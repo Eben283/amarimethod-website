@@ -66,6 +66,15 @@ describe('classifyInvoiceProduct', () => {
     });
   });
 
+  it('classifies the 6-Week Amari Practice', () => {
+    expect(classifyInvoiceProduct('6a683360017263178d05d1a3')).toMatchObject({
+      name: 'The 6-Week Amari Practice',
+      sessionsRemaining: 12,
+      seriesType: '6-week',
+      livingPractice: true,
+    });
+  });
+
   it('classifies Upgrade → 8', () => {
     expect(classifyInvoiceProduct(PID.eightUpgrade)).toMatchObject({
       sessionsRemaining: 7,
@@ -104,7 +113,7 @@ describe('INVOICE_PURCHASE_PRODUCTS map', () => {
   it('has exactly 6 entries (3 practices + 3 upgrades)', () => {
     // 4→8 upgrade ($575) added to ghl-products.js 2026-05-10; this assertion was
     // never bumped from 4 and sat red unnoticed (no CI gate — audit HIGH #7).
-    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(6);
+    expect(Object.keys(INVOICE_PURCHASE_PRODUCTS).length).toBe(7);
   });
 
   it('does NOT include single-session products, entrainment, or living practice', () => {
