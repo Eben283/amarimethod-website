@@ -139,13 +139,25 @@ export function isCreditableOrder(order) {
   return true;
 }
 
-// Field keys for the slot-request fields written by create-checkout.js
-// (Settings → Custom Fields → Session Tracking folder)
+// Field keys + IDs for the slot-request fields written by create-checkout.js
+// (Settings → Custom Fields → Session Tracking folder).
+// Contact GET returns `{ id, value }` only (no fieldKey) — always resolve by id.
 const REQUESTED_SLOT_FIELD_KEYS = [
+  "requested_session_slot_iso",
   "requested_session_slot",
   "requested_session_calendar",
   "requested_session_type",
 ];
+const REQUESTED_SLOT_FIELD_IDS = {
+  slotIso: GHL_FIELD_IDS.requested_session_slot_iso,
+  slot: GHL_FIELD_IDS.requested_session_slot,
+  calendar: GHL_FIELD_IDS.requested_session_calendar,
+  type: GHL_FIELD_IDS.requested_session_type,
+};
+
+const SLOT_ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const CHECKOUT_NOTE_SLOT_RE =
+  /Requested slot:\s*(\d{4}-\d{2}-\d{2}T[0-9:+-]+)/i;
 
 /**
  * Read a custom field value from a GHL contact object by FIELD KEY
@@ -162,24 +174,122 @@ function getCustomFieldValueByKey(contact, fieldKey) {
   return field ? (field.value ?? field.field_value ?? null) : null;
 }
 
+function getRequestedSessionField(contact, shortKey, fieldId) {
+  const byId = getCustomFieldValue(contact, fieldId);
+  if (byId != null && byId !== "") return byId;
+  return (
+    getCustomFieldValueByKey(contact, shortKey) ||
+    getCustomFieldValueByKey(contact, `contact.${shortKey}`)
+  );
+}
+
+function isBookableSlot(value) {
+  return typeof value === "string" && SLOT_ISO_RE.test(value);
+}
+
+/**
+ * Pull the full ISO slot from the most recent native-checkout audit note.
+ * create-checkout always writes "Requested slot: <ISO> (...)" even when the
+ * GHL DATE field truncates the stored custom-field value to YYYY-MM-DD.
+ */
+async function readSlotFromCheckoutNote(context, contactId) {
+  try {
+    const res = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/contacts/${contactId}/notes`,
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const notes = data.notes || [];
+    for (const note of notes) {
+      const body = note.body || "";
+      if (!/Native booking flow/i.test(body)) continue;
+      const match = body.match(CHECKOUT_NOTE_SLOT_RE);
+      if (match && isBookableSlot(match[1])) return match[1];
+    }
+  } catch (err) {
+    console.warn(
+      `[ghl-purchase-webhook] checkout-note slot lookup failed: ${err.message}`,
+    );
+  }
+  return null;
+}
+
+/**
+ * Resolve the exact picked start time for a native paid booking.
+ * Prefer the TEXT iso field; fall back to a full datetime in the DATE field,
+ * then to the checkout audit note. Date-only values are not bookable.
+ */
+async function resolveRequestedSlot(context, contact) {
+  const iso = getRequestedSessionField(
+    contact,
+    "requested_session_slot_iso",
+    REQUESTED_SLOT_FIELD_IDS.slotIso,
+  );
+  if (isBookableSlot(iso)) return String(iso).trim();
+
+  const slot = getRequestedSessionField(
+    contact,
+    "requested_session_slot",
+    REQUESTED_SLOT_FIELD_IDS.slot,
+  );
+  if (isBookableSlot(slot)) return String(slot).trim();
+
+  const fromNote = await readSlotFromCheckoutNote(context, contact.id);
+  if (fromNote) {
+    console.warn(
+      `[ghl-purchase-webhook] Using checkout-note slot for ${contact.id} (custom field missing/truncated)`,
+    );
+    return fromNote;
+  }
+
+  return null;
+}
+
+function contactLooksLikeNativeCheckout(contact) {
+  const type = getRequestedSessionField(
+    contact,
+    "requested_session_type",
+    REQUESTED_SLOT_FIELD_IDS.type,
+  );
+  const calendar = getRequestedSessionField(
+    contact,
+    "requested_session_calendar",
+    REQUESTED_SLOT_FIELD_IDS.calendar,
+  );
+  const tags = contact.tags || [];
+  return !!(
+    type ||
+    calendar ||
+    tags.includes("native-booking-started")
+  );
+}
+
 /**
  * Book the appointment that the user picked during native-flow checkout.
- * Reads requested_session_slot off the contact; if missing, this purchase
- * came from an old-style GHL funnel (which booked the appointment itself)
- * so we skip and return null without erroring.
+ * Reads the picked slot off the contact (by field id — GHL contact GET does
+ * not return fieldKey). If no bookable slot is present:
+ *   - legacy GHL calendar/funnel purchases → skip (they already booked)
+ *   - native checkout (tags/type/calendar present) → throw so callers alert
  */
 async function bookPaidBookingAppointment(context, contact, booking, token) {
-  const slot = getCustomFieldValueByKey(contact, "requested_session_slot");
+  const slot = await resolveRequestedSlot(context, contact);
   if (!slot) {
+    if (contactLooksLikeNativeCheckout(contact)) {
+      throw new Error(
+        "Native checkout payment received but no bookable requested_session_slot_iso/slot (time missing). Check checkout note for 'Requested slot'.",
+      );
+    }
     console.log(
       `[ghl-purchase-webhook] No requested_session_slot on contact ${contact.id} — assuming calendar checkout or legacy funnel purchase, skipping appointment creation`,
     );
     return null;
   }
 
-  const requestedCalendar = getCustomFieldValueByKey(
+  const requestedCalendar = getRequestedSessionField(
     contact,
     "requested_session_calendar",
+    REQUESTED_SLOT_FIELD_IDS.calendar,
   );
   const allowedCalendars = booking.duplicateCalendarIds || [booking.calendarId];
   let calendarId = booking.calendarId;

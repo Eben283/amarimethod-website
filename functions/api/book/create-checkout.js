@@ -177,8 +177,12 @@ export async function upsertContact(context, GHL_API_KEY, locationId, payload, b
   // doesn't have to wait for a payment webhook to fulfill it.
   const customFields = [];
   if (!booking.isFreeBooking) {
+    // requested_session_slot is a GHL DATE field and truncates to YYYY-MM-DD.
+    // Also write requested_session_slot_iso (TEXT) so the purchase webhook can
+    // book the exact picked time after payment (Holly Brinkman 2026-07-29).
     customFields.push(
       { key: "requested_session_slot", field_value: payload.startTime },
+      { key: "requested_session_slot_iso", field_value: payload.startTime },
       { key: "requested_session_calendar", field_value: booking.calendarId },
       { key: "requested_session_type", field_value: payload.sessionType },
     );

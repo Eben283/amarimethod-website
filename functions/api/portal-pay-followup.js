@@ -82,6 +82,7 @@ export async function onRequestPost(context) {
       body: JSON.stringify({
         customFields: [
           { key: "requested_session_slot", field_value: startTime },
+          { key: "requested_session_slot_iso", field_value: startTime },
           { key: "requested_session_calendar", field_value: calendarId },
           { key: "requested_session_type", field_value: sessionType },
         ],
