@@ -20,10 +20,9 @@
 //      URL: https://www.amarimethod.com/api/ghl-purchase-webhook
 //      Header: X-Webhook-Secret: <same value as GHL_WEBHOOK_SECRET>
 
-import { ghlFetch, ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
+import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
-import { FOUNDERS_CIRCLE_TAG, shouldGrantFoundersCircle } from "../lib/portal-helpers.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
@@ -734,14 +733,6 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} → ${newRemaining} (${pkg.name})`);
-
-    if (shouldGrantFoundersCircle(pkg.seriesType)) {
-      try {
-        await applyTagDelta(context, sanitizedContactId, { add: [FOUNDERS_CIRCLE_TAG] });
-      } catch (err) {
-        console.warn(`[ghl-purchase-webhook] founders-circle tag failed: ${err instanceof Error ? err.message : err}`);
-      }
-    }
 
     // Purchase event → nurture engine (Flow 3 exit fan-in matches the 4 series/upgrade
     // productIds; other products are ignored engine-side). Fire-and-forget, dormant until

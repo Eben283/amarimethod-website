@@ -43,18 +43,12 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
     seriesType === "12-week";
 }
 
-/** GHL tag that grandfather's legacy 4/8-session clients onto portal v1 (Founder's Circle). */
+/** GHL tag that grandfather's legacy 4/8-session clients onto portal v1 (Founder's Circle).
+ *  Applied manually (or via one-time backfill) — never auto-granted on new purchases. */
 export const FOUNDERS_CIRCLE_TAG = "founders-circle";
-
-/** series_type values that belong to the Founder's Circle product line (not 6/12-week Practice). */
-export const FOUNDERS_CIRCLE_SERIES_TYPES = new Set(["4-session", "8-session"]);
 
 export function hasFoundersCircleTag(tags = []) {
   return (tags || []).some((t) => String(t).toLowerCase() === FOUNDERS_CIRCLE_TAG);
-}
-
-export function shouldGrantFoundersCircle(seriesType) {
-  return FOUNDERS_CIRCLE_SERIES_TYPES.has(seriesType);
 }
 
 /**
