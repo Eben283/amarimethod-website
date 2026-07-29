@@ -1,6 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { getCustomField, isChecked, computeHasLivingPractice } from '../lib/portal-helpers.js';
+import { getCustomField, isChecked, computeHasLivingPractice, hasFoundersCircleTag, resolvePortalHome, FOUNDERS_CIRCLE_TAG } from '../lib/portal-helpers.js';
 import { countLifetimeCompleted } from './portal-data.js';
+
+describe('Founders Circle portal home routing', () => {
+  it('routes tagged clients to founders home (v1)', () => {
+    expect(resolvePortalHome({ isFoundersCircle: true })).toBe('founders');
+  });
+  it('routes untagged clients to practice home (v2), including former 4/8 series', () => {
+    expect(resolvePortalHome({ isFoundersCircle: false })).toBe('practice');
+  });
+  it('detects the founders-circle tag case-insensitively', () => {
+    expect(hasFoundersCircleTag(['founders-circle'])).toBe(true);
+    expect(hasFoundersCircleTag(['Founders-Circle'])).toBe(true);
+    expect(hasFoundersCircleTag(['affiliate-partner'])).toBe(false);
+    expect(FOUNDERS_CIRCLE_TAG).toBe('founders-circle');
+  });
+});
 
 describe('countLifetimeCompleted', () => {
   const NOW = Date.parse('2026-06-06T12:00:00Z');

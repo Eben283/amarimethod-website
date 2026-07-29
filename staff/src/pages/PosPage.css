@@ -487,6 +487,18 @@
   font-weight: 600;
 }
 
+.pos-founders-badge {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #3f2e1a;
+  color: #f5d0a9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .pos-checkout-links {
   display: grid;
   gap: 10px;

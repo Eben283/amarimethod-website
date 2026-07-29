@@ -76,6 +76,16 @@ export async function searchContacts(query: string): Promise<import('../types/st
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
 
+export async function setFoundersCircle(
+  contactId: string,
+  action: 'add' | 'remove',
+): Promise<{ success: boolean; isFoundersCircle: boolean }> {
+  return fetchApi('/staff-founders-circle', {
+    method: 'POST',
+    body: JSON.stringify({ contactId, action }),
+  });
+}
+
 export async function getContactDetail(
   id: string,
   debug = false,
@@ -245,6 +255,7 @@ export interface PosClient {
   name: string;
   phone: string | null;
   email: string | null;
+  isFoundersCircle?: boolean;
 }
 
 export interface PosDraftLineInput {

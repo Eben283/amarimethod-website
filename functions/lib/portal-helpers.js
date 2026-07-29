@@ -42,3 +42,22 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
     seriesType === "6-week" ||
     seriesType === "12-week";
 }
+
+/** GHL tag that grandfather's legacy 4/8-session clients onto portal v1 (Founder's Circle).
+ *  Applied manually (or via one-time backfill) — never auto-granted on new purchases. */
+export const FOUNDERS_CIRCLE_TAG = "founders-circle";
+
+export function hasFoundersCircleTag(tags = []) {
+  return (tags || []).some((t) => String(t).toLowerCase() === FOUNDERS_CIRCLE_TAG);
+}
+
+/**
+ * Portal home routing — Founder's Circle tag is the only v1 gate.
+ * Untagged clients (including 6/12-week Practice buyers) get Practice (v2).
+ * Legacy 4/8 pack-buy CTAs stay on v1 only.
+ */
+export function resolvePortalHome({ isFoundersCircle }) {
+  if (isFoundersCircle) return "founders";
+  return "practice";
+}
+

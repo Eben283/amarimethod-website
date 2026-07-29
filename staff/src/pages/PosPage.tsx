@@ -8,6 +8,7 @@ import {
   fulfillPosSale,
   chargePosSavedCard,
   searchContacts,
+  setFoundersCircle,
   startPosCheckout,
   type PosClient,
   type PosCheckoutOpen,
@@ -145,6 +146,7 @@ export default function PosPage() {
   const [productMatches, setProductMatches] = useState<typeof CATALOG[number][]>([]);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
   const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
+  const [foundersBusy, setFoundersBusy] = useState(false);
   const [detailClient, setDetailClient] = useState<PosClient | null>(null);
   const [customLabel, setCustomLabel] = useState("");
   const [customReason, setCustomReason] = useState("Custom sale");
@@ -403,6 +405,7 @@ export default function PosPage() {
       name: contact.name,
       phone: contact.phone || null,
       email: contact.email || null,
+      isFoundersCircle: !!contact.isFoundersCircle,
     };
     if (attach) {
       setClient(next);
@@ -423,6 +426,24 @@ export default function PosPage() {
     setDetailClient(null);
     setPanel(null);
     setNotice("");
+  }
+
+  async function toggleFoundersCircle() {
+    const target = detailClient || client;
+    if (!target || target.id.startsWith("draft_") || foundersBusy) return;
+    const next = !target.isFoundersCircle;
+    setFoundersBusy(true);
+    setNotice("");
+    try {
+      const result = await setFoundersCircle(target.id, next ? "add" : "remove");
+      const flagged = !!result.isFoundersCircle;
+      if (detailClient?.id === target.id) setDetailClient({ ...detailClient, isFoundersCircle: flagged });
+      if (client?.id === target.id) setClient({ ...client, isFoundersCircle: flagged });
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Could not update Founder's Circle tag");
+    } finally {
+      setFoundersBusy(false);
+    }
   }
 
   function saveNewCustomer() {
@@ -1002,7 +1023,7 @@ export default function PosPage() {
               Phone number
               <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} inputMode="tel" autoComplete="tel" />
             </label>
-            <p className="pos-muted">Phone or email is required. Customer is added to this cart on save.</p>
+            <p className="pos-muted">Phone or email is required. Customer is attached to this sale on save.</p>
           </div>
         )}
 
@@ -1017,6 +1038,9 @@ export default function PosPage() {
             <p className="pos-muted">
               {[ (detailClient || client)?.phone, (detailClient || client)?.email ].filter(Boolean).join(" · ") || "No contact detail"}
             </p>
+            {(detailClient || client)?.isFoundersCircle && (
+              <p className="pos-founders-badge" data-testid="founders-circle-badge">Founder's Circle</p>
+            )}
             {client && (detailClient || client)?.id === client.id && (
               <p className="pos-card-on-file">
                 {primarySavedCard
@@ -1032,8 +1056,22 @@ export default function PosPage() {
                           : "No proven card on file"}
               </p>
             )}
+            {!(detailClient || client)?.id.startsWith("draft_") && (
+              <button
+                type="button"
+                className="pos-secondary-btn"
+                onClick={() => void toggleFoundersCircle()}
+                disabled={foundersBusy}
+              >
+                {foundersBusy
+                  ? "Updating…"
+                  : (detailClient || client)?.isFoundersCircle
+                    ? "Remove Founder's Circle"
+                    : "Mark Founder's Circle"}
+              </button>
+            )}
             <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
-              Add to cart
+              Add customer
             </button>
             <p className="pos-section-label">Orders</p>
             {(detailClient || client)?.id.startsWith("draft_") ? (
@@ -1428,6 +1466,9 @@ export default function PosPage() {
             >
               {client.name}
             </button>
+            {client.isFoundersCircle && (
+              <p className="pos-founders-badge" data-testid="founders-circle-badge">Founder's Circle</p>
+            )}
             {!client.id.startsWith("draft_") && (
               <p className={`pos-customer-card ${primarySavedCard ? "is-ready" : ""}`}>
                 {savedCardsReason === "loading"

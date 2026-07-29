@@ -459,6 +459,7 @@ export async function onRequestGet(context) {
       sessionPrepaid,
       agreementSigned,
       tags: contact.tags || [],
+      isFoundersCircle: (contact.tags || []).some((t) => String(t).toLowerCase() === "founders-circle"),
       dateAdded: contact.dateAdded || "",
       lastAppointment: lastCompleted ? lastCompleted.startTime : null,
       appointments,
