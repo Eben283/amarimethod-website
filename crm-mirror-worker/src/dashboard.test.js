@@ -29,6 +29,8 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain("Exact email evidence, pending review");
     expect(html).toContain("history.replaceState");
     expect(html).toContain("It cannot send email or SMS");
+    expect(html).toContain('id="unlock"');
+    expect(html).toContain("Unlock dashboard");
   });
 
   it("renders only aggregate source health when the Worker has an authenticated session", () => {

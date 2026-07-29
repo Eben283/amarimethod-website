@@ -87,28 +87,52 @@ export async function upsertGhlContact(db, contact, now) {
     ).run();
   } else {
     contactId = id();
-    await db.batch([
-      db.prepare(
-        `INSERT INTO contacts
-         (id, first_name, last_name, display_name, email_normalized, phone_e164, referral_source_label, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(
-        contactId, contact.firstName, contact.lastName, contact.displayName, contact.email, contact.phone,
-        contact.referralSourceLabel, now, now,
-      ),
-      db.prepare(
-        `INSERT INTO external_records
-         (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
-         VALUES (?, 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
-      ).bind(id(), contact.externalId, contactId, contactId, now),
-    ]);
+    await db.prepare(
+      `INSERT INTO contacts
+       (id, first_name, last_name, display_name, email_normalized, phone_e164, referral_source_label, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      contactId, contact.firstName, contact.lastName, contact.displayName, contact.email, contact.phone,
+      contact.referralSourceLabel, now, now,
+    ).run();
   }
+  // Always refresh last_seen_at. Full-pass completeness counts external_records
+  // touched since the cycle started; skipping this on existing contacts made every
+  // GHL cycle report ~0 seen and stay stuck in "needs review".
+  await db.prepare(
+    `INSERT INTO external_records
+     (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+     VALUES (?, 'ghl', 'contact', ?, ?, 'contact', ?, ?)
+     ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
+       contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
+  ).bind(id(), contact.externalId, contactId, contactId, now).run();
   await replaceContactFacts(db, contactId, contact, now);
   return contactId;
 }
 
 export async function findContactIdByGhlId(db, externalId) {
   return contactIdForExternalRecord(db, "ghl", "contact", externalId);
+}
+
+// After a GHL full pass, drop external_records for contacts confirmed deleted in
+// GHL so completeness does not stay stuck in "needs review" on ghost rows.
+// Mirror contact history is retained; only the provider linkage row is removed.
+export async function dropAbsentGhlContacts(db, cycleStartedAt, contactExists) {
+  const missing = await db.prepare(
+    `SELECT external_id FROM external_records
+     WHERE provider = 'ghl' AND object_type = 'contact'
+       AND datetime(last_seen_at) < datetime(?)`,
+  ).bind(cycleStartedAt).all();
+  let dropped = 0;
+  for (const row of missing.results || []) {
+    if (await contactExists(row.external_id)) continue;
+    await db.prepare(
+      `DELETE FROM external_records
+       WHERE provider = 'ghl' AND object_type = 'contact' AND external_id = ?`,
+    ).bind(row.external_id).run();
+    dropped += 1;
+  }
+  return dropped;
 }
 
 async function findUniqueContactIdByEmail(db, email) {
