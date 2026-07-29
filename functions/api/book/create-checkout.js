@@ -18,8 +18,13 @@
 
 import { ghlFetch, getGhlToken } from "../../lib/ghl.js";
 import { appointmentEndTime } from "../../lib/datetime.js";
+import { FIELD_IDS } from "../../lib/ghl-fields.js";
+import { recordOpsError } from "../../lib/ops-alert.js";
 
-const ALLOWED_ORIGIN = "https://www.amarimethod.com";
+const ALLOWED_ORIGINS = new Set([
+  "https://www.amarimethod.com",
+  "https://amarimethod.com",
+]);
 const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 // Booking configuration. Each entry maps a sessionType (from the booking
@@ -83,13 +88,119 @@ const ALLOWED_BOOKINGS = {
 };
 
 function corsHeaders(requestOrigin) {
-  const allow = requestOrigin === ALLOWED_ORIGIN ? ALLOWED_ORIGIN : "";
+  const allow = ALLOWED_ORIGINS.has(requestOrigin)
+    ? requestOrigin
+    : "https://www.amarimethod.com";
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     Vary: "Origin",
   };
+}
+
+/** YYYY-MM-DD for GHL DATE fields — full ISO values can be rejected intermittently. */
+export function slotDateOnly(startTime) {
+  const m = String(startTime || "").match(/^(\d{4}-\d{2}-\d{2})/);
+  return m ? m[1] : "";
+}
+
+export function looksLikeDuplicateContactError(status, errText) {
+  if (status !== 400 && status !== 422) return false;
+  return /duplicate|already exists|contact already|email.*exist/i.test(
+    String(errText || ""),
+  );
+}
+
+function contactIdFromLookup(data) {
+  return (
+    data?.contact?.id ||
+    (Array.isArray(data?.contacts) && data.contacts[0]?.id) ||
+    null
+  );
+}
+
+/**
+ * Resolve an existing contact id by email. Prefer /search/duplicate; fall back
+ * to POST /contacts/search when duplicate lookup is non-ok or empty — the
+ * historical "couldn't start the secure payment" path was create-after-missed-
+ * lookup against an email that already existed.
+ */
+export async function findContactIdByEmail(context, locationId, email) {
+  const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(email)}`;
+  try {
+    const lookupRes = await ghlFetch(context, lookupUrl);
+    if (lookupRes.ok) {
+      const id = contactIdFromLookup(await lookupRes.json());
+      if (id) return id;
+    } else {
+      const errText = await lookupRes.text();
+      console.error(
+        `[book/create-checkout] contact lookup ${lookupRes.status}: ${errText}`,
+      );
+    }
+  } catch (err) {
+    console.error("[book/create-checkout] contact lookup failed:", err);
+  }
+
+  try {
+    const searchRes = await ghlFetch(
+      context,
+      "https://services.leadconnectorhq.com/contacts/search",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          locationId,
+          pageLimit: 1,
+          filters: [{ field: "email", operator: "eq", value: email }],
+        }),
+      },
+    );
+    if (searchRes.ok) {
+      return contactIdFromLookup(await searchRes.json());
+    }
+    const errText = await searchRes.text();
+    console.error(
+      `[book/create-checkout] contact search ${searchRes.status}: ${errText}`,
+    );
+  } catch (err) {
+    console.error("[book/create-checkout] contact search failed:", err);
+  }
+  return null;
+}
+
+export function buildSlotCustomFields(payload, booking) {
+  const fields = [];
+  if (!booking.isFreeBooking) {
+    const dateOnly = slotDateOnly(payload.startTime);
+    // Write by field id (contact GET returns {id,value} only; key writes are
+    // flakier on GHL). DATE field gets YYYY-MM-DD; TEXT iso keeps the full slot.
+    fields.push(
+      {
+        id: FIELD_IDS.requested_session_slot,
+        field_value: dateOnly || payload.startTime,
+      },
+      {
+        id: FIELD_IDS.requested_session_slot_iso,
+        field_value: payload.startTime,
+      },
+      {
+        id: FIELD_IDS.requested_session_calendar,
+        field_value: booking.calendarId,
+      },
+      {
+        id: FIELD_IDS.requested_session_type,
+        field_value: payload.sessionType,
+      },
+    );
+  }
+  if (payload.agreeCommunications) {
+    fields.push({
+      key: "communications_policies_new_client",
+      field_value: "true",
+    });
+  }
+  return fields;
 }
 
 function json(data, status, requestOrigin) {
@@ -148,56 +259,13 @@ function validateBody(b) {
  * order lands.
  */
 export async function upsertContact(context, GHL_API_KEY, locationId, payload, booking) {
-  const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(payload.email)}`;
-  let existingId = null;
-  try {
-    // Use ghlFetch (auth + 5xx/429 retry) and LOG a non-ok lookup. A silently
-    // ignored non-ok lookup used to fall straight through to contact-create,
-    // which GHL can reject as a duplicate → 422 ("couldn't start the secure
-    // payment") — the historical bug (H1, 2026-06-11 review).
-    const lookupRes = await ghlFetch(context, lookupUrl);
-    if (lookupRes.ok) {
-      const lookupData = await lookupRes.json();
-      existingId =
-        lookupData?.contact?.id ||
-        (Array.isArray(lookupData?.contacts) && lookupData.contacts[0]?.id) ||
-        null;
-    } else {
-      const errText = await lookupRes.text();
-      console.error(`[book/create-checkout] contact lookup ${lookupRes.status}: ${errText}`);
-    }
-  } catch (err) {
-    console.error("[book/create-checkout] contact lookup failed:", err);
-  }
+  let existingId = await findContactIdByEmail(context, locationId, payload.email);
+  const customFields = buildSlotCustomFields(payload, booking);
 
-  // Slot-request fields drive what the purchase webhook books after payment.
-  // Field keys must exist in GHL Settings → Custom Fields → Object: Contact.
-  // For free bookings (discovery call) we book the appointment directly in
-  // this handler, so no slot-request fields are needed — the request
-  // doesn't have to wait for a payment webhook to fulfill it.
-  const customFields = [];
-  if (!booking.isFreeBooking) {
-    // requested_session_slot is a GHL DATE field and truncates to YYYY-MM-DD.
-    // Also write requested_session_slot_iso (TEXT) so the purchase webhook can
-    // book the exact picked time after payment (Holly Brinkman 2026-07-29).
-    customFields.push(
-      { key: "requested_session_slot", field_value: payload.startTime },
-      { key: "requested_session_slot_iso", field_value: payload.startTime },
-      { key: "requested_session_calendar", field_value: booking.calendarId },
-      { key: "requested_session_type", field_value: payload.sessionType },
-    );
-  }
-  if (payload.agreeCommunications) {
-    customFields.push({
-      key: "communications_policies_new_client",
-      field_value: "true",
-    });
-  }
-
-  if (existingId) {
+  async function updateExisting(contactId) {
     const updateRes = await ghlFetch(
       context,
-      `https://services.leadconnectorhq.com/contacts/${existingId}`,
+      `https://services.leadconnectorhq.com/contacts/${contactId}`,
       {
         method: "PUT",
         body: JSON.stringify({
@@ -224,7 +292,11 @@ export async function upsertContact(context, GHL_API_KEY, locationId, payload, b
         throw new Error(`GHL contact update failed (${updateRes.status}): ${errText}`);
       }
     }
-    return existingId;
+    return contactId;
+  }
+
+  if (existingId) {
+    return updateExisting(existingId);
   }
 
   const createRes = await ghlFetch(
@@ -246,6 +318,16 @@ export async function upsertContact(context, GHL_API_KEY, locationId, payload, b
 
   if (!createRes.ok) {
     const errText = await createRes.text();
+    // Duplicate-create race: lookup missed an existing contact (or a parallel
+    // request won). Recover by looking up again and updating — otherwise the
+    // browser shows "couldn't start the secure payment" with no recovery.
+    if (looksLikeDuplicateContactError(createRes.status, errText)) {
+      console.error(
+        `[book/create-checkout] create hit duplicate (${createRes.status}); recovering via re-lookup`,
+      );
+      existingId = await findContactIdByEmail(context, locationId, payload.email);
+      if (existingId) return updateExisting(existingId);
+    }
     throw new Error(`GHL contact create failed (${createRes.status}): ${errText}`);
   }
 
@@ -405,8 +487,18 @@ export async function onRequestPost(context) {
     );
   } catch (err) {
     console.error("[book/create-checkout] contact upsert failed:", err);
+    context.waitUntil(
+      recordOpsError(env, "book/create-checkout", "contact upsert failed", {
+        sessionType: body.sessionType,
+        calendarId: body.calendarId,
+        message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+      }),
+    );
     return json(
-      { error: "Could not save your details. Please try again." },
+      {
+        error: "Could not save your details. Please try again.",
+        code: "contact_upsert_failed",
+      },
       422,
       origin,
     );

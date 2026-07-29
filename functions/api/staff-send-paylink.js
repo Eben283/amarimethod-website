@@ -53,6 +53,11 @@ const PRODUCTS = {
     price: "$347",
     path: "/payment-link/6a0107f11d5a394a682e3fd3",
   },
+  "amari-assessment": {
+    name: "Amari Assessment",
+    price: "$29",
+    path: "/payment-link/6a66cf107b99151a540409b3",
+  },
   "follow-up": {
     name: "Follow-up Session",
     price: "$190",

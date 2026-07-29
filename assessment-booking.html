@@ -319,7 +319,7 @@
       // site-v6 again here could create a second booking modal inside the iframe.
       if (!isEmbedded) {
         var siteShell = document.createElement('script');
-        siteShell.src = '/js/site-v6.js?v=24';
+        siteShell.src = '/js/site-v6.js?v=28';
         siteShell.setAttribute('data-nav', '');
         document.body.appendChild(siteShell);
       }
@@ -726,21 +726,22 @@
         els.step2SubmitBtn.disabled = true;
         els.step2SubmitLabel.textContent = 'Redirecting to secure payment…';
 
-        try {
-          const payload = {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            email: data.email,
-            phone: data.phone,
-            agreeCommunications: data.agreeCommunications,
-            agreePolicies: data.agreePolicies,
-            agreementVersion: AGREEMENT_VERSION,
-            calendarId: CALENDAR_ID,
-            sessionType: SESSION_TYPE,
-            sessionPrice: SESSION_PRICE,
-            startTime: state.selectedSlot.datetime,
-            timezone: state.timezone,
-          };
+        const payload = {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          agreeCommunications: data.agreeCommunications,
+          agreePolicies: data.agreePolicies,
+          agreementVersion: AGREEMENT_VERSION,
+          calendarId: CALENDAR_ID,
+          sessionType: SESSION_TYPE,
+          sessionPrice: SESSION_PRICE,
+          startTime: state.selectedSlot.datetime,
+          timezone: state.timezone,
+        };
+
+        async function requestCheckout() {
           const res = await fetch(CHECKOUT_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -748,7 +749,23 @@
           });
           const body = await res.json().catch(function () { return {}; });
           if (!res.ok || !body.checkoutUrl) {
-            throw new Error(body.error || ('checkout_failed_' + res.status));
+            const err = new Error(body.error || ('checkout_failed_' + res.status));
+            err.code = body.code || '';
+            err.status = res.status;
+            throw err;
+          }
+          return body;
+        }
+
+        try {
+          let body;
+          try {
+            body = await requestCheckout();
+          } catch (firstErr) {
+            // One automatic retry covers transient GHL duplicate-lookup races
+            // that otherwise surface as "couldn't start the secure payment".
+            await new Promise(function (r) { setTimeout(r, 600); });
+            body = await requestCheckout();
           }
           track('book_checkout_initiated');
           if (IS_EMBEDDED && window.parent !== window) {
@@ -763,6 +780,7 @@
           state.submitting = false;
           els.step2SubmitBtn.disabled = false;
           els.step2SubmitLabel.textContent = 'Continue to payment · $' + SESSION_PRICE;
+          console.error('[book] checkout failed', err && err.message, err && err.code);
           setBannerError("We couldn't start the secure payment. Try again, or email eben@amarimethod.com.");
         }
       });

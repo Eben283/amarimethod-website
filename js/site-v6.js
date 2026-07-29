@@ -317,6 +317,11 @@
         return false;
       }
     }
+    function sameSiteOrigin(origin) {
+      return origin === window.location.origin ||
+        origin === 'https://www.amarimethod.com' ||
+        origin === 'https://amarimethod.com';
+    }
 
     document.addEventListener('click', function (event) {
       var anchor = event.target.closest('a[href]');
@@ -337,7 +342,7 @@
     });
     window.addEventListener('message', function (event) {
       var data = event.data || {};
-      if (event.origin !== window.location.origin || event.source !== frame.contentWindow ||
+      if (!sameSiteOrigin(event.origin) || event.source !== frame.contentWindow ||
           data.type !== 'amari-assessment-checkout' || !validCheckoutUrl(data.checkoutUrl)) return;
       window.location.assign(data.checkoutUrl);
     });

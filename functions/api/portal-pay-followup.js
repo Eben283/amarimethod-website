@@ -14,6 +14,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireOwner } from "../lib/owned-access.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const allowedOrigin = "https://www.amarimethod.com";
 const PAYMENT_LINK_URL = "https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26";
@@ -74,6 +75,8 @@ export async function onRequestPost(context) {
   }
 
   // Persist the picked slot for the purchase webhook (same fields as /book/create-checkout).
+  // DATE field gets YYYY-MM-DD only; TEXT iso keeps the full offset time.
+  const dateOnly = String(startTime).match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || startTime;
   const updateRes = await ghlFetch(
     context,
     `https://services.leadconnectorhq.com/contacts/${contactId}`,
@@ -81,10 +84,10 @@ export async function onRequestPost(context) {
       method: "PUT",
       body: JSON.stringify({
         customFields: [
-          { key: "requested_session_slot", field_value: startTime },
-          { key: "requested_session_slot_iso", field_value: startTime },
-          { key: "requested_session_calendar", field_value: calendarId },
-          { key: "requested_session_type", field_value: sessionType },
+          { id: GHL_FIELD_IDS.requested_session_slot, field_value: dateOnly },
+          { id: GHL_FIELD_IDS.requested_session_slot_iso, field_value: startTime },
+          { id: GHL_FIELD_IDS.requested_session_calendar, field_value: calendarId },
+          { id: GHL_FIELD_IDS.requested_session_type, field_value: sessionType },
         ],
       }),
     },
