@@ -1002,7 +1002,7 @@ export default function PosPage() {
               Phone number
               <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} inputMode="tel" autoComplete="tel" />
             </label>
-            <p className="pos-muted">Phone or email is required. Customer is added to this cart on save.</p>
+            <p className="pos-muted">Phone or email is required. Customer is attached to this sale on save.</p>
           </div>
         )}
 
@@ -1033,7 +1033,7 @@ export default function PosPage() {
               </p>
             )}
             <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
-              Add to cart
+              Add customer
             </button>
             <p className="pos-section-label">Orders</p>
             {(detailClient || client)?.id.startsWith("draft_") ? (
