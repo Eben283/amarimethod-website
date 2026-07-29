@@ -160,6 +160,8 @@
 .pos-tile--customer.is-remove { background: #7f1d1d; }
 .pos-tile--custom { background: #27272a; }
 .pos-tile--practice { background: linear-gradient(160deg, #0f766e, #134e4a); }
+.pos-tile--practice-6 { background: linear-gradient(160deg, #0e7490, #155e75); }
+.pos-tile--assessment { background: linear-gradient(160deg, #4d7c0f, #365314); }
 .pos-tile--series { background: #1e3a5f; }
 .pos-tile--upgrades { background: #5b3a1d; }
 .pos-tile--sessions { background: #3f3f46; }
