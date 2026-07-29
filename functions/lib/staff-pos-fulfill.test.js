@@ -10,7 +10,7 @@ describe("staff POS fulfillment planning", () => {
         ghlProductId: "6a66cde7ef7b07f122ad46fb",
         label: "The 12-Week Amari Practice",
         quantity: 1,
-        lineTotalCents: 550000,
+        lineTotalCents: 540000,
       },
       {
         kind: "custom",
@@ -32,6 +32,21 @@ describe("staff POS fulfillment planning", () => {
     expect(plan.seriesType).toBe("12-week");
     expect(plan.livingPractice).toBe(true);
     expect(plan.packagePurchased).toBe(true);
+  });
+
+  it("credits the $3,000 6-week practice with 12 sessions", () => {
+    const effects = buildPosFulfillmentEffects([
+      {
+        kind: "catalog",
+        ghlProductId: "6a683360017263178d05d1a3",
+        label: "The 6-Week Amari Practice ($3,000)",
+        quantity: 1,
+        lineTotalCents: 300000,
+      },
+    ]);
+    expect(effects).toEqual([
+      expect.objectContaining({ type: "set_package", sessions: 12, seriesType: "6-week" }),
+    ]);
   });
 
   it("adds sessions for an initial and keeps living-practice grants separate", () => {

@@ -22,7 +22,8 @@ import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
 const CATALOG = [
-  ["12-week-practice", "Amari Practice", 550000, "Practice", "12-week · 24 sessions"],
+  ["12-week-practice", "12-Week Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
+  ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
@@ -824,8 +825,24 @@ export default function PosPage() {
                 className="pos-tile pos-tile--practice"
                 onClick={() => addOrIncrementCatalog("12-week-practice")}
               >
-                <strong>Amari Practice</strong>
-                <small>{money(550000)}</small>
+                <strong>12-Week Practice</strong>
+                <small>{money(540000)}</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--practice-6"
+                onClick={() => addOrIncrementCatalog("6-week-practice")}
+              >
+                <strong>6-Week Practice</strong>
+                <small>{money(300000)}</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--assessment"
+                onClick={() => addOrIncrementCatalog("amari-assessment")}
+              >
+                <strong>Assessment</strong>
+                <small>{money(2900)}</small>
               </button>
               <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
                 <strong>Series</strong>
@@ -841,7 +858,7 @@ export default function PosPage() {
                 onClick={() => openCategory("Single sessions")}
               >
                 <strong>Single sessions</strong>
-                <small>$29 intro, initials & follow-ups</small>
+                <small>Initials & follow-ups</small>
               </button>
             </div>
           </div>
@@ -1441,7 +1458,13 @@ export default function PosPage() {
               return (
                 <div className="pos-cart-line" key={`${lineKey(line)}-${index}`}>
                   <div className="pos-cart-line__mark" aria-hidden="true">
-                    {(line.productKey === "12-week-practice" ? "12" : "A")}
+                    {(line.productKey === "12-week-practice"
+                      ? "12"
+                      : line.productKey === "6-week-practice"
+                        ? "6"
+                        : line.productKey === "amari-assessment"
+                          ? "$"
+                          : "A")}
                     <span>{qty}</span>
                   </div>
                   <div className="pos-cart-line__body">
