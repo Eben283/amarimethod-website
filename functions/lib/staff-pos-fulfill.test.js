@@ -10,7 +10,7 @@ describe("staff POS fulfillment planning", () => {
         ghlProductId: "6a66cde7ef7b07f122ad46fb",
         label: "The 12-Week Amari Practice",
         quantity: 1,
-        lineTotalCents: 550000,
+        lineTotalCents: 540000,
       },
       {
         kind: "custom",

@@ -11,7 +11,7 @@ import {
 
 describe("staff POS model", () => {
   it("uses a server-owned catalog and rejects a browser-supplied price", () => {
-    expect(POS_CATALOG["12-week-practice"].amountCents).toBe(550000);
+    expect(POS_CATALOG["12-week-practice"].amountCents).toBe(540000);
     expect(POS_CATALOG["amari-assessment"]).toMatchObject({
       amountCents: 2900,
       ghlProductId: "6a66cf0103821ea09ea13f1b",

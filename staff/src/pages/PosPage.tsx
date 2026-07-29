@@ -22,7 +22,7 @@ import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
 const CATALOG = [
-  ["12-week-practice", "Amari Practice", 550000, "Practice", "12-week · 24 sessions"],
+  ["12-week-practice", "Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
@@ -825,7 +825,7 @@ export default function PosPage() {
                 onClick={() => addOrIncrementCatalog("12-week-practice")}
               >
                 <strong>Amari Practice</strong>
-                <small>{money(550000)}</small>
+                <small>{money(540000)}</small>
               </button>
               <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
                 <strong>Series</strong>

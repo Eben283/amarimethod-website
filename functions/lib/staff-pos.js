@@ -13,7 +13,7 @@ export const POS_CATALOG = Object.freeze({
   "initial-virtual": { label: "Initial Session — Virtual", amountCents: 22500, ghlProductId: "690b6b4d333ffa59d40c1823" },
   "4-session-series": { label: "4-Session Series", amountCents: 72000, ghlProductId: "69986faa724ecd2343ebaa6e" },
   "8-session-series": { label: "8-Session Series", amountCents: 129500, ghlProductId: "69987357c839790426996114" },
-  "12-week-practice": { label: "The 12-Week Amari Practice", amountCents: 550000, ghlProductId: "6a66cde7ef7b07f122ad46fb" },
+  "12-week-practice": { label: "The 12-Week Amari Practice", amountCents: 540000, ghlProductId: "6a66cde7ef7b07f122ad46fb" },
   "upgrade-initial-to-4": { label: "Upgrade: Initial → 4-Session", amountCents: 49500, ghlProductId: "6998739230cc6054f9bba62d" },
   "upgrade-initial-to-8": { label: "Upgrade: Initial → 8-Session", amountCents: 107000, ghlProductId: "699873d6990b71ebc1fa26b4" },
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },

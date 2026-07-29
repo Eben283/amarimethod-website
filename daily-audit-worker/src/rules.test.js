@@ -5,7 +5,7 @@ import { AUDIT_INCREMENT_MAP } from '../../functions/lib/ghl-products.js';
 // Real GHL ids (kept in sync with ghl-products.js).
 const EIGHT_SERIES_PRODUCT_ID = '69987357c839790426996114'; // 8-Session Series
 const TWELVE_WEEK_PRODUCT_ID = '6a66cde7ef7b07f122ad46fb'; // The 12-Week Amari Practice
-const TWELVE_WEEK_PRICE_ID = '6a66cde7ef7b076d15ad4700'; // current $5,500 price
+const TWELVE_WEEK_PRICE_ID = '6a66cde7ef7b076d15ad4700'; // current $5,400 price
 const UPGRADE_4TO8_PRICE_ID = '6a010952e41b44dab12d3c06';   // a priceId, not a productId
 const FOLLOWUP_PRODUCT_ID = '69aee204e80b62d627d8e922';     // single follow-up — not a package
 const lineItem = (id) => ({ product: { _id: id } });

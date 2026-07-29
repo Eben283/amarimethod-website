@@ -178,7 +178,7 @@ export const WEBHOOK_PURCHASE_MAP = Object.fromEntries(
 export const PRICE_IDS = {
   "69987357c839790426996114": ["69987357c83979a1f0996119", "699873074d5b8cc0bc0e3b5a"], // 8-Session Series
   "69986faa724ecd2343ebaa6e": ["69986faa724ecd4f9debaa73", "699872e130cc6054f9bba617"], // 4-Session Series
-  "6a66cde7ef7b07f122ad46fb": ["6a66cde7ef7b076d15ad4700"], // The 12-Week Amari Practice ($5,500)
+  "6a66cde7ef7b07f122ad46fb": ["6a66cde7ef7b076d15ad4700"], // The 12-Week Amari Practice ($5,400)
   "699873d6990b71ebc1fa26b4": ["699873d6990b71a8b3fa26b9"], // Upgrade: Initial → 8
   "6998739230cc6054f9bba62d": ["6998739230cc604805bba632"], // Upgrade: Initial → 4
   "6a010952e41b442c862d3c01": ["6a010952e41b44dab12d3c06"], // Upgrade: 4 → 8

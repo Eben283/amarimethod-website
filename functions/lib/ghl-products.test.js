@@ -133,7 +133,7 @@ describe('any-id resolver (productId + priceId)', () => {
     expect(productIdForAnyId(ID.eightSeriesPrice)).toBe(ID.eightSeries);
     expect(productForAnyId(ID.eightSeriesPrice).name).toBe('8-Session Series');
   });
-  it('resolves the 12-Week Practice product and its current $5,500 price', () => {
+  it('resolves the 12-Week Practice product and its current $5,400 price', () => {
     expect(productIdForAnyId(ID.twelveWeek)).toBe(ID.twelveWeek);
     expect(productIdForAnyId(ID.twelveWeekPrice)).toBe(ID.twelveWeek);
     expect(productForAnyId(ID.twelveWeekPrice).name).toBe('The 12-Week Amari Practice');
