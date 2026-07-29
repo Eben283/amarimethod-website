@@ -26,6 +26,7 @@
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/css/site-v6.css?v=12">
+  <link rel="stylesheet" href="/css/amari-calendar.css?v=1">
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
   <script>
@@ -71,41 +72,6 @@
 
     .step-section { display: none; }
     .step-section.is-active { display: block; }
-
-    /* ---- TWO-MONTH CALENDAR (Tock pattern) ---- */
-    .cal-frame { padding: 32px 0; border-top: 1px solid var(--line); }
-    .cal-months { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-    .cal-month-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .cal-month-header.is-left { padding-left: 0; }
-    .cal-month-header.is-right { padding-right: 0; }
-    .cal-month-label { font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: 0.01em; }
-    .cal-nav-btn { background: transparent; border: 1px solid var(--line); width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--body); transition: all 0.12s ease; padding: 0; font-family: var(--sans); font-size: 14px; }
-    .cal-nav-btn:hover:not(:disabled) { border-color: var(--ink); color: var(--ink); }
-    .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .cal-nav-spacer { width: 28px; height: 28px; }
-
-    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--body); padding-bottom: 8px; }
-    .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; }
-    .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--ink); background: transparent; border: none; cursor: pointer; border-radius: 50%; transition: background 0.12s ease, color 0.12s ease; padding: 0; }
-    .cal-day.is-empty { visibility: hidden; pointer-events: none; }
-    .cal-day:disabled, .cal-day.is-unavailable { color: #c8bfa8; cursor: default; }
-    .cal-day:hover:not(:disabled):not(.is-unavailable):not(.is-selected) { background: var(--cream-2); }
-    .cal-day.is-selected { background: var(--ink); color: #fff; font-weight: 600; }
-    .cal-day.is-today:not(.is-selected) { font-weight: 700; }
-    .cal-day.is-today:not(.is-selected)::after { content: ''; position: absolute; width: 4px; height: 4px; border-radius: 50%; background: var(--peach); transform: translateY(14px); }
-    .cal-day { position: relative; }
-
-    /* ---- Time slot list (below calendar after a date is picked) ---- */
-    .time-slots { padding: 28px 0 0; border-top: 1px solid var(--line); margin-top: 32px; }
-    .time-slots-label { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--body); margin: 0 0 14px; }
-    .time-slots-label strong { color: var(--ink); font-weight: 600; }
-    .time-slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 8px; }
-    .slot-btn { padding: 14px 10px; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--ink); transition: all 0.12s ease; }
-    .slot-btn:hover { border-color: var(--ink); }
-    .slot-btn.is-selected { background: var(--ink); border-color: var(--ink); color: #fff; }
-
-    .slot-loading, .slot-error, .slot-empty { padding: 24px 0; text-align: center; font-family: var(--sans); font-size: 14px; color: var(--body); }
-    .slot-error { color: #c64a3a; }
 
     /* ---- Order summary ---- */
     .order-summary { margin-top: 28px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

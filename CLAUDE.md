@@ -1,17 +1,24 @@
 # Amari Method Website
 
+## Read first (agents)
+- **Owned system pieces (calendar, POS, ledger, what not to reinvent):** [`SYSTEM.md`](./SYSTEM.md)
+- **Marketing visual language:** [`DESIGN.md`](./DESIGN.md) + `css/site-v6.css`
+
 ## Stack
-- Static HTML site + two React SPAs (quiz, portal) built with Vite
+- Static HTML site + React SPAs (quiz, portal, staff, cos) built with Vite
 - **Cloudflare Pages** hosting + Pages Functions for serverless API routes
-- **GoHighLevel (GHL)** as the CRM — contacts, appointments, custom fields, tags
+- **GoHighLevel (GHL)** as the CRM — contacts, appointments, custom fields, tags (being replaced by owned surfaces; see `SYSTEM.md`)
 - Portal auth: email magic link → JWT session token (30-day expiry, stored in localStorage)
 
 ## Repository Structure
 ```
 amarimethod-website/
 ├── *.html                  # Static marketing pages
-├── DESIGN.md               # Universal site-v6 style guide (agents: read first)
+├── SYSTEM.md               # Owned system catalog (calendar, POS, ledger — agents: read first)
+├── DESIGN.md               # Universal site-v6 style guide
 ├── css/site-v6.css         # Design tokens + shared components
+├── css/amari-calendar.css  # Canonical booking calendar + time-slot styles
+├── shared/amari-calendar/  # Shared React calendar (AmariMonthGrid, AmariTimeSlots)
 ├── js/site-v6.js           # Header/footer/search/mobile chrome
 ├── js/main.js              # Legacy site JS (prefer site-v6 on public pages)
 ├── functions/api/          # Cloudflare Pages Functions (serverless) (subset — see directory)

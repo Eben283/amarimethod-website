@@ -9,30 +9,30 @@ import {
 
 test.describe('QuickActions — booking label', () => {
 
-  test('S1 brand new → "Book Initial Session"', async ({ page }) => {
+  test('S1 brand new → "Book your initial session"', async ({ page }) => {
     await mountAsUser(page, S1_BRAND_NEW);
-    await expect(page.getByTestId('booking-label')).toHaveText('Book Initial Session');
+    await expect(page.getByTestId('booking-label')).toHaveText('Book your initial session');
   });
 
-  test('S2 after initial → "Book Follow-up Session"', async ({ page }) => {
+  test('S2 after initial → "Book a follow-up session"', async ({ page }) => {
     await mountAsUser(page, S2_AFTER_INITIAL);
-    await expect(page.getByTestId('booking-label')).toHaveText('Book Follow-up Session');
+    await expect(page.getByTestId('booking-label')).toHaveText('Book a follow-up session');
   });
 
-  test('S4 fresh series (0 done) → "Book Initial Session" (hasHadInitial=false)', async ({ page }) => {
+  test('S4 fresh series (0 done) → "Book your initial session" (hasHadInitial=false)', async ({ page }) => {
     await mountAsUser(page, S4_FRESH_4_SESSION);
     // hasHadInitial = sessionsCompleted > 0 = false → shows initial booking
-    await expect(page.getByTestId('booking-label')).toHaveText('Book Initial Session');
+    await expect(page.getByTestId('booking-label')).toHaveText('Book your initial session');
   });
 
-  test('S5 active series → "Book Follow-up Session"', async ({ page }) => {
+  test('S5 active series → "Book your next session"', async ({ page }) => {
     await mountAsUser(page, S5_ACTIVE_4_MID);
-    await expect(page.getByTestId('booking-label')).toHaveText('Book Follow-up Session');
+    await expect(page.getByTestId('booking-label')).toHaveText('Book your next session');
   });
 
-  test('S6 series complete (pay-as-you-go) → "Book Follow-up Session"', async ({ page }) => {
+  test('S6 series complete (pay-as-you-go) → "Book a follow-up session"', async ({ page }) => {
     await mountAsUser(page, S6_4_SESSION_COMPLETE);
-    await expect(page.getByTestId('booking-label')).toHaveText('Book Follow-up Session');
+    await expect(page.getByTestId('booking-label')).toHaveText('Book a follow-up session');
   });
 
 });
