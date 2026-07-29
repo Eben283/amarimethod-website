@@ -58,6 +58,19 @@ export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   return appointments.slice(0, 100);
 }
 
+// Used when a full-pass completeness cycle finds contacts the list walk did not
+// refresh. GHL returns 400 "Contact not found" for deleted IDs; those are ghosts
+// in the mirror, not missing source records that need operator recovery.
+export async function fetchGhlContactExists(env, contactExternalId) {
+  const token = await getAccessToken(env);
+  const response = await fetch(`${GHL_BASE}/contacts/${encodeURIComponent(contactExternalId)}`, {
+    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+  });
+  if (response.status === 400 || response.status === 404) return false;
+  if (!response.ok) throw new Error(`GHL contact probe failed (${response.status})`);
+  return true;
+}
+
 export async function fetchStripeChargesPage(env, cursor, limit) {
   if (!env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
   const params = new URLSearchParams({ limit: String(limit) });

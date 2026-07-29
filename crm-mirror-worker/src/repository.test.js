@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("CRM mirror absent GHL contacts", () => {
+  it("removes external_records for contacts confirmed deleted in GHL", async () => {
+    const deleted = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({
+          all: async () => ({ results: [{ external_id: "gone" }, { external_id: "alive" }] }),
+          run: async () => { deleted.push({ sql, values }); },
+        }),
+      }),
+    };
+
+    const dropped = await dropAbsentGhlContacts(db, "2026-07-29T07:30:00.000Z", async (id) => id === "alive");
+    expect(dropped).toBe(1);
+    expect(deleted).toHaveLength(1);
+    expect(deleted[0].values).toEqual(["gone"]);
+    expect(deleted[0].sql).toContain("DELETE FROM external_records");
+  });
+});
 
 describe("CRM mirror GHL contact last_seen", () => {
   it("refreshes external_records.last_seen_at when an existing contact is re-imported", async () => {

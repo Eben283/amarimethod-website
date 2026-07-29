@@ -19,6 +19,8 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 
 `/status` reports separate GHL and Stripe health states, treating a paginated GHL pass as healthy while it advances through the cursor; a source is stale after 45 minutes.
 
+Dashboard: `https://amari-crm-mirror.eben-fa2.workers.dev/` (bearer or one-time `/dashboard-access` session). Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
+
 Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, and `GHL_CLIENT_SECRET`. `PORTAL_KV` is the shared read-only GHL token cache.
 
 If this Worker is recreated, create a new dedicated D1 database and replace the binding ID before deploying. Never reuse the live automation database.

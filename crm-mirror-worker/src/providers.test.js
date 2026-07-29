@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactExists, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
 
 const env = {
   GHL_LOCATION_ID: "location_1",
@@ -49,6 +49,18 @@ describe("GHL contact pagination", () => {
       json: async () => ({ events: [{ id: "appointment_1" }] }),
     });
     await expect(fetchGhlAppointmentsForContact(env, "contact_1")).resolves.toEqual([{ id: "appointment_1" }]);
+  });
+
+  it("treats deleted GHL contacts as absent for completeness cleanup", async () => {
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      json: async () => ({ message: "Contact not found for id:gone", statusCode: 400 }),
+    });
+    await expect(fetchGhlContactExists(env, "gone")).resolves.toBe(false);
+
+    fetch.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ contact: { id: "alive" } }) });
+    await expect(fetchGhlContactExists(env, "alive")).resolves.toBe(true);
   });
 
   it("reads a Stripe customer only when a source charge needs identity evidence", async () => {

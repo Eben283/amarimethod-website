@@ -114,6 +114,27 @@ export async function findContactIdByGhlId(db, externalId) {
   return contactIdForExternalRecord(db, "ghl", "contact", externalId);
 }
 
+// After a GHL full pass, drop external_records for contacts confirmed deleted in
+// GHL so completeness does not stay stuck in "needs review" on ghost rows.
+// Mirror contact history is retained; only the provider linkage row is removed.
+export async function dropAbsentGhlContacts(db, cycleStartedAt, contactExists) {
+  const missing = await db.prepare(
+    `SELECT external_id FROM external_records
+     WHERE provider = 'ghl' AND object_type = 'contact'
+       AND datetime(last_seen_at) < datetime(?)`,
+  ).bind(cycleStartedAt).all();
+  let dropped = 0;
+  for (const row of missing.results || []) {
+    if (await contactExists(row.external_id)) continue;
+    await db.prepare(
+      `DELETE FROM external_records
+       WHERE provider = 'ghl' AND object_type = 'contact' AND external_id = ?`,
+    ).bind(row.external_id).run();
+    dropped += 1;
+  }
+  return dropped;
+}
+
 async function findUniqueContactIdByEmail(db, email) {
   if (!email) return null;
   const result = await db.prepare(
