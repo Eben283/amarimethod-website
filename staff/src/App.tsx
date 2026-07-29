@@ -17,6 +17,7 @@ import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
 import RevenuePage from './pages/RevenuePage';
 import PosPage from './pages/PosPage';
+import TriagePage from './pages/TriagePage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -79,6 +80,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <TodayPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/triage"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <TriagePage />
             </Layout>
           </ProtectedRoute>
         }
