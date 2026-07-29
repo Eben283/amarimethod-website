@@ -10,7 +10,7 @@ Before building booking/calendar UI, payments/POS, or CRM replacements, read **`
 ## Hard rules
 
 1. **Calendar** — use `css/amari-calendar.css` + `shared/amari-calendar/` (`AmariMonthGrid`, `AmariTimeSlots`). Do not invent a new picker. Do not embed a GHL calendar widget for new work.
-2. **Portal follow-ups** — `BookingModal` (native). Do not extend `EmbedCalendarModal` (legacy GHL iframe).
+2. **Portal follow-ups** — `BookingModal` (native). Do not embed GHL calendar widgets.
 3. **Staff sales** — `PosPage` + Stripe card-on-file (`functions/lib/stripe-api.js`). Not GHL Payment Methods UI.
 4. **Balances** — `functions/lib/session-ledger.js`.
 5. **Marketing pages** — site-v6 / `DESIGN.md` only.

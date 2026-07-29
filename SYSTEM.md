@@ -14,7 +14,7 @@ Last updated: 2026-07-29.
 ## Hard rules for agents
 
 1. **Calendar UI** → use `css/amari-calendar.css` + `shared/amari-calendar/` (`AmariMonthGrid`, `AmariTimeSlots`). Do **not** invent a new picker and do **not** embed a GHL calendar widget for new work.
-2. **Portal follow-up booking** → `portal/src/components/BookingModal.tsx` (native). Do **not** extend `EmbedCalendarModal` (legacy GHL iframe).
+2. **Portal follow-up booking** → `portal/src/components/BookingModal.tsx` (native). Do **not** embed a GHL calendar widget.
 3. **Staff in-person sales** → `staff/src/pages/PosPage.tsx` + Stripe card-on-file helpers in `functions/lib/stripe-api.js`. Not GHL Payment Methods UI.
 4. **Session balances** → `functions/lib/session-ledger.js`. Never trust a single GHL custom field as ground truth.
 5. **Marketing pages** → site-v6 only (`DESIGN.md`). No new design system forks.
@@ -43,8 +43,7 @@ Last updated: 2026-07-29.
 - Portal + staff modals: **one month** via `AmariMonthGrid`
 
 **Do not use for new booking UI:**
-- `portal/src/components/EmbedCalendarModal.tsx` — GHL iframe wrapper (legacy)
-- `js/main.js` `openBookingModal` GHL embeds — legacy marketing follow-ups
+- `js/main.js` `openCalendarModal` — unused GHL iframe helper; public pages use `/book/*`
 - Ad-hoc square-day grids, bare `selected` class names, or new CSS dialects (`cp-cal-*`, `fs-cal-*` day grids are retired in favor of `am-cal-*`)
 
 ---
@@ -60,8 +59,8 @@ Last updated: 2026-07-29.
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |
 | Portal `BookingModal` | Native | `portal/src/components/BookingModal.tsx` | Uses shared `AmariMonthGrid` / `AmariTimeSlots` |
 | Staff Field Studies calendar | Native | `staff/src/pages/FieldStudiesPage.tsx` (`CalendarModal`) | Uses shared calendar; study multi-session loop is page-specific |
-| `EmbedCalendarModal` | **Legacy GHL** | `portal/src/components/EmbedCalendarModal.tsx` | Used by QuickActions — replace with `BookingModal`, do not extend |
-| Marketing GHL iframe helper | **Legacy GHL** | `js/main.js` (~openBookingModal) | Phase-2 follow-up pages only |
+| `EmbedCalendarModal` | **Removed** | was `portal/src/components/EmbedCalendarModal.tsx` | Retired — portal QuickActions + ProgressTracker use `BookingModal` |
+| Marketing GHL iframe helper | **Legacy / unused** | `js/main.js` (`openCalendarModal`) | Dead helper; public pages use `/book/*` |
 
 ### Payments & POS
 
