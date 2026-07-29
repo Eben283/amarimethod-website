@@ -15,7 +15,13 @@ import {
   writePosSale,
 } from "../lib/staff-pos.js";
 import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
-import { createPosCheckoutSession, findOrCreateStripeCustomer } from "../lib/stripe-api.js";
+import {
+  chargeCustomerCard,
+  createPosCheckoutSession,
+  findOrCreateStripeCustomer,
+  resolveProvenStripeCustomer,
+  retrievePaymentMethod,
+} from "../lib/stripe-api.js";
 
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), { status, headers });
@@ -35,6 +41,26 @@ function siteOrigin(requestUrl) {
     // fall through
   }
   return "https://www.amarimethod.com";
+}
+
+async function storedCustomerId(env, contactId) {
+  const kv = env.PURCHASE_KV || env.PORTAL_KV;
+  if (!kv || !contactId) return null;
+  try {
+    return await kv.get(`stripe-cust:${contactId}`);
+  } catch {
+    return null;
+  }
+}
+
+async function rememberCustomer(env, contactId, customerId) {
+  const kv = env.PURCHASE_KV || env.PORTAL_KV;
+  if (!kv || !contactId || !customerId) return;
+  try {
+    await kv.put(`stripe-cust:${contactId}`, customerId);
+  } catch {
+    // fail-soft
+  }
 }
 
 export async function onRequestOptions(context) {
@@ -103,6 +129,7 @@ async function openStripeLegs(context, sale, reviewer) {
     phone: sale.client.phone,
     contactId: sale.client.id,
   });
+  await rememberCustomer(context.env, sale.client.id, customer.id);
 
   let next = sale;
   const opened = [];
@@ -138,6 +165,106 @@ async function openStripeLegs(context, sale, reviewer) {
   return { sale: next, checkouts: opened };
 }
 
+async function chargeSavedCardLeg(context, sale, reviewer, { paymentMethodId, paymentLegId, confirmed }) {
+  if (confirmed !== true) {
+    throw Object.assign(new Error("Confirm the card-on-file charge before continuing."), { status: 400 });
+  }
+  const secret = context.env.STRIPE_SECRET_KEY;
+  if (!secret) throw new Error("STRIPE_SECRET_KEY is not configured for card-on-file charges");
+  if (String(sale.client.id || "").startsWith("draft_")) {
+    throw new Error("Select an existing GHL customer before charging a card on file");
+  }
+  if (typeof paymentMethodId !== "string" || !paymentMethodId.startsWith("pm_")) {
+    throw Object.assign(new Error("Pick a saved card to charge."), { status: 400 });
+  }
+
+  const leg =
+    (paymentLegId && sale.paymentLegs.find((item) => item.id === paymentLegId)) ||
+    sale.paymentLegs.find((item) => item.method === "saved-card" && item.status !== "paid") ||
+    sale.paymentLegs.find((item) => item.status !== "paid");
+  if (!leg) throw Object.assign(new Error("No unpaid payment portion found"), { status: 400 });
+  if (leg.status === "paid") throw Object.assign(new Error("That payment portion is already paid"), { status: 400 });
+
+  const stored = await storedCustomerId(context.env, sale.client.id);
+  const customer = await resolveProvenStripeCustomer(secret, {
+    contactId: sale.client.id,
+    storedCustomerId: stored,
+  });
+  if (!customer) {
+    throw Object.assign(
+      new Error("No proven Stripe customer for this contact. Use Card (Checkout) once so the card can be saved."),
+      { status: 400 },
+    );
+  }
+  await rememberCustomer(context.env, sale.client.id, customer.id);
+
+  const pm = await retrievePaymentMethod(secret, paymentMethodId);
+  if (!pm || pm.customer !== customer.id || pm.type !== "card") {
+    throw Object.assign(new Error("That saved card does not belong to this customer."), { status: 400 });
+  }
+
+  let intent;
+  try {
+    intent = await chargeCustomerCard(secret, {
+      amountCents: leg.amountCents,
+      customerId: customer.id,
+      paymentMethodId,
+      saleId: sale.id,
+      paymentLegId: leg.id,
+      contactId: sale.client.id,
+      description: `${cartSummaryLabel(sale)} (saved card)`,
+    });
+  } catch (error) {
+    const code = error?.stripe?.code || "";
+    if (code === "authentication_required" || /authenticate|requires.?action/i.test(error?.message || "")) {
+      throw Object.assign(
+        new Error("This card needs the customer present (3-D Secure). Use Card (Checkout) instead."),
+        { status: 422 },
+      );
+    }
+    throw error;
+  }
+
+  if (intent.status === "requires_action" || intent.status === "requires_confirmation") {
+    throw Object.assign(
+      new Error("This card needs the customer present (3-D Secure). Use Card (Checkout) instead."),
+      { status: 422 },
+    );
+  }
+  if (intent.status !== "succeeded") {
+    throw Object.assign(
+      new Error(`Card charge did not succeed (${intent.status || "unknown"}). Try Checkout or another method.`),
+      { status: 422 },
+    );
+  }
+
+  let next = markLegPaid(sale, leg.id, {
+    paymentIntentId: intent.id,
+    reviewer,
+    source: "saved-card",
+  });
+  await writePosSale(context.env.PORTAL_KV, next);
+  if (next.status === "paid") {
+    const { sale: fulfilled, result } = await fulfillPaidPosSale(context, next, { actor: reviewer });
+    await writePosSale(context.env.PORTAL_KV, fulfilled);
+    return {
+      sale: fulfilled,
+      fulfillment: result,
+      card: {
+        brand: pm.card?.brand || "card",
+        last4: pm.card?.last4 || "",
+      },
+    };
+  }
+  return {
+    sale: next,
+    card: {
+      brand: pm.card?.brand || "card",
+      last4: pm.card?.last4 || "",
+    },
+  };
+}
+
 export async function onRequestPost(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = { ...corsHeaders(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -159,6 +286,17 @@ export async function onRequestPost(context) {
       const sale = await ensureSale(context, body, reviewer);
       if (!sale.paymentLegs?.length) return json({ error: "Add a payment method before checkout" }, 400, headers);
       const result = await openStripeLegs(context, sale, reviewer);
+      return json(result, 200, headers);
+    }
+
+    if (action === "charge-saved-card") {
+      const sale = await ensureSale(context, body, reviewer);
+      if (!sale.paymentLegs?.length) return json({ error: "Add a payment method before charging" }, 400, headers);
+      const result = await chargeSavedCardLeg(context, sale, reviewer, {
+        paymentMethodId: body.paymentMethodId,
+        paymentLegId: body.paymentLegId,
+        confirmed: body.confirmed === true,
+      });
       return json(result, 200, headers);
     }
 

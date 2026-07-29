@@ -3,9 +3,12 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getOwedStatus,
   getPosSale,
+  getStripeSavedCards,
   recordPosCash,
   fulfillPosSale,
+  chargePosSavedCard,
   searchContacts,
+  setFoundersCircle,
   startPosCheckout,
   type PosClient,
   type PosCheckoutOpen,
@@ -14,14 +17,17 @@ import {
   type PosPaymentMethod,
   type PosSale,
   type PurchaseEntry,
+  type StripeSavedCard,
 } from "../lib/api";
 import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
 const CATALOG = [
-  ["12-week-practice", "Amari Practice", 550000, "Practice", "12-week · 24 sessions"],
+  ["12-week-practice", "12-Week Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
+  ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
+  ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
   ["initial-in-person", "Initial — in person", 22500, "Single sessions", "Single session"],
   ["initial-virtual", "Initial — virtual", 22500, "Single sessions", "Single session"],
   ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],
@@ -46,7 +52,8 @@ type Panel =
   | "checkout"
   | "cash"
   | "split"
-  | "complete";
+  | "complete"
+  | "charge-confirm";
 
 const paymentLabels: Record<PosPaymentMethod, string> = {
   "checkout-link": "Checkout link",
@@ -59,6 +66,11 @@ const paymentLabels: Record<PosPaymentMethod, string> = {
 
 const money = (cents: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+
+function cardLabel(card: StripeSavedCard) {
+  const brand = (card.brand || "card").replace(/^./, (c) => c.toUpperCase());
+  return `${brand} •••• ${card.last4}`;
+}
 
 const draftStorageKey = "amari_staff_pos_draft";
 
@@ -134,6 +146,7 @@ export default function PosPage() {
   const [productMatches, setProductMatches] = useState<typeof CATALOG[number][]>([]);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
   const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
+  const [foundersBusy, setFoundersBusy] = useState(false);
   const [detailClient, setDetailClient] = useState<PosClient | null>(null);
   const [customLabel, setCustomLabel] = useState("");
   const [customReason, setCustomReason] = useState("Custom sale");
@@ -146,14 +159,21 @@ export default function PosPage() {
   const [cashDollars, setCashDollars] = useState("");
   const [cashReceivedCents, setCashReceivedCents] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<PosPaymentMethod | "split" | null>(null);
+  const [savedCards, setSavedCards] = useState<StripeSavedCard[]>([]);
+  const [savedCardsReason, setSavedCardsReason] = useState<string | null>(null);
+  const [pendingChargeCard, setPendingChargeCard] = useState<StripeSavedCard | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const customerTimer = useRef<ReturnType<typeof setTimeout>>();
   const hydratedSale = useRef<string | null>(null);
 
   const total = useMemo(() => calculateTotal(cart), [cart]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
-  const suggestions = useMemo(() => cashSuggestions(total), [total]);
-  const inCheckout = panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete";
+  const unpaidCashLeg = sale?.paymentLegs?.find((leg) => leg.method === "cash" && leg.status !== "paid");
+  const cashTargetCents = unpaidCashLeg?.amountCents ?? total;
+  const suggestions = useMemo(() => cashSuggestions(cashTargetCents), [cashTargetCents]);
+  const primarySavedCard = savedCards[0] || null;
+  const inCheckout =
+    panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete" || panel === "charge-confirm";
 
   useEffect(() => {
     const fromQuery = searchParams.get("sale");
@@ -262,6 +282,31 @@ export default function PosPage() {
     };
   }, [detailClient?.id, client?.id, panel]);
 
+  useEffect(() => {
+    if (!client || client.id.startsWith("draft_")) {
+      setSavedCards([]);
+      setSavedCardsReason(client ? "draft_client" : null);
+      return;
+    }
+    let cancelled = false;
+    setSavedCards([]);
+    setSavedCardsReason("loading");
+    void getStripeSavedCards(client.id)
+      .then((result) => {
+        if (cancelled) return;
+        setSavedCards(result.cards || []);
+        setSavedCardsReason(result.available ? null : result.reason || "no_cards");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSavedCards([]);
+        setSavedCardsReason("lookup_failed");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [client?.id]);
+
   function closePanel() {
     setPanel(null);
     setNotice("");
@@ -269,6 +314,7 @@ export default function PosPage() {
     setCustomerQuery("");
     setDetailClient(null);
     setSelectedPayment(null);
+    setPendingChargeCard(null);
   }
 
   function openSearch() {
@@ -359,6 +405,7 @@ export default function PosPage() {
       name: contact.name,
       phone: contact.phone || null,
       email: contact.email || null,
+      isFoundersCircle: !!contact.isFoundersCircle,
     };
     if (attach) {
       setClient(next);
@@ -379,6 +426,24 @@ export default function PosPage() {
     setDetailClient(null);
     setPanel(null);
     setNotice("");
+  }
+
+  async function toggleFoundersCircle() {
+    const target = detailClient || client;
+    if (!target || target.id.startsWith("draft_") || foundersBusy) return;
+    const next = !target.isFoundersCircle;
+    setFoundersBusy(true);
+    setNotice("");
+    try {
+      const result = await setFoundersCircle(target.id, next ? "add" : "remove");
+      const flagged = !!result.isFoundersCircle;
+      if (detailClient?.id === target.id) setDetailClient({ ...detailClient, isFoundersCircle: flagged });
+      if (client?.id === target.id) setClient({ ...client, isFoundersCircle: flagged });
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Could not update Founder's Circle tag");
+    } finally {
+      setFoundersBusy(false);
+    }
   }
 
   function saveNewCustomer() {
@@ -464,7 +529,7 @@ export default function PosPage() {
       const first = result.checkouts[0];
       if (first?.url) {
         window.open(first.url, "_blank", "noopener,noreferrer");
-        setNotice("Stripe Checkout opened. Copy the link if the client pays on another device.");
+        setNotice("Stripe window opened. When they’ve paid, tap Check payment.");
       } else {
         setNotice("Checkout saved. No Stripe link was returned.");
       }
@@ -482,6 +547,49 @@ export default function PosPage() {
     const paymentLegs = total ? [{ method: "manual-card" as const, amountCents: total }] : [];
     setLegs(paymentLegs);
     await startStripeCheckout(paymentLegs);
+  }
+
+  function chooseSavedCard() {
+    if (!primarySavedCard) {
+      setNotice("No proven card on file for this customer. Use Card (Checkout) first.");
+      return;
+    }
+    setSelectedPayment("saved-card");
+    const paymentLegs = total ? [{ method: "saved-card" as const, amountCents: total }] : [];
+    setLegs(paymentLegs);
+    setPendingChargeCard(primarySavedCard);
+    setPanel("charge-confirm");
+  }
+
+  async function confirmSavedCardCharge() {
+    if (!client || !cart.length || !pendingChargeCard) return;
+    const paymentLegs = legs.length ? legs : total ? [{ method: "saved-card" as const, amountCents: total }] : [];
+    const label = cardLabel(pendingChargeCard);
+    setBusy(true);
+    setNotice("");
+    try {
+      const result = await chargePosSavedCard({
+        id: sale?.id,
+        version: sale?.version,
+        client,
+        cart,
+        paymentLegs,
+        paymentMethodId: pendingChargeCard.id,
+        confirmed: true,
+      });
+      applySale(result.sale);
+      setPendingChargeCard(null);
+      setNotice(
+        result.sale.fulfillmentStatus === "fulfilled"
+          ? `Charged ${label}. GHL updated.`
+          : `Charged ${label}.`,
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not charge card on file.");
+      setPanel("checkout");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function chooseCheckoutLink() {
@@ -516,11 +624,17 @@ export default function PosPage() {
 
   async function confirmCash(amountCents = Math.round(Number(cashDollars) * 100)) {
     if (!client || !cart.length) return;
-    if (!Number.isSafeInteger(amountCents) || amountCents < total) {
-      setNotice(`Cash received needs to cover ${money(total)}. Use Split for a partial amount.`);
+    const requiredCents = unpaidCashLeg?.amountCents ?? total;
+    if (!Number.isSafeInteger(amountCents) || amountCents < requiredCents) {
+      setNotice(`Cash received needs to cover ${money(requiredCents)}.`);
       return;
     }
-    const paymentLegs = total ? [{ method: "cash" as const, amountCents: total }] : [];
+    const paymentLegs =
+      sale?.paymentLegs?.length
+        ? toDraftLegs(sale)
+        : total
+          ? [{ method: "cash" as const, amountCents: total }]
+          : [];
     setBusy(true);
     setNotice("");
     try {
@@ -530,6 +644,7 @@ export default function PosPage() {
         client,
         cart,
         paymentLegs,
+        paymentLegId: unpaidCashLeg?.id,
         cashReceivedCents: amountCents,
       });
       setCashReceivedCents(amountCents);
@@ -540,6 +655,12 @@ export default function PosPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function openCashForLeg(legAmountCents: number) {
+    setSelectedPayment("cash");
+    setCashDollars((legAmountCents / 100).toFixed(2));
+    setPanel("cash");
   }
 
   function updateSplitAmount(index: number, amountCents: number) {
@@ -595,11 +716,11 @@ export default function PosPage() {
         setCashReceivedCents(cashLeg.amountCents);
         applySale(result.sale);
       } else if (cashLeg && stripeLegs.length) {
-        setNotice("Card Checkout opened. After it pays, use Cash to record the cash leg on a follow-up — or keep both legs as card for now.");
+        setNotice("Card portion opened in Stripe. When that pays, record the cash portion here.");
         setPanel("checkout");
       } else {
         setPanel("checkout");
-        setNotice("Stripe Checkout opened for each card leg.");
+        setNotice("Stripe window opened. When they’ve paid, tap Check payment.");
       }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not start split checkout.");
@@ -666,6 +787,14 @@ export default function PosPage() {
           ? "Awaiting payment"
           : "Ready";
 
+  const awaitingPayment = Boolean(
+    sale &&
+      (sale.status === "awaiting_payment" ||
+        sale.status === "partially_paid" ||
+        checkouts.some((item) => Boolean(item.url)) ||
+        (sale.paymentLegs || []).some((leg) => Boolean(leg.stripeCheckoutUrl) && leg.status !== "paid")),
+  );
+
   const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
 
   return (
@@ -717,8 +846,24 @@ export default function PosPage() {
                 className="pos-tile pos-tile--practice"
                 onClick={() => addOrIncrementCatalog("12-week-practice")}
               >
-                <strong>Amari Practice</strong>
-                <small>{money(550000)}</small>
+                <strong>12-Week Practice</strong>
+                <small>{money(540000)}</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--practice-6"
+                onClick={() => addOrIncrementCatalog("6-week-practice")}
+              >
+                <strong>6-Week Practice</strong>
+                <small>{money(300000)}</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--assessment"
+                onClick={() => addOrIncrementCatalog("amari-assessment")}
+              >
+                <strong>Assessment</strong>
+                <small>{money(2900)}</small>
               </button>
               <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
                 <strong>Series</strong>
@@ -878,7 +1023,7 @@ export default function PosPage() {
               Phone number
               <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} inputMode="tel" autoComplete="tel" />
             </label>
-            <p className="pos-muted">Phone or email is required. Customer is added to this cart on save.</p>
+            <p className="pos-muted">Phone or email is required. Customer is attached to this sale on save.</p>
           </div>
         )}
 
@@ -893,8 +1038,40 @@ export default function PosPage() {
             <p className="pos-muted">
               {[ (detailClient || client)?.phone, (detailClient || client)?.email ].filter(Boolean).join(" · ") || "No contact detail"}
             </p>
+            {(detailClient || client)?.isFoundersCircle && (
+              <p className="pos-founders-badge" data-testid="founders-circle-badge">Founder's Circle</p>
+            )}
+            {client && (detailClient || client)?.id === client.id && (
+              <p className="pos-card-on-file">
+                {primarySavedCard
+                  ? `Card on file: ${cardLabel(primarySavedCard)}`
+                  : savedCardsReason === "loading"
+                    ? "Checking card on file…"
+                    : savedCardsReason === "no_cards"
+                      ? "No reusable card saved in Stripe"
+                      : savedCardsReason === "no_proven_customer"
+                        ? "No linked Stripe customer for this contact"
+                        : savedCardsReason === "lookup_failed"
+                          ? "Card lookup failed — try again"
+                          : "No proven card on file"}
+              </p>
+            )}
+            {!(detailClient || client)?.id.startsWith("draft_") && (
+              <button
+                type="button"
+                className="pos-secondary-btn"
+                onClick={() => void toggleFoundersCircle()}
+                disabled={foundersBusy}
+              >
+                {foundersBusy
+                  ? "Updating…"
+                  : (detailClient || client)?.isFoundersCircle
+                    ? "Remove Founder's Circle"
+                    : "Mark Founder's Circle"}
+              </button>
+            )}
             <button type="button" className="pos-primary-btn" onClick={attachDetailClient}>
-              Add to cart
+              Add customer
             </button>
             <p className="pos-section-label">Orders</p>
             {(detailClient || client)?.id.startsWith("draft_") ? (
@@ -979,62 +1156,162 @@ export default function PosPage() {
             <div className="pos-panel__bar">
               <button type="button" onClick={() => setPanel(null)}>Cancel</button>
               <strong>Total {money(total)}</strong>
-              <button type="button" onClick={() => void refreshSale()} disabled={busy || !sale}>Refresh</button>
+              {awaitingPayment ? (
+                <button type="button" onClick={() => void refreshSale()} disabled={busy || !sale}>Refresh</button>
+              ) : (
+                <span />
+              )}
             </div>
             {notice && <div className="pos-notice">{notice}</div>}
-            <p className="pos-checkout-prompt">Select payment option</p>
-            <div className="pos-pay-grid">
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
-                onClick={() => void chooseCard()}
-                disabled={busy}
-              >
-                Card
-                <small>Stripe Checkout</small>
+
+            {awaitingPayment ? (
+              <>
+                <h1 className="pos-panel-title">Waiting for payment</h1>
+                <p className="pos-muted">
+                  {(sale?.paymentLegs || []).filter((leg) => leg.status !== "paid").length > 1
+                    ? "Finish each unpaid portion below. When Stripe is done, check payment status."
+                    : "Finish payment in the Stripe window. Come back here and check status when it’s done."}
+                </p>
+                <section className="pos-await-legs">
+                  {(sale?.paymentLegs || []).map((leg) => {
+                    const checkout =
+                      checkouts.find((item) => item.legId === leg.id) ||
+                      (leg.stripeCheckoutUrl
+                        ? { legId: leg.id, url: leg.stripeCheckoutUrl, sessionId: leg.stripeCheckoutSessionId || "" }
+                        : null);
+                    const paid = leg.status === "paid";
+                    const stripeLike = leg.method !== "cash" && leg.method !== "other" && leg.method !== "saved-card";
+                    return (
+                      <article className={`pos-await-leg ${paid ? "is-paid" : ""}`} key={leg.id}>
+                        <div className="pos-await-leg__meta">
+                          <strong>{paymentLabels[leg.method] || leg.method}</strong>
+                          <span>{money(leg.amountCents)}</span>
+                          <small>
+                            {paid
+                              ? "Paid"
+                              : leg.method === "cash"
+                                ? "Collect cash"
+                                : leg.method === "saved-card"
+                                  ? "Charge card on file"
+                                  : "Pay in Stripe window"}
+                          </small>
+                        </div>
+                        {!paid && checkout?.url && stripeLike && (
+                          <div className="pos-await-recovery">
+                            <button
+                              type="button"
+                              className="pos-text-btn"
+                              onClick={() => window.open(checkout.url, "_blank", "noopener,noreferrer")}
+                            >
+                              Open again
+                            </button>
+                            <span aria-hidden="true">·</span>
+                            <button type="button" className="pos-text-btn" onClick={() => copyCheckout(checkout.url)}>
+                              Copy link
+                            </button>
+                          </div>
+                        )}
+                        {!paid && leg.method === "cash" && (
+                          <button
+                            type="button"
+                            className="pos-primary-btn"
+                            onClick={() => openCashForLeg(leg.amountCents)}
+                            disabled={busy}
+                          >
+                            Record cash {money(leg.amountCents)}
+                          </button>
+                        )}
+                      </article>
+                    );
+                  })}
+                </section>
+                <button type="button" className="pos-primary-btn" onClick={() => void refreshSale()} disabled={busy || !sale}>
+                  {busy ? "Checking…" : "Check payment status"}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="pos-checkout-prompt">How is this being paid?</p>
+                {primarySavedCard && (
+                  <p className="pos-card-on-file">Card on file: {cardLabel(primarySavedCard)}</p>
+                )}
+                <div className="pos-pay-grid">
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "saved-card" ? "is-active" : ""}`}
+                    onClick={chooseSavedCard}
+                    disabled={busy || !primarySavedCard || !total}
+                  >
+                    Card on file
+                    <small>{primarySavedCard ? cardLabel(primarySavedCard) : "None linked yet"}</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "manual-card" ? "is-active" : ""}`}
+                    onClick={() => void chooseCard()}
+                    disabled={busy}
+                  >
+                    New card
+                    <small>Opens Stripe Checkout</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "cash" ? "is-active" : ""}`}
+                    onClick={openCash}
+                    disabled={busy}
+                  >
+                    Cash
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "checkout-link" ? "is-active" : ""}`}
+                    onClick={() => void chooseCheckoutLink()}
+                    disabled={busy}
+                  >
+                    Checkout link
+                    <small>Open or copy URL</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`pos-pay-tile ${selectedPayment === "split" ? "is-active" : ""}`}
+                    onClick={openSplit}
+                    disabled={busy || !total}
+                  >
+                    Split payment
+                    <small>Card + cash, etc.</small>
+                  </button>
+                </div>
+                <p className="pos-muted">
+                  {primarySavedCard
+                    ? "Card on file charges immediately after you confirm. New card opens hosted Stripe Checkout and saves the card for next time."
+                    : savedCardsReason === "loading"
+                      ? "Checking for a card on file…"
+                      : savedCardsReason === "no_cards"
+                        ? "This customer has paid before, but Stripe has no reusable card saved. Use New card once to save one."
+                        : "No proven card on file yet. Use New card once — it will save for next time."}
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
+        {panel === "charge-confirm" && pendingChargeCard && (
+          <div className="pos-modal-scrim" role="presentation" onClick={() => !busy && setPanel("checkout")}>
+            <div className="pos-modal" role="dialog" aria-labelledby="charge-confirm-title" onClick={(e) => e.stopPropagation()}>
+              <h2 id="charge-confirm-title">Charge card on file?</h2>
+              <p className="pos-muted">
+                Charge <strong>{cardLabel(pendingChargeCard)}</strong> for <strong>{money(total)}</strong> on{" "}
+                <strong>{client?.name || "this customer"}</strong>?
+              </p>
+              <p className="pos-muted">This runs immediately. It is not a Checkout link.</p>
+              {notice && <div className="pos-notice">{notice}</div>}
+              <button type="button" className="pos-primary-btn" onClick={() => void confirmSavedCardCharge()} disabled={busy}>
+                {busy ? "Charging…" : `Charge ${money(total)}`}
               </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "cash" ? "is-active" : ""}`}
-                onClick={openCash}
-                disabled={busy}
-              >
-                Cash
-              </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "checkout-link" ? "is-active" : ""}`}
-                onClick={() => void chooseCheckoutLink()}
-                disabled={busy}
-              >
-                Checkout link
-                <small>Open or copy URL</small>
-              </button>
-              <button
-                type="button"
-                className={`pos-pay-tile ${selectedPayment === "split" ? "is-active" : ""}`}
-                onClick={openSplit}
-                disabled={busy || !total}
-              >
-                Split payment
+              <button type="button" className="pos-ghost-btn" onClick={() => { setPendingChargeCard(null); setPanel("checkout"); }} disabled={busy}>
+                Cancel
               </button>
             </div>
-            {checkouts.length > 0 && (
-              <section className="pos-checkout-links">
-                <p className="pos-section-label">Open Checkout</p>
-                {checkouts.map((item) => (
-                  <div className="pos-checkout-link-row" key={item.legId}>
-                    <button type="button" className="pos-secondary-btn" onClick={() => window.open(item.url, "_blank", "noopener,noreferrer")}>
-                      Open Stripe
-                    </button>
-                    <button type="button" className="pos-ghost-btn" onClick={() => copyCheckout(item.url)}>
-                      Copy link
-                    </button>
-                  </div>
-                ))}
-              </section>
-            )}
-            <p className="pos-muted">No tap to pay. Card opens hosted Stripe Checkout. Webhook marks the sale paid.</p>
           </div>
         )}
 
@@ -1047,6 +1324,11 @@ export default function PosPage() {
             </div>
             {notice && <div className="pos-notice">{notice}</div>}
             <h1 className="pos-panel-title">Accept cash</h1>
+            <p className="pos-muted">
+              {unpaidCashLeg
+                ? `Cash portion of this sale: ${money(unpaidCashLeg.amountCents)}.`
+                : `Full sale total ${money(total)}.`}
+            </p>
             <p className="pos-section-label">Amount received</p>
             <div className="pos-cash-suggestions">
               {suggestions.map((cents) => (
@@ -1173,16 +1455,36 @@ export default function PosPage() {
         </div>
 
         {client ? (
-          <button
-            type="button"
-            className="pos-customer-pill"
-            onClick={() => {
-              setDetailClient(client);
-              setPanel("customer-detail");
-            }}
-          >
-            {client.name}
-          </button>
+          <div className="pos-customer-block">
+            <button
+              type="button"
+              className="pos-customer-pill"
+              onClick={() => {
+                setDetailClient(client);
+                setPanel("customer-detail");
+              }}
+            >
+              {client.name}
+            </button>
+            {client.isFoundersCircle && (
+              <p className="pos-founders-badge" data-testid="founders-circle-badge">Founder's Circle</p>
+            )}
+            {!client.id.startsWith("draft_") && (
+              <p className={`pos-customer-card ${primarySavedCard ? "is-ready" : ""}`}>
+                {savedCardsReason === "loading"
+                  ? "Checking card on file…"
+                  : primarySavedCard
+                    ? `Card on file · ${cardLabel(primarySavedCard)}`
+                    : savedCardsReason === "no_cards"
+                      ? "Paid before, no reusable card saved"
+                      : savedCardsReason === "no_proven_customer"
+                        ? "No Stripe customer linked yet"
+                        : savedCardsReason === "lookup_failed"
+                          ? "Couldn’t check card on file"
+                          : "No card on file"}
+              </p>
+            )}
+          </div>
         ) : (
           <button type="button" className="pos-add-customer-link" onClick={openCustomer}>
             + Add customer
@@ -1197,7 +1499,13 @@ export default function PosPage() {
               return (
                 <div className="pos-cart-line" key={`${lineKey(line)}-${index}`}>
                   <div className="pos-cart-line__mark" aria-hidden="true">
-                    {(line.productKey === "12-week-practice" ? "12" : "A")}
+                    {(line.productKey === "12-week-practice"
+                      ? "12"
+                      : line.productKey === "6-week-practice"
+                        ? "6"
+                        : line.productKey === "amari-assessment"
+                          ? "$"
+                          : "A")}
                     <span>{qty}</span>
                   </div>
                   <div className="pos-cart-line__body">
@@ -1236,8 +1544,12 @@ export default function PosPage() {
             <button type="button" className="pos-checkout-btn" onClick={finishSale}>
               Done
             </button>
+          ) : awaitingPayment ? (
+            <button type="button" className="pos-checkout-btn" onClick={() => void refreshSale()} disabled={busy || !sale}>
+              {busy ? "Checking…" : "Check payment"}
+            </button>
           ) : (
-            <div className="pos-checkout-btn pos-checkout-btn--static">{money(total)}</div>
+            <div className="pos-checkout-btn pos-checkout-btn--static">Choose payment</div>
           )}
         </div>
       </aside>

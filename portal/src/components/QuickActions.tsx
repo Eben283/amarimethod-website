@@ -1,19 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ClientData } from '../types/portal';
-import EmbedCalendarModal, { type EmbedCalendarType } from './EmbedCalendarModal';
 
 interface QuickActionsProps {
   client: ClientData;
+  /** Opens the native Amari BookingModal (in-person / virtual toggle inside). */
   onBookSession: () => void;
-  /** Refresh dashboard data after the embedded calendar modal closes — the
-   *  iframe gives us no booking event, so we refetch on close to reflect any
-   *  session the user just booked. */
+  /** Kept for call-site compatibility; native BookingModal refreshes via its own success path. */
   onBooked: () => void;
 }
 
-// Booking URLs. Initial sessions point to the native flow at /book/<variant>;
-// follow-up + discovery still 301 to GHL (phase 2/3).
+// Initial sessions use the public native bookers. Follow-ups use BookingModal
+// (shared Amari calendar) — see SYSTEM.md. Do not reintroduce GHL embeds.
 const BOOKING_URLS = {
   initial_inperson: '/book/initial-in-person',
   initial_virtual: '/book/initial-virtual',
@@ -149,21 +147,17 @@ function ActionCard({ a }: { a: Action }) {
   );
 }
 
-export default function QuickActions({ client, onBookSession: _onBookSession, onBooked }: QuickActionsProps) {
+export default function QuickActions({ client, onBookSession, onBooked: _onBooked }: QuickActionsProps) {
   const navigate = useNavigate();
   const [showInitialChoice, setShowInitialChoice] = useState(false);
-  const [showSeriesChoice, setShowSeriesChoice] = useState(false);
-  const [showFollowupChoice, setShowFollowupChoice] = useState(false);
-  const [embedCalendarType, setEmbedCalendarType] = useState<EmbedCalendarType | null>(null);
 
   const hasHadInitial = client.sessionsCompleted > 0;
   const hasActiveSeries = client.seriesType !== 'none' && client.sessionsRemaining > 0;
-  const isPayAsYouGo = hasHadInitial && !hasActiveSeries;
 
   // Primary booking card — varies by state
   let primaryCard: JSX.Element;
   if (!hasHadInitial) {
-    // Brand new — pick in-person or virtual for the initial
+    // Brand new — pick in-person or virtual for the initial (public native bookers)
     primaryCard = (
       <BookingCard
         label="Book your initial session"
@@ -179,36 +173,45 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
       />
     );
   } else if (hasActiveSeries) {
-    // Series member — book from pre-paid pool, pick in-person or virtual
+    // Series member — native Amari BookingModal (in-person / virtual inside)
     primaryCard = (
-      <BookingCard
-        label="Book your next session"
-        description={`${client.sessionsRemaining} session${client.sessionsRemaining === 1 ? '' : 's'} left in your series.`}
-        price="Included"
-        open={showSeriesChoice}
-        onOpen={() => setShowSeriesChoice(true)}
-        onClose={() => setShowSeriesChoice(false)}
-        choices={[
-          { label: 'In person', onClick: () => setEmbedCalendarType('prepaid_inperson') },
-          { label: 'Virtual', onClick: () => setEmbedCalendarType('prepaid_virtual'), ghost: true },
-        ]}
-      />
+      <button
+        type="button"
+        className="cp-action cp-action-primary"
+        onClick={onBookSession}
+        data-testid="booking-card"
+      >
+        <span className="cp-action-l">
+          <span className="cp-action-h" data-testid="booking-label">Book your next session</span>
+          <span className="cp-action-p">
+            {`${client.sessionsRemaining} session${client.sessionsRemaining === 1 ? '' : 's'} left in your series.`}
+          </span>
+        </span>
+        <span className="cp-action-r">
+          <span className="cp-action-price">Included</span>
+          <span className="cp-action-cta">Book</span>
+        </span>
+      </button>
     );
   } else {
-    // Pay-as-you-go or finished series — book + pay per session
+    // Pay-as-you-go or finished series — same native modal. portal-book requires
+    // prepaid balance; with none left the modal surfaces that and series cards below.
     primaryCard = (
-      <BookingCard
-        label="Book a follow-up session"
-        description="Book and pay for a single session."
-        price="$190"
-        open={showFollowupChoice}
-        onOpen={() => setShowFollowupChoice(true)}
-        onClose={() => setShowFollowupChoice(false)}
-        choices={[
-          { label: 'In person', onClick: () => setEmbedCalendarType('followup_inperson') },
-          { label: 'Virtual', onClick: () => setEmbedCalendarType('followup_virtual'), ghost: true },
-        ]}
-      />
+      <button
+        type="button"
+        className="cp-action cp-action-primary"
+        onClick={onBookSession}
+        data-testid="booking-card"
+      >
+        <span className="cp-action-l">
+          <span className="cp-action-h" data-testid="booking-label">Book a follow-up session</span>
+          <span className="cp-action-p">Pick a time, then pay $190 for a single session.</span>
+        </span>
+        <span className="cp-action-r">
+          <span className="cp-action-price">$190</span>
+          <span className="cp-action-cta">Book</span>
+        </span>
+      </button>
     );
   }
 
@@ -286,20 +289,6 @@ export default function QuickActions({ client, onBookSession: _onBookSession, on
           {secondaryActions.map((a) => <ActionCard key={a.label} a={a} />)}
         </div>
       </section>
-
-      {embedCalendarType && (
-        <EmbedCalendarModal
-          calendarType={embedCalendarType}
-          onClose={() => {
-            setEmbedCalendarType(null);
-            setShowSeriesChoice(false);
-            setShowFollowupChoice(false);
-            // Reflect any session booked inside the embed (no booking event
-            // crosses the iframe boundary, so refetch on close).
-            onBooked();
-          }}
-        />
-      )}
     </>
   );
 }

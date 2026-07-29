@@ -42,6 +42,10 @@ describe('determineSeriesType', () => {
   it('the 12-week practice takes precedence over older package history', () => {
     expect(determineSeriesType([{ type: '8-series' }, { type: '12-week' }])).toBe('12-week');
   });
+  it('the 6-week practice beats 8-session history but loses to 12-week', () => {
+    expect(determineSeriesType([{ type: '8-series' }, { type: '6-week' }])).toBe('6-week');
+    expect(determineSeriesType([{ type: '6-week' }, { type: '12-week' }])).toBe('12-week');
+  });
 });
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
@@ -339,8 +343,8 @@ describe('classifyInvoice', () => {
 // ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
 
 describe('ACTIVE_PRODUCTS map', () => {
-  it('contains the 15 currently-sold products', () => {
-    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(15);
+  it('contains the 16 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(16);
   });
 
   it('contains the canonical 8-Session and 4-Session Series IDs', () => {

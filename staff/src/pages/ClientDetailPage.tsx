@@ -301,8 +301,15 @@ export default function ClientDetailPage() {
 
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ') || 'Unknown';
   const isPartner = client.tags.includes('affiliate-partner');
+  const isFoundersCircle = client.isFoundersCircle || client.tags.some((t) => t.toLowerCase() === 'founders-circle');
   const study = studyFromTags(client.tags);
-  const roleWord = isPartner ? 'Referral partner' : client.seriesType !== 'none' ? `${client.seriesType.replace('-session', '')}-session client` : 'Client';
+  const roleWord = isPartner
+    ? 'Referral partner'
+    : isFoundersCircle
+      ? "Founder's Circle client"
+      : client.seriesType !== 'none'
+        ? `${client.seriesType.replace('-session', '')}-session client`
+        : 'Client';
 
   // session progress numbers (same math as SessionStats)
   const totalSessions = client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
@@ -485,6 +492,7 @@ export default function ClientDetailPage() {
                 attended={client.ledgerAttended}
               />
               {isPartner && <span className="sa-chip">Partner</span>}
+              {isFoundersCircle && <span className="sa-chip">Founder's Circle</span>}
             </span>
           </div>
           <div className="sa-prog">

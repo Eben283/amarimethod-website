@@ -1,0 +1,18 @@
+---
+description: Amari owned system catalog — calendar, POS, ledger; do not reinvent or use GHL widgets
+alwaysApply: true
+---
+
+# Amari owned system
+
+Before building booking/calendar UI, payments/POS, or CRM replacements, read **`SYSTEM.md`** at the repo root.
+
+## Hard rules
+
+1. **Calendar** — use `css/amari-calendar.css` + `shared/amari-calendar/` (`AmariMonthGrid`, `AmariTimeSlots`). Do not invent a new picker. Do not embed a GHL calendar widget for new work.
+2. **Portal follow-ups** — `BookingModal` (native). Do not embed GHL calendar widgets.
+3. **Staff sales** — `PosPage` + Stripe card-on-file (`functions/lib/stripe-api.js`). Not GHL Payment Methods UI.
+4. **Balances** — `functions/lib/session-ledger.js`.
+5. **Marketing pages** — site-v6 / `DESIGN.md` only.
+
+When you ship a new owned piece, update `SYSTEM.md` in the same PR.

@@ -7,7 +7,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@amari/calendar": ["../shared/amari-calendar"],
+      "@amari/calendar/*": ["../shared/amari-calendar/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

@@ -134,6 +134,9 @@ export function classifyOrder(order) {
   if (/12.?week|24.?session/i.test(name)) {
     return { type: "12-week", sessions: 24, name, amount };
   }
+  if (/6.?week/i.test(name)) {
+    return { type: "6-week", sessions: 12, name, amount };
+  }
   if (/8.?session|eight.?session/i.test(name)) {
     return { type: "8-series", sessions: 8, name, amount };
   }
@@ -214,6 +217,8 @@ export function determineSeriesType(classifications) {
   // client on the 8-session series, so it must count toward has8 (not has4).
   const has12Week = classifications.some((c) => c.type === "12-week");
   if (has12Week) return "12-week";
+  const has6Week = classifications.some((c) => c.type === "6-week");
+  if (has6Week) return "6-week";
   const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade" || c.type === "4-to-8-upgrade");
   if (has8) return "8-session";
   const has4 = classifications.some((c) => c.type === "4-series" || c.type === "4-upgrade");

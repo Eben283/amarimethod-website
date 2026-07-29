@@ -29,7 +29,11 @@ export async function stripeRequest(secretKey, method, path, params) {
   const res = await fetch(url, init);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || data.error) {
-    const message = data?.error?.message || `Stripe ${method} ${path} failed (${res.status})`;
+    let message = data?.error?.message || `Stripe ${method} ${path} failed (${res.status})`;
+    // Stripe echoes key fragments in this error — never surface them to staff UI.
+    if (/invalid api key/i.test(message)) {
+      message = "Stripe API key is invalid. Update STRIPE_SECRET_KEY in Cloudflare Pages.";
+    }
     const err = new Error(message);
     err.status = res.status;
     err.stripe = data.error || null;
@@ -39,6 +43,13 @@ export async function stripeRequest(secretKey, method, path, params) {
 }
 
 export async function findOrCreateStripeCustomer(secretKey, { email, name, contactId, phone }) {
+  // Prefer a proven GHL-linked customer (especially one that already has cards)
+  // before creating a duplicate via email.
+  if (contactId && !String(contactId).startsWith("draft_")) {
+    const proven = await resolveProvenStripeCustomer(secretKey, { contactId });
+    if (proven) return proven;
+  }
+
   if (email) {
     const listed = await stripeRequest(secretKey, "GET", "/customers", { email, limit: 5 });
     const existing = (listed.data || []).find((c) => c && !c.deleted);
@@ -60,6 +71,7 @@ export async function findOrCreateStripeCustomer(secretKey, { email, name, conta
     email: email || undefined,
     phone: phone || undefined,
     "metadata[contactId]": contactId || undefined,
+    "metadata[id]": contactId || undefined,
   });
 }
 
@@ -92,11 +104,188 @@ export async function createPosCheckoutSession(secretKey, {
     "payment_intent_data[metadata][payment_leg_id]": paymentLegId,
     "payment_intent_data[metadata][contactId]": contactId || "",
     "payment_intent_data[metadata][leg_method]": legMethod || "",
+    // Save the card on the Stripe Customer for later staff-confirmed charges.
+    "payment_intent_data[setup_future_usage]": "off_session",
   };
   if (customerId) params.customer = customerId;
   else if (customerEmail) params.customer_email = customerEmail;
 
   return stripeRequest(secretKey, "POST", "/checkout/sessions", params);
+}
+
+function safeCardDescriptor(pm) {
+  const card = pm?.card || {};
+  return {
+    id: pm.id,
+    brand: String(card.brand || "card"),
+    last4: String(card.last4 || ""),
+    expMonth: Number.isInteger(card.exp_month) ? card.exp_month : null,
+    expYear: Number.isInteger(card.exp_year) ? card.exp_year : null,
+  };
+}
+
+/** Resolve a Stripe Customer only with evidence tied to this GHL contactId. Never email-only.
+ *  Collects all proven candidates and prefers one that already has a reusable card.
+ */
+export async function resolveProvenStripeCustomer(secretKey, { contactId, storedCustomerId } = {}) {
+  if (!contactId || String(contactId).startsWith("draft_")) return null;
+
+  const belongsToContact = (customer) => {
+    if (!customer || customer.deleted) return false;
+    const meta = customer.metadata || {};
+    // GHL commonly stamps the contact as metadata.id; we also use metadata.contactId.
+    if (meta.contactId && meta.contactId !== contactId) return false;
+    if (meta.id && meta.id !== contactId) return false;
+    return true;
+  };
+
+  const loadCustomer = async (customerId) => {
+    if (!customerId) return null;
+    try {
+      const customer = await stripeRequest(secretKey, "GET", `/customers/${customerId}`);
+      return belongsToContact(customer) ? customer : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const candidates = new Map(); // customerId -> customer
+  const add = (customer) => {
+    if (customer?.id) candidates.set(customer.id, customer);
+  };
+
+  if (storedCustomerId) {
+    const stored = await loadCustomer(storedCustomerId);
+    if (stored) {
+      const meta = stored.metadata || {};
+      if (meta.contactId === contactId || meta.id === contactId || (!meta.contactId && !meta.id)) {
+        add(stored);
+      }
+    }
+  }
+
+  for (const field of ["contactId", "id"]) {
+    try {
+      const found = await stripeRequest(secretKey, "GET", "/customers/search", {
+        query: `metadata["${field}"]:"${contactId}"`,
+        limit: 10,
+      });
+      for (const row of found.data || []) {
+        if (row && !row.deleted && row.metadata?.[field] === contactId && belongsToContact(row)) {
+          add(row);
+        }
+      }
+    } catch {
+      // Search may be unavailable — continue.
+    }
+  }
+
+  try {
+    const charges = await stripeRequest(secretKey, "GET", "/charges/search", {
+      query: `metadata["contactId"]:"${contactId}"`,
+      limit: 20,
+    });
+    for (const charge of charges.data || []) {
+      if (!charge?.customer) continue;
+      if (charge.metadata?.contactId && charge.metadata.contactId !== contactId) continue;
+      add(await loadCustomer(charge.customer));
+    }
+  } catch {
+    // Charge Search unavailable — continue with whatever candidates we have.
+  }
+
+  if (!candidates.size) return null;
+
+  let best = null;
+  let bestCards = -1;
+  for (const customer of candidates.values()) {
+    let cardCount = 0;
+    try {
+      const cards = await listCustomerCards(secretKey, customer.id);
+      cardCount = cards.length;
+    } catch {
+      cardCount = 0;
+    }
+    // Prefer any customer with cards; otherwise keep first proven match.
+    if (cardCount > bestCards) {
+      best = customer;
+      bestCards = cardCount;
+    }
+  }
+
+  if (!best) return null;
+
+  // Best-effort: stamp contactId for faster future POS lookups. Never block on this.
+  if (best.metadata?.contactId !== contactId) {
+    try {
+      best = await stripeRequest(secretKey, "POST", `/customers/${best.id}`, {
+        "metadata[contactId]": contactId,
+      });
+    } catch {
+      // keep unstamped customer
+    }
+  }
+  return best;
+}
+
+export async function listCustomerCards(secretKey, customerId) {
+  if (!customerId) return [];
+  const listed = await stripeRequest(secretKey, "GET", "/payment_methods", {
+    customer: customerId,
+    type: "card",
+    limit: 20,
+  });
+  const cards = (listed.data || [])
+    .filter((pm) => pm && pm.id && pm.card?.last4)
+    .map(safeCardDescriptor);
+
+  // Include invoice default if Stripe has one that wasn't in the type=card page.
+  try {
+    const customer = await stripeRequest(secretKey, "GET", `/customers/${customerId}`);
+    const defaultId = customer?.invoice_settings?.default_payment_method;
+    if (typeof defaultId === "string" && defaultId.startsWith("pm_") && !cards.some((c) => c.id === defaultId)) {
+      const pm = await stripeRequest(secretKey, "GET", `/payment_methods/${defaultId}`);
+      if (pm?.type === "card" && pm.card?.last4 && (!pm.customer || pm.customer === customerId)) {
+        cards.unshift(safeCardDescriptor(pm));
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return cards;
+}
+
+export async function retrievePaymentMethod(secretKey, paymentMethodId) {
+  return stripeRequest(secretKey, "GET", `/payment_methods/${paymentMethodId}`);
+}
+
+/**
+ * Off-session charge against an attached card. Returns the PaymentIntent.
+ * Caller must verify the PaymentMethod belongs to the proven customer first.
+ */
+export async function chargeCustomerCard(secretKey, {
+  amountCents,
+  customerId,
+  paymentMethodId,
+  saleId,
+  paymentLegId,
+  contactId,
+  description,
+}) {
+  return stripeRequest(secretKey, "POST", "/payment_intents", {
+    amount: amountCents,
+    currency: "usd",
+    customer: customerId,
+    payment_method: paymentMethodId,
+    off_session: "true",
+    confirm: "true",
+    description: description || undefined,
+    "metadata[sale_id]": saleId,
+    "metadata[payment_leg_id]": paymentLegId,
+    "metadata[contactId]": contactId || "",
+    "metadata[leg_method]": "saved-card",
+  });
 }
 
 function parseStripeSignatureHeader(header) {

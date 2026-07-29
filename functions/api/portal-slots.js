@@ -64,6 +64,8 @@ export async function onRequestGet(context) {
   const SLOT_CALENDAR_ALLOWLIST = new Set([
     'ZO1jlGfy01rsxVqicoSB', // Follow-up — In Person (Package)
     'bJFkhVP35Ecwh4tLnSmy', // Follow-up — Virtual (Package)
+    'SKDVOL8wtUN6Ne0ppbC9', // Follow-up — In Person (pay-as-you-go $190)
+    'oVn77FcecFY16iS2pHyP', // Follow-up — Virtual (pay-as-you-go $190)
     'G7OAnnJuFbMF6nQSlZVQ', // Initial — In Person
     'ySmht5hx4uZGEpgZrlCw', // Initial — Virtual
   ]);

@@ -68,6 +68,7 @@ export async function onRequestGet(context) {
         lastAppointment: null, // Would need separate API call per contact — skip for list
         sessionsRemaining: parseInt(getCustomField(c, "sessions_remaining", fieldDefs) ?? "0", 10),
         seriesType: getCustomField(c, "series_type", fieldDefs) || "none",
+        isFoundersCircle: (c.tags || []).some((t) => String(t).toLowerCase() === "founders-circle"),
       };
     });
 

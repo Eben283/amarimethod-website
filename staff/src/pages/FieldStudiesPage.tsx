@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, ClipboardList, ExternalLink, FilePenLine, House, Loader2, LockKeyhole, Plus, UserPlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AmariMonthGrid, AmariTimeSlots } from '@amari/calendar';
 import { bookFieldStudyFollowup, enrollFieldStudyParticipant, getFieldStudyParticipant, getFieldStudySlots, listFieldStudyParticipants, saveFieldStudyBaseline, type FieldStudySlot } from '../lib/api';
 import StudyBaselineForm, { emptyStudyBaselineAnswers } from '../components/StudyBaselineForm';
 import type { FieldStudyBaseline, FieldStudyParticipant, FieldStudyQueueItem } from '../types/staff';
+import '../../../css/amari-calendar.css';
 import './FieldStudiesPage.css';
 import './FieldStudiesFixes.css';
 import './FieldStudiesUsability.css';
 
 const SCALE = Array.from({ length: 11 }, (_, index) => index);
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const FIELD_STUDIES = {
   jaw: { label: 'Jaw', note: 'Jaw / TMJ tension & clicking' }, foot: { label: 'Foot', note: 'Arch, heel & plantar pain' },
   elbow: { label: 'Elbow', note: 'Tennis / golfer’s elbow' }, hand: { label: 'Hand', note: 'Wrist, thumb & grip pain' },
@@ -31,8 +32,6 @@ function bookedDates(sessions?: { startTime: string }[]) { return sessions?.map(
 function monthStart(date = new Date()) { return new Date(date.getFullYear(), date.getMonth(), 1); }
 function addMonth(date: Date, amount: number) { return new Date(date.getFullYear(), date.getMonth() + amount, 1); }
 function ymd(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
-function calendarDate(year: number, month: number, day: number) { return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`; }
-function monthHeading(date: Date) { return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(date); }
 function slotTime(slot: FieldStudySlot) { return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' }).format(new Date(slot.datetime)); }
 
 function Scale({ value, onChange, label }: { value: number | null; onChange: (next: number) => void; label: string }) { return <div className="fs-scale" role="group" aria-label={label}>{SCALE.map((n) => <button key={n} type="button" className={value === n ? 'selected' : ''} onClick={() => onChange(n)} aria-pressed={value === n} aria-label={`${label}: ${n}`}>{n}</button>)}</div>; }
@@ -111,7 +110,6 @@ function CalendarModal({ record, onClose }: { record: FieldStudyParticipant; onC
   const [booked, setBooked] = useState<string[]>([]);
   const startDate = ymd(month);
   const endDate = ymd(new Date(month.getFullYear(), month.getMonth() + 1, 0));
-  const today = ymd(new Date());
   const availableDates = useMemo(() => new Set(slots.map((slot) => slot.date)), [slots]);
   const times = selectedDate ? slots.filter((slot) => slot.date === selectedDate) : [];
   const firstSessionCompleted = record.firstSessionCompleted !== false;
@@ -143,8 +141,6 @@ function CalendarModal({ record, onClose }: { record: FieldStudyParticipant; onC
     } finally { setSubmitting(false); }
   }
 
-  const firstDay = month.getDay();
-  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   return <div className="fs-calendar" role="dialog" aria-modal="true" aria-label="Book study sessions">
     <div className="fs-calendar-scrim" onClick={() => { if (!submitting) void onClose(); }} />
     <section className="fs-native-calendar">
@@ -154,8 +150,29 @@ function CalendarModal({ record, onClose }: { record: FieldStudyParticipant; onC
       {booked.length > 0 && <div className="fs-calendar-booked" role="status"><Check size={15} /> {booked.map((date) => new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: timezone }).format(new Date(date))).join(' · ') } booked</div>}
       {error && <div className="fs-calendar-error" role="alert">{error}</div>}
       {booked.length >= sessionsToBook ? <div className="fs-calendar-complete"><p>All remaining study sessions are booked.</p><button type="button" onClick={() => { void onClose(); }}>Done <ArrowRight size={16} /></button></div> : <>
-        <div className="fs-single-month"><header><button type="button" aria-label="Previous month" disabled={month <= monthStart()} onClick={() => setMonth((current) => addMonth(current, -1))}>‹</button><h3>{monthHeading(month)}</h3><button type="button" aria-label="Next month" onClick={() => setMonth((current) => addMonth(current, 1))}>›</button></header><div className="fs-cal-weekdays">{WEEKDAYS.map((day) => <span key={day}>{day}</span>)}</div><div className="fs-cal-days">{Array.from({ length: firstDay }, (_, index) => <span key={`blank-${index}`} />)}{Array.from({ length: days }, (_, index) => { const day = index + 1; const date = calendarDate(month.getFullYear(), month.getMonth(), day); const disabled = loading || date < today || !availableDates.has(date); return <button key={date} type="button" disabled={disabled} className={`${date === selectedDate ? 'selected ' : ''}${date === today ? 'today ' : ''}${disabled ? 'unavailable' : ''}`} onClick={() => { setSelectedDate(date); setSelectedSlot(null); }}>{day}{!disabled && date !== selectedDate && <i />}</button>; })}</div></div>
-        <div className="fs-calendar-times">{loading ? <p>Loading available times…</p> : selectedDate ? <><p>Times for <strong>{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(`${selectedDate}T12:00:00`))}</strong></p><div>{times.map((slot) => <button type="button" key={slot.datetime} className={selectedSlot?.datetime === slot.datetime ? 'selected' : ''} onClick={() => setSelectedSlot(slot)}>{slotTime(slot)}</button>)}</div></> : <p>Choose a date to see available times.</p>}</div>
+        <div className="fs-calendar-picker">
+          <AmariMonthGrid
+            year={month.getFullYear()}
+            month={month.getMonth()}
+            selectedDate={selectedDate}
+            availableDates={availableDates}
+            onSelectDate={(date) => { setSelectedDate(date); setSelectedSlot(null); }}
+            onPrevMonth={() => setMonth((current) => addMonth(current, -1))}
+            onNextMonth={() => setMonth((current) => addMonth(current, 1))}
+            prevDisabled={month <= monthStart()}
+            loading={loading}
+          />
+          {selectedDate && (
+            <AmariTimeSlots
+              dateLabel={new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date(`${selectedDate}T12:00:00`))}
+              slots={times.map((slot) => ({ id: slot.datetime, label: slotTime(slot) }))}
+              selectedId={selectedSlot?.datetime ?? null}
+              onSelect={(id) => setSelectedSlot(times.find((slot) => slot.datetime === id) || null)}
+              emptyMessage="Choose a date to see available times."
+            />
+          )}
+          {!selectedDate && !loading && <p className="am-slots-empty" style={{ marginTop: 16 }}>Choose a date to see available times.</p>}
+        </div>
         <footer className="fs-calendar-action"><span>{selectedSlot ? `${sessionLabel[0].toUpperCase()}${sessionLabel.slice(1)}: ${slotTime(selectedSlot)}` : 'Pick a time to continue'}</span><button type="button" disabled={!selectedSlot || submitting} onClick={bookSelectedSlot}>{submitting ? 'Booking…' : `Book ${sessionLabel}`} <ArrowRight size={16} /></button></footer>
       </>}
     </section>

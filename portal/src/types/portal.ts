@@ -8,7 +8,7 @@ export interface ClientData {
    * Derived from real purchases (orders + invoices), not the GHL custom field.
    * The custom field can lag or be wrong; the ledger reflects what was bought.
    */
-  seriesType: 'none' | '4-session' | '8-session' | '12-week' | 'Single';
+  seriesType: 'none' | '4-session' | '6-week' | '8-session' | '12-week' | 'Single';
   /**
    * Lifetime journey counter: total past appointments with status
    * showed/completed/confirmed. Grows monotonically across packages.
@@ -58,6 +58,12 @@ export interface ClientData {
   hasLivingPractice: boolean;
   portalAccess: boolean;
   isPartner: boolean;
+  /**
+   * Legacy clients tagged `founders-circle` keep portal v1 (Founder's Circle
+   * home with pack repurchase). Untagged clients get v2. This replaced the
+   * old seriesType === '12-week' gate.
+   */
+  isFoundersCircle?: boolean;
   referralCount?: number;
   rewardCode?: string | null;
   /** Reminder cadence the client chose: all | some | none. Defaults to 'all'. */
