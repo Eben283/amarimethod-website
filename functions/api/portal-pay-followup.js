@@ -2,14 +2,14 @@
  * POST /api/portal-pay-followup
  *
  * Authenticated portal clients with no prepaid balance: save the Amari-calendar
- * slot onto the contact (requested_session_*), then return the EXISTING $190
- * Single Follow-up GHL payment link. After payment, ghl-purchase-webhook books
- * the appointment on the requested calendar (same path as public native checkout).
+ * slot onto the contact (requested_session_*), then return the correct
+ * à-la-carte single-session GHL payment link:
+ *   - default / new clients → $285 Single Session
+ *   - founders-circle tag → legacy $190 Single Follow-up
+ * After payment, ghl-purchase-webhook books the appointment on the requested
+ * calendar (same path as public native checkout).
  *
- * No new GHL product or calendar — reuses:
- *   product 6998ace59dfde469ecb2aab6
- *   payment-link/6998ad0288a3f09db4845d26
- *   calendars SKDVOL8… (in person) / oVn77… (virtual)
+ * Calendars: SKDVOL8… (in person) / oVn77… (virtual)
  */
 
 import { ghlFetch } from "../lib/ghl.js";
@@ -17,9 +17,9 @@ import { requireOwner } from "../lib/owned-access.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { singleSessionOfferFor } from "../lib/session-pricing.js";
 
 const allowedOrigin = "https://www.amarimethod.com";
-const PAYMENT_LINK_URL = "https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26";
 
 export const PAID_FOLLOWUP_CALENDARS = {
   "in-person": "SKDVOL8wtUN6Ne0ppbC9",
@@ -76,6 +76,18 @@ export async function onRequestPost(context) {
     return json({ error: "sessionType must be in-person or virtual" }, 400, origin);
   }
 
+  // Resolve dual-price offer from the live contact tags (Founder's Circle → $190).
+  const contactRes = await ghlFetch(
+    context,
+    `https://services.leadconnectorhq.com/contacts/${contactId}`,
+  );
+  if (!contactRes.ok) {
+    return json({ error: "Contact not found" }, 404, origin);
+  }
+  const contactPayload = await contactRes.json();
+  const contact = contactPayload.contact || contactPayload;
+  const offer = singleSessionOfferFor({ tags: contact.tags || [] });
+
   // Persist the picked slot for the purchase webhook (same fields as /book/create-checkout).
   // DATE field gets YYYY-MM-DD only; TEXT iso keeps the full offset time.
   const dateOnly = String(startTime).match(/^(\d{4}-\d{2}-\d{2})/)?.[1] || startTime;
@@ -112,14 +124,14 @@ export async function onRequestPost(context) {
       pathId: "portal_followup_paid_book",
       hopId: "pay_followup",
       outcome: "ok",
-      summary: "Portal $190 slot saved; payment link returned",
+      summary: `Portal ${offer.priceLabel} slot saved; payment link returned`,
       source: "portal-pay-followup",
       contactId,
       condition: {
         expected: "requested_session_slot_iso set",
         observed: String(startTime),
       },
-      money: { product: "Single Follow-up", amountCents: 19000 },
+      money: { product: offer.name, amountCents: offer.amountCents },
     }),
   );
 
@@ -136,7 +148,7 @@ export async function onRequestPost(context) {
     console.warn("[portal-pay-followup] tag add failed:", err);
   }
 
-  const paymentUrl = new URL(PAYMENT_LINK_URL);
+  const paymentUrl = new URL(offer.paymentLinkUrl);
   // Contact-scoped links help GHL attach the order to the right person when possible.
   paymentUrl.searchParams.set("contact_id", contactId);
 
@@ -144,6 +156,8 @@ export async function onRequestPost(context) {
     success: true,
     paymentUrl: paymentUrl.toString(),
     calendarId,
-    amountCents: 19000,
+    amountCents: offer.amountCents,
+    priceLabel: offer.priceLabel,
+    productId: offer.productId,
   }, 200, origin);
 }

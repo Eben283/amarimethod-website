@@ -10,8 +10,11 @@ const PID = {
   twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
   sixWeek: '6a683360017263178d05d1a3',
   sixWeekPrice: '6a683360017263ef8a05d1a7',
-  // à-la-carte standalone follow-up ($190) — SHOULD credit +1 (ADD)
+  // à-la-carte standalone follow-up ($190 Founder's Circle) — SHOULD credit +1 (ADD)
   singleFollowupSession: '6998ace59dfde469ecb2aab6',
+  // default raised single ($285) — same credit + native-book path
+  singleSession285: '6a6b8bb7a1753b65945372f1',
+  singleSession285Price: '6a6b8bb7a1753b0f3f5372f5',
   retiredFollowup: '67f57171b6b1019c7b0233cc',
   // draw-down / booking products — ride on a booking against an existing
   // package; crediting them would inflate the balance. Must NEVER be credited.
@@ -29,6 +32,16 @@ describe('PRODUCT_MAP — purchase crediting', () => {
     expect(p).toBeDefined();
     expect(p.sessionsToAdd).toBe(1);
     expect(p.seriesType).toBe(null);
+  });
+
+  it('credits the raised $285 Single Session (+1) and native-books like $190', () => {
+    expect(PRODUCT_MAP[PID.singleSession285]).toMatchObject({
+      sessionsToAdd: 1,
+      seriesType: null,
+      isNativePaidBooking: true,
+      allowRequestedCalendar: true,
+    });
+    expect(resolveOrderProductId({ items: [{ price: { _id: PID.singleSession285Price } }] })).toBe(PID.singleSession285);
   });
 
   it('credits package series with the right session counts', () => {

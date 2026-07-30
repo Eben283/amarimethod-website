@@ -116,13 +116,16 @@ Background gotcha: `body { background }` from style-v5.css shows in the gutters 
 | Service | Price | Duration | Notes |
 |---------|-------|----------|-------|
 | Initial Session | $225 | 60 min | |
-| Follow-up Session | $190 | 50 min | |
-| 4-Session Series | $720 | — | Available to anyone at any time |
-| 8-Session Series | $1,295 | — (includes Living Practice) | Available to anyone at any time |
-| Upgrade: 1 Initial → 4-Session | $495 | — | Credit upgrade only — $225 already paid applied toward $720. ONLY if client has purchased exactly 1 initial session. |
-| Upgrade: 1 Initial → 8-Session | $1,070 | — | Credit upgrade only — $225 already paid applied toward $1,295. ONLY if client has purchased exactly 1 initial session. |
+| Single Session | $285 | 50 min | Default à-la-carte (product `6a6b8bb7a1753b65945372f1`) |
+| Single Follow-up (Founder's Circle) | $190 | 50 min | Only for `founders-circle` tag (~11 contacts); product `6998ace59dfde469ecb2aab6` |
+| 4-Session Series | $720 | — | Legacy ladder — Founder's Circle keep this; raised SKU not created yet |
+| 8-Session Series | $1,295 | — (includes Living Practice) | Legacy ladder — Founder's Circle keep this; raised SKU not created yet |
+| Upgrade: 1 Initial → 4-Session | $495 | — | Credit upgrade only — $225 already paid applied toward $720. ONLY if client has purchased exactly 1 initial session. Legacy for founders until raised SKU exists. |
+| Upgrade: 1 Initial → 8-Session | $1,070 | — | Credit upgrade only — $225 already paid applied toward $1,295. ONLY if client has purchased exactly 1 initial session. Legacy for founders until raised SKU exists. |
 | Living Practice | $347 | standalone video program | |
 | Discovery Call | Free | 15 min | |
+
+**Price-raise policy (2026-07-30):** everyone gets raised prices except Founder's Circle (`founders-circle` tag), who keep old 4/8/upgrade/entrainment prices. Dual-price helper: `functions/lib/session-pricing.js`.
 
 ## Key URLs
 - Live site: https://www.amarimethod.com

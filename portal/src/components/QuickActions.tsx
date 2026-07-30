@@ -205,10 +205,10 @@ export default function QuickActions({ client, onBookSession, onBooked: _onBooke
       >
         <span className="cp-action-l">
           <span className="cp-action-h" data-testid="booking-label">Book a follow-up session</span>
-          <span className="cp-action-p">Pick a time, then pay $190 for a single session.</span>
+          <span className="cp-action-p">Pick a time, then pay {client.isFoundersCircle ? '$190' : '$285'} for a single session.</span>
         </span>
         <span className="cp-action-r">
-          <span className="cp-action-price">$190</span>
+          <span className="cp-action-price">{client.isFoundersCircle ? '$190' : '$285'}</span>
           <span className="cp-action-cta">Book</span>
         </span>
       </button>

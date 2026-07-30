@@ -43,7 +43,9 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
     seriesType === "12-week";
 }
 
-/** GHL tag that grandfather's legacy 4/8-session clients onto portal v1 (Founder's Circle).
+/** GHL tag for Founder's Circle (~11 package buyers as of 2026-07-30).
+ *  Gates: portal v1 home + legacy à-la-carte single ($190). Same tag will gate
+ *  legacy 4/8/upgrade/entrainment prices once parallel raised SKUs exist.
  *  Applied manually (or via one-time backfill) — never auto-granted on new purchases. */
 export const FOUNDERS_CIRCLE_TAG = "founders-circle";
 

@@ -10,7 +10,8 @@ const PACKAGE_CALENDARS = {
   followup_virtual:  'bJFkhVP35Ecwh4tLnSmy',
 };
 
-// Existing pay-as-you-go $190 calendars (same as old GHL widgets)
+// Pay-as-you-go calendars (same as old GHL widgets). Price is dual:
+// $285 default / $190 Founder's Circle — resolved server-side in portal-pay-followup.
 const PAID_CALENDARS = {
   followup_inperson: 'SKDVOL8wtUN6Ne0ppbC9',
   followup_virtual:  'oVn77FcecFY16iS2pHyP',
@@ -33,10 +34,12 @@ interface BookingModalProps {
   rescheduleFor?: Appointment | null;
   /**
    * No prepaid sessions left: pick a slot on the Amari calendar, then pay the
-   * existing $190 Single Follow-up link. Webhook books after payment.
-   * Reschedule always uses prepaid book (never pay-again).
+   * à-la-carte single-session link ($285 default / $190 Founder's Circle).
+   * Webhook books after payment. Reschedule always uses prepaid book.
    */
   payPerSession?: boolean;
+  /** Display price for pay-as-you-go. Server still picks the real payment link. */
+  singleSessionPriceLabel?: string;
 }
 
 function getUserTimezone(): string {
@@ -68,12 +71,18 @@ function slotDisplayLimit(date: string, today: Date): number {
   return Math.min(12, 6 + Math.floor(daysAhead / 9));
 }
 
-export default function BookingModal({ onClose, rescheduleFor, payPerSession = false }: BookingModalProps) {
+export default function BookingModal({
+  onClose,
+  rescheduleFor,
+  payPerSession = false,
+  singleSessionPriceLabel = '$285',
+}: BookingModalProps) {
   const [sessionType, setSessionType] = useState<SessionType>('in-person');
   const [step, setStep] = useState<ModalStep>('select');
   // Reschedule never re-charges; only a fresh book with no package balance pays.
   const needsPayment = Boolean(payPerSession && !rescheduleFor);
   const calendars = needsPayment ? PAID_CALENDARS : PACKAGE_CALENDARS;
+  const payLabel = singleSessionPriceLabel;
 
   const today = new Date();
   const [calYear, setCalYear] = useState(today.getFullYear());
@@ -234,7 +243,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
               {rescheduleFor
                 ? <>Pick a <em>new time.</em></>
                 : needsPayment
-                  ? <>Pick a time, then <em>pay $190.</em></>
+                  ? <>Pick a time, then <em>pay {payLabel}.</em></>
                   : <>Find a time <em>that works.</em></>}
             </h2>
           </div>
@@ -292,7 +301,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
                 <div><span className="cp-mono">Time</span><b><em>{formatTime(selectedSlot.hour, selectedSlot.minute)}</em></b></div>
                 <div><span className="cp-mono">Timezone</span><b>{timezone.replace(/_/g, ' ')}</b></div>
                 {needsPayment && (
-                  <div><span className="cp-mono">Total</span><b>$190</b></div>
+                  <div><span className="cp-mono">Total</span><b>{payLabel}</b></div>
                 )}
               </div>
               {needsPayment && (
@@ -379,7 +388,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
                 className="cp-btn cp-btn-primary"
                 onClick={handleConfirm}
               >
-                <span>{needsPayment ? 'Pay $190' : 'Confirm booking'}</span><span className="cp-arrow">→</span>
+                <span>{needsPayment ? `Pay ${payLabel}` : 'Confirm booking'}</span><span className="cp-arrow">→</span>
               </button>
             </>
           )}

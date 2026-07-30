@@ -31,6 +31,8 @@ describe('classifyCharge', () => {
   it('falls back to the paid amount when the description is generic', () => {
     expect(classifyCharge(charge({ amount: 129500, description: 'Payment for invoice 000136' }))).toMatchObject({ sessions: 8, kind: 'matched-amount' });
     expect(classifyCharge(charge({ amount: 19000, description: 'Payment for invoice 000200' }))).toMatchObject({ sessions: 1, kind: 'matched-amount' });
+    expect(classifyCharge(charge({ amount: 28500, description: 'Payment for invoice 000203' }))).toMatchObject({ sessions: 1, kind: 'matched-amount' });
+    expect(classifyCharge(charge({ amount: 28500, description: 'Single Session ($285)' }))).toMatchObject({ sessions: 1, kind: 'matched-description' });
     expect(classifyCharge(charge({ amount: 540000, description: 'Payment for invoice 000201' }))).toMatchObject({ sessions: 24, kind: 'matched-amount' });
     expect(classifyCharge(charge({ amount: 550000, description: 'Payment for invoice 000201' }))).toMatchObject({ sessions: 24, kind: 'matched-amount' });
     expect(classifyCharge(charge({ amount: 300000, description: 'Payment for invoice 000202' }))).toMatchObject({ sessions: 12, kind: 'matched-amount' });

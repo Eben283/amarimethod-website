@@ -29,7 +29,8 @@ export const AMOUNT_TO_SESSIONS = Object.freeze({
   575:  { sessions: 4, label: 'Upgrade 4→8' },
   495:  { sessions: 3, label: 'Upgrade Initial→4' },
   225:  { sessions: 1, label: 'Initial Session' },
-  190:  { sessions: 1, label: 'Follow-up Session' },
+  285:  { sessions: 1, label: 'Single Session' },
+  190:  { sessions: 1, label: 'Follow-up Session' }, // Founder's Circle legacy à-la-carte
   90:   { sessions: 0, label: 'Entrainment' },
   347:  { sessions: 0, label: 'Living Practice' },
 });
@@ -51,6 +52,7 @@ export function classifyCharge(charge) {
     /entrainment/i.test(desc) ? { sessions: 0, label: 'Entrainment' } :
     /living practice/i.test(desc) ? { sessions: 0, label: 'Living Practice' } :
     /initial/i.test(desc) ? { sessions: 1, label: 'Initial Session' } :
+    /single.?session/i.test(desc) ? { sessions: 1, label: 'Single Session' } :
     /follow.?up/i.test(desc) ? { sessions: 1, label: 'Follow-up Session' } :
     null;
   if (byDesc) return { ...byDesc, amount, kind: 'matched-description' };

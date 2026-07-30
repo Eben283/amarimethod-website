@@ -11,7 +11,7 @@ const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; pri
   { product: 'upgrade-initial-to-4', label: 'Upgrade: Initial to 4', price: '$495', primary: false },
   { product: 'upgrade-initial-to-8', label: 'Upgrade: Initial to 8', price: '$1,070', primary: false },
   { product: 'upgrade-4-to-8', label: 'Upgrade: 4 to 8', price: '$575', primary: false },
-  { product: 'follow-up', label: 'Follow-up session', price: '$190', primary: false },
+  { product: 'follow-up', label: 'Single session', price: '$285', primary: false },
   { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
 ];
 

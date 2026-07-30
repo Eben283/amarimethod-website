@@ -12,8 +12,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 16 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(16);
+  it('contains 17 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(17);
   });
 
   it('every entry has required shape', () => {
@@ -118,6 +118,8 @@ const ID = {
   initialIP: '688a1cd770362828afbf08a2',
   initialVirt: '690b6b4d333ffa59d40c1823',
   singleFU: '6998ace59dfde469ecb2aab6',
+  singleSession285: '6a6b8bb7a1753b65945372f1',
+  singleSession285Price: '6a6b8bb7a1753b0f3f5372f5',
   fuIP: '69aee204e80b62d627d8e922', // draw-down
   fuVirt: '69aee3ebcf9cf8ed9f6c928d', // draw-down
   prePurchased: '67b1299f080422451447bdd0', // draw-down
@@ -172,6 +174,8 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
   });
   it('credits à-la-carte singles +1 with no series change', () => {
     expect(PURCHASE_CREDIT_MAP[ID.singleFU]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
+    expect(PURCHASE_CREDIT_MAP[ID.singleSession285]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
+    expect(productIdForAnyId(ID.singleSession285Price)).toBe(ID.singleSession285);
     expect(PURCHASE_CREDIT_MAP[ID.initialIP]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
     expect(PURCHASE_CREDIT_MAP[ID.initialVirt]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
   });

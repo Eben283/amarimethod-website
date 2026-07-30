@@ -78,7 +78,18 @@ export const PAID_BOOKING_MAP = {
   },
   // Existing $190 Single Follow-up product + payment link (staff-send-paylink).
   // One product covers in-person + virtual; calendar comes from requested_session_calendar.
+  // Kept for Founder's Circle grandfathering after the 2026-07-30 $285 raise.
   "6998ace59dfde469ecb2aab6": {
+    isNativePaidBooking: true,
+    calendarId: "SKDVOL8wtUN6Ne0ppbC9",
+    duplicateCalendarIds: ["SKDVOL8wtUN6Ne0ppbC9", "oVn77FcecFY16iS2pHyP"],
+    allowRequestedCalendar: true,
+    durationMinutes: 50,
+    sessionTitle: "Amari Method Follow-up Session",
+    sessionTag: "booked-followup-paid",
+  },
+  // Default $285 Single Session (2026-07-30) — same native book path as $190.
+  "6a6b8bb7a1753b65945372f1": {
     isNativePaidBooking: true,
     calendarId: "SKDVOL8wtUN6Ne0ppbC9",
     duplicateCalendarIds: ["SKDVOL8wtUN6Ne0ppbC9", "oVn77FcecFY16iS2pHyP"],

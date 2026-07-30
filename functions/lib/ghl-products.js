@@ -125,6 +125,14 @@ export const GHL_PRODUCTS = {
     sessions: 1,
     isPackagePurchase: false,
   },
+  // 2026-07-30 price raise — default à-la-carte single for non-Founder's Circle.
+  // Founder's Circle (~11 tagged contacts) keep the $190 product above.
+  "6a6b8bb7a1753b65945372f1": {
+    name: "Single Session",
+    classification: "followup",
+    sessions: 1,
+    isPackagePurchase: false,
+  },
   "67b1299f080422451447bdd0": {
     name: "Pre Purchased session",
     classification: "followup",
@@ -196,7 +204,8 @@ export const PRICE_IDS = {
   "690b6b4d333ffa59d40c1823": ["690b6b4d6d7d7a23e2a84c51"], // Initial — Virtual
   "69aee204e80b62d627d8e922": ["69aee2041bfe9fb270652ceb"], // Follow-up — In Person (draw-down)
   "69aee3ebcf9cf8ed9f6c928d": ["69aee3ecaf297f29bc0186cb"], // Follow-up — Virtual (draw-down)
-  "6998ace59dfde469ecb2aab6": ["6998ace59dfde42ec0b2aabb", "6998ad0288a3f09db4845d26"], // Single Follow-up
+  "6998ace59dfde469ecb2aab6": ["6998ace59dfde42ec0b2aabb", "6998ad0288a3f09db4845d26"], // Single Follow-up ($190 Founder's Circle)
+  "6a6b8bb7a1753b65945372f1": ["6a6b8bb7a1753b0f3f5372f5"], // Single Session ($285 default)
   "67b1299f080422451447bdd0": ["67b1299f0804221b3947bdd4"], // Pre Purchased (draw-down)
   "69c5d29c4019ce8e80e2513b": ["69c5d29c5b50e82344c2d6ec"], // Entrainment
   "6998d7f2606fa79c54fa3ff5": ["6998d7f2606fa7edc0fa3ffa"], // Living Practice

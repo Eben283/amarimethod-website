@@ -456,7 +456,7 @@ export default function ClientDetailPage() {
                 {showMorePayLinks && (
                   <>
                     {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
-                    {renderPayRow('follow-up', 'Follow-up', '$190')}
+                    {renderPayRow('follow-up', 'Single session', isFoundersCircle ? '$190' : '$285')}
                     {renderPayRow('living-practice', 'Living Practice', '$347')}
                     {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
                     {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}

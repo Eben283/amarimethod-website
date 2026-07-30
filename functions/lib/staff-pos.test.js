@@ -25,6 +25,14 @@ describe("staff POS model", () => {
         ghlProductId: "6a683360017263178d05d1a3",
       }),
     ]);
+    expect(POS_CATALOG["follow-up"]).toMatchObject({
+      amountCents: 28500,
+      ghlProductId: "6a6b8bb7a1753b65945372f1",
+    });
+    expect(POS_CATALOG["follow-up-founders"]).toMatchObject({
+      amountCents: 19000,
+      ghlProductId: "6998ace59dfde469ecb2aab6",
+    });
     expect(POS_CATALOG["amari-assessment"]).toMatchObject({
       amountCents: 2900,
       ghlProductId: "6a66cf0103821ea09ea13f1b",

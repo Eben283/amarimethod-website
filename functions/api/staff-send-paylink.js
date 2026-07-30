@@ -6,6 +6,7 @@
 
 import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { singleSessionOfferFor } from "../lib/session-pricing.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // GHL payment links are hosted on the GHL-managed subdomain, NOT the
@@ -58,10 +59,12 @@ const PRODUCTS = {
     price: "$29",
     path: "/payment-link/6a66cf107b99151a540409b3",
   },
+  // Placeholder — resolved per contact in onRequestPost via founders-circle tag.
+  // Default label is the raised $285; Founder's Circle still receive $190.
   "follow-up": {
-    name: "Follow-up Session",
-    price: "$190",
-    path: "/payment-link/6998ad0288a3f09db4845d26",
+    name: "Single Session",
+    price: "$285",
+    path: "/payment-link/6a6b8bdda655fa0b802a7164",
   },
 };
 
@@ -108,8 +111,6 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400, headers });
     }
 
-    const product = PRODUCTS[productKey];
-
     const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
     if (!contactRes.ok) {
       return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers });
@@ -120,6 +121,12 @@ export async function onRequestPost(context) {
 
     if (!contact.phone) {
       return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers });
+    }
+
+    let product = PRODUCTS[productKey];
+    if (productKey === "follow-up") {
+      const offer = singleSessionOfferFor({ tags: contact.tags || [] });
+      product = { name: offer.name, price: offer.priceLabel, path: offer.paymentLinkPath };
     }
 
     // Short-window dedupe: the SPA's 15s fetch timeout + the retry button can

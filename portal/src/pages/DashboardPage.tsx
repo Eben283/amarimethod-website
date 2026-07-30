@@ -123,6 +123,7 @@ export default function DashboardPage() {
         <BookingModal
           rescheduleFor={rescheduleAppt}
           payPerSession={!(client.sessionsRemaining > 0)}
+          singleSessionPriceLabel={client.isFoundersCircle ? '$190' : '$285'}
           onClose={() => {
             setShowBookingModal(false);
             setRescheduleAppt(null);

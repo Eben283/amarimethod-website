@@ -100,6 +100,7 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
         <BookingModal
           rescheduleFor={rescheduleFor}
           payPerSession={!(client.sessionsRemaining > 0)}
+          singleSessionPriceLabel={client.isFoundersCircle ? '$190' : '$285'}
           onClose={closeBooking}
         />
       )}

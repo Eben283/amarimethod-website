@@ -20,7 +20,10 @@ export const POS_CATALOG = Object.freeze({
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },
   "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
   "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
-  "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
+  // Default raised single ($285). Founder's Circle legacy $190 stays as a
+  // separate catalog key so staff can still ring the grandfathered price.
+  "follow-up": { label: "Single Session ($285)", amountCents: 28500, ghlProductId: "6a6b8bb7a1753b65945372f1" },
+  "follow-up-founders": { label: "Single Follow-up Session ($190 · Founder's Circle)", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
 });
 
 export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);
