@@ -1,6 +1,6 @@
 // GET /api/ops/incidents — open (or filtered) Amari Ops incidents. Eben-only.
 
-import { corsHeaders, requireEbenStaffAuth } from "../../lib/endpoint-guards.js";
+import { corsHeaders, requireStaffAuth } from "../../lib/endpoint-guards.js";
 import { listOpsIncidents } from "../../lib/ops-events.js";
 
 export async function onRequestOptions(context) {
@@ -18,7 +18,7 @@ export async function onRequestGet(context) {
     "Cache-Control": "no-store",
   };
 
-  const { error } = await requireEbenStaffAuth(context, headers);
+  const { error } = await requireStaffAuth(context, headers);
   if (error) return error;
 
   const url = new URL(context.request.url);

@@ -170,7 +170,7 @@ export const OPS_HTML = `<!doctype html>
 <body>
 <div id="gate">
   <div class="mark">Amari Ops</div>
-  <p>Private. Eben only.</p>
+  <p>Same staff PIN as /staff.</p>
   <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autocomplete="one-time-code">
   <button id="unlock" type="button">Open</button>
   <div class="err" id="gateErr"></div>
@@ -185,12 +185,14 @@ export const OPS_HTML = `<!doctype html>
 
   <div id="view-home"></div>
   <div id="view-path" hidden></div>
-  <p class="foot">Eben only · alerts on flip · no Fix layer yet</p>
+  <p class="foot">Staff PIN · alerts on flip · no Fix layer yet</p>
 </div>
 
 <script>
 (function () {
-  var LS = "amari_ops_token";
+  // Reuse the staff app session so Ops doesn't need a second login.
+  var LS = "staff_token";
+  var EXP = "staff_token_expiry";
   var token = localStorage.getItem(LS) || "";
   var gate = document.getElementById("gate");
   var app = document.getElementById("app");
@@ -222,12 +224,18 @@ export const OPS_HTML = `<!doctype html>
     });
   }
 
+  function clearSession() {
+    localStorage.removeItem(LS);
+    localStorage.removeItem(EXP);
+    token = "";
+  }
+
   async function api(path) {
     var res = await fetch(path, {
       headers: { Authorization: "Bearer " + token, Accept: "application/json" }
     });
     if (res.status === 401 || res.status === 403) {
-      var err = new Error(res.status === 403 ? "eben-only" : "auth");
+      var err = new Error("auth");
       err.code = res.status;
       throw err;
     }
@@ -250,18 +258,13 @@ export const OPS_HTML = `<!doctype html>
       if (!res.ok) { errEl.textContent = data.error || "Could not sign in."; return; }
       token = data.token;
       localStorage.setItem(LS, token);
-      // Prove Eben-only before showing the board.
+      localStorage.setItem(EXP, String(Date.now() + 30 * 24 * 60 * 60 * 1000));
       await api("/api/ops/systems");
       showApp();
       render();
     } catch (e) {
-      if (e && e.code === 403) {
-        localStorage.removeItem(LS);
-        token = "";
-        errEl.textContent = "Amari Ops is Eben only.";
-        return;
-      }
-      errEl.textContent = "Could not open Ops.";
+      clearSession();
+      errEl.textContent = "Could not open Ops. Try your /staff PIN again.";
     }
   }
 
@@ -274,6 +277,11 @@ export const OPS_HTML = `<!doctype html>
     app.hidden = true;
     gate.hidden = false;
     if (msg) document.getElementById("gateErr").textContent = msg;
+  }
+
+  function sessionLooksFresh() {
+    var expiry = Number(localStorage.getItem(EXP) || 0);
+    return !!token && (!expiry || expiry > Date.now());
   }
 
   function setOverall(status, note) {
@@ -395,16 +403,9 @@ export const OPS_HTML = `<!doctype html>
       if (route.view === "path") await renderPath(route.pathId);
       else await renderHome();
     } catch (e) {
-      if (e && (e.code === 401 || e.message === "auth")) {
-        localStorage.removeItem(LS);
-        token = "";
-        showGate("Session ended — enter PIN.");
-        return;
-      }
-      if (e && (e.code === 403 || e.message === "eben-only")) {
-        localStorage.removeItem(LS);
-        token = "";
-        showGate("Amari Ops is Eben only.");
+      if (e && (e.code === 401 || e.code === 403 || e.message === "auth")) {
+        clearSession();
+        showGate("Session ended — enter your staff PIN.");
         return;
       }
       homeView.innerHTML = '<p class="empty">Could not load systems.</p>';
@@ -417,7 +418,7 @@ export const OPS_HTML = `<!doctype html>
   });
   window.addEventListener("hashchange", function () { render(); });
 
-  if (token) {
+  if (sessionLooksFresh()) {
     showApp();
     render();
   }

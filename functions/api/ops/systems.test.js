@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../lib/endpoint-guards.js", () => ({
   corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
-  requireEbenStaffAuth: vi.fn(),
+  requireStaffAuth: vi.fn(),
 }));
 
 vi.mock("../../lib/ops-board.js", () => ({
@@ -20,12 +20,12 @@ vi.mock("../../lib/ops-board.js", () => ({
 }));
 
 import { onRequestGet } from "./systems.js";
-import { requireEbenStaffAuth } from "../../lib/endpoint-guards.js";
+import { requireStaffAuth } from "../../lib/endpoint-guards.js";
 import { buildSystemsBoard, buildPathDetail } from "../../lib/ops-board.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  requireEbenStaffAuth.mockResolvedValue({ payload: { user: "Eben", role: "staff" } });
+  requireStaffAuth.mockResolvedValue({ payload: { user: "Garrett", role: "staff" } });
 });
 
 function ctx(url) {
@@ -39,16 +39,16 @@ function ctx(url) {
 }
 
 describe("GET /api/ops/systems", () => {
-  it("401/403 when auth fails", async () => {
-    requireEbenStaffAuth.mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Amari Ops is Eben-only" }), { status: 403 }),
+  it("401 when auth fails", async () => {
+    requireStaffAuth.mockResolvedValue({
+      error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 }),
     });
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
     expect(buildSystemsBoard).not.toHaveBeenCalled();
   });
 
-  it("returns board for Eben", async () => {
+  it("returns board for any staff user", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
     expect(res.status).toBe(200);
     const body = await res.json();
