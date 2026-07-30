@@ -1,5 +1,5 @@
 // Amari Ops path registry — the board only shows registered rows.
-// Phase 1: Assessment paid→book is fully instrumented; others are stubs for later.
+// Paths emit OpsEvents (or fail via ops:err); dependencies are judged from live signals.
 
 export const OPS_SEVERITY = Object.freeze({
   MONEY: "money",
@@ -10,13 +10,24 @@ export const OPS_SEVERITY = Object.freeze({
 
 export const PATH_ASSESSMENT_PAID_BOOK = "assessment_paid_book";
 
-/** @type {ReadonlyArray<{id:string,label:string,kind:'path'|'dependency',severity:string,hops:Array<{id:string,label:string}>,laws:string[],instrumentation:'full'|'partial'|'planned'}>} */
+/** ops:err source → path id (partial money/booking fail sink until full emitters). */
+export const OPS_ERR_PATH_SOURCES = Object.freeze({
+  "ghl-purchase-webhook": "order_package_credit",
+  "ghl-invoice-webhook": "invoice_package_credit",
+  "staff-pos-fulfill": "pos_card_fulfill",
+  "book/create-checkout": "discovery_free_book",
+  "appointment-webhook": "appointment_webhook",
+});
+
+/** @type {ReadonlyArray<{id:string,label:string,kind:'path'|'dependency',severity:string,hops:Array<{id:string,label:string}>,laws:string[],instrumentation:'full'|'partial'|'planned',group?:string}>} */
 export const OPS_REGISTRY = Object.freeze([
+  // ── Money / booking paths ──────────────────────────────────────────────
   Object.freeze({
     id: PATH_ASSESSMENT_PAID_BOOK,
     label: "Assessment · paid → book",
     kind: "path",
     severity: OPS_SEVERITY.MONEY,
+    group: "paths",
     hops: Object.freeze([
       Object.freeze({ id: "create_checkout", label: "Checkout created" }),
       Object.freeze({ id: "payment", label: "Payment" }),
@@ -31,6 +42,7 @@ export const OPS_REGISTRY = Object.freeze([
     label: "Intro paid → book",
     kind: "path",
     severity: OPS_SEVERITY.MONEY,
+    group: "paths",
     hops: Object.freeze([
       Object.freeze({ id: "create_checkout", label: "Checkout created" }),
       Object.freeze({ id: "payment", label: "Payment" }),
@@ -41,10 +53,56 @@ export const OPS_REGISTRY = Object.freeze([
     instrumentation: "partial",
   }),
   Object.freeze({
+    id: "portal_followup_paid_book",
+    label: "Portal $190 · pay → book",
+    kind: "path",
+    severity: OPS_SEVERITY.MONEY,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "pay_followup", label: "Pay follow-up" }),
+      Object.freeze({ id: "payment", label: "Payment" }),
+      Object.freeze({ id: "purchase_webhook", label: "Purchase webhook" }),
+      Object.freeze({ id: "create_appointment", label: "Create appointment" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "planned",
+  }),
+  Object.freeze({
+    id: "order_package_credit",
+    label: "Order · paid → package credit",
+    kind: "path",
+    severity: OPS_SEVERITY.MONEY,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "purchase_webhook", label: "Purchase webhook" }),
+      Object.freeze({ id: "resolve_product", label: "Resolve product" }),
+      Object.freeze({ id: "put_session_fields", label: "Credit sessions" }),
+      Object.freeze({ id: "purchase_cluster", label: "Purchase cluster" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "partial",
+  }),
+  Object.freeze({
+    id: "invoice_package_credit",
+    label: "Invoice · paid → package credit",
+    kind: "path",
+    severity: OPS_SEVERITY.MONEY,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "invoice_webhook", label: "Invoice webhook" }),
+      Object.freeze({ id: "classify_product", label: "Classify product" }),
+      Object.freeze({ id: "put_session_fields", label: "Credit sessions" }),
+      Object.freeze({ id: "tag_delta", label: "Tag delta" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "partial",
+  }),
+  Object.freeze({
     id: "pos_card_fulfill",
     label: "Staff POS · charge → fulfill",
     kind: "path",
     severity: OPS_SEVERITY.MONEY,
+    group: "paths",
     hops: Object.freeze([
       Object.freeze({ id: "pos_charge", label: "POS charge" }),
       Object.freeze({ id: "pos_webhook", label: "POS webhook" }),
@@ -54,19 +112,233 @@ export const OPS_REGISTRY = Object.freeze([
     instrumentation: "partial",
   }),
   Object.freeze({
+    id: "discovery_free_book",
+    label: "Discovery · free book",
+    kind: "path",
+    severity: OPS_SEVERITY.BOOKING,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "submit", label: "Submit" }),
+      Object.freeze({ id: "create_appointment", label: "Create appointment" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "partial",
+  }),
+  Object.freeze({
+    id: "portal_package_book",
+    label: "Portal · prepaid follow-up book",
+    kind: "path",
+    severity: OPS_SEVERITY.BOOKING,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "auth", label: "Auth" }),
+      Object.freeze({ id: "ledger_gate", label: "Ledger gate" }),
+      Object.freeze({ id: "create_appointment", label: "Create appointment" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "planned",
+  }),
+  Object.freeze({
+    id: "appointment_webhook",
+    label: "Appointment webhook → engines",
+    kind: "path",
+    severity: OPS_SEVERITY.BOOKING,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "ingest", label: "Ingest" }),
+      Object.freeze({ id: "dispatch_reminder", label: "Dispatch reminder" }),
+      Object.freeze({ id: "dispatch_nurture", label: "Dispatch nurture" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "partial",
+  }),
+  Object.freeze({
+    id: "staff_book",
+    label: "Staff · book appointment",
+    kind: "path",
+    severity: OPS_SEVERITY.BOOKING,
+    group: "paths",
+    hops: Object.freeze([
+      Object.freeze({ id: "staff_book", label: "Staff book" }),
+      Object.freeze({ id: "create_appointment", label: "Create appointment" }),
+    ]),
+    laws: Object.freeze([]),
+    instrumentation: "planned",
+  }),
+
+  // ── Messaging ──────────────────────────────────────────────────────────
+  Object.freeze({
+    id: "partner_welcome_message",
+    label: "Partner welcome / please-book",
+    kind: "path",
+    severity: OPS_SEVERITY.WRONG_MESSAGE,
+    group: "messaging",
+    hops: Object.freeze([
+      Object.freeze({ id: "trigger", label: "Trigger" }),
+      Object.freeze({ id: "guard", label: "Already-booked guard" }),
+      Object.freeze({ id: "send", label: "Send" }),
+    ]),
+    laws: Object.freeze(["L_partner_welcome_not_if_booked"]),
+    instrumentation: "planned",
+  }),
+  Object.freeze({
+    id: "comms_coherence",
+    label: "Comms coherence",
+    kind: "dependency",
+    severity: OPS_SEVERITY.WRONG_MESSAGE,
+    group: "messaging",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "reminder_engine",
+    label: "Reminder engine",
+    kind: "dependency",
+    severity: OPS_SEVERITY.WRONG_MESSAGE,
+    group: "messaging",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "planned",
+  }),
+  Object.freeze({
+    id: "nurture_engine",
+    label: "Nurture engine",
+    kind: "dependency",
+    severity: OPS_SEVERITY.WRONG_MESSAGE,
+    group: "messaging",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "planned",
+  }),
+
+  // ── Infra / money hygiene dependencies ─────────────────────────────────
+  Object.freeze({
     id: "ghl_token",
     label: "GHL token",
     kind: "dependency",
     severity: OPS_SEVERITY.INFRA,
+    group: "infra",
     hops: Object.freeze([]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "series_reconcile",
+    label: "Series reconcile",
+    kind: "dependency",
+    severity: OPS_SEVERITY.MONEY,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "ledger_drift",
+    label: "Ledger drift scan",
+    kind: "dependency",
+    severity: OPS_SEVERITY.MONEY,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "daily_audit",
+    label: "Daily audit",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "partner_refresh",
+    label: "Partner activity refresh",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "conversation_cache",
+    label: "Conversation cache",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "coach_cadence",
+    label: "Coach cadence",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "coach_reconcile",
+    label: "Coach reconcile",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "funnel_refresh",
+    label: "Funnel refresh",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "call_coach",
+    label: "Call coach",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "field_id_check",
+    label: "Field-ID single-source",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "ecosystem_scan",
+    label: "Ecosystem scan",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "crm_mirror",
     label: "CRM mirror",
     kind: "dependency",
     severity: OPS_SEVERITY.INFRA,
+    group: "infra",
     hops: Object.freeze([]),
     laws: Object.freeze([]),
     instrumentation: "planned",
@@ -75,4 +347,8 @@ export const OPS_REGISTRY = Object.freeze([
 
 export function registryPath(pathId) {
   return OPS_REGISTRY.find((p) => p.id === pathId) || null;
+}
+
+export function registryPathIds() {
+  return OPS_REGISTRY.filter((p) => p.kind === "path").map((p) => p.id);
 }

@@ -7,6 +7,15 @@
 
 import { registryPath } from "./ops-registry.js";
 import { notifyOpsFlip } from "./ops-notify.js";
+import {
+  appendTrailEvent,
+  countTrailIncidentsByPath,
+  listTrailEvents,
+  listTrailIncidents,
+  resolveTrailIncidents,
+  trailEventFromInput,
+  upsertTrailIncident,
+} from "./ops-trail-kv.js";
 
 const OUTCOMES = new Set(["ok", "skip", "fail"]);
 
@@ -28,6 +37,8 @@ function changesOf(res) {
 
 /**
  * Append one hop event. Fire-and-forget safe; resolves { recorded, id?, reason? }.
+ * Prefers AUTOMATION_DB; always mirrors to PORTAL_KV when available so /ops
+ * can read the trail without a Pages D1 binding.
  * @param {object} env
  * @param {object} evt
  */
@@ -37,49 +48,53 @@ export async function recordOpsEvent(env, evt) {
     if (!evt.pathId || !evt.hopId || !evt.summary) return { recorded: false, reason: "missing-fields" };
     if (!OUTCOMES.has(evt.outcome)) return { recorded: false, reason: "bad-outcome" };
 
-    const db = automationDb(env);
-    if (!db) {
-      console.error(
-        `[ops-events] no AUTOMATION_DB — dropping event: ${evt.pathId}/${evt.hopId} ${evt.outcome}`,
-      );
-      return { recorded: false, reason: "no-db" };
-    }
-
     const at = evt.at || new Date().toISOString();
     const atMs = evt.atMs != null ? evt.atMs : Date.parse(at) || Date.now();
     const id = evt.id || newId("evt");
+    const shaped = trailEventFromInput(evt, id, at, atMs);
 
-    await db
-      .prepare(
-        `INSERT INTO ops_events
+    const db = automationDb(env);
+    if (db) {
+      await db
+        .prepare(
+          `INSERT INTO ops_events
            (id, at, at_ms, path_id, hop_id, outcome, reason_code, summary,
             correlation_id, contact_id, person_label, trigger_type, trigger_id,
             condition_expected, condition_observed, message_json, money_json, source)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      )
-      .bind(
-        id,
-        at,
-        atMs,
-        evt.pathId,
-        evt.hopId,
-        evt.outcome,
-        evt.reasonCode ?? null,
-        evt.summary,
-        evt.correlationId ?? null,
-        evt.contactId ?? null,
-        evt.personLabel ?? null,
-        evt.trigger?.type ?? evt.triggerType ?? null,
-        evt.trigger?.id ?? evt.triggerId ?? null,
-        evt.condition?.expected ?? null,
-        evt.condition?.observed ?? null,
-        evt.message != null ? JSON.stringify(evt.message) : null,
-        evt.money != null ? JSON.stringify(evt.money) : null,
-        evt.source ?? null,
-      )
-      .run();
+        )
+        .bind(
+          id,
+          at,
+          atMs,
+          evt.pathId,
+          evt.hopId,
+          evt.outcome,
+          evt.reasonCode ?? null,
+          evt.summary,
+          evt.correlationId ?? null,
+          evt.contactId ?? null,
+          evt.personLabel ?? null,
+          evt.trigger?.type ?? evt.triggerType ?? null,
+          evt.trigger?.id ?? evt.triggerId ?? null,
+          evt.condition?.expected ?? null,
+          evt.condition?.observed ?? null,
+          evt.message != null ? JSON.stringify(evt.message) : null,
+          evt.money != null ? JSON.stringify(evt.money) : null,
+          evt.source ?? null,
+        )
+        .run();
+    }
 
-    return { recorded: true, id, at, atMs };
+    const kvRes = await appendTrailEvent(env, shaped);
+    if (!db && !kvRes.recorded) {
+      console.error(
+        `[ops-events] no AUTOMATION_DB/KV — dropping event: ${evt.pathId}/${evt.hopId} ${evt.outcome}`,
+      );
+      return { recorded: false, reason: "no-store" };
+    }
+
+    return { recorded: true, id, at, atMs, via: db ? "d1" : "kv" };
   } catch (err) {
     console.error(`[ops-events] record failed: ${err && err.message}`);
     return { recorded: false, reason: "threw" };
@@ -92,15 +107,76 @@ export async function recordOpsEvent(env, evt) {
  */
 export async function openOpsIncident(env, inc, { context = null, alert = true } = {}) {
   try {
-    const db = automationDb(env);
-    if (!db) return { opened: false, reason: "no-db" };
     if (!inc?.pathId || !inc?.title) return { opened: false, reason: "missing-fields" };
 
+    const db = automationDb(env);
     const path = registryPath(inc.pathId);
     const severity = inc.severity || path?.severity || "infra";
     const openedAt = inc.openedAt || new Date().toISOString();
     const openedAtMs = inc.openedAtMs != null ? inc.openedAtMs : Date.parse(openedAt) || Date.now();
     const eventIds = Array.isArray(inc.eventIds) ? inc.eventIds.filter(Boolean) : [];
+
+    if (!db) {
+      // Pages without D1: open on the KV trail so /ops still shows the flip.
+      const existingKv = (await listTrailIncidents(env, { status: "open", pathId: inc.pathId, limit: 50 })).find(
+        (row) =>
+          (inc.correlationId && row.correlationId === inc.correlationId) ||
+          (inc.contactId && row.contactId === inc.contactId),
+      );
+      if (existingKv) {
+        const merged = [...eventIds, ...(existingKv.eventIds || [])]
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .slice(0, 20);
+        await upsertTrailIncident(env, {
+          ...existingKv,
+          eventIds: merged,
+          failedHopId: inc.failedHopId || existingKv.failedHopId || null,
+        });
+        return { opened: false, attached: true, id: existingKv.id, flipped: false, via: "kv" };
+      }
+
+      const id = inc.id || newId("inc");
+      const shaped = {
+        id,
+        pathId: inc.pathId,
+        status: "open",
+        severity,
+        openedAt,
+        openedAtMs,
+        resolvedAt: null,
+        lastAlertedAt: null,
+        title: inc.title,
+        contactId: inc.contactId ?? null,
+        personLabel: inc.personLabel ?? null,
+        correlationId: inc.correlationId ?? null,
+        failedHopId: inc.failedHopId ?? null,
+        eventIds: eventIds.slice(0, 20),
+        lawId: inc.lawId ?? null,
+      };
+      await upsertTrailIncident(env, shaped);
+
+      let alertResult = null;
+      if (alert) {
+        alertResult = await notifyOpsFlip(context || { env }, {
+          id,
+          pathId: inc.pathId,
+          severity,
+          title: inc.title,
+          contactId: inc.contactId,
+          personLabel: inc.personLabel,
+          correlationId: inc.correlationId,
+          failedHopId: inc.failedHopId,
+          lawId: inc.lawId,
+        });
+        if (alertResult?.sent || alertResult?.shadowed) {
+          await upsertTrailIncident(env, {
+            ...shaped,
+            lastAlertedAt: new Date().toISOString(),
+          });
+        }
+      }
+      return { opened: true, id, flipped: true, alert: alertResult, via: "kv" };
+    }
 
     // Prefer matching an already-open incident on the same correlation (or contact).
     let existing = null;
@@ -163,6 +239,25 @@ export async function openOpsIncident(env, inc, { context = null, alert = true }
       )
       .run();
 
+    const shaped = {
+      id,
+      pathId: inc.pathId,
+      status: "open",
+      severity,
+      openedAt,
+      openedAtMs,
+      resolvedAt: null,
+      lastAlertedAt: null,
+      title: inc.title,
+      contactId: inc.contactId ?? null,
+      personLabel: inc.personLabel ?? null,
+      correlationId: inc.correlationId ?? null,
+      failedHopId: inc.failedHopId ?? null,
+      eventIds: eventIds.slice(0, 20),
+      lawId: inc.lawId ?? null,
+    };
+    await upsertTrailIncident(env, shaped);
+
     let alertResult = null;
     if (alert) {
       alertResult = await notifyOpsFlip(context || { env }, {
@@ -177,10 +272,12 @@ export async function openOpsIncident(env, inc, { context = null, alert = true }
         lawId: inc.lawId,
       });
       if (alertResult?.sent || alertResult?.shadowed) {
+        const lastAlertedAt = new Date().toISOString();
         await db
           .prepare(`UPDATE ops_incidents SET last_alerted_at = ? WHERE id = ?`)
-          .bind(new Date().toISOString(), id)
+          .bind(lastAlertedAt, id)
           .run();
+        await upsertTrailIncident(env, { ...shaped, lastAlertedAt });
       }
     }
 
@@ -194,29 +291,36 @@ export async function openOpsIncident(env, inc, { context = null, alert = true }
 /** Resolve open incidents for a path+correlation (and/or contact). */
 export async function resolveOpsIncident(env, { pathId, correlationId, contactId } = {}) {
   try {
+    if (!pathId) return { resolved: 0, reason: "missing-path" };
     const db = automationDb(env);
-    if (!db || !pathId) return { resolved: 0, reason: !db ? "no-db" : "missing-path" };
-    const resolvedAt = new Date().toISOString();
     let total = 0;
-    if (correlationId) {
-      const res = await db
-        .prepare(
-          `UPDATE ops_incidents SET status = 'resolved', resolved_at = ?
+    if (db) {
+      const resolvedAt = new Date().toISOString();
+      if (correlationId) {
+        const res = await db
+          .prepare(
+            `UPDATE ops_incidents SET status = 'resolved', resolved_at = ?
            WHERE path_id = ? AND status = 'open' AND correlation_id = ?`,
-        )
-        .bind(resolvedAt, pathId, correlationId)
-        .run();
-      total += changesOf(res);
-    }
-    if (contactId) {
-      const res = await db
-        .prepare(
-          `UPDATE ops_incidents SET status = 'resolved', resolved_at = ?
+          )
+          .bind(resolvedAt, pathId, correlationId)
+          .run();
+        total += changesOf(res);
+      }
+      if (contactId) {
+        const res = await db
+          .prepare(
+            `UPDATE ops_incidents SET status = 'resolved', resolved_at = ?
            WHERE path_id = ? AND status = 'open' AND contact_id = ?`,
-        )
-        .bind(resolvedAt, pathId, contactId)
-        .run();
-      total += changesOf(res);
+          )
+          .bind(resolvedAt, pathId, contactId)
+          .run();
+        total += changesOf(res);
+      }
+    }
+    const kvRes = await resolveTrailIncidents(env, { pathId, correlationId, contactId });
+    total = Math.max(total, kvRes.resolved || 0);
+    if (!db && !(kvRes.resolved > 0) && kvRes.reason === "threw") {
+      return { resolved: 0, reason: "threw" };
     }
     return { resolved: total };
   } catch (err) {
@@ -225,10 +329,10 @@ export async function resolveOpsIncident(env, { pathId, correlationId, contactId
   }
 }
 
-/** List incidents (newest first). */
+/** List incidents (newest first). Prefers D1; falls back to KV trail. */
 export async function listOpsIncidents(env, { status = "open", pathId, limit = 50 } = {}) {
   const db = automationDb(env);
-  if (!db) return [];
+  if (!db) return listTrailIncidents(env, { status, pathId, limit });
   try {
     let res;
     if (pathId && status) {
@@ -264,14 +368,14 @@ export async function listOpsIncidents(env, { status = "open", pathId, limit = 5
     return (res.results || []).map(shapeIncident);
   } catch (err) {
     console.error(`[ops-events] listIncidents failed: ${err && err.message}`);
-    return [];
+    return listTrailIncidents(env, { status, pathId, limit });
   }
 }
 
 /** Count open incidents grouped by path_id. */
 export async function countOpenIncidentsByPath(env) {
   const db = automationDb(env);
-  if (!db) return {};
+  if (!db) return countTrailIncidentsByPath(env);
   try {
     const res = await db
       .prepare(
@@ -286,7 +390,7 @@ export async function countOpenIncidentsByPath(env) {
     return out;
   } catch (err) {
     console.error(`[ops-events] countOpenIncidents failed: ${err && err.message}`);
-    return {};
+    return countTrailIncidentsByPath(env);
   }
 }
 
@@ -350,10 +454,10 @@ function shapeEvent(row) {
   };
 }
 
-/** Recent events for a path (newest first). */
+/** Recent events for a path (newest first). Prefers D1; falls back to KV trail. */
 export async function listOpsEvents(env, { pathId, contactId, correlationId, limit = 50 } = {}) {
   const db = automationDb(env);
-  if (!db) return [];
+  if (!db) return listTrailEvents(env, { pathId, contactId, correlationId, limit });
   try {
     let res;
     if (correlationId) {
@@ -381,7 +485,7 @@ export async function listOpsEvents(env, { pathId, contactId, correlationId, lim
     return (res.results || []).map(shapeEvent);
   } catch (err) {
     console.error(`[ops-events] list failed: ${err && err.message}`);
-    return [];
+    return listTrailEvents(env, { pathId, contactId, correlationId, limit });
   }
 }
 
