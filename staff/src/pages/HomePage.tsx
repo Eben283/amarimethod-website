@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -30,6 +30,7 @@ const TOOLS: HomeTool[] = [
 ];
 
 const BACK_OFFICE = [
+  { label: 'Amari Ops', detail: 'Systems · path · why', Icon: Activity, href: '/ops' },
   { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
   { label: 'Automation Watch', detail: 'Message review', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard' },
   { label: 'CRM Mirror', detail: 'Reconciliation', Icon: Database, href: 'https://amari-crm-mirror.eben-fa2.workers.dev/' },
