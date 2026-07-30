@@ -59,6 +59,16 @@ const PRODUCTS = {
     price: "$29",
     path: "/payment-link/6a66cf107b99151a540409b3",
   },
+  "6-week-practice": {
+    name: "6-Week Amari Practice",
+    price: "$3,000",
+    path: "/payment-link/6a6833c27b99151a54040da5",
+  },
+  "12-week-practice": {
+    name: "12-Week Amari Practice",
+    price: "$5,400",
+    path: "/payment-link/6a66ce547b99151a540409b0",
+  },
   // Placeholder — resolved per contact in onRequestPost via founders-circle tag.
   // Default label is the raised $285; Founder's Circle still receive $190.
   "follow-up": {

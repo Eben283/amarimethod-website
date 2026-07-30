@@ -450,7 +450,7 @@ export default function ClientDetailPage() {
                 <span>
                   {isFoundersCircle
                     ? '8-pack, 4-pack, $190 follow-up & more'
-                    : '$285 single · Assessment · initial (6/12-week SMS soon)'}
+                    : '$285 single · $3k 6-week · $5.4k 12-week'}
                 </span>
               </span>
               <span className="cv"><ChevronRight size={18} /></span>
@@ -477,10 +477,12 @@ export default function ClientDetailPage() {
                 ) : (
                   <>
                     {renderPayRow('follow-up', 'Single session', '$285')}
-                    {renderPayRow('amari-assessment', 'Assessment', '$29')}
-                    {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                    {renderPayRow('6-week-practice', '6-Week Practice', '$3,000')}
+                    {renderPayRow('12-week-practice', '12-Week Practice', '$5,400')}
                     {showMorePayLinks && (
                       <>
+                        {renderPayRow('amari-assessment', 'Assessment', '$29')}
+                        {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
                         {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
                         {renderPayRow('living-practice', 'Living Practice', '$347')}
                       </>

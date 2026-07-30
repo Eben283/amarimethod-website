@@ -118,8 +118,8 @@ Background gotcha: `body { background }` from style-v5.css shows in the gutters 
 | Service | Price | Notes |
 |---------|-------|-------|
 | Single Session | $285 | product `6a6b8bb7a1753b65945372f1` |
-| 6-Week Amari Practice | $3,000 | 12 sessions + Living Practice · `6a683360017263178d05d1a3` |
-| 12-Week Amari Practice | $5,400 | 24 sessions + Living Practice · `6a66cde7ef7b07f122ad46fb` |
+| 6-Week Amari Practice | $3,000 | 12 sessions + Living Practice · `6a683360017263178d05d1a3` · paylink `6a6833c27b99151a54040da5` |
+| 12-Week Amari Practice | $5,400 | 24 sessions + Living Practice · `6a66cde7ef7b07f122ad46fb` · paylink `6a66ce547b99151a540409b0` |
 
 **Founder's Circle only** (`founders-circle` tag, ~11 contacts) — keep existing products; do not delete:
 | Service | Price |

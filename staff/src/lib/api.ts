@@ -211,7 +211,9 @@ export type PayLinkProduct =
   | 'upgrade-4-to-8'
   | 'living-practice'
   | 'follow-up'
-  | 'amari-assessment';
+  | 'amari-assessment'
+  | '6-week-practice'
+  | '12-week-practice';
 
 export async function sendPayLink(
   contactId: string,

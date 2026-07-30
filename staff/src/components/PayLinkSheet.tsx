@@ -5,10 +5,12 @@ import { sendPayLink, type PayLinkProduct } from '../lib/api';
 
 type PayRow = { product: PayLinkProduct; label: string; price: string; primary: boolean };
 
-/** Default ladder — new clients. Practice 6/12-week SMS wait on hosted paylinks. */
+/** Default ladder — new clients: $285 / 6-week / 12-week Practice. */
 const DEFAULT_PRODUCTS: PayRow[] = [
   { product: 'follow-up', label: 'Single session', price: '$285', primary: true },
-  { product: 'amari-assessment', label: 'Assessment', price: '$29', primary: true },
+  { product: '6-week-practice', label: '6-Week Practice', price: '$3,000', primary: true },
+  { product: '12-week-practice', label: '12-Week Practice', price: '$5,400', primary: true },
+  { product: 'amari-assessment', label: 'Assessment', price: '$29', primary: false },
   { product: 'initial-in-person', label: 'Initial — In Person', price: '$225', primary: false },
   { product: 'initial-virtual', label: 'Initial — Virtual', price: '$225', primary: false },
   { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
@@ -71,12 +73,6 @@ export default function PayLinkSheet({
             <X className="h-5 w-5" />
           </button>
         </div>
-
-        {!isFoundersCircle && (
-          <p className="mb-3 text-xs text-amari-text-muted">
-            Default ladder: $285 single · $3,000 6-week · $5,400 12-week. Practice SMS links land once GHL paylinks are pasted.
-          </p>
-        )}
 
         <div className="space-y-2">
           {visible.map(({ product, label, price }) => {
