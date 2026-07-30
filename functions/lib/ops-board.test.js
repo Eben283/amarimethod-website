@@ -20,11 +20,13 @@ import {
   listOpsIncidents,
   listOpsEvents,
 } from "./ops-events.js";
+import { listOpsErrors } from "./ops-alert.js";
 import { PATH_ASSESSMENT_PAID_BOOK } from "./ops-registry.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
   listOpsEvents.mockResolvedValue([]);
+  listOpsErrors.mockResolvedValue([]);
 });
 
 function kvEnv(map = {}) {
@@ -47,7 +49,7 @@ describe("buildSystemsBoard", () => {
     expect(board.overall).toBe("red");
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
     expect(assessment.status).toBe("red");
-    expect(board.systems[0].kind).toBe("path");
+    expect(board.systems[0].group).toBe("paths");
   });
 
   it("does not fake-green assessment with empty trail", async () => {
@@ -58,13 +60,49 @@ describe("buildSystemsBoard", () => {
     expect(assessment.note).toMatch(/no trail/i);
   });
 
-  it("marks partial paths unknown, never green", async () => {
+  it("marks partial paths unknown, never green, unless ops:err", async () => {
     const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     const intro = board.systems.find((s) => s.id === "intro_paid_book");
     expect(intro.status).toBe("unknown");
   });
 
-  it("surfaces live GHL token + reconcile signals", async () => {
+  it("marks invoice credit red from recent ops:err", async () => {
+    listOpsErrors.mockResolvedValue([
+      {
+        key: "ops:err:1",
+        source: "ghl-invoice-webhook",
+        summary: "PUT sessions failed",
+        at: new Date().toISOString(),
+      },
+    ]);
+    const board = await buildSystemsBoard(kvEnv());
+    const invoice = board.systems.find((s) => s.id === "invoice_package_credit");
+    expect(invoice.status).toBe("red");
+    expect(invoice.note).toMatch(/failure/i);
+  });
+
+  it("registers expanded money/booking/messaging/infra rows", async () => {
+    const board = await buildSystemsBoard(kvEnv());
+    const ids = board.systems.map((s) => s.id);
+    for (const id of [
+      "invoice_package_credit",
+      "order_package_credit",
+      "discovery_free_book",
+      "portal_package_book",
+      "appointment_webhook",
+      "comms_coherence",
+      "reminder_engine",
+      "conversation_cache",
+      "funnel_refresh",
+      "call_coach",
+      "ledger_drift",
+      "field_id_check",
+    ]) {
+      expect(ids).toContain(id);
+    }
+  });
+
+  it("surfaces live GHL token + reconcile + funnel signals", async () => {
     const expiry = String(Date.now() + 20 * 3600 * 1000);
     const board = await buildSystemsBoard(
       kvEnv({
@@ -75,10 +113,17 @@ describe("buildSystemsBoard", () => {
           applied: 0,
           ordersScanned: 7,
         },
+        "ops:funnel-refresh:lastRun": {
+          status: "ok",
+          finishedAt: new Date().toISOString(),
+          sales: 3,
+          sessionsSold: 8,
+        },
       }),
     );
     expect(board.systems.find((s) => s.id === "ghl_token").status).toBe("green");
     expect(board.systems.find((s) => s.id === "series_reconcile").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "funnel_refresh").status).toBe("green");
   });
 });
 

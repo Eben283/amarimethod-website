@@ -260,8 +260,9 @@ export const OPS_HTML = `<!doctype html>
       homeBanner.hidden = true;
     }
 
-    var paths = (data.systems || []).filter(function (s) { return s.kind === "path"; });
-    var deps = (data.systems || []).filter(function (s) { return s.kind === "dependency"; });
+    var paths = (data.systems || []).filter(function (s) { return (s.group || s.kind) === "paths" || (s.kind === "path" && s.group !== "messaging"); });
+    var messaging = (data.systems || []).filter(function (s) { return s.group === "messaging"; });
+    var deps = (data.systems || []).filter(function (s) { return s.group === "infra" || (s.kind === "dependency" && s.group !== "messaging"); });
 
     function block(title, rows, hint) {
       if (!rows.length) return "";
@@ -278,6 +279,7 @@ export const OPS_HTML = `<!doctype html>
 
     homeView.innerHTML =
       block("Client paths", paths, "money & booking") +
+      block("Messaging", messaging, "wrong-message watch") +
       block("Dependencies", deps, "live signals");
 
     homeView.querySelectorAll("[data-path]").forEach(function (btn) {
