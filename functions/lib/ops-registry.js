@@ -305,7 +305,7 @@ export const OPS_REGISTRY = Object.freeze([
   }),
   Object.freeze({
     id: "call_coach",
-    label: "Call coach",
+    label: "Call coach (on-demand)",
     kind: "dependency",
     severity: OPS_SEVERITY.INFRA,
     group: "infra",

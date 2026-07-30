@@ -20,7 +20,8 @@ binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
 
 # Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
-#   ANTHROPIC_API_KEY   — Claude coherence calls (am-anthropic-api-key in Keychain)
+#   OPENROUTER_API_KEY  — LLM coherence via OpenRouter
+#   OPENROUTER_MODEL    — optional override (default google/gemini-2.5-flash-lite)
 #   WORKER_AUTH_SECRET  — gates the /run, /status, /summary, /flags HTTP routes
 
 # Persist logs + metrics to the Workers dashboard so failures are searchable and

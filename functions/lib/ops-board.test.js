@@ -125,6 +125,39 @@ describe("buildSystemsBoard", () => {
     expect(board.systems.find((s) => s.id === "series_reconcile").status).toBe("green");
     expect(board.systems.find((s) => s.id === "funnel_refresh").status).toBe("green");
   });
+
+  it("call coach is green on fresh readiness even with no coaching run", async () => {
+    const board = await buildSystemsBoard(
+      kvEnv({
+        "call-coach:status:ready": {
+          ok: true,
+          checkedAt: new Date().toISOString(),
+          openRouter: true,
+          ghlTokenOk: true,
+          model: "google/gemini-2.5-flash-lite",
+        },
+      }),
+    );
+    const coach = board.systems.find((s) => s.id === "call_coach");
+    expect(coach.status).toBe("green");
+    expect(coach.note).toMatch(/ready · on-demand/i);
+    expect(coach.label).toMatch(/on-demand/i);
+  });
+
+  it("call coach is red when readiness says not ready", async () => {
+    const board = await buildSystemsBoard(
+      kvEnv({
+        "call-coach:status:ready": {
+          ok: false,
+          checkedAt: new Date().toISOString(),
+          error: "OPENROUTER_API_KEY not configured",
+        },
+      }),
+    );
+    const coach = board.systems.find((s) => s.id === "call_coach");
+    expect(coach.status).toBe("red");
+    expect(coach.note).toMatch(/not ready/i);
+  });
 });
 
 describe("buildPathDetail", () => {
