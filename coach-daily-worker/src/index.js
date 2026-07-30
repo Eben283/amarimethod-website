@@ -77,6 +77,12 @@ async function refreshOne(contactId, auth) {
 }
 
 async function refreshCallCards(env, due) {
+  // Call coaching (Whisper + LLM) is expensive and idle unless we opt in.
+  // Default off; set CALL_COACH_AUTO_REFRESH=1 on coach-daily to restore.
+  if (String(env?.CALL_COACH_AUTO_REFRESH || "").trim() !== "1") {
+    console.error("[refresh-cards] skipped — CALL_COACH_AUTO_REFRESH not enabled (call coach is on-demand)");
+    return;
+  }
   const auth = env.WORKER_AUTH_SECRET;
   if (!auth) { console.error("[refresh-cards] no WORKER_AUTH_SECRET — skipping"); return; }
 

@@ -613,18 +613,13 @@ async function readInfraSignals(env) {
   }
 
   try {
-    const rec = await kv.get("call-coach:status:lastRun", "json");
-    out.call_coach = signalFromJudged(
-      "call_coach",
-      judgeLastRun(rec, {
-        maxAgeH: 30,
-        okPredicate: (x) => x.status === "ok" && !(x.failed > 0 && x.coached === 0 && x.contactsProcessed > 0),
-        detail: (x) =>
-          x.contactsProcessed != null
-            ? `${x.coached ?? 0} coached · ${x.failed ?? 0} failed / ${x.contactsProcessed}`
-            : "ok",
-      }),
-    );
+    // Call coach is on-demand (Whisper + LLM). Board watches readiness
+    // ("if we want it, will it run?"), not lastRun freshness.
+    const [ready, last] = await Promise.all([
+      kv.get("call-coach:status:ready", "json"),
+      kv.get("call-coach:status:lastRun", "json"),
+    ]);
+    out.call_coach = judgeCallCoachReadiness(ready, last);
   } catch {
     out.call_coach = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
   }
@@ -759,4 +754,83 @@ function lastRunAsLog(pathId, judged) {
   ];
 }
 
-export const __test = { readInfraSignals, judgeLastRun, ageHours, fmtAge, indexRecentOpsErrors };
+/**
+ * Call coach = on-demand. Green when OpenRouter + GHL look ready (fresh probe).
+ * lastRun is informational only (does not go red for "stale / never ran").
+ */
+function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
+  const lastNote =
+    last && (last.finishedAt || last.startedAt)
+      ? last.status === "error" || (last.failed > 0 && last.coached === 0 && last.contactsProcessed > 0)
+        ? ` · last run failed ${fmtAge(ageHours(last.finishedAt || last.startedAt))}`
+        : last.status === "running"
+          ? ` · run in progress`
+          : last.contactsProcessed != null
+            ? ` · last ${last.coached ?? 0}/${last.contactsProcessed} ${fmtAge(ageHours(last.finishedAt || last.startedAt))}`
+            : ` · last run ${fmtAge(ageHours(last.finishedAt || last.startedAt))}`
+      : " · no coaching run yet";
+
+  if (!ready) {
+    return {
+      status: "unknown",
+      note: `no readiness probe${lastNote}`,
+      why: "Call coach has not written call-coach:status:ready yet — cron /ready may be down.",
+      lastAt: last?.finishedAt || last?.startedAt || null,
+      detail: { ready: null, lastRun: last || null, mode: "on-demand" },
+      log: lastRunAsLog("call_coach", {
+        status: "unknown",
+        lastAt: last?.finishedAt || last?.startedAt || null,
+        detail: last,
+        note: "no readiness probe",
+      }),
+    };
+  }
+
+  const at = ready.checkedAt || null;
+  const age = ageHours(at);
+  const stale = age == null || age > maxAgeH;
+  const baseDetail = { ready, lastRun: last || null, mode: "on-demand" };
+
+  if (!ready.ok) {
+    const note = `not ready · ${ready.error || "OpenRouter or GHL token"}${lastNote}`;
+    return {
+      status: "red",
+      note,
+      why: note,
+      lastAt: at,
+      detail: baseDetail,
+      log: lastRunAsLog("call_coach", { status: "red", lastAt: at, detail: ready, note }),
+    };
+  }
+  if (stale) {
+    const note = `readiness stale — last ${fmtAge(age)} (want < ${maxAgeH}h)${lastNote}`;
+    return {
+      status: "red",
+      note,
+      why: note,
+      lastAt: at,
+      detail: baseDetail,
+      log: lastRunAsLog("call_coach", { status: "red", lastAt: at, detail: ready, note }),
+    };
+  }
+
+  const modelBit = ready.model ? ` · ${ready.model}` : "";
+  const note = `ready · on-demand${modelBit}${lastNote}`;
+  return {
+    status: "green",
+    note,
+    why: note,
+    lastAt: at,
+    detail: baseDetail,
+    log: lastRunAsLog("call_coach", { status: "green", lastAt: at, detail: ready, note }),
+  };
+}
+
+export const __test = {
+  readInfraSignals,
+  judgeLastRun,
+  judgeCallCoachReadiness,
+  ageHours,
+  fmtAge,
+  indexRecentOpsErrors,
+};

@@ -3,12 +3,13 @@ main = "src/index.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# Daily at 11:07 UTC (4 AM PDT / 3 AM PST) — staggered a few minutes after
-# daily-audit's 11:00 cron so the two never race an on-demand GHL token
-# refresh at the same second (2026-07-02 audit; the shared single-use
-# refresh token makes simultaneous refreshes destructive).
+# Readiness probe only (cheap OpenRouter ping + GHL token check). Full coaching
+# is on-demand via /run or /coach-one — Whisper + LLM per contact is too expensive
+# to auto-sweep daily while call coaching is idle.
+# Staggered after daily-audit's 11:00 cron so we never race an on-demand GHL
+# token refresh at the same second (2026-07-02 audit).
 [triggers]
-crons = ["0 10 * * *"]
+crons = ["15 10 * * *"]
 
 # Self service binding — dispatches each coaching batch as a FRESH invocation
 # (own CPU/memory/subrequest budget) instead of ctx.waitUntil-chaining them
@@ -34,9 +35,10 @@ binding = "AI"
 # Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
 #   GHL_CLIENT_ID       — same as ghl-token-refresh / daily-audit
 #   GHL_CLIENT_SECRET   — same as ghl-token-refresh / daily-audit
-#   OPENROUTER_API_KEY  — LLM coaching via OpenRouter (free :free models by default)
-#   OPENROUTER_MODEL    — optional override (default google/gemma-4-31b-it:free)
-#   WORKER_AUTH_SECRET  — gates the /run, /latest HTTP routes (worker-auth.js)
+#   OPENROUTER_API_KEY  — LLM coaching via OpenRouter
+#   OPENROUTER_MODEL    — optional override (default google/gemini-2.5-flash-lite)
+#   WORKER_AUTH_SECRET  — gates the /run, /latest, /ready HTTP routes (worker-auth.js)
+#   CALL_COACH_CRON_ENABLED — set to "1" to re-enable daily full coaching sweeps
 
 # Persist logs + metrics to the Workers dashboard so failures are searchable and
 # countable (previously console.error/warn only existed during a live `wrangler

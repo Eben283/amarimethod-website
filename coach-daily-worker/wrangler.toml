@@ -19,6 +19,8 @@ id = "79cff30d0e45419791b0d25cd81961df"
 #   GHL_CLIENT_ID       am-ghl-client-id
 #   GHL_CLIENT_SECRET   am-ghl-client-secret
 #   WORKER_AUTH_SECRET  am-worker-auth-secret  (same secret as conversation-cache + call-coach)
+#   CALL_COACH_AUTO_REFRESH — set to "1" to re-enable daily /coach-one refresh batch
+#                             (default off — call coach is on-demand / expensive)
 
 # Persist logs + metrics to the Workers dashboard so failures are searchable and
 # countable (previously console.error/warn only existed during a live `wrangler

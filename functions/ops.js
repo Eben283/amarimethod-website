@@ -458,6 +458,9 @@ export const OPS_HTML = `<!doctype html>
     if (data.note || data.why) {
       html += '<p class="why">' + esc(data.why || data.note) + "</p>";
     }
+    if (data.id === "call_coach") {
+      html += '<p class="why">On-demand only — no auto Whisper/LLM sweep. Staff: POST /api/staff-call-coach-run (or /coach-one per contact). Ops watches readiness, not last-run freshness.</p>';
+    }
     html += "</div>";
 
     if (data.incidents && data.incidents.length) {

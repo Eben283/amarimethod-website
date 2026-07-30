@@ -1,6 +1,6 @@
 // Coaching pass over a contact's FULL relationship — every call transcript +
 // the complete two-way message thread (both directions). Uses OpenRouter
-// (Eben's key; free :free models by default) so we don't need Anthropic.
+// (Eben's OpenRouter key; Gemini Flash Lite by default) so we don't need Anthropic.
 
 import { openRouterChat } from "../../functions/lib/openrouter-chat.js";
 

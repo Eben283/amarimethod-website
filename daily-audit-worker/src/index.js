@@ -203,8 +203,7 @@ async function runAudit(env) {
   // that talks to GHL. No other watchdog covers this.
   const tokenRefreshWatchdogIssues = await checkTokenRefresh(env);
 
-  // Same pattern for the call-coach sister Worker (daily coaching digest) —
-  // previously unwatched; a mid-batch death left status "running" silently.
+  // Call coach: readiness probe + stuck mid-batch (coaching itself is on-demand).
   const callCoachWatchdogIssues = await checkCallCoach(env);
 
   // Read the session-ledger drift findings produced by the separate drift cron
@@ -335,16 +334,53 @@ async function checkStreamSigningHealth(env) {
 //   - Last run >36h ago (cron skipped, schedule may be broken)
 //   - Last run reported status="error" (worker errored)
 //   - Last run failed >5 contacts (transient GHL issues — info, not warning)
-// Watchdog for the call-coach sister Worker (daily 11:07 cron). Two failure
-// shapes: never/stale lastRun (cron dead), and status stuck at "running"
-// (an invocation died mid-batch-chain — the 2026-07-02 audit's silent
-// half-death). No other watchdog covered this worker.
+// Watchdog for call-coach. Coaching is on-demand — do NOT flag never/stale
+// lastRun. Still flag readiness probe gaps and stuck mid-batch runs.
 async function checkCallCoach(env) {
   const issues = [];
-  const KEY = "call-coach:status:lastRun";
+
+  let ready;
+  try {
+    ready = await env.PORTAL_KV.get("call-coach:status:ready", "json");
+  } catch (err) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "call-coach-ready-unreadable",
+      message: `call-coach readiness KV read failed: ${err.message}`,
+    });
+  }
+  if (!ready) {
+    issues.push({
+      severity: "warning",
+      area: "infra",
+      kind: "call-coach-ready-missing",
+      message: "call-coach has no readiness probe — daily /ready cron may be dead.",
+    });
+  } else {
+    const ageH = ready.checkedAt
+      ? (Date.now() - new Date(ready.checkedAt).getTime()) / 3_600_000
+      : null;
+    if (ageH == null || ageH > 36) {
+      issues.push({
+        severity: "warning",
+        area: "infra",
+        kind: "call-coach-ready-stale",
+        message: `call-coach readiness last checked ${ageH != null ? Math.round(ageH) + "h ago" : "at an unknown time"} — probe cron may be broken.`,
+      });
+    } else if (ready.ok === false) {
+      issues.push({
+        severity: "warning",
+        area: "infra",
+        kind: "call-coach-not-ready",
+        message: `call-coach not ready: ${ready.error || "OpenRouter or GHL token"}`,
+      });
+    }
+  }
+
   let summary;
   try {
-    summary = await env.PORTAL_KV.get(KEY, "json");
+    summary = await env.PORTAL_KV.get("call-coach:status:lastRun", "json");
   } catch (err) {
     issues.push({
       severity: "warning",
@@ -354,26 +390,7 @@ async function checkCallCoach(env) {
     });
     return issues;
   }
-  if (!summary) {
-    issues.push({
-      severity: "warning",
-      area: "infra",
-      kind: "call-coach-never-ran",
-      message: "call-coach Worker has never written a lastRun summary — cron may be dead or the KV binding wrong.",
-    });
-    return issues;
-  }
-  const ts = summary.finishedAt || summary.startedAt || null;
-  const ageH = ts ? (Date.now() - new Date(ts).getTime()) / 3_600_000 : null;
-  if (ageH === null || ageH > 30) {
-    issues.push({
-      severity: "warning",
-      area: "infra",
-      kind: "call-coach-stale",
-      message: `call-coach last ran ${ageH ? Math.round(ageH) + "h ago" : "at an unknown time"} — the daily 11:07 UTC cron may be broken.`,
-    });
-  }
-  if (summary.status === "running" && summary.startedAt) {
+  if (summary?.status === "running" && summary.startedAt) {
     const runH = (Date.now() - new Date(summary.startedAt).getTime()) / 3_600_000;
     if (runH > 3) {
       issues.push({

@@ -1,23 +1,28 @@
-// Call-Coach Worker — runs daily at 11:00 UTC (after daily-audit).
+// Call-Coach Worker — readiness probe daily; full coaching on-demand.
 //
-// For yesterday's outreach activity it:
+// Cron writes call-coach:status:ready (OpenRouter + GHL token check). Full
+// Whisper + LLM sweeps are expensive and idle while we are not actively
+// coaching calls — trigger via /run (day batch) or /coach-one (single contact).
+// Set CALL_COACH_CRON_ENABLED=1 to restore the old daily coaching sweep.
+//
+// For a coaching run it:
 //   1. Lists contacts with recent calls + outgoing texts (src/ghl.js).
 //   2. For each call: downloads the GHL recording (audio/x-wav — spike-confirmed
 //      reachable 2026-06-13), transcribes it via Workers AI @cf/openai/whisper.
 //      (Tries GHL's stored transcription first; usually absent, so Whisper.)
-//   3. Calls Claude (src/coach.js) over the transcript + recent outgoing texts
+//   3. Calls OpenRouter (src/coach.js) over the transcript + recent outgoing texts
 //      → constructive coaching pointers.
 //   4. Writes per-call results + a daily digest + a lastRun status to KV.
 //
 // Surfaced by the Pages Function /api/call-coach (reads KV) on the Follow-Up
-// card + /day digest.
+// card + /day digest. Ops board watches readiness, not lastRun freshness.
 //
 // AUDIO STATUS: live. Spike 0 confirmed recordings download as real WAV. If a
 // given call has no recording (never recorded / too short), that call is still
 // coached on text only and flagged audio:false — no audio is NOT a global
 // fallback, it's per-call.
 //
-// CHUNKING: Whisper + Claude per-contact is I/O-heavy. On a full day the
+// CHUNKING: Whisper + LLM per-contact is I/O-heavy. On a full day the
 // sequential loop can exceed Cloudflare's CPU budget before finishing. We split
 // the work into batches of BATCH_SIZE contacts per invocation. The first batch
 // enumerates all contacts for the day and saves the list to KV; subsequent
@@ -25,6 +30,7 @@
 // self-requeues via ctx.waitUntil so no contact is skipped.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
+import { openRouterChat, DEFAULT_OPENROUTER_MODEL } from "../../functions/lib/openrouter-chat.js";
 import {
   fetchRelationshipBundles,
   fetchContactRelationship,
@@ -40,8 +46,10 @@ const KV_DAILY_PREFIX  = "call-coach:daily:";    // call-coach:daily:{date}
 const KV_LATEST_PREFIX = "call-coach:latest:";   // call-coach:latest:{contactId}
 const KV_QUEUE_PREFIX  = "call-coach:queue:";    // call-coach:queue:{date} → [contactId, ...]
 const KV_LAST_RUN      = "call-coach:status:lastRun";
+const KV_READY         = "call-coach:status:ready";
 const RESULT_TTL_S     = 30 * 86400;
 const LATEST_TTL_S     = 180 * 86400;
+const READY_TTL_S      = 7 * 86400;
 
 // How many contacts to process per Worker invocation. Each contact does a
 // recording download + Whisper + Claude call — keep this small so we stay
@@ -50,9 +58,68 @@ const BATCH_SIZE = 8;
 const MAX_CALLS_PER_CONTACT = 3;
 const WHISPER_MODEL = "@cf/openai/whisper";
 
+function cronCoachingEnabled(env) {
+  return String(env?.CALL_COACH_CRON_ENABLED || "").trim() === "1";
+}
+
+/**
+ * Cheap "if we want to coach, will it work?" probe — not a coaching sweep.
+ * Writes call-coach:status:ready for the ops board.
+ */
+export async function checkReadiness(env) {
+  const checkedAt = new Date().toISOString();
+  const result = {
+    checkedAt,
+    ok: false,
+    openRouter: false,
+    ghlTokenOk: false,
+    ghlTokenHoursLeft: null,
+    model: env?.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL,
+    error: null,
+  };
+
+  try {
+    const expiryRaw = await env.PORTAL_KV.get("ghl_token_expiry");
+    const expiryMs = expiryRaw != null ? Number(expiryRaw) : NaN;
+    if (Number.isFinite(expiryMs)) {
+      result.ghlTokenHoursLeft = (expiryMs - Date.now()) / 3_600_000;
+      result.ghlTokenOk = result.ghlTokenHoursLeft > 1;
+    }
+  } catch (err) {
+    result.error = `ghl token read failed: ${err && err.message}`;
+  }
+
+  if (!env?.OPENROUTER_API_KEY) {
+    result.error = result.error || "OPENROUTER_API_KEY not configured";
+  } else {
+    const ping = await openRouterChat(env, {
+      user: 'Reply with exactly the word ok and nothing else.',
+      maxTokens: 8,
+    });
+    if (ping.error) {
+      result.error = ping.error;
+    } else {
+      result.openRouter = true;
+      result.model = ping.model || result.model;
+    }
+  }
+
+  if (!result.ghlTokenOk && !result.error) {
+    result.error = "GHL token missing or expiring within 1h";
+  }
+  result.ok = !!(result.openRouter && result.ghlTokenOk);
+  await safePut(env, KV_READY, result, READY_TTL_S);
+  return result;
+}
+
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runCoach(env, ctx, yesterdayPacific(), 0));
+    if (cronCoachingEnabled(env)) {
+      ctx.waitUntil(runCoach(env, ctx, yesterdayPacific(), 0));
+      return;
+    }
+    // Default: readiness only — no Whisper / LLM coaching spend.
+    ctx.waitUntil(checkReadiness(env));
   },
 
   async fetch(request, env, ctx) {
@@ -60,6 +127,12 @@ export default {
     if (denied) return denied;
 
     const url = new URL(request.url);
+
+    // /ready — probe OpenRouter + GHL token; write readiness for ops board.
+    if (url.pathname === "/ready") {
+      const ready = await checkReadiness(env);
+      return json(ready, ready.ok ? 200 : 503);
+    }
 
     // /run?date=YYYY-MM-DD[&offset=N] — coach a given Pacific date.
     // Fire-and-return; actual work runs in background via waitUntil.
@@ -118,8 +191,11 @@ export default {
     }
 
     if (url.pathname === "/status") {
-      const last = await env.PORTAL_KV.get(KV_LAST_RUN, "json");
-      return json(last || { error: "never run" });
+      const [last, ready] = await Promise.all([
+        env.PORTAL_KV.get(KV_LAST_RUN, "json"),
+        env.PORTAL_KV.get(KV_READY, "json"),
+      ]);
+      return json({ lastRun: last || null, ready: ready || null });
     }
 
     // /backfill-latest — populate call-coach:latest:{contactId} from existing dated records.
