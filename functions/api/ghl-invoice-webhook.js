@@ -47,6 +47,7 @@ import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -434,6 +435,45 @@ export async function onRequestPost(context) {
     console.log(
       `[ghl-invoice-webhook] Updated ${sanitizedContactId}: ${pkg.name} — series_type=${pkg.seriesType}, sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}, series_type was ${currentSeriesType || "none"}`,
     );
+
+    try {
+      const corr = `invoice:${matchedInvoiceId}`;
+      const label = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim() || null;
+      await emitPathHop(context.env, {
+        pathId: "invoice_package_credit",
+        hopId: "invoice_webhook",
+        outcome: "ok",
+        summary: `Invoice paid — ${pkg.name}`,
+        source: "ghl-invoice-webhook",
+        contactId: sanitizedContactId,
+        personLabel: label,
+        correlationId: corr,
+        money: { product: pkg.name },
+      });
+      await emitPathHop(context.env, {
+        pathId: "invoice_package_credit",
+        hopId: "put_session_fields",
+        outcome: "ok",
+        summary: `sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}`,
+        source: "ghl-invoice-webhook",
+        contactId: sanitizedContactId,
+        personLabel: label,
+        correlationId: corr,
+        money: { product: pkg.name },
+      });
+      await emitPathHop(context.env, {
+        pathId: "invoice_package_credit",
+        hopId: "tag_delta",
+        outcome: "ok",
+        summary: "Invoice series tags applied",
+        source: "ghl-invoice-webhook",
+        contactId: sanitizedContactId,
+        personLabel: label,
+        correlationId: corr,
+      });
+    } catch (opsErr) {
+      console.error("[ghl-invoice-webhook] ops emit failed:", opsErr?.message || opsErr);
+    }
 
     // 8. KV write for idempotency — written even on a D1 win, mirroring
     // ghl-purchase-webhook (cross-system readers see KV, not D1).

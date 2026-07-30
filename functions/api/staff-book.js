@@ -7,6 +7,8 @@ import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-gu
 import { ghlFetch } from "../lib/ghl.js";
 import { appointmentEndTime } from "../lib/datetime.js";
 import { listStaffBookTypes, resolveStaffBookType, flattenSlots } from "../lib/staff-book-calendars.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
+import { recordOpsError } from "../lib/ops-alert.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -173,6 +175,25 @@ export async function onRequestPost(context) {
     if (!createRes.ok) {
       const detail = await createRes.text();
       console.error("[staff-book] create error:", createRes.status, detail.slice(0, 300));
+      context.waitUntil?.(
+        recordOpsError(context.env, "staff-book", "Staff book appointment failed", {
+          contactId,
+          sessionType,
+          status: createRes.status,
+          error: detail.slice(0, 300),
+        }),
+      );
+      context.waitUntil?.(
+        emitPathHop(context.env, {
+          pathId: "staff_book",
+          hopId: "create_appointment",
+          outcome: "fail",
+          summary: "Staff book failed",
+          source: "staff-book",
+          contactId,
+          reasonCode: "book_failed",
+        }),
+      );
       return json({ error: "That time is no longer available. Choose another one." }, 422, headers);
     }
     const data = await createRes.json();
@@ -185,6 +206,17 @@ export async function onRequestPost(context) {
         title: booking.title,
       },
     };
+    context.waitUntil?.(
+      emitPathHop(context.env, {
+        pathId: "staff_book",
+        hopId: "create_appointment",
+        outcome: "ok",
+        summary: `Staff booked ${booking.title}${result.appointment.id ? ` (${result.appointment.id})` : ""}`,
+        source: "staff-book",
+        contactId,
+        trigger: { type: "staff.book", id: sessionType },
+      }),
+    );
     await context.env.PORTAL_KV?.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
     return json(result, 200, headers);
   }

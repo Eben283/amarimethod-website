@@ -13,6 +13,7 @@ import {
 } from "./ghl-products.js";
 import { claimProcessedEvent } from "./processed-events.js";
 import { recordOpsError } from "./ops-alert.js";
+import { emitPathHop } from "./ops-path-emit.js";
 import { recordSeriesPurchase } from "./purchase-confirmations.js";
 import { emitNurtureEvent } from "./engine-forward.js";
 
@@ -304,6 +305,19 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
       ],
     };
 
+    context.waitUntil?.(emitPathHop(context.env, {
+      pathId: "pos_card_fulfill",
+      hopId: "fulfill",
+      outcome: "ok",
+      summary: `POS fulfilled${plan.packagePurchased ? " · package" : ""} · remaining ${plan.remaining ?? "?"}`,
+      source: "staff-pos-fulfill",
+      contactId,
+      correlationId: sale.id ? `pos:${sale.id}` : null,
+      money: sale.totals?.grandTotalCents != null
+        ? { amountCents: sale.totals.grandTotalCents, product: "POS" }
+        : { product: "POS" },
+    }));
+
     return {
       sale: next,
       result: {
@@ -320,6 +334,20 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
     context.waitUntil?.(recordOpsError(context.env, "staff-pos-fulfill",
       "POS sale paid but GHL fulfillment failed",
       { saleId: sale.id, contactId, error: message.slice(0, 300) }));
+    context.waitUntil?.(emitPathHop(context.env, {
+      pathId: "pos_card_fulfill",
+      hopId: "fulfill",
+      outcome: "fail",
+      summary: "POS paid but GHL fulfill failed",
+      source: "staff-pos-fulfill",
+      contactId,
+      correlationId: sale.id ? `pos:${sale.id}` : null,
+      reasonCode: "fulfill_failed",
+      condition: {
+        expected: "GHL fields updated for paid POS sale",
+        observed: message.slice(0, 120),
+      },
+    }));
 
     const failed = {
       ...sale,

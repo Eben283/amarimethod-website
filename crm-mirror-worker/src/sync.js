@@ -10,6 +10,7 @@ import {
 } from "./repository.js";
 import { normalizeGhlAppointment, normalizeGhlContact, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
@@ -115,7 +116,28 @@ export async function syncRequestedProviders(env, sources, limit, now) {
   const results = {};
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
+  await writeCrmMirrorLastRun(env, results, now);
   return results;
+}
+
+async function writeCrmMirrorLastRun(env, results, now) {
+  try {
+    const failed = Object.values(results).some((r) => r && r.status === "failed");
+    await writeOpsLastRun(env, OPS_LAST_RUN_KEYS.crmMirror, {
+      status: failed ? "error" : "ok",
+      ok: !failed,
+      results,
+      failure_detail: failed
+        ? Object.entries(results)
+            .filter(([, r]) => r?.status === "failed")
+            .map(([p, r]) => `${p}: ${r.failureDetail || "failed"}`)
+            .join("; ")
+        : null,
+      finishedAt: typeof now === "string" ? now : new Date().toISOString(),
+    });
+  } catch {
+    /* never break sync for board writes */
+  }
 }
 
 export async function runScheduledSync(env, now) {
@@ -133,6 +155,7 @@ export async function runScheduledSync(env, now) {
     }
   }
   console.log(JSON.stringify({ event: "crm_mirror_scheduled_sync", limit: SCHEDULED_SYNC_LIMIT, results }));
+  await writeCrmMirrorLastRun(env, results, now);
   return results;
 }
 

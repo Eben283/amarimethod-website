@@ -10,6 +10,7 @@ import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
 import { saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 /**
  * React to an appointment event: enroll into flows whose enrollOn matches, cancel flows whose
@@ -94,5 +95,19 @@ export async function runSweep(env, nowMs, limit = 100) {
     const r = await processStep({ ...item, flow }, deps, nowMs);
     counts[r.outcome] = (counts[r.outcome] || 0) + 1;
   }
+
+  // Ops board signal — sweep health, not "did we send marketing".
+  try {
+    const failed = counts.failed || 0;
+    await writeOpsLastRun(env, OPS_LAST_RUN_KEYS.reminder, {
+      status: failed > 0 && (counts.sent || 0) + (counts.would_send || 0) === 0 ? "error" : "ok",
+      due: due.length,
+      ...counts,
+      startedAt: new Date(nowMs).toISOString(),
+    });
+  } catch {
+    /* never break the sweep for board writes */
+  }
+
   return counts;
 }

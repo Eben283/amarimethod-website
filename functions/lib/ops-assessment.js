@@ -5,7 +5,7 @@ import { PATH_ASSESSMENT_PAID_BOOK } from "./ops-registry.js";
 import { openOpsIncident, recordOpsEvent, resolveOpsIncident } from "./ops-events.js";
 import { recordOpsError } from "./ops-alert.js";
 
-const SOURCE = "ghl-purchase-webhook";
+const SOURCE = "ghl-purchase-webhook:assessment";
 
 /**
  * Human-readable view of slot fields on the contact (for condition.observed).
@@ -215,6 +215,6 @@ export async function recordAssessmentCheckout(env, {
       observed: startTime ? String(startTime) : "null",
     },
     money: { product: "Amari Assessment", amountCents: 2900 },
-    source: "book/create-checkout",
+    source: "book/create-checkout:assessment",
   });
 }

@@ -21,6 +21,7 @@ import { appointmentEndTime } from "../../lib/datetime.js";
 import { FIELD_IDS } from "../../lib/ghl-fields.js";
 import { recordOpsError } from "../../lib/ops-alert.js";
 import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
+import { emitPathHop } from "../../lib/ops-path-emit.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -488,8 +489,16 @@ export async function onRequestPost(context) {
     );
   } catch (err) {
     console.error("[book/create-checkout] contact upsert failed:", err);
+    const errSource =
+      body.sessionType === "discovery_call"
+        ? "book/create-checkout:discovery"
+        : body.sessionType === "amari_assessment"
+          ? "book/create-checkout:assessment"
+          : body.sessionType?.startsWith("initial_")
+            ? "book/create-checkout:intro"
+            : "book/create-checkout";
     context.waitUntil(
-      recordOpsError(env, "book/create-checkout", "contact upsert failed", {
+      recordOpsError(env, errSource, "contact upsert failed", {
         sessionType: body.sessionType,
         calendarId: body.calendarId,
         message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
@@ -510,14 +519,38 @@ export async function onRequestPost(context) {
     recordPreCheckoutAudit(context, contactId, body, ip, userAgent, booking),
   );
 
+  const personLabel = [body.firstName, body.lastName].filter(Boolean).join(" ").trim() || null;
+
   // Amari Ops: Assessment checkout hop (path assessment_paid_book).
   if (body.sessionType === "amari_assessment") {
     context.waitUntil(
       recordAssessmentCheckout(env, {
         contactId,
-        personLabel: [body.firstName, body.lastName].filter(Boolean).join(" ").trim() || null,
+        personLabel,
         startTime: body.startTime,
         sessionType: body.sessionType,
+      }),
+    );
+  }
+
+  // Intro checkout hop.
+  if (body.sessionType === "initial_in_person" || body.sessionType === "initial_virtual") {
+    context.waitUntil(
+      emitPathHop(env, {
+        pathId: "intro_paid_book",
+        hopId: "create_checkout",
+        outcome: "ok",
+        summary: "Intro checkout created; contact slot fields written",
+        source: "book/create-checkout:intro",
+        contactId,
+        personLabel,
+        correlationId: contactId && body.startTime ? `checkout:${contactId}:${body.startTime}` : null,
+        trigger: { type: "book.create_checkout", id: body.sessionType },
+        condition: {
+          expected: "requested_session_slot_iso set to selected startTime",
+          observed: body.startTime ? String(body.startTime) : "null",
+        },
+        money: { product: booking?.name || "Intro" },
       }),
     );
   }
@@ -526,10 +559,62 @@ export async function onRequestPost(context) {
   // Book the appointment directly + redirect straight to the success
   // page. No Stripe payment link, no purchase webhook handoff.
   if (booking.isFreeBooking) {
+    context.waitUntil(
+      emitPathHop(env, {
+        pathId: "discovery_free_book",
+        hopId: "submit",
+        outcome: "ok",
+        summary: "Discovery submit + contact upserted",
+        source: "book/create-checkout:discovery",
+        contactId,
+        personLabel,
+        correlationId: contactId && body.startTime ? `discovery:${contactId}:${body.startTime}` : null,
+        trigger: { type: "book.create_checkout", id: body.sessionType },
+      }),
+    );
     try {
       await bookFreeAppointment(context, locationId, contactId, body, booking);
+      context.waitUntil(
+        emitPathHop(env, {
+          pathId: "discovery_free_book",
+          hopId: "create_appointment",
+          outcome: "ok",
+          summary: "Discovery call booked",
+          source: "book/create-checkout:discovery",
+          contactId,
+          personLabel,
+          correlationId: contactId && body.startTime ? `discovery:${contactId}:${body.startTime}` : null,
+          condition: {
+            expected: "free discovery appointment created",
+            observed: body.startTime ? String(body.startTime) : "null",
+          },
+        }),
+      );
     } catch (err) {
       console.error("[book/create-checkout] free appointment book failed:", err);
+      context.waitUntil(
+        recordOpsError(env, "book/create-checkout:discovery", "free appointment book failed", {
+          sessionType: body.sessionType,
+          contactId,
+          message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+        }),
+      );
+      context.waitUntil(
+        emitPathHop(env, {
+          pathId: "discovery_free_book",
+          hopId: "create_appointment",
+          outcome: "fail",
+          summary: "Discovery call failed to book",
+          source: "book/create-checkout:discovery",
+          contactId,
+          personLabel,
+          reasonCode: "book_failed",
+          condition: {
+            expected: "free discovery appointment created",
+            observed: err instanceof Error ? err.message.slice(0, 120) : "error",
+          },
+        }),
+      );
       return json(
         { error: "Could not book your call. Please try a different time or email eben@amarimethod.com." },
         422,

@@ -19,6 +19,7 @@ import {
   saveEnrollment, loadDueSteps, markStep, appendEvent, exitEnrollment, enrollmentId,
 } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 async function exitPass(db, event, nowMs, actions) {
   for (const seq of SEQUENCES) {
@@ -139,5 +140,18 @@ export async function runSweep(env, nowMs, limit = 100) {
     const r = await processStep({ ...item, sequence }, deps, nowMs);
     counts[r.outcome] = (counts[r.outcome] || 0) + 1;
   }
+
+  try {
+    const failed = counts.failed || 0;
+    await writeOpsLastRun(env, OPS_LAST_RUN_KEYS.nurture, {
+      status: failed > 0 && (counts.sent || 0) + (counts.would_send || 0) === 0 ? "error" : "ok",
+      due: due.length,
+      ...counts,
+      startedAt: new Date(nowMs).toISOString(),
+    });
+  } catch {
+    /* never break the sweep for board writes */
+  }
+
   return counts;
 }
