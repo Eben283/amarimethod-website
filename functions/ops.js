@@ -113,6 +113,9 @@ export const OPS_HTML = `<!doctype html>
   .orb.green .core { background: var(--good); box-shadow: 0 0 22px color-mix(in srgb, var(--good) 45%, transparent); }
   .orb.red .core { background: var(--bad); box-shadow: 0 0 22px color-mix(in srgb, var(--bad) 45%, transparent); }
   .orb.unknown .core { background: var(--warn); box-shadow: 0 0 18px color-mix(in srgb, var(--warn) 35%, transparent); }
+  .orb.stuck .core, .orb.sick .core { background: var(--bad); box-shadow: 0 0 22px color-mix(in srgb, var(--bad) 45%, transparent); }
+  .orb.healthy .core, .orb.map_ok .core { background: var(--good); box-shadow: 0 0 22px color-mix(in srgb, var(--good) 45%, transparent); }
+  .orb.idle .core, .orb.blind .core { background: var(--idle); }
   .orb.green .ring { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
   .orb.red .ring { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
   .status-copy .kicker {
@@ -160,8 +163,11 @@ export const OPS_HTML = `<!doctype html>
     outline: none;
   }
   .sys:focus-visible { box-shadow: 0 0 0 1px var(--accent); }
-  .sys.red {
+  .sys.red, .sys.sick, .sys.stuck, .sys.map_bad {
     background: linear-gradient(90deg, var(--bad-dim), transparent 70%);
+  }
+  .sys.stuck {
+    background: linear-gradient(90deg, var(--warn-dim), transparent 70%);
   }
   .sys .label { font-size: 1.02rem; font-weight: 500; letter-spacing: -0.01em; }
   .sys .meta { color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.35; }
@@ -172,17 +178,87 @@ export const OPS_HTML = `<!doctype html>
     color: var(--muted); background: color-mix(in srgb, var(--panel) 70%, transparent);
     border: 1px solid var(--line);
   }
-  .sys .state.red { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); background: var(--bad-dim); }
-  .sys .state.green { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, var(--line)); background: var(--good-dim); }
-  .sys .state.unknown { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, var(--line)); background: var(--warn-dim); }
+  .sys .state.red, .sys .state.sick { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); background: var(--bad-dim); }
+  .sys .state.stuck { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-dim); }
+  .sys .state.green, .sys .state.healthy, .sys .state.map_ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, var(--line)); background: var(--good-dim); }
+  .sys .state.unknown, .sys .state.idle, .sys .state.blind { color: var(--faint); border-color: var(--line); background: transparent; }
 
   .dot {
     width: 10px; height: 10px; border-radius: 50%;
     background: var(--idle);
   }
-  .dot.green { background: var(--good); box-shadow: 0 0 0 3px var(--good-dim); }
-  .dot.red { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-dim); }
-  .dot.unknown { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-dim); }
+  .dot.green, .dot.healthy, .dot.map_ok { background: var(--good); box-shadow: 0 0 0 3px var(--good-dim); }
+  .dot.red, .dot.sick, .dot.map_bad { background: var(--bad); box-shadow: 0 0 0 3px var(--bad-dim); }
+  .dot.stuck { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-dim); }
+  .dot.unknown, .dot.idle, .dot.blind { background: var(--idle); }
+
+  .hot-strip {
+    margin-top: 22px; padding: 16px 16px 14px;
+    border: 1px solid var(--line2); border-radius: 12px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 90%, #3a2a20), transparent);
+  }
+  .hot-strip .hs-title {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint);
+  }
+  .hot-strip .hs-head {
+    margin-top: 8px; font-family: var(--serif); font-size: 1.35rem;
+    letter-spacing: -0.02em; line-height: 1.15;
+  }
+  .hot-strip.stuck .hs-head, .hot-strip.sick .hs-head { color: var(--accent); }
+  .hot-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .hot-pill {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 4px; border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .hot-pill.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, var(--line)); }
+  .hot-pill.fail, .hot-pill.stuck { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+  .hot-people { margin-top: 12px; }
+  .hot-people button {
+    display: block; width: 100%; text-align: left;
+    background: none; border: 0; color: var(--ink); font: inherit;
+    padding: 8px 0; cursor: pointer; border-top: 1px solid var(--line);
+  }
+  .hot-people button .p { font-weight: 500; }
+  .hot-people button .d { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+  .person-card {
+    margin: 18px 0; padding: 16px;
+    border: 1px solid var(--line2); border-radius: 12px;
+    background: color-mix(in srgb, var(--panel) 80%, transparent);
+  }
+  .person-card .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .pill {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 4px; border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .pill.bad { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); background: var(--bad-dim); }
+  .pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-dim); }
+  .hop-row {
+    display: grid; grid-template-columns: 56px 1fr; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--line);
+  }
+  .hop-row .mark {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); padding-top: 3px;
+  }
+  .hop-row.ok .mark { color: var(--good); }
+  .hop-row.fail .mark, .hop-row.stuck .mark { color: var(--bad); }
+  .hop-row.pending .mark, .hop-row.skip .mark { color: var(--warn); }
+  .hop-row .name { font-weight: 500; }
+  .hop-row .detail { color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.4; }
+  .change-box {
+    margin-top: 14px; padding: 12px 14px;
+    border-left: 2px solid var(--accent);
+    background: linear-gradient(90deg, var(--accent-dim), transparent 90%);
+  }
+  .change-box .t { font-weight: 600; margin-bottom: 4px; }
+  .change-box .d { color: var(--muted); font-size: 13px; line-height: 1.45; }
 
   .back {
     display: inline-flex; align-items: center; gap: 6px;
@@ -236,10 +312,12 @@ export const OPS_HTML = `<!doctype html>
     border: 1px solid var(--line2);
   }
   .hop.ok .n { color: var(--good); border-color: color-mix(in srgb, var(--good) 40%, var(--line)); background: var(--good-dim); }
-  .hop.red .n { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); background: var(--bad-dim); }
-  .hop.skip .n { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-dim); }
+  .hop.red .n, .hop.fail .n, .hop.stuck .n { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); background: var(--bad-dim); }
+  .hop.stuck .n { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, var(--line)); background: var(--warn-dim); }
+  .hop.skip .n, .hop.pending .n { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); background: var(--warn-dim); }
   .hop .name { font-size: 15.5px; font-weight: 500; padding-top: 5px; }
-  .hop.red .name { color: var(--bad); }
+  .hop.red .name, .hop.fail .name, .hop.stuck .name { color: var(--bad); }
+  .hop.stuck .name { color: var(--warn); }
   .hop .detail { color: var(--muted); font-size: 12.5px; margin-top: 4px; line-height: 1.4; }
 
   .log .row {
@@ -306,7 +384,7 @@ export const OPS_HTML = `<!doctype html>
   <header class="brand" id="homeHead">
     <div class="eyebrow"><span class="live"></span> Private · live</div>
     <div class="mark">Amari Ops</div>
-    <p class="sub">Every watched system. Open a row to see the path and why.</p>
+    <p class="sub">Hot paths first. Open a person for site → automation → why → change.</p>
     <div class="status-bar">
       <div class="orb" id="overallOrb"><span class="ring"></span><span class="core"></span></div>
       <div class="status-copy">
@@ -333,6 +411,20 @@ export const OPS_HTML = `<!doctype html>
   function parseRoute() {
     var h = (location.hash || "").replace(/^#/, "");
     if (h.charAt(0) === "/") h = h.slice(1);
+    if (h.indexOf("person/") === 0) {
+      var pq = h.indexOf("?");
+      var ppath = pq >= 0 ? h.slice(0, pq) : h;
+      var pquery = pq >= 0 ? h.slice(pq + 1) : "";
+      var prest = ppath.slice(7);
+      var pparts = prest.split("/").filter(Boolean);
+      var kind = /(?:^|&)k=corr(?:&|$)/.test(pquery) ? "corr" : "contact";
+      return {
+        view: "person",
+        pathId: decodeURIComponent(pparts[0] || ""),
+        personKey: pparts[1] ? decodeURIComponent(pparts[1]) : "",
+        personKind: kind,
+      };
+    }
     if (h.indexOf("path/") === 0) {
       return { view: "path", pathId: decodeURIComponent(h.slice(5).split("?")[0]) };
     }
@@ -359,11 +451,68 @@ export const OPS_HTML = `<!doctype html>
     return res.json();
   }
 
+  function rowState(s) {
+    return String((s && (s.state || s.status)) || "idle").toLowerCase();
+  }
+
+  function stateLabel(st) {
+    var map = {
+      healthy: "healthy", sick: "sick", stuck: "stuck", idle: "idle", blind: "blind",
+      map_ok: "map ok", map_bad: "map bad",
+      green: "ok", red: "red", unknown: "idle"
+    };
+    return map[st] || st;
+  }
+
   function setOverall(status, note) {
     var orb = document.getElementById("overallOrb");
     var label = document.getElementById("overallLabel");
-    orb.className = "orb " + (status || "unknown");
+    orb.className = "orb " + (status || "idle");
     label.textContent = note || status || "";
+  }
+
+  function changeSurfaceHtml(cs) {
+    if (!cs || !cs.touch) return "";
+    var blast = Array.isArray(cs.blastRadius) ? cs.blastRadius : [];
+    return (
+      '<div class="change-box">' +
+        '<div class="t">Change surface</div>' +
+        '<div class="d">' + esc(cs.touch) + '</div>' +
+        (blast.length
+          ? '<div class="d" style="margin-top:6px">Blast radius: ' + blast.map(function (b) { return esc(b); }).join(" · ") + "</div>"
+          : "") +
+        (cs.talkHint ? '<div class="d" style="margin-top:6px">' + esc(cs.talkHint) + "</div>" : "") +
+      "</div>"
+    );
+  }
+
+  function hopMark(status) {
+    if (status === "ok") return "ok";
+    if (status === "fail") return "fail";
+    if (status === "stuck") return "stuck";
+    if (status === "pending") return "next";
+    if (status === "skip") return "skip";
+    return "—";
+  }
+
+  function renderPersonHops(list) {
+    if (!list || !list.length) return '<p class="empty">No hops in this trail.</p>';
+    return list.map(function (h) {
+      var st = String(h.status || "idle");
+      return (
+        '<div class="hop-row ' + esc(st) + '">' +
+          '<div class="mark">' + esc(hopMark(st)) + "</div>" +
+          "<div>" +
+            '<div class="name">' + esc(h.label || h.hopId) + "</div>" +
+            (h.detail || h.at
+              ? '<div class="detail">' + esc(h.detail || "") +
+                (h.at ? (h.detail ? " · " : "") + esc(fmt(h.at)) : "") +
+                "</div>"
+              : "") +
+          "</div>" +
+        "</div>"
+      );
+    }).join("");
   }
 
   function renderLog(events, emptyMsg) {
@@ -393,14 +542,11 @@ export const OPS_HTML = `<!doctype html>
     homeView.hidden = false;
     pathView.hidden = true;
     var data = await api("/api/ops/systems");
-    var reds = (data.systems || []).filter(function (s) { return s.status === "red"; }).length;
-    var unknowns = (data.systems || []).filter(function (s) { return s.status === "unknown"; }).length;
-    setOverall(
-      data.overall,
-      reds ? (reds + " system" + (reds === 1 ? "" : "s") + " need attention") :
-        (data.overall === "green" ? "All live signals green" :
-          (unknowns ? unknowns + " waiting / unwatched" : "Checking…"))
-    );
+    var attention = Number(data.attentionCount || 0);
+    var overallNote = attention
+      ? attention + " path" + (attention === 1 ? "" : "s") + " need attention"
+      : (data.overall === "green" ? "Hot paths quiet" : "Watching…");
+    setOverall(attention ? "sick" : (data.overall || "idle"), overallNote);
 
     if (!data.configured) {
       homeBanner.hidden = false;
@@ -411,6 +557,35 @@ export const OPS_HTML = `<!doctype html>
       homeBanner.hidden = true;
     }
 
+    var hot = data.hotStrip || null;
+    var hotHtml = "";
+    if (hot) {
+      hotHtml =
+        '<div class="hot-strip ' + esc(hot.tone || "") + '">' +
+          '<div class="hs-title">Hot · pay → book → confirm</div>' +
+          '<div class="hs-head">' + esc(hot.headline || "") + "</div>" +
+          '<div class="hot-pills">' +
+            '<span class="hot-pill ' + esc(hot.checkout || "idle") + '">checkout ' + esc(hot.checkout || "idle") + "</span>" +
+            '<span class="hot-pill ' + esc(hot.payment || "idle") + '">payment ' + esc(hot.payment || "idle") + "</span>" +
+            '<span class="hot-pill ' + esc(hot.paidToBook || "idle") + '">paid→book ' + esc(hot.paidToBook || "idle") + "</span>" +
+          "</div>";
+      if (hot.people && hot.people.length) {
+        hotHtml += '<div class="hot-people">';
+        hot.people.forEach(function (p) {
+          var kind = p.contactId ? "contact" : (p.correlationId ? "corr" : "");
+          var key = p.contactId || p.correlationId || "";
+          if (!key || !p.pathId || !kind) return;
+          hotHtml +=
+            '<button type="button" data-person-path="' + esc(p.pathId) + '" data-person-id="' + esc(key) + '" data-person-kind="' + kind + '">' +
+              '<div class="p">' + esc(p.personLabel || key) + "</div>" +
+              '<div class="d">' + esc(p.title || "") + "</div>" +
+            "</button>";
+        });
+        hotHtml += "</div>";
+      }
+      hotHtml += "</div>";
+    }
+
     var paths = (data.systems || []).filter(function (s) { return s.group === "paths"; });
     var messaging = (data.systems || []).filter(function (s) { return s.group === "messaging"; });
     var deps = (data.systems || []).filter(function (s) { return s.group === "infra" || (!s.group && s.kind === "dependency"); });
@@ -419,23 +594,33 @@ export const OPS_HTML = `<!doctype html>
       if (!rows.length) return "";
       var html = '<div class="section-head"><h2>' + esc(title) + "</h2><small>" + esc(hint || "") + "</small></div>";
       rows.forEach(function (s) {
-        html += '<button type="button" class="sys ' + esc(s.status) + '" data-path="' + esc(s.id) + '">' +
-          '<span class="dot ' + esc(s.status) + '"></span>' +
+        var st = rowState(s);
+        html += '<button type="button" class="sys ' + esc(st) + '" data-path="' + esc(s.id) + '">' +
+          '<span class="dot ' + esc(st) + '"></span>' +
           '<span><div class="label">' + esc(s.label) + "</div>" +
-          '<div class="meta">' + esc(s.note || s.severity) + "</div></span>" +
-          '<span class="state ' + esc(s.status) + '">' + esc(s.status) + "</span></button>";
+          '<div class="meta">' + esc(s.note || s.severity || "") + "</div></span>" +
+          '<span class="state ' + esc(st) + '">' + esc(stateLabel(st)) + "</span></button>";
       });
       return html;
     }
 
     homeView.innerHTML =
+      hotHtml +
       block("Client paths", paths, "money & booking") +
-      block("Messaging", messaging, "wrong-message") +
-      block("Dependencies", deps, "live signals");
+      block("Messaging", messaging, "quiet unless collision") +
+      block("Dependencies", deps, "blast-radius map");
 
     homeView.querySelectorAll("[data-path]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         location.hash = "#path/" + btn.getAttribute("data-path");
+      });
+    });
+    homeView.querySelectorAll("[data-person-path]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var kind = btn.getAttribute("data-person-kind") || "contact";
+        location.hash = "#person/" + encodeURIComponent(btn.getAttribute("data-person-path")) +
+          "/" + encodeURIComponent(btn.getAttribute("data-person-id")) +
+          (kind === "corr" ? "?k=corr" : "");
       });
     });
   }
@@ -445,15 +630,18 @@ export const OPS_HTML = `<!doctype html>
     homeView.hidden = true;
     pathView.hidden = false;
     var data = await api("/api/ops/systems?pathId=" + encodeURIComponent(pathId));
+    var st = rowState(data);
 
     var html = '<button type="button" class="back" id="backHome">← All systems</button>';
     html += '<div class="path-hero">';
-    html += '<div class="kicker">' + esc(data.severity || "system") + " · " + esc(data.status) + "</div>";
+    html += '<div class="kicker">' + esc(data.severity || "system") + " · " + esc(stateLabel(st));
+    if (data.boardRole) html += " · " + esc(data.boardRole);
+    html += "</div>";
     html += '<div class="path-title">' + esc(data.label) + "</div>";
     html += '<div class="status-bar" style="margin-top:18px">';
-    html += '<div class="orb ' + esc(data.status) + '"><span class="ring"></span><span class="core"></span></div>';
+    html += '<div class="orb ' + esc(st) + '"><span class="ring"></span><span class="core"></span></div>';
     html += '<div class="status-copy"><div class="kicker">Status</div><div class="label">' +
-      esc(data.status) + (data.instrumentation ? " · " + esc(data.instrumentation) : "") +
+      esc(stateLabel(st)) + (data.instrumentation ? " · " + esc(data.instrumentation) : "") +
       "</div></div></div>";
     if (data.note || data.why) {
       html += '<p class="why">' + esc(data.why || data.note) + "</p>";
@@ -461,6 +649,7 @@ export const OPS_HTML = `<!doctype html>
     if (data.id === "call_coach") {
       html += '<p class="why">On-demand only — no auto Whisper/LLM sweep. Staff: POST /api/staff-call-coach-run (or /coach-one per contact). Ops watches readiness, not last-run freshness.</p>';
     }
+    html += changeSurfaceHtml(data.changeSurface);
     html += "</div>";
 
     if (data.incidents && data.incidents.length) {
@@ -470,6 +659,24 @@ export const OPS_HTML = `<!doctype html>
           (inc.failedHopId ? " · hop " + esc(inc.failedHopId) : "") +
           " · " + esc(fmt(inc.openedAt)) + "</div></div>";
       });
+    }
+
+    if (data.people && data.people.length) {
+      html += '<div class="section-head"><h2>People</h2><small>open a timeline</small></div>';
+      html += '<div class="hot-people">';
+      data.people.forEach(function (p) {
+        var kind = p.contactId ? "contact" : (p.correlationId ? "corr" : "");
+        var key = p.contactId || p.correlationId;
+        if (!key || !kind) return;
+        html +=
+          '<button type="button" data-person-id="' + esc(key) + '" data-person-kind="' + kind + '">' +
+            '<div class="p">' + esc(p.personLabel || key) +
+            (p.pill ? ' <span class="pill ' + (p.pill.indexOf("stuck") >= 0 || p.pill === "fail" || p.pill === "collision" ? "bad" : "") + '">' + esc(p.pill) + "</span>" : "") +
+            "</div>" +
+            '<div class="d">' + esc(p.title || "") + (p.openedAt ? " · " + esc(fmt(p.openedAt)) : "") + "</div>" +
+          "</button>";
+      });
+      html += "</div>";
     }
 
     if (data.hops && data.hops.length) {
@@ -515,14 +722,71 @@ export const OPS_HTML = `<!doctype html>
     document.getElementById("backHome").addEventListener("click", function () {
       location.hash = "";
     });
+    pathView.querySelectorAll("[data-person-id]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var kind = btn.getAttribute("data-person-kind") || "contact";
+        location.hash = "#person/" + encodeURIComponent(pathId) + "/" +
+          encodeURIComponent(btn.getAttribute("data-person-id")) +
+          (kind === "corr" ? "?k=corr" : "");
+      });
+    });
+  }
+
+  async function renderPerson(pathId, personKey, personKind) {
+    homeHead.hidden = true;
+    homeView.hidden = true;
+    pathView.hidden = false;
+    var param = personKind === "corr" ? "correlationId" : "contactId";
+    var qs = "pathId=" + encodeURIComponent(pathId) + "&" + param + "=" + encodeURIComponent(personKey);
+    var data = await api("/api/ops/systems?" + qs);
+
+    var html = '<button type="button" class="back" id="backPath">← ' + esc(data.pathLabel || "Path") + "</button>";
+    html += '<div class="person-card">';
+    html += '<div class="pills">';
+    if (data.pill) {
+      var pillTone = data.pill === "ok" ? "" : (data.pill.indexOf("stuck") >= 0 || data.pill === "fail" || data.pill === "collision" ? "bad" : "warn");
+      html += '<span class="pill ' + pillTone + '">' + esc(data.pill) + "</span>";
+    }
+    html += '<span class="pill">' + esc(data.pathLabel || pathId) + "</span>";
+    html += "</div>";
+    html += '<div class="path-title" style="font-size:1.7rem">' + esc(data.personLabel || personKey || "Person") + "</div>";
+    if (data.contactId) {
+      html += '<p class="why" style="margin-top:8px">' + esc(data.contactId) + "</p>";
+    }
+
+    html += '<div class="section-head" style="margin-top:22px"><h2>Site</h2><small>what they did</small></div>';
+    html += renderPersonHops(data.site);
+
+    html += '<div class="section-head"><h2>Automation</h2><small>what fired</small></div>';
+    html += renderPersonHops(data.automation);
+
+    if (data.why) {
+      html += '<div class="section-head"><h2>Why</h2><small>this matters</small></div>';
+      html += '<p class="why">' + esc(data.why) + "</p>";
+    }
+    if (data.nextIfUnchanged) {
+      html += '<div class="section-head"><h2>If nothing changes</h2><small>next</small></div>';
+      html += '<p class="why">' + esc(data.nextIfUnchanged) + "</p>";
+    }
+    html += changeSurfaceHtml(data.changeSurface);
+    html += "</div>";
+
+    pathView.innerHTML = html;
+    document.getElementById("backPath").addEventListener("click", function () {
+      location.hash = "#path/" + encodeURIComponent(pathId);
+    });
   }
 
   async function render() {
     route = parseRoute();
     try {
-      if (route.view === "path") await renderPath(route.pathId);
+      if (route.view === "person") await renderPerson(route.pathId, route.personKey, route.personKind);
+      else if (route.view === "path") await renderPath(route.pathId);
       else await renderHome();
     } catch (e) {
+      homeHead.hidden = false;
+      homeView.hidden = false;
+      pathView.hidden = true;
       homeView.innerHTML = '<p class="empty">Could not load systems.</p>';
     }
   }
