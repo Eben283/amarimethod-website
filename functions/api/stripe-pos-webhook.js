@@ -5,6 +5,7 @@ import { claimProcessedEvent } from "../lib/processed-events.js";
 import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
 import { markLegPaid, posSessionKey, readPosSale, writePosSale } from "../lib/staff-pos.js";
 import { verifyStripeWebhookSignature } from "../lib/stripe-api.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -21,6 +22,17 @@ async function loadSaleForSession(kv, session) {
 
 async function maybeFulfill(context, sale) {
   if (!sale || sale.status !== "paid") return sale;
+  context.waitUntil?.(
+    emitPathHop(context.env, {
+      pathId: "pos_card_fulfill",
+      hopId: "pos_webhook",
+      outcome: "ok",
+      summary: "Stripe POS session paid — fulfilling",
+      source: "staff-pos-fulfill",
+      contactId: sale.client?.id || null,
+      correlationId: sale.id ? `pos:${sale.id}` : null,
+    }),
+  );
   const { sale: fulfilled } = await fulfillPaidPosSale(context, sale, { actor: "Stripe" });
   await writePosSale(context.env.PORTAL_KV, fulfilled);
   return fulfilled;

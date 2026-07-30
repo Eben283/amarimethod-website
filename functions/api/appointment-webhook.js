@@ -12,6 +12,7 @@ import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { dispatchAppointmentEvent } from "../lib/appointment-dispatch.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const KEY_TTL_SECONDS = 30 * 24 * 3600; // KV fallback dedupe window
@@ -87,6 +88,55 @@ export async function onRequestPost(context) {
       alert(context, "dispatch threw", { key, error: String(err?.message || err) });
       result = { ok: false, actions: [], errors: [String(err?.message || err)] };
     }
+
+    // Ops path: ingest + per-engine dispatch hops (green only once GHL webhook is live).
+    const corr = event.appointmentId ? `appt:${event.appointmentId}` : key;
+    context.waitUntil?.(
+      emitPathHop(context.env, {
+        pathId: "appointment_webhook",
+        hopId: "ingest",
+        outcome: "ok",
+        summary: `Appointment ${event.type} ingested`,
+        source: "appointment-webhook",
+        contactId: event.contactId || null,
+        correlationId: corr,
+        trigger: { type: `ghl.appointment.${event.type}`, id: event.appointmentId },
+      }),
+    );
+    const reminderAct = (result.actions || []).some((a) => a.engine === "reminder");
+    const nurtureAct = (result.actions || []).some((a) => a.engine === "nurture");
+    const reminderErr = (result.errors || []).some((e) => String(e).startsWith("reminder:"));
+    const nurtureErr = (result.errors || []).some((e) => String(e).startsWith("nurture:"));
+    context.waitUntil?.(
+      emitPathHop(context.env, {
+        pathId: "appointment_webhook",
+        hopId: "dispatch_reminder",
+        outcome: reminderErr ? "fail" : reminderAct ? "ok" : "skip",
+        summary: reminderErr
+          ? "Reminder dispatch failed"
+          : reminderAct
+            ? "Reminder engine accepted event"
+            : "Reminder engine skipped (unconfigured or no-op)",
+        source: "appointment-webhook",
+        contactId: event.contactId || null,
+        correlationId: corr,
+      }),
+    );
+    context.waitUntil?.(
+      emitPathHop(context.env, {
+        pathId: "appointment_webhook",
+        hopId: "dispatch_nurture",
+        outcome: nurtureErr ? "fail" : nurtureAct ? "ok" : "skip",
+        summary: nurtureErr
+          ? "Nurture dispatch failed"
+          : nurtureAct
+            ? "Nurture engine accepted event"
+            : "Nurture engine skipped (unconfigured or no-op)",
+        source: "appointment-webhook",
+        contactId: event.contactId || null,
+        correlationId: corr,
+      }),
+    );
 
     // 9. success
     return json(200, {

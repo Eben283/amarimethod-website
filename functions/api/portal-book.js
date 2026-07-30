@@ -16,6 +16,8 @@ import { computeSessionLedger } from "../lib/session-ledger.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { appointmentEndTime } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
+import { recordOpsError } from "../lib/ops-alert.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -161,12 +163,38 @@ export async function onRequestPost(context) {
   // cached field — see portalBookingBlocked.
   const ledger = await computeSessionLedger(context, contactId);
   if (portalBookingBlocked(ledger, contact)) {
+    context.waitUntil?.(
+      emitPathHop(env, {
+        pathId: "portal_package_book",
+        hopId: "ledger_gate",
+        outcome: "fail",
+        summary: "Portal book blocked — no sessions remaining",
+        source: "portal-book",
+        contactId,
+        reasonCode: "no_sessions",
+        condition: {
+          expected: "sessions remaining > 0",
+          observed: String(ledger?.remaining ?? "blocked"),
+        },
+      }),
+    );
     return json(
       { error: 'No sessions remaining in your package. Please purchase a new series to book another session.' },
       403,
       origin,
     );
   }
+
+  context.waitUntil?.(
+    emitPathHop(env, {
+      pathId: "portal_package_book",
+      hopId: "auth",
+      outcome: "ok",
+      summary: "Portal owner auth + ledger gate passed",
+      source: "portal-book",
+      contactId,
+    }),
+  );
 
   // Create the appointment title
   const title = sessionType === 'virtual'
@@ -209,6 +237,28 @@ export async function onRequestPost(context) {
     if (!bookRes.ok) {
       const errText = await bookRes.text();
       console.error('GHL booking error:', bookRes.status, errText);
+      context.waitUntil?.(
+        recordOpsError(env, "portal-book", "Portal package book failed", {
+          contactId,
+          status: bookRes.status,
+          error: String(errText).slice(0, 300),
+        }),
+      );
+      context.waitUntil?.(
+        emitPathHop(env, {
+          pathId: "portal_package_book",
+          hopId: "create_appointment",
+          outcome: "fail",
+          summary: "Portal prepaid follow-up book failed",
+          source: "portal-book",
+          contactId,
+          reasonCode: "book_failed",
+          condition: {
+            expected: "GHL appointment created",
+            observed: `${bookRes.status}: ${String(errText).slice(0, 80)}`,
+          },
+        }),
+      );
       // Surface the actual GHL error so the modal can display it for debugging
       return json({ error: `Booking failed (${bookRes.status}): ${errText}` }, 422, origin);
     }
@@ -224,6 +274,21 @@ export async function onRequestPost(context) {
         sessionType,
       },
     };
+
+    context.waitUntil?.(
+      emitPathHop(env, {
+        pathId: "portal_package_book",
+        hopId: "create_appointment",
+        outcome: "ok",
+        summary: `Portal follow-up booked (${apptData.id || "ok"})`,
+        source: "portal-book",
+        contactId,
+        condition: {
+          expected: "GHL appointment created",
+          observed: startTime ? String(startTime) : "null",
+        },
+      }),
+    );
 
     // Cache the successful result so duplicate confirms return the same
     // appointment instead of creating a second one.

@@ -15,6 +15,8 @@
 import { ghlFetch } from "../lib/ghl.js";
 import { requireOwner } from "../lib/owned-access.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
+import { recordOpsError } from "../lib/ops-alert.js";
 
 const allowedOrigin = "https://www.amarimethod.com";
 const PAYMENT_LINK_URL = "https://link.amarimethod.com/payment-link/6998ad0288a3f09db4845d26";
@@ -95,8 +97,31 @@ export async function onRequestPost(context) {
   if (!updateRes.ok) {
     const errText = await updateRes.text();
     console.error(`[portal-pay-followup] contact update ${updateRes.status}: ${errText}`);
+    context.waitUntil?.(
+      recordOpsError(context.env, "portal-pay-followup", "Could not save portal follow-up slot", {
+        contactId,
+        status: updateRes.status,
+        error: String(errText).slice(0, 300),
+      }),
+    );
     return json({ error: "Could not save your selected time. Please try again." }, 422, origin);
   }
+
+  context.waitUntil?.(
+    emitPathHop(context.env, {
+      pathId: "portal_followup_paid_book",
+      hopId: "pay_followup",
+      outcome: "ok",
+      summary: "Portal $190 slot saved; payment link returned",
+      source: "portal-pay-followup",
+      contactId,
+      condition: {
+        expected: "requested_session_slot_iso set",
+        observed: String(startTime),
+      },
+      money: { product: "Single Follow-up", amountCents: 19000 },
+    }),
+  );
 
   try {
     await ghlFetch(

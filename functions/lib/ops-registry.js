@@ -10,13 +10,24 @@ export const OPS_SEVERITY = Object.freeze({
 
 export const PATH_ASSESSMENT_PAID_BOOK = "assessment_paid_book";
 
-/** ops:err source → path id (partial money/booking fail sink until full emitters). */
+/** ops:err source → path id (fail sink). Prefer path-scoped sources to avoid cross-paint. */
 export const OPS_ERR_PATH_SOURCES = Object.freeze({
+  "ghl-purchase-webhook:package": "order_package_credit",
+  "ghl-purchase-webhook:assessment": "assessment_paid_book",
+  "ghl-purchase-webhook:intro": "intro_paid_book",
+  "ghl-purchase-webhook:followup": "portal_followup_paid_book",
+  // Legacy unscoped source — keep mapped to package (most common fail) until call sites migrate.
   "ghl-purchase-webhook": "order_package_credit",
   "ghl-invoice-webhook": "invoice_package_credit",
   "staff-pos-fulfill": "pos_card_fulfill",
+  "book/create-checkout:discovery": "discovery_free_book",
+  "book/create-checkout:intro": "intro_paid_book",
+  "book/create-checkout:assessment": "assessment_paid_book",
   "book/create-checkout": "discovery_free_book",
   "appointment-webhook": "appointment_webhook",
+  "portal-book": "portal_package_book",
+  "staff-book": "staff_book",
+  "portal-pay-followup": "portal_followup_paid_book",
 });
 
 /** @type {ReadonlyArray<{id:string,label:string,kind:'path'|'dependency',severity:string,hops:Array<{id:string,label:string}>,laws:string[],instrumentation:'full'|'partial'|'planned',group?:string}>} */
@@ -50,7 +61,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "create_appointment", label: "Create appointment" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "portal_followup_paid_book",
@@ -65,7 +76,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "create_appointment", label: "Create appointment" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "order_package_credit",
@@ -80,7 +91,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "purchase_cluster", label: "Purchase cluster" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "invoice_package_credit",
@@ -95,7 +106,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "tag_delta", label: "Tag delta" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "pos_card_fulfill",
@@ -109,7 +120,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "fulfill", label: "Fulfill" }),
     ]),
     laws: Object.freeze(["L_pos_paid_fulfilled"]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "discovery_free_book",
@@ -122,7 +133,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "create_appointment", label: "Create appointment" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "portal_package_book",
@@ -136,7 +147,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "create_appointment", label: "Create appointment" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "appointment_webhook",
@@ -150,7 +161,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "dispatch_nurture", label: "Dispatch nurture" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "partial",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "staff_book",
@@ -163,7 +174,7 @@ export const OPS_REGISTRY = Object.freeze([
       Object.freeze({ id: "create_appointment", label: "Create appointment" }),
     ]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
 
   // ── Messaging ──────────────────────────────────────────────────────────
@@ -199,7 +210,7 @@ export const OPS_REGISTRY = Object.freeze([
     group: "messaging",
     hops: Object.freeze([]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "nurture_engine",
@@ -209,7 +220,7 @@ export const OPS_REGISTRY = Object.freeze([
     group: "messaging",
     hops: Object.freeze([]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
 
   // ── Infra / money hygiene dependencies ─────────────────────────────────
@@ -341,7 +352,7 @@ export const OPS_REGISTRY = Object.freeze([
     group: "infra",
     hops: Object.freeze([]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
   }),
 ]);
 

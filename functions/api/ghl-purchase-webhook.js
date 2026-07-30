@@ -31,6 +31,11 @@ import { checkPackageBalance } from "../lib/session-consistency.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
 import { describeSlotFields, recordAssessmentBookPath } from "../lib/ops-assessment.js";
+import {
+  emitPathHop,
+  paidBookPathForProduct,
+  recordPaidBookPath,
+} from "../lib/ops-path-emit.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -695,9 +700,16 @@ export async function onRequestPost(context) {
 
     if (!contactRes.ok) {
       console.error(`[ghl-purchase-webhook] Contact fetch failed: ${sanitizedContactId} (${contactRes.status})`);
-      context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+      const errSource = booking?.isNonCreditBooking
+        ? "ghl-purchase-webhook:assessment"
+        : booking?.isNativePaidBooking
+          ? (resolvedProductId === "6998ace59dfde469ecb2aab6"
+            ? "ghl-purchase-webhook:followup"
+            : "ghl-purchase-webhook:intro")
+          : "ghl-purchase-webhook:package";
+      context.waitUntil(recordOpsError(context.env, errSource,
         "Contact fetch failed after payment — fulfillment not completed",
-        { contactId: sanitizedContactId, status: contactRes.status, product: productName }));
+        { contactId: sanitizedContactId, status: contactRes.status, product: productName, pathHint: errSource }));
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
         { status: 404, headers }
@@ -865,7 +877,7 @@ export async function onRequestPost(context) {
           `[ghl-purchase-webhook] Balance consistency violation for ${sanitizedContactId} ` +
           `(${pkg.name}): ${balanceCheck.violation} — writing anyway (advisory)`,
         );
-        context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+        context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook:package",
           "Session balance consistency violation on package purchase — value written anyway",
           { contactId: sanitizedContactId, product: pkg.name,
             attemptedRemaining: newRemaining, packageSize: pkg.sessionsToAdd,
@@ -907,10 +919,23 @@ export async function onRequestPost(context) {
     if (!updateRes.ok) {
       const errText = await updateRes.text();
       console.error(`[ghl-purchase-webhook] PUT failed for ${sanitizedContactId} (${updateRes.status}): ${errText}`);
-      context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+      context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook:package",
         "GHL field update failed — payment received, sessions_remaining NOT updated",
         { contactId: sanitizedContactId, status: updateRes.status, product: pkg.name,
           attemptedRemaining: newRemaining, ghlError: String(errText).slice(0, 300) }));
+      try {
+        await emitPathHop(context.env, {
+          pathId: "order_package_credit",
+          hopId: "put_session_fields",
+          outcome: "fail",
+          summary: `Package credit PUT failed for ${pkg.name}`,
+          source: "ghl-purchase-webhook:package",
+          contactId: sanitizedContactId,
+          personLabel: [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim() || null,
+          correlationId: resolvedOrderId ? `order:${resolvedOrderId}` : null,
+          money: { product: pkg.name },
+        });
+      } catch { /* ignore */ }
       return new Response(
         JSON.stringify({ error: "Failed to update contact fields" }),
         { status: 500, headers }
@@ -918,6 +943,52 @@ export async function onRequestPost(context) {
     }
 
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} → ${newRemaining} (${pkg.name})`);
+
+    // Ops: package credit path — payment + credit hops (series/upgrade and singles that credit).
+    try {
+      const corr = resolvedOrderId ? `order:${resolvedOrderId}` : `contact:${sanitizedContactId}`;
+      const label = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim() || null;
+      await emitPathHop(context.env, {
+        pathId: "order_package_credit",
+        hopId: "purchase_webhook",
+        outcome: "ok",
+        summary: `Order paid — ${pkg.name}`,
+        source: "ghl-purchase-webhook:package",
+        contactId: sanitizedContactId,
+        personLabel: label,
+        correlationId: corr,
+        money: { product: pkg.name },
+      });
+      await emitPathHop(context.env, {
+        pathId: "order_package_credit",
+        hopId: "put_session_fields",
+        outcome: "ok",
+        summary: `sessions_remaining ${currentRemaining} → ${newRemaining}`,
+        source: "ghl-purchase-webhook:package",
+        contactId: sanitizedContactId,
+        personLabel: label,
+        correlationId: corr,
+        money: { product: pkg.name },
+        condition: {
+          expected: "sessions_remaining updated after paid order",
+          observed: String(newRemaining),
+        },
+      });
+      if (pkg.seriesType !== null) {
+        await emitPathHop(context.env, {
+          pathId: "order_package_credit",
+          hopId: "purchase_cluster",
+          outcome: "ok",
+          summary: `Series purchase recorded (${pkg.seriesType})`,
+          source: "ghl-purchase-webhook:package",
+          contactId: sanitizedContactId,
+          personLabel: label,
+          correlationId: corr,
+        });
+      }
+    } catch (opsErr) {
+      console.error("[ghl-purchase-webhook] package ops emit failed:", opsErr?.message || opsErr);
+    }
 
     // Purchase event → nurture engine (Flow 3 exit fan-in matches the 4 series/upgrade
     // productIds; other products are ignored engine-side). Fire-and-forget, dormant until
@@ -948,8 +1019,32 @@ export async function onRequestPost(context) {
     // they picked. Create the appointment on the calendar + tag the
     // contact. Legacy GHL-funnel purchases skip this branch (slot missing).
     if (pkg.isNativePaidBooking) {
+      const paidPathId = paidBookPathForProduct(resolvedProductId, pkg);
+      let appointment = null;
+      let bookError = null;
+      let skippedReason = null;
+      const slotIsoRaw = getRequestedSessionField(
+        contact,
+        "requested_session_slot_iso",
+        REQUESTED_SLOT_FIELD_IDS.slotIso,
+      );
+      const slotDateRaw = getRequestedSessionField(
+        contact,
+        "requested_session_slot",
+        REQUESTED_SLOT_FIELD_IDS.slot,
+      );
+      const slotTypeRaw = getRequestedSessionField(
+        contact,
+        "requested_session_type",
+        REQUESTED_SLOT_FIELD_IDS.type,
+      );
+      const slotCalRaw = getRequestedSessionField(
+        contact,
+        "requested_session_calendar",
+        REQUESTED_SLOT_FIELD_IDS.calendar,
+      );
       try {
-        const appointment = await bookPaidBookingAppointment(
+        appointment = await bookPaidBookingAppointment(
           context,
           contact,
           pkg,
@@ -962,11 +1057,14 @@ export async function onRequestPost(context) {
             pkg,
             appointment,
           );
+        } else if (!contactLooksLikeNativeCheckout(contact)) {
+          skippedReason = "legacy_or_calendar_checkout";
         }
       } catch (err) {
         // Don't fail the whole webhook — the payment succeeded, the
         // sessions_remaining update succeeded. Surface the booking
         // failure via a contact note so Eben can recover manually.
+        bookError = err;
         console.error(
           `[ghl-purchase-webhook] Initial session appointment booking failed:`,
           err.message,
@@ -995,6 +1093,39 @@ export async function onRequestPost(context) {
           );
         } catch (noteErr) {
           console.error("[ghl-purchase-webhook] urgent note failed:", noteErr);
+        }
+      }
+
+      if (paidPathId) {
+        const slotCondition = {
+          expected: "requested_session_slot_iso bookable datetime",
+          observed: describeSlotFields({
+            slotIso: slotIsoRaw,
+            slotDate: slotDateRaw,
+            type: slotTypeRaw,
+            calendar: slotCalRaw,
+          }),
+        };
+        const opsSource = paidPathId === "portal_followup_paid_book"
+          ? "ghl-purchase-webhook:followup"
+          : "ghl-purchase-webhook:intro";
+        try {
+          await recordPaidBookPath(context, {
+            pathId: paidPathId,
+            source: opsSource,
+            contact,
+            productName: pkg.name,
+            orderId: resolvedOrderId,
+            appointment,
+            bookError,
+            slotCondition,
+            skippedReason,
+            failTitle: paidPathId === "portal_followup_paid_book"
+              ? "Paid portal follow-up, no appointment"
+              : "Paid Intro, no appointment",
+          });
+        } catch (opsErr) {
+          console.error("[ghl-purchase-webhook] paid-book ops emit failed:", opsErr?.message || opsErr);
         }
       }
     }
@@ -1029,7 +1160,7 @@ export async function onRequestPost(context) {
 
   } catch (err) {
     console.error("[ghl-purchase-webhook] Unexpected error:", err);
-    context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
+    context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook:package",
       "Unhandled error processing a purchase webhook",
       { message: String(err && err.message).slice(0, 300) }));
     return new Response(

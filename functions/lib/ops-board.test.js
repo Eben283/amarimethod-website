@@ -66,7 +66,28 @@ describe("buildSystemsBoard", () => {
     expect(intro.status).toBe("unknown");
   });
 
-  it("marks invoice credit red from recent ops:err", async () => {
+  it("marks invoice credit red from latest fail trail event", async () => {
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => {
+      if (pathId === "invoice_package_credit") {
+        return [
+          {
+            pathId: "invoice_package_credit",
+            hopId: "put_session_fields",
+            outcome: "fail",
+            summary: "PUT sessions failed",
+            at: new Date().toISOString(),
+          },
+        ];
+      }
+      return [];
+    });
+    const board = await buildSystemsBoard(kvEnv());
+    const invoice = board.systems.find((s) => s.id === "invoice_package_credit");
+    expect(invoice.status).toBe("red");
+    expect(invoice.note).toMatch(/failed|PUT/i);
+  });
+
+  it("still paints partial-era ops:err onto invoice via related source map", async () => {
     listOpsErrors.mockResolvedValue([
       {
         key: "ops:err:1",
@@ -75,10 +96,11 @@ describe("buildSystemsBoard", () => {
         at: new Date().toISOString(),
       },
     ]);
+    // Full paths ignore ops:err for home status — but source map remains for detail.
     const board = await buildSystemsBoard(kvEnv());
-    const invoice = board.systems.find((s) => s.id === "invoice_package_credit");
-    expect(invoice.status).toBe("red");
-    expect(invoice.note).toMatch(/failure/i);
+    expect(board.systems.find((s) => s.id === "invoice_package_credit").instrumentation).toBe(
+      "full",
+    );
   });
 
   it("registers expanded money/booking/messaging/infra rows", async () => {
@@ -157,6 +179,52 @@ describe("buildSystemsBoard", () => {
     const coach = board.systems.find((s) => s.id === "call_coach");
     expect(coach.status).toBe("red");
     expect(coach.note).toMatch(/not ready/i);
+  });
+
+  it("surfaces reminder + nurture + crm lastRuns", async () => {
+    const board = await buildSystemsBoard(
+      kvEnv({
+        "ops:reminder-engine:lastRun": {
+          status: "ok",
+          finishedAt: new Date().toISOString(),
+          due: 1,
+          would_send: 1,
+        },
+        "ops:nurture-engine:lastRun": {
+          status: "ok",
+          finishedAt: new Date().toISOString(),
+          due: 0,
+        },
+        "ops:crm-mirror:lastRun": {
+          status: "ok",
+          ok: true,
+          finishedAt: new Date().toISOString(),
+        },
+      }),
+    );
+    expect(board.systems.find((s) => s.id === "reminder_engine").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "nurture_engine").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "crm_mirror").status).toBe("green");
+  });
+
+  it("marks newly full money/booking paths as full instrumentation", async () => {
+    const board = await buildSystemsBoard(kvEnv());
+    for (const id of [
+      "intro_paid_book",
+      "order_package_credit",
+      "invoice_package_credit",
+      "pos_card_fulfill",
+      "discovery_free_book",
+      "portal_package_book",
+      "staff_book",
+      "portal_followup_paid_book",
+      "appointment_webhook",
+    ]) {
+      expect(board.systems.find((s) => s.id === id).instrumentation).toBe("full");
+    }
+    expect(board.systems.find((s) => s.id === "partner_welcome_message").instrumentation).toBe(
+      "planned",
+    );
   });
 });
 

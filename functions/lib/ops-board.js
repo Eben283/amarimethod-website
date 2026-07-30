@@ -642,6 +642,48 @@ async function readInfraSignals(env) {
   }
 
   try {
+    const rec = await kv.get("ops:reminder-engine:lastRun", "json");
+    out.reminder_engine = signalFromJudged(
+      "reminder_engine",
+      judgeLastRun(rec, {
+        maxAgeH: 1,
+        okPredicate: (x) => x.status === "ok" || x.status == null,
+        detail: (x) => {
+          const bits = [];
+          if (x.due != null) bits.push(`${x.due} due`);
+          if (x.would_send != null) bits.push(`${x.would_send} would_send`);
+          if (x.sent != null) bits.push(`${x.sent} sent`);
+          if (x.failed) bits.push(`${x.failed} failed`);
+          return bits.join(" · ") || "ok";
+        },
+      }),
+    );
+  } catch {
+    out.reminder_engine = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    const rec = await kv.get("ops:nurture-engine:lastRun", "json");
+    out.nurture_engine = signalFromJudged(
+      "nurture_engine",
+      judgeLastRun(rec, {
+        maxAgeH: 1,
+        okPredicate: (x) => x.status === "ok" || x.status == null,
+        detail: (x) => {
+          const bits = [];
+          if (x.due != null) bits.push(`${x.due} due`);
+          if (x.would_send != null) bits.push(`${x.would_send} would_send`);
+          if (x.sent != null) bits.push(`${x.sent} sent`);
+          if (x.failed) bits.push(`${x.failed} failed`);
+          return bits.join(" · ") || "ok";
+        },
+      }),
+    );
+  } catch {
+    out.nurture_engine = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
     const beat = await kv.get("ops:beat:field-id-check", "json");
     out.field_id_check = signalFromJudged(
       "field_id_check",
