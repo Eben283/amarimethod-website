@@ -260,9 +260,9 @@ export const OPS_HTML = `<!doctype html>
       homeBanner.hidden = true;
     }
 
-    var paths = (data.systems || []).filter(function (s) { return (s.group || s.kind) === "paths" || (s.kind === "path" && s.group !== "messaging"); });
+    var paths = (data.systems || []).filter(function (s) { return s.group === "paths"; });
     var messaging = (data.systems || []).filter(function (s) { return s.group === "messaging"; });
-    var deps = (data.systems || []).filter(function (s) { return s.group === "infra" || (s.kind === "dependency" && s.group !== "messaging"); });
+    var deps = (data.systems || []).filter(function (s) { return s.group === "infra" || (!s.group && s.kind === "dependency"); });
 
     function block(title, rows, hint) {
       if (!rows.length) return "";
