@@ -9,6 +9,7 @@
 
 import { ghlFetch } from "../../lib/ghl.js";
 import { applyLookBusy } from "../../lib/look-busy.js";
+import { applyHourPackPreference } from "../../lib/booking-slot-policy.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 
@@ -185,10 +186,11 @@ export async function onRequestGet(context) {
     }
   }
 
-  // GHL lookBusy is off — thin here so gaps rotate weekly and the earliest
-  // real slot on a day always stays bookable.
+  // Prefer on-hour main sessions / intro slots that leave the next Follow-up
+  // hour free, then thin with look-busy. Both only filter GHL-approved times.
+  const packed = applyHourPackPreference(slots, { calendarId });
   return json(
-    { slots: applyLookBusy(slots, { calendarId }) },
+    { slots: applyLookBusy(packed, { calendarId }) },
     200,
     origin,
   );

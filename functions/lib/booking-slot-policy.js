@@ -222,3 +222,105 @@ export function driftAgainstPolicy(live) {
 export function followupPolicy() {
   return SLOT_POLICIES.followup;
 }
+
+function slotHourMinute(slot) {
+  if (slot && Number.isInteger(slot.hour) && Number.isInteger(slot.minute)) {
+    return { hour: slot.hour, minute: slot.minute };
+  }
+  const time = String(slot?.time || "");
+  if (/^\d{2}:\d{2}$/.test(time)) {
+    return {
+      hour: Number(time.slice(0, 2)),
+      minute: Number(time.slice(3, 5)),
+    };
+  }
+  const timePart = String(slot?.datetime || "").split("T")[1] || "";
+  const hour = Number.parseInt(timePart.slice(0, 2), 10);
+  const minute = Number.parseInt(timePart.slice(3, 5), 10);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  return { hour, minute };
+}
+
+/**
+ * True when [start, start+block) overlaps a later on-the-hour instant.
+ * Example: Assessment 10:40 with block 50 occupies until 11:30 → smashes 11:00.
+ * Assessment 10:00 with block 50 frees at 10:50 → preserves 11:00.
+ */
+export function smashesNextOnHour(hour, minute, blockMinutes) {
+  const block = Number(blockMinutes);
+  if (!Number.isFinite(block) || block <= 0) return false;
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return false;
+  const startMin = hour * 60 + minute;
+  const endMin = startMin + block;
+  // First :00 strictly after the start.
+  const nextHour = Math.ceil((startMin + 1) / 60) * 60;
+  return nextHour < endMin;
+}
+
+export function slotPreservesNextOnHour(slot, blockMinutes) {
+  const hm = slotHourMinute(slot);
+  if (!hm) return true;
+  return !smashesNextOnHour(hm.hour, hm.minute, blockMinutes);
+}
+
+/**
+ * Show-layer preference on top of GHL free-slots (same safety model as look-busy):
+ * - Main sessions (Follow-up / Initial): keep :00 starts only.
+ * - Intro / phone: if a day has any slot that leaves the next Follow-up hour free,
+ *   drop the ones that smash it (e.g. prefer Assessment 10:00 over 10:40).
+ * Never invents times; never empties a day that only had smashing slots.
+ *
+ * @param {Array<{date?: string, time?: string, hour?: number, minute?: number, datetime?: string}>} slots
+ * @param {{ calendarId: string }} opts
+ */
+export function applyHourPackPreference(slots, opts) {
+  if (!Array.isArray(slots) || slots.length === 0) return slots;
+  const policy = policyForCalendarId(opts && opts.calendarId);
+  if (!policy) return slots;
+
+  if (policy.preferOnHour) {
+    return slots.filter((slot) => {
+      const hm = slotHourMinute(slot);
+      return hm ? hm.minute === 0 : true;
+    });
+  }
+
+  if (policy.lattice !== "intro" && policy.lattice !== "phone") {
+    return slots;
+  }
+
+  const block = blockMinutes(policy);
+  const byDate = new Map();
+  const passthrough = [];
+  for (const slot of slots) {
+    if (!slot || !slot.date) {
+      passthrough.push(slot);
+      continue;
+    }
+    if (!byDate.has(slot.date)) byDate.set(slot.date, []);
+    byDate.get(slot.date).push(slot);
+  }
+
+  const out = [];
+  for (const [, daySlots] of byDate) {
+    const preserving = [];
+    const smashing = [];
+    for (const slot of daySlots) {
+      if (slotPreservesNextOnHour(slot, block)) preserving.push(slot);
+      else smashing.push(slot);
+    }
+    // Prefer non-smashing when any exist; otherwise keep smashing so the day
+    // still has something bookable (GHL said they were free).
+    out.push(...(preserving.length ? preserving : smashing));
+  }
+
+  out.sort((a, b) => {
+    const da = String(a.date || "");
+    const db = String(b.date || "");
+    if (da !== db) return da.localeCompare(db);
+    return String(a.datetime || a.time || "").localeCompare(
+      String(b.datetime || b.time || ""),
+    );
+  });
+  return passthrough.length ? [...out, ...passthrough] : out;
+}
