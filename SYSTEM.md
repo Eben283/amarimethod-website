@@ -7,7 +7,7 @@ Companion docs:
 - Marketing visual language → `DESIGN.md` + `css/site-v6.css`
 - Native booking architecture → `amari-method-docs/ops/memory/project_native_booking.md`
 
-Last updated: 2026-07-29.
+Last updated: 2026-07-30.
 
 ---
 
@@ -98,6 +98,12 @@ Last updated: 2026-07-29.
 | Today / day-of | `TodayPage`, `GarrettDay`, `AppointmentCard` |
 | Client detail CRM | `ClientDetailPage`, notes, message history |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
+
+### Messaging exit smoke tests
+
+| Name | Kind | Paths | Notes |
+|------|------|-------|-------|
+| Morning SMS (Twilio) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. Sends via Twilio, not GHL. Needs upgraded Twilio + A2P/toll-free before US delivery works; default `MORNING_SMS_MODE=shadow`. |
 
 ---
 
