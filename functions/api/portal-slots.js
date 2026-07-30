@@ -7,6 +7,7 @@
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { applyLookBusy } from "../lib/look-busy.js";
+import { applyHourPackPreference } from "../lib/booking-slot-policy.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -124,8 +125,9 @@ export async function onRequestGet(context) {
       }
     }
 
+    const packed = applyHourPackPreference(slots, { calendarId });
     return json(
-      { slots: applyLookBusy(slots, { calendarId }) },
+      { slots: applyLookBusy(packed, { calendarId }) },
       200,
       origin,
     );

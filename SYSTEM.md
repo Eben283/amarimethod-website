@@ -7,7 +7,7 @@ Companion docs:
 - Marketing visual language → `DESIGN.md` + `css/site-v6.css`
 - Native booking architecture → `amari-method-docs/ops/memory/project_native_booking.md`
 
-Last updated: 2026-07-29.
+Last updated: 2026-07-30.
 
 ---
 
@@ -54,6 +54,7 @@ Last updated: 2026-07-29.
 
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
+| Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Follow-up on-the-hour (`50/10/60`); Assessment denser intro; `applyHourPackPreference` prefers intro slots that leave the next `:00` free (e.g. Assessment 10:00 over 10:40). Wired on `/api/book/public-slots` + `/api/portal-slots` before look-busy. Doc: `decision_booking_slot_model.md` |
 | Public Tock bookers | Native | `book/initial-in-person.html`, `initial-virtual.html`, `discovery-call.html`, `assessment-booking.html` | Two-month; slots via `/api/book/public-slots` |
 | Public study booker | Native | `book/study.html` | Single-month cousin; `/api/study-book` |
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |
