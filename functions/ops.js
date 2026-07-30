@@ -22,44 +22,52 @@ export const OPS_HTML = `<!doctype html>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
+  /*
+    Color theory — cool split-complementary ops board
+    Dominant: slate-blue field (calm scan surface)
+    Accent: teal (analogous “watching / healthy”)
+    Alerts: coral (sick) + amber (stuck) — warm complements against cool base
+    Not brown, not cream/terracotta, not purple
+  */
   :root {
-    --bg: #14100e;
-    --bg2: #1f1814;
-    --panel: #241c17;
-    --line: #3a2f27;
-    --line2: #4a3c32;
-    --ink: #f4ebe1;
-    --muted: #a89886;
-    --faint: #6f6155;
-    --accent: #e29a72;
-    --accent-dim: color-mix(in srgb, var(--accent) 18%, transparent);
-    --good: #7fba8a;
-    --good-dim: color-mix(in srgb, var(--good) 16%, transparent);
-    --bad: #e07a68;
-    --bad-dim: color-mix(in srgb, var(--bad) 16%, transparent);
-    --warn: #c9a45a;
+    --bg: #eef2f6;
+    --bg2: #e4ebf2;
+    --panel: #f7fafc;
+    --line: #c9d4e0;
+    --line2: #aebccb;
+    --ink: #122033;
+    --muted: #4a5d73;
+    --faint: #7a8ea3;
+    --accent: #0b7f86;
+    --accent-dim: color-mix(in srgb, var(--accent) 12%, transparent);
+    --good: #1a8f6a;
+    --good-dim: color-mix(in srgb, var(--good) 12%, transparent);
+    --bad: #d64545;
+    --bad-dim: color-mix(in srgb, var(--bad) 12%, transparent);
+    --warn: #c47a14;
     --warn-dim: color-mix(in srgb, var(--warn) 14%, transparent);
-    --idle: #6a5c50;
+    --idle: #8a9bb0;
+    --on-bright: #ffffff;
     --serif: "Fraunces", Georgia, serif;
     --sans: "IBM Plex Sans", "Segoe UI", sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; margin: 0; }
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
   body {
     min-height: 100vh;
     color: var(--ink);
     font: 15px/1.5 var(--sans);
     background:
-      radial-gradient(900px 520px at 8% -8%, #3b241c 0%, transparent 55%),
-      radial-gradient(700px 480px at 100% 0%, #1e2a22 0%, transparent 48%),
-      radial-gradient(600px 400px at 70% 110%, #2a1c16 0%, transparent 50%),
-      var(--bg);
+      radial-gradient(900px 520px at 6% -10%, #c8e8ea 0%, transparent 55%),
+      radial-gradient(720px 480px at 100% 0%, #d5e2f4 0%, transparent 50%),
+      radial-gradient(640px 420px at 70% 110%, #dce8ef 0%, transparent 52%),
+      linear-gradient(180deg, #f5f8fb 0%, var(--bg) 40%, #e8eef5 100%);
   }
   body::before {
     content: "";
     position: fixed; inset: 0; pointer-events: none; z-index: 0;
-    opacity: 0.045;
+    opacity: 0.035;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   .wrap {
@@ -110,14 +118,13 @@ export const OPS_HTML = `<!doctype html>
     position: absolute; inset: 11px; border-radius: 50%;
     background: var(--idle);
   }
-  .orb.green .core { background: var(--good); box-shadow: 0 0 22px color-mix(in srgb, var(--good) 45%, transparent); }
-  .orb.red .core { background: var(--bad); box-shadow: 0 0 22px color-mix(in srgb, var(--bad) 45%, transparent); }
-  .orb.unknown .core { background: var(--warn); box-shadow: 0 0 18px color-mix(in srgb, var(--warn) 35%, transparent); }
-  .orb.stuck .core, .orb.sick .core { background: var(--bad); box-shadow: 0 0 22px color-mix(in srgb, var(--bad) 45%, transparent); }
-  .orb.healthy .core, .orb.map_ok .core { background: var(--good); box-shadow: 0 0 22px color-mix(in srgb, var(--good) 45%, transparent); }
+  .orb.green .core, .orb.healthy .core, .orb.map_ok .core { background: var(--good); }
+  .orb.red .core, .orb.sick .core { background: var(--bad); }
+  .orb.stuck .core, .orb.unknown .core { background: var(--warn); }
   .orb.idle .core, .orb.blind .core { background: var(--idle); }
-  .orb.green .ring { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
-  .orb.red .ring { border-color: color-mix(in srgb, var(--bad) 45%, var(--line)); }
+  .orb.green .ring, .orb.healthy .ring, .orb.map_ok .ring { border-color: color-mix(in srgb, var(--good) 55%, var(--line)); }
+  .orb.red .ring, .orb.sick .ring { border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); }
+  .orb.stuck .ring { border-color: color-mix(in srgb, var(--warn) 55%, var(--line)); }
   .status-copy .kicker {
     font-family: var(--mono); font-size: 11px; font-weight: 600;
     letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);
@@ -195,7 +202,8 @@ export const OPS_HTML = `<!doctype html>
   .hot-strip {
     margin-top: 22px; padding: 16px 16px 14px;
     border: 1px solid var(--line2); border-radius: 12px;
-    background: linear-gradient(135deg, color-mix(in srgb, var(--panel) 90%, #3a2a20), transparent);
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--panel)), var(--panel) 55%, transparent);
   }
   .hot-strip .hs-title {
     font-family: var(--mono); font-size: 11px; font-weight: 600;
@@ -205,7 +213,8 @@ export const OPS_HTML = `<!doctype html>
     margin-top: 8px; font-family: var(--serif); font-size: 1.35rem;
     letter-spacing: -0.02em; line-height: 1.15;
   }
-  .hot-strip.stuck .hs-head, .hot-strip.sick .hs-head { color: var(--accent); }
+  .hot-strip.stuck .hs-head { color: var(--warn); }
+  .hot-strip.sick .hs-head { color: var(--bad); }
   .hot-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .hot-pill {
     font-family: var(--mono); font-size: 10px; font-weight: 600;
@@ -214,7 +223,8 @@ export const OPS_HTML = `<!doctype html>
     color: var(--muted);
   }
   .hot-pill.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, var(--line)); }
-  .hot-pill.fail, .hot-pill.stuck { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+  .hot-pill.fail { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+  .hot-pill.stuck { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, var(--line)); }
   .hot-people { margin-top: 12px; }
   .hot-people button {
     display: block; width: 100%; text-align: left;
@@ -227,7 +237,7 @@ export const OPS_HTML = `<!doctype html>
   .person-card {
     margin: 18px 0; padding: 16px;
     border: 1px solid var(--line2); border-radius: 12px;
-    background: color-mix(in srgb, var(--panel) 80%, transparent);
+    background: color-mix(in srgb, var(--panel) 92%, #ffffff);
   }
   .person-card .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
   .pill {
@@ -248,8 +258,8 @@ export const OPS_HTML = `<!doctype html>
     color: var(--muted); padding-top: 3px;
   }
   .hop-row.ok .mark { color: var(--good); }
-  .hop-row.fail .mark, .hop-row.stuck .mark { color: var(--bad); }
-  .hop-row.pending .mark, .hop-row.skip .mark { color: var(--warn); }
+  .hop-row.fail .mark { color: var(--bad); }
+  .hop-row.stuck .mark, .hop-row.pending .mark, .hop-row.skip .mark { color: var(--warn); }
   .hop-row .name { font-weight: 500; }
   .hop-row .detail { color: var(--muted); font-size: 12.5px; margin-top: 3px; line-height: 1.4; }
   .change-box {
@@ -334,9 +344,9 @@ export const OPS_HTML = `<!doctype html>
     font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
     padding: 2px 7px; border-radius: 3px; margin-right: 8px; vertical-align: 1px;
   }
-  .stamp.ok { background: var(--good); color: var(--bg); }
-  .stamp.fail { background: var(--bad); color: var(--bg); }
-  .stamp.skip { background: var(--warn); color: var(--bg); }
+  .stamp.ok { background: var(--good); color: var(--on-bright); }
+  .stamp.fail { background: var(--bad); color: var(--on-bright); }
+  .stamp.skip { background: var(--warn); color: var(--on-bright); }
   .cond { display: block; color: var(--faint); font-size: 12px; margin-top: 5px; }
   .empty { color: var(--muted); padding: 18px 2px; }
   .foot {
@@ -350,7 +360,7 @@ export const OPS_HTML = `<!doctype html>
     .live {
       animation: pulse 2.4s ease-out infinite;
     }
-    .orb.green .ring, .orb.red .ring {
+    .orb.green .ring, .orb.red .ring, .orb.sick .ring, .orb.healthy .ring {
       animation: breath 2.8s ease-in-out infinite;
     }
     .sys, .hop, .log .row {
