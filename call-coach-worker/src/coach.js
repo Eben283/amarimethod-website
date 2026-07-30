@@ -1,11 +1,8 @@
-// Claude coaching pass over a contact's FULL relationship — every call
-// transcript + the complete two-way message thread (both directions).
-// Produces constructive, specific, evidence-based pointers for Garrett —
-// "what worked / what to improve / objections / next step" — grounded ONLY in
-// what was actually said. No fabrication, no generic sales-script advice.
+// Coaching pass over a contact's FULL relationship — every call transcript +
+// the complete two-way message thread (both directions). Uses OpenRouter
+// (Eben's key; free :free models by default) so we don't need Anthropic.
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-6";
+import { openRouterChat } from "../../functions/lib/openrouter-chat.js";
 
 // Amari context so the coach judges against how Garrett actually works, not a
 // generic high-pressure sales frame. Mirrors the positioning rules: warm,
@@ -181,42 +178,17 @@ function parseCoaching(text) {
 
 // Returns { coaching, error }. coaching is the parsed object on success.
 export async function coachInteraction(env, { contactName, transcript, thread }) {
-  const apiKey = env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { error: "ANTHROPIC_API_KEY not configured" };
-
   if (!transcript && !(thread && thread.length)) {
     return { error: "nothing to coach (no transcript, no message thread)" };
   }
 
-  const body = {
-    model: MODEL,
-    max_tokens: 1500,
+  const { text, error } = await openRouterChat(env, {
     system: SYSTEM,
-    messages: [{ role: "user", content: buildUserContent({ contactName, transcript, thread }) }],
-  };
+    user: buildUserContent({ contactName, transcript, thread }),
+    maxTokens: 1500,
+  });
+  if (error) return { error };
 
-  let res;
-  try {
-    res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    return { error: `anthropic request failed: ${err.message}` };
-  }
-
-  if (!res.ok) {
-    const detail = (await res.text().catch(() => "")).slice(0, 200);
-    return { error: `anthropic ${res.status}: ${detail}` };
-  }
-
-  const data = await res.json().catch(() => null);
-  const text = data?.content?.[0]?.text || "";
   const coaching = parseCoaching(text);
   if (!coaching) return { error: "could not parse coaching JSON", rawText: text.slice(0, 300) };
   // Belt-and-suspenders on the NAMES rule: strip any fabricated surname that

@@ -1,14 +1,15 @@
 // Cross-channel comms coherence — looks at a contact's recent multi-channel
 // touch history (call/sms/email, both directions, already cached by
-// conversation-cache-worker in conv:{contactId}) and asks Claude to flag what
-// a deterministic side-effect check (qa-audit.js) can't see: messages that say
-// the same thing in different words across channels, messages that contradict
-// each other, and inbound messages that signal the client never actually got
-// information we already sent. Pure helpers below are unit tested directly;
-// evaluateContact is the only function that makes a network call.
+// conversation-cache-worker in conv:{contactId}) and asks an LLM (OpenRouter,
+// free :free models by default) to flag what a deterministic side-effect check
+// (qa-audit.js) can't see: messages that say the same thing in different words
+// across channels, messages that contradict each other, and inbound messages
+// that signal the client never actually got information we already sent. Pure
+// helpers below are unit tested directly; evaluateContact is the only function
+// that makes a network call.
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-6";
+import { openRouterChat } from "../../functions/lib/openrouter-chat.js";
+
 const DAY_MS = 86_400_000;
 
 const SYSTEM = `You are reviewing one Amari Method client's recent cross-channel communication (calls, texts, emails — both what we sent and what they sent back) for COHERENCE, not content quality or sales technique. A separate deterministic system already checks for missing reminders, missing automations, and exact-duplicate messages — do not re-flag those. Your job is the judgment a regex can't do:
@@ -112,41 +113,16 @@ export function parseFlags(text) {
 // Returns { result, error }. result is { flags, confidence } on success, plus
 // bookkeeping (contactId, evaluatedTouchCount) the caller persists alongside it.
 export async function evaluateContact(env, { contactId, contactName, touches, nowMs, windowDays = 3 }) {
-  const apiKey = env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { error: "ANTHROPIC_API_KEY not configured" };
-
   const windowed = windowTouches(touches, nowMs, windowDays);
   if (windowed.length < 2) return { error: "nothing to evaluate (fewer than 2 touches in window)" };
 
-  const body = {
-    model: MODEL,
-    max_tokens: 800,
+  const { text, error } = await openRouterChat(env, {
     system: SYSTEM,
-    messages: [{ role: "user", content: buildNarrative(windowed, contactName) }],
-  };
+    user: buildNarrative(windowed, contactName),
+    maxTokens: 800,
+  });
+  if (error) return { error };
 
-  let res;
-  try {
-    res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    return { error: `anthropic request failed: ${err.message}` };
-  }
-
-  if (!res.ok) {
-    const detail = (await res.text().catch(() => "")).slice(0, 200);
-    return { error: `anthropic ${res.status}: ${detail}` };
-  }
-
-  const data = await res.json().catch(() => null);
-  const text = data?.content?.[0]?.text || "";
   const result = parseFlags(text);
   if (!result) return { error: "could not parse flags JSON", rawText: text.slice(0, 300) };
   return { result, contactId, evaluatedTouchCount: windowed.length };

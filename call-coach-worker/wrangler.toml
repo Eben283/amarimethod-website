@@ -34,7 +34,8 @@ binding = "AI"
 # Secrets (set via `npx wrangler secret put <KEY>` — NOT committed):
 #   GHL_CLIENT_ID       — same as ghl-token-refresh / daily-audit
 #   GHL_CLIENT_SECRET   — same as ghl-token-refresh / daily-audit
-#   ANTHROPIC_API_KEY   — Claude coaching calls (am-anthropic-api-key in Keychain)
+#   OPENROUTER_API_KEY  — LLM coaching via OpenRouter (free :free models by default)
+#   OPENROUTER_MODEL    — optional override (default google/gemma-4-31b-it:free)
 #   WORKER_AUTH_SECRET  — gates the /run, /latest HTTP routes (worker-auth.js)
 
 # Persist logs + metrics to the Workers dashboard so failures are searchable and
