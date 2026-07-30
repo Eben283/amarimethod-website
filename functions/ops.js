@@ -284,7 +284,7 @@ export const OPS_HTML = `<!doctype html>
       });
     }
 
-    html += "<h2>Log <small>newest first</small></h2><div class="log">";
+    html += '<h2>Log <small>newest first</small></h2><div class="log">';
     var events = data.events || [];
     if (!events.length) {
       html += '<p class="empty">No events yet for this path.</p>';
