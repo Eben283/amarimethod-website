@@ -17,7 +17,6 @@ import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
 import RevenuePage from './pages/RevenuePage';
 import PosPage from './pages/PosPage';
-import TriagePage from './pages/TriagePage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -84,16 +83,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/triage"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <TriagePage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      {/* Desk / triage removed — wrong product; ops visibility lives at /ops */}
+      <Route path="/triage" element={<Navigate to="/" replace />} />
       <Route
         path="/clients"
         element={

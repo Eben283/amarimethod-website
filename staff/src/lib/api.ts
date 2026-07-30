@@ -222,54 +222,6 @@ export async function sendPayLink(
   });
 }
 
-export async function sendReceipt(
-  contactId: string,
-  channel: 'sms' | 'email' = 'sms',
-): Promise<{ ok: boolean; receiptUrl: string; channel: string }> {
-  return fetchApi('/staff-send-receipt', {
-    method: 'POST',
-    body: JSON.stringify({ contactId, channel }),
-  });
-}
-
-export type StaffBookType = { id: string; label: string; durationMinutes: number };
-export type StaffBookSlot = { date: string; hour: number; minute: number; datetime: string };
-
-export async function listStaffBookTypes(): Promise<StaffBookType[]> {
-  const r = await fetchApi<{ types: StaffBookType[] }>('/staff-book', {
-    method: 'POST',
-    body: JSON.stringify({ action: 'list-types' }),
-  });
-  return r.types || [];
-}
-
-export async function getStaffBookSlots(
-  sessionType: string,
-  startDate: string,
-  endDate: string,
-  timezone = 'America/Los_Angeles',
-): Promise<StaffBookSlot[]> {
-  const r = await fetchApi<{ slots: StaffBookSlot[] }>('/staff-book', {
-    method: 'POST',
-    body: JSON.stringify({ action: 'get-slots', sessionType, startDate, endDate, timezone }),
-  });
-  return r.slots || [];
-}
-
-export async function staffBookAppointment(input: {
-  contactId: string;
-  sessionType: string;
-  startTime: string;
-  timezone?: string;
-  idempotencyKey: string;
-  notify?: boolean;
-}): Promise<{ appointment: { id: string; startTime: string; sessionType: string; calendarId: string; title: string } }> {
-  return fetchApi('/staff-book', {
-    method: 'POST',
-    body: JSON.stringify({ action: 'book', timezone: 'America/Los_Angeles', notify: true, ...input }),
-  });
-}
-
 export interface StripeSavedCard {
   id: string;
   brand: string;
@@ -1085,29 +1037,6 @@ export async function bookFieldStudyFollowup(
   return fetchApi('/staff-field-study', {
     method: 'POST',
     body: JSON.stringify({ action: 'book-followup', recordId, startTime, timezone, idempotencyKey }),
-  });
-}
-
-export type TriageItem = {
-  id: string;
-  kind: 'break' | 'money' | 'ops';
-  title: string;
-  blurb: string;
-  source: string;
-  at: string | null;
-  contactId: string | null;
-  product: string | null;
-  actions: Array<'open_client' | 'open_ghl' | 'open_balances' | 'open_pos' | 'dismiss'>;
-};
-
-export async function getExceptions(): Promise<{ items: TriageItem[]; count: number; generatedAt: string }> {
-  return fetchApi('/staff-exceptions');
-}
-
-export async function dismissException(key: string): Promise<{ ok: boolean; key: string }> {
-  return fetchApi('/staff-exceptions', {
-    method: 'POST',
-    body: JSON.stringify({ action: 'dismiss', key }),
   });
 }
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, CalendarPlus, FileText,
+  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
@@ -13,8 +13,6 @@ import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
 import StudyCapturePanel from '../components/StudyCapturePanel';
-import BookForSomeoneModal from '../components/BookForSomeoneModal';
-import DeskActionModal from '../components/DeskActionModal';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
@@ -112,8 +110,6 @@ export default function ClientDetailPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
   const [showMorePayLinks, setShowMorePayLinks] = useState(false);
-  const [bookOpen, setBookOpen] = useState(false);
-  const [receiptOpen, setReceiptOpen] = useState(false);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -432,19 +428,7 @@ export default function ClientDetailPage() {
         </div>
 
         {/* ============ ADMIN & CHECKOUT ============ */}
-        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Booking, payment, products, records</span><span className="gl" /></div>
-
-        <button className="sa-paytrigger" onClick={() => setBookOpen(true)}>
-          <span className="ic"><CalendarPlus size={17} /></span>
-          <span className="tx"><b>Book appointment</b><span>Book for this person on a staff calendar</span></span>
-          <span className="cv"><ChevronRight size={18} /></span>
-        </button>
-
-        <button className="sa-paytrigger" onClick={() => setReceiptOpen(true)}>
-          <span className="ic"><FileText size={17} /></span>
-          <span className="tx"><b>Resend receipt</b><span>Text or email their latest Stripe receipt</span></span>
-          <span className="cv"><ChevronRight size={18} /></span>
-        </button>
+        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Payment, products, records</span><span className="gl" /></div>
 
         {/* pay status banner */}
         {showPaymentBanner && (
@@ -744,22 +728,6 @@ export default function ClientDetailPage() {
           contactId={client.id}
           onClose={() => setShowAddNote(false)}
           onSaved={() => { setShowAddNote(false); loadClient(); }}
-        />
-      )}
-      {bookOpen && (
-        <BookForSomeoneModal
-          contactId={client.id}
-          contactName={`${client.firstName} ${client.lastName}`.trim()}
-          onClose={() => setBookOpen(false)}
-          onBooked={() => { setBookOpen(false); loadClient(); }}
-        />
-      )}
-      {receiptOpen && (
-        <DeskActionModal
-          mode="receipt"
-          contactId={client.id}
-          contactName={`${client.firstName} ${client.lastName}`.trim()}
-          onClose={() => setReceiptOpen(false)}
         />
       )}
     </div>
