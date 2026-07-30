@@ -1,5 +1,5 @@
 // Amari Ops path registry — the board only shows registered rows.
-// Phase 1: Assessment paid→book is fully instrumented; others are stubs for later.
+// Paths emit OpsEvents; dependencies are judged from live signals (KV / workers).
 
 export const OPS_SEVERITY = Object.freeze({
   MONEY: "money",
@@ -60,7 +60,34 @@ export const OPS_REGISTRY = Object.freeze([
     severity: OPS_SEVERITY.INFRA,
     hops: Object.freeze([]),
     laws: Object.freeze([]),
-    instrumentation: "planned",
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "series_reconcile",
+    label: "Series reconcile",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "daily_audit",
+    label: "Daily audit",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
+    id: "partner_refresh",
+    label: "Partner activity refresh",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
   }),
   Object.freeze({
     id: "crm_mirror",
@@ -75,4 +102,8 @@ export const OPS_REGISTRY = Object.freeze([
 
 export function registryPath(pathId) {
   return OPS_REGISTRY.find((p) => p.id === pathId) || null;
+}
+
+export function registryPathIds() {
+  return OPS_REGISTRY.filter((p) => p.kind === "path").map((p) => p.id);
 }

@@ -6,6 +6,14 @@ vi.mock("./ops-events.js", () => ({
   listOpsEvents: vi.fn(async () => []),
 }));
 
+vi.mock("./ops-alert.js", () => ({
+  listOpsErrors: vi.fn(async () => []),
+}));
+
+vi.mock("./ops-trail-kv.js", () => ({
+  trailMeta: vi.fn(async () => null),
+}));
+
 import { buildSystemsBoard, buildPathDetail } from "./ops-board.js";
 import {
   countOpenIncidentsByPath,
@@ -16,23 +24,61 @@ import { PATH_ASSESSMENT_PAID_BOOK } from "./ops-registry.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  listOpsEvents.mockResolvedValue([]);
 });
+
+function kvEnv(map = {}) {
+  return {
+    PORTAL_KV: {
+      async get(key, type) {
+        const v = map[key];
+        if (v == null) return null;
+        if (type === "json") return typeof v === "string" ? JSON.parse(v) : v;
+        return String(v);
+      },
+    },
+  };
+}
 
 describe("buildSystemsBoard", () => {
   it("marks assessment red when an open incident exists; paths before deps", async () => {
     countOpenIncidentsByPath.mockResolvedValue({ [PATH_ASSESSMENT_PAID_BOOK]: 1 });
-    const board = await buildSystemsBoard({ AUTOMATION_DB: {} });
+    const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     expect(board.overall).toBe("red");
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
     expect(assessment.status).toBe("red");
     expect(board.systems[0].kind).toBe("path");
   });
 
-  it("assessment green when watching and no open incidents", async () => {
+  it("does not fake-green assessment with empty trail", async () => {
     countOpenIncidentsByPath.mockResolvedValue({});
-    const board = await buildSystemsBoard({ AUTOMATION_DB: {} });
+    const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
-    expect(assessment.status).toBe("green");
+    expect(assessment.status).toBe("unknown");
+    expect(assessment.note).toMatch(/no trail/i);
+  });
+
+  it("marks partial paths unknown, never green", async () => {
+    const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
+    const intro = board.systems.find((s) => s.id === "intro_paid_book");
+    expect(intro.status).toBe("unknown");
+  });
+
+  it("surfaces live GHL token + reconcile signals", async () => {
+    const expiry = String(Date.now() + 20 * 3600 * 1000);
+    const board = await buildSystemsBoard(
+      kvEnv({
+        ghl_token_expiry: expiry,
+        "ops:series-reconcile:lastRun": {
+          status: "ok",
+          finishedAt: new Date().toISOString(),
+          applied: 0,
+          ordersScanned: 7,
+        },
+      }),
+    );
+    expect(board.systems.find((s) => s.id === "ghl_token").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "series_reconcile").status).toBe("green");
   });
 });
 
@@ -71,5 +117,13 @@ describe("buildPathDetail", () => {
     expect(bookHop.state).toBe("red");
     expect(detail.events).toHaveLength(2);
     expect(detail.incidents[0].personLabel).toBe("Holly Brinkman");
+  });
+
+  it("dependency detail exposes why from KV signal", async () => {
+    const expiry = String(Date.now() + 12 * 3600 * 1000);
+    const detail = await buildPathDetail(kvEnv({ ghl_token_expiry: expiry }), "ghl_token");
+    expect(detail.status).toBe("green");
+    expect(detail.why).toMatch(/remaining/i);
+    expect(detail.events.length).toBeGreaterThan(0);
   });
 });

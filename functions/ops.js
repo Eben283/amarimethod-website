@@ -42,7 +42,7 @@ export const OPS_HTML = `<!doctype html>
       var(--bg);
   }
   .wrap { max-width: 720px; margin: 0 auto; padding: 28px 18px 72px; }
-  header.brand { margin-bottom: 28px; }
+  header.brand { margin-bottom: 22px; }
   header.brand .mark {
     font-family: Georgia, "Times New Roman", serif;
     font-size: clamp(2rem, 5vw, 2.75rem);
@@ -53,11 +53,17 @@ export const OPS_HTML = `<!doctype html>
   header.brand .sub {
     margin-top: 8px;
     color: var(--muted);
-    max-width: 42ch;
+    max-width: 46ch;
   }
   .overall {
     display: inline-flex; align-items: center; gap: 8px;
     margin-top: 16px; font-size: 13px; color: var(--muted);
+  }
+  .banner {
+    margin: 14px 0 4px; padding: 10px 12px;
+    border-left: 3px solid var(--warn);
+    background: color-mix(in srgb, var(--warn) 12%, transparent);
+    color: var(--muted); font-size: 13px;
   }
   .dot {
     width: 10px; height: 10px; border-radius: 50%;
@@ -100,8 +106,11 @@ export const OPS_HTML = `<!doctype html>
   .path-title {
     font-family: Georgia, serif; font-size: 1.6rem; font-weight: 400;
   }
+  .why {
+    margin: 14px 0 8px; color: var(--muted); font-size: 14px; max-width: 52ch;
+  }
   .incident {
-    margin: 14px 0 22px; padding: 12px 14px;
+    margin: 14px 0 10px; padding: 12px 14px;
     border-left: 3px solid var(--bad);
     background: color-mix(in srgb, var(--bad) 10%, transparent);
   }
@@ -152,8 +161,9 @@ export const OPS_HTML = `<!doctype html>
 <div class="wrap" id="app">
   <header class="brand" id="homeHead">
     <div class="mark">Amari Ops</div>
-    <p class="sub">All watched systems. Open a red path to see why.</p>
+    <p class="sub">Watched systems. Open anything to see the path and why.</p>
     <div class="overall"><span class="dot" id="overallDot"></span><span id="overallLabel">Loading…</span></div>
+    <div class="banner" id="homeBanner" hidden></div>
   </header>
 
   <div id="view-home"></div>
@@ -166,6 +176,7 @@ export const OPS_HTML = `<!doctype html>
   var homeView = document.getElementById("view-home");
   var pathView = document.getElementById("view-path");
   var homeHead = document.getElementById("homeHead");
+  var homeBanner = document.getElementById("homeBanner");
   var route = parseRoute();
 
   function parseRoute() {
@@ -204,17 +215,50 @@ export const OPS_HTML = `<!doctype html>
     label.textContent = note || status || "";
   }
 
+  function renderLog(events, emptyMsg) {
+    var html = '<div class="log">';
+    if (!events || !events.length) {
+      html += '<p class="empty">' + esc(emptyMsg || "No events yet.") + "</p>";
+    } else {
+      events.slice(0, 30).forEach(function (e) {
+        var stamp = e.outcome === "ok" ? "OK" : e.outcome === "fail" ? "FAIL" : "SKIP";
+        html += '<div class="row"><div class="when">' + esc(fmt(e.at)) + "</div><div>" +
+          '<span class="stamp ' + esc(e.outcome === "fail" ? "fail" : e.outcome) + '">' + stamp + "</span>" +
+          esc(e.summary);
+        if (e.personLabel) html += ' <span style="color:var(--muted)">· ' + esc(e.personLabel) + "</span>";
+        if (e.condition && (e.condition.expected || e.condition.observed)) {
+          html += '<span class="cond">expected ' + esc(e.condition.expected || "—") +
+            " · saw " + esc(e.condition.observed || "—") + "</span>";
+        }
+        html += "</div></div>";
+      });
+    }
+    html += "</div>";
+    return html;
+  }
+
   async function renderHome() {
     homeHead.hidden = false;
     homeView.hidden = false;
     pathView.hidden = true;
     var data = await api("/api/ops/systems");
     var reds = (data.systems || []).filter(function (s) { return s.status === "red"; }).length;
+    var unknowns = (data.systems || []).filter(function (s) { return s.status === "unknown"; }).length;
     setOverall(
       data.overall,
-      reds ? (reds + " system" + (reds === 1 ? "" : "s") + " red") :
-        (data.overall === "green" ? "All watched systems green" : "Some systems unwatched")
+      reds ? (reds + " red") :
+        (data.overall === "green" ? "All live signals green" :
+          (unknowns ? unknowns + " unwatched / waiting" : "Checking…"))
     );
+
+    if (!data.configured) {
+      homeBanner.hidden = false;
+      homeBanner.textContent = data.trail && data.trail.kv
+        ? "Trail via KV (Pages D1 not bound yet). Live worker signals below are real."
+        : "Event store not bound — infra signals still load from KV.";
+    } else {
+      homeBanner.hidden = true;
+    }
 
     var paths = (data.systems || []).filter(function (s) { return s.kind === "path"; });
     var deps = (data.systems || []).filter(function (s) { return s.kind === "dependency"; });
@@ -225,7 +269,7 @@ export const OPS_HTML = `<!doctype html>
       rows.forEach(function (s) {
         html += '<button type="button" class="sys" data-path="' + esc(s.id) + '">' +
           '<span class="dot ' + esc(s.status) + '"></span>' +
-          '<span><div class="label">' + esc(s.label) + '</div>' +
+          '<span><div class="label">' + esc(s.label) + "</div>" +
           '<div class="meta">' + esc(s.note || s.severity) + "</div></span>" +
           '<span class="state ' + esc(s.status) + '">' + esc(s.status) + "</span></button>";
       });
@@ -234,7 +278,7 @@ export const OPS_HTML = `<!doctype html>
 
     homeView.innerHTML =
       block("Client paths", paths, "money & booking") +
-      block("Dependencies", deps, "infra");
+      block("Dependencies", deps, "live signals");
 
     homeView.querySelectorAll("[data-path]").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -253,6 +297,9 @@ export const OPS_HTML = `<!doctype html>
     html += '<div class="path-title">' + esc(data.label) + "</div>";
     html += '<div class="overall" style="margin-top:10px"><span class="dot ' + esc(data.status) + '"></span>' +
       '<span>' + esc(data.status) + " · " + esc(data.severity) + "</span></div>";
+    if (data.note || data.why) {
+      html += '<p class="why">' + esc(data.why || data.note) + "</p>";
+    }
 
     if (data.incidents && data.incidents.length) {
       data.incidents.slice(0, 3).forEach(function (inc) {
@@ -263,46 +310,43 @@ export const OPS_HTML = `<!doctype html>
       });
     }
 
-    html += "<h2>Path</h2>";
-    if (!data.hops || !data.hops.length) {
-      html += '<p class="empty">No hops on this dependency — status only.</p>';
-    } else {
+    if (data.hops && data.hops.length) {
+      html += "<h2>Path</h2>";
       data.hops.forEach(function (h, i) {
         var mark = h.state === "ok" ? "●" : h.state === "red" ? "!" : h.state === "skip" ? "–" : "○";
         html += '<div class="hop ' + esc(h.state) + '"><div class="n">' + (i + 1) + "</div><div>" +
           '<div class="name"><span class="mark">' + mark + "</span>" + esc(h.label) + "</div>";
         if (h.latest) {
           html += '<div class="detail">' + esc(h.latest.summary || h.latest.outcome);
+          if (h.latest.at) html += " · " + esc(fmt(h.latest.at));
           if (h.latest.condition && h.latest.condition.observed) {
             html += " · saw " + esc(h.latest.condition.observed);
           }
           html += "</div>";
         } else if (h.state === "unwatched") {
           html += '<div class="detail">not instrumented yet</div>';
+        } else {
+          html += '<div class="detail">no hop yet</div>';
         }
         html += "</div></div>";
       });
     }
 
-    html += '<h2>Log <small>newest first</small></h2><div class="log">';
-    var events = data.events || [];
-    if (!events.length) {
-      html += '<p class="empty">No events yet for this path.</p>';
-    } else {
-      events.slice(0, 30).forEach(function (e) {
-        var stamp = e.outcome === "ok" ? "OK" : e.outcome === "fail" ? "FAIL" : "SKIP";
+    html += '<h2>Log <small>newest first</small></h2>';
+    html += renderLog(data.events, data.kind === "dependency"
+      ? "No signal detail yet for this dependency."
+      : "No events yet — the next Assessment purchase will write hops here.");
+
+    if (data.relatedErrors && data.relatedErrors.length) {
+      html += "<h2>Related failures <small>ops:err</small></h2><div class='log'>";
+      data.relatedErrors.forEach(function (e) {
         html += '<div class="row"><div class="when">' + esc(fmt(e.at)) + "</div><div>" +
-          '<span class="stamp ' + esc(e.outcome === "fail" ? "fail" : e.outcome) + '">' + stamp + "</span>" +
-          esc(e.summary);
-        if (e.personLabel) html += ' <span style="color:var(--muted)">· ' + esc(e.personLabel) + "</span>";
-        if (e.condition && (e.condition.expected || e.condition.observed)) {
-          html += '<span class="cond">expected ' + esc(e.condition.expected || "—") +
-            " · saw " + esc(e.condition.observed || "—") + "</span>";
-        }
-        html += "</div></div>";
+          '<span class="stamp fail">FAIL</span>' + esc(e.summary) +
+          (e.source ? ' <span style="color:var(--muted)">· ' + esc(e.source) + "</span>" : "") +
+          "</div></div>";
       });
+      html += "</div>";
     }
-    html += "</div>";
 
     pathView.innerHTML = html;
     document.getElementById("backHome").addEventListener("click", function () {

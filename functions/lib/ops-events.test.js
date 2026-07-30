@@ -164,14 +164,40 @@ describe("recordOpsEvent", () => {
     });
   });
 
-  it("missing AUTOMATION_DB: graceful skip, never throws", async () => {
+  it("missing AUTOMATION_DB and KV: graceful skip, never throws", async () => {
     const res = await recordOpsEvent({}, {
       pathId: PATH_ASSESSMENT_PAID_BOOK,
       hopId: "purchase_webhook",
       outcome: "ok",
       summary: "x",
     });
-    expect(res).toEqual({ recorded: false, reason: "no-db" });
+    expect(res).toEqual({ recorded: false, reason: "no-store" });
+  });
+
+  it("missing AUTOMATION_DB but has KV: records trail for /ops", async () => {
+    const store = new Map();
+    const env = {
+      PORTAL_KV: {
+        async get(key, type) {
+          const v = store.get(key);
+          if (v == null) return null;
+          return type === "json" ? JSON.parse(v) : v;
+        },
+        async put(key, value) {
+          store.set(key, value);
+        },
+      },
+    };
+    const res = await recordOpsEvent(env, {
+      pathId: PATH_ASSESSMENT_PAID_BOOK,
+      hopId: "purchase_webhook",
+      outcome: "ok",
+      summary: "paid via kv trail",
+    });
+    expect(res.recorded).toBe(true);
+    expect(res.via).toBe("kv");
+    const rows = await listOpsEvents(env, { pathId: PATH_ASSESSMENT_PAID_BOOK });
+    expect(rows[0].summary).toBe("paid via kv trail");
   });
 });
 
