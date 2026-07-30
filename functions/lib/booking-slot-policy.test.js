@@ -2,12 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   SLOT_POLICIES,
   STUDIO_INTERVAL_MINUTES,
+  INTRO_ASSESSMENT_INTERVAL_MINUTES,
   WORK_HOURS,
   studioSessionStarts,
   blockMinutes,
   startLattice,
   isHourlyLattice,
   policyForCalendarId,
+  preferOnHourForCalendar,
   driftAgainstPolicy,
   followupPolicy,
 } from "./booking-slot-policy.js";
@@ -16,6 +18,7 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
   it("makes Follow-up the priority studio policy with 50/10/60", () => {
     const fu = followupPolicy();
     expect(fu.priority).toBe(true);
+    expect(fu.preferOnHour).toBe(true);
     expect(fu.durationMinutes).toBe(50);
     expect(fu.bufferMinutes).toBe(10);
     expect(fu.intervalMinutes).toBe(60);
@@ -40,7 +43,7 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
     expect(grid).not.toContain("10:30");
   });
 
-  it("locks Work Hours to first session 10am and last session 6pm", () => {
+  it("locks Work Hours so main sessions run 10am–6pm starts", () => {
     expect(WORK_HOURS.firstSessionStart).toBe("10:00");
     expect(WORK_HOURS.lastSessionStart).toBe("18:00");
     expect(WORK_HOURS.openFrom).toBe("10:00");
@@ -51,19 +54,32 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
     expect(starts).not.toContain("19:00");
   });
 
-  it("aligns Assessment and Initial to the same hourly studio lattice", () => {
-    expect(SLOT_POLICIES.assessment.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
+  it("keeps Initial on the hour but Assessment denser for intro fills", () => {
     expect(SLOT_POLICIES.initial.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
-    expect(SLOT_POLICIES.assessment.durationMinutes).toBe(40);
+    expect(SLOT_POLICIES.initial.preferOnHour).toBe(true);
+    expect(SLOT_POLICIES.assessment.intervalMinutes).toBe(
+      INTRO_ASSESSMENT_INTERVAL_MINUTES,
+    );
+    expect(SLOT_POLICIES.assessment.lattice).toBe("intro");
+    expect(SLOT_POLICIES.assessment.preferOnHour).toBe(false);
     expect(SLOT_POLICIES.assessment.bufferMinutes).toBe(10);
     expect(blockMinutes(SLOT_POLICIES.assessment)).toBe(50);
-    expect(SLOT_POLICIES.initial.durationMinutes).toBe(60);
+    const introGrid = startLattice(10, 0, SLOT_POLICIES.assessment.intervalMinutes, 4);
+    expect(introGrid).toEqual(["10:00", "10:40", "11:20", "12:00"]);
   });
 
-  it("keeps phone/short lattices denser than studio", () => {
+  it("keeps phone/short lattices denser than main studio", () => {
     expect(SLOT_POLICIES.discovery_call.intervalMinutes).toBe(15);
+    expect(SLOT_POLICIES.discovery_call.preferOnHour).toBe(false);
     expect(SLOT_POLICIES.entrainment.intervalMinutes).toBe(15);
     expect(SLOT_POLICIES.entrainment.lattice).toBe("short");
+  });
+
+  it("marks prefer-on-hour only for main session calendars", () => {
+    expect(preferOnHourForCalendar("SKDVOL8wtUN6Ne0ppbC9")).toBe(true);
+    expect(preferOnHourForCalendar("G7OAnnJuFbMF6nQSlZVQ")).toBe(true);
+    expect(preferOnHourForCalendar("EM6vB2mq7EAdGCbUb3j1")).toBe(false);
+    expect(preferOnHourForCalendar("USgPsktqRcuomdUgpShL")).toBe(false);
   });
 });
 
@@ -90,7 +106,7 @@ describe("booking-slot-policy — lookup and drift", () => {
     ]);
   });
 
-  it("flags live Assessment interval 40 and buffer 15 as drift", () => {
+  it("flags live Assessment buffer 15 as drift but keeps interval 40", () => {
     const report = driftAgainstPolicy({
       id: "EM6vB2mq7EAdGCbUb3j1",
       slotDuration: 40,
@@ -98,16 +114,9 @@ describe("booking-slot-policy — lookup and drift", () => {
       slotBuffer: 15,
     });
     expect(report.ok).toBe(false);
-    expect(report.drifts).toContainEqual({
-      field: "slotInterval",
-      live: 40,
-      policy: 60,
-    });
-    expect(report.drifts).toContainEqual({
-      field: "slotBuffer",
-      live: 15,
-      policy: 10,
-    });
+    expect(report.drifts).toEqual([
+      { field: "slotBuffer", live: 15, policy: 10 },
+    ]);
   });
 
   it("reports ok when live matches policy", () => {

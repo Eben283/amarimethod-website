@@ -54,7 +54,7 @@ Last updated: 2026-07-30.
 
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
-| Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Follow-up 50 min on-the-hour is priority; studio `interval=60`, post-buffer `10` (Follow-up block=60). GHL still serves free-slots; policy is the Amari seed + drift check. Doc: `decision_booking_slot_model.md` |
+| Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Follow-up on-the-hour (`50/10/60`); Assessment denser intro (`40/10/40`, e.g. 10:40 OK); `preferOnHour` for main sessions. GHL free-slots still truth. Doc: `decision_booking_slot_model.md` |
 | Public Tock bookers | Native | `book/initial-in-person.html`, `initial-virtual.html`, `discovery-call.html`, `assessment-booking.html` | Two-month; slots via `/api/book/public-slots` |
 | Public study booker | Native | `book/study.html` | Single-month cousin; `/api/study-book` |
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |

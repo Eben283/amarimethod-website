@@ -1,11 +1,10 @@
 /**
  * Canonical booking slot policy (duration · interval · buffer).
  *
- * Priority: Follow-up (50 min) starts on the hour. Studio bodywork shares an
- * hourly start lattice (interval 60) with a 10-minute post-buffer so Follow-up
- * block packs to 60 (10:00 → 11:00 → 12:00). GHL remains availability truth
- * today — this module is the Amari-owned policy seed for drift checks and a
- * future availability engine.
+ * Priority: Follow-up (50 min) starts on the hour (interval 60, buffer 10).
+ * Intro paths (Assessment / Discovery) keep denser lattices so off-hour fills
+ * like 10:40 remain offerable — look-busy already hides plenty.
+ * GHL remains availability truth; Amari ranks/filters what to show.
  * See amari-method-docs/ops/memory/decision_booking_slot_model.md
  *
  * Knobs:
@@ -14,8 +13,11 @@
  *   intervalMinutes — candidate start lattice (NOT "match duration")
  */
 
-/** Shared studio rhythm: starts on the hour when Work Hours open on :00. */
+/** Main-session rhythm (Follow-up / Initial): on the hour. */
 export const STUDIO_INTERVAL_MINUTES = 60;
+
+/** Assessment intro lattice — denser; allows 10:40-style starts from a 10:00 open. */
+export const INTRO_ASSESSMENT_INTERVAL_MINUTES = 40;
 
 /**
  * Garrett Work Hours (GHL schedule WIPAUCHQ5WW18vLJ49Gk).
@@ -50,8 +52,9 @@ export function studioSessionStarts() {
  * @property {number} durationMinutes
  * @property {number} bufferMinutes
  * @property {number} intervalMinutes
- * @property {'studio'|'phone'|'short'} lattice
+ * @property {'studio'|'intro'|'phone'|'short'} lattice
  * @property {boolean} [priority]
+ * @property {boolean} [preferOnHour] when Amari ranks/thins show-list
  */
 
 /** @type {Record<string, SlotPolicy>} */
@@ -70,6 +73,7 @@ export const SLOT_POLICIES = {
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
     priority: true,
+    preferOnHour: true,
   },
   initial: {
     id: "initial",
@@ -85,6 +89,7 @@ export const SLOT_POLICIES = {
     bufferMinutes: 0,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
+    preferOnHour: true,
   },
   assessment: {
     id: "assessment",
@@ -92,8 +97,10 @@ export const SLOT_POLICIES = {
     calendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
     durationMinutes: 40,
     bufferMinutes: 10,
-    intervalMinutes: STUDIO_INTERVAL_MINUTES,
-    lattice: "studio",
+    // Keep denser intro grid (10:00, 10:40, 11:20…) — off-hour fills OK.
+    intervalMinutes: INTRO_ASSESSMENT_INTERVAL_MINUTES,
+    lattice: "intro",
+    preferOnHour: false,
   },
   discovery_call: {
     id: "discovery_call",
@@ -103,6 +110,7 @@ export const SLOT_POLICIES = {
     bufferMinutes: 15,
     intervalMinutes: 15,
     lattice: "phone",
+    preferOnHour: false,
   },
   discovery_virtual: {
     id: "discovery_virtual",
@@ -112,6 +120,7 @@ export const SLOT_POLICIES = {
     bufferMinutes: 0,
     intervalMinutes: 15,
     lattice: "phone",
+    preferOnHour: false,
   },
   entrainment: {
     id: "entrainment",
@@ -121,8 +130,15 @@ export const SLOT_POLICIES = {
     bufferMinutes: 0,
     intervalMinutes: 15,
     lattice: "short",
+    preferOnHour: false,
   },
 };
+
+/** True when Amari show-layer should keep/prefer :00 starts for this calendar. */
+export function preferOnHourForCalendar(calendarId) {
+  const policy = policyForCalendarId(calendarId);
+  return !!(policy && policy.preferOnHour);
+}
 
 /** Occupied calendar block in minutes (session + post buffer). */
 export function blockMinutes(policy) {
