@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../lib/endpoint-guards.js", () => ({
   corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
-  requireStaffAuth: vi.fn(),
 }));
 
 vi.mock("../../lib/ops-board.js", () => ({
@@ -20,12 +19,10 @@ vi.mock("../../lib/ops-board.js", () => ({
 }));
 
 import { onRequestGet } from "./systems.js";
-import { requireStaffAuth } from "../../lib/endpoint-guards.js";
 import { buildSystemsBoard, buildPathDetail } from "../../lib/ops-board.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  requireStaffAuth.mockResolvedValue({ payload: { user: "Garrett", role: "staff" } });
 });
 
 function ctx(url) {
@@ -39,16 +36,7 @@ function ctx(url) {
 }
 
 describe("GET /api/ops/systems", () => {
-  it("401 when auth fails", async () => {
-    requireStaffAuth.mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 }),
-    });
-    const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
-    expect(res.status).toBe(401);
-    expect(buildSystemsBoard).not.toHaveBeenCalled();
-  });
-
-  it("returns board for any staff user", async () => {
+  it("returns board with no auth", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
     expect(res.status).toBe(200);
     const body = await res.json();

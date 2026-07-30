@@ -1,6 +1,6 @@
-// GET /api/ops/incidents — open (or filtered) Amari Ops incidents. Eben-only.
+// GET /api/ops/incidents — open (or filtered) Amari Ops incidents. No PIN.
 
-import { corsHeaders, requireStaffAuth } from "../../lib/endpoint-guards.js";
+import { corsHeaders } from "../../lib/endpoint-guards.js";
 import { listOpsIncidents } from "../../lib/ops-events.js";
 
 export async function onRequestOptions(context) {
@@ -16,10 +16,8 @@ export async function onRequestGet(context) {
     ...corsHeaders(origin, "GET, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow",
   };
-
-  const { error } = await requireStaffAuth(context, headers);
-  if (error) return error;
 
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status") || "open";
