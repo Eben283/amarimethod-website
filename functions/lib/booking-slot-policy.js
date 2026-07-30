@@ -18,6 +18,31 @@
 export const STUDIO_INTERVAL_MINUTES = 60;
 
 /**
+ * Garrett Work Hours (GHL schedule WIPAUCHQ5WW18vLJ49Gk).
+ * Open 10:00–19:00 Mon–Fri so the last session can START at 18:00 with a 60-min block.
+ */
+export const WORK_HOURS = Object.freeze({
+  scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
+  timezone: "America/Los_Angeles",
+  openFrom: "10:00",
+  openTo: "19:00",
+  firstSessionStart: "10:00",
+  lastSessionStart: "18:00",
+  weekdays: Object.freeze([
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+  ]),
+});
+
+/** Hourly session starts from first through last (inclusive). */
+export function studioSessionStarts() {
+  return startLattice(10, 0, STUDIO_INTERVAL_MINUTES, 9);
+}
+
+/**
  * @typedef {object} SlotPolicy
  * @property {string} id
  * @property {string} label

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   SLOT_POLICIES,
   STUDIO_INTERVAL_MINUTES,
+  WORK_HOURS,
+  studioSessionStarts,
   blockMinutes,
   startLattice,
   isHourlyLattice,
@@ -36,6 +38,17 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
     ]);
     expect(grid.every((t) => t.endsWith(":00"))).toBe(true);
     expect(grid).not.toContain("10:30");
+  });
+
+  it("locks Work Hours to first session 10am and last session 6pm", () => {
+    expect(WORK_HOURS.firstSessionStart).toBe("10:00");
+    expect(WORK_HOURS.lastSessionStart).toBe("18:00");
+    expect(WORK_HOURS.openFrom).toBe("10:00");
+    expect(WORK_HOURS.openTo).toBe("19:00");
+    const starts = studioSessionStarts();
+    expect(starts[0]).toBe("10:00");
+    expect(starts[starts.length - 1]).toBe("18:00");
+    expect(starts).not.toContain("19:00");
   });
 
   it("aligns Assessment and Initial to the same hourly studio lattice", () => {
