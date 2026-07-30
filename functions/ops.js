@@ -200,9 +200,12 @@ export const OPS_HTML = `<!doctype html>
   var route = parseRoute();
 
   function parseRoute() {
-    var h = location.hash.replace(/^#\\/?/, "");
-    var m = h.match(/^path\\/([^/?]+)/);
-    return m ? { view: "path", pathId: decodeURIComponent(m[1]) } : { view: "home" };
+    var h = (location.hash || "").replace(/^#/, "");
+    if (h.charAt(0) === "/") h = h.slice(1);
+    if (h.indexOf("path/") === 0) {
+      return { view: "path", pathId: decodeURIComponent(h.slice(5).split("?")[0]) };
+    }
+    return { view: "home" };
   }
 
   function esc(s) {
