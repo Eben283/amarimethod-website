@@ -224,7 +224,7 @@ describe("openOpsIncident / resolve", () => {
 });
 
 describe("listOpsEvents", () => {
-  it("returns newest-first for a path", async () => {
+  it("returns newest-first shaped events for a path", async () => {
     const db = fakeD1();
     const env = { AUTOMATION_DB: db };
     await recordOpsEvent(env, {
@@ -245,5 +245,6 @@ describe("listOpsEvents", () => {
     });
     const rows = await listOpsEvents(env, { pathId: PATH_ASSESSMENT_PAID_BOOK });
     expect(rows.map((r) => r.summary)).toEqual(["b", "a"]);
+    expect(rows[0].hopId).toBe("create_appointment");
   });
 });

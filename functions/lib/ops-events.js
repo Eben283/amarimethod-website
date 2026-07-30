@@ -225,6 +225,131 @@ export async function resolveOpsIncident(env, { pathId, correlationId, contactId
   }
 }
 
+/** List incidents (newest first). */
+export async function listOpsIncidents(env, { status = "open", pathId, limit = 50 } = {}) {
+  const db = automationDb(env);
+  if (!db) return [];
+  try {
+    let res;
+    if (pathId && status) {
+      res = await db
+        .prepare(
+          `SELECT * FROM ops_incidents WHERE path_id = ? AND status = ?
+           ORDER BY opened_at_ms DESC LIMIT ?`,
+        )
+        .bind(pathId, status, limit)
+        .all();
+    } else if (status) {
+      res = await db
+        .prepare(
+          `SELECT * FROM ops_incidents WHERE status = ?
+           ORDER BY opened_at_ms DESC LIMIT ?`,
+        )
+        .bind(status, limit)
+        .all();
+    } else if (pathId) {
+      res = await db
+        .prepare(
+          `SELECT * FROM ops_incidents WHERE path_id = ?
+           ORDER BY opened_at_ms DESC LIMIT ?`,
+        )
+        .bind(pathId, limit)
+        .all();
+    } else {
+      res = await db
+        .prepare(`SELECT * FROM ops_incidents ORDER BY opened_at_ms DESC LIMIT ?`)
+        .bind(limit)
+        .all();
+    }
+    return (res.results || []).map(shapeIncident);
+  } catch (err) {
+    console.error(`[ops-events] listIncidents failed: ${err && err.message}`);
+    return [];
+  }
+}
+
+/** Count open incidents grouped by path_id. */
+export async function countOpenIncidentsByPath(env) {
+  const db = automationDb(env);
+  if (!db) return {};
+  try {
+    const res = await db
+      .prepare(
+        `SELECT path_id, COUNT(*) AS n FROM ops_incidents
+         WHERE status = 'open' GROUP BY path_id`,
+      )
+      .all();
+    const out = {};
+    for (const row of res.results || []) {
+      out[row.path_id] = Number(row.n) || 0;
+    }
+    return out;
+  } catch (err) {
+    console.error(`[ops-events] countOpenIncidents failed: ${err && err.message}`);
+    return {};
+  }
+}
+
+function shapeIncident(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    pathId: row.path_id,
+    status: row.status,
+    severity: row.severity,
+    openedAt: row.opened_at,
+    openedAtMs: row.opened_at_ms,
+    resolvedAt: row.resolved_at || null,
+    lastAlertedAt: row.last_alerted_at || null,
+    title: row.title,
+    contactId: row.contact_id || null,
+    personLabel: row.person_label || null,
+    correlationId: row.correlation_id || null,
+    failedHopId: row.failed_hop_id || null,
+    eventIds: safeJsonArray(row.event_ids_json),
+    lawId: row.law_id || null,
+  };
+}
+
+function shapeEvent(row) {
+  if (!row) return null;
+  let money = null;
+  let message = null;
+  try {
+    money = row.money_json ? JSON.parse(row.money_json) : null;
+  } catch {
+    money = null;
+  }
+  try {
+    message = row.message_json ? JSON.parse(row.message_json) : null;
+  } catch {
+    message = null;
+  }
+  return {
+    id: row.id,
+    at: row.at,
+    atMs: row.at_ms,
+    pathId: row.path_id,
+    hopId: row.hop_id,
+    outcome: row.outcome,
+    reasonCode: row.reason_code || null,
+    summary: row.summary,
+    correlationId: row.correlation_id || null,
+    contactId: row.contact_id || null,
+    personLabel: row.person_label || null,
+    trigger: row.trigger_type
+      ? { type: row.trigger_type, id: row.trigger_id || undefined }
+      : null,
+    condition:
+      row.condition_expected || row.condition_observed
+        ? { expected: row.condition_expected || null, observed: row.condition_observed || null }
+        : null,
+    message,
+    money,
+    source: row.source || null,
+  };
+}
+
 /** Recent events for a path (newest first). */
 export async function listOpsEvents(env, { pathId, contactId, correlationId, limit = 50 } = {}) {
   const db = automationDb(env);
@@ -253,7 +378,7 @@ export async function listOpsEvents(env, { pathId, contactId, correlationId, lim
     } else {
       return [];
     }
-    return res.results || [];
+    return (res.results || []).map(shapeEvent);
   } catch (err) {
     console.error(`[ops-events] list failed: ${err && err.message}`);
     return [];

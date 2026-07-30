@@ -26,9 +26,12 @@ describe("buildFlipCopy", () => {
     });
     expect(copy.sms).toContain("Holly Brinkman");
     expect(copy.sms).toContain("Paid Assessment, no appointment");
+    expect(copy.sms).toContain("/ops#path/assessment_paid_book");
     expect(copy.subject).toContain("Paid Assessment, no appointment");
+    expect(copy.html).toContain("/ops#path/assessment_paid_book");
   });
 });
+
 
 describe("notifyOpsFlip", () => {
   it("money severity → SMS + email to OPS_ALERT_CONTACT_ID", async () => {

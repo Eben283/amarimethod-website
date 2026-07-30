@@ -26,7 +26,8 @@ export function buildFlipCopy(incident) {
   const path = incident.pathId || "path";
   const title = incident.title || "Ops incident";
   const hop = incident.failedHopId ? ` (hop: ${incident.failedHopId})` : "";
-  const sms = `Amari Ops · ${title} — ${who}${hop}. Path: ${path}. Incident ${incident.id || "?"}.`;
+  const opsUrl = `https://www.amarimethod.com/ops#path/${encodeURIComponent(path)}`;
+  const sms = `Amari Ops · ${title} — ${who}${hop}. ${opsUrl}`;
   const subject = `Amari Ops · ${title}`;
   const html = [
     `<p><strong>${escapeHtml(title)}</strong></p>`,
@@ -37,7 +38,7 @@ export function buildFlipCopy(incident) {
       : "",
     incident.lawId ? `<p>Law: <code>${escapeHtml(incident.lawId)}</code></p>` : "",
     `<p>Incident: <code>${escapeHtml(incident.id || "")}</code></p>`,
-    `<p>Open Amari Ops (board coming Phase 2) and reconcile.</p>`,
+    `<p><a href="${escapeHtml(opsUrl)}">Open in Amari Ops</a></p>`,
   ]
     .filter(Boolean)
     .join("\n");
