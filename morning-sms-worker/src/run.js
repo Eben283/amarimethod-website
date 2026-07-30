@@ -5,7 +5,7 @@ import {
   messageForKind,
   SEND_GRACE_MS,
 } from "./schedule.js";
-import { parseRecipients, sendTwilioSms } from "./twilio.js";
+import { parseContactIds, sendGhlSms } from "./ghl-sms.js";
 
 const IDEMPOTENCY_TTL_S = 36 * 60 * 60; // survive past midnight PT
 
@@ -14,8 +14,13 @@ function modeOf(env) {
   return m === "active" ? "active" : "shadow";
 }
 
-function idemKey(dateKey, kind, to) {
-  return `morning-sms:${dateKey}:${kind}:${to}`;
+function idemKey(dateKey, kind, contactId) {
+  return `morning-sms:${dateKey}:${kind}:${contactId}`;
+}
+
+function maskId(id) {
+  if (!id || id.length < 4) return "***";
+  return `…${id.slice(-4)}`;
 }
 
 /**
@@ -26,10 +31,11 @@ export async function runMorningSms(env, opts = {}) {
   const nowMs = opts.nowMs ?? Date.now();
   const timeZone = env.TIMEZONE || "America/Los_Angeles";
   const mode = modeOf(env);
-  const recipients = parseRecipients(env.MORNING_SMS_TO);
+  const recipients = parseContactIds(env.MORNING_SMS_CONTACT_IDS);
   const summary = {
+    provider: "ghl",
     mode,
-    recipients: recipients.map((r) => `***${r.slice(-4)}`),
+    recipients: recipients.map(maskId),
     schedule: null,
     sends: [],
     skipped: [],
@@ -37,7 +43,7 @@ export async function runMorningSms(env, opts = {}) {
   };
 
   if (recipients.length === 0) {
-    summary.errors.push("MORNING_SMS_TO empty or invalid");
+    summary.errors.push("MORNING_SMS_CONTACT_IDS empty or invalid");
     return summary;
   }
 
@@ -73,12 +79,12 @@ export async function runMorningSms(env, opts = {}) {
     const body = messageForKind(kind);
     if (!body) continue;
 
-    for (const to of recipients) {
-      const key = idemKey(schedule.dateKey, kind, to);
+    for (const contactId of recipients) {
+      const key = idemKey(schedule.dateKey, kind, contactId);
       if (kv) {
         const seen = await kv.get(key);
         if (seen) {
-          summary.skipped.push({ kind, to: `***${to.slice(-4)}`, reason: "already-sent" });
+          summary.skipped.push({ kind, contactId: maskId(contactId), reason: "already-sent" });
           continue;
         }
       }
@@ -86,16 +92,13 @@ export async function runMorningSms(env, opts = {}) {
       if (dry) {
         summary.sends.push({
           kind,
-          to: `***${to.slice(-4)}`,
+          contactId: maskId(contactId),
           body,
           result: { success: true, shadowed: true },
         });
-        // Do not reserve idempotency keys in shadow — flipping to active the
-        // same morning must still be able to deliver.
         continue;
       }
 
-      // Reserve before send (same pattern as staff-send-text).
       if (kv) {
         try {
           await kv.put(key, `pending:${nowMs}`, { expirationTtl: IDEMPOTENCY_TTL_S });
@@ -104,17 +107,16 @@ export async function runMorningSms(env, opts = {}) {
         }
       }
 
-      const result = await sendTwilioSms(env, { to, body });
+      const result = await sendGhlSms(env, { contactId, message: body });
       summary.sends.push({
         kind,
-        to: `***${to.slice(-4)}`,
+        contactId: maskId(contactId),
         body,
         result: {
           success: result.success,
-          sid: result.sid || null,
+          messageId: result.messageId || null,
           status: result.status || null,
           error: result.error || null,
-          code: result.code ?? null,
         },
       });
 
@@ -126,7 +128,7 @@ export async function runMorningSms(env, opts = {}) {
         }
       } else if (result.success && kv) {
         try {
-          await kv.put(key, result.sid || `ok:${nowMs}`, { expirationTtl: IDEMPOTENCY_TTL_S });
+          await kv.put(key, result.messageId || `ok:${nowMs}`, { expirationTtl: IDEMPOTENCY_TTL_S });
         } catch {
           /* ignore */
         }

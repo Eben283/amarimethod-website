@@ -2,35 +2,28 @@ name = "morning-sms"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 
-# PARKED 2026-07-30 — Eben paused Twilio morning SMS before A2P setup.
-# Re-enable when ready:
-# [triggers]
-# crons = ["*/5 11-19 * * *"]
+# Morning window, every 5 minutes. Logic is PT-aware inside the worker; the UTC
+# window covers ~4am–12pm PT across DST (11:00–19:59 UTC).
 [triggers]
-crons = []
+crons = ["*/5 11-19 * * *"]
 
-# Same KV as Pages / other workers — used for send idempotency keys + optional
-# GHL token reads when resolving today's first appointment.
+# Same KV as Pages / other workers — send idempotency + GHL OAuth tokens.
 [[kv_namespaces]]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
 
 [vars]
-# E.164 comma-separated. Trial can only deliver to Twilio-verified numbers until
-# the account is upgraded + A2P/toll-free verified.
-MORNING_SMS_TO = "+14159348341,+14153142790"
-TWILIO_FROM_NUMBER = "+18316121965"
-# shadow = log would_send only; active = actually call Twilio.
-MORNING_SMS_MODE = "shadow"
+# GHL contact ids: Eben Forrest + Garrett Hewstan (the contact that has a mobile).
+MORNING_SMS_CONTACT_IDS = "3jsTC9Cb7hkDpC3FLuFd,lYgxJtvpRzWO2UvDh9ju"
+# shadow = log would_send only; active = send via GHL conversations SMS.
+MORNING_SMS_MODE = "active"
 TIMEZONE = "America/Los_Angeles"
+MORNING_SMS_PROVIDER = "ghl"
 
 # Secrets (set once in this dir — pull from Bitwarden cloud-brain):
-#   TWILIO_SID            am-twilio-sid / TWILIO_SID
-#   TWILIO_AUTH_TOKEN     am-twilio-auth-token / TWILIO_AUTH_TOKEN
-#   WORKER_AUTH_SECRET    same as other workers
-# Optional (only needed for appointment-relative schedule):
 #   GHL_CLIENT_ID
 #   GHL_CLIENT_SECRET
+#   WORKER_AUTH_SECRET
 
 [observability]
 enabled = true

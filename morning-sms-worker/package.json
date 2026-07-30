@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker cron: Twilio morning SMS to Garrett + Eben (GHL exit smoke test). First text = good morning / prepare; second = staff meeting 90m later. Schedule: 8:00 PT default, or 2h before first appointment when earlier.",
+  "description": "Cloudflare Worker cron: GHL morning SMS to Garrett + Eben. First text = good morning / prepare; second = staff meeting 90m later. Schedule: 8:00 PT default, or 2h before first appointment when earlier.",
   "scripts": {
     "test": "node --test",
     "deploy": "wrangler deploy"

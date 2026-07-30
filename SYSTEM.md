@@ -103,7 +103,7 @@ Last updated: 2026-07-30.
 
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
-| Morning SMS (Twilio) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. Sends via Twilio, not GHL. Needs upgraded Twilio + A2P/toll-free before US delivery works; default `MORNING_SMS_MODE=shadow`. |
+| Morning SMS (GHL) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett via GHL SMS: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. `MORNING_SMS_MODE=active`. |
 
 ---
 

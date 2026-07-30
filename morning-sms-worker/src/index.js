@@ -1,5 +1,5 @@
-// Morning SMS Worker — Twilio smoke test for GHL messaging exit.
-// Cron: every 5m in the morning UTC window. Sends to MORNING_SMS_TO:
+// Morning SMS Worker — GHL SMS to Eben + Garrett.
+// Cron: every 5m in the morning UTC window. Sends to MORNING_SMS_CONTACT_IDS:
 //   prepare @ 08:00 PT (or 2h before first appt if earlier)
 //   meeting @ prepare + 90m ("Staff meeting")
 
@@ -39,9 +39,9 @@ export default {
     if (url.pathname === "/status") {
       return json({
         ok: true,
+        provider: env.MORNING_SMS_PROVIDER || "ghl",
         mode: env.MORNING_SMS_MODE || "shadow",
-        from: env.TWILIO_FROM_NUMBER || null,
-        toCount: String(env.MORNING_SMS_TO || "")
+        contactCount: String(env.MORNING_SMS_CONTACT_IDS || "")
           .split(/[,\s]+/)
           .filter(Boolean).length,
         timezone: env.TIMEZONE || "America/Los_Angeles",
