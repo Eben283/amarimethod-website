@@ -100,6 +100,12 @@ Last updated: 2026-07-30.
 | Client detail CRM | `ClientDetailPage`, notes, message history |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
 
+### Messaging exit smoke tests
+
+| Name | Kind | Paths | Notes |
+|------|------|-------|-------|
+| Morning SMS (GHL) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett via GHL SMS: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. `MORNING_SMS_MODE=active`. |
+
 ---
 
 ## Where to put new owned pieces
