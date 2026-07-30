@@ -2,9 +2,11 @@
  * Canonical booking slot policy (duration · interval · buffer).
  *
  * Priority: Follow-up (50 min) starts on the hour. Studio bodywork shares an
- * hourly start lattice (interval 60). GHL remains availability truth today —
- * this module is the Amari-owned policy seed for drift checks and a future
- * availability engine. See amari-method-docs/ops/memory/decision_booking_slot_model.md
+ * hourly start lattice (interval 60) with a 10-minute post-buffer so Follow-up
+ * block packs to 60 (10:00 → 11:00 → 12:00). GHL remains availability truth
+ * today — this module is the Amari-owned policy seed for drift checks and a
+ * future availability engine.
+ * See amari-method-docs/ops/memory/decision_booking_slot_model.md
  *
  * Knobs:
  *   durationMinutes — client session length (appointment endTime)
@@ -39,7 +41,7 @@ export const SLOT_POLICIES = {
       "bJFkhVP35Ecwh4tLnSmy", // package virtual
     ],
     durationMinutes: 50,
-    bufferMinutes: 15,
+    bufferMinutes: 10,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
     priority: true,
@@ -64,7 +66,7 @@ export const SLOT_POLICIES = {
     label: "Amari Assessment",
     calendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
     durationMinutes: 40,
-    bufferMinutes: 15,
+    bufferMinutes: 10,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
   },

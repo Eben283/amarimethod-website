@@ -11,13 +11,13 @@ import {
 } from "./booking-slot-policy.js";
 
 describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
-  it("makes Follow-up the priority studio policy with 50/15/60", () => {
+  it("makes Follow-up the priority studio policy with 50/10/60", () => {
     const fu = followupPolicy();
     expect(fu.priority).toBe(true);
     expect(fu.durationMinutes).toBe(50);
-    expect(fu.bufferMinutes).toBe(15);
+    expect(fu.bufferMinutes).toBe(10);
     expect(fu.intervalMinutes).toBe(60);
-    expect(blockMinutes(fu)).toBe(65);
+    expect(blockMinutes(fu)).toBe(60);
     expect(isHourlyLattice(fu.intervalMinutes)).toBe(true);
   });
 
@@ -42,6 +42,8 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
     expect(SLOT_POLICIES.assessment.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
     expect(SLOT_POLICIES.initial.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
     expect(SLOT_POLICIES.assessment.durationMinutes).toBe(40);
+    expect(SLOT_POLICIES.assessment.bufferMinutes).toBe(10);
+    expect(blockMinutes(SLOT_POLICIES.assessment)).toBe(50);
     expect(SLOT_POLICIES.initial.durationMinutes).toBe(60);
   });
 
@@ -60,7 +62,7 @@ describe("booking-slot-policy — lookup and drift", () => {
     expect(policyForCalendarId("unknown")).toBe(null);
   });
 
-  it("flags live Follow-up interval 30 as drift against hourly policy", () => {
+  it("flags live Follow-up interval 30 and buffer 15 as drift", () => {
     const report = driftAgainstPolicy({
       id: "SKDVOL8wtUN6Ne0ppbC9",
       slotDuration: 50,
@@ -71,10 +73,11 @@ describe("booking-slot-policy — lookup and drift", () => {
     expect(report.priority).toBe(true);
     expect(report.drifts).toEqual([
       { field: "slotInterval", live: 30, policy: 60 },
+      { field: "slotBuffer", live: 15, policy: 10 },
     ]);
   });
 
-  it("flags live Assessment interval 40 as drift", () => {
+  it("flags live Assessment interval 40 and buffer 15 as drift", () => {
     const report = driftAgainstPolicy({
       id: "EM6vB2mq7EAdGCbUb3j1",
       slotDuration: 40,
@@ -87,6 +90,11 @@ describe("booking-slot-policy — lookup and drift", () => {
       live: 40,
       policy: 60,
     });
+    expect(report.drifts).toContainEqual({
+      field: "slotBuffer",
+      live: 15,
+      policy: 10,
+    });
   });
 
   it("reports ok when live matches policy", () => {
@@ -94,7 +102,7 @@ describe("booking-slot-policy — lookup and drift", () => {
       id: "SKDVOL8wtUN6Ne0ppbC9",
       slotDuration: 50,
       slotInterval: 60,
-      slotBuffer: 15,
+      slotBuffer: 10,
     });
     expect(report.ok).toBe(true);
     expect(report.drifts).toEqual([]);
