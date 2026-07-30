@@ -1,7 +1,7 @@
-// GET /api/ops/systems — Amari Ops board (Eben-only).
+// GET /api/ops/systems — Amari Ops board (click-to-view, no PIN).
 //   ?pathId=assessment_paid_book → path detail (hops + incidents + log)
 
-import { corsHeaders, requireStaffAuth } from "../../lib/endpoint-guards.js";
+import { corsHeaders } from "../../lib/endpoint-guards.js";
 import { buildPathDetail, buildSystemsBoard } from "../../lib/ops-board.js";
 
 export async function onRequestOptions(context) {
@@ -17,11 +17,8 @@ export async function onRequestGet(context) {
     ...corsHeaders(origin, "GET, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
+    "X-Robots-Tag": "noindex, nofollow",
   };
-
-  // Same staff PIN / JWT as /staff (Eben or Garrett).
-  const { error } = await requireStaffAuth(context, headers);
-  if (error) return error;
 
   const url = new URL(context.request.url);
   const pathId = url.searchParams.get("pathId");

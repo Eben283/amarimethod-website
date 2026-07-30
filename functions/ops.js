@@ -1,5 +1,4 @@
-// GET /ops — Amari Ops board shell (data via /api/ops/*).
-// No PIN screen here. Reuses staff_token; if missing, send to /staff/login.
+// GET /ops — Amari Ops board. Click and see. No PIN / login gate.
 
 export async function onRequestGet() {
   return new Response(OPS_HTML, {
@@ -164,10 +163,6 @@ export const OPS_HTML = `<!doctype html>
 
 <script>
 (function () {
-  // No PIN UI on Ops. Use the existing staff session, or bounce to staff login.
-  var LS = "staff_token";
-  var EXP = "staff_token_expiry";
-  var token = localStorage.getItem(LS) || "";
   var homeView = document.getElementById("view-home");
   var pathView = document.getElementById("view-path");
   var homeHead = document.getElementById("homeHead");
@@ -196,25 +191,8 @@ export const OPS_HTML = `<!doctype html>
     });
   }
 
-  function goStaffLogin() {
-    var next = location.pathname + location.hash;
-    location.replace("/staff/login?next=" + encodeURIComponent(next));
-  }
-
-  function sessionLooksFresh() {
-    var expiry = Number(localStorage.getItem(EXP) || 0);
-    return !!token && (!expiry || expiry > Date.now());
-  }
-
   async function api(path) {
-    var res = await fetch(path, {
-      headers: { Authorization: "Bearer " + token, Accept: "application/json" }
-    });
-    if (res.status === 401 || res.status === 403) {
-      var err = new Error("auth");
-      err.code = res.status;
-      throw err;
-    }
+    var res = await fetch(path, { headers: { Accept: "application/json" } });
     if (!res.ok) throw new Error("load");
     return res.json();
   }
@@ -338,27 +316,13 @@ export const OPS_HTML = `<!doctype html>
       if (route.view === "path") await renderPath(route.pathId);
       else await renderHome();
     } catch (e) {
-      if (e && (e.code === 401 || e.code === 403 || e.message === "auth")) {
-        localStorage.removeItem(LS);
-        localStorage.removeItem(EXP);
-        goStaffLogin();
-        return;
-      }
       homeView.innerHTML = '<p class="empty">Could not load systems.</p>';
     }
   }
 
   window.addEventListener("hashchange", function () { render(); });
-
-  if (!sessionLooksFresh()) {
-    goStaffLogin();
-    return;
-  }
   render();
-  setInterval(function () {
-    if (!token) return;
-    render();
-  }, 60000);
+  setInterval(render, 60000);
 })();
 </script>
 </body>
