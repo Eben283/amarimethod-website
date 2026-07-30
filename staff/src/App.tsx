@@ -38,6 +38,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function safeNextPath(raw: string | null): string | null {
+  // Only same-origin relative paths (e.g. /ops, /staff/today). Blocks //evil.com.
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
+
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -50,7 +56,13 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+    // /ops is outside the staff SPA — full navigation.
+    if (next && !next.startsWith('/staff')) {
+      window.location.replace(next);
+      return null;
+    }
+    return <Navigate to={next && next.startsWith('/staff') ? next.replace(/^\/staff/, '') || '/' : '/'} replace />;
   }
 
   return <>{children}</>;

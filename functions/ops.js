@@ -1,5 +1,5 @@
-// GET /ops — Amari Ops board shell (Eben-only data via /api/ops/*).
-// Public HTML; PIN gate in-page. No Desk/Fix.
+// GET /ops — Amari Ops board shell (data via /api/ops/*).
+// No PIN screen here. Reuses staff_token; if missing, send to /staff/login.
 
 export async function onRequestGet() {
   return new Response(OPS_HTML, {
@@ -141,24 +141,6 @@ export const OPS_HTML = `<!doctype html>
   .empty { color: var(--muted); padding: 16px 2px; }
   .foot { color: var(--muted); font-size: 12px; margin-top: 36px; }
 
-  #gate {
-    max-width: 420px; margin: 14vh auto 0; text-align: center; padding: 0 18px;
-  }
-  #gate .mark {
-    font-family: Georgia, serif; font-size: 2.4rem; font-weight: 400;
-  }
-  #gate p { color: var(--muted); margin-top: 10px; font-size: 14px; }
-  #gate input {
-    width: 100%; margin-top: 18px; padding: 12px 14px; border-radius: 8px;
-    border: 1px solid var(--line); background: var(--bg2); color: var(--ink); font: inherit;
-    text-align: center; letter-spacing: 0.2em;
-  }
-  #gate button {
-    margin-top: 12px; width: 100%; padding: 12px; border-radius: 8px;
-    border: 0; background: var(--accent); color: #1a120e; font: inherit; font-weight: 600;
-    cursor: pointer;
-  }
-  #gate .err { color: var(--bad); margin-top: 12px; font-size: 13px; min-height: 1.2em; }
   [hidden] { display: none !important; }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -168,15 +150,7 @@ export const OPS_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-<div id="gate">
-  <div class="mark">Amari Ops</div>
-  <p>Same staff PIN as /staff.</p>
-  <input id="pin" type="password" inputmode="numeric" maxlength="8" placeholder="PIN" autocomplete="one-time-code">
-  <button id="unlock" type="button">Open</button>
-  <div class="err" id="gateErr"></div>
-</div>
-
-<div class="wrap" id="app" hidden>
+<div class="wrap" id="app">
   <header class="brand" id="homeHead">
     <div class="mark">Amari Ops</div>
     <p class="sub">All watched systems. Open a red path to see why.</p>
@@ -185,17 +159,15 @@ export const OPS_HTML = `<!doctype html>
 
   <div id="view-home"></div>
   <div id="view-path" hidden></div>
-  <p class="foot">Staff PIN · alerts on flip · no Fix layer yet</p>
+  <p class="foot">Alerts on flip · no Fix layer yet</p>
 </div>
 
 <script>
 (function () {
-  // Reuse the staff app session so Ops doesn't need a second login.
+  // No PIN UI on Ops. Use the existing staff session, or bounce to staff login.
   var LS = "staff_token";
   var EXP = "staff_token_expiry";
   var token = localStorage.getItem(LS) || "";
-  var gate = document.getElementById("gate");
-  var app = document.getElementById("app");
   var homeView = document.getElementById("view-home");
   var pathView = document.getElementById("view-path");
   var homeHead = document.getElementById("homeHead");
@@ -224,10 +196,14 @@ export const OPS_HTML = `<!doctype html>
     });
   }
 
-  function clearSession() {
-    localStorage.removeItem(LS);
-    localStorage.removeItem(EXP);
-    token = "";
+  function goStaffLogin() {
+    var next = location.pathname + location.hash;
+    location.replace("/staff/login?next=" + encodeURIComponent(next));
+  }
+
+  function sessionLooksFresh() {
+    var expiry = Number(localStorage.getItem(EXP) || 0);
+    return !!token && (!expiry || expiry > Date.now());
   }
 
   async function api(path) {
@@ -241,47 +217,6 @@ export const OPS_HTML = `<!doctype html>
     }
     if (!res.ok) throw new Error("load");
     return res.json();
-  }
-
-  async function login() {
-    var pin = document.getElementById("pin").value.trim();
-    var errEl = document.getElementById("gateErr");
-    errEl.textContent = "";
-    if (pin.length < 4) { errEl.textContent = "Enter your PIN."; return; }
-    try {
-      var res = await fetch("/api/staff-auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin: pin })
-      });
-      var data = await res.json().catch(function () { return {}; });
-      if (!res.ok) { errEl.textContent = data.error || "Could not sign in."; return; }
-      token = data.token;
-      localStorage.setItem(LS, token);
-      localStorage.setItem(EXP, String(Date.now() + 30 * 24 * 60 * 60 * 1000));
-      await api("/api/ops/systems");
-      showApp();
-      render();
-    } catch (e) {
-      clearSession();
-      errEl.textContent = "Could not open Ops. Try your /staff PIN again.";
-    }
-  }
-
-  function showApp() {
-    gate.hidden = true;
-    app.hidden = false;
-  }
-
-  function showGate(msg) {
-    app.hidden = true;
-    gate.hidden = false;
-    if (msg) document.getElementById("gateErr").textContent = msg;
-  }
-
-  function sessionLooksFresh() {
-    var expiry = Number(localStorage.getItem(EXP) || 0);
-    return !!token && (!expiry || expiry > Date.now());
   }
 
   function setOverall(status, note) {
@@ -404,26 +339,24 @@ export const OPS_HTML = `<!doctype html>
       else await renderHome();
     } catch (e) {
       if (e && (e.code === 401 || e.code === 403 || e.message === "auth")) {
-        clearSession();
-        showGate("Session ended — enter your staff PIN.");
+        localStorage.removeItem(LS);
+        localStorage.removeItem(EXP);
+        goStaffLogin();
         return;
       }
       homeView.innerHTML = '<p class="empty">Could not load systems.</p>';
     }
   }
 
-  document.getElementById("unlock").addEventListener("click", login);
-  document.getElementById("pin").addEventListener("keydown", function (ev) {
-    if (ev.key === "Enter") login();
-  });
   window.addEventListener("hashchange", function () { render(); });
 
-  if (sessionLooksFresh()) {
-    showApp();
-    render();
+  if (!sessionLooksFresh()) {
+    goStaffLogin();
+    return;
   }
+  render();
   setInterval(function () {
-    if (!token || app.hidden) return;
+    if (!token) return;
     render();
   }, 60000);
 })();
