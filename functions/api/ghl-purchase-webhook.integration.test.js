@@ -284,4 +284,82 @@ describe('purchase-webhook — write orchestration', () => {
     );
     expect(appointmentCreate).toBeFalsy();
   });
+
+  // Amari Ops Phase 1: Holly-class fail must leave a reconstructable trail
+  // (payment hop + create_appointment fail with slot condition + open incident).
+  it('Assessment no-slot fail writes ops_events + opens money incident when AUTOMATION_DB is bound', async () => {
+    const opsRows = [];
+    const incidents = [];
+    const db = {
+      prepare: (sql) => ({
+        _a: [],
+        bind(...a) { this._a = a; return this; },
+        async run() {
+          if (/INSERT INTO ops_events/.test(sql)) {
+            opsRows.push({
+              path_id: this._a[3], hop_id: this._a[4], outcome: this._a[5],
+              summary: this._a[7], correlation_id: this._a[8],
+              condition_expected: this._a[13], condition_observed: this._a[14],
+            });
+          }
+          if (/INSERT INTO ops_incidents/.test(sql)) {
+            incidents.push({
+              path_id: this._a[1], status: this._a[2], severity: this._a[3],
+              title: this._a[8], correlation_id: this._a[11], law_id: this._a[14],
+            });
+          }
+          return { meta: { changes: 1 } };
+        },
+        async first() { return null; },
+        async all() { return { results: [] }; },
+      }),
+    };
+
+    const contact = {
+      id: 'holly-ops',
+      firstName: 'Holly',
+      lastName: 'Brinkman',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'U4CngR3hNQFlGHIh8TkM', value: '2026-08-04' },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'holly-ops-order' },
+      contact,
+    });
+    ctx.env.AUTOMATION_DB = db;
+    ctx.env.OPS_ALERT_MODE = 'shadow';
+    ctx.env.OPS_ALERT_CONTACT_ID = 'ebenOps';
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+
+    expect(opsRows).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path_id: 'assessment_paid_book',
+        hop_id: 'purchase_webhook',
+        outcome: 'ok',
+        correlation_id: 'order:holly-ops-order',
+      }),
+      expect.objectContaining({
+        path_id: 'assessment_paid_book',
+        hop_id: 'create_appointment',
+        outcome: 'fail',
+        condition_expected: 'requested_session_slot_iso bookable datetime',
+      }),
+    ]));
+    const fail = opsRows.find((r) => r.hop_id === 'create_appointment');
+    expect(fail.condition_observed).toMatch(/slot_iso=null/);
+    expect(incidents).toEqual([
+      expect.objectContaining({
+        path_id: 'assessment_paid_book',
+        status: 'open',
+        severity: 'money',
+        title: 'Paid Assessment, no appointment',
+        law_id: 'L_paid_assessment_has_appt',
+      }),
+    ]);
+  });
 });

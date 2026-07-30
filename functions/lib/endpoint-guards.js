@@ -58,6 +58,21 @@ export async function requireStaffAuth(context, headers) {
   return { payload };
 }
 
+// Amari Ops is Eben-only. Staff JWT required, then user must be Eben (not Garrett).
+export async function requireEbenStaffAuth(context, headers) {
+  const auth = await requireStaffAuth(context, headers);
+  if (auth.error) return auth;
+  if (auth.payload?.user !== "Eben") {
+    return {
+      error: new Response(JSON.stringify({ error: "Amari Ops is Eben-only" }), {
+        status: 403,
+        headers,
+      }),
+    };
+  }
+  return auth;
+}
+
 // Parses the request body as JSON.
 //
 // Returns { body: object } on success, or { error: Response } with status 400

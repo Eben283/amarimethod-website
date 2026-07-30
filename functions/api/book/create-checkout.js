@@ -20,6 +20,7 @@ import { ghlFetch, getGhlToken } from "../../lib/ghl.js";
 import { appointmentEndTime } from "../../lib/datetime.js";
 import { FIELD_IDS } from "../../lib/ghl-fields.js";
 import { recordOpsError } from "../../lib/ops-alert.js";
+import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -508,6 +509,18 @@ export async function onRequestPost(context) {
   context.waitUntil(
     recordPreCheckoutAudit(context, contactId, body, ip, userAgent, booking),
   );
+
+  // Amari Ops: Assessment checkout hop (path assessment_paid_book).
+  if (body.sessionType === "amari_assessment") {
+    context.waitUntil(
+      recordAssessmentCheckout(env, {
+        contactId,
+        personLabel: [body.firstName, body.lastName].filter(Boolean).join(" ").trim() || null,
+        startTime: body.startTime,
+        sessionType: body.sessionType,
+      }),
+    );
+  }
 
   // ----- Free booking flow (discovery call) -----
   // Book the appointment directly + redirect straight to the success
