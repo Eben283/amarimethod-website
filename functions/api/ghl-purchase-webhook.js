@@ -30,6 +30,7 @@ import { recordOpsError } from "../lib/ops-alert.js";
 import { checkPackageBalance } from "../lib/session-consistency.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
+import { describeSlotFields, recordAssessmentBookPath } from "../lib/ops-assessment.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -715,19 +716,41 @@ export async function onRequestPost(context) {
     if (booking?.isNonCreditBooking) {
       const token = await getGhlToken(context);
       let appointment = null;
+      let bookError = null;
+      let skippedReason = null;
+      const slotIsoRaw = getRequestedSessionField(
+        contact,
+        "requested_session_slot_iso",
+        REQUESTED_SLOT_FIELD_IDS.slotIso,
+      );
+      const slotDateRaw = getRequestedSessionField(
+        contact,
+        "requested_session_slot",
+        REQUESTED_SLOT_FIELD_IDS.slot,
+      );
+      const slotTypeRaw = getRequestedSessionField(
+        contact,
+        "requested_session_type",
+        REQUESTED_SLOT_FIELD_IDS.type,
+      );
+      const slotCalRaw = getRequestedSessionField(
+        contact,
+        "requested_session_calendar",
+        REQUESTED_SLOT_FIELD_IDS.calendar,
+      );
       try {
         appointment = await bookPaidBookingAppointment(context, contact, booking, token);
         if (appointment) {
           await recordPaidBooking(context, sanitizedContactId, booking, appointment);
+        } else if (!contactLooksLikeNativeCheckout(contact)) {
+          skippedReason = "legacy_or_calendar_checkout";
         }
       } catch (err) {
+        bookError = err;
         console.error(
           "[ghl-purchase-webhook] Assessment appointment booking failed:",
           err.message,
         );
-        context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook",
-          "Assessment payment received, but appointment did not auto-book",
-          { contactId: sanitizedContactId, product: productName, error: String(err.message).slice(0, 300) }));
         try {
           await ghlFetch(
             context,
@@ -751,6 +774,32 @@ export async function onRequestPost(context) {
         } catch (noteErr) {
           console.error("[ghl-purchase-webhook] Assessment recovery note failed:", noteErr);
         }
+      }
+
+      const slotCondition = {
+        expected: "requested_session_slot_iso bookable datetime",
+        observed: describeSlotFields({
+          slotIso: slotIsoRaw,
+          slotDate: slotDateRaw,
+          type: slotTypeRaw,
+          calendar: slotCalRaw,
+        }),
+      };
+      // Amari Ops spine: always emit payment + book hop (ok/fail/skip) so path→why is real.
+      // Awaited (not waitUntil) so Holly-class fails are durable before the 200 returns.
+      // Flip alert + legacy ops:err mirror live inside recordAssessmentBookPath.
+      try {
+        await recordAssessmentBookPath(context, {
+          contact,
+          productName,
+          orderId: resolvedOrderId,
+          appointment,
+          bookError,
+          slotCondition,
+          skippedReason,
+        });
+      } catch (opsErr) {
+        console.error("[ghl-purchase-webhook] ops spine write failed:", opsErr?.message || opsErr);
       }
 
       if (kv && idempotencyKey) {
