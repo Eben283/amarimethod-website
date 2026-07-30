@@ -2,10 +2,12 @@ name = "morning-sms"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 
-# Morning window, every 5 minutes. Logic is PT-aware inside the worker; the UTC
-# window covers ~4am–12pm PT across DST (11:00–19:59 UTC).
+# PARKED 2026-07-30 — Eben paused Twilio morning SMS before A2P setup.
+# Re-enable when ready:
+# [triggers]
+# crons = ["*/5 11-19 * * *"]
 [triggers]
-crons = ["*/5 11-19 * * *"]
+crons = []
 
 # Same KV as Pages / other workers — used for send idempotency keys + optional
 # GHL token reads when resolving today's first appointment.
