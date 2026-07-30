@@ -1,10 +1,10 @@
 // Dual-price single-session offers.
 //
-// 2026-07-30 price raise: new clients pay $285 (GHL "Single Session").
-// The ~11 Founder's Circle contacts tagged `founders-circle` keep the legacy
-// $190 Single Follow-up product for à-la-carte singles. Pack/upgrade/entrainment
-// grandfathering uses the same tag once parallel new SKUs exist — those new
-// products are not created yet, so this module only covers the single session.
+// 2026-07-30 ladders:
+//   Default: $285 Single + $3,000 6-week Practice + $5,400 12-week Practice
+//   Founder's Circle (`founders-circle`, ~11): keep legacy $190 single and the
+//   existing 4/8/upgrade/entrainment products (no raised replacements).
+// This module resolves the à-la-carte single only.
 
 import { hasFoundersCircleTag } from "./portal-helpers.js";
 

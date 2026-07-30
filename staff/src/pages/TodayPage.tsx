@@ -48,6 +48,7 @@ export default function TodayPage() {
   const [docContactId, setDocContactId] = useState<string | null>(null);
   const [docClientName, setDocClientName] = useState('');
   const [sellContactId, setSellContactId] = useState<string | null>(null);
+  const [sellIsFounders, setSellIsFounders] = useState(false);
 
   // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
   // toggling fires overlapping requests; only the latest one is allowed to commit
@@ -206,7 +207,10 @@ export default function TodayPage() {
           date={selectedDate}
           onTapAppointment={(appt) => navigate(`/client/${appt.contactId}?appointment=${appt.id}`)}
           onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
-          onSellLink={(appt) => setSellContactId(appt.contactId)}
+          onSellLink={(appt) => {
+            setSellContactId(appt.contactId);
+            setSellIsFounders((appt.tags || []).some((t) => String(t).toLowerCase() === 'founders-circle'));
+          }}
         />
       ) : (
         <WeekView
@@ -225,7 +229,11 @@ export default function TodayPage() {
       {sellContactId && (
         <PayLinkSheet
           contactId={sellContactId}
-          onClose={() => setSellContactId(null)}
+          isFoundersCircle={sellIsFounders}
+          onClose={() => {
+            setSellContactId(null);
+            setSellIsFounders(false);
+          }}
         />
       )}
     </div>

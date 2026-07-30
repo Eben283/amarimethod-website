@@ -210,7 +210,8 @@ export type PayLinkProduct =
   | 'upgrade-initial-to-8'
   | 'upgrade-4-to-8'
   | 'living-practice'
-  | 'follow-up';
+  | 'follow-up'
+  | 'amari-assessment';
 
 export async function sendPayLink(
   contactId: string,

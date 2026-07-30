@@ -44,6 +44,10 @@ interface Action {
 }
 
 function getSeriesActions(client: ClientData): Action[] {
+  // 4/8/upgrade ladder is Founder's Circle only. Default clients buy
+  // $285 single / 6-week / 12-week Practice (staff/POS until paylinks land).
+  if (!client.isFoundersCircle) return [];
+
   const { seriesType, sessionsCompleted, sessionsRemaining, isPartner } = client;
   const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
   const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;

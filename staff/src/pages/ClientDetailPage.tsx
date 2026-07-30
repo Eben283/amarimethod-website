@@ -440,27 +440,51 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {/* collapsible pay link */}
+        {/* collapsible pay link — Founder's Circle keep 4/8 ladder; everyone else gets $285 default */}
         {client.phone && (
           <div>
             <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
               <span className="ic"><Send size={17} /></span>
-              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
+              <span className="tx">
+                <b>Send pay link</b>
+                <span>
+                  {isFoundersCircle
+                    ? '8-pack, 4-pack, $190 follow-up & more'
+                    : '$285 single · Assessment · initial (6/12-week SMS soon)'}
+                </span>
+              </span>
               <span className="cv"><ChevronRight size={18} /></span>
             </button>
             <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
               <div className="sa-collapse-in">
-                {renderPayRow('8-session-series', '8-Pack', '$1,295')}
-                {renderPayRow('4-session-series', '4-Pack', '$720')}
-                {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
-                {showMorePayLinks && (
+                {isFoundersCircle ? (
                   <>
-                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
-                    {renderPayRow('follow-up', 'Single session', isFoundersCircle ? '$190' : '$285')}
-                    {renderPayRow('living-practice', 'Living Practice', '$347')}
-                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
-                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
-                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+                    {renderPayRow('8-session-series', '8-Pack', '$1,295')}
+                    {renderPayRow('4-session-series', '4-Pack', '$720')}
+                    {renderPayRow('follow-up', 'Follow-up', '$190')}
+                    {showMorePayLinks && (
+                      <>
+                        {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                        {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
+                        {renderPayRow('living-practice', 'Living Practice', '$347')}
+                        {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
+                        {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
+                        {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+                        {renderPayRow('amari-assessment', 'Assessment', '$29')}
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {renderPayRow('follow-up', 'Single session', '$285')}
+                    {renderPayRow('amari-assessment', 'Assessment', '$29')}
+                    {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                    {showMorePayLinks && (
+                      <>
+                        {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
+                        {renderPayRow('living-practice', 'Living Practice', '$347')}
+                      </>
+                    )}
                   </>
                 )}
                 <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>

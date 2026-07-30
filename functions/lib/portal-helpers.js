@@ -44,8 +44,8 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
 }
 
 /** GHL tag for Founder's Circle (~11 package buyers as of 2026-07-30).
- *  Gates: portal v1 home + legacy à-la-carte single ($190). Same tag will gate
- *  legacy 4/8/upgrade/entrainment prices once parallel raised SKUs exist.
+ *  Gates: portal v1 home; legacy $190 single; staff paylinks for old 4/8/
+ *  upgrade/entrainment products. Default clients get $285 / 6-week / 12-week.
  *  Applied manually (or via one-time backfill) — never auto-granted on new purchases. */
 export const FOUNDERS_CIRCLE_TAG = "founders-circle";
 

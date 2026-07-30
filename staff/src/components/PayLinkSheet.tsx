@@ -3,30 +3,46 @@ import { createPortal } from 'react-dom';
 import { X, Loader2, Check } from 'lucide-react';
 import { sendPayLink, type PayLinkProduct } from '../lib/api';
 
-const PAY_PRODUCTS: { product: PayLinkProduct; label: string; price: string; primary: boolean }[] = [
+type PayRow = { product: PayLinkProduct; label: string; price: string; primary: boolean };
+
+/** Default ladder — new clients. Practice 6/12-week SMS wait on hosted paylinks. */
+const DEFAULT_PRODUCTS: PayRow[] = [
+  { product: 'follow-up', label: 'Single session', price: '$285', primary: true },
+  { product: 'amari-assessment', label: 'Assessment', price: '$29', primary: true },
+  { product: 'initial-in-person', label: 'Initial — In Person', price: '$225', primary: false },
+  { product: 'initial-virtual', label: 'Initial — Virtual', price: '$225', primary: false },
+  { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
+];
+
+/** Founder's Circle keep the legacy 4/8/upgrade ladder + $190 single. */
+const FOUNDERS_PRODUCTS: PayRow[] = [
   { product: '8-session-series', label: '8-Pack', price: '$1,295', primary: true },
   { product: '4-session-series', label: '4-Pack', price: '$720', primary: true },
+  { product: 'follow-up', label: 'Follow-up session', price: '$190', primary: true },
   { product: 'initial-in-person', label: 'Initial — In Person', price: '$225', primary: false },
   { product: 'initial-virtual', label: 'Initial — Virtual', price: '$225', primary: false },
   { product: 'upgrade-initial-to-4', label: 'Upgrade: Initial to 4', price: '$495', primary: false },
   { product: 'upgrade-initial-to-8', label: 'Upgrade: Initial to 8', price: '$1,070', primary: false },
   { product: 'upgrade-4-to-8', label: 'Upgrade: 4 to 8', price: '$575', primary: false },
-  { product: 'follow-up', label: 'Single session', price: '$285', primary: false },
   { product: 'living-practice', label: 'Living Practice', price: '$347', primary: false },
+  { product: 'amari-assessment', label: 'Assessment', price: '$29', primary: false },
 ];
 
 export default function PayLinkSheet({
   contactId,
+  isFoundersCircle = false,
   onClose,
   onLinkSent,
 }: {
   contactId: string;
+  isFoundersCircle?: boolean;
   onClose: () => void;
   onLinkSent?: (note: string) => void;
 }) {
   const [status, setStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'error'>>({});
   const [showMore, setShowMore] = useState(false);
-  const visible = showMore ? PAY_PRODUCTS : PAY_PRODUCTS.filter((p) => p.primary);
+  const products = isFoundersCircle ? FOUNDERS_PRODUCTS : DEFAULT_PRODUCTS;
+  const visible = showMore ? products : products.filter((p) => p.primary);
 
   async function handleSend(product: PayLinkProduct, label: string) {
     if (status[product] === 'sending' || status[product] === 'sent') return;
@@ -48,11 +64,19 @@ export default function PayLinkSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <span className="font-semibold text-amari-charcoal">Send link</span>
+          <span className="font-semibold text-amari-charcoal">
+            {isFoundersCircle ? "Send link · Founder's Circle" : 'Send link'}
+          </span>
           <button type="button" onClick={onClose} className="text-amari-text-muted">
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {!isFoundersCircle && (
+          <p className="mb-3 text-xs text-amari-text-muted">
+            Default ladder: $285 single · $3,000 6-week · $5,400 12-week. Practice SMS links land once GHL paylinks are pasted.
+          </p>
+        )}
 
         <div className="space-y-2">
           {visible.map(({ product, label, price }) => {
@@ -78,19 +102,22 @@ export default function PayLinkSheet({
                 >
                   {s === 'sending' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
                    s === 'sent' ? <Check className="h-3.5 w-3.5" /> :
-                   s === 'error' ? 'Error' : 'Send'}
+                   'Send'}
                 </button>
               </div>
             );
           })}
         </div>
-        <button
-          type="button"
-          onClick={() => setShowMore((v) => !v)}
-          className="mt-3 w-full text-center text-xs text-amari-text-muted"
-        >
-          {showMore ? 'Fewer options' : 'More options'}
-        </button>
+
+        {products.some((p) => !p.primary) && (
+          <button
+            type="button"
+            className="mt-3 w-full text-center text-sm text-amari-text-muted"
+            onClick={() => setShowMore((v) => !v)}
+          >
+            {showMore ? 'Fewer products' : 'More products'}
+          </button>
+        )}
       </div>
     </div>,
     document.body,
