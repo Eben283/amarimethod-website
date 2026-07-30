@@ -1,5 +1,8 @@
 // Amari Ops board assembly — registry + open incidents + live infra signals.
 // Read path for /api/ops/systems. No Fix actions. Never fake-green unwatched rows.
+//
+// Row roles (ops-board-meta): hot = pay/book early warning; quiet = messaging;
+// map = blast-radius. States: healthy | sick | stuck | idle | blind | map_ok | map_bad.
 
 import { OPS_ERR_PATH_SOURCES, OPS_REGISTRY, registryPath } from "./ops-registry.js";
 import {
@@ -9,9 +12,22 @@ import {
 } from "./ops-events.js";
 import { listOpsErrors } from "./ops-alert.js";
 import { trailMeta } from "./ops-trail-kv.js";
+import {
+  boardMetaFor,
+  isAttentionState,
+  OPS_BOARD_ROLE,
+  OPS_ROW_STATE,
+} from "./ops-board-meta.js";
 
 const HOUR = 3600 * 1000;
 const ERR_LOOKBACK_H = 72;
+const HOT_HEALTHY_MAX_AGE_H = 72;
+const STUCK_REASON_CODES = new Set([
+  "book_failed",
+  "no_appointment_silent",
+  "slot_missing",
+  "stuck_hop",
+]);
 
 function ageHours(iso) {
   if (!iso) return null;
@@ -62,16 +78,184 @@ function signalFromJudged(id, judged, why) {
   };
 }
 
+function eventLooksStuck(evt) {
+  if (!evt) return false;
+  if (evt.outcome === "fail" && STUCK_REASON_CODES.has(evt.reasonCode)) return true;
+  if (evt.hopId === "create_appointment" && evt.outcome === "fail") return true;
+  return false;
+}
+
+function mapInfraToRowState(signalStatus) {
+  if (signalStatus === "red") return OPS_ROW_STATE.MAP_BAD;
+  if (signalStatus === "green") return OPS_ROW_STATE.MAP_OK;
+  return OPS_ROW_STATE.IDLE;
+}
+
+function judgePathRow(reg, { openCount, latest, errs }) {
+  const meta = boardMetaFor(reg.id);
+  const role = meta.role;
+
+  if (openCount > 0) {
+    const stuck =
+      latest && eventLooksStuck(latest)
+        ? OPS_ROW_STATE.STUCK
+        : OPS_ROW_STATE.SICK;
+    return {
+      state: stuck,
+      note:
+        openCount === 1
+          ? stuck === OPS_ROW_STATE.STUCK
+            ? "1 stuck journey"
+            : "1 open incident"
+          : `${openCount} open incidents`,
+      why: latest?.summary || null,
+      lastAt: latest?.at || null,
+    };
+  }
+
+  if (reg.instrumentation === "planned") {
+    return {
+      state: role === OPS_BOARD_ROLE.QUIET ? OPS_ROW_STATE.IDLE : OPS_ROW_STATE.BLIND,
+      note:
+        role === OPS_BOARD_ROLE.QUIET
+          ? "quiet · no collision signal"
+          : "map only · not owned yet",
+      why: null,
+      lastAt: null,
+    };
+  }
+
+  if (reg.instrumentation === "partial") {
+    if (errs?.length) {
+      return {
+        state: OPS_ROW_STATE.SICK,
+        note: `${errs.length} recent failure${errs.length === 1 ? "" : "s"}`,
+        why: errs[0].summary,
+        lastAt: errs[0].at,
+      };
+    }
+    return {
+      state: OPS_ROW_STATE.IDLE,
+      note: "quiet · watching for failures",
+      why: null,
+      lastAt: null,
+    };
+  }
+
+  // full
+  if (latest) {
+    if (latest.outcome === "fail") {
+      const stuck = eventLooksStuck(latest);
+      return {
+        state: stuck ? OPS_ROW_STATE.STUCK : OPS_ROW_STATE.SICK,
+        note: latest.summary || (stuck ? "stuck hop" : "latest hop failed"),
+        why: latest.summary,
+        lastAt: latest.at,
+      };
+    }
+    const age = ageHours(latest.at);
+    if (role === OPS_BOARD_ROLE.HOT && age != null && age > HOT_HEALTHY_MAX_AGE_H) {
+      return {
+        state: OPS_ROW_STATE.IDLE,
+        note: `quiet · last ${fmtAge(age)}`,
+        why: latest.summary,
+        lastAt: latest.at,
+      };
+    }
+    if (role === OPS_BOARD_ROLE.QUIET) {
+      return {
+        state: OPS_ROW_STATE.HEALTHY,
+        note: `quiet · last ${fmtAge(age)}`,
+        why: latest.summary,
+        lastAt: latest.at,
+      };
+    }
+    return {
+      state: OPS_ROW_STATE.HEALTHY,
+      note: `last hop ${fmtAge(age)}`,
+      why: latest.summary,
+      lastAt: latest.at,
+    };
+  }
+
+  if (role === OPS_BOARD_ROLE.QUIET) {
+    return {
+      state: OPS_ROW_STATE.IDLE,
+      note: "quiet · watching",
+      why: null,
+      lastAt: null,
+    };
+  }
+  if (role === OPS_BOARD_ROLE.HOT) {
+    return {
+      state: OPS_ROW_STATE.IDLE,
+      note: "watching — no trail yet",
+      why: null,
+      lastAt: null,
+    };
+  }
+  return {
+    state: OPS_ROW_STATE.IDLE,
+    note: "on map",
+    why: null,
+    lastAt: null,
+  };
+}
+
+function buildHotStrip(systems, openIncidentsSample) {
+  const hot = systems.filter((s) => s.boardRole === OPS_BOARD_ROLE.HOT);
+  const sick = hot.filter((s) => s.state === OPS_ROW_STATE.SICK);
+  const stuck = hot.filter((s) => s.state === OPS_ROW_STATE.STUCK);
+  const healthy = hot.filter((s) => s.state === OPS_ROW_STATE.HEALTHY);
+  const people = (openIncidentsSample || [])
+    .filter((i) => i.personLabel || i.contactId || i.correlationId)
+    .slice(0, 5)
+    .map((i) => ({
+      personLabel: i.personLabel || null,
+      contactId: i.contactId || null,
+      correlationId: i.correlationId || null,
+      pathId: i.pathId,
+      title: i.title,
+      failedHopId: i.failedHopId || null,
+    }));
+
+  let headline = "Pay → book → confirm quiet";
+  let tone = "healthy";
+  if (stuck.length || sick.length) {
+    tone = stuck.length ? "stuck" : "sick";
+    const bits = [];
+    if (stuck.length) bits.push(`${stuck.length} stuck`);
+    if (sick.length) bits.push(`${sick.length} failing`);
+    headline = bits.join(" · ");
+  } else if (healthy.length) {
+    headline = `${healthy.length} hot path${healthy.length === 1 ? "" : "s"} healthy`;
+  }
+
+  return {
+    tone,
+    headline,
+    checkout: sick.find((s) => s.id === "discovery_free_book" || s.id === "assessment_paid_book")
+      ? "fail"
+      : healthy.length
+        ? "ok"
+        : "idle",
+    payment: healthy.length || stuck.length ? "ok" : "idle",
+    paidToBook: stuck.length ? "stuck" : sick.length ? "fail" : healthy.length ? "ok" : "idle",
+    people,
+  };
+}
+
 /**
  * Home board rows: paths first, then messaging, then infra.
- * Status: red | green | unknown — never green for unwatched / empty-trail lies.
+ * States: healthy | sick | stuck | idle | blind | map_ok | map_bad
  */
 export async function buildSystemsBoard(env) {
-  const [openByPath, infra, meta, errIndex] = await Promise.all([
+  const [openByPath, infra, meta, errIndex, openIncidents] = await Promise.all([
     countOpenIncidentsByPath(env),
     readInfraSignals(env),
     trailMeta(env),
     indexRecentOpsErrors(env),
+    listOpsIncidents(env, { status: "open", limit: 30 }),
   ]);
 
   const pathActivity = {};
@@ -84,56 +268,47 @@ export async function buildSystemsBoard(env) {
 
   const systems = OPS_REGISTRY.map((reg) => {
     const openCount = openByPath[reg.id] || 0;
-    let status = "unknown";
+    const metaRow = boardMetaFor(reg.id);
+    let state = OPS_ROW_STATE.IDLE;
     let note = null;
     let lastAt = null;
     let why = null;
+    // legacy status for older clients / alerts: red|green|unknown
+    let status = "unknown";
 
     if (reg.kind === "dependency") {
       const signal = infra[reg.id];
       if (signal) {
-        status = signal.status;
+        state = mapInfraToRowState(signal.status);
         note = signal.note;
         lastAt = signal.lastAt || null;
         why = signal.why || null;
+        status = signal.status;
       } else if (reg.instrumentation === "planned") {
+        state = OPS_ROW_STATE.BLIND;
+        note = "map only · not owned yet";
         status = "unknown";
-        note = "not instrumented yet";
       } else {
+        state = OPS_ROW_STATE.IDLE;
+        note = "on map · no signal yet";
         status = "unknown";
-        note = "no signal";
-      }
-    } else if (openCount > 0) {
-      status = "red";
-      note = openCount === 1 ? "1 open incident" : `${openCount} open incidents`;
-    } else if (reg.instrumentation === "planned") {
-      status = "unknown";
-      note = "planned — not watching yet";
-    } else if (reg.instrumentation === "partial") {
-      const errs = errIndex.byPath[reg.id] || [];
-      if (errs.length) {
-        status = "red";
-        note = `${errs.length} recent failure${errs.length === 1 ? "" : "s"}`;
-        why = errs[0].summary;
-        lastAt = errs[0].at;
-      } else {
-        status = "unknown";
-        note = "partial — fail sink only";
       }
     } else {
-      const latest = pathActivity[reg.id];
-      if (latest) {
-        status = latest.outcome === "fail" ? "red" : "green";
-        note =
-          latest.outcome === "fail"
-            ? latest.summary || "latest hop failed"
-            : `last hop ${fmtAge(ageHours(latest.at))}`;
-        lastAt = latest.at;
-        why = latest.summary;
-      } else {
-        status = "unknown";
-        note = "watching — no trail yet";
-      }
+      const judged = judgePathRow(reg, {
+        openCount,
+        latest: pathActivity[reg.id],
+        errs: errIndex.byPath[reg.id] || [],
+      });
+      state = judged.state;
+      note = judged.note;
+      why = judged.why;
+      lastAt = judged.lastAt;
+      status =
+        state === OPS_ROW_STATE.SICK || state === OPS_ROW_STATE.STUCK
+          ? "red"
+          : state === OPS_ROW_STATE.HEALTHY
+            ? "green"
+            : "unknown";
     }
 
     return {
@@ -143,35 +318,49 @@ export async function buildSystemsBoard(env) {
       severity: reg.severity,
       group: reg.group || (reg.kind === "path" ? "paths" : "infra"),
       instrumentation: reg.instrumentation,
-      status,
+      boardRole: metaRow.role,
+      state,
+      status, // legacy
       note,
       why,
       lastAt,
       openIncidentCount: openCount,
       hops: reg.hops,
+      changeSurface: metaRow.changeSurface,
     };
   });
 
   const groupRank = { paths: 0, messaging: 1, infra: 2 };
+  const stateRank = {
+    [OPS_ROW_STATE.SICK]: 0,
+    [OPS_ROW_STATE.STUCK]: 1,
+    [OPS_ROW_STATE.MAP_BAD]: 2,
+    [OPS_ROW_STATE.HEALTHY]: 3,
+    [OPS_ROW_STATE.MAP_OK]: 4,
+    [OPS_ROW_STATE.IDLE]: 5,
+    [OPS_ROW_STATE.BLIND]: 6,
+  };
   systems.sort((a, b) => {
     const ga = groupRank[a.group] ?? 9;
     const gb = groupRank[b.group] ?? 9;
     if (ga !== gb) return ga - gb;
-    if (a.status === "red" && b.status !== "red") return -1;
-    if (b.status === "red" && a.status !== "red") return 1;
+    const sa = stateRank[a.state] ?? 9;
+    const sb = stateRank[b.state] ?? 9;
+    if (sa !== sb) return sa - sb;
     return a.label.localeCompare(b.label);
   });
 
-  const reds = systems.filter((s) => s.status === "red").length;
-  const watched = systems.filter((s) => s.status !== "unknown");
-  const overall = reds
+  const attention = systems.filter((s) => isAttentionState(s.state));
+  const overall = attention.length
     ? "red"
-    : watched.length && watched.every((s) => s.status === "green")
+    : systems.some((s) => s.state === OPS_ROW_STATE.HEALTHY || s.state === OPS_ROW_STATE.MAP_OK)
       ? "green"
       : "unknown";
 
   return {
     overall,
+    attentionCount: attention.length,
+    hotStrip: buildHotStrip(systems, openIncidents),
     generatedAt: new Date().toISOString(),
     configured: !!env?.AUTOMATION_DB,
     trail: {
@@ -182,12 +371,15 @@ export async function buildSystemsBoard(env) {
   };
 }
 
+
 /**
  * Path detail: hops + open incidents + short event log (+ infra why for deps).
+ * Includes people[] for opening person timelines from this path.
  */
 export async function buildPathDetail(env, pathId) {
   const reg = registryPath(pathId);
   if (!reg) return null;
+  const metaRow = boardMetaFor(pathId);
 
   if (reg.kind === "dependency") {
     const infra = await readInfraSignals(env);
@@ -199,6 +391,7 @@ export async function buildPathDetail(env, pathId) {
       log: [],
     };
     const relatedErrs = await relatedOpsErrors(env, pathId);
+    const state = mapInfraToRowState(signal.status);
     return {
       id: reg.id,
       label: reg.label,
@@ -206,14 +399,18 @@ export async function buildPathDetail(env, pathId) {
       severity: reg.severity,
       group: reg.group || "infra",
       instrumentation: reg.instrumentation,
+      boardRole: metaRow.role,
+      state,
       status: signal.status,
       note: signal.note,
       hops: [],
       incidents: [],
+      people: [],
       events: signal.log || [],
       why: signal.why,
       signalDetail: signal.detail || null,
       relatedErrors: relatedErrs,
+      changeSurface: metaRow.changeSurface,
       generatedAt: new Date().toISOString(),
       configured: !!env?.AUTOMATION_DB,
     };
@@ -233,40 +430,71 @@ export async function buildPathDetail(env, pathId) {
 
   const hops = (reg.hops || []).map((h) => {
     const latest = latestByHop[h.id] || null;
-    let state = "idle";
-    if (failedHopId && h.id === failedHopId) state = "red";
-    else if (latest?.outcome === "fail") state = "red";
-    else if (latest?.outcome === "skip") state = "skip";
-    else if (latest?.outcome === "ok") state = "ok";
-    else if (reg.instrumentation !== "full") state = "unwatched";
+    let hopState = "idle";
+    if (failedHopId && h.id === failedHopId) {
+      hopState = eventLooksStuck(latest) || h.id === "create_appointment" ? "stuck" : "fail";
+    } else if (latest?.outcome === "fail") {
+      hopState = eventLooksStuck(latest) ? "stuck" : "fail";
+    } else if (latest?.outcome === "skip") hopState = "skip";
+    else if (latest?.outcome === "ok") hopState = "ok";
+    else if (reg.instrumentation !== "full") hopState = "unwatched";
     return {
       id: h.id,
       label: h.label,
-      state,
+      state: hopState,
       latest: latest
         ? {
             outcome: latest.outcome,
             summary: latest.summary,
             at: latest.at,
             condition: latest.condition,
+            reasonCode: latest.reasonCode || null,
           }
         : null,
     };
   });
 
-  let status = "unknown";
-  if (incidents.length) status = "red";
-  else if (events.some((e) => e.outcome === "fail")) status = "red";
-  else if (relatedErrors.length && reg.instrumentation !== "full") status = "red";
-  else if (reg.instrumentation === "full" && events.length) status = "green";
-  else if (reg.instrumentation === "planned") status = "unknown";
+  const latest = events[0] || null;
+  const judged = judgePathRow(reg, {
+    openCount: incidents.length,
+    latest,
+    errs: relatedErrors,
+  });
 
-  const emptyNote =
-    reg.instrumentation === "full"
-      ? "no trail yet — next Assessment purchase will land here"
-      : reg.instrumentation === "partial"
-        ? "partial watch — failures land in ops:err until hop emitters exist"
-        : "planned — not watching yet";
+  const people = [];
+  const seen = new Set();
+  for (const inc of incidents) {
+    const key = inc.contactId || inc.correlationId || inc.personLabel;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    people.push({
+      personLabel: inc.personLabel || null,
+      contactId: inc.contactId || null,
+      correlationId: inc.correlationId || null,
+      title: inc.title,
+      failedHopId: inc.failedHopId || null,
+      openedAt: inc.openedAt || null,
+      pill: eventLooksStuck({ outcome: "fail", hopId: inc.failedHopId, reasonCode: "stuck_hop" })
+        ? "stuck hop"
+        : "incident",
+    });
+  }
+  for (const e of events) {
+    const key = e.contactId || e.correlationId || e.personLabel;
+    if (!key || seen.has(key)) continue;
+    if (!e.personLabel && !e.contactId) continue;
+    seen.add(key);
+    people.push({
+      personLabel: e.personLabel || null,
+      contactId: e.contactId || null,
+      correlationId: e.correlationId || null,
+      title: e.summary,
+      failedHopId: e.outcome === "fail" ? e.hopId : null,
+      openedAt: e.at || null,
+      pill: eventLooksStuck(e) ? "stuck hop" : e.outcome === "fail" ? "fail" : "ok",
+    });
+    if (people.length >= 12) break;
+  }
 
   return {
     id: reg.id,
@@ -275,22 +503,156 @@ export async function buildPathDetail(env, pathId) {
     severity: reg.severity,
     group: reg.group || "paths",
     instrumentation: reg.instrumentation,
+    boardRole: metaRow.role,
     laws: reg.laws,
-    status,
-    note:
-      status === "red"
-        ? incidents[0]?.title || relatedErrors[0]?.summary || "failure on path"
-        : events.length
-          ? `${events.length} recent event${events.length === 1 ? "" : "s"}`
-          : emptyNote,
+    state: judged.state,
+    status:
+      judged.state === OPS_ROW_STATE.SICK || judged.state === OPS_ROW_STATE.STUCK
+        ? "red"
+        : judged.state === OPS_ROW_STATE.HEALTHY
+          ? "green"
+          : "unknown",
+    note: judged.note,
+    why: judged.why,
     hops,
     incidents,
+    people,
     events,
     relatedErrors,
+    changeSurface: metaRow.changeSurface,
     generatedAt: new Date().toISOString(),
     configured: !!env?.AUTOMATION_DB,
   };
 }
+
+/**
+ * Person timeline for a path journey — Sean / Holly shaped.
+ * Query: pathId + (contactId | correlationId)
+ */
+export async function buildPersonTimeline(env, { pathId, contactId, correlationId } = {}) {
+  const reg = registryPath(pathId);
+  if (!reg) return null;
+  if (!contactId && !correlationId) return null;
+  const metaRow = boardMetaFor(pathId);
+
+  const [events, incidents] = await Promise.all([
+    listOpsEvents(env, { pathId, contactId: contactId || undefined, correlationId: correlationId || undefined, limit: 60 }),
+    listOpsIncidents(env, { pathId, status: "open", limit: 20 }),
+  ]);
+
+  const mine = incidents.filter(
+    (i) =>
+      (contactId && i.contactId === contactId) ||
+      (correlationId && i.correlationId === correlationId),
+  );
+
+  const personLabel =
+    mine[0]?.personLabel ||
+    events.find((e) => e.personLabel)?.personLabel ||
+    null;
+
+  const siteHops = [];
+  const automationHops = [];
+  for (const e of [...events].reverse()) {
+    const hopStatus =
+      e.outcome === "ok"
+        ? "ok"
+        : e.outcome === "skip"
+          ? "skip"
+          : eventLooksStuck(e)
+            ? "stuck"
+            : "fail";
+    const entry = {
+      hopId: e.hopId,
+      label: (reg.hops || []).find((h) => h.id === e.hopId)?.label || e.hopId,
+      status: hopStatus,
+      detail: e.summary,
+      at: e.at,
+      condition: e.condition || null,
+      reasonCode: e.reasonCode || null,
+      message: e.message || null,
+    };
+    // Site vs automation: first owned "create_checkout" / "submit" / "staff_book" / "pay_followup" / "auth" = site;
+    // payment/webhook/send/guard = automation. Simple split.
+    if (
+      ["create_checkout", "submit", "staff_book", "pay_followup", "auth", "ledger_gate"].includes(
+        e.hopId,
+      )
+    ) {
+      siteHops.push(entry);
+    } else {
+      automationHops.push(entry);
+    }
+  }
+
+  // Pending confirmation when book stuck
+  const bookStuck = automationHops.some(
+    (h) => h.hopId === "create_appointment" && (h.status === "stuck" || h.status === "fail"),
+  );
+  if (bookStuck && !automationHops.some((h) => /confirm/i.test(h.label))) {
+    automationHops.push({
+      hopId: "confirmation",
+      label: "Confirmation",
+      status: "pending",
+      detail: "Waiting on appointment — client may never get it",
+      at: null,
+      condition: null,
+      reasonCode: "pending_confirmation",
+      message: null,
+    });
+  }
+
+  const failOrStuck =
+    [...siteHops, ...automationHops].find((h) => h.status === "stuck" || h.status === "fail") ||
+    null;
+
+  let why = null;
+  let nextIfUnchanged = null;
+  if (failOrStuck) {
+    if (failOrStuck.status === "stuck" || failOrStuck.hopId === "create_appointment") {
+      why =
+        failOrStuck.condition?.observed
+          ? `Stuck at paid → book. Expected ${failOrStuck.condition.expected}; saw ${failOrStuck.condition.observed}.`
+          : "Stuck at paid → book. Data present; hop didn’t connect to appointment create.";
+      nextIfUnchanged = "Client never gets confirmation.";
+    } else if (pathId === "partner_welcome_message" || /welcome|please.book/i.test(failOrStuck.detail || "")) {
+      why = "Welcome flow didn’t know they’d already booked.";
+      nextIfUnchanged = "Remaining welcome steps may still be queued.";
+    } else {
+      why = failOrStuck.detail || "Hop failed.";
+      nextIfUnchanged = "Journey stays broken until this hop is fixed.";
+    }
+  }
+
+  const pill =
+    failOrStuck?.status === "stuck"
+      ? "stuck hop"
+      : failOrStuck
+        ? pathId === "partner_welcome_message"
+          ? "collision"
+          : "fail"
+        : "ok";
+
+  return {
+    view: "person",
+    pathId: reg.id,
+    pathLabel: reg.label,
+    personLabel,
+    contactId: contactId || mine[0]?.contactId || events[0]?.contactId || null,
+    correlationId: correlationId || mine[0]?.correlationId || events[0]?.correlationId || null,
+    pill,
+    severity: reg.severity,
+    boardRole: metaRow.role,
+    site: siteHops,
+    automation: automationHops,
+    why,
+    nextIfUnchanged,
+    changeSurface: metaRow.changeSurface,
+    incidents: mine,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 
 async function indexRecentOpsErrors(env) {
   const byPath = {};
@@ -875,4 +1237,8 @@ export const __test = {
   ageHours,
   fmtAge,
   indexRecentOpsErrors,
+  eventLooksStuck,
+  judgePathRow,
+  buildHotStrip,
+  mapInfraToRowState,
 };

@@ -1,8 +1,13 @@
 // GET /api/ops/systems — Amari Ops board (click-to-view, no PIN).
-//   ?pathId=assessment_paid_book → path detail (hops + incidents + log)
+//   ?pathId=assessment_paid_book → path detail (hops + people + log)
+//   ?pathId=...&contactId=... | &correlationId=... → person timeline
 
 import { corsHeaders } from "../../lib/endpoint-guards.js";
-import { buildPathDetail, buildSystemsBoard } from "../../lib/ops-board.js";
+import {
+  buildPathDetail,
+  buildPersonTimeline,
+  buildSystemsBoard,
+} from "../../lib/ops-board.js";
 
 export async function onRequestOptions(context) {
   return new Response(null, {
@@ -22,8 +27,25 @@ export async function onRequestGet(context) {
 
   const url = new URL(context.request.url);
   const pathId = url.searchParams.get("pathId");
+  const contactId = url.searchParams.get("contactId");
+  const correlationId = url.searchParams.get("correlationId");
 
   try {
+    if (pathId && (contactId || correlationId)) {
+      const person = await buildPersonTimeline(context.env, {
+        pathId,
+        contactId: contactId || undefined,
+        correlationId: correlationId || undefined,
+      });
+      if (!person) {
+        return new Response(JSON.stringify({ error: "Unknown path or missing person key" }), {
+          status: 404,
+          headers,
+        });
+      }
+      return new Response(JSON.stringify(person), { status: 200, headers });
+    }
+
     if (pathId) {
       const detail = await buildPathDetail(context.env, pathId);
       if (!detail) {

@@ -14,7 +14,7 @@ vi.mock("./ops-trail-kv.js", () => ({
   trailMeta: vi.fn(async () => null),
 }));
 
-import { buildSystemsBoard, buildPathDetail } from "./ops-board.js";
+import { buildSystemsBoard, buildPathDetail, buildPersonTimeline } from "./ops-board.js";
 import {
   countOpenIncidentsByPath,
   listOpsIncidents,
@@ -22,11 +22,13 @@ import {
 } from "./ops-events.js";
 import { listOpsErrors } from "./ops-alert.js";
 import { PATH_ASSESSMENT_PAID_BOOK } from "./ops-registry.js";
+import { OPS_BOARD_ROLE, OPS_ROW_STATE, boardMetaFor } from "./ops-board-meta.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
   listOpsEvents.mockResolvedValue([]);
   listOpsErrors.mockResolvedValue([]);
+  listOpsIncidents.mockResolvedValue([]);
 });
 
 function kvEnv(map = {}) {
@@ -42,13 +44,26 @@ function kvEnv(map = {}) {
   };
 }
 
+describe("ops-board-meta", () => {
+  it("marks money paths hot and partner welcome quiet", () => {
+    expect(boardMetaFor(PATH_ASSESSMENT_PAID_BOOK).role).toBe(OPS_BOARD_ROLE.HOT);
+    expect(boardMetaFor("partner_welcome_message").role).toBe(OPS_BOARD_ROLE.QUIET);
+    expect(boardMetaFor("ghl_token").role).toBe(OPS_BOARD_ROLE.MAP);
+    expect(boardMetaFor(PATH_ASSESSMENT_PAID_BOOK).changeSurface.touch).toMatch(/appointment/i);
+  });
+});
+
 describe("buildSystemsBoard", () => {
-  it("marks assessment red when an open incident exists; paths before deps", async () => {
+  it("marks assessment sick/red when an open incident exists; paths before deps", async () => {
     countOpenIncidentsByPath.mockResolvedValue({ [PATH_ASSESSMENT_PAID_BOOK]: 1 });
     const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     expect(board.overall).toBe("red");
+    expect(board.attentionCount).toBeGreaterThan(0);
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
     expect(assessment.status).toBe("red");
+    expect(assessment.state).toMatch(/sick|stuck/);
+    expect(assessment.boardRole).toBe(OPS_BOARD_ROLE.HOT);
+    expect(board.hotStrip).toBeTruthy();
     expect(board.systems[0].group).toBe("paths");
   });
 
@@ -57,16 +72,22 @@ describe("buildSystemsBoard", () => {
     const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
     expect(assessment.status).toBe("unknown");
+    expect(assessment.state).toBe(OPS_ROW_STATE.IDLE);
     expect(assessment.note).toMatch(/no trail/i);
   });
 
-  it("marks partial paths unknown, never green, unless ops:err", async () => {
+  it("marks partial/planned paths idle or blind, never green", async () => {
     const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
     const intro = board.systems.find((s) => s.id === "intro_paid_book");
+    // intro is now full instrumentation — idle without trail
     expect(intro.status).toBe("unknown");
+    expect(intro.state).toBe(OPS_ROW_STATE.IDLE);
+    const welcome = board.systems.find((s) => s.id === "partner_welcome_message");
+    expect(welcome.state).toBe(OPS_ROW_STATE.IDLE);
+    expect(welcome.boardRole).toBe(OPS_BOARD_ROLE.QUIET);
   });
 
-  it("marks invoice credit red from latest fail trail event", async () => {
+  it("marks invoice credit red/stuck from latest fail trail event", async () => {
     listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => {
       if (pathId === "invoice_package_credit") {
         return [
@@ -84,6 +105,7 @@ describe("buildSystemsBoard", () => {
     const board = await buildSystemsBoard(kvEnv());
     const invoice = board.systems.find((s) => s.id === "invoice_package_credit");
     expect(invoice.status).toBe("red");
+    expect(invoice.state).toBe(OPS_ROW_STATE.SICK);
     expect(invoice.note).toMatch(/failed|PUT/i);
   });
 
@@ -124,7 +146,7 @@ describe("buildSystemsBoard", () => {
     }
   });
 
-  it("surfaces live GHL token + reconcile + funnel signals", async () => {
+  it("surfaces live GHL token + reconcile + funnel signals as map_ok", async () => {
     const expiry = String(Date.now() + 20 * 3600 * 1000);
     const board = await buildSystemsBoard(
       kvEnv({
@@ -144,6 +166,7 @@ describe("buildSystemsBoard", () => {
       }),
     );
     expect(board.systems.find((s) => s.id === "ghl_token").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "ghl_token").state).toBe(OPS_ROW_STATE.MAP_OK);
     expect(board.systems.find((s) => s.id === "series_reconcile").status).toBe("green");
     expect(board.systems.find((s) => s.id === "funnel_refresh").status).toBe("green");
   });
@@ -162,6 +185,7 @@ describe("buildSystemsBoard", () => {
     );
     const coach = board.systems.find((s) => s.id === "call_coach");
     expect(coach.status).toBe("green");
+    expect(coach.state).toBe(OPS_ROW_STATE.MAP_OK);
     expect(coach.note).toMatch(/ready · on-demand/i);
     expect(coach.label).toMatch(/on-demand/i);
   });
@@ -178,6 +202,7 @@ describe("buildSystemsBoard", () => {
     );
     const coach = board.systems.find((s) => s.id === "call_coach");
     expect(coach.status).toBe("red");
+    expect(coach.state).toBe(OPS_ROW_STATE.MAP_BAD);
     expect(coach.note).toMatch(/not ready/i);
   });
 
@@ -226,6 +251,40 @@ describe("buildSystemsBoard", () => {
       "planned",
     );
   });
+
+  it("hotStrip lists stuck paid→book and people from open incidents", async () => {
+    countOpenIncidentsByPath.mockResolvedValue({ [PATH_ASSESSMENT_PAID_BOOK]: 1 });
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => {
+      if (pathId === PATH_ASSESSMENT_PAID_BOOK) {
+        return [
+          {
+            pathId: PATH_ASSESSMENT_PAID_BOOK,
+            hopId: "create_appointment",
+            outcome: "fail",
+            summary: "slot on contact, no appointment",
+            at: new Date().toISOString(),
+            reasonCode: "stuck_hop",
+          },
+        ];
+      }
+      return [];
+    });
+    listOpsIncidents.mockResolvedValue([
+      {
+        pathId: PATH_ASSESSMENT_PAID_BOOK,
+        personLabel: "Holly Brinkman",
+        contactId: "c_holly",
+        title: "Paid Assessment, no appointment",
+        failedHopId: "create_appointment",
+      },
+    ]);
+    const board = await buildSystemsBoard({ AUTOMATION_DB: {}, ...kvEnv() });
+    expect(board.hotStrip.tone).toBe("stuck");
+    expect(board.hotStrip.paidToBook).toBe("stuck");
+    expect(board.hotStrip.people[0].personLabel).toBe("Holly Brinkman");
+    const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
+    expect(assessment.state).toBe(OPS_ROW_STATE.STUCK);
+  });
 });
 
 describe("buildPathDetail", () => {
@@ -233,13 +292,14 @@ describe("buildPathDetail", () => {
     expect(await buildPathDetail({}, "nope")).toBeNull();
   });
 
-  it("highlights failed hop and returns log", async () => {
+  it("highlights stuck hop, people, and change surface", async () => {
     listOpsIncidents.mockResolvedValue([
       {
         id: "inc_1",
         title: "Paid Assessment, no appointment",
         failedHopId: "create_appointment",
         personLabel: "Holly Brinkman",
+        contactId: "c_holly",
       },
     ]);
     listOpsEvents.mockResolvedValue([
@@ -249,18 +309,25 @@ describe("buildPathDetail", () => {
         summary: "no book",
         at: "2026-07-29T12:00:00.000Z",
         condition: { expected: "slot iso", observed: "null" },
+        contactId: "c_holly",
+        personLabel: "Holly Brinkman",
       },
       {
         hopId: "purchase_webhook",
         outcome: "ok",
         summary: "paid",
         at: "2026-07-29T11:59:00.000Z",
+        contactId: "c_holly",
+        personLabel: "Holly Brinkman",
       },
     ]);
     const detail = await buildPathDetail({ AUTOMATION_DB: {} }, PATH_ASSESSMENT_PAID_BOOK);
     expect(detail.status).toBe("red");
+    expect(detail.state).toMatch(/sick|stuck/);
     const bookHop = detail.hops.find((h) => h.id === "create_appointment");
-    expect(bookHop.state).toBe("red");
+    expect(bookHop.state).toBe("stuck");
+    expect(detail.people[0].personLabel).toBe("Holly Brinkman");
+    expect(detail.changeSurface.touch).toMatch(/appointment/i);
     expect(detail.events).toHaveLength(2);
     expect(detail.incidents[0].personLabel).toBe("Holly Brinkman");
   });
@@ -269,7 +336,88 @@ describe("buildPathDetail", () => {
     const expiry = String(Date.now() + 12 * 3600 * 1000);
     const detail = await buildPathDetail(kvEnv({ ghl_token_expiry: expiry }), "ghl_token");
     expect(detail.status).toBe("green");
+    expect(detail.state).toBe(OPS_ROW_STATE.MAP_OK);
     expect(detail.why).toMatch(/remaining/i);
     expect(detail.events.length).toBeGreaterThan(0);
+  });
+});
+
+describe("buildPersonTimeline", () => {
+  it("returns null without path or person key", async () => {
+    expect(await buildPersonTimeline({}, { pathId: PATH_ASSESSMENT_PAID_BOOK })).toBeNull();
+    expect(await buildPersonTimeline({}, { contactId: "c1" })).toBeNull();
+  });
+
+  it("shapes Holly stuck paid→book timeline", async () => {
+    listOpsEvents.mockResolvedValue([
+      {
+        hopId: "create_appointment",
+        outcome: "fail",
+        summary: "slot present, appointment create never ran",
+        at: "2026-07-29T12:00:00.000Z",
+        condition: { expected: "appointment id", observed: "null" },
+        contactId: "c_holly",
+        personLabel: "Holly Brinkman",
+        reasonCode: "stuck_hop",
+      },
+      {
+        hopId: "purchase_webhook",
+        outcome: "ok",
+        summary: "Assessment paid",
+        at: "2026-07-29T11:59:00.000Z",
+        contactId: "c_holly",
+        personLabel: "Holly Brinkman",
+      },
+      {
+        hopId: "create_checkout",
+        outcome: "ok",
+        summary: "Checkout created with slot",
+        at: "2026-07-29T11:58:00.000Z",
+        contactId: "c_holly",
+        personLabel: "Holly Brinkman",
+      },
+    ]);
+    listOpsIncidents.mockResolvedValue([
+      {
+        personLabel: "Holly Brinkman",
+        contactId: "c_holly",
+        failedHopId: "create_appointment",
+        title: "Paid Assessment, no appointment",
+      },
+    ]);
+    const person = await buildPersonTimeline(
+      { AUTOMATION_DB: {} },
+      { pathId: PATH_ASSESSMENT_PAID_BOOK, contactId: "c_holly" },
+    );
+    expect(person.view).toBe("person");
+    expect(person.personLabel).toBe("Holly Brinkman");
+    expect(person.pill).toBe("stuck hop");
+    expect(person.site.some((h) => h.hopId === "create_checkout")).toBe(true);
+    expect(person.automation.some((h) => h.status === "stuck")).toBe(true);
+    expect(person.why).toMatch(/stuck|paid/i);
+    expect(person.nextIfUnchanged).toMatch(/confirmation/i);
+    expect(person.changeSurface.talkHint).toMatch(/Assessment/i);
+  });
+
+  it("shapes Sean welcome collision as quiet messaging person", async () => {
+    listOpsEvents.mockResolvedValue([
+      {
+        hopId: "send_welcome",
+        outcome: "fail",
+        summary: "Welcome said please book after Partner Initial already booked",
+        at: "2026-07-28T17:18:00.000Z",
+        contactId: "c_sean",
+        personLabel: "Sean O'Donoghue",
+        reasonCode: "collision",
+      },
+    ]);
+    const person = await buildPersonTimeline(
+      { AUTOMATION_DB: {} },
+      { pathId: "partner_welcome_message", contactId: "c_sean" },
+    );
+    expect(person.personLabel).toMatch(/Sean/);
+    expect(person.pill).toBe("collision");
+    expect(person.why).toMatch(/already booked/i);
+    expect(person.changeSurface.talkHint).toMatch(/Sean|welcome/i);
   });
 });
