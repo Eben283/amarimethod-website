@@ -2,6 +2,7 @@
 // PIN auth for Chief of Staff app — same pattern as staff-auth.js
 
 import { checkPinAttempts, recordFailedPinAttempt, clearPinAttempts } from "../lib/rate-limit.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
@@ -123,6 +124,11 @@ export async function onRequestPost(context) {
       },
       JWT_SECRET
     );
+
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.cosAuth, {
+      status: "ok",
+      user: matchedUser.name,
+    });
 
     return new Response(
       JSON.stringify({ token }),

@@ -6,6 +6,7 @@ import {
   SEND_GRACE_MS,
 } from "./schedule.js";
 import { parseContactIds, sendGhlSms } from "./ghl-sms.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 const IDEMPOTENCY_TTL_S = 36 * 60 * 60; // survive past midnight PT
 
@@ -21,6 +22,25 @@ function idemKey(dateKey, kind, contactId) {
 function maskId(id) {
   if (!id || id.length < 4) return "***";
   return `…${id.slice(-4)}`;
+}
+
+async function finish(env, summary) {
+  const sendFails = (summary.sends || []).filter((s) => s.result && s.result.success === false).length;
+  const status =
+    (summary.errors?.length && !(summary.sends?.length)) ||
+    (sendFails > 0 && sendFails === summary.sends.length)
+      ? "error"
+      : "ok";
+  await writeOpsLastRun(env, OPS_LAST_RUN_KEYS.morningSms, {
+    status,
+    mode: summary.mode,
+    sendCount: summary.sends?.length || 0,
+    skipCount: summary.skipped?.length || 0,
+    errorCount: summary.errors?.length || 0,
+    errors: (summary.errors || []).slice(0, 5),
+    schedule: summary.schedule,
+  });
+  return summary;
 }
 
 /**
@@ -44,7 +64,7 @@ export async function runMorningSms(env, opts = {}) {
 
   if (recipients.length === 0) {
     summary.errors.push("MORNING_SMS_CONTACT_IDS empty or invalid");
-    return summary;
+    return finish(env, summary);
   }
 
   let firstAppointmentMs = null;
@@ -69,7 +89,7 @@ export async function runMorningSms(env, opts = {}) {
 
   if (kinds.length === 0) {
     summary.skipped.push("nothing due in grace window");
-    return summary;
+    return finish(env, summary);
   }
 
   const kv = env.PORTAL_KV;
@@ -136,5 +156,5 @@ export async function runMorningSms(env, opts = {}) {
     }
   }
 
-  return summary;
+  return finish(env, summary);
 }

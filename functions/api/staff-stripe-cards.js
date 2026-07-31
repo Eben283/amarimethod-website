@@ -4,6 +4,7 @@
 
 import { corsHeaders, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { listCustomerCards, resolveProvenStripeCustomer } from "../lib/stripe-api.js";
+import { writeOpsLastRun, OPS_READY_KEYS } from "../lib/ops-last-run.js";
 
 function json(data, status, headers) {
   return new Response(JSON.stringify(data), { status, headers });
@@ -44,11 +45,23 @@ export async function onRequestGet(context) {
   if (contactId.startsWith("draft_")) return json({ available: false, reason: "draft_client", cards: [] }, 200, headers);
 
   const secret = context.env.STRIPE_SECRET_KEY;
-  if (!secret) return json({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers);
+  if (!secret) {
+    await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
+      ok: false,
+      checkedAt: new Date().toISOString(),
+      error: "STRIPE_SECRET_KEY not configured",
+    });
+    return json({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers);
+  }
 
   try {
     const stored = await storedCustomerId(context.env, contactId);
     const customer = await resolveProvenStripeCustomer(secret, { contactId, storedCustomerId: stored });
+    // Stripe API answered — readiness ok even when this contact has no customer.
+    await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
+      ok: true,
+      checkedAt: new Date().toISOString(),
+    });
     if (!customer) {
       return json({ available: false, reason: "no_proven_customer", cards: [] }, 200, headers);
     }
@@ -62,6 +75,11 @@ export async function onRequestGet(context) {
     }, 200, headers);
   } catch (err) {
     console.error("[staff-stripe-cards]", err instanceof Error ? err.message : err);
+    await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
+      ok: false,
+      checkedAt: new Date().toISOString(),
+      error: err instanceof Error ? err.message : "lookup_failed",
+    });
     return json({ available: false, reason: "lookup_failed", cards: [] }, 200, headers);
   }
 }

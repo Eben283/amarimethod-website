@@ -4,6 +4,7 @@
 
 import { ghlHeaders, getGhlToken, applyTagDelta } from "../lib/ghl.js";
 import { reserveAuthSlot } from "../lib/rate-limit.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -268,6 +269,11 @@ export async function onRequestPost(context) {
 
     console.log(`[portal-auth] Magic link generated`);
     // Cooldown + counters were already reserved up front (see reserveAuthSlot).
+
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.portalAuth, {
+      status: "ok",
+      contactId: contact.id,
+    });
 
     return new Response(
       JSON.stringify({

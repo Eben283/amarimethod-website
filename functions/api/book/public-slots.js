@@ -10,6 +10,7 @@
 import { ghlFetch } from "../../lib/ghl.js";
 import { applyLookBusy } from "../../lib/look-busy.js";
 import { applyHourPackPreference } from "../../lib/booking-slot-policy.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../lib/ops-last-run.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 
@@ -160,6 +161,11 @@ export async function onRequestGet(context) {
   }
 
   if (!hadAnySuccess) {
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.publicSlots, {
+      status: "error",
+      calendarId,
+      error: "Upstream calendar lookup failed",
+    });
     return json({ error: "Upstream calendar lookup failed" }, 422, origin);
   }
 
@@ -189,9 +195,11 @@ export async function onRequestGet(context) {
   // Prefer on-hour main sessions / intro slots that leave the next Follow-up
   // hour free, then thin with look-busy. Both only filter GHL-approved times.
   const packed = applyHourPackPreference(slots, { calendarId });
-  return json(
-    { slots: applyLookBusy(packed, { calendarId }) },
-    200,
-    origin,
-  );
+  const thinned = applyLookBusy(packed, { calendarId });
+  await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.publicSlots, {
+    status: "ok",
+    calendarId,
+    slotCount: thinned.length,
+  });
+  return json({ slots: thinned }, 200, origin);
 }

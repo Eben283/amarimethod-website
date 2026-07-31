@@ -18,6 +18,7 @@ import {
   OPS_BOARD_ROLE,
   OPS_ROW_STATE,
 } from "./ops-board-meta.js";
+import { OPS_LAST_RUN_KEYS, OPS_READY_KEYS } from "./ops-last-run.js";
 
 const HOUR = 3600 * 1000;
 const ERR_LOOKBACK_H = 72;
@@ -1133,7 +1134,278 @@ async function readInfraSignals(env) {
     /* leave planned/unwatched */
   }
 
+  // ── Apps / auth / availability / Stripe ───────────────────────────────
+  try {
+    const rec = await kv.get(OPS_LAST_RUN_KEYS.morningSms, "json");
+    out.morning_sms = signalFromJudged(
+      "morning_sms",
+      judgeLastRun(rec, {
+        maxAgeH: 26,
+        okPredicate: (x) => x.status === "ok" || (x.status == null && !(x.errors?.length)),
+        detail: (x) => {
+          const sends = Array.isArray(x.sends) ? x.sends.length : x.sendCount;
+          const errs = Array.isArray(x.errors) ? x.errors.length : x.errorCount;
+          const bits = [];
+          if (x.mode) bits.push(x.mode);
+          if (sends != null) bits.push(`${sends} send${sends === 1 ? "" : "s"}`);
+          if (errs) bits.push(`${errs} err`);
+          if (x.schedule?.reason) bits.push(x.schedule.reason);
+          return bits.join(" · ") || "ok";
+        },
+      }),
+    );
+  } catch {
+    out.morning_sms = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    out.chief_of_staff = await judgeChiefOfStaff(kv);
+  } catch {
+    out.chief_of_staff = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    out.staff_auth = signalFromJudged(
+      "staff_auth",
+      judgeInteractiveOk(await kv.get(OPS_LAST_RUN_KEYS.staffAuth, "json"), {
+        label: "staff login",
+      }),
+    );
+  } catch {
+    out.staff_auth = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    const [auth, verify] = await Promise.all([
+      kv.get(OPS_LAST_RUN_KEYS.portalAuth, "json"),
+      kv.get(OPS_LAST_RUN_KEYS.portalVerify, "json"),
+    ]);
+    out.portal_auth = signalFromJudged("portal_auth", judgePortalAuth(auth, verify));
+  } catch {
+    out.portal_auth = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    const rec = await kv.get(OPS_LAST_RUN_KEYS.publicSlots, "json");
+    out.public_slots = signalFromJudged(
+      "public_slots",
+      judgeLastRun(rec, {
+        maxAgeH: 24,
+        okPredicate: (x) => x.status === "ok",
+        detail: (x) =>
+          x.slotCount != null
+            ? `${x.slotCount} slots · ${x.calendarId || "cal"}`
+            : "ok",
+      }),
+    );
+  } catch {
+    out.public_slots = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
+  try {
+    out.stripe = await judgeStripe(kv);
+  } catch {
+    out.stripe = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
+  }
+
   return out;
+}
+
+/** Interactive apps: green on last ok (no stale-red), idle if never, red on error. */
+function judgeInteractiveOk(rec, { label }) {
+  if (!rec) {
+    return {
+      status: "unknown",
+      note: "no login signal yet",
+      lastAt: null,
+      detail: null,
+    };
+  }
+  const at = rec.finishedAt || rec.ranAt || rec.checkedAt;
+  const age = ageHours(at);
+  if (rec.status === "error" || rec.ok === false) {
+    return {
+      status: "red",
+      note: rec.error || `${label} failed`,
+      lastAt: at,
+      detail: rec,
+    };
+  }
+  return {
+    status: "green",
+    note: `last ok · ${fmtAge(age)}`,
+    lastAt: at,
+    detail: rec,
+  };
+}
+
+function judgePortalAuth(auth, verify) {
+  const latest = [auth, verify]
+    .filter(Boolean)
+    .sort((a, b) => {
+      const ta = Date.parse(a.finishedAt || a.ranAt || "") || 0;
+      const tb = Date.parse(b.finishedAt || b.ranAt || "") || 0;
+      return tb - ta;
+    })[0];
+  if (!latest) {
+    return { status: "unknown", note: "no portal auth signal yet", lastAt: null, detail: null };
+  }
+  const at = latest.finishedAt || latest.ranAt;
+  if (latest.status === "error" || latest.ok === false) {
+    return {
+      status: "red",
+      note: latest.error || "portal auth failed",
+      lastAt: at,
+      detail: { auth, verify },
+    };
+  }
+  const bits = [];
+  if (auth?.status === "ok") bits.push("link sent");
+  if (verify?.status === "ok") bits.push("verified");
+  return {
+    status: "green",
+    note: `${bits.join(" · ") || "ok"} · ${fmtAge(ageHours(at))}`,
+    lastAt: at,
+    detail: { auth, verify },
+  };
+}
+
+async function judgeChiefOfStaff(kv) {
+  const [ready, auth, chat] = await Promise.all([
+    kv.get(OPS_READY_KEYS.cos, "json"),
+    kv.get(OPS_LAST_RUN_KEYS.cosAuth, "json"),
+    kv.get(OPS_LAST_RUN_KEYS.cosChat, "json"),
+  ]);
+  const readyAt = ready?.checkedAt || ready?.finishedAt;
+  const authAt = auth?.finishedAt || auth?.ranAt;
+  const chatAt = chat?.finishedAt || chat?.ranAt;
+  const lastAt = [readyAt, authAt, chatAt]
+    .filter(Boolean)
+    .sort((a, b) => (Date.parse(b) || 0) - (Date.parse(a) || 0))[0] || null;
+
+  if (ready && ready.ok === false) {
+    return {
+      status: "red",
+      note: ready.error || "chat not configured",
+      why: ready.error || "cos:status:ready ok=false — ANTHROPIC_API_KEY or probe failed",
+      lastAt: readyAt || lastAt,
+      detail: { ready, auth, chat },
+      log: lastRunAsLog("chief_of_staff", {
+        status: "red",
+        lastAt: readyAt,
+        detail: ready,
+        note: "not ready",
+      }),
+    };
+  }
+  if (chat && (chat.status === "error" || chat.ok === false)) {
+    return {
+      status: "red",
+      note: chat.error || "last chat failed",
+      why: chat.error || "ops:cos-chat:lastRun reported error",
+      lastAt: chatAt || lastAt,
+      detail: { ready, auth, chat },
+      log: lastRunAsLog("chief_of_staff", {
+        status: "red",
+        lastAt: chatAt,
+        detail: chat,
+        note: "chat error",
+      }),
+    };
+  }
+  if (ready?.ok || auth?.status === "ok" || chat?.status === "ok") {
+    const bits = [];
+    if (ready?.ok) bits.push("Anthropic ready");
+    if (auth?.status === "ok") bits.push(`login ${fmtAge(ageHours(authAt))}`);
+    if (chat?.status === "ok") bits.push(`chat ${fmtAge(ageHours(chatAt))}`);
+    return {
+      status: "green",
+      note: bits.join(" · ") || "ok",
+      why: bits.join(" · "),
+      lastAt,
+      detail: { ready, auth, chat },
+      log: lastRunAsLog("chief_of_staff", {
+        status: "green",
+        lastAt,
+        detail: { ready, auth, chat },
+        note: "ok",
+      }),
+    };
+  }
+  return {
+    status: "unknown",
+    note: "no CoS signal yet",
+    why: "No cos:status:ready / login / chat heartbeat in KV — open /cos once to seed.",
+    lastAt: null,
+    detail: { ready, auth, chat },
+    log: [],
+  };
+}
+
+async function judgeStripe(kv) {
+  const [ready, webhook] = await Promise.all([
+    kv.get(OPS_READY_KEYS.stripe, "json"),
+    kv.get(OPS_LAST_RUN_KEYS.stripeWebhook, "json"),
+  ]);
+  const readyAt = ready?.checkedAt || ready?.finishedAt;
+  const hookAt = webhook?.finishedAt || webhook?.ranAt;
+  const lastAt = [readyAt, hookAt]
+    .filter(Boolean)
+    .sort((a, b) => (Date.parse(b) || 0) - (Date.parse(a) || 0))[0] || null;
+
+  if (ready && ready.ok === false) {
+    return {
+      status: "red",
+      note: ready.error || "Stripe not configured",
+      why: ready.error || "stripe:status:ready ok=false",
+      lastAt: readyAt || lastAt,
+      detail: { ready, webhook },
+      log: lastRunAsLog("stripe", { status: "red", lastAt: readyAt, detail: ready, note: "not ready" }),
+    };
+  }
+  if (webhook && (webhook.status === "error" || webhook.ok === false)) {
+    return {
+      status: "red",
+      note: webhook.error || "POS webhook failed",
+      why: webhook.error || "ops:stripe-pos-webhook:lastRun error",
+      lastAt: hookAt || lastAt,
+      detail: { ready, webhook },
+      log: lastRunAsLog("stripe", { status: "red", lastAt: hookAt, detail: webhook, note: "webhook error" }),
+    };
+  }
+  if (ready?.ok || webhook?.status === "ok") {
+    const bits = [];
+    if (ready?.ok) bits.push(`API ${fmtAge(ageHours(readyAt))}`);
+    if (webhook?.status === "ok") bits.push(`webhook ${fmtAge(ageHours(hookAt))}`);
+    // Webhook can be quiet for days — don't stale-red if API readiness is ok.
+    // If only webhook and it's >7d, soft idle.
+    if (!ready?.ok && hookAt && ageHours(hookAt) > 7 * 24) {
+      return {
+        status: "unknown",
+        note: `quiet · last webhook ${fmtAge(ageHours(hookAt))}`,
+        why: "No recent Stripe API probe; last POS webhook is old.",
+        lastAt: hookAt,
+        detail: { ready, webhook },
+        log: [],
+      };
+    }
+    return {
+      status: "green",
+      note: bits.join(" · ") || "ok",
+      why: bits.join(" · "),
+      lastAt,
+      detail: { ready, webhook },
+      log: lastRunAsLog("stripe", { status: "green", lastAt, detail: { ready, webhook }, note: "ok" }),
+    };
+  }
+  return {
+    status: "unknown",
+    note: "no Stripe signal yet",
+    why: "No stripe:status:ready or POS webhook lastRun — use Staff POS / cards once to seed.",
+    lastAt: null,
+    detail: { ready, webhook },
+    log: [],
+  };
 }
 
 function lastRunAsLog(pathId, judged) {
@@ -1241,4 +1513,8 @@ export const __test = {
   judgePathRow,
   buildHotStrip,
   mapInfraToRowState,
+  judgeInteractiveOk,
+  judgePortalAuth,
+  judgeChiefOfStaff,
+  judgeStripe,
 };

@@ -32,4 +32,18 @@ export const OPS_LAST_RUN_KEYS = Object.freeze({
   reminder: "ops:reminder-engine:lastRun",
   nurture: "ops:nurture-engine:lastRun",
   crmMirror: "ops:crm-mirror:lastRun",
+  morningSms: "ops:morning-sms:lastRun",
+  cosAuth: "ops:cos-auth:lastRun",
+  cosChat: "ops:cos-chat:lastRun",
+  staffAuth: "ops:staff-auth:lastRun",
+  portalAuth: "ops:portal-auth:lastRun",
+  portalVerify: "ops:portal-verify:lastRun",
+  publicSlots: "ops:public-slots:lastRun",
+  stripeWebhook: "ops:stripe-pos-webhook:lastRun",
+});
+
+/** On-demand readiness probes (call-coach style). */
+export const OPS_READY_KEYS = Object.freeze({
+  cos: "cos:status:ready",
+  stripe: "stripe:status:ready",
 });

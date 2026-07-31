@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: GET /api/portal-verify?token=xxx
 // Validates the magic link JWT and returns a session token
 
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
+
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
@@ -158,6 +160,11 @@ export async function onRequestGet(context) {
     );
 
     console.log(`[portal-verify] Session created for contact: ${payload.contactId}`);
+
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.portalVerify, {
+      status: "ok",
+      contactId: payload.contactId,
+    });
 
     return new Response(
       JSON.stringify({
