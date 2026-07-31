@@ -1,7 +1,8 @@
 // GET  /api/ops/fix?pathId=… — fix job status
-// POST /api/ops/fix { pathId, action: "request"|"sweep" }
-//   request — queue a fix (public; worker launches)
-//   sweep   — run fixer now (requires WORKER_AUTH_SECRET / Bearer)
+// POST /api/ops/fix { pathId, action: "fix"|"request"|"sweep"|"launch" }
+//   fix     — Fix button: launch now (or return copy-paste prompt). Public.
+//   request — queue only for cron (public)
+//   sweep / launch — worker auth
 
 import { corsHeaders } from "../../lib/endpoint-guards.js";
 import { requireWorkerAuth } from "../../lib/worker-auth.js";
@@ -40,6 +41,7 @@ export async function onRequestGet(context) {
       pathId,
       autoFix: isAutoFixable(pathId),
       fixMode: String(context.env.OPS_FIX_MODE || "shadow").toLowerCase(),
+      hasCursorKey: !!context.env.CURSOR_API_KEY,
       job,
     },
     200,
@@ -61,7 +63,7 @@ export async function onRequestPost(context) {
   } catch {
     body = {};
   }
-  const action = String(body.action || "request").toLowerCase();
+  const action = String(body.action || "fix").toLowerCase();
   const pathId = body.pathId;
 
   if (action === "sweep") {
@@ -85,11 +87,34 @@ export async function onRequestPost(context) {
     return json(result, result.ok ? 200 : 409, headers);
   }
 
-  // Default: queue a request the cron/sweep will pick up.
-  if (!pathId) return json({ error: "pathId required" }, 400, headers);
-  const result = await queueFixRequest(context.env, pathId, { reason: "manual" });
-  if (!result.queued) {
-    return json(result, result.reason === "unknown-path" ? 404 : 409, headers);
+  if (action === "request") {
+    // Queue only — cron may pick up later (when OPS_FIX_MODE=auto).
+    if (!pathId) return json({ error: "pathId required" }, 400, headers);
+    const result = await queueFixRequest(context.env, pathId, { reason: "manual" });
+    if (!result.queued) {
+      return json(result, result.reason === "unknown-path" ? 404 : 409, headers);
+    }
+    return json(result, 200, headers);
   }
-  return json(result, 200, headers);
+
+  // Default / action "fix": Fix button — launch now or return copy-paste prompt.
+  if (!pathId) return json({ error: "pathId required" }, 400, headers);
+  if (!isAutoFixable(pathId)) {
+    return json({ ok: false, error: "not-fixable" }, 409, headers);
+  }
+  const detail = await buildPathDetail(context.env, pathId);
+  if (!detail) return json({ error: "Unknown path" }, 404, headers);
+  const result = await launchFixForPath(context.env, detail, {
+    requested: true,
+    manual: true,
+    force: !!body.force,
+  });
+  return json(
+    {
+      ...result,
+      hasCursorKey: !!context.env.CURSOR_API_KEY,
+    },
+    result.ok ? 200 : 409,
+    headers,
+  );
 }

@@ -141,6 +141,40 @@ describe("launchFixForPath", () => {
     expect(body.prompt.text).toContain(PATH_ASSESSMENT_PAID_BOOK);
   });
 
+  it("manual Fix without API key returns copy-paste prompt", async () => {
+    const env = kvEnv({}, { OPS_FIX_MODE: OPS_FIX_MODES.SHADOW });
+    const res = await launchFixForPath(
+      env,
+      { id: PATH_ASSESSMENT_PAID_BOOK, label: "Assessment", state: "sick" },
+      { manual: true },
+    );
+    expect(res.ok).toBe(true);
+    expect(res.promptReady).toBe(true);
+    expect(res.prompt).toContain(PATH_ASSESSMENT_PAID_BOOK);
+    expect(res.job.status).toBe("prompt_ready");
+  });
+
+  it("manual Fix with API key launches even when cron mode is shadow", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({ agent: { id: "bc-manual", url: "https://cursor.com/agents/bc-manual" } }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+    const env = kvEnv(
+      {},
+      { OPS_FIX_MODE: OPS_FIX_MODES.SHADOW, CURSOR_API_KEY: "test-key" },
+    );
+    const res = await launchFixForPath(
+      env,
+      { id: PATH_ASSESSMENT_PAID_BOOK, state: "sick" },
+      { manual: true },
+    );
+    expect(res.ok).toBe(true);
+    expect(res.job.agentId).toBe("bc-manual");
+    expect(fetchSpy).toHaveBeenCalledOnce();
+  });
+
   it("respects cooldown", async () => {
     const env = kvEnv(
       {

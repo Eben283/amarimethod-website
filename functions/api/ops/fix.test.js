@@ -90,6 +90,29 @@ describe("POST /api/ops/fix", () => {
     expect(queueFixRequest).toHaveBeenCalled();
   });
 
+  it("fix action launches manually without worker auth", async () => {
+    launchFixForPath.mockResolvedValueOnce({
+      ok: true,
+      promptReady: true,
+      prompt: "fix me",
+      job: { status: "prompt_ready" },
+    });
+    const res = await onRequestPost(
+      ctx("https://www.amarimethod.com/api/ops/fix", {
+        method: "POST",
+        body: { action: "fix", pathId: "assessment_paid_book" },
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(launchFixForPath).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "assessment_paid_book" }),
+      expect.objectContaining({ manual: true, requested: true }),
+    );
+    const data = await res.json();
+    expect(data.promptReady).toBe(true);
+  });
+
   it("sweep requires worker auth", async () => {
     const denied = await onRequestPost(
       ctx("https://www.amarimethod.com/api/ops/fix", {
