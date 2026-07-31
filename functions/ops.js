@@ -557,6 +557,7 @@ export const OPS_HTML = `<!doctype html>
     if (!job) return "";
     var st = String(job.status || "");
     if (st === "shadow") return "shadow · would launch";
+    if (st === "prompt_ready") return "prompt ready — paste into Cursor";
     if (st === "launching") return "launching agent…";
     if (st === "launched" || st === "running") return "agent launched";
     if (st === "error") return "fixer error";
@@ -566,14 +567,13 @@ export const OPS_HTML = `<!doctype html>
   function fixPanelHtml(data) {
     if (!data || !data.autoFix) return "";
     var job = data.fix || null;
-    var mode = data.fixMode || "";
     var html = '<div class="fix-box" id="fixPanel">';
-    html += '<div class="t">Fixer</div>';
+    html += '<div class="t">Fix</div>';
     if (job) {
       html += '<div class="d">' + esc(fixStatusLabel(job));
       if (job.note) html += " — " + esc(job.note);
       html += "</div>";
-      if (job.agentUrl) {
+      if (job.agentUrl && job.status !== "prompt_ready") {
         html += '<div class="d"><a href="' + esc(job.agentUrl) + '" target="_blank" rel="noopener">Open agent</a></div>';
       }
       if (job.error) html += '<div class="d" style="color:var(--bad)">' + esc(job.error) + "</div>";
@@ -583,45 +583,78 @@ export const OPS_HTML = `<!doctype html>
         html += "</div>";
       }
     } else {
-      html += '<div class="d">Queues a bounded Cursor agent (change surface only). Cron picks it up within ~15m.</div>';
-      if (mode) html += '<div class="meta">Board mode: ' + esc(mode) + "</div>";
+      html += '<div class="d">Press Fix when you want a bounded repair — change surface only. Nothing launches until you press.</div>';
     }
     html += '<div class="fix-actions">';
     html += '<button type="button" class="fix-btn" id="requestFix"' +
       (job && (job.status === "launching" || job.status === "launched" || job.status === "running") ? " disabled" : "") +
-      ">Request fix</button>";
+      ">Fix</button>";
     html += '<span class="fix-msg" id="fixMsg"></span>';
+    html += "</div>";
+    html += '<div id="fixPromptWrap" hidden style="margin-top:12px">';
+    html += '<div class="d" style="margin-bottom:8px">Copy into a new <a href="https://cursor.com/agents" target="_blank" rel="noopener">Cursor Cloud Agent</a> (repo: amarimethod-website).</div>';
+    html += '<textarea id="fixPrompt" readonly rows="8" style="width:100%;font:12px/1.4 var(--mono);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg2);color:var(--ink);resize:vertical"></textarea>';
+    html += '<div class="fix-actions"><button type="button" class="fix-btn ghost" id="copyFixPrompt">Copy prompt</button></div>';
     html += "</div></div>";
     return html;
+  }
+
+  function showFixPrompt(prompt) {
+    var wrap = document.getElementById("fixPromptWrap");
+    var ta = document.getElementById("fixPrompt");
+    if (!wrap || !ta || !prompt) return;
+    ta.value = prompt;
+    wrap.hidden = false;
   }
 
   async function requestFix(pathId) {
     var btn = document.getElementById("requestFix");
     var msg = document.getElementById("fixMsg");
     if (btn) btn.disabled = true;
-    if (msg) { msg.className = "fix-msg"; msg.textContent = "Queuing…"; }
+    if (msg) { msg.className = "fix-msg"; msg.textContent = "Preparing fix…"; }
     try {
       var res = await fetch("/api/ops/fix", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ action: "request", pathId: pathId }),
+        body: JSON.stringify({ action: "fix", pathId: pathId }),
       });
       var body = await res.json().catch(function () { return {}; });
-      if (!res.ok || !body.queued) {
-        var reason = body.reason || body.error || "failed";
-        if (reason === "already-running") {
-          if (msg) msg.textContent = "Already in flight — see agent above.";
+      if (!res.ok || !body.ok) {
+        var reason = body.error || body.reason || "failed";
+        if (reason === "cooldown" || reason === "already-running") {
+          if (msg) msg.textContent = "Already in flight.";
+          if (body.job && body.job.agentUrl) {
+            msg.innerHTML = 'Already in flight — <a href="' + esc(body.job.agentUrl) + '" target="_blank" rel="noopener">open agent</a>.';
+          }
         } else if (reason === "not-fixable") {
-          if (msg) { msg.className = "fix-msg err"; msg.textContent = "This path is not auto-fixable."; }
+          if (msg) { msg.className = "fix-msg err"; msg.textContent = "This path is not fixable from here."; }
         } else {
           if (msg) { msg.className = "fix-msg err"; msg.textContent = String(reason); }
         }
-        if (btn && reason !== "already-running") btn.disabled = false;
+        if (btn && reason !== "cooldown") btn.disabled = false;
         return;
       }
-      if (msg) msg.textContent = "Queued — fixer will pick this up on the next sweep.";
+      if (body.promptReady && body.prompt) {
+        if (msg) msg.textContent = "Prompt ready — copy into Cursor.";
+        showFixPrompt(body.prompt);
+        if (btn) btn.disabled = false;
+        return;
+      }
+      if (body.job && body.job.agentUrl) {
+        if (msg) {
+          msg.innerHTML = 'Agent launched — <a href="' + esc(body.job.agentUrl) + '" target="_blank" rel="noopener">open</a>.';
+        }
+        return;
+      }
+      if (body.shadowed) {
+        if (msg) msg.textContent = "Shadow mode — would launch (no Cursor key on server yet).";
+        if (body.prompt) showFixPrompt(body.prompt);
+        if (btn) btn.disabled = false;
+        return;
+      }
+      if (msg) msg.textContent = "Fix started.";
     } catch (e) {
-      if (msg) { msg.className = "fix-msg err"; msg.textContent = "Could not queue."; }
+      if (msg) { msg.className = "fix-msg err"; msg.textContent = "Could not start fix."; }
       if (btn) btn.disabled = false;
     }
   }
@@ -874,6 +907,27 @@ export const OPS_HTML = `<!doctype html>
     var fixBtn = document.getElementById("requestFix");
     if (fixBtn) {
       fixBtn.addEventListener("click", function () { requestFix(pathId); });
+    }
+    var copyBtn = document.getElementById("copyFixPrompt");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        var ta = document.getElementById("fixPrompt");
+        if (!ta || !ta.value) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(ta.value).then(function () {
+            copyBtn.textContent = "Copied";
+            setTimeout(function () { copyBtn.textContent = "Copy prompt"; }, 1500);
+          });
+        } else {
+          ta.select();
+          document.execCommand("copy");
+          copyBtn.textContent = "Copied";
+          setTimeout(function () { copyBtn.textContent = "Copy prompt"; }, 1500);
+        }
+      });
+    }
+    if (data.fix && data.fix.status === "prompt_ready" && data.fix.prompt) {
+      showFixPrompt(data.fix.prompt);
     }
     pathView.querySelectorAll("[data-person-id]").forEach(function (btn) {
       btn.addEventListener("click", function () {

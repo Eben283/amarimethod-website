@@ -134,6 +134,8 @@ Bounded Cursor cloud agents for board attention — so code issues get a draft P
 
 Modes (`OPS_FIX_MODE`): `off` · `shadow` (default, KV would-launch only) · `auto` (needs `CURSOR_API_KEY`). Public `/ops` can **queue** only; cron/worker auth launches. Secrets/config failures stay human — agent stops and reports.
 
+**Fix button (manual):** on a fixable path, press **Fix**. If `CURSOR_API_KEY` is set on Pages, launches a Cursor agent immediately (even when cron is shadow). If not, returns a copy-paste prompt for [cursor.com/agents](https://cursor.com/agents). Nothing auto-launches until you press.
+
 ### Amari Ops flip alerts (SMS + email)
 
 On **new money/booking incident open** only (not while red, not infra board rows). GHL Conversations → Eben.

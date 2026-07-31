@@ -145,19 +145,30 @@ function isJobActive(job) {
     const at = Date.parse(job.launchedAt || "") || 0;
     return Date.now() - at < OPS_FIX_COOLDOWN_MS;
   }
+  // prompt_ready is reusable — pressing Fix again regenerates the prompt.
   return false;
 }
 
 /**
- * Launch (or shadow) a Cursor cloud agent for one path.
+ * Launch (or prepare) a Cursor cloud agent for one path.
+ *
+ * @param {{ requested?: boolean, force?: boolean, manual?: boolean }} opts
+ *   manual — Fix button press: launch for real when CURSOR_API_KEY is set even if
+ *            cron mode is shadow/off; otherwise return a copy-paste prompt.
  */
-export async function launchFixForPath(env, row, { requested = false, force = false } = {}) {
+export async function launchFixForPath(env, row, { requested = false, force = false, manual = false } = {}) {
   const pathId = row?.id || row?.pathId;
   if (!pathId) return { ok: false, error: "missing-path" };
   if (!isAutoFixable(pathId) && !force) return { ok: false, error: "not-fixable" };
 
-  const mode = modeOf(env);
-  if (mode === OPS_FIX_MODES.OFF) return { ok: false, error: "fix-mode-off" };
+  let mode = modeOf(env);
+  const apiKey = env?.CURSOR_API_KEY;
+  // Manual Fix button: ignore cron off/shadow when a Cursor key is present.
+  if (manual && apiKey) {
+    mode = OPS_FIX_MODES.AUTO;
+  } else if (mode === OPS_FIX_MODES.OFF && !manual) {
+    return { ok: false, error: "fix-mode-off" };
+  }
 
   const existing = await readFixJob(env, pathId);
   if (!force && isJobActive(existing)) {
@@ -173,7 +184,7 @@ export async function launchFixForPath(env, row, { requested = false, force = fa
     why: row.why,
     changeSurface: row.changeSurface || meta.changeSurface,
     events: row.events || [],
-    requested,
+    requested: requested || manual,
   });
 
   const launchedAt = new Date().toISOString();
@@ -183,21 +194,39 @@ export async function launchFixForPath(env, row, { requested = false, force = fa
     state: row.state,
     note: row.note || null,
     mode,
-    requested,
+    requested: requested || manual,
+    manual: !!manual,
     promptPreview: prompt.slice(0, 400),
     launchedAt,
     updatedAt: launchedAt,
   };
 
   const kv = env?.PORTAL_KV;
-  if (mode === OPS_FIX_MODES.SHADOW) {
-    const job = { ...baseJob, status: "shadow", agentId: null, agentUrl: null };
-    if (kv) await kv.put(fixJobKey(pathId), JSON.stringify(job), { expirationTtl: JOB_TTL_S });
-    console.log(`[ops-fix] shadow would_launch ${pathId}`);
-    return { ok: true, shadowed: true, job };
+
+  // Manual Fix with no API key → hand back a ready prompt (no around-the-clock agent).
+  if (manual && !apiKey) {
+    const job = {
+      ...baseJob,
+      status: "prompt_ready",
+      agentId: null,
+      agentUrl: "https://cursor.com/agents",
+      prompt,
+    };
+    if (kv) {
+      await kv.put(fixJobKey(pathId), JSON.stringify({ ...job, prompt: prompt.slice(0, 6000) }), {
+        expirationTtl: JOB_TTL_S,
+      });
+    }
+    return { ok: true, promptReady: true, prompt, job };
   }
 
-  const apiKey = env.CURSOR_API_KEY;
+  if (mode === OPS_FIX_MODES.SHADOW) {
+    const job = { ...baseJob, status: "shadow", agentId: null, agentUrl: null, prompt };
+    if (kv) await kv.put(fixJobKey(pathId), JSON.stringify({ ...job, prompt: undefined }), { expirationTtl: JOB_TTL_S });
+    console.log(`[ops-fix] shadow would_launch ${pathId}`);
+    return { ok: true, shadowed: true, job, prompt: manual ? prompt : undefined };
+  }
+
   if (!apiKey) {
     const job = {
       ...baseJob,
