@@ -10,6 +10,12 @@ crons = ["*/15 * * * *"]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
 
+# Same amari-automation D1 as Pages / series-reconcile — fuller board for sweeps.
+[[d1_databases]]
+binding = "AUTOMATION_DB"
+database_name = "amari-automation"
+database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
+
 [vars]
 # off | shadow (log only) | auto (launch Cursor agents)
 OPS_FIX_MODE = "shadow"
