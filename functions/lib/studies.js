@@ -121,6 +121,32 @@ export const STUDIES = {
 // amari-study, Garrett sole provider, in-person 662 8th Ave).
 export const STUDY_CALENDAR_ID = "J1N09B6bRYPOGNyVAfmX";
 
+// Calendar event base title. Keep "15-Minute" so NON_JOURNEY_PATTERN excludes
+// these free visits from the paid ledger even when a study name is appended.
+export const STUDY_APPOINTMENT_BASE_TITLE = "Amari Study 15-Minute Session";
+
+// GHL custom field "Study Name" (contact.study_name) — set at signup; read at
+// booking so calendar titles can show which study (e.g. Elbow Pain Study).
+export const STUDY_NAME_FIELD_ID = "1xhxStKyEN47shwjOKC0";
+
+/** Calendar title Garrett sees: base, or "base - Elbow Pain Study". */
+export function studyAppointmentTitle(studyName) {
+  const name = String(studyName || "").trim();
+  return name ? `${STUDY_APPOINTMENT_BASE_TITLE} - ${name}` : STUDY_APPOINTMENT_BASE_TITLE;
+}
+
+/** Read Study Name from a GHL contact payload (customFields id or key). */
+export function studyNameFromContact(contact) {
+  const fields = contact?.customFields || [];
+  const hit = fields.find(
+    (f) =>
+      f.id === STUDY_NAME_FIELD_ID ||
+      f.key === "contact.study_name" ||
+      f.key === "study_name",
+  );
+  return String(hit?.value || "").trim();
+}
+
 export function getStudyBySlug(slug) {
   return STUDIES[slug] || null;
 }

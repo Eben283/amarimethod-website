@@ -1,7 +1,7 @@
 // Public Amari study booking endpoint. The customer sees amarimethod.com;
 // GHL remains the appointment and reminder system behind it.
 import { ghlFetch } from '../lib/ghl.js';
-import { STUDY_CALENDAR_ID } from '../lib/studies.js';
+import { STUDY_CALENDAR_ID, studyAppointmentTitle, studyNameFromContact } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
@@ -62,9 +62,20 @@ export async function onRequestPost(context) {
     const { firstName, lastName } = splitName(name); const cleanPhone = String(phone).replace(/[^\d+]/g, '').slice(0, 20); const cleanEmail = String(email).trim().toLowerCase().slice(0, 254);
     const upsert = await ghlFetch(context, `${GHL_API_BASE}/contacts/upsert`, { method: 'POST', body: JSON.stringify({ firstName, lastName, phone: cleanPhone, email: cleanEmail, locationId: GHL_LOCATION_ID, source: 'Amari study booking page' }) });
     if (!upsert.ok) throw new Error('contact upsert failed');
-    const contactId = (await upsert.json()).contact?.id;
+    const upserted = await upsert.json();
+    const contactId = upserted.contact?.id;
     if (!contactId) throw new Error('contact ID missing');
-    const appointment = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, { method: 'POST', body: JSON.stringify({ calendarId: STUDY_CALENDAR_ID, locationId: GHL_LOCATION_ID, contactId, startTime, endTime: appointmentEndTime(startTime, 15), selectedTimezone: timezone, title: 'Amari Study 15-Minute Session', appointmentStatus: 'confirmed', firstName, lastName, email: cleanEmail, phone: cleanPhone }) });
+    // Prefer Study Name from upsert; if GHL omits customFields, fetch the contact.
+    let studyName = studyNameFromContact(upserted.contact);
+    if (!studyName) {
+      const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
+      if (contactRes.ok) {
+        const contactData = await contactRes.json();
+        studyName = studyNameFromContact(contactData.contact || contactData);
+      }
+    }
+    const title = studyAppointmentTitle(studyName);
+    const appointment = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, { method: 'POST', body: JSON.stringify({ calendarId: STUDY_CALENDAR_ID, locationId: GHL_LOCATION_ID, contactId, startTime, endTime: appointmentEndTime(startTime, 15), selectedTimezone: timezone, title, appointmentStatus: 'confirmed', firstName, lastName, email: cleanEmail, phone: cleanPhone }) });
     if (!appointment.ok) return json({ error: 'That time was just taken. Please choose another.' }, 422, origin);
     return json({ success: true, appointment: { startTime } }, 200, origin);
   } catch (error) { console.error('[study-book] booking:', error.message); return json({ error: 'We could not save that booking. Please try again.' }, 422, origin); }
