@@ -75,6 +75,17 @@ export const OPS_HTML = `<!doctype html>
     max-width: 760px; margin: 0 auto; padding: 36px 20px 88px;
   }
 
+  .top-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 22px;
+  }
+  .home-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--muted); text-decoration: none;
+    font: 500 13px/1 var(--sans);
+  }
+  .home-link:hover { color: var(--accent); }
+
   header.brand { margin-bottom: 8px; }
   header.brand .eyebrow {
     display: inline-flex; align-items: center; gap: 8px;
@@ -391,6 +402,9 @@ export const OPS_HTML = `<!doctype html>
 </head>
 <body>
 <div class="wrap" id="app">
+  <nav class="top-nav" aria-label="Ops">
+    <a class="home-link" href="/staff">← Staff home</a>
+  </nav>
   <header class="brand" id="homeHead">
     <div class="eyebrow"><span class="live"></span> Private · live</div>
     <div class="mark">Amari Ops</div>
