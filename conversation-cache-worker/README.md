@@ -5,7 +5,9 @@ system (target architecture: `ops/drafts/coach-architecture-target-2026-06-14.md
 
 **Why:** `outreach-cadence.mjs` re-pulled a full 60 days of conversations from GHL
 every single morning. This worker pulls once, then only what changed — so
-downstream consumers (the coach's cadence step, learning) read the cache instead.
+downstream consumers (the coach's cadence step, learning, and Staff Conversations)
+read the cache instead. Staff inbox skips paid GHL conversation webhooks: incremental
+poll every 5 minutes, plus optimistic KV appends when staff send SMS.
 
 **Proven (2026-06-14):** first run backfilled 90 days = 264 conversations → 244
 contacts cached in 33s. Immediate second run = 0 changed, 0.4s.
@@ -51,7 +53,8 @@ fixes. Manual: `/sync?full=1`. Nightly is unnecessary — drift is rare + self-h
 ## Routes (Bearer `WORKER_AUTH_SECRET`)
 `/sync` (sync + derive, awaited), `/cadence` (re-derive off cache, no GHL conv
 pull), `/due` (read the derived list), `/status`, `/conversations?contactId=`,
-`/index`. Cron every 3 hours runs sync → derive.
+`/index`. Cron every **5 minutes** runs incremental sync → derive. Staff inbox
+reads the same KV via Pages `GET /api/staff-inbox` (no GHL conversation webhooks).
 
 ## Deploy
 `cd conversation-cache-worker && npx wrangler deploy`

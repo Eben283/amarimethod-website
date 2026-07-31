@@ -18,6 +18,7 @@ import CommunityPage from './pages/CommunityPage';
 import RevenuePage from './pages/RevenuePage';
 import PosPage from './pages/PosPage';
 import OperationsPage from './pages/OperationsPage';
+import ConversationsPage from './pages/ConversationsPage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -96,8 +97,18 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Messages retired into Follow-Up (unanswered replies rank on top there) */}
-      <Route path="/messages" element={<Navigate to="/follow-up" replace />} />
+      {/* Messages → Conversations inbox */}
+      <Route path="/messages" element={<Navigate to="/conversations" replace />} />
+      <Route
+        path="/conversations"
+        element={
+          <ProtectedRoute>
+            <Layout fullBleed>
+              <ConversationsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/balances"
         element={

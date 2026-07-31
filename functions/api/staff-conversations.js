@@ -3,6 +3,8 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffOrOpsAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { isNonReply } from "../lib/message-reply.js";
+export { isNonReply } from "../lib/message-reply.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -50,23 +52,6 @@ function buildContactName(conv) {
   const combined = [first, last].filter(Boolean).join(" ").trim();
   if (combined) return combined;
   return conv.email || conv.phone || "Unknown";
-}
-
-// A last inbound message only "needs a reply" if it's an actual human message. Automated
-// texts (OTP / verification codes), email reply-delimiter artifacts, empty bodies, and bare
-// closers ("Im good", "Likewise, thanks!") are NOT replies — flagging them buries the real
-// ones, and because the UI dismiss is session-only they reappear on every reload. Exported
-// for tests.
-const CLOSER_WORD =
-  "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
-const CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
-export function isNonReply(text) {
-  const t = String(text || "").trim();
-  if (!t) return true;                                                              // empty / whitespace
-  if (/please type your reply above this line|^#{2}-|-#{2}$/i.test(t)) return true; // email reply delimiter
-  if (/\bverification code\b|\bis your\b[^.]*\bcode\b|\byour\b[^.]*\bcode is\b|\bone[- ]?time (code|password)\b|\bOTP\b|do not share/i.test(t)) return true; // OTP / automated
-  if (t.length <= 40 && CLOSER_RE.test(t)) return true;                             // bare closer
-  return false;
 }
 
 export async function onRequestGet(context) {

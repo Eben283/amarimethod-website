@@ -7,7 +7,7 @@ Companion docs:
 - Marketing visual language → `DESIGN.md` + `css/site-v6.css`
 - Native booking architecture → `amari-method-docs/ops/memory/project_native_booking.md`
 
-Last updated: 2026-07-30.
+Last updated: 2026-07-31.
 
 ---
 
@@ -97,6 +97,7 @@ Last updated: 2026-07-30.
 |------|-------|
 | Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms |
 | Today / day-of | `TodayPage`, `GarrettDay`, `AppointmentCard` |
+| Conversations inbox | `ConversationsPage`, `GET /api/staff-inbox`, `functions/lib/conv-cache.js`, `conversation-cache-worker` (5-min poll; no GHL conversation webhooks) |
 | Client detail CRM | `ClientDetailPage`, notes, message history |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
 

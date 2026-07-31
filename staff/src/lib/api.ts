@@ -514,6 +514,18 @@ export async function getConversations(
   return fetchApi(`/staff-conversations?filter=${encodeURIComponent(filter)}${debug ? '&debug=1' : ''}`);
 }
 
+export async function getInboxThreads(
+  filter: 'active' | 'all' | 'needs_reply' = 'active',
+): Promise<import('../types/staff').InboxListResponse> {
+  return fetchApi(`/staff-inbox?filter=${encodeURIComponent(filter)}`);
+}
+
+export async function getInboxThread(
+  contactId: string,
+): Promise<{ success: boolean; thread: import('../types/staff').InboxThread }> {
+  return fetchApi(`/staff-inbox?contactId=${encodeURIComponent(contactId)}`);
+}
+
 export async function getBalances(
   refresh = false,
 ): Promise<import('../types/staff').BalancesResponse> {

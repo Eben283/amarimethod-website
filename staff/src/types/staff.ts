@@ -272,6 +272,34 @@ export interface ConversationsResponse {
   conversations: ConversationSummary[];
 }
 
+export interface InboxThreadSummary {
+  contactId: string;
+  contactName: string;
+  email: string;
+  lastMessagePreview: string;
+  lastMessageDate: number | null;
+  lastMessageType: string;
+  lastMessageDirection: 'inbound' | 'outbound';
+  needsReply: boolean;
+  unread: boolean;
+  touchCount: number;
+}
+
+export interface InboxThread extends InboxThreadSummary {
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  business?: string;
+  messages: ContactMessage[];
+}
+
+export interface InboxListResponse {
+  success: boolean;
+  filter: string;
+  count: number;
+  threads: InboxThreadSummary[];
+}
+
 export interface BalanceRow {
   id: string;
   name: string;

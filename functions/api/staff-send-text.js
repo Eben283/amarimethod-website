@@ -8,6 +8,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { appendOutboundTouch } from "../lib/conv-cache.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // The personalized coach drafts are warm + full (Garrett's voice, "never clipped") and run
@@ -87,6 +88,14 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: "Failed to send text" }), { status: 422, headers });
   }
   console.log(`[staff-send-text] sent by ${tokenPayload.user || "staff"} to ${contactId} (last4 ${phone.slice(-4)}, ${message.length} chars)`);
+
+  if (kv) {
+    try {
+      await appendOutboundTouch(kv, contactId, { kind: "sms", text: message, ts: Date.now() });
+    } catch (err) {
+      console.error("[staff-send-text] cache append failed:", err instanceof Error ? err.message : String(err));
+    }
+  }
 
   return new Response(JSON.stringify({ success: true, sentTo: `***${phone.slice(-4)}` }), { status: 200, headers });
 }

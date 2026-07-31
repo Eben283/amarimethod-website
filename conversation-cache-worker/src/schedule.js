@@ -8,11 +8,11 @@
 // weeks before it was caught (todo ih32, fixed 2026-07-11). schedule.test.js
 // asserts these constants match wrangler.toml, which would have caught it.
 
-export const INCREMENTAL_CRON = "30 */3 * * *"; // cheap incremental sync, every 3h
+export const INCREMENTAL_CRON = "*/5 * * * *"; // cheap incremental sync, every 5 minutes
 export const WEEKLY_FULL_CRON = "30 2 * * 1";   // full reconcile (drift insurance), Mondays
 
-// The Monday weekly cron does a FULL reconcile; the 3-hourly cron does the cheap
-// incremental sync. Keyed against the INCREMENTAL cron (not the weekly one) so a
+// The Monday weekly cron does a FULL reconcile; the frequent incremental cron does the
+// cheap delta sync. Keyed against the INCREMENTAL cron (not the weekly one) so a
 // future change to the weekly schedule's exact time can't silently disable the
 // full reconcile again.
 export function isFullReconcile(cron) {

@@ -16,7 +16,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 // ───────────────────────── cron → reconcile mode ─────────────────────────
 
-test('the 3-hourly incremental cron does NOT trigger a full reconcile', () => {
+test('the 5-minute incremental cron does NOT trigger a full reconcile', () => {
   assert.equal(isFullReconcile(INCREMENTAL_CRON), false);
 });
 
