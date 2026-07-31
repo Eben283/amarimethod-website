@@ -83,12 +83,19 @@ export default function BookForSomeoneModal({
       setResults([]);
       return;
     }
+    if (query.trim().length < 2) {
+      setResults([]);
+      setError('');
+      return;
+    }
     const t = window.setTimeout(async () => {
       setSearching(true);
+      setError('');
       try {
         setResults(await searchContacts(query.trim()));
-      } catch {
+      } catch (err) {
         setResults([]);
+        setError(err instanceof ApiError ? err.message : 'Could not search contacts.');
       } finally {
         setSearching(false);
       }
@@ -163,7 +170,11 @@ export default function BookForSomeoneModal({
                 autoFocus
               />
             </div>
+            {error && <div className="bfs__error" role="alert">{error}</div>}
             {searching && <p className="bfs__hint"><Loader2 className="spin" size={14} /> Searching…</p>}
+            {!searching && query.trim().length >= 2 && results.length === 0 && !error && (
+              <p className="bfs__hint">No contacts matched “{query.trim()}”.</p>
+            )}
             <ul className="bfs__results">
               {results.map((c) => (
                 <li key={c.id}>
@@ -174,6 +185,7 @@ export default function BookForSomeoneModal({
                       setContactName(c.name || c.email || c.id);
                       setQuery('');
                       setResults([]);
+                      setError('');
                     }}
                   >
                     <strong>{c.name || 'No name'}</strong>

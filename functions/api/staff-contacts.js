@@ -23,7 +23,7 @@ export async function onRequestGet(context) {
   try {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
-
+    void tokenPayload;
 
     const url = new URL(context.request.url);
     const query = (url.searchParams.get("query") || "").trim();
@@ -32,12 +32,19 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify([]), { status: 200, headers });
     }
 
-    // Search contacts in GHL
-    const searchUrl = `${GHL_API_BASE}/contacts/?locationId=${GHL_LOCATION_ID}&query=${encodeURIComponent(query)}&limit=20`;
-    const searchRes = await ghlFetch(context, searchUrl);
+    // POST /contacts/search — GET /contacts/?query= returns 400 on current GHL.
+    const searchRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/search`, {
+      method: "POST",
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID,
+        pageLimit: 20,
+        query,
+      }),
+    });
 
     if (!searchRes.ok) {
-      console.error(`[staff-contacts] GHL search error: ${searchRes.status}`);
+      const detail = await searchRes.text();
+      console.error(`[staff-contacts] GHL search error: ${searchRes.status}`, detail.slice(0, 200));
       return new Response(JSON.stringify({ error: "Search failed" }), { status: 422, headers });
     }
 
