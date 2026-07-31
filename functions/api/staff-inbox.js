@@ -34,8 +34,10 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ success: true, thread }), { status: 200, headers });
     }
 
-    const filterParam = (url.searchParams.get("filter") || "active").toLowerCase();
-    const filter = ["active", "all", "needs_reply"].includes(filterParam) ? filterParam : "active";
+    const filterParam = (url.searchParams.get("filter") || "all").toLowerCase();
+    // "active" is an alias of "all" — inbox shows every cached thread chronologically.
+    const normalized = filterParam === "active" ? "all" : filterParam;
+    const filter = ["all", "needs_reply"].includes(normalized) ? normalized : "all";
     const limitParam = parseInt(url.searchParams.get("limit") || "80", 10);
     const limit = Number.isFinite(limitParam) ? limitParam : 80;
     const threads = await listInboxThreads(kv, { filter, limit });

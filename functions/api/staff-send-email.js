@@ -6,6 +6,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { appendOutboundTouch } from "../lib/conv-cache.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const MAX_SUBJECT = 200;
@@ -69,6 +70,16 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ error: "Failed to send email" }), { status: 422, headers });
   }
   console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email)}, subj ${subject.length}c, body ${html.length}c)`);
+
+  if (kv) {
+    try {
+      // Cache preview stores plain text; strip tags lightly so the inbox preview stays readable.
+      const preview = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() || subject;
+      await appendOutboundTouch(kv, contactId, { kind: "email", text: preview, ts: Date.now() });
+    } catch (err) {
+      console.error("[staff-send-email] cache append failed:", err instanceof Error ? err.message : String(err));
+    }
+  }
 
   return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email) }), { status: 200, headers });
 }

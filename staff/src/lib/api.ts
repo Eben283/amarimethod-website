@@ -515,7 +515,7 @@ export async function getConversations(
 }
 
 export async function getInboxThreads(
-  filter: 'active' | 'all' | 'needs_reply' = 'active',
+  filter: 'active' | 'all' | 'needs_reply' = 'all',
 ): Promise<import('../types/staff').InboxListResponse> {
   return fetchApi(`/staff-inbox?filter=${encodeURIComponent(filter)}`);
 }

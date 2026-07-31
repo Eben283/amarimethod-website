@@ -5,7 +5,6 @@ import { isNonReply } from "../lib/message-reply.js";
 
 const TEXT_LIMIT = 280;
 const DEFAULT_LIST_LIMIT = 80;
-const ACTIVE_MS = 45 * 24 * 60 * 60 * 1000; // hide quiet threads older than 45 days
 
 export function lastSeenKey(contactId) {
   return `inbox:lastSeen:${contactId}`;
@@ -55,16 +54,17 @@ export async function readConv(kv, contactId) {
   return raw && typeof raw === "object" ? raw : null;
 }
 
-export async function listInboxThreads(kv, { limit = DEFAULT_LIST_LIMIT, filter = "active" } = {}) {
+export async function listInboxThreads(kv, { limit = DEFAULT_LIST_LIMIT, filter = "all" } = {}) {
   const index = await readConvIndex(kv);
+  // Every cached thread, newest → oldest. Age is the cue a thread is quiet — no
+  // 45-day "active" window and no stale badges. ("active" is accepted as an alias
+  // of "all" for older callers.)
   const ranked = Object.entries(index)
     .map(([contactId, lastMessageDate]) => ({ contactId, lastMessageDate: Number(lastMessageDate) || 0 }))
     .filter((row) => row.contactId && row.lastMessageDate > 0)
     .sort((a, b) => b.lastMessageDate - a.lastMessageDate);
 
-  const cutoff = Date.now() - ACTIVE_MS;
-  const pool = filter === "all" ? ranked : ranked.filter((row) => row.lastMessageDate >= cutoff);
-  const selected = pool.slice(0, Math.min(Math.max(Number(limit) || DEFAULT_LIST_LIMIT, 1), 150));
+  const selected = ranked.slice(0, Math.min(Math.max(Number(limit) || DEFAULT_LIST_LIMIT, 1), 150));
 
   const threads = [];
   for (const row of selected) {
