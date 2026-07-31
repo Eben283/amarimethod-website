@@ -1,0 +1,11 @@
+{
+  "name": "ops-fix-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Amari Ops Fix layer — cron launches bounded Cursor cloud agents for board attention.",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "test": "node --test"
+  }
+}
