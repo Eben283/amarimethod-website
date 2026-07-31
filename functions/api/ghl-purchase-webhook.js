@@ -72,7 +72,7 @@ export const PAID_BOOKING_MAP = {
     name: "Amari Assessment",
     calendarId: "EM6vB2mq7EAdGCbUb3j1",
     duplicateCalendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
-    durationMinutes: 40,
+    durationMinutes: 50,
     sessionTitle: "Amari Assessment — In Person",
     sessionTag: null,
   },

@@ -112,7 +112,7 @@ describe('purchase-webhook — write orchestration', () => {
     expect(putToContact()).toBeFalsy();
   });
 
-  it('Assessment payment → books its selected 40-minute appointment, with no session or portal-field writes', async () => {
+  it('Assessment payment → books its selected 50-minute appointment, with no session or portal-field writes', async () => {
     const contact = {
       id: 'assessment-contact',
       firstName: 'Ada',
@@ -148,7 +148,7 @@ describe('purchase-webhook — write orchestration', () => {
       calendarId: ASSESSMENT_CALENDAR_ID,
       contactId: contact.id,
       startTime: '2026-08-03T10:00:00-07:00',
-      endTime: '2026-08-03T10:40:00-07:00',
+      endTime: '2026-08-03T10:50:00-07:00',
       title: 'Amari Assessment — In Person',
       appointmentStatus: 'confirmed',
     });
@@ -203,7 +203,7 @@ describe('purchase-webhook — write orchestration', () => {
       calendarId: ASSESSMENT_CALENDAR_ID,
       contactId: contact.id,
       startTime: '2026-08-04T11:00:00-07:00',
-      endTime: '2026-08-04T11:40:00-07:00',
+      endTime: '2026-08-04T11:50:00-07:00',
     });
   });
 

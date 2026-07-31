@@ -4,7 +4,7 @@
 export const STAFF_BOOK_TYPES = {
   assessment: {
     calendarId: "EM6vB2mq7EAdGCbUb3j1",
-    durationMinutes: 40,
+    durationMinutes: 50,
     title: "Amari Method Assessment",
     label: "Assessment ($29)",
   },

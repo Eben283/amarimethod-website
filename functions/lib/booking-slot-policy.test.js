@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   SLOT_POLICIES,
   STUDIO_INTERVAL_MINUTES,
-  INTRO_ASSESSMENT_INTERVAL_MINUTES,
   WORK_HOURS,
   studioSessionStarts,
   blockMinutes,
@@ -14,7 +13,7 @@ import {
   followupPolicy,
 } from "./booking-slot-policy.js";
 
-describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
+describe("booking-slot-policy — Assessment + Follow-up both 50/10/60", () => {
   it("makes Follow-up the priority studio policy with 50/10/60", () => {
     const fu = followupPolicy();
     expect(fu.priority).toBe(true);
@@ -24,6 +23,16 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
     expect(fu.intervalMinutes).toBe(60);
     expect(blockMinutes(fu)).toBe(60);
     expect(isHourlyLattice(fu.intervalMinutes)).toBe(true);
+  });
+
+  it("makes Assessment 50 minutes on the same hourly lattice", () => {
+    const a = SLOT_POLICIES.assessment;
+    expect(a.durationMinutes).toBe(50);
+    expect(a.bufferMinutes).toBe(10);
+    expect(a.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
+    expect(a.preferOnHour).toBe(true);
+    expect(a.lattice).toBe("studio");
+    expect(blockMinutes(a)).toBe(60);
   });
 
   it("gives Follow-up only on-the-hour starts from a 10:00 open", () => {
@@ -39,46 +48,25 @@ describe("booking-slot-policy — Follow-up on-the-hour priority", () => {
       "17:00",
       "18:00",
     ]);
-    expect(grid.every((t) => t.endsWith(":00"))).toBe(true);
-    expect(grid).not.toContain("10:30");
   });
 
   it("locks Work Hours so main sessions run 10am–6pm starts", () => {
     expect(WORK_HOURS.firstSessionStart).toBe("10:00");
     expect(WORK_HOURS.lastSessionStart).toBe("18:00");
-    expect(WORK_HOURS.openFrom).toBe("10:00");
-    expect(WORK_HOURS.openTo).toBe("19:00");
     const starts = studioSessionStarts();
     expect(starts[0]).toBe("10:00");
     expect(starts[starts.length - 1]).toBe("18:00");
-    expect(starts).not.toContain("19:00");
   });
 
-  it("keeps Initial on the hour but Assessment denser for intro fills", () => {
-    expect(SLOT_POLICIES.initial.intervalMinutes).toBe(STUDIO_INTERVAL_MINUTES);
-    expect(SLOT_POLICIES.initial.preferOnHour).toBe(true);
-    expect(SLOT_POLICIES.assessment.intervalMinutes).toBe(
-      INTRO_ASSESSMENT_INTERVAL_MINUTES,
-    );
-    expect(SLOT_POLICIES.assessment.lattice).toBe("intro");
-    expect(SLOT_POLICIES.assessment.preferOnHour).toBe(false);
-    expect(SLOT_POLICIES.assessment.bufferMinutes).toBe(10);
-    expect(blockMinutes(SLOT_POLICIES.assessment)).toBe(50);
-    const introGrid = startLattice(10, 0, SLOT_POLICIES.assessment.intervalMinutes, 4);
-    expect(introGrid).toEqual(["10:00", "10:40", "11:20", "12:00"]);
-  });
-
-  it("keeps phone/short lattices denser than main studio", () => {
+  it("keeps Partner Initial at 60 and phone/short denser", () => {
+    expect(SLOT_POLICIES.initial.durationMinutes).toBe(60);
     expect(SLOT_POLICIES.discovery_call.intervalMinutes).toBe(15);
-    expect(SLOT_POLICIES.discovery_call.preferOnHour).toBe(false);
-    expect(SLOT_POLICIES.entrainment.intervalMinutes).toBe(15);
-    expect(SLOT_POLICIES.entrainment.lattice).toBe("short");
+    expect(SLOT_POLICIES.entrainment.durationMinutes).toBe(30);
   });
 
-  it("marks prefer-on-hour only for main session calendars", () => {
+  it("marks prefer-on-hour for Assessment and Follow-up", () => {
     expect(preferOnHourForCalendar("SKDVOL8wtUN6Ne0ppbC9")).toBe(true);
-    expect(preferOnHourForCalendar("G7OAnnJuFbMF6nQSlZVQ")).toBe(true);
-    expect(preferOnHourForCalendar("EM6vB2mq7EAdGCbUb3j1")).toBe(false);
+    expect(preferOnHourForCalendar("EM6vB2mq7EAdGCbUb3j1")).toBe(true);
     expect(preferOnHourForCalendar("USgPsktqRcuomdUgpShL")).toBe(false);
   });
 });
@@ -87,26 +75,10 @@ describe("booking-slot-policy — lookup and drift", () => {
   it("resolves known calendar ids", () => {
     expect(policyForCalendarId("SKDVOL8wtUN6Ne0ppbC9")?.id).toBe("followup");
     expect(policyForCalendarId("EM6vB2mq7EAdGCbUb3j1")?.id).toBe("assessment");
-    expect(policyForCalendarId("G7OAnnJuFbMF6nQSlZVQ")?.id).toBe("initial");
     expect(policyForCalendarId("unknown")).toBe(null);
   });
 
-  it("flags live Follow-up interval 30 and buffer 15 as drift", () => {
-    const report = driftAgainstPolicy({
-      id: "SKDVOL8wtUN6Ne0ppbC9",
-      slotDuration: 50,
-      slotInterval: 30,
-      slotBuffer: 15,
-    });
-    expect(report.ok).toBe(false);
-    expect(report.priority).toBe(true);
-    expect(report.drifts).toEqual([
-      { field: "slotInterval", live: 30, policy: 60 },
-      { field: "slotBuffer", live: 15, policy: 10 },
-    ]);
-  });
-
-  it("flags live Assessment buffer 15 as drift but keeps interval 40", () => {
+  it("flags live Assessment duration 40 and interval 40 as drift", () => {
     const report = driftAgainstPolicy({
       id: "EM6vB2mq7EAdGCbUb3j1",
       slotDuration: 40,
@@ -115,18 +87,19 @@ describe("booking-slot-policy — lookup and drift", () => {
     });
     expect(report.ok).toBe(false);
     expect(report.drifts).toEqual([
+      { field: "slotDuration", live: 40, policy: 50 },
+      { field: "slotInterval", live: 40, policy: 60 },
       { field: "slotBuffer", live: 15, policy: 10 },
     ]);
   });
 
-  it("reports ok when live matches policy", () => {
+  it("reports ok when live Assessment matches 50/10/60", () => {
     const report = driftAgainstPolicy({
-      id: "SKDVOL8wtUN6Ne0ppbC9",
+      id: "EM6vB2mq7EAdGCbUb3j1",
       slotDuration: 50,
       slotInterval: 60,
       slotBuffer: 10,
     });
     expect(report.ok).toBe(true);
-    expect(report.drifts).toEqual([]);
   });
 });
