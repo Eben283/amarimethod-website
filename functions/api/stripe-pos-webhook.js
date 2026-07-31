@@ -6,6 +6,7 @@ import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
 import { markLegPaid, posSessionKey, readPosSale, writePosSale } from "../lib/staff-pos.js";
 import { verifyStripeWebhookSignature } from "../lib/stripe-api.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -125,11 +126,25 @@ export async function onRequestPost(context) {
   try {
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const result = await settleSession(context, event.data?.object, event.type);
+      await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.stripeWebhook, {
+        status: "ok",
+        eventType: event.type,
+      });
       return json({ received: true, ...result });
     }
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.stripeWebhook, {
+      status: "ok",
+      eventType: event.type,
+      ignored: true,
+    });
     return json({ received: true, ignored: event.type });
   } catch (error) {
     console.error("[stripe-pos-webhook]", error instanceof Error ? error.message : error);
+    await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.stripeWebhook, {
+      status: "error",
+      eventType: event?.type || null,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return json({ error: "Webhook handler failed" }, 500);
   }
 }

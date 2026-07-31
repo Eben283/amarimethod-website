@@ -104,7 +104,20 @@ Last updated: 2026-07-30.
 
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
-| Morning SMS (GHL) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett via GHL SMS: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. `MORNING_SMS_MODE=active`. |
+| Morning SMS (GHL) | Worker cron | `morning-sms-worker/` | Texts Eben + Garrett via GHL SMS: prepare @ 08:00 PT (or 2h before first appt) + “Staff meeting” +90m. `MORNING_SMS_MODE=active`. Watched on `/ops` via `ops:morning-sms:lastRun`. |
+
+### Amari Ops watchers (apps / auth / money deps)
+
+Board rows beyond money paths — heartbeats in `PORTAL_KV`, judged by `functions/lib/ops-board.js`:
+
+| Board id | Signal keys | Emit from |
+|----------|-------------|-----------|
+| `chief_of_staff` | `cos:status:ready`, `ops:cos-auth:lastRun`, `ops:cos-chat:lastRun` | `cos-auth`, `cos-chat` |
+| `staff_auth` | `ops:staff-auth:lastRun` | `staff-auth` |
+| `portal_auth` | `ops:portal-auth:lastRun`, `ops:portal-verify:lastRun` | `portal-auth`, `portal-verify` |
+| `public_slots` | `ops:public-slots:lastRun` | `book/public-slots` |
+| `stripe` | `stripe:status:ready`, `ops:stripe-pos-webhook:lastRun` | `staff-stripe-cards`, `stripe-pos-webhook` |
+| `morning_sms` | `ops:morning-sms:lastRun` | `morning-sms-worker` |
 
 ---
 

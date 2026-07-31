@@ -11,6 +11,7 @@ import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
 import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
+import { writeOpsLastRun, OPS_LAST_RUN_KEYS, OPS_READY_KEYS } from "../lib/ops-last-run.js";
 
 // Ledger-relevant custom field IDs (single-sourced from lib/ghl-fields.js) —
 // deriveLedger's field fallback needs them to resolve the values on low
@@ -860,8 +861,19 @@ export async function onRequestPost(context) {
 
   const ANTHROPIC_API_KEY = context.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) {
+    await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
+      ok: false,
+      checkedAt: new Date().toISOString(),
+      anthropic: false,
+      error: "ANTHROPIC_API_KEY not configured",
+    });
     return jsonResponse({ error: "Chat not configured (missing ANTHROPIC_API_KEY)" }, 500, origin);
   }
+  await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    anthropic: true,
+  });
 
   const kv = context.env.PORTAL_KV;
   const dateKey = todayKey();
@@ -1123,6 +1135,12 @@ export async function onRequestPost(context) {
 
       // Log usage for cost monitoring
       console.log(`[cos-chat] usage: in=${result.usage.input_tokens} out=${result.usage.output_tokens} cache_read=${result.usage.cache_read_input_tokens} cache_create=${result.usage.cache_creation_input_tokens} tools=${result.tool_calls.length}`);
+      await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.cosChat, {
+        status: "ok",
+        user: cosUser,
+        inputTokens: result.usage?.input_tokens,
+        outputTokens: result.usage?.output_tokens,
+      });
 
       // Parse actions, context, reminders, and Spotify commands from the full response
       const actions = parseActions(fullContent);

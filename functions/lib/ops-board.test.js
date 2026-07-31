@@ -141,9 +141,79 @@ describe("buildSystemsBoard", () => {
       "call_coach",
       "ledger_drift",
       "field_id_check",
+      "chief_of_staff",
+      "morning_sms",
+      "staff_auth",
+      "portal_auth",
+      "public_slots",
+      "stripe",
     ]) {
       expect(ids).toContain(id);
     }
+  });
+
+  it("surfaces CoS readiness, morning SMS, slots, Stripe, and auth heartbeats", async () => {
+    const board = await buildSystemsBoard(
+      kvEnv({
+        "cos:status:ready": {
+          ok: true,
+          checkedAt: new Date().toISOString(),
+          anthropic: true,
+        },
+        "ops:cos-auth:lastRun": {
+          status: "ok",
+          user: "Eben",
+          finishedAt: new Date().toISOString(),
+        },
+        "ops:morning-sms:lastRun": {
+          status: "ok",
+          mode: "active",
+          sendCount: 2,
+          finishedAt: new Date().toISOString(),
+          schedule: { reason: "default_8am" },
+        },
+        "ops:staff-auth:lastRun": {
+          status: "ok",
+          user: "Garrett",
+          finishedAt: new Date().toISOString(),
+        },
+        "ops:portal-auth:lastRun": {
+          status: "ok",
+          finishedAt: new Date().toISOString(),
+        },
+        "ops:public-slots:lastRun": {
+          status: "ok",
+          calendarId: "EM6vB2mq7EAdGCbUb3j1",
+          slotCount: 12,
+          finishedAt: new Date().toISOString(),
+        },
+        "stripe:status:ready": {
+          ok: true,
+          checkedAt: new Date().toISOString(),
+        },
+      }),
+    );
+    expect(board.systems.find((s) => s.id === "chief_of_staff").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "morning_sms").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "staff_auth").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "portal_auth").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "public_slots").status).toBe("green");
+    expect(board.systems.find((s) => s.id === "stripe").status).toBe("green");
+  });
+
+  it("marks CoS red when Anthropic readiness fails", async () => {
+    const board = await buildSystemsBoard(
+      kvEnv({
+        "cos:status:ready": {
+          ok: false,
+          checkedAt: new Date().toISOString(),
+          error: "ANTHROPIC_API_KEY not configured",
+        },
+      }),
+    );
+    const cos = board.systems.find((s) => s.id === "chief_of_staff");
+    expect(cos.status).toBe("red");
+    expect(cos.note).toMatch(/ANTHROPIC|not configured/i);
   });
 
   it("surfaces live GHL token + reconcile + funnel signals as map_ok", async () => {

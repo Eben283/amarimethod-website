@@ -121,6 +121,54 @@ export const OPS_BOARD_META = Object.freeze({
       talkHint: "Fix nurture sequences; exits also fire from purchase events.",
     },
   },
+  morning_sms: {
+    role: OPS_BOARD_ROLE.QUIET,
+    changeSurface: {
+      touch: "morning-sms-worker cron → GHL conversations SMS.",
+      blastRadius: ["ghl_token"],
+      talkHint: "Fix morning Prepare/Meeting texts; GHL SMS path only.",
+    },
+  },
+  chief_of_staff: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "cos-auth + cos-chat (Anthropic) + dist/cos SPA.",
+      blastRadius: ["ghl_token"],
+      talkHint: "Fix CoS login/chat; Anthropic key + JWT — not staff PIN.",
+    },
+  },
+  staff_auth: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "staff-auth PIN → JWT for /staff.",
+      blastRadius: ["pos_card_fulfill", "staff_book"],
+      talkHint: "Fix staff login; shared PIN secrets, not CoS.",
+    },
+  },
+  portal_auth: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "portal-auth magic link + portal-verify session mint.",
+      blastRadius: ["portal_package_book", "portal_followup_paid_book"],
+      talkHint: "Fix client portal login email/verify; GHL tag + Resend/GHL mail.",
+    },
+  },
+  public_slots: {
+    role: OPS_BOARD_ROLE.HOT,
+    changeSurface: {
+      touch: "book/public-slots → GHL free-slots + look-busy + slot policy.",
+      blastRadius: ["assessment_paid_book", "intro_paid_book", "discovery_free_book", "ghl_token"],
+      talkHint: "Fix public availability; clients can't book if this is red.",
+    },
+  },
+  stripe: {
+    role: OPS_BOARD_ROLE.HOT,
+    changeSurface: {
+      touch: "STRIPE_SECRET_KEY + stripe-pos-webhook + staff-stripe-cards.",
+      blastRadius: ["pos_card_fulfill", "order_package_credit"],
+      talkHint: "Fix Stripe key/webhook; POS charge path depends on this.",
+    },
+  },
 });
 
 /** Default map role for infra deps not listed above. */
