@@ -32,7 +32,7 @@ async function sessionCookie(env, cookieName, durationSeconds, nowSeconds = Math
   if (!env.WORKER_AUTH_SECRET) return null;
   const expiresAt = nowSeconds + durationSeconds;
   const token = `${expiresAt}.${await signature(env.WORKER_AUTH_SECRET, cookieName, expiresAt)}`;
-  return `${cookieName}=${token}; Max-Age=${durationSeconds}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+  return `${cookieName}=${token}; Max-Age=${durationSeconds}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`;
 }
 
 async function hasSession(request, env, cookieName, nowSeconds = Math.floor(Date.now() / 1000)) {

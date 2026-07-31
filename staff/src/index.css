@@ -207,6 +207,56 @@
   .staff-backoffice__links button:disabled { opacity: .72; cursor: wait; }
   .staff-backoffice__error { margin: 10px 3px 0; color: #8a3b32; font-size: 11px; line-height: 1.4; }
 
+  .ops-hub {
+    min-height: 100vh; display: grid; grid-template-rows: auto auto minmax(0, 1fr);
+    background:
+      radial-gradient(900px 420px at 0% -10%, #d7ecee 0%, transparent 55%),
+      radial-gradient(720px 400px at 100% 0%, #d9e4f4 0%, transparent 52%),
+      linear-gradient(180deg, #f5f8fb 0%, #eef2f6 45%, #e8eef5 100%);
+    color: #122033;
+  }
+  .ops-hub__head { display: flex; flex-direction: column; gap: 14px; padding: 18px 18px 0; }
+  .ops-hub__back {
+    display: inline-flex; align-items: center; gap: 2px; width: fit-content;
+    color: #4a5d73; text-decoration: none; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+  }
+  .ops-hub__back svg { width: 16px; height: 16px; }
+  .ops-hub__head p { margin: 0; color: #0b7f86; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .14em; text-transform: uppercase; }
+  .ops-hub__head h1 { margin: 8px 0 0; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; letter-spacing: -.03em; line-height: .98; }
+  .ops-hub__head span { display: block; margin-top: 8px; color: #4a5d73; font-size: 13px; line-height: 1.45; max-width: 46ch; }
+  .ops-hub__tabs {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+    padding: 16px 18px 12px;
+  }
+  .ops-hub__tabs button {
+    display: grid; grid-template-columns: 18px 1fr; gap: 8px; align-items: start;
+    min-height: 64px; padding: 10px 11px; border: 1px solid #c9d4e0; border-radius: 14px;
+    background: rgba(247, 250, 252, .88); color: #4a5d73; text-align: left; cursor: pointer;
+  }
+  .ops-hub__tabs button svg { width: 16px; height: 16px; margin-top: 2px; stroke-width: 1.8; }
+  .ops-hub__tabs button span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .ops-hub__tabs button strong { font-size: 12px; line-height: 1.2; color: #122033; }
+  .ops-hub__tabs button small { color: #7a8ea3; font-size: 10px; line-height: 1.25; }
+  .ops-hub__tabs button.is-active {
+    border-color: #0b7f86; background: #e7f4f5; box-shadow: inset 0 0 0 1px color-mix(in srgb, #0b7f86 35%, transparent);
+  }
+  .ops-hub__tabs button:focus-visible { outline: 3px solid #122033; outline-offset: 2px; }
+  .ops-hub__frame {
+    min-height: 0; margin: 0 12px 12px; border: 1px solid #c9d4e0; border-radius: 18px;
+    background: #f7fafc; overflow: hidden; position: relative;
+  }
+  .ops-hub__frame iframe { display: block; width: 100%; height: calc(100vh - 210px); min-height: 520px; border: 0; background: #f7fafc; }
+  .ops-hub__status {
+    position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px;
+    color: #4a5d73; font-size: 13px; padding: 24px; text-align: center;
+  }
+  .ops-hub__status svg { width: 18px; height: 18px; }
+  .ops-hub__status--error { color: #8a3b32; }
+  @media (max-width: 720px) {
+    .ops-hub__tabs { grid-template-columns: 1fr; }
+    .ops-hub__frame iframe { height: calc(100vh - 320px); min-height: 420px; }
+  }
+
   .staff-resources { margin-top: 22px; padding: 3px 3px 0; }.staff-resources header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 3px 9px; }.staff-resources header p { margin: 0; color: #71858a; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }.staff-resources header span { color: #8b9b9e; font-size: 10px; }.staff-resources > a { display: grid; grid-template-columns: 30px 1fr 16px; align-items: center; gap: 10px; min-height: 56px; padding: 9px 10px; border: 1px solid #dce4e5; border-radius: 12px; background: white; color: #536a70; text-decoration: none; }.staff-resources > a:focus-visible { outline: 3px solid #19343d; outline-offset: 2px; }.staff-resources__icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #f1ece4; color: #927442; }.staff-resources__icon svg, .staff-resources > a > svg { width: 16px; height: 16px; }.staff-resources > a > svg { color: #9aa8aa; }.staff-resources__copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }.staff-resources__copy strong { color: #526a71; font-size: 12px; line-height: 1.2; }.staff-resources__copy small { color: #82959a; font-size: 10px; }
 
   .community-page { max-width: 1160px; margin: 0 auto; padding: 34px 22px 76px; color: #20363b; }

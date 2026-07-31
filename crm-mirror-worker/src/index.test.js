@@ -60,5 +60,13 @@ describe("CRM mirror dashboard access handoff", () => {
     const replay = await worker.fetch(new Request(body.url), env);
     expect(replay.status).toBe(200);
     expect(await replay.text()).toContain("expired");
+
+    const mintedEmbed = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const embedBody = await mintedEmbed.json();
+    const embedHandoff = await worker.fetch(new Request(`${embedBody.url}?embed=1`), env);
+    expect(embedHandoff.status).toBe(302);
+    expect(embedHandoff.headers.get("Location")).toBe("/?embed=1");
   });
 });

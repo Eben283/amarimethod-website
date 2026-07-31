@@ -8,7 +8,8 @@ describe("CRM mirror dashboard sessions", () => {
     const cookie = await dashboardSessionCookie(env, 1_000);
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("Secure");
-    expect(cookie).toContain("SameSite=Strict");
+    expect(cookie).toContain("SameSite=None");
+    expect(cookie).toContain("Partitioned");
     await expect(hasDashboardSession(new Request("https://example.test", { headers: { Cookie: cookie } }), env, 1_001))
       .resolves.toBe(true);
   });

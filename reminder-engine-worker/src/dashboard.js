@@ -13,6 +13,7 @@
 
 import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+import { OPS_SURFACE_NAV_CSS, opsEmbedBootScript, opsSurfaceNavHtml } from "../../functions/lib/ops-surface-nav.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -314,12 +315,15 @@ export const DASHBOARD_HTML = `<!doctype html>
     .row { animation: rise .25s ease both; }
     @keyframes rise { from { opacity: 0; transform: translateY(3px); } }
   }
+  /*__OPS_SURFACE_NAV_CSS__*/
 </style>
 </head>
 <body>
+<script>__OPS_EMBED_BOOT__</script>
 <div class="wrap" id="app" hidden>
+  __OPS_SURFACE_NAV__
   <header>
-    <a class="home-link" href="https://www.amarimethod.com/staff/">← Amari Home</a>
+    <a class="home-link ops-embed-hide" href="https://www.amarimethod.com/staff/operations">← Operations</a>
     <h1>Automation Watch</h1>
     <p class="thesis">GHL is still doing the sending. This panel shows what the new system
     <b>would have done</b> — watching until the two agree.</p>
@@ -471,7 +475,11 @@ export const DASHBOARD_HTML = `<!doctype html>
 </html>`;
 
 export function handleDashboardPage() {
-  return new Response(DASHBOARD_HTML, {
+  const html = DASHBOARD_HTML
+    .replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS)
+    .replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("automation"))
+    .replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
+  return new Response(html, {
     status: 200,
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
   });

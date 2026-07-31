@@ -17,6 +17,7 @@ import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
 import RevenuePage from './pages/RevenuePage';
 import PosPage from './pages/PosPage';
+import OperationsPage from './pages/OperationsPage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -196,6 +197,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout fullBleed>
               <FieldStudiesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/operations"
+        element={
+          <ProtectedRoute>
+            <Layout fullBleed>
+              <OperationsPage />
             </Layout>
           </ProtectedRoute>
         }

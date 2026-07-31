@@ -107,10 +107,11 @@ export default {
       const valid = await env.PORTAL_KV.get(accessKey);
       if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
       await env.PORTAL_KV.delete(accessKey);
+      const embed = url.searchParams.get("embed") === "1" ? "?embed=1" : "";
       return new Response(null, {
         status: 302,
         headers: {
-          Location: "/",
+          Location: `/${embed}`,
           "Set-Cookie": await dashboardSessionCookie(env),
           "Cache-Control": "no-store",
           "Referrer-Policy": "no-referrer",

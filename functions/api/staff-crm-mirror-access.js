@@ -1,12 +1,12 @@
 // POST /api/staff-crm-mirror-access
-// Mints a one-time CRM mirror dashboard access URL for an Eben staff session.
+// Mints a one-time CRM mirror dashboard access URL for a staff session.
 //
-// Auth: Eben-only staff JWT at THIS layer. The CRM mirror Worker's bearer gate
+// Auth: staff JWT at THIS layer. The CRM mirror Worker's bearer gate
 // is satisfied server-side with WORKER_AUTH_SECRET — the browser never sees it.
 // The returned URL is an opaque /dashboard-access/:code handoff that expires in
 // five minutes and sets an HttpOnly dashboard session cookie.
 
-import { requireEbenStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
 const WORKER_TIMEOUT_MS = 15_000;
@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const { error } = await requireEbenStaffAuth(context, headers);
+    const { error } = await requireStaffAuth(context, headers);
     if (error) return error;
 
     const secret = context.env.WORKER_AUTH_SECRET;

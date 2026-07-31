@@ -108,6 +108,8 @@ Last updated: 2026-07-30.
 
 ### Amari Ops watchers (apps / auth / money deps)
 
+Operator UI hub: Staff → **Operations** (`/staff/operations`) with tabs for Systems (`/ops`), CRM Mirror, and Automation Watch. Shared tab chrome also lives on each deep-linked surface (`functions/lib/ops-surface-nav.js`). SwiftBar stays separate.
+
 Board rows beyond money paths — heartbeats in `PORTAL_KV`, judged by `functions/lib/ops-board.js`:
 
 | Board id | Signal keys | Emit from |

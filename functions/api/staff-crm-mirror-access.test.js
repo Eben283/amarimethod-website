@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/endpoint-guards.js", () => ({
-  requireEbenStaffAuth: vi.fn(),
+  requireStaffAuth: vi.fn(),
   corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
 }));
 
-import { requireEbenStaffAuth } from "../lib/endpoint-guards.js";
+import { requireStaffAuth } from "../lib/endpoint-guards.js";
 import { onRequestPost } from "./staff-crm-mirror-access.js";
 
 beforeEach(() => {
@@ -25,8 +25,8 @@ function context(env = { WORKER_AUTH_SECRET: "worker-secret" }) {
 }
 
 describe("staff-crm-mirror-access", () => {
-  it("forwards only after Eben staff auth and never returns the worker secret", async () => {
-    requireEbenStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } });
+  it("forwards only after staff auth and never returns the worker secret", async () => {
+    requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Garrett" } });
     global.fetch.mockResolvedValue({
       ok: true,
       status: 200,
@@ -51,18 +51,18 @@ describe("staff-crm-mirror-access", () => {
     );
   });
 
-  it("returns the Eben-only auth denial without minting a link", async () => {
-    requireEbenStaffAuth.mockResolvedValue({
-      error: new Response(JSON.stringify({ error: "Amari Ops is Eben-only" }), { status: 403 }),
+  it("returns the staff auth denial without minting a link", async () => {
+    requireStaffAuth.mockResolvedValue({
+      error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 }),
     });
 
     const response = await onRequestPost(context());
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(401);
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("fails closed when WORKER_AUTH_SECRET is missing", async () => {
-    requireEbenStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } });
+    requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } });
     const response = await onRequestPost(context({}));
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "CRM mirror access is not configured" });

@@ -1,3 +1,5 @@
+import { OPS_SURFACE_NAV_CSS, opsEmbedBootScript, opsSurfaceNavHtml } from "../../functions/lib/ops-surface-nav.js";
+
 const DASHBOARD_HTML = `<!doctype html>
 <html lang="en">
   <head>
@@ -64,17 +66,20 @@ const DASHBOARD_HTML = `<!doctype html>
       .access-hint strong { color: #edfff2; }
       @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid, .operations-grid, .profile-grid, .profile-sections { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
+      /*__OPS_SURFACE_NAV_CSS__*/
     </style>
   </head>
   <body>
+    <script>__OPS_EMBED_BOOT__</script>
     <main>
+      __OPS_SURFACE_NAV__
       <div class="eyebrow">Read-only operator view</div>
       <h1>CRM mirror<br />health</h1>
       <p class="lede">A focused view of the data copied from GoHighLevel and Stripe. It has no client messaging, booking, or automated ledger-posting capability.</p>
       <div class="state" id="state"><span class="dot"></span><span>__SERVER_STATE__</span></div>
       <p class="access-hint" id="access-hint" hidden>
         <strong>Operator session required.</strong>
-        Open this dashboard from Staff → Back office → CRM Mirror. That path mints a short-lived access link server-side; the worker bearer secret never enters the browser.
+        Open this dashboard from Staff → Operations → CRM Mirror. That path mints a short-lived access link server-side; the worker bearer secret never enters the browser.
       </p>
 
       <div class="grid" aria-label="Mirror data counts">
@@ -430,6 +435,9 @@ function initialSummary(status) {
 export function dashboardHtml(status = null) {
   const summary = initialSummary(status);
   return DASHBOARD_HTML
+    .replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS)
+    .replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("crm"))
+    .replace("__OPS_EMBED_BOOT__", opsEmbedBootScript())
     .replaceAll("__SERVER_STATE__", summary.state)
     .replaceAll("__SERVER_CONTACTS__", summary.contacts)
     .replaceAll("__SERVER_APPOINTMENTS__", summary.appointments)

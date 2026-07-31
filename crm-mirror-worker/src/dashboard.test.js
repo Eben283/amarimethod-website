@@ -6,7 +6,9 @@ describe("CRM mirror dashboard", () => {
     const html = dashboardHtml();
     expect(html).toContain("Read-only operator view");
     expect(html).toContain('id="access-hint"');
-    expect(html).toContain("Open this dashboard from Staff → Back office → CRM Mirror");
+    expect(html).toContain("Open this dashboard from Staff → Operations → CRM Mirror");
+    expect(html).toContain("ops-surface-nav");
+    expect(html).toContain("Automation Watch");
     expect(html).not.toContain('id="unlock"');
     expect(html).not.toContain("Unlock dashboard");
     expect(html).not.toContain("WORKER_AUTH_SECRET");

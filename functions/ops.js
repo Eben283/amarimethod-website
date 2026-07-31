@@ -1,7 +1,12 @@
 // GET /ops — Amari Ops board. Click and see. No PIN / login gate.
+import { OPS_SURFACE_NAV_CSS, opsEmbedBootScript, opsSurfaceNavHtml } from "./lib/ops-surface-nav.js";
 
 export async function onRequestGet() {
-  return new Response(OPS_HTML, {
+  const html = OPS_HTML
+    .replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS)
+    .replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("systems"))
+    .replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
+  return new Response(html, {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
@@ -433,11 +438,14 @@ export const OPS_HTML = `<!doctype html>
       50% { transform: scale(1.08); opacity: 0.75; }
     }
   }
+  /*__OPS_SURFACE_NAV_CSS__*/
 </style>
 </head>
 <body>
+<script>__OPS_EMBED_BOOT__</script>
 <div class="wrap" id="app">
-  <nav class="top-nav" aria-label="Ops">
+  __OPS_SURFACE_NAV__
+  <nav class="top-nav ops-embed-hide" aria-label="Ops">
     <a class="home-link" href="/staff">← Staff home</a>
   </nav>
   <header class="brand" id="homeHead">
