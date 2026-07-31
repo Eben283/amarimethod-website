@@ -22,15 +22,16 @@ const DEFAULT_MAX_ROUNDS = 4;
 
 // One completion via the shared client, no tools, no browser streaming — we just
 // want the final text back.
-async function complete(apiKey, system, messages, maxTokens) {
+async function complete(llm, system, messages, maxTokens) {
   const requestBody = buildRequestBody({
     system,
     messages,
     includeTools: false,
     maxTokens,
+    model: llm.model,
   });
   const { text } = await streamWithTools({
-    apiKey,
+    llm,
     requestBody,
     onTextDelta: () => {}, // accumulate only; nothing streams to the client here
     executeToolFn: async () => "", // no tools are ever offered, so this is unreachable
@@ -115,21 +116,27 @@ function parseAudit(text) {
  * generateOnBrand — the public interface of the gate.
  *
  * @param {object}   opts
- * @param {string}   opts.apiKey        Anthropic key (context.env.ANTHROPIC_API_KEY)
+ * @param {object}   [opts.llm]         from resolveCosLlm(env) — preferred
+ * @param {string}   [opts.apiKey]      legacy direct Anthropic key
  * @param {string}   opts.userName      who's driving ("Garrett" | "Eben" | "Staff")
  * @param {Array}    opts.messages      conversation so far: [{role, content}, ...],
  *                                      last one being the current request/brief/paste
  * @param {number}   [opts.maxRounds=3]  audit/revise rounds before best-effort return
  * @returns {Promise<{copy, channel, fixes: string[], rounds, passedClean, remainingTells: string[]}>}
  */
-export async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRounds = DEFAULT_MAX_ROUNDS }) {
-  if (!apiKey) throw new Error("voice-engine: missing Anthropic API key");
+export async function generateOnBrand({ llm, apiKey, userName = "Garrett", messages, maxRounds = DEFAULT_MAX_ROUNDS }) {
+  const transport =
+    llm ||
+    (apiKey
+      ? { provider: "anthropic", apiKey, url: "https://api.anthropic.com/v1/messages", model: "claude-sonnet-4-6" }
+      : null);
+  if (!transport?.apiKey) throw new Error("voice-engine: missing OpenRouter/Anthropic API key");
   if (!Array.isArray(messages) || messages.length === 0) {
     throw new Error("voice-engine: messages array is required");
   }
 
   // Pass 1 — generate.
-  const generated = await complete(apiKey, generatorSystem(userName), messages, 1500);
+  const generated = await complete(transport, generatorSystem(userName), messages, 1500);
   let { channel, copy } = parseGenerated(generated);
 
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
@@ -147,7 +154,7 @@ export async function generateOnBrand({ apiKey, userName = "Garrett", messages, 
     rounds = round + 1;
     const tells = mechanicalTells(copy);
 
-    const audited = await complete(apiKey, auditorSystem(), auditInput(taskText, copy, tells), 1500);
+    const audited = await complete(transport, auditorSystem(), auditInput(taskText, copy, tells), 1500);
     const { verdict, fixed, copy: revisedCopy } = parseAudit(audited);
 
     modelPassed = verdict === "PASS" && tells.length === 0;

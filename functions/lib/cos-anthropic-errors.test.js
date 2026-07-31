@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { anthropicUserError, COS_CALENDAR_IDS } from "./cos-anthropic.js";
+import { anthropicUserError, COS_CALENDAR_IDS, resolveCosLlm } from "./cos-anthropic.js";
 
 describe("anthropicUserError", () => {
   it("maps Anthropic credit-balance failures to a billing message", () => {
@@ -24,6 +24,29 @@ describe("anthropicUserError", () => {
     const mapped = anthropicUserError(new Error("network reset"));
     expect(mapped.code).toBe("stream_interrupted");
     expect(mapped.billing).toBe(false);
+  });
+});
+
+describe("resolveCosLlm", () => {
+  it("prefers the OpenRouter Chief of Staff key", () => {
+    const llm = resolveCosLlm({
+      OPENROUTER_API_KEY: "sk-or-v1-test",
+      ANTHROPIC_API_KEY: "sk-ant-should-not-win",
+    });
+    expect(llm.provider).toBe("openrouter");
+    expect(llm.apiKey).toBe("sk-or-v1-test");
+    expect(llm.url).toContain("openrouter.ai");
+    expect(llm.model).toMatch(/claude-sonnet-4/);
+  });
+
+  it("falls back to direct Anthropic when OpenRouter is unset", () => {
+    const llm = resolveCosLlm({ ANTHROPIC_API_KEY: "sk-ant-test" });
+    expect(llm.provider).toBe("anthropic");
+    expect(llm.url).toContain("api.anthropic.com");
+  });
+
+  it("returns null when neither key is set", () => {
+    expect(resolveCosLlm({})).toBeNull();
   });
 });
 

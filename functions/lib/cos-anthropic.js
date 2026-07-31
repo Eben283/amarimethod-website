@@ -19,10 +19,41 @@ import {
 import { recordFieldVisit, listFieldPartners } from "./cos-field-visits.js";
 
 const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
+const OPENROUTER_MESSAGES_API = "https://openrouter.ai/api/v1/messages";
 const MODEL = "claude-sonnet-4-6";
+/** OpenRouter Anthropic-skin slug — same Sonnet 4.6, billed on the CoS OpenRouter key. */
+const OPENROUTER_MODEL = "anthropic/claude-sonnet-4.6";
 const ANTHROPIC_VERSION = "2023-06-01";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const MAX_TOOL_ROUNDS = 5;
+
+/**
+ * Prefer the OpenRouter "Chief of Staff" key (OPENROUTER_API_KEY). Fall back to
+ * direct Anthropic only when OpenRouter is unset. Keeps the Messages API + tool
+ * use + streaming path identical; only the host and model slug change.
+ *
+ * @param {Record<string, string|undefined>} env
+ * @returns {{ provider: "openrouter"|"anthropic", apiKey: string, url: string, model: string } | null}
+ */
+export function resolveCosLlm(env) {
+  if (env?.OPENROUTER_API_KEY) {
+    return {
+      provider: "openrouter",
+      apiKey: env.OPENROUTER_API_KEY,
+      url: OPENROUTER_MESSAGES_API,
+      model: env.OPENROUTER_COS_MODEL || OPENROUTER_MODEL,
+    };
+  }
+  if (env?.ANTHROPIC_API_KEY) {
+    return {
+      provider: "anthropic",
+      apiKey: env.ANTHROPIC_API_KEY,
+      url: ANTHROPIC_API,
+      model: env.ANTHROPIC_COS_MODEL || MODEL,
+    };
+  }
+  return null;
+}
 
 // Active GHL calendars the CoS day summary + list_calendar_events tool must sweep.
 // GHL's /calendars/events requires calendarId — location-only returns []. Keep in
@@ -56,29 +87,37 @@ export function anthropicUserError(err) {
     lower.includes("credit balance is too low") ||
     lower.includes("purchase credits") ||
     lower.includes("plans & billing") ||
-    (lower.includes("billing") && lower.includes("credit"))
+    (lower.includes("billing") && lower.includes("credit")) ||
+    lower.includes("insufficient credits") ||
+    lower.includes("402")
   ) {
     return {
-      message: "Anthropic credits are exhausted — top up Plans & Billing, then try again.",
+      message: "AI credits are exhausted — top up OpenRouter (Chief of Staff key) or Anthropic, then try again.",
       code: "anthropic_credits",
       billing: true,
     };
   }
-  if (lower.includes("anthropic 401") || lower.includes("invalid x-api-key") || lower.includes("authentication")) {
+  if (
+    lower.includes("anthropic 401") ||
+    lower.includes("openrouter 401") ||
+    lower.includes("invalid x-api-key") ||
+    lower.includes("user not found") ||
+    lower.includes("authentication")
+  ) {
     return {
-      message: "Anthropic API key was rejected. Check ANTHROPIC_API_KEY in Cloudflare.",
+      message: "AI API key was rejected. Check OPENROUTER_API_KEY (preferred) or ANTHROPIC_API_KEY in Cloudflare.",
       code: "anthropic_auth",
       billing: false,
     };
   }
-  if (lower.includes("anthropic 429") || lower.includes("rate_limit")) {
+  if (lower.includes("anthropic 429") || lower.includes("openrouter 429") || lower.includes("rate_limit")) {
     return {
-      message: "Anthropic rate-limited us. Wait a moment and try again.",
+      message: "The AI provider rate-limited us. Wait a moment and try again.",
       code: "anthropic_rate_limit",
       billing: false,
     };
   }
-  if (raw.startsWith("Anthropic ")) {
+  if (raw.startsWith("Anthropic ") || raw.startsWith("OpenRouter ")) {
     return {
       message: "The AI service rejected the request. Try again in a moment.",
       code: "anthropic_request",
@@ -621,13 +660,13 @@ export async function executeTool(context, toolName, input, user = "Eben", field
 }
 
 // Build a Messages API request body. The system prompt is sent as a
-// cache_control:"ephemeral" block — Anthropic caches it for 5 min.
-// COS already KV-caches the dynamic context (calendar, GHL summary) for
-// 5 min, so the assembled system prompt is stable within that window —
-// cache hits happen for repeat messages in the same session.
-export function buildRequestBody({ system, messages, includeTools = true, maxTokens = 2048 }) {
+// cache_control:"ephemeral" block — Anthropic caches it for 5 min (OpenRouter's
+// Anthropic skin passes this through). COS already KV-caches the dynamic
+// context (calendar, GHL summary) for 5 min, so the assembled system prompt is
+// stable within that window — cache hits happen for repeat messages in-session.
+export function buildRequestBody({ system, messages, includeTools = true, maxTokens = 2048, model = MODEL }) {
   const body = {
-    model: MODEL,
+    model,
     max_tokens: maxTokens,
     stream: true,
     system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
@@ -644,16 +683,36 @@ export function buildRequestBody({ system, messages, includeTools = true, maxTok
   return body;
 }
 
+function llmHeaders(llm) {
+  const headers = {
+    "content-type": "application/json",
+    "anthropic-version": ANTHROPIC_VERSION,
+    "x-api-key": llm.apiKey,
+  };
+  if (llm.provider === "openrouter") {
+    headers.Authorization = `Bearer ${llm.apiKey}`;
+    headers["HTTP-Referer"] = "https://www.amarimethod.com";
+    headers["X-Title"] = "Amari Chief of Staff";
+  }
+  return headers;
+}
+
 // Make a single Messages API call. Returns the raw streaming Response.
-export async function callAnthropic(apiKey, requestBody) {
-  return fetch(ANTHROPIC_API, {
+// `llm` is from resolveCosLlm(); legacy callAnthropic(apiKey, body) still works
+// against direct Anthropic for older callers/tests.
+export async function callAnthropic(apiKeyOrLlm, requestBody) {
+  const llm =
+    typeof apiKeyOrLlm === "string"
+      ? { provider: "anthropic", apiKey: apiKeyOrLlm, url: ANTHROPIC_API, model: MODEL }
+      : apiKeyOrLlm;
+  const body = {
+    ...requestBody,
+    model: requestBody.model || llm.model || MODEL,
+  };
+  return fetch(llm.url || ANTHROPIC_API, {
     method: "POST",
-    headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
+    headers: llmHeaders(llm),
+    body: JSON.stringify(body),
   });
 }
 
@@ -661,7 +720,14 @@ export async function callAnthropic(apiKey, requestBody) {
 // Calls onTextDelta(text) for each text chunk Claude produces (across all turns).
 // Calls executeToolFn(name, input) when Claude requests a tool.
 // Returns { text, usage, tool_calls } when message stops (no more tool_use).
-export async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn }) {
+export async function streamWithTools({ apiKey, llm, requestBody, onTextDelta, executeToolFn }) {
+  const transport =
+    llm ||
+    (apiKey
+      ? { provider: "anthropic", apiKey, url: ANTHROPIC_API, model: MODEL }
+      : null);
+  if (!transport?.apiKey) throw new Error("Anthropic 401: missing API key");
+
   let messages = [...requestBody.messages];
   let allText = "";
   const allToolCalls = [];
@@ -672,12 +738,14 @@ export async function streamWithTools({ apiKey, requestBody, onTextDelta, execut
     cache_creation_input_tokens: 0,
   };
 
+  const label = transport.provider === "openrouter" ? "OpenRouter" : "Anthropic";
+
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const resp = await callAnthropic(apiKey, { ...requestBody, messages });
+    const resp = await callAnthropic(transport, { ...requestBody, messages });
 
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error(`Anthropic ${resp.status}: ${errText.slice(0, 500)}`);
+      throw new Error(`${label} ${resp.status}: ${errText.slice(0, 500)}`);
     }
 
     const reader = resp.body.getReader();

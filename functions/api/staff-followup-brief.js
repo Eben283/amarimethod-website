@@ -10,12 +10,10 @@
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { callAnthropic, resolveCosLlm } from "../lib/cos-anthropic.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
-const MODEL = "claude-sonnet-4-6";
 
 
 // Garrett's voice + Amari context + strict-JSON contract. The banned phrases are
@@ -89,8 +87,8 @@ export async function onRequestPost(context) {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
-    const apiKey = context.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return new Response(JSON.stringify({ error: "Brief not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers });
+    const llm = resolveCosLlm(context.env);
+    if (!llm) return new Response(JSON.stringify({ error: "Brief not configured (missing OPENROUTER_API_KEY)" }), { status: 500, headers });
 
     const payload = await context.request.json().catch(() => ({}));
     const { contactId, contact } = payload;
@@ -131,20 +129,17 @@ export async function onRequestPost(context) {
     }
 
     const body = {
-      model: MODEL,
+      model: llm.model,
       max_tokens: 1200,
+      stream: false,
       system: SYSTEM,
       messages: [{ role: "user", content: buildUserPrompt(contact, thread) }],
     };
 
-    const aiRes = await fetch(ANTHROPIC_API, {
-      method: "POST",
-      headers: { "x-api-key": apiKey, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const aiRes = await callAnthropic(llm, body);
     if (!aiRes.ok) {
       const detail = await aiRes.text().catch(() => "");
-      console.error("[staff-followup-brief] Anthropic error:", aiRes.status, detail.slice(0, 300));
+      console.error("[staff-followup-brief] LLM error:", aiRes.status, detail.slice(0, 300));
       return new Response(JSON.stringify({ error: "Couldn't build the brief — model error. Try again." }), { status: 422, headers });
     }
     const aiData = await aiRes.json();
