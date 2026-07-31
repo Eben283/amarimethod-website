@@ -1040,4 +1040,8 @@ export async function bookFieldStudyFollowup(
   });
 }
 
+export async function getCrmMirrorAccessUrl(): Promise<{ url: string; expiresInSeconds: number }> {
+  return fetchApi('/staff-crm-mirror-access', { method: 'POST' });
+}
+
 export { ApiError };

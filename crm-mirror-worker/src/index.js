@@ -98,8 +98,8 @@ async function actionPayload(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    // The shell has no data or action controls. Data endpoints remain protected,
-    // and the fragment-held access token is stripped from browser history.
+    // The shell has no data or action controls. Data endpoints remain protected.
+    // Browser sessions come only from /dashboard-access/:code (never a pasted secret).
     const dashboardAccess = url.pathname.match(/^\/dashboard-access\/([^/]+)$/);
     if (request.method === "GET" && dashboardAccess) {
       const code = decodeURIComponent(dashboardAccess[1]);

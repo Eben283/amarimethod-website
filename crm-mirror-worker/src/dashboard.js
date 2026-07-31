@@ -59,12 +59,9 @@ const DASHBOARD_HTML = `<!doctype html>
       .action-row button:hover { transform: translateY(-1px); }
       .action-status { color: #f1d59b; font-size: .74rem; line-height: 1.4; }
       .footer { margin-top: 46px; color: #708378; font-size: .8rem; }
-      .unlock { display: grid; gap: 10px; max-width: 520px; margin: 0 0 28px; padding: 16px; border: 1px solid #31523e; border-radius: 16px; background: #173222; }
-      .unlock[hidden] { display: none !important; }
-      .unlock label { display: grid; gap: 6px; color: #b7e8c7; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-      .unlock input { width: 100%; padding: 11px 12px; border: 1px solid #3d644c; border-radius: 10px; background: #10271b; color: #edf4ef; font: 500 .95rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; }
-      .unlock button { justify-self: start; padding: 10px 14px; border: 0; border-radius: 10px; background: #3f7d57; color: #edfff2; cursor: pointer; font: 700 .82rem/1 ui-sans-serif, system-ui, sans-serif; }
-      .unlock button:hover { transform: translateY(-1px); }
+      .access-hint { max-width: 520px; margin: 0 0 28px; padding: 16px; border: 1px solid #31523e; border-radius: 16px; background: #173222; color: #b7e8c7; font-size: .86rem; line-height: 1.5; }
+      .access-hint[hidden] { display: none !important; }
+      .access-hint strong { color: #edfff2; }
       @media (max-width: 720px) { main { padding-top: 36px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .review-grid, .operations-grid, .profile-grid, .profile-sections { grid-template-columns: 1fr; } }
       @media (max-width: 420px) { .grid { grid-template-columns: 1fr; } }
     </style>
@@ -75,13 +72,10 @@ const DASHBOARD_HTML = `<!doctype html>
       <h1>CRM mirror<br />health</h1>
       <p class="lede">A focused view of the data copied from GoHighLevel and Stripe. It has no client messaging, booking, or automated ledger-posting capability.</p>
       <div class="state" id="state"><span class="dot"></span><span>__SERVER_STATE__</span></div>
-      <form class="unlock" id="unlock" hidden>
-        <label>Operator access token
-          <input id="unlock-token" type="password" autocomplete="off" spellcheck="false" placeholder="WORKER_AUTH_SECRET" />
-        </label>
-        <button type="submit">Unlock dashboard</button>
-        <p class="action-status" id="unlock-status">Paste the worker bearer secret to load mirror counts and review queues.</p>
-      </form>
+      <p class="access-hint" id="access-hint" hidden>
+        <strong>Operator session required.</strong>
+        Open this dashboard from Staff → Back office → CRM Mirror. That path mints a short-lived access link server-side; the worker bearer secret never enters the browser.
+      </p>
 
       <div class="grid" aria-label="Mirror data counts">
         <article class="card"><span class="label">Contacts</span><strong class="value" id="contacts">__SERVER_CONTACTS__</strong><span class="detail">Copied from GoHighLevel</span></article>
@@ -150,55 +144,10 @@ const DASHBOARD_HTML = `<!doctype html>
     </main>
     <script>
       (async () => {
-        const fragment = new URLSearchParams(location.hash.slice(1));
-        const token = fragment.get("access_token");
-        const reviewToken = fragment.get("review_access_token");
         const state = document.querySelector("#state span:last-child");
-        const unlock = document.getElementById("unlock");
-        const unlockStatus = document.getElementById("unlock-status");
-        const showUnlock = (message) => {
-          unlock.hidden = false;
-          if (message) unlockStatus.textContent = message;
-        };
-        unlock.addEventListener("submit", async (event) => {
-          event.preventDefault();
-          const secret = document.getElementById("unlock-token").value.trim();
-          if (!secret) {
-            unlockStatus.textContent = "Paste the worker bearer secret first.";
-            return;
-          }
-          unlockStatus.textContent = "Opening protected session…";
-          const sessionResponse = await fetch("/dashboard-session", {
-            method: "POST",
-            headers: { Authorization: "Bearer " + secret },
-            credentials: "same-origin",
-          });
-          if (!sessionResponse.ok) {
-            unlockStatus.textContent = "That access token was rejected.";
-            return;
-          }
-          window.location.reload();
-        });
+        const accessHint = document.getElementById("access-hint");
+        const showAccessHint = () => { accessHint.hidden = false; };
         try {
-          if (token) {
-            const sessionResponse = await fetch("/dashboard-session", {
-              method: "POST",
-              headers: { Authorization: "Bearer " + token },
-              credentials: "same-origin",
-            });
-            if (!sessionResponse.ok) throw new Error("operator access was denied");
-          }
-          if (reviewToken) {
-            const reviewSessionResponse = await fetch("/review-session", {
-              method: "POST",
-              headers: { Authorization: "Bearer " + reviewToken },
-              credentials: "same-origin",
-            });
-            if (!reviewSessionResponse.ok) throw new Error("review access was denied");
-          }
-          if (token || reviewToken) {
-            history.replaceState(null, "", location.pathname + location.search);
-          }
           const [statusResponse, operationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             fetch("/status", { credentials: "same-origin" }),
             fetch("/operations?limit=25", { credentials: "same-origin" }),
@@ -443,7 +392,7 @@ const DASHBOARD_HTML = `<!doctype html>
           state.textContent = "Protected data loaded · no sender actions available";
         } catch (error) {
           state.textContent = "Protected operator session required";
-          showUnlock("Paste the worker bearer secret to load mirror data.");
+          showAccessHint();
         }
       })();
     </script>

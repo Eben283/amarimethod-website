@@ -5,7 +5,13 @@ describe("CRM mirror dashboard", () => {
   it("is a read-only shell that requires protected access before loading aggregates", () => {
     const html = dashboardHtml();
     expect(html).toContain("Read-only operator view");
-    expect(html).toContain('fetch("/dashboard-session"');
+    expect(html).toContain('id="access-hint"');
+    expect(html).toContain("Open this dashboard from Staff → Back office → CRM Mirror");
+    expect(html).not.toContain('id="unlock"');
+    expect(html).not.toContain("Unlock dashboard");
+    expect(html).not.toContain("WORKER_AUTH_SECRET");
+    expect(html).not.toContain("access_token");
+    expect(html).not.toContain('fetch("/dashboard-session"');
     expect(html).toContain('fetch("/review-session"');
     expect(html).toContain('fetch("/status", { credentials: "same-origin" })');
     expect(html).toContain('fetch("/operations?limit=25", { credentials: "same-origin" })');
@@ -27,10 +33,7 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain("Not a session package");
     expect(html).toContain("elevated review session");
     expect(html).toContain("Exact email evidence, pending review");
-    expect(html).toContain("history.replaceState");
     expect(html).toContain("It cannot send email or SMS");
-    expect(html).toContain('id="unlock"');
-    expect(html).toContain("Unlock dashboard");
   });
 
   it("renders only aggregate source health when the Worker has an authenticated session", () => {

@@ -1,7 +1,7 @@
 import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDayData } from '../lib/api';
+import { getCrmMirrorAccessUrl, getDayData } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 
 type HomeTool = {
@@ -11,6 +11,15 @@ type HomeTool = {
   to?: string;
   href?: string;
   tone: 'ink' | 'lake' | 'coral' | 'moss' | 'ochre' | 'violet';
+};
+
+type BackOfficeTool = {
+  label: string;
+  detail: string;
+  Icon: typeof CalendarDays;
+  to?: string;
+  href?: string;
+  action?: 'crm-mirror';
 };
 
 const TOOLS: HomeTool[] = [
@@ -28,11 +37,11 @@ const TOOLS: HomeTool[] = [
   { label: 'Playbooks', detail: 'Reference', Icon: BookOpen, to: '/playbook', tone: 'moss' },
 ];
 
-const BACK_OFFICE = [
+const BACK_OFFICE: BackOfficeTool[] = [
   { label: 'Amari Ops', detail: 'Systems · path · why', Icon: Activity, href: '/ops' },
   { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
   { label: 'Automation Watch', detail: 'Message review', Icon: Workflow, href: 'https://reminder-engine.eben-fa2.workers.dev/dashboard' },
-  { label: 'CRM Mirror', detail: 'Reconciliation', Icon: Database, href: 'https://amari-crm-mirror.eben-fa2.workers.dev/' },
+  { label: 'CRM Mirror', detail: 'Reconciliation', Icon: Database, action: 'crm-mirror' },
 ];
 
 type SessionDoor = { appointment: TodayAppointment; state: 'now' | 'next' };
@@ -71,6 +80,8 @@ export default function HomePage() {
   const [sessionDoor, setSessionDoor] = useState<SessionDoor | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  const [crmMirrorOpening, setCrmMirrorOpening] = useState(false);
+  const [crmMirrorError, setCrmMirrorError] = useState<string | null>(null);
 
   const loadSessionDoor = useCallback(async () => {
     try {
@@ -118,9 +129,23 @@ export default function HomePage() {
     if (tool.href) window.location.assign(tool.href);
   }
 
-  function openBackOffice(tool: typeof BACK_OFFICE[number]) {
-    if ('to' in tool && tool.to) navigate(tool.to);
-    if ('href' in tool && tool.href) window.location.assign(tool.href);
+  async function openBackOffice(tool: BackOfficeTool) {
+    if (tool.action === 'crm-mirror') {
+      if (crmMirrorOpening) return;
+      setCrmMirrorOpening(true);
+      setCrmMirrorError(null);
+      try {
+        const { url } = await getCrmMirrorAccessUrl();
+        window.location.assign(url);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not open CRM Mirror';
+        setCrmMirrorError(message);
+        setCrmMirrorOpening(false);
+      }
+      return;
+    }
+    if (tool.to) navigate(tool.to);
+    if (tool.href) window.location.assign(tool.href);
   }
 
   return (
@@ -192,13 +217,18 @@ export default function HomePage() {
         <div className="staff-backoffice__links">
           {BACK_OFFICE.map((tool) => {
             const { label, detail, Icon } = tool;
-            return <button key={label} type="button" onClick={() => openBackOffice(tool)}>
+            const opening = tool.action === 'crm-mirror' && crmMirrorOpening;
+            return <button key={label} type="button" onClick={() => { void openBackOffice(tool); }} disabled={opening} aria-busy={opening || undefined}>
               <span className="staff-backoffice__icon"><Icon aria-hidden="true" /></span>
-              <span className="staff-backoffice__copy"><strong>{label}</strong><small>{detail}</small></span>
-              {tool.href ? <ArrowUpRight aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
+              <span className="staff-backoffice__copy">
+                <strong>{label}</strong>
+                <small>{opening ? 'Opening protected session…' : detail}</small>
+              </span>
+              {opening ? <Loader2 aria-hidden="true" className="animate-spin" /> : tool.href || tool.action ? <ArrowUpRight aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
             </button>;
           })}
         </div>
+        {crmMirrorError ? <p className="staff-backoffice__error" role="alert">{crmMirrorError}</p> : null}
       </section>
 
       <section className="staff-resources" aria-label="Staff resources">
