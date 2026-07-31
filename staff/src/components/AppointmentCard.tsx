@@ -6,6 +6,7 @@ interface Props {
   onTap: () => void;
   onDocSession?: () => void;
   onSellLink?: () => void;
+  onBook?: () => void;
 }
 
 const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
@@ -36,7 +37,7 @@ function sessionTypeLabel(calendarName: string): string {
   return calendarName.length > 20 ? calendarName.slice(0, 18) + '...' : calendarName;
 }
 
-export default function AppointmentCard({ appointment, onTap, onDocSession, onSellLink }: Props) {
+export default function AppointmentCard({ appointment, onTap, onDocSession, onSellLink, onBook }: Props) {
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
 
@@ -123,8 +124,8 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
         <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
       </button>
 
-      {(onDocSession || onSellLink || (appointment.meetingLocation && !isPast)) && (
-        <div className="mt-3 pt-3 border-t border-amari-border flex items-center gap-2 justify-end">
+      {(onDocSession || onSellLink || onBook || (appointment.meetingLocation && !isPast)) && (
+        <div className="mt-3 pt-3 border-t border-amari-border flex items-center gap-2 justify-end flex-wrap">
           {appointment.meetingLocation && !isPast && (
             <a
               href={appointment.meetingLocation}
@@ -135,6 +136,14 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
             >
               <Video className="w-3 h-3" /> Join
             </a>
+          )}
+          {onBook && (
+            <button
+              onClick={onBook}
+              className="text-xs text-amari-charcoal font-medium px-2 py-1 rounded hover:bg-amari-light-sand min-h-[36px]"
+            >
+              Book next
+            </button>
           )}
           {onSellLink && (
             <button

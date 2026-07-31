@@ -1044,4 +1044,43 @@ export async function getCrmMirrorAccessUrl(): Promise<{ url: string; expiresInS
   return fetchApi('/staff-crm-mirror-access', { method: 'POST' });
 }
 
+// ── Staff booking (owned UI; GHL still availability + write-back) ────────────
+export type StaffBookType = { id: string; label: string; durationMinutes: number };
+export type StaffBookSlot = { date: string; hour: number; minute: number; datetime: string };
+
+export async function listStaffBookTypes(): Promise<StaffBookType[]> {
+  const r = await fetchApi<{ types: StaffBookType[] }>('/staff-book', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'list-types' }),
+  });
+  return r.types || [];
+}
+
+export async function getStaffBookSlots(
+  sessionType: string,
+  startDate: string,
+  endDate: string,
+  timezone = 'America/Los_Angeles',
+): Promise<StaffBookSlot[]> {
+  const r = await fetchApi<{ slots: StaffBookSlot[] }>('/staff-book', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'get-slots', sessionType, startDate, endDate, timezone }),
+  });
+  return r.slots || [];
+}
+
+export async function staffBookAppointment(input: {
+  contactId: string;
+  sessionType: string;
+  startTime: string;
+  timezone?: string;
+  idempotencyKey: string;
+  notify?: boolean;
+}): Promise<{ appointment: { id: string; startTime: string; sessionType: string; calendarId: string; title: string } }> {
+  return fetchApi('/staff-book', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'book', timezone: 'America/Los_Angeles', notify: true, ...input }),
+  });
+}
+
 export { ApiError };

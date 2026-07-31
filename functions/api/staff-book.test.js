@@ -15,7 +15,16 @@ describe("staff-book-calendars", () => {
   it("lists types for the UI", () => {
     const types = listStaffBookTypes();
     expect(types.some((t) => t.id === "assessment")).toBe(true);
+    expect(types.some((t) => t.id === "followup_package_in_person")).toBe(true);
+    expect(types.some((t) => t.id === "followup_in_person")).toBe(true);
+    expect(types.some((t) => t.id === "initial_in_person")).toBe(true);
     expect(types.some((t) => t.id === "partner_initial")).toBe(true);
+  });
+
+  it("maps pay-as-you-go follow-up calendars", () => {
+    expect(resolveStaffBookType("followup_in_person")?.calendarId).toBe("SKDVOL8wtUN6Ne0ppbC9");
+    expect(resolveStaffBookType("followup_virtual")?.calendarId).toBe("oVn77FcecFY16iS2pHyP");
+    expect(resolveStaffBookType("initial_virtual")?.calendarId).toBe("ySmht5hx4uZGEpgZrlCw");
   });
 });
 

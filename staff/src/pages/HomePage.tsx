@@ -1,6 +1,7 @@
-import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
+import { Activity, ArrowUpRight, BookOpen, CalendarDays, CalendarPlus, ChevronRight, CircleDollarSign, ClipboardPlus, Database, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet, Workflow } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import BookForSomeoneModal from '../components/BookForSomeoneModal';
 import { getCrmMirrorAccessUrl, getDayData } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 
@@ -10,6 +11,7 @@ type HomeTool = {
   Icon: typeof CalendarDays;
   to?: string;
   href?: string;
+  action?: 'book';
   tone: 'ink' | 'lake' | 'coral' | 'moss' | 'ochre' | 'violet';
 };
 
@@ -24,6 +26,7 @@ type BackOfficeTool = {
 
 const TOOLS: HomeTool[] = [
   { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
+  { label: 'Book', detail: 'Appointments', Icon: CalendarPlus, action: 'book', tone: 'lake' },
   { label: 'Follow-Up', detail: 'Outreach', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
   { label: 'Clients', detail: 'People', Icon: Users, to: '/clients', tone: 'lake' },
   { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
@@ -82,6 +85,7 @@ export default function HomePage() {
   const [sessionError, setSessionError] = useState(false);
   const [crmMirrorOpening, setCrmMirrorOpening] = useState(false);
   const [crmMirrorError, setCrmMirrorError] = useState<string | null>(null);
+  const [bookOpen, setBookOpen] = useState(false);
 
   const loadSessionDoor = useCallback(async () => {
     try {
@@ -125,6 +129,10 @@ export default function HomePage() {
   }, [loadSessionDoor]);
 
   function open(tool: HomeTool) {
+    if (tool.action === 'book') {
+      setBookOpen(true);
+      return;
+    }
     if (tool.to) navigate(tool.to);
     if (tool.href) window.location.assign(tool.href);
   }
@@ -243,6 +251,12 @@ export default function HomePage() {
         </a>
       </section>
 
+      {bookOpen && (
+        <BookForSomeoneModal
+          onClose={() => setBookOpen(false)}
+          onBooked={() => setBookOpen(false)}
+        />
+      )}
     </main>
   );
 }

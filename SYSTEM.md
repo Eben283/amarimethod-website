@@ -7,7 +7,7 @@ Companion docs:
 - Marketing visual language → `DESIGN.md` + `css/site-v6.css`
 - Native booking architecture → `amari-method-docs/ops/memory/project_native_booking.md`
 
-Last updated: 2026-07-30.
+Last updated: 2026-07-31.
 
 ---
 
@@ -60,6 +60,7 @@ Last updated: 2026-07-30.
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |
 | Portal `BookingModal` | Native | `portal/src/components/BookingModal.tsx` | Prepaid → `portal-book`; no balance → Amari calendar then existing $190 payment link (`portal-pay-followup`) |
 | Staff Field Studies calendar | Native | `staff/src/pages/FieldStudiesPage.tsx` (`CalendarModal`) | Uses shared calendar; study multi-session loop is page-specific |
+| Staff Book appointment | Native | `staff/src/components/BookForSomeoneModal.tsx`, `/api/staff-book`, `functions/lib/staff-book-calendars.js` | Search contact → session type → Amari calendar → direct GHL appointment write. Entry: Home **Book**, Client detail, Today **Book next**. Full staff slot truth (no look-busy). |
 | `EmbedCalendarModal` | **Removed** | was `portal/src/components/EmbedCalendarModal.tsx` | Retired — portal QuickActions + ProgressTracker use `BookingModal` |
 | Marketing GHL iframe helper | **Legacy / unused** | `js/main.js` (`openCalendarModal`) | Dead helper; public pages use `/book/*` |
 

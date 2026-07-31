@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus,
+  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, CalendarPlus,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
+import BookForSomeoneModal from '../components/BookForSomeoneModal';
 import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
@@ -110,6 +111,7 @@ export default function ClientDetailPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
   const [showMorePayLinks, setShowMorePayLinks] = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -428,7 +430,13 @@ export default function ClientDetailPage() {
         </div>
 
         {/* ============ ADMIN & CHECKOUT ============ */}
-        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Payment, products, records</span><span className="gl" /></div>
+        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Booking, payment, products, records</span><span className="gl" /></div>
+
+        <button className="sa-paytrigger" onClick={() => setBookOpen(true)}>
+          <span className="ic"><CalendarPlus size={17} /></span>
+          <span className="tx"><b>Book appointment</b><span>Owned calendar — no GHL needed</span></span>
+          <span className="cv"><ChevronRight size={18} /></span>
+        </button>
 
         {/* pay status banner */}
         {showPaymentBanner && (
@@ -728,6 +736,14 @@ export default function ClientDetailPage() {
           contactId={client.id}
           onClose={() => setShowAddNote(false)}
           onSaved={() => { setShowAddNote(false); loadClient(); }}
+        />
+      )}
+      {bookOpen && (
+        <BookForSomeoneModal
+          contactId={client.id}
+          contactName={`${client.firstName} ${client.lastName}`.trim()}
+          onClose={() => setBookOpen(false)}
+          onBooked={() => { setBookOpen(false); loadClient(); }}
         />
       )}
     </div>

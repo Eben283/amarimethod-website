@@ -2,6 +2,30 @@
 // Never trust a client-supplied calendarId.
 
 export const STAFF_BOOK_TYPES = {
+  followup_package_in_person: {
+    calendarId: "ZO1jlGfy01rsxVqicoSB",
+    durationMinutes: 50,
+    title: "Amari Method Follow-up — In Person",
+    label: "Follow-up · package · in person",
+  },
+  followup_package_virtual: {
+    calendarId: "bJFkhVP35Ecwh4tLnSmy",
+    durationMinutes: 50,
+    title: "Amari Method Follow-up — Virtual",
+    label: "Follow-up · package · virtual",
+  },
+  followup_in_person: {
+    calendarId: "SKDVOL8wtUN6Ne0ppbC9",
+    durationMinutes: 50,
+    title: "Amari Method Follow-up — In Person",
+    label: "Follow-up · pay-as-you-go · in person",
+  },
+  followup_virtual: {
+    calendarId: "oVn77FcecFY16iS2pHyP",
+    durationMinutes: 50,
+    title: "Amari Method Follow-up — Virtual",
+    label: "Follow-up · pay-as-you-go · virtual",
+  },
   assessment: {
     calendarId: "EM6vB2mq7EAdGCbUb3j1",
     durationMinutes: 40,
@@ -14,17 +38,17 @@ export const STAFF_BOOK_TYPES = {
     title: "Amari Method Discovery Call",
     label: "Discovery call (free)",
   },
-  followup_package_in_person: {
-    calendarId: "ZO1jlGfy01rsxVqicoSB",
-    durationMinutes: 50,
-    title: "Amari Method Follow-up — In Person",
-    label: "Follow-up · package · in person",
+  initial_in_person: {
+    calendarId: "G7OAnnJuFbMF6nQSlZVQ",
+    durationMinutes: 60,
+    title: "Amari Method Initial Session — In Person",
+    label: "Initial · in person",
   },
-  followup_package_virtual: {
-    calendarId: "bJFkhVP35Ecwh4tLnSmy",
-    durationMinutes: 50,
-    title: "Amari Method Follow-up — Virtual",
-    label: "Follow-up · package · virtual",
+  initial_virtual: {
+    calendarId: "ySmht5hx4uZGEpgZrlCw",
+    durationMinutes: 60,
+    title: "Amari Method Initial Session — Virtual",
+    label: "Initial · virtual",
   },
   partner_initial: {
     calendarId: "lfsnaiGiLNL2z12pLKDP",
