@@ -24,6 +24,74 @@ const ANTHROPIC_VERSION = "2023-06-01";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const MAX_TOOL_ROUNDS = 5;
 
+// Active GHL calendars the CoS day summary + list_calendar_events tool must sweep.
+// GHL's /calendars/events requires calendarId — location-only returns []. Keep in
+// sync between getGhlSummary (cos-chat.js) and executeTool below.
+export const COS_CALENDAR_IDS = Object.freeze([
+  "G7OAnnJuFbMF6nQSlZVQ", // Initial — In Person
+  "ySmht5hx4uZGEpgZrlCw", // Initial — Virtual
+  "uUDFD0ZQEWtzGLS9aLq7", // Initial — Paid at Partner
+  "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment
+  "SKDVOL8wtUN6Ne0ppbC9", // Follow-up — In Person
+  "ZO1jlGfy01rsxVqicoSB", // Follow-up — In Person (Package)
+  "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
+  "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
+  "B5aGXLoS4kzAjZAMMXxk", // Entrainment
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
+  "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
+  "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
+  "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
+]);
+
+/**
+ * Map a thrown Anthropic / stream error into a short staff-facing message.
+ * Keeps raw API bodies out of the UI while calling out the common billing miss
+ * that otherwise looked like "Stream interrupted."
+ */
+export function anthropicUserError(err) {
+  const raw = err instanceof Error ? err.message : String(err || "");
+  const lower = raw.toLowerCase();
+  if (
+    lower.includes("credit balance is too low") ||
+    lower.includes("purchase credits") ||
+    lower.includes("plans & billing") ||
+    (lower.includes("billing") && lower.includes("credit"))
+  ) {
+    return {
+      message: "Anthropic credits are exhausted — top up Plans & Billing, then try again.",
+      code: "anthropic_credits",
+      billing: true,
+    };
+  }
+  if (lower.includes("anthropic 401") || lower.includes("invalid x-api-key") || lower.includes("authentication")) {
+    return {
+      message: "Anthropic API key was rejected. Check ANTHROPIC_API_KEY in Cloudflare.",
+      code: "anthropic_auth",
+      billing: false,
+    };
+  }
+  if (lower.includes("anthropic 429") || lower.includes("rate_limit")) {
+    return {
+      message: "Anthropic rate-limited us. Wait a moment and try again.",
+      code: "anthropic_rate_limit",
+      billing: false,
+    };
+  }
+  if (raw.startsWith("Anthropic ")) {
+    return {
+      message: "The AI service rejected the request. Try again in a moment.",
+      code: "anthropic_request",
+      billing: false,
+    };
+  }
+  return {
+    message: "The connection dropped before the reply finished. Please try again.",
+    code: "stream_interrupted",
+    billing: false,
+  };
+}
+
 // GHL custom field IDs (single-sourced from lib/ghl-fields.js)
 const FIELD_SESSIONS_REMAINING = GHL_FIELD_IDS.sessions_remaining;
 const FIELD_SESSIONS_COMPLETED = GHL_FIELD_IDS.sessions_completed;
@@ -418,21 +486,6 @@ export async function executeTool(context, toolName, input, user = "Eben", field
       // silently returns {events:[]}, causing a 422 or an always-empty result.
       // Sweep each active calendar in parallel and merge, same pattern as
       // getGhlSummary() in cos-chat.js.
-      const CALENDAR_IDS = [
-        "G7OAnnJuFbMF6nQSlZVQ", // Initial — In Person
-        "ySmht5hx4uZGEpgZrlCw", // Initial — Virtual
-        "uUDFD0ZQEWtzGLS9aLq7", // Initial — Paid at Partner
-        "SKDVOL8wtUN6Ne0ppbC9", // Follow-up — In Person
-        "ZO1jlGfy01rsxVqicoSB", // Follow-up — In Person (Package)
-        "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
-        "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
-        "B5aGXLoS4kzAjZAMMXxk", // Entrainment
-        "lfsnaiGiLNL2z12pLKDP", // Partner Initial
-        "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
-        "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
-        "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
-        "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
-      ];
       const startOffset = pacificOffsetForDate(input.start_date);
       const endOffset = pacificOffsetForDate(input.end_date);
       const startMs = new Date(`${input.start_date}T00:00:00${startOffset}`).getTime();
@@ -441,7 +494,7 @@ export async function executeTool(context, toolName, input, user = "Eben", field
         `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&calendarId=${calId}&startTime=${startMs}&endTime=${endMs}`;
 
       const calResps = await Promise.all(
-        CALENDAR_IDS.map((id) => ghlFetch(context, eventsUrl(id)).catch(() => null))
+        COS_CALENDAR_IDS.map((id) => ghlFetch(context, eventsUrl(id)).catch(() => null))
       );
 
       const eventsById = new Map();

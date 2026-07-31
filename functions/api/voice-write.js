@@ -6,6 +6,7 @@
 
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 import { generateOnBrand } from "../lib/voice-engine.js";
+import { anthropicUserError } from "../lib/cos-anthropic.js";
 
 const HISTORY_CAP = 25; // keep the last N drafts per user
 
@@ -73,8 +74,12 @@ export async function onRequestPost(context) {
 
     return new Response(JSON.stringify(result), { status: 200, headers });
   } catch (err) {
-    console.error("[voice-write] error:", err.message);
-    return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers });
+    const mapped = anthropicUserError(err);
+    console.error("[voice-write] error:", err.message, "→", mapped.code);
+    return new Response(
+      JSON.stringify({ error: mapped.message, code: mapped.code }),
+      { status: 500, headers },
+    );
   }
 }
 
