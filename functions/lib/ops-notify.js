@@ -1,8 +1,11 @@
 // Amari Ops flip alerts — Eben only, on incident open (not while red).
 // Money/booking → SMS + email via GHL conversation send to OPS_ALERT_CONTACT_ID.
-// Never throws. Missing contact id = log only (deploy-safe).
+// Never throws. Env unset falls back to Eben's GHL contact (same id as morning-sms).
 
 import { sendConversationMessage } from "./ghl-send.js";
+
+/** Eben Forrest — morning-sms + ops flip recipient. Override via OPS_ALERT_CONTACT_ID. */
+export const DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
 
 const SEVERITY_CHANNELS = Object.freeze({
   money: Object.freeze(["sms", "email"]),
@@ -66,13 +69,8 @@ export async function notifyOpsFlip(context, incident) {
       return { sent: false, reason: "infra-app-only" };
     }
 
-    const alertContactId = env?.OPS_ALERT_CONTACT_ID;
-    if (!alertContactId) {
-      console.error(
-        `[ops-notify] OPS_ALERT_CONTACT_ID unset — flip not delivered: ${incident?.title}`,
-      );
-      return { sent: false, reason: "no-contact" };
-    }
+    const alertContactId =
+      String(env?.OPS_ALERT_CONTACT_ID || "").trim() || DEFAULT_OPS_ALERT_CONTACT_ID;
 
     // Optional shadow: log would_send without messaging (local / staging).
     if (String(env?.OPS_ALERT_MODE || "").toLowerCase() === "shadow") {

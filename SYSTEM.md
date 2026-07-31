@@ -132,6 +132,19 @@ Bounded Cursor cloud agents for board attention — so code issues get a draft P
 
 Modes (`OPS_FIX_MODE`): `off` · `shadow` (default, KV would-launch only) · `auto` (needs `CURSOR_API_KEY`). Public `/ops` can **queue** only; cron/worker auth launches. Secrets/config failures stay human — agent stops and reports.
 
+### Amari Ops flip alerts (SMS + email)
+
+On **new money/booking incident open** only (not while red, not infra board rows). GHL Conversations → Eben.
+
+| Piece | Notes |
+|-------|-------|
+| Deliver | `functions/lib/ops-notify.js` |
+| Recipient | `OPS_ALERT_CONTACT_ID` (Pages + `series-reconcile`); defaults to Eben `3jsTC9Cb7hkDpC3FLuFd` |
+| Shadow | `OPS_ALERT_MODE=shadow` logs would-send |
+| Opens incidents today | Assessment / Intro / portal follow-up paid→book fail; Assessment law sweep on `series-reconcile` |
+
+Board red alone (e.g. stale `field_id_check`) does **not** text — only incident flips.
+
 ---
 
 ## Where to put new owned pieces

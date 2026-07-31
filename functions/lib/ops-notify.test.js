@@ -63,9 +63,12 @@ describe("notifyOpsFlip", () => {
     expect(sendConversationMessage).not.toHaveBeenCalled();
   });
 
-  it("missing OPS_ALERT_CONTACT_ID: no throw", async () => {
-    const res = await notifyOpsFlip({ env: {} }, { severity: "money", title: "x" });
-    expect(res).toEqual({ sent: false, reason: "no-contact" });
+  it("missing OPS_ALERT_CONTACT_ID falls back to Eben default contact", async () => {
+    const { DEFAULT_OPS_ALERT_CONTACT_ID } = await import("./ops-notify.js");
+    const res = await notifyOpsFlip({ env: {} }, { severity: "money", title: "x", pathId: "p" });
+    expect(res.sent).toBe(true);
+    expect(sendConversationMessage).toHaveBeenCalled();
+    expect(sendConversationMessage.mock.calls[0][1].contactId).toBe(DEFAULT_OPS_ALERT_CONTACT_ID);
   });
 
   it("OPS_ALERT_MODE=shadow does not send", async () => {

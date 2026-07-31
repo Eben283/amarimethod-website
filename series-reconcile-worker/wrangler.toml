@@ -24,8 +24,11 @@ binding = "PURCHASE_KV"
 id = "b8ef627521e04f5998a707d4a8f1935c"
 
 # Secrets (set via `npx wrangler secret put <KEY>`):
-#   GHL_CLIENT_ID     — same as ghl-token-refresh
-#   GHL_CLIENT_SECRET — same as ghl-token-refresh
+#   GHL_CLIENT_ID         — same as ghl-token-refresh
+#   GHL_CLIENT_SECRET     — same as ghl-token-refresh
+#   WORKER_AUTH_SECRET
+#   OPS_ALERT_CONTACT_ID  — Eben GHL contact for ops flip SMS/email (law sweep)
+# Optional var: OPS_ALERT_MODE=shadow to log would-send without messaging.
 
 # amari-attendance D1 — the webhook's primary idempotency store (schema created
 # 2026-07-02). The worker reads webhook claims and claims its own applies so a
