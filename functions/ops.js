@@ -281,6 +281,41 @@ export const OPS_HTML = `<!doctype html>
   .change-box .t { font-weight: 600; margin-bottom: 4px; }
   .change-box .d { color: var(--muted); font-size: 13px; line-height: 1.45; }
 
+  .fix-box {
+    margin: 18px 0 8px; padding: 14px 16px;
+    border-left: 2px solid var(--accent);
+    background: linear-gradient(90deg, var(--accent-dim), transparent 92%);
+    border-radius: 0 8px 8px 0;
+  }
+  .fix-box .t { font-weight: 600; letter-spacing: -0.01em; }
+  .fix-box .d { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.45; }
+  .fix-box .meta {
+    margin-top: 8px; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.04em; color: var(--faint);
+  }
+  .fix-box a { color: var(--accent); text-decoration: none; }
+  .fix-box a:hover { text-decoration: underline; }
+  .fix-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
+  .fix-btn {
+    font: 600 13px/1 var(--sans); color: var(--on-bright);
+    background: var(--accent); border: 0; border-radius: 6px;
+    padding: 10px 14px; cursor: pointer;
+  }
+  .fix-btn:hover { filter: brightness(1.06); }
+  .fix-btn:disabled { opacity: 0.55; cursor: default; filter: none; }
+  .fix-btn.ghost {
+    background: transparent; color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  }
+  .fix-msg { font-size: 13px; color: var(--muted); }
+  .fix-msg.err { color: var(--bad); }
+  .sys .fix-chip {
+    display: inline-block; margin-left: 6px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent); vertical-align: 1px;
+  }
+
   .back {
     display: inline-flex; align-items: center; gap: 6px;
     background: none; border: 0; color: var(--muted);
@@ -421,7 +456,7 @@ export const OPS_HTML = `<!doctype html>
 
   <div id="view-home"></div>
   <div id="view-path" hidden></div>
-  <p class="foot">Alerts on flip · no Fix layer yet · Pacific time</p>
+  <p class="foot" id="opsFoot">Alerts on flip · Fix layer · Pacific time</p>
 </div>
 
 <script>
@@ -510,6 +545,79 @@ export const OPS_HTML = `<!doctype html>
     );
   }
 
+  function fixStatusLabel(job) {
+    if (!job) return "";
+    var st = String(job.status || "");
+    if (st === "shadow") return "shadow · would launch";
+    if (st === "launching") return "launching agent…";
+    if (st === "launched" || st === "running") return "agent launched";
+    if (st === "error") return "fixer error";
+    return st;
+  }
+
+  function fixPanelHtml(data) {
+    if (!data || !data.autoFix) return "";
+    var job = data.fix || null;
+    var mode = data.fixMode || "";
+    var html = '<div class="fix-box" id="fixPanel">';
+    html += '<div class="t">Fixer</div>';
+    if (job) {
+      html += '<div class="d">' + esc(fixStatusLabel(job));
+      if (job.note) html += " — " + esc(job.note);
+      html += "</div>";
+      if (job.agentUrl) {
+        html += '<div class="d"><a href="' + esc(job.agentUrl) + '" target="_blank" rel="noopener">Open agent</a></div>';
+      }
+      if (job.error) html += '<div class="d" style="color:var(--bad)">' + esc(job.error) + "</div>";
+      if (job.launchedAt) {
+        html += '<div class="meta">' + esc(fmt(job.launchedAt));
+        if (job.mode) html += " · mode " + esc(job.mode);
+        html += "</div>";
+      }
+    } else {
+      html += '<div class="d">Queues a bounded Cursor agent (change surface only). Cron picks it up within ~15m.</div>';
+      if (mode) html += '<div class="meta">Board mode: ' + esc(mode) + "</div>";
+    }
+    html += '<div class="fix-actions">';
+    html += '<button type="button" class="fix-btn" id="requestFix"' +
+      (job && (job.status === "launching" || job.status === "launched" || job.status === "running") ? " disabled" : "") +
+      ">Request fix</button>";
+    html += '<span class="fix-msg" id="fixMsg"></span>';
+    html += "</div></div>";
+    return html;
+  }
+
+  async function requestFix(pathId) {
+    var btn = document.getElementById("requestFix");
+    var msg = document.getElementById("fixMsg");
+    if (btn) btn.disabled = true;
+    if (msg) { msg.className = "fix-msg"; msg.textContent = "Queuing…"; }
+    try {
+      var res = await fetch("/api/ops/fix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ action: "request", pathId: pathId }),
+      });
+      var body = await res.json().catch(function () { return {}; });
+      if (!res.ok || !body.queued) {
+        var reason = body.reason || body.error || "failed";
+        if (reason === "already-running") {
+          if (msg) msg.textContent = "Already in flight — see agent above.";
+        } else if (reason === "not-fixable") {
+          if (msg) { msg.className = "fix-msg err"; msg.textContent = "This path is not auto-fixable."; }
+        } else {
+          if (msg) { msg.className = "fix-msg err"; msg.textContent = String(reason); }
+        }
+        if (btn && reason !== "already-running") btn.disabled = false;
+        return;
+      }
+      if (msg) msg.textContent = "Queued — fixer will pick this up on the next sweep.";
+    } catch (e) {
+      if (msg) { msg.className = "fix-msg err"; msg.textContent = "Could not queue."; }
+      if (btn) btn.disabled = false;
+    }
+  }
+
   function hopMark(status) {
     if (status === "ok") return "ok";
     if (status === "fail") return "fail";
@@ -571,6 +679,11 @@ export const OPS_HTML = `<!doctype html>
       ? attention + " path" + (attention === 1 ? "" : "s") + " need attention"
       : (data.overall === "green" ? "Hot paths quiet" : "Watching…");
     setOverall(attention ? "sick" : (data.overall || "idle"), overallNote);
+    var foot = document.getElementById("opsFoot");
+    if (foot) {
+      var fm = data.fixMode || "shadow";
+      foot.textContent = "Alerts on flip · Fix " + fm + " · Pacific time";
+    }
 
     if (!data.configured) {
       homeBanner.hidden = false;
@@ -619,9 +732,12 @@ export const OPS_HTML = `<!doctype html>
       var html = '<div class="section-head"><h2>' + esc(title) + "</h2><small>" + esc(hint || "") + "</small></div>";
       rows.forEach(function (s) {
         var st = rowState(s);
+        var fixChip = s.fix
+          ? '<span class="fix-chip">' + esc(fixStatusLabel(s.fix)) + "</span>"
+          : "";
         html += '<button type="button" class="sys ' + esc(st) + '" data-path="' + esc(s.id) + '">' +
           '<span class="dot ' + esc(st) + '"></span>' +
-          '<span><div class="label">' + esc(s.label) + "</div>" +
+          '<span><div class="label">' + esc(s.label) + fixChip + "</div>" +
           '<div class="meta">' + esc(s.note || s.severity || "") + "</div></span>" +
           '<span class="state ' + esc(st) + '">' + esc(stateLabel(st)) + "</span></button>";
       });
@@ -674,6 +790,7 @@ export const OPS_HTML = `<!doctype html>
       html += '<p class="why">On-demand only — no auto Whisper/LLM sweep. Staff: POST /api/staff-call-coach-run (or /coach-one per contact). Ops watches readiness, not last-run freshness.</p>';
     }
     html += changeSurfaceHtml(data.changeSurface);
+    html += fixPanelHtml(data);
     html += "</div>";
 
     if (data.incidents && data.incidents.length) {
@@ -746,6 +863,10 @@ export const OPS_HTML = `<!doctype html>
     document.getElementById("backHome").addEventListener("click", function () {
       location.hash = "";
     });
+    var fixBtn = document.getElementById("requestFix");
+    if (fixBtn) {
+      fixBtn.addEventListener("click", function () { requestFix(pathId); });
+    }
     pathView.querySelectorAll("[data-person-id]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var kind = btn.getAttribute("data-person-kind") || "contact";

@@ -1,0 +1,25 @@
+name = "ops-fixer"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Every 15 minutes — scan /ops attention and launch bounded Cursor fix agents.
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[kv_namespaces]]
+binding = "PORTAL_KV"
+id = "79cff30d0e45419791b0d25cd81961df"
+
+[vars]
+# off | shadow (log only) | auto (launch Cursor agents)
+OPS_FIX_MODE = "shadow"
+OPS_FIX_REPO = "https://github.com/Eben283/amarimethod-website"
+TIMEZONE = "America/Los_Angeles"
+
+# Secrets:
+#   CURSOR_API_KEY      — from Cursor Dashboard → API Keys (required for auto)
+#   WORKER_AUTH_SECRET  — for manual /run
+
+[observability]
+enabled = true
+head_sampling_rate = 1

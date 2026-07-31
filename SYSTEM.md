@@ -119,6 +119,19 @@ Board rows beyond money paths — heartbeats in `PORTAL_KV`, judged by `function
 | `stripe` | `stripe:status:ready`, `ops:stripe-pos-webhook:lastRun` | `staff-stripe-cards`, `stripe-pos-webhook` |
 | `morning_sms` | `ops:morning-sms:lastRun` | `morning-sms-worker` |
 
+### Amari Ops Fix layer
+
+Bounded Cursor cloud agents for board attention — so code issues get a draft PR without babysitting.
+
+| Piece | Path |
+|-------|------|
+| Launch + queue logic | `functions/lib/ops-fix.js` |
+| API (`request` / `sweep` / `launch`) | `functions/api/ops/fix.js` |
+| Cron worker (*/15) | `ops-fix-worker/` |
+| Eligibility (`autoFix`) | `functions/lib/ops-board-meta.js` |
+
+Modes (`OPS_FIX_MODE`): `off` · `shadow` (default, KV would-launch only) · `auto` (needs `CURSOR_API_KEY`). Public `/ops` can **queue** only; cron/worker auth launches. Secrets/config failures stay human — agent stops and reports.
+
 ---
 
 ## Where to put new owned pieces

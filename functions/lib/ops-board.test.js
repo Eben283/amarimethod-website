@@ -63,6 +63,8 @@ describe("buildSystemsBoard", () => {
     expect(assessment.status).toBe("red");
     expect(assessment.state).toMatch(/sick|stuck/);
     expect(assessment.boardRole).toBe(OPS_BOARD_ROLE.HOT);
+    expect(assessment.autoFix).toBe(true);
+    expect(board.fixMode).toBe("shadow");
     expect(board.hotStrip).toBeTruthy();
     expect(board.systems[0].group).toBe("paths");
   });
