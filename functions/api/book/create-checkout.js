@@ -68,7 +68,7 @@ const ALLOWED_BOOKINGS = {
     productId: "6a66cf0103821ea09ea13f1b",
     price: 29,
     title: "Amari Assessment — In Person",
-    durationMinutes: 40,
+    durationMinutes: 50,
     pmaTag: "agreed-pma-v2026-06-16",
     sessionTag: null,
     paymentLinkUrl:

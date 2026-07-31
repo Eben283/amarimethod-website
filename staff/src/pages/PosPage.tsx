@@ -27,7 +27,7 @@ const CATALOG = [
   ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
-  ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 40 min"],
+  ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
   ["initial-in-person", "Initial — in person", 22500, "Single sessions", "Single session"],
   ["initial-virtual", "Initial — virtual", 22500, "Single sessions", "Single session"],
   ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],

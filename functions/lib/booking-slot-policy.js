@@ -1,9 +1,9 @@
 /**
  * Canonical booking slot policy (duration · interval · buffer).
  *
- * Priority: Follow-up (50 min) starts on the hour (interval 60, buffer 10).
- * Intro paths (Assessment / Discovery) keep denser lattices so off-hour fills
- * like 10:40 remain offerable — look-busy already hides plenty.
+ * Public bodywork rhythm: Assessment + Follow-up are both 50 min on the hour
+ * (interval 60, buffer 10 → block 60). Partner Initial stays 60. Discovery /
+ * study / phone stay 15. Entrainment stays 30.
  * GHL remains availability truth; Amari ranks/filters what to show.
  * See amari-method-docs/ops/memory/decision_booking_slot_model.md
  *
@@ -13,11 +13,8 @@
  *   intervalMinutes — candidate start lattice (NOT "match duration")
  */
 
-/** Main-session rhythm (Follow-up / Initial): on the hour. */
+/** Main bodywork rhythm (Assessment / Follow-up / paid Initial): on the hour. */
 export const STUDIO_INTERVAL_MINUTES = 60;
-
-/** Assessment intro lattice — denser; allows 10:40-style starts from a 10:00 open. */
-export const INTRO_ASSESSMENT_INTERVAL_MINUTES = 40;
 
 /**
  * Garrett Work Hours (GHL schedule WIPAUCHQ5WW18vLJ49Gk).
@@ -77,15 +74,15 @@ export const SLOT_POLICIES = {
   },
   initial: {
     id: "initial",
-    label: "Initial Session",
+    label: "Initial Session / Partner Initial",
     calendarIds: [
-      "G7OAnnJuFbMF6nQSlZVQ", // IP
-      "ySmht5hx4uZGEpgZrlCw", // virtual
+      "G7OAnnJuFbMF6nQSlZVQ", // paid Initial IP (legacy path; public first visit is Assessment)
+      "ySmht5hx4uZGEpgZrlCw", // paid Initial virtual
       "uUDFD0ZQEWtzGLS9aLq7", // paid at partner
-      "lfsnaiGiLNL2z12pLKDP", // partner IP
-      "P7T6M1w8wtuRfwAqzOVw", // partner virtual
+      "lfsnaiGiLNL2z12pLKDP", // partner IP — keep 60
+      "P7T6M1w8wtuRfwAqzOVw", // partner virtual — keep 60
     ],
-    durationMinutes: 60,
+    durationMinutes: 60, // Partner Initial stays 60; legacy paid Initial calendars still 60 in GHL
     bufferMinutes: 0,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
@@ -95,12 +92,11 @@ export const SLOT_POLICIES = {
     id: "assessment",
     label: "Amari Assessment",
     calendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
-    durationMinutes: 40,
+    durationMinutes: 50, // was 40 — public first visit
     bufferMinutes: 10,
-    // Keep denser intro grid (10:00, 10:40, 11:20…) — off-hour fills OK.
-    intervalMinutes: INTRO_ASSESSMENT_INTERVAL_MINUTES,
-    lattice: "intro",
-    preferOnHour: false,
+    intervalMinutes: STUDIO_INTERVAL_MINUTES,
+    lattice: "studio",
+    preferOnHour: true,
   },
   discovery_call: {
     id: "discovery_call",
@@ -265,9 +261,9 @@ export function slotPreservesNextOnHour(slot, blockMinutes) {
 
 /**
  * Show-layer preference on top of GHL free-slots (same safety model as look-busy):
- * - Main sessions (Follow-up / Initial): keep :00 starts only.
- * - Intro / phone: if a day has any slot that leaves the next Follow-up hour free,
- *   drop the ones that smash it (e.g. prefer Assessment 10:00 over 10:40).
+ * - Main sessions (Assessment / Follow-up / Initial): keep :00 starts only.
+ * - Phone / short: if a day has any slot that leaves the next Follow-up hour free,
+ *   drop the ones that smash it.
  * Never invents times; never empties a day that only had smashing slots.
  *
  * @param {Array<{date?: string, time?: string, hour?: number, minute?: number, datetime?: string}>} slots
@@ -285,7 +281,7 @@ export function applyHourPackPreference(slots, opts) {
     });
   }
 
-  if (policy.lattice !== "intro" && policy.lattice !== "phone") {
+  if (policy.lattice !== "phone" && policy.lattice !== "short") {
     return slots;
   }
 
