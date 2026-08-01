@@ -7,7 +7,6 @@ import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
 import SessionDocSheet from '../components/SessionDocSheet';
 import PayLinkSheet from '../components/PayLinkSheet';
-import GarrettDay from '../components/GarrettDay';
 import MoneyMoments from '../components/MoneyMoments';
 import SharpenDeck from '../components/SharpenDeck';
 
@@ -132,9 +131,6 @@ export default function TodayPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      {/* Garrett's Day — manual directive list, first thing on the tab. */}
-      <GarrettDay />
-
       {/* Today's sell moments — 8-pack opportunities hiding in today's schedule
           (renewals at last session + first-timers to pitch). */}
       <MoneyMoments />
