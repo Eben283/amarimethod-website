@@ -1306,7 +1306,7 @@ async function judgeChiefOfStaff(kv) {
     return {
       status: "red",
       note: ready.error || "chat not configured",
-      why: ready.error || "cos:status:ready ok=false — ANTHROPIC_API_KEY or probe failed",
+      why: ready.error || "cos:status:ready ok=false — OPENROUTER_API_KEY / ANTHROPIC_API_KEY or probe failed",
       lastAt: readyAt || lastAt,
       detail: { ready, auth, chat },
       log: lastRunAsLog("chief_of_staff", {

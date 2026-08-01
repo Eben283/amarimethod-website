@@ -6,6 +6,7 @@
 
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 import { generateOnBrand } from "../lib/voice-engine.js";
+import { anthropicUserError, resolveCosLlm } from "../lib/cos-anthropic.js";
 
 const HISTORY_CAP = 25; // keep the last N drafts per user
 
@@ -24,9 +25,9 @@ export async function onRequestPost(context) {
     const { error, payload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
-    const apiKey = context.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Writer not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers });
+    const llm = resolveCosLlm(context.env);
+    if (!llm) {
+      return new Response(JSON.stringify({ error: "Writer not configured (missing OPENROUTER_API_KEY)" }), { status: 500, headers });
     }
 
     const { body, error: parseError } = await parseJsonBody(context.request, headers);
@@ -46,7 +47,7 @@ export async function onRequestPost(context) {
 
     const userName = payload.user || "Garrett";
 
-    const result = await generateOnBrand({ apiKey, userName, messages });
+    const result = await generateOnBrand({ llm, userName, messages });
 
     // Save to KV history (best-effort — a failed save never blocks the draft).
     const kv = context.env.PORTAL_KV;
@@ -73,8 +74,12 @@ export async function onRequestPost(context) {
 
     return new Response(JSON.stringify(result), { status: 200, headers });
   } catch (err) {
-    console.error("[voice-write] error:", err.message);
-    return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers });
+    const mapped = anthropicUserError(err);
+    console.error("[voice-write] error:", err.message, "→", mapped.code);
+    return new Response(
+      JSON.stringify({ error: mapped.message, code: mapped.code }),
+      { status: 500, headers },
+    );
   }
 }
 

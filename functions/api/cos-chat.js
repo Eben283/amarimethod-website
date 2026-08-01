@@ -8,7 +8,7 @@ import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
 import { getWeather, getDirections, searchPlaces, getPackageTracking, getRevenueSummary } from "../lib/cos-lookups.js";
 import { getCurrentPlayback, getUserPlaylists, executeSpotifyAction, isSpotifyConnected } from "../lib/spotify.js";
 import { loadVaultKnowledge, buildVaultContext } from "../lib/cos-vault.js";
-import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool } from "../lib/cos-anthropic.js";
+import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool, anthropicUserError, COS_CALENDAR_IDS, resolveCosLlm } from "../lib/cos-anthropic.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS, OPS_READY_KEYS } from "../lib/ops-last-run.js";
@@ -421,21 +421,6 @@ async function getGhlSummary(context) {
     // empty and COS always said "no appointments today." Sweep each active
     // calendar in parallel and merge, same as daily-audit-worker. (Verified
     // 2026-06-05: locationId-only = 0 events; +calendarId returns the real ones.)
-    const CALENDAR_IDS = [
-      "G7OAnnJuFbMF6nQSlZVQ", // Initial — In Person
-      "ySmht5hx4uZGEpgZrlCw", // Initial — Virtual
-      "uUDFD0ZQEWtzGLS9aLq7", // Initial — Paid at Partner
-      "SKDVOL8wtUN6Ne0ppbC9", // Follow-up — In Person
-      "ZO1jlGfy01rsxVqicoSB", // Follow-up — In Person (Package)
-      "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
-      "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
-      "B5aGXLoS4kzAjZAMMXxk", // Entrainment
-      "lfsnaiGiLNL2z12pLKDP", // Partner Initial
-      "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
-      "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
-      "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual
-      "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call
-    ];
     const eventsUrl = (calId) =>
       `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&calendarId=${calId}&startTime=${String(dayStartMs)}&endTime=${String(dayEndMs)}`;
 
@@ -443,7 +428,7 @@ async function getGhlSummary(context) {
     // fail-soft (one bad calendar shouldn't drop the rest).
     const [pipeResp, ...calResps] = await Promise.all([
       ghlFetch(context, `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`),
-      ...CALENDAR_IDS.map((id) => ghlFetch(context, eventsUrl(id)).catch(() => null)),
+      ...COS_CALENDAR_IDS.map((id) => ghlFetch(context, eventsUrl(id)).catch(() => null)),
     ]);
 
     const lines = [];
@@ -859,20 +844,24 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Message is required" }, 400, origin);
   }
 
-  const ANTHROPIC_API_KEY = context.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) {
+  const llm = resolveCosLlm(context.env);
+  if (!llm) {
     await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
       ok: false,
       checkedAt: new Date().toISOString(),
       anthropic: false,
-      error: "ANTHROPIC_API_KEY not configured",
+      openrouter: false,
+      error: "OPENROUTER_API_KEY (preferred) or ANTHROPIC_API_KEY not configured",
     });
-    return jsonResponse({ error: "Chat not configured (missing ANTHROPIC_API_KEY)" }, 500, origin);
+    return jsonResponse({ error: "Chat not configured (missing OPENROUTER_API_KEY)" }, 500, origin);
   }
   await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
     ok: true,
     checkedAt: new Date().toISOString(),
-    anthropic: true,
+    anthropic: llm.provider === "anthropic",
+    openrouter: llm.provider === "openrouter",
+    provider: llm.provider,
+    model: llm.model,
   });
 
   const kv = context.env.PORTAL_KV;
@@ -1050,12 +1039,13 @@ export async function onRequestPost(context) {
     finalSystemPrompt += `\n\n## Pending Actions (queued for desk processing)\n${actionSummary}`;
   }
 
-  // Build Anthropic request with prompt caching + tool use
+  // Build Anthropic/OpenRouter request with prompt caching + tool use
   const requestBody = buildRequestBody({
     system: finalSystemPrompt,
     messages: anthropicMessages,
     includeTools: true,
     maxTokens: 2048,
+    model: llm.model,
   });
 
   // Stream the response back via SSE
@@ -1111,7 +1101,7 @@ export async function onRequestPost(context) {
 
     try {
       const result = await streamWithTools({
-        apiKey: ANTHROPIC_API_KEY,
+        llm,
         requestBody,
         onTextDelta: async (delta) => {
           fullContent += delta;
@@ -1234,8 +1224,25 @@ export async function onRequestPost(context) {
       // Send done event with parsed actions
       await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "done", actions })}\n\n`));
     } catch (err) {
-      console.error("[cos-chat] Stream error:", err.message);
-      await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Stream interrupted" })}\n\n`));
+      const mapped = anthropicUserError(err);
+      console.error("[cos-chat] Stream error:", err.message, "→", mapped.code);
+      await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.cosChat, {
+        status: "error",
+        ok: false,
+        user: cosUser,
+        error: mapped.message,
+        code: mapped.code,
+      });
+      if (mapped.billing) {
+        await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
+          ok: false,
+          checkedAt: new Date().toISOString(),
+          anthropic: true,
+          error: mapped.message,
+          code: mapped.code,
+        });
+      }
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "error", message: mapped.message, code: mapped.code })}\n\n`));
     } finally {
       await writer.close();
     }
