@@ -1,9 +1,11 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
+import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import {
   activeClientOperations,
   classifyPurchase,
+  clientDeskContacts,
   contactProfile,
   decideLedgerCutoverCandidate,
   decideReconciliationCandidate,
@@ -49,6 +51,10 @@ function dashboardAccessCode() {
 
 function dashboardAccessKey(code) {
   return `crm-dashboard-access:${code}`;
+}
+
+function requestedView(value) {
+  return value === "client-desk" ? "client-desk" : "dashboard";
 }
 
 function parseSyncRequest(payload) {
@@ -108,10 +114,11 @@ export default {
       if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
       await env.PORTAL_KV.delete(accessKey);
       const embed = url.searchParams.get("embed") === "1" ? "?embed=1" : "";
+      const destination = valid === "client-desk" ? "/client-desk" : "/";
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `/${embed}`,
+          Location: `${destination}${embed}`,
           "Set-Cookie": await dashboardSessionCookie(env),
           "Cache-Control": "no-store",
           "Referrer-Policy": "no-referrer",
@@ -122,6 +129,10 @@ export default {
       const denied = await requireDashboardReadAuth(request, env);
       const status = denied ? null : await mirrorStatus(env.CRM_DB, new Date().toISOString());
       return html(dashboardHtml(status));
+    }
+    if (request.method === "GET" && url.pathname === "/client-desk") {
+      const denied = await requireDashboardReadAuth(request, env);
+      return denied || html(clientDeskHtml());
     }
 
     try {
@@ -135,7 +146,8 @@ export default {
         const denied = requireWorkerAuth(request, env);
         if (denied) return denied;
         const code = dashboardAccessCode();
-        await env.PORTAL_KV.put(dashboardAccessKey(code), "1", { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS });
+        const view = requestedView(url.searchParams.get("view"));
+        await env.PORTAL_KV.put(dashboardAccessKey(code), view, { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS });
         return json(200, {
           success: true,
           expiresInSeconds: DASHBOARD_ACCESS_TTL_SECONDS,
@@ -197,7 +209,8 @@ export default {
         return json(200, { success: true, result });
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail)) {
+      const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -227,6 +240,17 @@ export default {
           worker: "amari-crm-mirror",
           contacts: await searchContacts(env.CRM_DB, query, limit),
         });
+      }
+      if (request.method === "GET" && url.pathname === "/client-desk/contacts") {
+        const query = parseContactSearch(url.searchParams.get("query"));
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const scope = url.searchParams.get("scope") === "all" ? "all" : "clients";
+        return json(200, { success: true, worker: "amari-crm-mirror", contacts: await clientDeskContacts(env.CRM_DB, { query, limit, scope }) });
+      }
+      if (request.method === "GET" && clientDeskDetail) {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
+        return profile ? json(200, { success: true, worker: "amari-crm-mirror", ...profile }) : json(404, { error: "contact not found" });
       }
       if (request.method === "GET" && contactDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

@@ -402,8 +402,61 @@ export async function searchContacts(db, query, limit) {
   return result.results || [];
 }
 
+// Read-only Client Desk index. A client is any mirrored contact with an
+// appointment or settled purchase; this keeps unqualified prospect records out
+// of the default daily view while preserving a deliberate "all contacts" mode.
+export async function clientDeskContacts(db, { query = null, limit = 50, scope = "clients" } = {}) {
+  const filters = [];
+  const values = [];
+  if (scope !== "all") {
+    filters.push(`(
+      EXISTS (SELECT 1 FROM appointments appointment WHERE appointment.contact_id = contact.id)
+      OR EXISTS (SELECT 1 FROM purchases purchase WHERE purchase.contact_id = contact.id)
+    )`);
+  }
+  if (query) {
+    const pattern = likePattern(query);
+    filters.push(`(
+      lower(contact.display_name) LIKE ? ESCAPE '\\'
+      OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
+      OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'
+    )`);
+    values.push(pattern, pattern, `%${String(query).replace(/[\\%_]/g, "\\$&")}%`);
+  }
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const result = await db.prepare(
+    `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
+            communication.channel AS last_channel, communication.direction AS last_direction,
+            communication.occurred_at AS last_occurred_at, communication.subject_or_preview AS last_preview,
+            upcoming.starts_at AS next_appointment_at, upcoming_service.name AS next_service_name
+       FROM contacts contact
+       LEFT JOIN communications communication ON communication.id = (
+         SELECT id FROM communications
+         WHERE contact_id = contact.id
+         ORDER BY datetime(occurred_at) DESC, id DESC
+         LIMIT 1
+       )
+       LEFT JOIN appointments upcoming ON upcoming.id = (
+         SELECT id FROM appointments appointment
+         WHERE appointment.contact_id = contact.id
+           AND appointment.status IN ('booked', 'confirmed')
+           AND datetime(appointment.starts_at) >= datetime('now')
+         ORDER BY datetime(appointment.starts_at), id
+         LIMIT 1
+       )
+       LEFT JOIN services upcoming_service ON upcoming_service.id = upcoming.service_id
+       ${where}
+       ORDER BY CASE WHEN communication.direction = 'inbound' THEN 0 ELSE 1 END,
+                CASE WHEN communication.occurred_at IS NULL THEN 1 ELSE 0 END,
+                datetime(communication.occurred_at) DESC,
+                lower(contact.display_name), contact.id
+       LIMIT ?`,
+  ).bind(...values, limit).all();
+  return result.results || [];
+}
+
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, stateResult, nextAppointmentResult, appointmentsResult, purchasesResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, purchasesResult] = await db.batch([
     db.prepare(
       `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
        FROM contacts WHERE id = ?`,
@@ -441,6 +494,13 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
+      `SELECT channel, direction, provider_status, occurred_at, subject_or_preview
+       FROM communications
+       WHERE contact_id = ?
+       ORDER BY datetime(occurred_at) DESC, id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
       `SELECT amount_cents, amount_refunded_cents, currency, purchased_at, provider_status,
               classification, classification_review_state
        FROM purchases
@@ -459,6 +519,7 @@ export async function contactProfile(db, contactId, limit, now) {
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
     purchases: purchasesResult.results || [],
+    communications: communicationsResult.results || [],
   };
 }
 

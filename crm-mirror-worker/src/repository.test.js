@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
 
 describe("CRM mirror absent GHL contacts", () => {
   it("removes external_records for contacts confirmed deleted in GHL", async () => {
@@ -166,6 +166,7 @@ describe("CRM mirror client profiles", () => {
         { results: [{ sessions_remaining: "3", series_type: "8-session" }] },
         { results: [{ starts_at: "2026-07-27 13:00:00" }] },
         { results: [{ status: "confirmed" }] },
+        { results: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }] },
         { results: [{ classification: "8-Session Series" }] },
       ],
     };
@@ -177,7 +178,19 @@ describe("CRM mirror client profiles", () => {
       nextAppointment: { starts_at: "2026-07-27 13:00:00" },
       appointments: [{ status: "confirmed" }],
       purchases: [{ classification: "8-Session Series" }],
+      communications: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }],
     });
+  });
+
+  it("returns a bounded client directory with the latest communication only", async () => {
+    const calls = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => { calls.push({ sql, values }); return { results: [{ id: "contact_1", last_direction: "inbound", last_preview: "Hello" }] }; } }) }),
+    };
+    await expect(clientDeskContacts(db, { query: "Eben", limit: 12, scope: "clients" })).resolves.toEqual([{ id: "contact_1", last_direction: "inbound", last_preview: "Hello" }]);
+    expect(calls[0].sql).toContain("communications communication");
+    expect(calls[0].sql).toContain("EXISTS (SELECT 1 FROM appointments");
+    expect(calls[0].values.at(-1)).toBe(12);
   });
 });
 

@@ -38,7 +38,8 @@ export async function onRequestPost(context) {
     const timer = setTimeout(() => ac.abort(), WORKER_TIMEOUT_MS);
     let body;
     try {
-      const res = await fetch(WORKER_URL, {
+      const requestedView = new URL(context.request.url || "https://www.amarimethod.com/api/staff-crm-mirror-access").searchParams.get("view") === "client-desk" ? "?view=client-desk" : "";
+      const res = await fetch(`${WORKER_URL}${requestedView}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${secret}` },
         signal: ac.signal,
