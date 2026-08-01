@@ -50,7 +50,7 @@ describe('PRODUCT_MAP — purchase crediting', () => {
       isNativePaidBooking: true,
       isNonCreditBooking: true,
       calendarId: 'EM6vB2mq7EAdGCbUb3j1',
-      durationMinutes: 40,
+      durationMinutes: 50,
     });
     // Existing $190 Single Follow-up — credits +1 AND native-books from requested slot.
     expect(PRODUCT_MAP[PID.singleFollowupSession]).toMatchObject({

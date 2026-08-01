@@ -23,7 +23,7 @@ const ALLOWED_CALENDARS = new Set([
   "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person ($190, 50 min)
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual ($190, 50 min)
   "USgPsktqRcuomdUgpShL", // Discovery Call (free, 15 min)
-  "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment — In Person ($29, 40 min)
+  "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment — In Person ($29, 50 min)
 ]);
 
 function corsHeaders(requestOrigin) {

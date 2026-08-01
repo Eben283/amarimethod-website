@@ -5,7 +5,7 @@ describe("staff-book-calendars", () => {
   it("maps assessment to the Assessment calendar", () => {
     const booking = resolveStaffBookType("assessment");
     expect(booking.calendarId).toBe("EM6vB2mq7EAdGCbUb3j1");
-    expect(booking.durationMinutes).toBe(40);
+    expect(booking.durationMinutes).toBe(50);
   });
 
   it("rejects unknown session types", () => {
@@ -53,7 +53,7 @@ describe("staff-book API", () => {
         const body = JSON.parse(opts.body);
         expect(body.calendarId).toBe("EM6vB2mq7EAdGCbUb3j1");
         expect(body.toNotify).toBe(true);
-        expect(body.endTime).toMatch(/T11:40:00-07:00$/);
+        expect(body.endTime).toMatch(/T11:50:00-07:00$/);
         return { ok: true, json: async () => ({ id: "appt1" }) };
       }
       return { ok: false, status: 500, text: async () => "no" };

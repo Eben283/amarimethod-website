@@ -261,7 +261,7 @@
       '  <div class="assessment-booking-backdrop" data-assessment-close></div>\n' +
       '  <section class="assessment-booking-panel" role="dialog" aria-modal="true" aria-labelledby="assessmentBookingTitle" tabindex="-1">\n' +
       '    <header class="assessment-booking-head">\n' +
-      '      <div><p class="assessment-booking-eyebrow">Amari Assessment</p><p id="assessmentBookingTitle">$29 · 40 minutes · In person</p></div>\n' +
+      '      <div><p class="assessment-booking-eyebrow">Amari Assessment</p><p id="assessmentBookingTitle">$29 · 50 minutes · In person</p></div>\n' +
       '      <button type="button" class="assessment-booking-close" data-assessment-close aria-label="Close booking">×</button>\n' +
       '    </header>\n' +
       '    <iframe id="assessmentBookingFrame" title="Book an Amari Assessment" loading="lazy"></iframe>\n' +
