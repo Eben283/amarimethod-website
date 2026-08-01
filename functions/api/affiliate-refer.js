@@ -146,9 +146,10 @@ export async function onRequestPost(context) {
     }
 
     // ---- STEP 1: Upsert client contact ----
-    const referralType = (body.referralType === "sold" || body.referralType === "refer")
-      ? body.referralType
-      : "refer"; // default to refer if missing
+    // Partners now introduce clients to Amari; they do not sell a session or
+    // collect client payment. Keep the legacy field at its only valid value
+    // until the payout lifecycle is fully migrated.
+    const referralType = "refer";
 
     const referralCustomFields = [
       { id: REFERRAL_SOURCE_FIELD_ID, field_value: affiliateName },

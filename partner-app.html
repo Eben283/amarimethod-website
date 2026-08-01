@@ -1403,42 +1403,35 @@
       <div>
         <span class="earnings-amount" id="earnings-amount">$0</span>
         <div class="earnings-paid" id="earnings-paid" style="display:none;"></div>
-        <div class="earnings-label">Earned from referrals</div>
+        <div class="earnings-label">Assessment rewards earned</div>
       </div>
       <div class="earnings-breakdown" id="earnings-breakdown">
-        <div data-label="Booked"><strong id="stat-booked">0</strong></div>
+        <div data-label="Attended"><strong id="stat-booked">0</strong></div>
         <div data-label="Referred"><strong id="stat-total">0</strong></div>
       </div>
     </div>
     <p class="earnings-nudge" id="earnings-nudge">
-      Your first referral earns <em style="font-style:italic;color:var(--pa-accent);">$50 cash</em> &mdash; just a name and a phone number.
+      Earn <em style="font-style:italic;color:var(--pa-accent);">$50</em> when a referred client attends their Assessment. A collected enrollment raises your total reward to $400 or $700.
     </p>
   </section>
 
-  <!-- 2. ACTION STACK — Refer primary + Sold secondary -->
+  <!-- 2. ACTION STACK -->
   <div class="action-stack">
     <button class="cta-card cta-card-primary" id="btn-refer" type="button">
       <span class="cta-icon">+</span>
       <div>
         <span class="cta-label">Refer a client</span>
-        <span class="cta-desc">Submit their name and number. We handle the rest.</span>
+        <span class="cta-desc">With their permission, submit their name and number. We handle the rest.</span>
       </div>
       <span class="cta-earn-tag">+$50</span>
     </button>
 
-    <button class="cta-card cta-card-secondary" id="btn-sold" type="button">
-      <div>
-        <span class="cta-label">Sold a session?</span>
-        <span class="cta-desc">Log it &mdash; full $225 payout.</span>
-      </div>
-      <span class="cta-earn-tag">$225</span>
-    </button>
   </div>
 
   <!-- Refer form (hidden, shown when "Refer a client" tapped) -->
   <div class="inline-form" id="refer-form-panel">
     <h3>Refer a client</h3>
-    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
+    <div class="form-subtitle">With their permission, share their name and number. We’ll send them the $29 Assessment link and handle everything from there.</div>
     <form id="refer-form" novalidate>
       <div class="field">
         <label for="refer-name">Client first name</label>
@@ -1448,34 +1441,13 @@
         <label for="refer-phone">Client phone</label>
         <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
       </div>
+      <label class="checkbox-row"><input type="checkbox" name="confirmedPermission" required><span>I have permission to share this client’s contact information with Amari.</span></label>
       <div class="form-error" id="refer-error"></div>
       <button type="submit" class="submit-btn" id="refer-submit-btn">Submit referral</button>
     </form>
   </div>
 
-  <!-- Sold form (hidden, shown when "Sold a session?" tapped) -->
-  <div class="inline-form" id="sold-form-panel">
-    <h3>Client info</h3>
-    <div class="form-subtitle">Submit your client's details so Garrett can send the intake and get them booked.</div>
-    <form id="sold-form" novalidate>
-      <div class="field">
-        <label for="sold-name">Client first name</label>
-        <input type="text" id="sold-name" name="clientFirstName" autocomplete="given-name" required>
-      </div>
-      <div class="field">
-        <label for="sold-phone">Client phone</label>
-        <input type="tel" id="sold-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
-      </div>
-      <div class="field">
-        <label for="sold-email">Client email <span style="font-weight:400;color:var(--pa-mute);">(optional)</span></label>
-        <input type="email" id="sold-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
-      </div>
-      <div class="form-error" id="sold-error"></div>
-      <button type="submit" class="submit-btn" id="sold-submit-btn">Submit client</button>
-    </form>
-  </div>
-
-  <!-- Shared success state — content swaps per type (refer / sold) -->
+  <!-- Shared success state -->
   <div class="inline-success" id="referral-success">
     <div class="success-glyph" id="success-glyph">&#x2726;</div>
     <h3 id="success-heading">Got it.</h3>
@@ -1497,17 +1469,7 @@
     </div>
   </div>
 
-  <!-- 3. SHARE LINK -->
-  <section class="app-share-section" id="share-panel">
-    <h3>Share your link</h3>
-    <p>Text this to anyone you know with pain. When they book through your link, you earn $50.</p>
-    <div class="share-link-row">
-      <input type="text" class="share-link-input" id="share-link" readonly>
-      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
-    </div>
-  </section>
-
-  <!-- 4. WHAT TO SAY (collapsible reference) -->
+  <!-- 3. WHAT TO SAY (collapsible reference) -->
   <div class="section-label">Reference</div>
   <section class="pitch-card" id="pitch-card">
     <button type="button" class="pitch-card-summary" id="pitch-card-toggle" aria-expanded="false">
@@ -1531,8 +1493,8 @@
             <p class="talking-point-copy">Amari teaches you to bring your body back into balance yourself.</p>
           </div>
           <div class="talking-point">
-            <span class="talking-point-label">The comparison</span>
-            <p class="talking-point-copy">Like chiropractic, except you learn to do it yourself.</p>
+            <span class="talking-point-label">The invitation</span>
+            <p class="talking-point-copy">Amari starts with a $29 Assessment so you can see whether it feels like a useful next step.</p>
           </div>
           <div class="talking-point">
             <span class="talking-point-label">The big promise</span>
@@ -1554,11 +1516,11 @@
       <div class="pitch-section">
         <div class="pitch-section-title">What they're buying</div>
         <ul class="spec-list">
-          <li><span class="spec-k">Session</span><span class="spec-v">60 minutes with the Amari team</span></li>
-          <li><span class="spec-k">Price</span><span class="spec-v"><em>$225</em></span></li>
-          <li><span class="spec-k">Format</span><span class="spec-v">In-person or virtual</span></li>
-          <li><span class="spec-k">Payment</span><span class="spec-v">Affirm available</span></li>
-          <li><span class="spec-k">Includes</span><span class="spec-v">A full look at their pattern, hands-on work, and take-home protocols</span></li>
+          <li><span class="spec-k">First step</span><span class="spec-v">Amari Assessment</span></li>
+          <li><span class="spec-k">Price</span><span class="spec-v"><em>$29</em></span></li>
+          <li><span class="spec-k">Format</span><span class="spec-v">In person</span></li>
+          <li><span class="spec-k">Payment</span><span class="spec-v">Paid directly to Amari</span></li>
+          <li><span class="spec-k">Includes</span><span class="spec-v">Guided movement education and a personalized at-home protocol</span></li>
         </ul>
       </div>
     </div>
@@ -1901,17 +1863,13 @@
       var firstName = partner.firstName || partner.lastName || 'there';
       document.getElementById('greeting').textContent = 'Hey, ' + firstName;
 
-      // Set share link
-      var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
-      document.getElementById('share-link').value = partnerLink;
-
-      // Update earnings card — only refer-path booked/completed referrals earn $50
+      // Update earnings card — $50 is earned only after the Assessment is attended.
       var total = stats.total || 0;
       var referEarned = 0;
       var referPaid = 0;
       for (var i = 0; i < referrals.length; i++) {
         var ref = referrals[i];
-        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && (ref.status === 'booked' || ref.status === 'completed')) {
+        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && ref.status === 'completed') {
           referEarned++;
           if (ref.feeStatus === 'paid') referPaid++;
         }
@@ -2049,9 +2007,8 @@
     }
   });
 
-  // ── Dual-path form toggles ──
+  // ── Referral form toggle ──
   var referPanel = document.getElementById('refer-form-panel');
-  var soldPanel = document.getElementById('sold-form-panel');
   var successPanel = document.getElementById('referral-success');
 
   // Track which form triggered the success state
@@ -2059,7 +2016,6 @@
 
   function closeAllForms() {
     referPanel.classList.remove('active');
-    soldPanel.classList.remove('active');
     successPanel.classList.remove('active');
   }
 
@@ -2072,16 +2028,7 @@
     }
   });
 
-  document.getElementById('btn-sold').addEventListener('click', function () {
-    var isActive = soldPanel.classList.contains('active');
-    closeAllForms();
-    if (!isActive) {
-      soldPanel.classList.add('active');
-      document.getElementById('sold-name').focus();
-    }
-  });
-
-  // ── Generic referral submit handler ──
+  // ── Referral submit handler ──
   function handleReferralSubmit(form, errorId, submitBtnId, type) {
     return async function (e) {
       e.preventDefault();
@@ -2109,15 +2056,7 @@
         clientPhone: rawPhone,
       };
 
-      // Include email if present (sold form has email field)
-      var emailField = form.clientEmail;
-      if (emailField) {
-        var emailVal = emailField.value.trim();
-        if (emailVal) payload.clientEmail = emailVal;
-      }
-
-      // Include referral type for future backend differentiation
-      payload.referralType = type;
+      payload.referralType = 'refer';
 
       var fetchHeaders = { 'Content-Type': 'application/json' };
       if (session && session.token) {
@@ -2157,29 +2096,15 @@
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
 
-        if (type === 'refer') {
-          glyphEl.textContent = '✦'; // ✦
-          headingEl.innerHTML = "We've got " + nameHtml + " from here.";
-          messageEl.textContent =
-            "We'll reach out within 24 hours and let you know when they book. Your $50 lands on the next payout.";
-          metaK1.textContent = 'Sent to';
-          metaV1.textContent = payload.clientPhone;
-          metaK2.textContent = 'Submitted';
-          metaV2.textContent = submittedAt;
-          metaEl.style.display = '';
-          if (anotherBtn) anotherBtn.textContent = 'Refer another';
-        } else {
-          glyphEl.innerHTML = '&#x2295;'; // ⊕
-          headingEl.textContent = 'Logged.';
-          messageEl.textContent =
-            "$225 lands on your next payout. We'll confirm the session with " + clientName + " and put it on the calendar.";
-          metaK1.textContent = 'Client';
-          metaV1.textContent = clientName;
-          metaK2.textContent = 'Submitted';
-          metaV2.textContent = submittedAt;
-          metaEl.style.display = '';
-          if (anotherBtn) anotherBtn.textContent = 'Log another';
-        }
+        glyphEl.textContent = '✦';
+        headingEl.innerHTML = "We've got " + nameHtml + " from here.";
+        messageEl.textContent = "We'll send them the $29 Assessment link. Earn $50 if they attend.";
+        metaK1.textContent = 'Sent to';
+        metaV1.textContent = payload.clientPhone;
+        metaK2.textContent = 'Submitted';
+        metaV2.textContent = submittedAt;
+        metaEl.style.display = '';
+        if (anotherBtn) anotherBtn.textContent = 'Refer another';
 
         closeAllForms();
         successPanel.classList.add('active');
@@ -2197,31 +2122,11 @@
   document.getElementById('refer-form').addEventListener('submit',
     handleReferralSubmit(document.getElementById('refer-form'), 'refer-error', 'refer-submit-btn', 'refer'));
 
-  document.getElementById('sold-form').addEventListener('submit',
-    handleReferralSubmit(document.getElementById('sold-form'), 'sold-error', 'sold-submit-btn', 'sold'));
-
   // Submit another
   document.getElementById('btn-another').addEventListener('click', function () {
     successPanel.classList.remove('active');
-    if (lastFormType === 'refer') {
-      referPanel.classList.add('active');
-      document.getElementById('refer-name').focus();
-    } else {
-      soldPanel.classList.add('active');
-      document.getElementById('sold-name').focus();
-    }
-  });
-
-  // ── Copy link ──
-  document.getElementById('btn-copy').addEventListener('click', function () {
-    var linkInput = document.getElementById('share-link');
-    linkInput.select();
-    navigator.clipboard.writeText(linkInput.value).then(function () {
-      document.getElementById('btn-copy').textContent = 'Copied!';
-      setTimeout(function () {
-        document.getElementById('btn-copy').textContent = 'Copy';
-      }, 2000);
-    });
+    referPanel.classList.add('active');
+    document.getElementById('refer-name').focus();
   });
 
   // ── Install banner ──
