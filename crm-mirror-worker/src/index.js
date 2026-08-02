@@ -59,11 +59,15 @@ function requestedView(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "stripe"))];
-  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, and/or stripe");
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "stripe"))];
+  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, and/or stripe");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
-  return { sources, limit };
+  const requestedPages = Number(payload?.pages);
+  // Message-export cursors are valid only briefly, so a deliberate manual run
+  // consumes multiple pages immediately. Cap it to protect Worker runtime.
+  const pages = Number.isInteger(requestedPages) ? Math.min(Math.max(requestedPages, 1), 8) : 8;
+  return { sources, limit, pages };
 }
 
 export function parseQueueLimit(value) {
@@ -296,10 +300,10 @@ export default {
         } catch {
           return json(400, { error: "invalid JSON" });
         }
-        const { sources, limit } = parseSyncRequest(payload);
-        const results = await syncRequestedProviders(env, sources, limit, new Date().toISOString());
-        console.log(JSON.stringify({ event: "crm_mirror_sync", sources, limit, results }));
-        return json(200, { success: true, sources, limit, results });
+        const { sources, limit, pages } = parseSyncRequest(payload);
+        const results = await syncRequestedProviders(env, sources, limit, new Date().toISOString(), pages);
+        console.log(JSON.stringify({ event: "crm_mirror_sync", sources, limit, pages, results }));
+        return json(200, { success: true, sources, limit, pages, results });
       }
       return json(404, { error: "not found" });
     } catch (error) {
