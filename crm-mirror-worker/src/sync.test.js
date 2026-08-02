@@ -1,0 +1,72 @@
+import { describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  beginSyncRun: vi.fn(async () => "run_1"),
+  finishSyncRun: vi.fn(async () => {}),
+  findContactIdByGhlId: vi.fn(),
+  getSyncCursor: vi.fn(async () => null),
+  listGhlContactExternalIds: vi.fn(async () => ["contact_1", "contact_2"]),
+  setSyncCursor: vi.fn(async () => {}),
+  upsertGhlAppointment: vi.fn(),
+  upsertGhlContact: vi.fn(async (_db, contact) => `owned_${contact.externalId}`),
+  upsertClientNote: vi.fn(async () => {}),
+  upsertClientTask: vi.fn(async () => {}),
+  upsertStripeCharge: vi.fn(),
+  upsertCommunicationEvent: vi.fn(),
+  upsertCommunicationThread: vi.fn(),
+  ensureCommunicationThread: vi.fn(),
+  fetchGhlAppointmentsForContact: vi.fn(),
+  fetchGhlContact: vi.fn(async (_env, id) => ({ externalId: id })),
+  fetchGhlContactNotes: vi.fn(async (_env, id) => id === "contact_1" ? [{ externalId: "note_1" }] : [{ externalId: "note_2" }]),
+  fetchGhlContactTasks: vi.fn(async (_env, id) => id === "contact_1" ? [{ externalId: "task_1" }] : []),
+  fetchGhlContactsPage: vi.fn(),
+  fetchGhlConversationMessages: vi.fn(),
+  fetchGhlConversationsPage: vi.fn(),
+  fetchGhlMessageExport: vi.fn(),
+  fetchStripeChargesPage: vi.fn(),
+  fetchStripeCustomer: vi.fn(),
+  writeOpsLastRun: vi.fn(),
+}));
+
+vi.mock("./repository.js", () => ({
+  beginSyncRun: mocks.beginSyncRun, finishSyncRun: mocks.finishSyncRun,
+  findContactIdByGhlId: mocks.findContactIdByGhlId, getSyncCursor: mocks.getSyncCursor,
+  listGhlContactExternalIds: mocks.listGhlContactExternalIds, setSyncCursor: mocks.setSyncCursor,
+  upsertGhlAppointment: mocks.upsertGhlAppointment, upsertGhlContact: mocks.upsertGhlContact,
+  upsertClientNote: mocks.upsertClientNote, upsertClientTask: mocks.upsertClientTask,
+  upsertStripeCharge: mocks.upsertStripeCharge, upsertCommunicationEvent: mocks.upsertCommunicationEvent,
+  upsertCommunicationThread: mocks.upsertCommunicationThread, ensureCommunicationThread: mocks.ensureCommunicationThread,
+}));
+vi.mock("./providers.js", () => ({
+  fetchGhlAppointmentsForContact: mocks.fetchGhlAppointmentsForContact, fetchGhlContact: mocks.fetchGhlContact,
+  fetchGhlContactNotes: mocks.fetchGhlContactNotes, fetchGhlContactTasks: mocks.fetchGhlContactTasks,
+  fetchGhlContactsPage: mocks.fetchGhlContactsPage, fetchGhlConversationMessages: mocks.fetchGhlConversationMessages,
+  fetchGhlConversationsPage: mocks.fetchGhlConversationsPage, fetchGhlMessageExport: mocks.fetchGhlMessageExport,
+  fetchStripeChargesPage: mocks.fetchStripeChargesPage, fetchStripeCustomer: mocks.fetchStripeCustomer,
+}));
+vi.mock("./normalizers.js", () => ({
+  normalizeGhlAppointment: (value) => value, normalizeGhlContact: (value) => value,
+  normalizeGhlConversation: (value) => value, normalizeGhlMessage: (value) => value,
+  normalizeGhlNote: (value) => value, normalizeGhlTask: (value) => value,
+  normalizeStripeCharge: (value) => value, normalizedEmail: (value) => value,
+}));
+vi.mock("../../functions/lib/ops-last-run.js", () => ({
+  writeOpsLastRun: mocks.writeOpsLastRun, OPS_LAST_RUN_KEYS: { crmMirror: "crm" },
+}));
+
+import { backfillGhlClientRecords } from "./sync.js";
+
+describe("historic GHL client-record backfill", () => {
+  it("refreshes source state and projects notes/tasks in a bounded resumable page", async () => {
+    const outcome = await backfillGhlClientRecords({ CRM_DB: {} }, 50, "2026-08-02T19:00:00.000Z");
+    expect(mocks.listGhlContactExternalIds).toHaveBeenCalledWith({}, null, 10);
+    expect(mocks.fetchGhlContact).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchGhlContactNotes).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchGhlContactTasks).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertGhlContact).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertClientNote).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertClientTask).toHaveBeenCalledTimes(1);
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-client-records", "done", "2026-08-02T19:00:00.000Z");
+    expect(outcome).toMatchObject({ status: "succeeded", recordsRead: 5, recordsWritten: 5, cursorAfter: "done" });
+  });
+});

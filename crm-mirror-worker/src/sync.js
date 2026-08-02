@@ -3,16 +3,19 @@ import {
   finishSyncRun,
   findContactIdByGhlId,
   getSyncCursor,
+  listGhlContactExternalIds,
   setSyncCursor,
   upsertGhlAppointment,
   upsertGhlContact,
+  upsertClientNote,
+  upsertClientTask,
   upsertStripeCharge,
   upsertCommunicationEvent,
   upsertCommunicationThread,
   ensureCommunicationThread,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -135,6 +138,66 @@ export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 }
   return outcome;
 }
 
+// Historic client records have no location-wide GHL API feed. Walk the existing
+// owned contact↔GHL links in small, durable pages and re-read only that contact's
+// source state, notes, and tasks. It writes solely to CRM_DB; it never changes
+// a GHL contact, consent, note, or task. Consent remains unknown unless a source
+// with explicit, independently auditable consent evidence is introduced.
+export async function backfillGhlClientRecords(env, requestedLimit, now) {
+  const cursorKey = "ghl-client-records";
+  const cursorBefore = await getSyncCursor(env.CRM_DB, cursorKey);
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", `client-records:${cursorBefore || "start"}`, now);
+  const outcome = result();
+  try {
+    if (cursorBefore === "done") {
+      outcome.cursorAfter = "done";
+      await finishSyncRun(env.CRM_DB, runId, outcome, now);
+      return outcome;
+    }
+    // Three source reads per contact; cap one Worker invocation to avoid a
+    // large historical sweep competing with the real-time mirror.
+    const limit = Math.min(Math.max(1, requestedLimit), 10);
+    const externalIds = await listGhlContactExternalIds(env.CRM_DB, cursorBefore, limit);
+    for (const externalId of externalIds) {
+      const [rawContact, rawNotes, rawTasks] = await Promise.all([
+        fetchGhlContact(env, externalId),
+        fetchGhlContactNotes(env, externalId),
+        fetchGhlContactTasks(env, externalId),
+      ]);
+      outcome.recordsRead += 1 + rawNotes.length + rawTasks.length;
+      const contact = normalizeGhlContact(rawContact);
+      if (!contact) {
+        outcome.recordsSkipped += 1 + rawNotes.length + rawTasks.length;
+        continue;
+      }
+      const contactId = await upsertGhlContact(env.CRM_DB, contact, now);
+      outcome.recordsWritten += 1;
+      for (const rawNote of rawNotes) {
+        const note = normalizeGhlNote(rawNote);
+        if (!note) { outcome.recordsSkipped += 1; continue; }
+        await upsertClientNote(env.CRM_DB, note, contactId, now);
+        outcome.recordsWritten += 1;
+      }
+      for (const rawTask of rawTasks) {
+        const task = normalizeGhlTask(rawTask);
+        if (!task) { outcome.recordsSkipped += 1; continue; }
+        await upsertClientTask(env.CRM_DB, task, contactId, now);
+        outcome.recordsWritten += 1;
+      }
+    }
+    const hasMore = externalIds.length === limit;
+    outcome.cursorAfter = hasMore ? externalIds.at(-1) : "done";
+    outcome.status = hasMore ? "partial" : "succeeded";
+    await setSyncCursor(env.CRM_DB, cursorKey, outcome.cursorAfter, now);
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
+
 export async function syncStripe(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "stripe");
   const runId = await beginSyncRun(env.CRM_DB, "stripe", cursorBefore, now);
@@ -192,6 +255,7 @@ export async function syncRequestedProviders(env, sources, limit, now, pages = 8
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
   if (selected.has("ghl-message-export")) results.ghlMessageExport = await backfillGhlMessageExport(env, { pages, pageSize: limit }, now);
+  if (selected.has("ghl-client-records")) results.ghlClientRecords = await backfillGhlClientRecords(env, limit, now);
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;

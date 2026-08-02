@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactExists, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactExists, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
 
 const env = {
   GHL_LOCATION_ID: "location_1",
@@ -49,6 +49,15 @@ describe("GHL contact pagination", () => {
       json: async () => ({ events: [{ id: "appointment_1" }] }),
     });
     await expect(fetchGhlAppointmentsForContact(env, "contact_1")).resolves.toEqual([{ id: "appointment_1" }]);
+  });
+
+  it("reads contact notes and tasks without injecting a location parameter", async () => {
+    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ notes: [{ id: "note_1" }] }) });
+    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ tasks: [{ id: "task_1" }] }) });
+    await expect(fetchGhlContactNotes(env, "contact_1")).resolves.toEqual([{ id: "note_1" }]);
+    await expect(fetchGhlContactTasks(env, "contact_1")).resolves.toEqual([{ id: "task_1" }]);
+    expect(new URL(fetch.mock.calls[0][0]).searchParams.has("locationId")).toBe(false);
+    expect(new URL(fetch.mock.calls[1][0]).searchParams.has("locationId")).toBe(false);
   });
 
   it("treats deleted GHL contacts as absent for completeness cleanup", async () => {

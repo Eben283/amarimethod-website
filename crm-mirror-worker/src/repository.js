@@ -114,6 +114,21 @@ export async function findContactIdByGhlId(db, externalId) {
   return contactIdForExternalRecord(db, "ghl", "contact", externalId);
 }
 
+// A stable, source-scoped list keeps historic record import resumable without
+// exposing the owned contact directory to GHL pagination semantics. This reads
+// only contacts that are already linked to a GHL source record.
+export async function listGhlContactExternalIds(db, afterExternalId, limit) {
+  const result = await db.prepare(
+    `SELECT external_id
+     FROM external_records
+     WHERE provider = 'ghl' AND object_type = 'contact' AND contact_id IS NOT NULL
+       AND (? IS NULL OR external_id > ?)
+     ORDER BY external_id ASC
+     LIMIT ?`,
+  ).bind(afterExternalId || null, afterExternalId || null, limit).all();
+  return (result.results || []).map((row) => row.external_id).filter(Boolean);
+}
+
 export async function upsertCommunicationThread(db, thread, contactId, now) {
   const existing = await db.prepare(
     "SELECT id FROM communication_threads WHERE provider = 'ghl' AND provider_thread_id = ?",

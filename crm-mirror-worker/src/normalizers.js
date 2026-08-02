@@ -114,6 +114,17 @@ function customFieldEntries(raw) {
   });
 }
 
+function dndSummary(raw) {
+  if (raw?.dnd === true) return "on";
+  if (raw?.dnd === false) return "off";
+  const settings = raw?.dndSettings;
+  if (!settings || typeof settings !== "object") return null;
+  const channels = Object.entries(settings)
+    .filter(([, setting]) => setting && typeof setting === "object" && typeof setting.status === "string")
+    .map(([channel, setting]) => `${channel.toLowerCase()}: ${String(setting.status).toLowerCase() === "active" ? "on" : "off"}`);
+  return channels.length ? channels.join(" · ") : null;
+}
+
 export function normalizeGhlContact(raw) {
   const id = text(raw?.id);
   if (!id) return null;
@@ -127,9 +138,9 @@ export function normalizeGhlContact(raw) {
   if (tags.includes("affiliate-referral")) roles.add("client");
   const attributes = customFieldEntries(raw.customFields);
   const management = [
-    ["system.dnd", raw.dnd == null ? null : (raw.dnd ? "on" : "off")],
+    ["system.dnd", dndSummary(raw)],
     ["system.owner", text(raw.assignedToName || raw.assignedTo?.name || raw.assignedTo)],
-    ["system.followers", Array.isArray(raw.followers) ? raw.followers.map((follower) => text(follower?.name || follower)).filter(Boolean).join(", ") : null],
+    ["system.followers", Array.isArray(raw.followers) ? raw.followers.map((follower) => text(follower?.name || follower)).filter(Boolean).join(", ") || "None" : null],
   ].filter(([, value]) => value != null);
   return {
     externalId: id,

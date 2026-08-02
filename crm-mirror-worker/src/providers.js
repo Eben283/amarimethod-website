@@ -92,6 +92,19 @@ export async function fetchGhlContact(env, contactExternalId) {
   return payload.contact || payload;
 }
 
+// Notes and tasks are contact-scoped endpoints. Unlike the contacts list, they
+// reject a locationId query parameter, so use the shared authenticated reader
+// directly rather than routing through a helper that adds location scope.
+export async function fetchGhlContactNotes(env, contactExternalId) {
+  const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}/notes`);
+  return Array.isArray(payload.notes) ? payload.notes : [];
+}
+
+export async function fetchGhlContactTasks(env, contactExternalId) {
+  const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}/tasks`);
+  return Array.isArray(payload.tasks) ? payload.tasks : [];
+}
+
 // Used when a full-pass completeness cycle finds contacts the list walk did not
 // refresh. GHL returns 400 "Contact not found" for deleted IDs; those are ghosts
 // in the mirror, not missing source records that need operator recovery.

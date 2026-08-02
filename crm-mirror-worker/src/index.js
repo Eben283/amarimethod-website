@@ -143,8 +143,8 @@ function requestedView(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "stripe"))];
-  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, and/or stripe");
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe"))];
+  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, and/or stripe");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
