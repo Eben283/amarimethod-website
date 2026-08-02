@@ -24,7 +24,6 @@ All landscape ~1600×1194. This is the backbone. Filename encodes subject + demo
 | `journal-woman-asn37.jpg` | Asian woman, hand on wall, green top | journal hero |
 | `knee-man-his44.jpg` | Hispanic man | knee condition |
 | `living-practice-woman-asn35.jpg` | Asian woman | in-person / living-practice |
-| `amari-runner-trail.jpg` | person running on a wooded trail | home at-home practice panel |
 | `neck-man-asn47.jpg` | Asian man | neck condition |
 | `pricing-man-wht54.jpg` | man | pricing / sessions |
 | `sciatica-man-wht50.jpg` | man | sciatica condition |
