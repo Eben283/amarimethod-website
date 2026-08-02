@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
-  getOutreachCoach, sendFollowupText, sendFollowupEmail, verifyDecisionMaker, dismissReply, ApiError,
+  getOutreachCoach, verifyDecisionMaker, dismissReply, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupCopy';
@@ -1557,133 +1557,55 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
   );
 }
 
-// Editable message + Send. Garrett can tweak the wording, then send the text right
-// from the card (via the same GHL send path as the VM/Talked chips) — no copy-paste.
+// Editable draft only. The staff app never sends outreach: Garrett copies the
+// wording, then opens the real GHL conversation to send or adjust it there.
 function EditSendText({ contactId, text, channel, onSent }: { contactId: string; text: string; channel?: string; onSent?: () => void }) {
   const [val, setVal] = useState(text);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [sentTo, setSentTo] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
-  // Synchronous send-lock: a double-click fires two onClicks before React re-renders
-  // with status==='sending', so the state check alone has a real double-send window.
-  // A ref flips immediately, so the second click is a no-op. We also remember the
-  // exact text we sent, so Send only re-enables for a GENUINELY different message.
-  const sendingRef = useRef(false);
-  const sentValRef = useRef<string | null>(null);
-  // Auto-grow to fit the whole message — no scrollbar inside the box.
   useEffect(() => {
     const el = ref.current;
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
   }, [val]);
-  const send = async () => {
-    const msg = val.trim();
-    if (!msg || sendingRef.current) return;      // sync guard — closes the double-tap race
-    if (msg === sentValRef.current) return;       // already sent this exact text
-    sendingRef.current = true;
-    setStatus('sending');
-    try {
-      const res = await sendFollowupText(contactId, msg);
-      sentValRef.current = msg;
-      setSentTo(res?.sentTo ?? null);
-      setStatus('sent');
-      // Record the send as a touch so the engine sees it (no more "call them" right
-      // after a text). Idempotent: the server's 5-min send-dedupe gates the SMS, so a
-      // deduped re-send returns deduped:true and we skip the touch — no double-count.
-      // Fire-and-forget: a failed touch-record must not break the (already sent) UX.
-      if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'texted' }).catch(() => {});
-      onSent?.(); // drop the card from Act Now now — you handled them
-    } catch (err) {
-      setErrMsg(err instanceof Error ? err.message : 'Failed to send');
-      setStatus('error');
-    } finally {
-      sendingRef.current = false;
-    }
-  };
-  const sentThisText = status === 'sent' && val.trim() === sentValRef.current;
   return (
     <div className="rounded-lg border border-amari-border p-2.5">
       {channel && <span className="mb-1 inline-block rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">{channel}</span>}
       <textarea
         ref={ref}
         value={val}
-        onChange={(e) => {
-          setVal(e.target.value);
-          // Re-enable Send only when the text actually changes after a send/error —
-          // editing to a NEW message is a legit new send; identical text stays locked.
-          if (status === 'error') { setStatus('idle'); setErrMsg(null); }
-          else if (status === 'sent' && e.target.value.trim() !== sentValRef.current) setStatus('idle');
-        }}
+        onChange={(e) => setVal(e.target.value)}
         rows={3}
         className="w-full resize-y overflow-hidden rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
       />
       <div className="mt-1.5 flex items-center gap-2">
-        <button type="button" onClick={send} disabled={status === 'sending' || sentThisText || !val.trim()}
-          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-          {status === 'sending' ? 'Sending…' : sentThisText ? '✓ Sent' : 'Send text'}
-        </button>
         <button type="button"
           onClick={() => { navigator.clipboard?.writeText(val).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
           className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
           {copied ? '✓ Copied' : 'Copy'}
         </button>
-        {sentThisText && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
-        {status === 'error' && <span className="text-xs text-red-600">{errMsg || "Didn't send — try again"}</span>}
+        <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white">
+          Open GHL to send
+        </a>
       </div>
     </div>
   );
 }
 
-// Plain-text → safe HTML for the email body: escape, paragraph on blank lines,
-// <br> on single newlines. Keeps Garrett's line breaks without trusting raw input.
-function bodyToHtml(s: string): string {
-  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return s.trim().split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
-}
-
-// Editable subject + body + Send email. The email twin of EditSendText — Garrett tweaks
-// the wording, then sends THROUGH GHL (logged on the timeline, traceable) with the same
-// synchronous double-send lock. Body is plain text in the box; converted to HTML on send.
+// Email drafts follow the same boundary: editable here, sent only from GHL.
 function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { contactId: string; defaultSubject: string; defaultBody: string; onSent?: () => void }) {
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [errMsg, setErrMsg] = useState<string | null>(null);
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
-  const sendingRef = useRef(false);
-  const sentKeyRef = useRef<string | null>(null);
   useEffect(() => {
     const el = ref.current;
     if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }
   }, [body]);
-  const key = `${subject.trim()}${body.trim()}`;
-  const send = async () => {
-    const subj = subject.trim();
-    const msg = body.trim();
-    if (!subj || !msg || sendingRef.current) return;   // sync guard — closes the double-tap race
-    if (key === sentKeyRef.current) return;             // already sent this exact email
-    sendingRef.current = true;
-    setStatus('sending');
-    try {
-      const res = await sendFollowupEmail(contactId, subj, bodyToHtml(msg));
-      sentKeyRef.current = key;
-      setSentTo(res?.sentTo ?? null);
-      setStatus('sent');
-      // Record the send as a touch so the engine sees it. Idempotent via the server's
-      // 5-min send-dedupe (deduped:true → skip the touch). Fire-and-forget.
-      if (!res?.deduped) recordPartnerOutcome({ contactId, signal: 'emailed' }).catch(() => {});
-      onSent?.(); // drop the card from Act Now now — you handled them
-    } catch (err) {
-      setErrMsg(err instanceof Error ? err.message : 'Failed to send');
-      setStatus('error');
-    } finally {
-      sendingRef.current = false;
-    }
+  const copyDraft = () => {
+    const value = [subject.trim() ? `Subject: ${subject.trim()}` : '', body.trim()].filter(Boolean).join('\n\n');
+    navigator.clipboard?.writeText(value).then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500); }).catch(() => {});
   };
-  const sentThis = status === 'sent' && key === sentKeyRef.current;
-  const onEdit = () => { if (status === 'error') { setStatus('idle'); setErrMsg(null); } else if (status === 'sent' && key !== sentKeyRef.current) setStatus('idle'); };
   return (
     <div className="rounded-lg border border-amari-border p-2.5">
       <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-amari-light-sand px-2 py-0.5 text-[10px] uppercase tracking-wide text-amari-text-muted">
@@ -1692,24 +1614,26 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
       <input
         type="text"
         value={subject}
-        onChange={(e) => { setSubject(e.target.value); onEdit(); }}
+        onChange={(e) => setSubject(e.target.value)}
         placeholder="Subject"
         className="mb-1.5 w-full rounded border border-amari-border bg-white px-2 py-1.5 text-sm font-medium text-amari-charcoal"
       />
       <textarea
         ref={ref}
         value={body}
-        onChange={(e) => { setBody(e.target.value); onEdit(); }}
+        onChange={(e) => setBody(e.target.value)}
         rows={6}
         className="w-full resize-y overflow-hidden rounded border border-amari-border bg-white p-2 text-sm text-amari-charcoal"
       />
       <div className="mt-1.5 flex items-center gap-2">
-        <button type="button" onClick={send} disabled={status === 'sending' || sentThis || !subject.trim() || !body.trim()}
-          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-          {status === 'sending' ? 'Sending…' : sentThis ? '✓ Sent' : 'Send email'}
+        <button type="button" onClick={copyDraft} disabled={!subject.trim() || !body.trim()}
+          className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-50">
+          {copied ? '✓ Copied' : 'Copy email'}
         </button>
-        {sentThis && <span className="text-xs text-amari-text-muted">Sent{sentTo ? ` to ${sentTo}` : ''}</span>}
-        {status === 'error' && <span className="text-xs text-red-600">{errMsg || "Didn't send — try again"}</span>}
+        <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+          className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white">
+          Open GHL to send
+        </a>
       </div>
     </div>
   );
