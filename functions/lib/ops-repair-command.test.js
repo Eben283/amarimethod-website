@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES } from "./ops-repair-command.js";
+import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES, repairCommandKey } from "./ops-repair-command.js";
 import { OPS_REGISTRY } from "./ops-registry.js";
 
 function env() {
@@ -29,6 +29,19 @@ describe("ops repair commands", () => {
     expect((await claimNextRepairCommand(e)).command).toBeNull();
     expect((await finishRepairCommand(e, created.command.id, { status: "completed", result: "verified" })).command.status).toBe("completed");
     expect((await getRepairCommand(e, created.command.id)).command).toMatchObject({ status: "completed", result: "verified" });
+  });
+  it("reclaims only a command whose runner lease expired", async () => {
+    const e = env();
+    const created = await createRepairCommand(e, { command: "FIX", pathId: "crm_mirror" });
+    await e.PORTAL_KV.put(repairCommandKey(created.command.id), JSON.stringify({
+      ...created.command,
+      status: "running",
+      attempts: 1,
+      leaseExpiresAt: "2000-01-01T00:00:00.000Z",
+    }));
+    const claimed = await claimNextRepairCommand(e, { runnerId: "recovery" });
+    expect(claimed.command).toMatchObject({ id: created.command.id, status: "running", runnerId: "recovery", attempts: 2 });
+    expect(Date.parse(claimed.command.leaseExpiresAt)).toBeGreaterThan(Date.now());
   });
   it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY));
 });

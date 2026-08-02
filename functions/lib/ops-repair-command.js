@@ -7,6 +7,7 @@ import { boardMetaFor } from "./ops-board-meta.js";
 
 const PREFIX = "ops:repair:command:";
 const TTL_S = 14 * 86400;
+const LEASE_S = 20 * 60;
 const COMMAND = "FIX";
 
 export const REPAIR_MODE = Object.freeze({
@@ -99,10 +100,21 @@ export async function claimNextRepairCommand(env, { runnerId } = {}) {
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
   const page = await kv.list({ prefix: PREFIX, limit: 100 });
+  const now = Date.now();
   for (const key of page.keys || []) {
     const entry = await kv.get(key.name, "json");
-    if (!entry || entry.status !== "pending") continue;
-    const claimed = { ...entry, status: "running", claimedAt: new Date().toISOString(), runnerId: runnerId || "local-codex" };
+    const staleLease = entry?.status === "running" && Number.isFinite(Date.parse(entry.leaseExpiresAt)) && Date.parse(entry.leaseExpiresAt) <= now;
+    if (!entry || (entry.status !== "pending" && !staleLease)) continue;
+    const claimedAt = new Date(now).toISOString();
+    const claimed = {
+      ...entry,
+      status: "running",
+      claimedAt,
+      leaseExpiresAt: new Date(now + LEASE_S * 1000).toISOString(),
+      runnerId: runnerId || "local-codex",
+      attempts: (entry.attempts || 0) + 1,
+      ...(staleLease ? { reclaimedAt: claimedAt } : {}),
+    };
     await kv.put(key.name, JSON.stringify(claimed), { expirationTtl: TTL_S });
     return { ok: true, command: claimed };
   }
@@ -127,4 +139,4 @@ export async function finishRepairCommand(env, id, { status, result } = {}) {
   return { ok: true, command: finished };
 }
 
-export const __test = { PREFIX, COMMAND, id };
+export const __test = { PREFIX, COMMAND, LEASE_S, id };
