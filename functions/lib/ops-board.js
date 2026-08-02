@@ -1306,7 +1306,7 @@ async function judgeChiefOfStaff(kv) {
     return {
       status: "red",
       note: ready.error || "chat not configured",
-      why: ready.error || "cos:status:ready ok=false — ANTHROPIC_API_KEY or probe failed",
+      why: ready.error || "cos:status:ready ok=false — OpenRouter key or probe failed",
       lastAt: readyAt || lastAt,
       detail: { ready, auth, chat },
       log: lastRunAsLog("chief_of_staff", {
@@ -1334,7 +1334,7 @@ async function judgeChiefOfStaff(kv) {
   }
   if (ready?.ok || auth?.status === "ok" || chat?.status === "ok") {
     const bits = [];
-    if (ready?.ok) bits.push("Anthropic ready");
+    if (ready?.ok) bits.push("OpenRouter ready");
     if (auth?.status === "ok") bits.push(`login ${fmtAge(ageHours(authAt))}`);
     if (chat?.status === "ok") bits.push(`chat ${fmtAge(ageHours(chatAt))}`);
     return {

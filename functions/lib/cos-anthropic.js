@@ -18,9 +18,10 @@ import {
 } from "./cos-parking.js";
 import { recordFieldVisit, listFieldPartners } from "./cos-field-visits.js";
 
-const ANTHROPIC_API = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-6";
-const ANTHROPIC_VERSION = "2023-06-01";
+// COS owns a scoped OpenRouter key. Use its Anthropic Messages-compatible
+// endpoint so the native tool-use and prompt-cache request shape stays intact.
+const OPENROUTER_MESSAGES_API = "https://openrouter.ai/api/v1/messages";
+export const OPENROUTER_MODEL = "anthropic/claude-sonnet-4.6";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const MAX_TOOL_ROUNDS = 5;
 
@@ -574,7 +575,7 @@ export async function executeTool(context, toolName, input, user = "Eben", field
 // cache hits happen for repeat messages in the same session.
 export function buildRequestBody({ system, messages, includeTools = true, maxTokens = 2048 }) {
   const body = {
-    model: MODEL,
+    model: OPENROUTER_MODEL,
     max_tokens: maxTokens,
     stream: true,
     system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
@@ -591,17 +592,35 @@ export function buildRequestBody({ system, messages, includeTools = true, maxTok
   return body;
 }
 
-// Make a single Messages API call. Returns the raw streaming Response.
-export async function callAnthropic(apiKey, requestBody) {
-  return fetch(ANTHROPIC_API, {
+// Make a single OpenRouter Anthropic-Messages API call. Returns the raw response.
+export async function callOpenRouter(apiKey, requestBody) {
+  return fetch(OPENROUTER_MESSAGES_API, {
     method: "POST",
     headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
+      "Authorization": `Bearer ${apiKey}`,
       "content-type": "application/json",
+      "HTTP-Referer": "https://www.amarimethod.com",
+      "X-Title": "Amari Method Chief of Staff",
     },
     body: JSON.stringify(requestBody),
   });
+}
+
+// A deliberately tiny, read-only synthetic request used only by the protected
+// readiness endpoint. It does not read/write COS conversations, invoke tools,
+// or include customer data. Keeping this at the provider boundary catches an
+// invalid key/model/provider route before it reaches the chat UI.
+export async function probeOpenRouter(apiKey) {
+  const response = await callOpenRouter(apiKey, {
+    model: OPENROUTER_MODEL,
+    max_tokens: 8,
+    stream: false,
+    messages: [{ role: "user", content: "Reply with OK." }],
+  });
+  if (!response.ok) {
+    throw new Error(`OpenRouter ${response.status} readiness probe failed`);
+  }
+  return { model: OPENROUTER_MODEL };
 }
 
 // Run a multi-turn streaming chat with tool use.
@@ -620,11 +639,11 @@ export async function streamWithTools({ apiKey, requestBody, onTextDelta, execut
   };
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const resp = await callAnthropic(apiKey, { ...requestBody, messages });
+    const resp = await callOpenRouter(apiKey, { ...requestBody, messages });
 
     if (!resp.ok) {
       const errText = await resp.text();
-      throw new Error(`Anthropic ${resp.status}: ${errText.slice(0, 500)}`);
+      throw new Error(`OpenRouter ${resp.status}: ${errText.slice(0, 500)}`);
     }
 
     const reader = resp.body.getReader();
