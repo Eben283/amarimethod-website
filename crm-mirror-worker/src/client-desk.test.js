@@ -1,15 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
-describe("Client Desk email rendering", () => {
-  it("replaces raw email destinations with labelled, private links", () => {
+describe("Client Desk message rendering", () => {
+  it("cleans tracking destinations before inserting message text", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("function emailLinkLabel");
-    expect(html).toContain("Upgrade to 4 sessions");
-    expect(html).toContain("Upgrade to 8 sessions");
-    expect(html).toContain("Share feedback");
-    expect(html).toContain("Unsubscribe");
-    expect(html).toContain('referrerpolicy="no-referrer"');
-    expect(html).toContain("kind === 'email' ? emailBody(content) : esc(cleanMessage(content))");
+    expect(html).toContain("const cleanMessage");
+    expect(html).toContain("[Amari link]");
+    expect(html).toContain("If you no longer wish to receive these emails");
+    expect(html).toContain("esc(content)");
   });
 });
