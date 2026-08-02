@@ -4,6 +4,7 @@ import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import {
   activeClientOperations,
+  communicationsInbox,
   classifyPurchase,
   clientDeskContacts,
   contactProfile,
@@ -214,7 +215,7 @@ export default {
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -250,6 +251,15 @@ export default {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
         const scope = url.searchParams.get("scope") === "all" ? "all" : "clients";
         return json(200, { success: true, worker: "amari-crm-mirror", contacts: await clientDeskContacts(env.CRM_DB, { query, limit, scope }) });
+      }
+      if (request.method === "GET" && url.pathname === "/communications/inbox") {
+        const query = parseContactSearch(url.searchParams.get("query"));
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          threads: await communicationsInbox(env.CRM_DB, { query, limit }),
+        });
       }
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
