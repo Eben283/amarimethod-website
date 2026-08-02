@@ -408,7 +408,7 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
 }
 
 export async function mirrorStatus(db, now = new Date().toISOString()) {
-  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestCommunicationImport] = await db.batch([
+  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestCommunicationImport, latestClientRecordImport] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
     db.prepare("SELECT COUNT(*) AS count FROM appointments"),
     db.prepare("SELECT COUNT(*) AS count FROM purchases"),
@@ -419,6 +419,7 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND (cursor_before = 'message-export' OR cursor_before LIKE 'conversations:%') ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT status, finished_at, records_read, records_written, records_skipped, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'client-records:%' ORDER BY started_at DESC LIMIT 1"),
   ]);
   return {
     contacts: Number(contacts.results?.[0]?.count || 0),
@@ -429,6 +430,9 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
       events: Number(events.results?.[0]?.count || 0),
       unreadInbound: Number(unread.results?.[0]?.count || 0),
       latestImport: latestCommunicationImport.results?.[0] || null,
+    },
+    clientRecords: {
+      latestImport: latestClientRecordImport.results?.[0] || null,
     },
     lastSync: lastSync.results?.[0] || null,
     syncHealth: syncHealthForRuns({
