@@ -44,4 +44,5 @@ describe("ops repair commands", () => {
     expect(Date.parse(claimed.command.leaseExpiresAt)).toBeGreaterThan(Date.now());
   });
   it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY));
+  it("keeps CRM diagnosis inside its read-only readiness surface", () => expect(policyFor("crm_mirror").touch).toContain("crm-mirror-worker readiness"));
 });
