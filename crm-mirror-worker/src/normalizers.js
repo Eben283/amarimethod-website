@@ -125,6 +125,12 @@ export function normalizeGhlContact(raw) {
   const roles = new Set(["lead"]);
   if (tags.includes("affiliate-partner")) roles.add("affiliate_partner");
   if (tags.includes("affiliate-referral")) roles.add("client");
+  const attributes = customFieldEntries(raw.customFields);
+  const management = [
+    ["system.dnd", raw.dnd == null ? null : (raw.dnd ? "on" : "off")],
+    ["system.owner", text(raw.assignedToName || raw.assignedTo?.name || raw.assignedTo)],
+    ["system.followers", Array.isArray(raw.followers) ? raw.followers.map((follower) => text(follower?.name || follower)).filter(Boolean).join(", ") : null],
+  ].filter(([, value]) => value != null);
   return {
     externalId: id,
     firstName,
@@ -134,7 +140,7 @@ export function normalizeGhlContact(raw) {
     phone: normalizedPhone(raw.phone),
     tags,
     roles: [...roles].sort(),
-    attributes: customFieldEntries(raw.customFields),
+    attributes: [...attributes, ...management],
     referralSourceLabel: text(raw.source),
   };
 }
@@ -159,6 +165,37 @@ export function normalizeGhlAppointment(raw, contactExternalId) {
     startsAt: text(raw.startTime || raw.startAt || raw.start_time),
     endsAt: text(raw.endTime || raw.endAt || raw.end_time),
     timezone: text(raw.selectedTimezone || raw.timezone),
+  };
+}
+
+export function normalizeGhlNote(raw) {
+  const externalId = text(raw?.id || raw?.noteId);
+  const body = cleanMessage(raw?.body || raw?.content || raw?.note);
+  if (!externalId || !body) return null;
+  const createdAt = raw?.dateAdded || raw?.createdAt || raw?.created_at || raw?.date;
+  return {
+    externalId,
+    body,
+    authoredBy: text(raw?.userName || raw?.authorName || raw?.author || raw?.userId),
+    createdAt: typeof createdAt === "number" ? new Date(createdAt).toISOString() : text(createdAt),
+  };
+}
+
+export function normalizeGhlTask(raw) {
+  const externalId = text(raw?.id || raw?.taskId);
+  const title = cleanMessage(raw?.title || raw?.name || raw?.body || raw?.description);
+  if (!externalId || !title) return null;
+  const status = text(raw?.status)?.toLowerCase() || (raw?.completed ? "completed" : "open");
+  const createdAt = raw?.dateAdded || raw?.createdAt || raw?.created_at || raw?.date;
+  const dueAt = raw?.dueDate || raw?.dueAt || raw?.due_at || null;
+  const completedAt = raw?.completedAt || raw?.completed_at || (status === "completed" ? raw?.dateUpdated || raw?.updatedAt : null);
+  return {
+    externalId,
+    title,
+    status,
+    dueAt: typeof dueAt === "number" ? new Date(dueAt).toISOString() : text(dueAt),
+    completedAt: typeof completedAt === "number" ? new Date(completedAt).toISOString() : text(completedAt),
+    createdAt: typeof createdAt === "number" ? new Date(createdAt).toISOString() : text(createdAt),
   };
 }
 

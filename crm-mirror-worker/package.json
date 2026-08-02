@@ -6,5 +6,8 @@
   "description": "Read-only GHL and Stripe mirror for the Amari internal CRM. It never sends messages or writes to providers.",
   "scripts": {
     "test": "vitest run --config vitest.config.js"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
   }
 }

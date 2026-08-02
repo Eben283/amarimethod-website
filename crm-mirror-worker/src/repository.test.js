@@ -163,11 +163,17 @@ describe("CRM mirror client profiles", () => {
         { results: [{ id: "contact_1", display_name: "Eben" }] },
         { results: [{ tag: "client" }] },
         { results: [{ role: "client" }] },
+        { results: [{ attribute_key: "series", attribute_value: "8-session" }] },
         { results: [{ sessions_remaining: "3", series_type: "8-session" }] },
         { results: [{ starts_at: "2026-07-27 13:00:00" }] },
         { results: [{ status: "confirmed" }] },
         { results: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }] },
+        { results: [{ direction: "inbound", body_clean: "Can we reschedule?" }] },
         { results: [{ classification: "8-Session Series" }] },
+        { results: [{ body: "Call before next session" }] },
+        { results: [{ title: "Follow up", status: "open" }] },
+        { results: [{ channel: "sms", state: "granted" }] },
+        { results: [{ activity_type: "message", body: "Can we reschedule?" }] },
       ],
     };
     await expect(contactProfile(profileDb, "contact_1", 25, "2026-07-26T00:00:00.000Z")).resolves.toMatchObject({
@@ -179,6 +185,10 @@ describe("CRM mirror client profiles", () => {
       appointments: [{ status: "confirmed" }],
       purchases: [{ classification: "8-Session Series" }],
       communications: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }],
+      notes: [{ body: "Call before next session" }],
+      tasks: [{ title: "Follow up", status: "open" }],
+      consents: [{ channel: "sms", state: "granted" }],
+      activityTimeline: [{ activity_type: "message", body: "Can we reschedule?" }],
     });
   });
 

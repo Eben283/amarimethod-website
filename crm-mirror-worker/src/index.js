@@ -6,6 +6,8 @@ import {
   activeClientOperations,
   communicationsInbox,
   classifyPurchase,
+  deleteClientNote,
+  deleteClientTask,
   clientDeskContacts,
   contactProfile,
   decideLedgerCutoverCandidate,
@@ -21,8 +23,10 @@ import {
   searchContacts,
   upsertGhlAppointment,
   upsertGhlContact,
+  upsertClientNote,
+  upsertClientTask,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage } from "./normalizers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
@@ -82,6 +86,28 @@ async function processGhlWebhook(request, env) {
     const appointment = normalizeGhlAppointment(data, data.contactId);
     if (contactId && appointment) await upsertGhlAppointment(env.CRM_DB, appointment, contactId, now);
     return json(200, { accepted: true, projected: Boolean(contactId && appointment) });
+  }
+  if (["NoteCreate", "NoteUpdate", "NoteDelete"].includes(payload.type) && data.contactId) {
+    const note = normalizeGhlNote(data);
+    if (payload.type === "NoteDelete") {
+      const noteId = String(data.id || data.noteId || "");
+      if (noteId) await deleteClientNote(env.CRM_DB, noteId);
+      return json(200, { accepted: true, projected: Boolean(noteId) });
+    }
+    const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
+    if (contactId && note) await upsertClientNote(env.CRM_DB, note, contactId, now);
+    return json(200, { accepted: true, projected: Boolean(contactId && note) });
+  }
+  if (["TaskCreate", "TaskComplete", "TaskDelete"].includes(payload.type) && data.contactId) {
+    const task = normalizeGhlTask(data);
+    if (payload.type === "TaskDelete") {
+      const taskId = String(data.id || data.taskId || "");
+      if (taskId) await deleteClientTask(env.CRM_DB, taskId);
+      return json(200, { accepted: true, projected: Boolean(taskId) });
+    }
+    const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
+    if (contactId && task) await upsertClientTask(env.CRM_DB, task, contactId, now);
+    return json(200, { accepted: true, projected: Boolean(contactId && task) });
   }
   if (!message) return json(202, { accepted: true, projected: false });
   const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);

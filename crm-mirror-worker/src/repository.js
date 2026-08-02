@@ -176,6 +176,53 @@ export async function recordGhlWebhookEvent(db, webhook, now) {
   return Number(result.meta?.changes || 0) > 0;
 }
 
+// Notes and tasks are first-class client records. They are intentionally kept
+// separate from the append-only webhook journal so staff can read a current
+// workspace without treating delivery metadata as the record itself.
+export async function upsertClientNote(db, note, contactId, now) {
+  const existing = await db.prepare(
+    "SELECT id FROM client_notes WHERE provider_note_id = ?",
+  ).bind(note.externalId).first();
+  const noteId = existing?.id || id();
+  if (existing) {
+    await db.prepare(
+      `UPDATE client_notes SET contact_id = ?, body = ?, authored_by = ?, created_at = ?, updated_at = ? WHERE id = ?`,
+    ).bind(contactId, note.body, note.authoredBy, note.createdAt || now, now, noteId).run();
+  } else {
+    await db.prepare(
+      `INSERT INTO client_notes (id, contact_id, provider_note_id, body, authored_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(noteId, contactId, note.externalId, note.body, note.authoredBy, note.createdAt || now, now).run();
+  }
+  return noteId;
+}
+
+export async function deleteClientNote(db, providerNoteId) {
+  await db.prepare("DELETE FROM client_notes WHERE provider_note_id = ?").bind(providerNoteId).run();
+}
+
+export async function upsertClientTask(db, task, contactId, now) {
+  const existing = await db.prepare(
+    "SELECT id FROM client_tasks WHERE provider_task_id = ?",
+  ).bind(task.externalId).first();
+  const taskId = existing?.id || id();
+  if (existing) {
+    await db.prepare(
+      `UPDATE client_tasks SET contact_id = ?, title = ?, due_at = ?, completed_at = ?, status = ?, created_at = ?, updated_at = ? WHERE id = ?`,
+    ).bind(contactId, task.title, task.dueAt, task.completedAt, task.status, task.createdAt || now, now, taskId).run();
+  } else {
+    await db.prepare(
+      `INSERT INTO client_tasks (id, contact_id, provider_task_id, title, due_at, completed_at, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(taskId, contactId, task.externalId, task.title, task.dueAt, task.completedAt, task.status, task.createdAt || now, now).run();
+  }
+  return taskId;
+}
+
+export async function deleteClientTask(db, providerTaskId) {
+  await db.prepare("DELETE FROM client_tasks WHERE provider_task_id = ?").bind(providerTaskId).run();
+}
+
 // After a GHL full pass, drop external_records for contacts confirmed deleted in
 // GHL so completeness does not stay stuck in "needs review" on ghost rows.
 // Mirror contact history is retained; only the provider linkage row is removed.
@@ -532,14 +579,18 @@ export async function clientDeskContacts(db, { query = null, limit = 50, scope =
 // selected-contact timeline below.
 export async function communicationsInbox(db, { query = null, limit = 50 } = {}) {
   const values = [];
-  let where = "";
+  const filters = [
+    "COALESCE(thread.last_preview, '') NOT LIKE 'OPS-%'",
+    "lower(COALESCE(contact.email_normalized, '')) <> 'eben@ebenforrest.com'",
+  ];
   if (query) {
     const pattern = likePattern(query);
-    where = `WHERE lower(contact.display_name) LIKE ? ESCAPE '\\'
+    filters.push(`(lower(contact.display_name) LIKE ? ESCAPE '\\'
       OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
-      OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'`;
+      OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\')`);
     values.push(pattern, pattern, `%${String(query).replace(/[\\%_]/g, "\\$&")}%`);
   }
+  const where = `WHERE ${filters.join(" AND ")}`;
   const result = await db.prepare(
     `SELECT thread.id AS thread_id, thread.channel, thread.last_event_at,
             thread.last_preview, thread.last_direction, thread.unread_inbound_count,
@@ -556,7 +607,7 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
 }
 
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, notesResult, tasksResult, consentResult, activityResult] = await db.batch([
     db.prepare(
       `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
        FROM contacts WHERE id = ?`,
@@ -627,6 +678,51 @@ export async function contactProfile(db, contactId, limit, now) {
        ORDER BY datetime(purchased_at) DESC, id DESC
        LIMIT ?`,
     ).bind(contactId, limit),
+    db.prepare(
+      `SELECT body, authored_by, created_at, updated_at
+       FROM client_notes WHERE contact_id = ?
+       ORDER BY datetime(created_at) DESC, id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT title, due_at, completed_at, status, created_at, updated_at
+       FROM client_tasks WHERE contact_id = ?
+       ORDER BY CASE WHEN completed_at IS NULL THEN 0 ELSE 1 END,
+                datetime(due_at) ASC, datetime(created_at) DESC, id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT channel, state, source, effective_at
+       FROM consents WHERE contact_id = ?
+       ORDER BY channel, datetime(effective_at) DESC`,
+    ).bind(contactId),
+    // This is the client-visible activity history—not a webhook log. Each row
+    // is a recognised client record with one common chronological shape.
+    db.prepare(
+      `SELECT * FROM (
+         SELECT 'message' AS activity_type, event.occurred_at, event.direction,
+                COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
+                event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
+                NULL AS amount_cents, NULL AS currency
+         FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
+         WHERE event.contact_id = ?
+         UNION ALL
+         SELECT 'appointment', appointment.starts_at, NULL, NULL, NULL, NULL, NULL,
+                appointment.status, COALESCE(service.name, 'Appointment'), NULL, NULL
+         FROM appointments appointment LEFT JOIN services service ON service.id = appointment.service_id
+         WHERE appointment.contact_id = ?
+         UNION ALL
+         SELECT 'payment', purchase.purchased_at, NULL, NULL, purchase.provider_status, NULL,
+                purchase.classification, NULL, NULL, purchase.amount_cents, purchase.currency
+         FROM purchases purchase WHERE purchase.contact_id = ?
+         UNION ALL
+         SELECT 'note', note.created_at, NULL, NULL, NULL, NULL, note.body, NULL,
+                note.authored_by, NULL, NULL
+         FROM client_notes note WHERE note.contact_id = ?
+         UNION ALL
+         SELECT 'task', task.created_at, NULL, NULL, NULL, task.title, NULL,
+                task.status, task.due_at, NULL, NULL
+         FROM client_tasks task WHERE task.contact_id = ?
+       ) ORDER BY datetime(occurred_at) DESC LIMIT ?`,
+    ).bind(contactId, contactId, contactId, contactId, contactId, limit),
   ]);
   const contact = contactResult.results?.[0] || null;
   if (!contact) return null;
@@ -639,6 +735,10 @@ export async function contactProfile(db, contactId, limit, now) {
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
     purchases: purchasesResult.results || [],
+    notes: notesResult.results || [],
+    tasks: tasksResult.results || [],
+    consents: consentResult.results || [],
+    activityTimeline: activityResult.results || [],
     communications: communicationsResult.results || [],
     communicationTimeline: timelineResult.results || [],
   };
