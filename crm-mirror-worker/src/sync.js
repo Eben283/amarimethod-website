@@ -255,7 +255,20 @@ export async function syncRequestedProviders(env, sources, limit, now, pages = 8
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
   if (selected.has("ghl-message-export")) results.ghlMessageExport = await backfillGhlMessageExport(env, { pages, pageSize: limit }, now);
-  if (selected.has("ghl-client-records")) results.ghlClientRecords = await backfillGhlClientRecords(env, limit, now);
+  if (selected.has("ghl-client-records")) {
+    try {
+      results.ghlClientRecords = await backfillGhlClientRecords(env, limit, now);
+    } catch (error) {
+      // This source is a deliberately manual historic import. Return its
+      // aggregate failure to the authenticated operator so a pre-run problem
+      // can be diagnosed without exposing any contact payloads or making the
+      // whole protected sync endpoint look like a generic server failure.
+      results.ghlClientRecords = {
+        ...result("failed"),
+        failureDetail: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;
