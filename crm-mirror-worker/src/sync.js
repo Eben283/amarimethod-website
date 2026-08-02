@@ -146,14 +146,12 @@ export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 }
 export async function backfillGhlClientRecords(env, requestedLimit, now) {
   const cursorKey = "ghl-client-records";
   const cursorBefore = await getSyncCursor(env.CRM_DB, cursorKey);
+  // Once the historic pass is complete, cron should not create empty sync-run
+  // rows forever. A deliberate future re-import needs an explicit cursor reset.
+  if (cursorBefore === "done") return { ...result(), cursorAfter: "done" };
   const runId = await beginSyncRun(env.CRM_DB, "ghl", `client-records:${cursorBefore || "start"}`, now);
   const outcome = result();
   try {
-    if (cursorBefore === "done") {
-      outcome.cursorAfter = "done";
-      await finishSyncRun(env.CRM_DB, runId, outcome, now);
-      return outcome;
-    }
     // Three source reads per contact; cap one Worker invocation to avoid a
     // large historical sweep competing with the real-time mirror.
     const limit = Math.min(Math.max(1, requestedLimit), 10);
@@ -298,7 +296,13 @@ export async function runScheduledSync(env, now) {
   const results = {};
   // Conversation history is intentionally not scheduled until its GHL cursor
   // is proven to advance; rerunning the first page would waste API capacity.
-  for (const [provider, sync, limit] of [["ghl", syncGhl, SCHEDULED_SYNC_LIMIT], ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT]]) {
+  // Historic client records are different: each run has its own durable cursor
+  // and is deliberately capped well below the provider rate limit.
+  for (const [provider, sync, limit] of [
+    ["ghl", syncGhl, SCHEDULED_SYNC_LIMIT],
+    ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],
+    ["ghl-client-records", backfillGhlClientRecords, 10],
+  ]) {
     try {
       results[provider] = await sync(env, limit, now);
     } catch (error) {
