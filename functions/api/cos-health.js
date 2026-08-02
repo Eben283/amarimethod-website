@@ -53,6 +53,8 @@ export async function onRequestGet(context) {
     };
     console.error("[cos-health] OpenRouter readiness probe failed", status || "unknown");
     await record(context.env, result);
-    return new Response(JSON.stringify(result), { status: 502, headers: HEADERS });
+    // Pages may replace 502/503 bodies with Cloudflare HTML, which would hide
+    // the actionable provider state from the monitor. 422 preserves the JSON.
+    return new Response(JSON.stringify(result), { status: 422, headers: HEADERS });
   }
 }
