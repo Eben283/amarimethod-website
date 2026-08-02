@@ -167,6 +167,15 @@ export async function recordRealtimeGhlMessage(db, event, contactId, now) {
   return { duplicate: false };
 }
 
+export async function recordGhlWebhookEvent(db, webhook, now) {
+  const result = await db.prepare(
+    `INSERT INTO ghl_webhook_events (webhook_id, event_type, contact_external_id, conversation_external_id, occurred_at, received_at, processing_state)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(webhook_id) DO NOTHING`,
+  ).bind(webhook.id, webhook.type, webhook.contactExternalId, webhook.conversationExternalId, webhook.occurredAt, now, webhook.processingState).run();
+  return Number(result.meta?.changes || 0) > 0;
+}
+
 // After a GHL full pass, drop external_records for contacts confirmed deleted in
 // GHL so completeness does not stay stuck in "needs review" on ghost rows.
 // Mirror contact history is retained; only the provider linkage row is removed.
