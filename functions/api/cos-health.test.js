@@ -36,7 +36,7 @@ describe("GET /api/cos-health", () => {
     probeOpenRouter.mockRejectedValue(new Error("OpenRouter 401 readiness probe failed"));
     const ctx = context({ OPENROUTER_API_KEY: "sk-or-test" });
     const response = await onRequestGet(ctx);
-    expect(response.status).toBe(502);
+    expect(response.status).toBe(422);
     expect(await response.json()).toMatchObject({ ok: false, error: "OpenRouter 401 readiness probe failed" });
   });
 
