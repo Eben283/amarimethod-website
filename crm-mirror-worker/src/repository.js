@@ -310,18 +310,28 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
 }
 
 export async function mirrorStatus(db, now = new Date().toISOString()) {
-  const [contacts, appointments, purchases, lastSync, latestGhl, latestStripe] = await db.batch([
+  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestConversationImport] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
     db.prepare("SELECT COUNT(*) AS count FROM appointments"),
     db.prepare("SELECT COUNT(*) AS count FROM purchases"),
+    db.prepare("SELECT COUNT(*) AS count FROM communication_threads"),
+    db.prepare("SELECT COUNT(*) AS count FROM communication_events"),
+    db.prepare("SELECT COALESCE(SUM(unread_inbound_count), 0) AS count FROM communication_threads"),
     db.prepare("SELECT provider, status, finished_at FROM sync_runs ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'conversations:%' ORDER BY started_at DESC LIMIT 1"),
   ]);
   return {
     contacts: Number(contacts.results?.[0]?.count || 0),
     appointments: Number(appointments.results?.[0]?.count || 0),
     purchases: Number(purchases.results?.[0]?.count || 0),
+    communications: {
+      threads: Number(threads.results?.[0]?.count || 0),
+      events: Number(events.results?.[0]?.count || 0),
+      unreadInbound: Number(unread.results?.[0]?.count || 0),
+      latestImport: latestConversationImport.results?.[0] || null,
+    },
     lastSync: lastSync.results?.[0] || null,
     syncHealth: syncHealthForRuns({
       ghl: latestGhl.results?.[0] || null,
