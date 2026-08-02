@@ -148,9 +148,9 @@ export const OPS_BOARD_META = Object.freeze({
     autoFix: true,
     role: OPS_BOARD_ROLE.MAP,
     changeSurface: {
-      touch: "cos-auth + cos-chat (Anthropic) + dist/cos SPA.",
+      touch: "cos-auth + cos-chat (OpenRouter) + dist/cos SPA.",
       blastRadius: ["ghl_token"],
-      talkHint: "Fix CoS login/chat; Anthropic key + JWT — not staff PIN.",
+      talkHint: "Fix CoS login/chat; OpenRouter key + JWT — not staff PIN.",
     },
   },
   staff_auth: {
