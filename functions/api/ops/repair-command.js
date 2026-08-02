@@ -3,7 +3,7 @@
 // expose this service-key route to a browser or GHL workflow.
 
 import { requireOpsReadKey } from "../../lib/ops-auth.js";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand } from "../../lib/ops-repair-command.js";
+import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand } from "../../lib/ops-repair-command.js";
 
 const HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
@@ -12,6 +12,11 @@ export async function onRequestGet(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const url = new URL(context.request.url);
+  const id = url.searchParams.get("id");
+  if (id) {
+    const result = await getRepairCommand(context.env, id);
+    return json(result, result.ok ? 200 : 404);
+  }
   if (url.searchParams.get("claim") !== "1") return json({ error: "claim=1 required" }, 400);
   const result = await claimNextRepairCommand(context.env, { runnerId: url.searchParams.get("runner") || "local-codex" });
   return json(result, result.ok ? 200 : 500);

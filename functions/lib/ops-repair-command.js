@@ -109,6 +109,14 @@ export async function claimNextRepairCommand(env, { runnerId } = {}) {
   return { ok: true, command: null };
 }
 
+export async function getRepairCommand(env, id) {
+  if (!id) return { ok: false, error: "missing-id" };
+  const kv = env?.PORTAL_KV;
+  if (!kv) return { ok: false, error: "no-kv" };
+  const command = await kv.get(repairCommandKey(id), "json");
+  return command ? { ok: true, command } : { ok: false, error: "not-found" };
+}
+
 export async function finishRepairCommand(env, id, { status, result } = {}) {
   if (!id || !["completed", "blocked", "failed"].includes(status)) return { ok: false, error: "bad-finish" };
   const kv = env?.PORTAL_KV;
