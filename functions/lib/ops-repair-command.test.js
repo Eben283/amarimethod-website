@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES } from "./ops-repair-command.js";
+import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES } from "./ops-repair-command.js";
 import { OPS_REGISTRY } from "./ops-registry.js";
 
 function env() {
@@ -28,6 +28,7 @@ describe("ops repair commands", () => {
     expect(claimed.command.id).toBe(created.command.id);
     expect((await claimNextRepairCommand(e)).command).toBeNull();
     expect((await finishRepairCommand(e, created.command.id, { status: "completed", result: "verified" })).command.status).toBe("completed");
+    expect((await getRepairCommand(e, created.command.id)).command).toMatchObject({ status: "completed", result: "verified" });
   });
   it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY));
 });
