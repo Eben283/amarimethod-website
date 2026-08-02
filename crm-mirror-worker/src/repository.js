@@ -114,6 +114,32 @@ export async function findContactIdByGhlId(db, externalId) {
   return contactIdForExternalRecord(db, "ghl", "contact", externalId);
 }
 
+export async function upsertCommunicationThread(db, thread, contactId, now) {
+  const existing = await db.prepare(
+    "SELECT id FROM communication_threads WHERE provider = 'ghl' AND provider_thread_id = ?",
+  ).bind(thread.externalId).first();
+  const threadId = existing?.id || id();
+  const values = [contactId, thread.channel, thread.lastOccurredAt, thread.lastPreview, thread.lastDirection, thread.unreadInboundCount, now, threadId];
+  if (existing) {
+    await db.prepare(`UPDATE communication_threads SET contact_id = ?, channel = ?, last_event_at = ?, last_preview = ?, last_direction = ?, unread_inbound_count = ?, updated_at = ? WHERE id = ?`).bind(...values).run();
+  } else {
+    await db.prepare(`INSERT INTO communication_threads (id, contact_id, provider, provider_thread_id, channel, last_event_at, last_preview, last_direction, unread_inbound_count, created_at, updated_at) VALUES (?, ?, 'ghl', ?, ?, ?, ?, ?, ?, ?, ?)`).bind(threadId, contactId, thread.externalId, thread.channel, thread.lastOccurredAt, thread.lastPreview, thread.lastDirection, thread.unreadInboundCount, now, now).run();
+  }
+  return threadId;
+}
+
+export async function upsertCommunicationEvent(db, event, threadId, contactId, now) {
+  const existing = await db.prepare("SELECT id FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?").bind(event.externalId).first();
+  const eventId = existing?.id || id();
+  const values = [threadId, contactId, event.channel, event.direction, event.deliveryStatus, event.subject, event.body, event.occurredAt, event.senderLabel, now, eventId];
+  if (existing) {
+    await db.prepare(`UPDATE communication_events SET thread_id = ?, contact_id = ?, event_kind = ?, direction = ?, delivery_status = ?, subject = ?, body_clean = ?, occurred_at = ?, sender_label = ?, updated_at = ? WHERE id = ?`).bind(...values).run();
+  } else {
+    await db.prepare(`INSERT INTO communication_events (id, thread_id, contact_id, provider, provider_event_id, event_kind, direction, delivery_status, subject, body_clean, occurred_at, sender_label, created_at, updated_at) VALUES (?, ?, ?, 'ghl', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(eventId, threadId, contactId, event.externalId, event.channel, event.direction, event.deliveryStatus, event.subject, event.body, event.occurredAt, event.senderLabel, now, now).run();
+  }
+  return eventId;
+}
+
 // After a GHL full pass, drop external_records for contacts confirmed deleted in
 // GHL so completeness does not stay stuck in "needs review" on ghost rows.
 // Mirror contact history is retained; only the provider linkage row is removed.
