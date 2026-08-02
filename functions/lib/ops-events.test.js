@@ -231,6 +231,33 @@ describe("openOpsIncident / resolve", () => {
     expect(db._incidents).toHaveLength(1);
   });
 
+  it("replays one missed alert for an already-open incident, then dedupes it", async () => {
+    const db = fakeD1();
+    const env = { AUTOMATION_DB: db };
+    await openOpsIncident(env, {
+      pathId: PATH_ASSESSMENT_PAID_BOOK,
+      title: "x",
+      correlationId: "order:o1",
+    }, { alert: false });
+
+    const replay = await openOpsIncident(env, {
+      pathId: PATH_ASSESSMENT_PAID_BOOK,
+      title: "x",
+      correlationId: "order:o1",
+    }, { context: { env }, alert: true });
+    expect(replay).toMatchObject({ attached: true, alert: { sent: true } });
+    expect(notifyOpsFlip).toHaveBeenCalledTimes(1);
+    expect(db._incidents[0].last_alerted_at).toBeTruthy();
+
+    const deduped = await openOpsIncident(env, {
+      pathId: PATH_ASSESSMENT_PAID_BOOK,
+      title: "x",
+      correlationId: "order:o1",
+    }, { context: { env }, alert: true });
+    expect(deduped).toMatchObject({ attached: true, alert: { sent: true, deduped: true } });
+    expect(notifyOpsFlip).toHaveBeenCalledTimes(1);
+  });
+
   it("resolve closes open incidents for correlation", async () => {
     const db = fakeD1();
     const env = { AUTOMATION_DB: db };

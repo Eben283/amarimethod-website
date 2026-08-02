@@ -127,12 +127,31 @@ export async function openOpsIncident(env, inc, { context = null, alert = true }
         const merged = [...eventIds, ...(existingKv.eventIds || [])]
           .filter((v, i, a) => a.indexOf(v) === i)
           .slice(0, 20);
-        await upsertTrailIncident(env, {
+        const attached = {
           ...existingKv,
           eventIds: merged,
           failedHopId: inc.failedHopId || existingKv.failedHopId || null,
-        });
-        return { opened: false, attached: true, id: existingKv.id, flipped: false, via: "kv" };
+        };
+        await upsertTrailIncident(env, attached);
+        let alertResult = existingKv.lastAlertedAt ? { sent: true, deduped: true } : null;
+        if (alert && !existingKv.lastAlertedAt) {
+          alertResult = await notifyOpsFlip(context || { env }, {
+            id: existingKv.id,
+            pathId: inc.pathId,
+            severity,
+            title: inc.title,
+            contactId: inc.contactId,
+            personLabel: inc.personLabel,
+            correlationId: inc.correlationId,
+            failedHopId: inc.failedHopId,
+            lawId: inc.lawId,
+          });
+          if (alertResult?.sent || alertResult?.shadowed) {
+            attached.lastAlertedAt = new Date().toISOString();
+            await upsertTrailIncident(env, attached);
+          }
+        }
+        return { opened: false, attached: true, id: existingKv.id, flipped: false, alert: alertResult, via: "kv" };
       }
 
       const id = inc.id || newId("inc");
@@ -208,7 +227,27 @@ export async function openOpsIncident(env, inc, { context = null, alert = true }
         .prepare(`UPDATE ops_incidents SET event_ids_json = ?, failed_hop_id = COALESCE(?, failed_hop_id) WHERE id = ?`)
         .bind(JSON.stringify(merged), inc.failedHopId ?? null, existing.id)
         .run();
-      return { opened: false, attached: true, id: existing.id, flipped: false };
+      let alertResult = existing.last_alerted_at ? { sent: true, deduped: true } : null;
+      if (alert && !existing.last_alerted_at) {
+        alertResult = await notifyOpsFlip(context || { env }, {
+          id: existing.id,
+          pathId: inc.pathId,
+          severity,
+          title: inc.title,
+          contactId: inc.contactId,
+          personLabel: inc.personLabel,
+          correlationId: inc.correlationId,
+          failedHopId: inc.failedHopId,
+          lawId: inc.lawId,
+        });
+        if (alertResult?.sent || alertResult?.shadowed) {
+          await db
+            .prepare(`UPDATE ops_incidents SET last_alerted_at = ? WHERE id = ?`)
+            .bind(new Date().toISOString(), existing.id)
+            .run();
+        }
+      }
+      return { opened: false, attached: true, id: existing.id, flipped: false, alert: alertResult };
     }
 
     const id = inc.id || newId("inc");
