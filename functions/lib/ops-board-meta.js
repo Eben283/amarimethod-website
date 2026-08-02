@@ -177,6 +177,14 @@ export const OPS_BOARD_META = Object.freeze({
       talkHint: "Restore the independent operations monitor; do not change customer-facing systems.",
     },
   },
+  outreach_snapshot: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "outreach-snapshot.js → upload-outreach-snapshot.sh → staff-outreach-upload heartbeat.",
+      blastRadius: ["funnel_refresh", "conversation_cache"],
+      talkHint: "Restore the snapshot job and its upload only; never send outreach from this repair.",
+    },
+  },
   public_slots: {
     autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
