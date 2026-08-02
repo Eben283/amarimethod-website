@@ -25,7 +25,7 @@
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200
 /staff/cos /staff/ 200
-/staff/write /staff/ 200
+/staff/write /staff/cos 302
 /staff/community /staff/ 200
 /staff/login /staff/ 200
 

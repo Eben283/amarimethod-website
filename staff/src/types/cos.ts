@@ -7,6 +7,15 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   actions?: QueuedAction[];
+  draft?: VoiceDraftMeta;
+}
+
+export interface VoiceDraftMeta {
+  channel: string;
+  fixes: string[];
+  rounds: number;
+  passedClean: boolean;
+  remainingTells: string[];
 }
 
 export interface QueuedAction {

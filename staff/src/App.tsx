@@ -12,7 +12,6 @@ import FunnelPage from './pages/FunnelPage';
 import PipelinePage from './pages/PipelinePage';
 import CheckInPage from './pages/CheckInPage';
 import CosPage from './pages/CosPage';
-import WritePage from './pages/WritePage';
 import FieldStudiesPage from './pages/FieldStudiesPage';
 import CommunityPage from './pages/CommunityPage';
 import PosPage from './pages/PosPage';
@@ -163,16 +162,6 @@ function AppRoutes() {
           <ProtectedRoute>
             <Layout fullBleed>
               <CosPage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/write"
-        element={
-          <ProtectedRoute>
-            <Layout fullBleed>
-              <WritePage />
             </Layout>
           </ProtectedRoute>
         }
