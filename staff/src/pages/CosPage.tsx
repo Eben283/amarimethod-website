@@ -4,7 +4,8 @@ import { sendCosMessage, resetCosConversation } from '../lib/cosApi';
 import MessageBubble from '../components/cos/MessageBubble';
 import ChatInput from '../components/cos/ChatInput';
 import ActionCard from '../components/cos/ActionCard';
-import type { ChatMessage, QueuedAction } from '../types/cos';
+import DraftFooter from '../components/cos/DraftFooter';
+import type { ChatMessage, QueuedAction, VoiceDraftMeta } from '../types/cos';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -41,9 +42,9 @@ export default function CosPage() {
       text,
       image,
       (chunk) => { fullContent += chunk; setStreamingContent(fullContent); },
-      (actions) => {
+      (actions, draft) => {
         setMessages((prev) => [...prev, {
-          id: generateId(), role: 'assistant', content: fullContent, timestamp: Date.now(), actions: actions as QueuedAction[],
+          id: generateId(), role: 'assistant', content: fullContent, timestamp: Date.now(), actions: actions as QueuedAction[], draft: draft as VoiceDraftMeta | undefined,
         }]);
         setStreamingContent('');
         setIsStreaming(false);
@@ -70,7 +71,7 @@ export default function CosPage() {
   return (
     <div className="flex flex-col" style={{ height: '100dvh' }}>
       <header className="flex items-center justify-between px-4 py-3 border-b border-amari-border">
-        <h1 className="text-base font-semibold text-amari-charcoal">Chief of Staff</h1>
+        <h1 className="text-base font-semibold text-amari-charcoal">Ask Amari</h1>
         <button
           onClick={handleNewChat}
           disabled={isStreaming || messages.length === 0}
@@ -86,7 +87,7 @@ export default function CosPage() {
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <p className="text-amari-text-muted text-lg mb-1">Ask me anything.</p>
-              <p className="text-amari-text-muted text-sm">Client history, schedule, who owes, what to do next.</p>
+              <p className="text-amari-text-muted text-sm">Ask about the practice, or paste something to write or clean up.</p>
             </div>
           </div>
         )}
@@ -101,6 +102,7 @@ export default function CosPage() {
                 ))}
               </div>
             )}
+            {msg.draft && <DraftFooter copy={msg.content} meta={msg.draft} />}
           </div>
         ))}
 

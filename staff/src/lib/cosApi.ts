@@ -20,7 +20,7 @@ export async function sendCosMessage(
   message: string,
   image: string | undefined,
   onChunk: (text: string) => void,
-  onDone: (actions: unknown[]) => void,
+  onDone: (actions: unknown[], draft?: VoiceWriteResult) => void,
   onError: (error: string) => void,
 ): Promise<void> {
   const token = staffToken();
@@ -62,7 +62,7 @@ export async function sendCosMessage(
       try {
         const parsed = JSON.parse(data);
         if (parsed.type === 'chunk') onChunk(parsed.text);
-        else if (parsed.type === 'done') { sawTerminal = true; onDone(parsed.actions || []); }
+        else if (parsed.type === 'done') { sawTerminal = true; onDone(parsed.actions || [], parsed.draft); }
         else if (parsed.type === 'error') { sawTerminal = true; onError(parsed.message); }
       } catch {
         // non-JSON line, ignore

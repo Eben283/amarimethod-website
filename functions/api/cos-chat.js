@@ -12,6 +12,8 @@ import { buildRequestBody, streamWithTools, executeTool as executeAnthropicTool 
 import { parsePacificWallClock } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS, OPS_READY_KEYS } from "../lib/ops-last-run.js";
+import { generateOnBrand } from "../lib/voice-engine.js";
+import { routeAskAmariRequest } from "../lib/ask-amari-router.js";
 
 // Ledger-relevant custom field IDs (single-sourced from lib/ghl-fields.js) —
 // deriveLedger's field fallback needs them to resolve the values on low
@@ -131,6 +133,51 @@ function parseSpotifyActions(text) {
 
 function stripSpotify(text) {
   return text.replace(/<!--SPOTIFY:.*?-->/gs, "").trim();
+}
+
+function writerHistory(messages) {
+  // Keep only the most recent contiguous writing exchange. General COS turns
+  // have different context and should not make a rewrite request ambiguous.
+  let first = messages.length - 1;
+  while (first >= 0 && messages[first]?.mode === "write") first -= 1;
+  // The Voice Writer only needs the current edit thread. Twelve turns leaves
+  // room for several revisions without letting a day-long chat grow unbounded.
+  return messages.slice(first + 1).slice(-12).map(({ role, content }) => ({ role, content }));
+}
+
+function streamHeaders(headers) {
+  return {
+    ...headers,
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+  };
+}
+
+function writerStream(context, { apiKey, userName, messages, conversation, kv, dateKey, headers }) {
+  const { readable, writable } = new TransformStream();
+  const writer = writable.getWriter();
+  const encoder = new TextEncoder();
+
+  context.waitUntil((async () => {
+    try {
+      const draft = await generateOnBrand({ apiKey, userName, messages });
+      conversation.messages.push({ role: "assistant", content: draft.copy, mode: "write", timestamp: Date.now() });
+      conversation.updated = Date.now();
+      if (kv) {
+        await kv.put(`cos:conv:${userName}:${dateKey}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 });
+      }
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: draft.copy })}\n\n`));
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "done", actions: [], draft })}\n\n`));
+    } catch (err) {
+      console.error("[cos-chat] writer error:", err.message);
+      await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "The writer hit a problem. Try again." })}\n\n`));
+    } finally {
+      await writer.close();
+    }
+  })());
+
+  return new Response(readable, { headers: streamHeaders(headers) });
 }
 
 // Build the system prompt
@@ -886,8 +933,25 @@ export async function onRequestPost(context) {
   const contextDoc = contextRaw || "";
   const pendingActions = actionsRaw ? JSON.parse(actionsRaw) : [];
 
-  // Add user message to history
-  conversation.messages.push({ role: "user", content: userMessage, timestamp: Date.now() });
+  // The single Ask Amari chat owns both jobs. The backend selects the writer
+  // only for explicit copy work (and its revisions); no UI toggle is involved.
+  const previousMode = conversation.messages.at(-1)?.mode;
+  const requestMode = userImages.length === 0
+    ? routeAskAmariRequest({ message: userMessage, previousMode })
+    : "ask";
+  conversation.messages.push({ role: "user", content: userMessage, mode: requestMode, timestamp: Date.now() });
+
+  if (requestMode === "write") {
+    return writerStream(context, {
+      apiKey: OPENROUTER_API_KEY,
+      userName: cosUser,
+      messages: writerHistory(conversation.messages),
+      conversation,
+      kv,
+      dateKey,
+      headers,
+    });
+  }
 
   // Detect what contextual lookups the message needs
   const msg = userMessage.toLowerCase();
@@ -1247,12 +1311,5 @@ export async function onRequestPost(context) {
     }
   })());
 
-  return new Response(readable, {
-    headers: {
-      ...headers,
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    },
-  });
+  return new Response(readable, { headers: streamHeaders(headers) });
 }
