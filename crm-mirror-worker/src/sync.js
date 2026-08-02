@@ -184,9 +184,11 @@ async function writeCrmMirrorLastRun(env, results, now) {
 
 export async function runScheduledSync(env, now) {
   const results = {};
-  for (const [provider, sync] of [["ghl", syncGhl], ["stripe", syncStripe]]) {
+  // Conversations use their own 25-thread cursor so a dense message history
+  // cannot starve the ordinary contact/appointment or Stripe mirror passes.
+  for (const [provider, sync, limit] of [["ghl", syncGhl, SCHEDULED_SYNC_LIMIT], ["ghlConversations", syncGhlConversations, 25], ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT]]) {
     try {
-      results[provider] = await sync(env, SCHEDULED_SYNC_LIMIT, now);
+      results[provider] = await sync(env, limit, now);
     } catch (error) {
       // Each provider records its own failed sync run. Keep the other source
       // moving so a transient GHL failure cannot make Stripe stale too.
