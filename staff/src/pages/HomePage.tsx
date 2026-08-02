@@ -24,7 +24,7 @@ type BackOfficeTool = {
 const TOOLS: HomeTool[] = [
   { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
   { label: 'Follow-Up', detail: 'Outreach', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
-  { label: 'Client Desk', detail: 'Last communication', Icon: Users, to: '/client-desk', tone: 'lake' },
+  { label: 'Client Desk', detail: 'Last communication', Icon: Users, to: '/client-desk', tone: 'coral' },
   { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
   { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
   { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
