@@ -54,13 +54,16 @@ describe("notifyOpsFlip", () => {
     );
   });
 
-  it("infra → no text/email", async () => {
+  it("infra → SMS with the exact bounded FIX reply", async () => {
     const res = await notifyOpsFlip(
       { env: { OPS_ALERT_CONTACT_ID: "ebenContact" } },
-      { severity: "infra", title: "token" },
+      { severity: "infra", title: "token", pathId: "chief_of_staff" },
     );
-    expect(res.reason).toBe("infra-app-only");
-    expect(sendConversationMessage).not.toHaveBeenCalled();
+    expect(res.sent).toBe(true);
+    expect(sendConversationMessage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ channel: "sms", message: expect.stringContaining("FIX chief_of_staff") }),
+    );
   });
 
   it("missing OPS_ALERT_CONTACT_ID falls back to Eben default contact", async () => {

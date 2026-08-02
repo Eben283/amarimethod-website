@@ -11,7 +11,7 @@ const SEVERITY_CHANNELS = Object.freeze({
   money: Object.freeze(["sms", "email"]),
   booking: Object.freeze(["sms", "email"]),
   wrong_message: Object.freeze(["sms"]),
-  infra: Object.freeze([]), // app only
+  infra: Object.freeze(["sms"]),
 });
 
 function channelsFor(severity) {
@@ -30,7 +30,8 @@ export function buildFlipCopy(incident) {
   const title = incident.title || "Ops incident";
   const hop = incident.failedHopId ? ` (hop: ${incident.failedHopId})` : "";
   const opsUrl = `https://www.amarimethod.com/ops#path/${encodeURIComponent(path)}`;
-  const sms = `Amari Ops · ${title} — ${who}${hop}. ${opsUrl}`;
+  const command = path ? ` Reply FIX ${path}.` : "";
+  const sms = `Amari Ops · ${title} — ${who}${hop}.${command} ${opsUrl}`;
   const subject = `Amari Ops · ${title}`;
   const html = [
     `<p><strong>${escapeHtml(title)}</strong></p>`,

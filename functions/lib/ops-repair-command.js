@@ -9,6 +9,7 @@ const PREFIX = "ops:repair:command:";
 const TTL_S = 14 * 86400;
 const LEASE_S = 20 * 60;
 const COMMAND = "FIX";
+const APPROVAL_COMMANDS = new Set(["APPROVE", "CONFIRM"]);
 
 export const REPAIR_MODE = Object.freeze({
   REPAIR_DEPLOY: "repair_deploy",
@@ -96,6 +97,51 @@ export async function createRepairCommand(env, { command, pathId, requestedBy = 
   return { ok: true, command: entry };
 }
 
+function authorizationModeFor(original, action) {
+  if (action === "APPROVE" && [REPAIR_MODE.DIAGNOSE_ONLY, REPAIR_MODE.APPROVAL_REQUIRED].includes(original?.policy?.mode)) {
+    return "approved_execute";
+  }
+  if (action === "CONFIRM" && original?.policy?.mode === REPAIR_MODE.CONFIRM_REQUIRED) {
+    return "confirmed_execute";
+  }
+  return null;
+}
+
+// An explicit text approval is not a blanket escalation. It creates a second,
+// auditable command tied to the diagnosis that requested it, and only for the
+// policy tier that asks for that exact response.
+export async function authorizeRepairCommand(env, id, { command, requestedBy = "ops" } = {}) {
+  const action = String(command || "").toUpperCase();
+  if (!APPROVAL_COMMANDS.has(action)) return { ok: false, error: "unsupported-command" };
+  const kv = env?.PORTAL_KV;
+  if (!kv) return { ok: false, error: "no-kv" };
+  const original = await kv.get(repairCommandKey(id), "json");
+  if (!original) return { ok: false, error: "not-found" };
+  if (!["completed", "blocked"].includes(original.status)) return { ok: false, error: "not-ready" };
+  const executionMode = authorizationModeFor(original, action);
+  if (!executionMode) return { ok: false, error: "wrong-authorization" };
+
+  const commandId = id();
+  const now = new Date().toISOString();
+  const entry = {
+    id: commandId,
+    command: action,
+    pathId: original.pathId,
+    requestedBy,
+    requestedAt: now,
+    status: "pending",
+    policy: { ...original.policy, mode: executionMode },
+    authorization: {
+      action,
+      sourceCommandId: original.id,
+      sourceResult: String(original.result || "").slice(0, 2000),
+      grantedAt: now,
+    },
+  };
+  await kv.put(repairCommandKey(commandId), JSON.stringify(entry), { expirationTtl: TTL_S });
+  return { ok: true, command: entry };
+}
+
 export async function claimNextRepairCommand(env, { runnerId } = {}) {
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
@@ -139,4 +185,4 @@ export async function finishRepairCommand(env, id, { status, result } = {}) {
   return { ok: true, command: finished };
 }
 
-export const __test = { PREFIX, COMMAND, LEASE_S, id };
+export const __test = { PREFIX, COMMAND, LEASE_S, id, authorizationModeFor };
