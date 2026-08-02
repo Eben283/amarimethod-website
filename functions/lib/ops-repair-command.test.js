@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, policyFor } from "./ops-repair-command.js";
+import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES } from "./ops-repair-command.js";
+import { OPS_REGISTRY } from "./ops-registry.js";
 
 function env() {
   const store = new Map();
@@ -11,10 +12,14 @@ function env() {
 }
 
 describe("ops repair commands", () => {
-  it("only authorizes explicit code-only policies", async () => {
+  it("gives every registered surface an explicit bounded policy", async () => {
     const e = env();
     expect((await createRepairCommand(e, { command: "FIX", pathId: "chief_of_staff" })).ok).toBe(true);
-    expect(await createRepairCommand(e, { command: "FIX", pathId: "stripe" })).toMatchObject({ error: "path-not-authorized" });
+    expect((await createRepairCommand(e, { command: "FIX", pathId: "stripe" })).ok).toBe(true);
+    expect(Object.keys(REPAIR_POLICIES).sort()).toEqual(OPS_REGISTRY.map(({ id }) => id).sort());
+    expect(policyFor("chief_of_staff").mode).toBe(REPAIR_MODE.REPAIR_DEPLOY);
+    expect(policyFor("stripe").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY);
+    expect(policyFor("assessment_paid_book").mode).toBe(REPAIR_MODE.CONFIRM_REQUIRED);
   });
   it("claims once and records a terminal outcome", async () => {
     const e = env();
@@ -24,5 +29,5 @@ describe("ops repair commands", () => {
     expect((await claimNextRepairCommand(e)).command).toBeNull();
     expect((await finishRepairCommand(e, created.command.id, { status: "completed", result: "verified" })).command.status).toBe("completed");
   });
-  it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe("diagnose_only"));
+  it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY));
 });
