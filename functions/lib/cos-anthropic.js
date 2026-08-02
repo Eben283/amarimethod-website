@@ -611,15 +611,17 @@ export async function callOpenRouter(apiKey, requestBody) {
 // or include customer data. Keeping this at the provider boundary catches an
 // invalid key/model/provider route before it reaches the chat UI.
 export async function probeOpenRouter(apiKey) {
-  const response = await callOpenRouter(apiKey, {
-    model: OPENROUTER_MODEL,
-    max_tokens: 8,
-    stream: false,
-    messages: [{ role: "user", content: "Reply with OK." }],
+  await streamWithTools({
+    apiKey,
+    requestBody: {
+      model: OPENROUTER_MODEL,
+      max_tokens: 8,
+      stream: true,
+      messages: [{ role: "user", content: "Reply with OK." }],
+    },
+    onTextDelta: async () => {},
+    executeToolFn: async () => "{}",
   });
-  if (!response.ok) {
-    throw new Error(`OpenRouter ${response.status} readiness probe failed`);
-  }
   return { model: OPENROUTER_MODEL };
 }
 
@@ -653,6 +655,7 @@ export async function streamWithTools({ apiKey, requestBody, onTextDelta, execut
     const assistantContent = [];
     let currentBlock = null;
     let stopReason = null;
+    let sawMessageStop = false;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -722,8 +725,16 @@ export async function streamWithTools({ apiKey, requestBody, onTextDelta, execut
         } else if (event.type === "message_delta") {
           stopReason = event.delta?.stop_reason;
           usage.output_tokens += event.usage?.output_tokens || 0;
+        } else if (event.type === "message_stop") {
+          sawMessageStop = true;
+        } else if (event.type === "error") {
+          throw new Error(`OpenRouter stream error: ${event.error?.message || "unknown error"}`);
         }
       }
+    }
+
+    if (!sawMessageStop) {
+      throw new Error("OpenRouter stream ended without a terminal message");
     }
 
     // Done if no more tool calls
