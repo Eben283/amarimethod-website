@@ -3,7 +3,7 @@
 // expose this service-key route to a browser or GHL workflow.
 
 import { requireOpsReadKey } from "../../lib/ops-auth.js";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand } from "../../lib/ops-repair-command.js";
+import { authorizeRepairCommand, claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand } from "../../lib/ops-repair-command.js";
 
 const HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS });
@@ -30,6 +30,10 @@ export async function onRequestPost(context) {
   if (body.action === "finish") {
     const result = await finishRepairCommand(context.env, body.id, { status: body.status, result: body.result });
     return json(result, result.ok ? 200 : 400);
+  }
+  if (body.action === "authorize") {
+    const result = await authorizeRepairCommand(context.env, body.id, { command: body.command, requestedBy: body.requestedBy });
+    return json(result, result.ok ? 201 : 400);
   }
   const result = await createRepairCommand(context.env, body);
   return json(result, result.ok ? 201 : 400);

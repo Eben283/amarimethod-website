@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES, repairCommandKey } from "./ops-repair-command.js";
+import { authorizeRepairCommand, claimNextRepairCommand, createRepairCommand, finishRepairCommand, getRepairCommand, policyFor, REPAIR_MODE, REPAIR_POLICIES, repairCommandKey } from "./ops-repair-command.js";
 import { OPS_REGISTRY } from "./ops-registry.js";
 
 function env() {
@@ -45,4 +45,18 @@ describe("ops repair commands", () => {
   });
   it("keeps CRM repair diagnosis-only", () => expect(policyFor("crm_mirror").mode).toBe(REPAIR_MODE.DIAGNOSE_ONLY));
   it("keeps CRM diagnosis inside its read-only readiness surface", () => expect(policyFor("crm_mirror").touch).toContain("crm-mirror-worker readiness"));
+  it("turns an explicit approval of a completed diagnosis into one bounded execution command", async () => {
+    const e = env();
+    const diagnosis = await createRepairCommand(e, { command: "FIX", pathId: "crm_mirror" });
+    await finishRepairCommand(e, diagnosis.command.id, { status: "completed", result: "Add readiness endpoint." });
+    const approved = await authorizeRepairCommand(e, diagnosis.command.id, { command: "APPROVE", requestedBy: "sms:eben" });
+    expect(approved.command).toMatchObject({ command: "APPROVE", pathId: "crm_mirror", status: "pending", policy: { mode: "approved_execute" } });
+    expect(approved.command.authorization).toMatchObject({ sourceCommandId: diagnosis.command.id, sourceResult: "Add readiness endpoint." });
+  });
+  it("rejects confirmation unless the original path requires confirmation", async () => {
+    const e = env();
+    const diagnosis = await createRepairCommand(e, { command: "FIX", pathId: "crm_mirror" });
+    await finishRepairCommand(e, diagnosis.command.id, { status: "completed", result: "x" });
+    expect((await authorizeRepairCommand(e, diagnosis.command.id, { command: "CONFIRM" })).error).toBe("wrong-authorization");
+  });
 });
