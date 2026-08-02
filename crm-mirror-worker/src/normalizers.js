@@ -35,6 +35,60 @@ function text(value) {
   return result || null;
 }
 
+function cleanMessage(value) {
+  const source = text(value);
+  return source ? source.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null : null;
+}
+
+function messageChannel(value) {
+  const type = String(value || "").toUpperCase();
+  if (type.includes("EMAIL") || type === "3") return "email";
+  if (type.includes("SMS") || type === "2") return "sms";
+  return null;
+}
+
+function messageDirection(raw) {
+  if (raw?.direction === 1 || raw?.direction === "1" || raw?.direction === "inbound" || raw?.status === "received") return "inbound";
+  if (raw?.direction === 2 || raw?.direction === "2" || raw?.direction === "outbound" || raw?.status === "sent" || raw?.status === "delivered") return "outbound";
+  return "outbound";
+}
+
+export function normalizeGhlConversation(raw) {
+  const externalId = text(raw?.id);
+  const contactExternalId = text(raw?.contactId);
+  if (!externalId || !contactExternalId) return null;
+  const channel = messageChannel(raw.lastMessageType || raw.type) || "mixed";
+  const occurredAt = raw.lastMessageDate || raw.dateUpdated || raw.dateAdded || null;
+  return {
+    externalId,
+    contactExternalId,
+    channel,
+    lastOccurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
+    lastPreview: cleanMessage(raw.lastMessageBody || raw.lastMessage?.body),
+    lastDirection: messageDirection({ direction: raw.lastMessageDirection ?? raw.lastMessage?.direction }),
+    unreadInboundCount: Math.max(0, Number(raw.unreadCount || 0) || 0),
+  };
+}
+
+export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
+  const externalId = text(raw?.id);
+  const channel = messageChannel(raw?.messageType || raw?.type);
+  const occurredAt = raw?.dateAdded || raw?.createdAt || raw?.date;
+  if (!externalId || !channel || !threadExternalId || !contactExternalId || !occurredAt) return null;
+  return {
+    externalId,
+    threadExternalId,
+    contactExternalId,
+    channel,
+    direction: messageDirection(raw),
+    deliveryStatus: text(raw.status),
+    subject: text(raw.subject),
+    body: cleanMessage(raw.body || raw.message),
+    occurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
+    senderLabel: text(raw.fromName || raw.userName),
+  };
+}
+
 export function normalizedEmail(value) {
   const email = text(value);
   return email ? email.toLowerCase() : null;

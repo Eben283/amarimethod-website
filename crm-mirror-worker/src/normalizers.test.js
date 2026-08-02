@@ -2,11 +2,22 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeGhlAppointment,
   normalizeGhlContact,
+  normalizeGhlConversation,
+  normalizeGhlMessage,
   normalizeStripeCharge,
   normalizedPhone,
 } from "./normalizers.js";
 
 describe("CRM mirror normalizers", () => {
+  it("normalizes GHL inbox threads and strips markup for the owned timeline", () => {
+    expect(normalizeGhlConversation({
+      id: "thread_1", contactId: "contact_1", lastMessageType: "TYPE_EMAIL", lastMessageBody: "<p>Hello <strong>there</strong></p>",
+      lastMessageDirection: "inbound", lastMessageDate: 1_700_000_000_000, unreadCount: 2,
+    })).toMatchObject({ externalId: "thread_1", contactExternalId: "contact_1", channel: "email", lastPreview: "Hello there", lastDirection: "inbound", unreadInboundCount: 2 });
+    expect(normalizeGhlMessage({ id: "message_1", type: 2, direction: 1, status: "received", body: "<b>Can we reschedule?</b>", dateAdded: "2026-08-02T10:00:00Z" }, "thread_1", "contact_1"))
+      .toMatchObject({ externalId: "message_1", channel: "sms", direction: "inbound", body: "Can we reschedule?" });
+  });
+
   it("normalizes a GHL contact without treating the pipeline as data", () => {
     expect(normalizeGhlContact({
       id: "ghl_1",

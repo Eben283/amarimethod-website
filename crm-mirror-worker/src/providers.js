@@ -47,6 +47,28 @@ export async function fetchGhlContactsPage(env, cursor, limit) {
   return { contacts, nextCursor: nextGhlCursor(payload.meta, contacts.length, limit) };
 }
 
+// The location-wide inbox is paginated separately from contacts. It supplies
+// thread-level unread state and the most recent preview; messages are then
+// fetched per thread so the owned timeline never depends on a UI-only summary.
+export async function fetchGhlConversationsPage(env, page = 1, limit = 100) {
+  const params = new URLSearchParams({
+    locationId: env.GHL_LOCATION_ID,
+    sortBy: "last_message_date",
+    sort: "desc",
+    limit: String(Math.min(100, Math.max(1, limit))),
+    page: String(Math.max(1, page)),
+  });
+  const payload = await ghlGet(env, `/conversations/search?${params}`);
+  const conversations = Array.isArray(payload.conversations) ? payload.conversations : (Array.isArray(payload.data) ? payload.data : []);
+  return { conversations, nextPage: conversations.length >= limit ? page + 1 : null };
+}
+
+export async function fetchGhlConversationMessages(env, conversationExternalId, limit = 100) {
+  const payload = await ghlGet(env, `/conversations/${encodeURIComponent(conversationExternalId)}/messages?limit=${Math.min(100, Math.max(1, limit))}`);
+  const messages = Array.isArray(payload.messages?.messages) ? payload.messages.messages : (Array.isArray(payload.messages) ? payload.messages : []);
+  return messages.slice(0, limit);
+}
+
 export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}/appointments?limit=100`);
   const appointments = Array.isArray(payload.events)

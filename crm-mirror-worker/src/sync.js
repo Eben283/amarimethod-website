@@ -7,9 +7,11 @@ import {
   upsertGhlAppointment,
   upsertGhlContact,
   upsertStripeCharge,
+  upsertCommunicationEvent,
+  upsertCommunicationThread,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -51,6 +53,45 @@ export async function syncGhl(env, limit, now) {
     outcome.cursorAfter = page.nextCursor;
     outcome.status = page.nextCursor ? "partial" : "succeeded";
     await setSyncCursor(env.CRM_DB, "ghl", page.nextCursor, now);
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
+
+// Kept separate from the contact sweep while this is introduced: conversation
+// history is larger and needs its own health/cursor contract. It is read-only
+// against GHL and writes solely into the owned CRM mirror.
+export async function syncGhlConversations(env, limit, now) {
+  const cursorBefore = await getSyncCursor(env.CRM_DB, "ghl-conversations");
+  const page = Math.max(1, Number(cursorBefore || 1) || 1);
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", `conversations:${page}`, now);
+  const outcome = result();
+  try {
+    const response = await fetchGhlConversationsPage(env, page, Math.min(100, limit));
+    for (const rawThread of response.conversations) {
+      outcome.recordsRead += 1;
+      const thread = normalizeGhlConversation(rawThread);
+      if (!thread) { outcome.recordsSkipped += 1; continue; }
+      const contactId = await findContactIdByGhlId(env.CRM_DB, thread.contactExternalId);
+      if (!contactId) { outcome.recordsSkipped += 1; continue; }
+      const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
+      outcome.recordsWritten += 1;
+      const rawMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      for (const rawMessage of rawMessages) {
+        outcome.recordsRead += 1;
+        const message = normalizeGhlMessage(rawMessage, thread.externalId, thread.contactExternalId);
+        if (!message) { outcome.recordsSkipped += 1; continue; }
+        await upsertCommunicationEvent(env.CRM_DB, message, threadId, contactId, now);
+        outcome.recordsWritten += 1;
+      }
+    }
+    outcome.cursorAfter = response.nextPage ? String(response.nextPage) : "1";
+    outcome.status = response.nextPage ? "partial" : "succeeded";
+    await setSyncCursor(env.CRM_DB, "ghl-conversations", outcome.cursorAfter, now);
   } catch (error) {
     outcome.status = "failed";
     outcome.failureDetail = error instanceof Error ? error.message : String(error);
