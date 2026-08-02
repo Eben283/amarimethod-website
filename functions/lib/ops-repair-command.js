@@ -110,12 +110,12 @@ function authorizationModeFor(original, action) {
 // An explicit text approval is not a blanket escalation. It creates a second,
 // auditable command tied to the diagnosis that requested it, and only for the
 // policy tier that asks for that exact response.
-export async function authorizeRepairCommand(env, id, { command, requestedBy = "ops" } = {}) {
+export async function authorizeRepairCommand(env, sourceId, { command, requestedBy = "ops" } = {}) {
   const action = String(command || "").toUpperCase();
   if (!APPROVAL_COMMANDS.has(action)) return { ok: false, error: "unsupported-command" };
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
-  const original = await kv.get(repairCommandKey(id), "json");
+  const original = await kv.get(repairCommandKey(sourceId), "json");
   if (!original) return { ok: false, error: "not-found" };
   if (!["completed", "blocked"].includes(original.status)) return { ok: false, error: "not-ready" };
   const executionMode = authorizationModeFor(original, action);
