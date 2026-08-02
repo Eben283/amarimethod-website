@@ -499,8 +499,36 @@ export async function clientDeskContacts(db, { query = null, limit = 50, scope =
   return result.results || [];
 }
 
+// The daily staff inbox: one row per person/thread, with only the information
+// needed to choose who needs attention. Full content remains in the protected
+// selected-contact timeline below.
+export async function communicationsInbox(db, { query = null, limit = 50 } = {}) {
+  const values = [];
+  let where = "";
+  if (query) {
+    const pattern = likePattern(query);
+    where = `WHERE lower(contact.display_name) LIKE ? ESCAPE '\\'
+      OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
+      OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'`;
+    values.push(pattern, pattern, `%${String(query).replace(/[\\%_]/g, "\\$&")}%`);
+  }
+  const result = await db.prepare(
+    `SELECT thread.id AS thread_id, thread.channel, thread.last_event_at,
+            thread.last_preview, thread.last_direction, thread.unread_inbound_count,
+            contact.id AS contact_id, contact.display_name, contact.email_normalized,
+            contact.phone_e164
+       FROM communication_threads thread
+       JOIN contacts contact ON contact.id = thread.contact_id
+       ${where}
+       ORDER BY CASE WHEN thread.unread_inbound_count > 0 THEN 0 ELSE 1 END,
+                datetime(thread.last_event_at) DESC, lower(contact.display_name), thread.id
+       LIMIT ?`,
+  ).bind(...values, limit).all();
+  return result.results || [];
+}
+
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, purchasesResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult] = await db.batch([
     db.prepare(
       `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
        FROM contacts WHERE id = ?`,
@@ -510,6 +538,12 @@ export async function contactProfile(db, contactId, limit, now) {
     ).bind(contactId),
     db.prepare(
       "SELECT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
+    ).bind(contactId),
+    db.prepare(
+      `SELECT attribute_key, attribute_value, source, updated_at
+       FROM contact_attributes
+       WHERE contact_id = ?
+       ORDER BY source, attribute_key`,
     ).bind(contactId),
     db.prepare(
       `SELECT
@@ -545,6 +579,16 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
+      `SELECT event.id, event.event_kind, event.direction, event.delivery_status,
+              event.subject, event.body_clean, event.occurred_at, event.sender_label,
+              event.read_at, thread.channel AS thread_channel
+       FROM communication_events event
+       LEFT JOIN communication_threads thread ON thread.id = event.thread_id
+       WHERE event.contact_id = ?
+       ORDER BY datetime(event.occurred_at) DESC, event.id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
       `SELECT amount_cents, amount_refunded_cents, currency, purchased_at, provider_status,
               classification, classification_review_state
        FROM purchases
@@ -559,11 +603,13 @@ export async function contactProfile(db, contactId, limit, now) {
     contact,
     tags: (tagsResult.results || []).map((row) => row.tag),
     roles: (rolesResult.results || []).map((row) => row.role),
+    fields: attributesResult.results || [],
     importedCurrentState: stateResult.results?.[0] || {},
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
     purchases: purchasesResult.results || [],
     communications: communicationsResult.results || [],
+    communicationTimeline: timelineResult.results || [],
   };
 }
 
