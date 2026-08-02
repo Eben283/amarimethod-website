@@ -87,6 +87,11 @@ export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   return appointments.slice(0, 100);
 }
 
+export async function fetchGhlContact(env, contactExternalId) {
+  const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}`);
+  return payload.contact || payload;
+}
+
 // Used when a full-pass completeness cycle finds contacts the list walk did not
 // refresh. GHL returns 400 "Contact not found" for deleted IDs; those are ghosts
 // in the mirror, not missing source records that need operator recovery.

@@ -19,8 +19,11 @@ import {
   recordRealtimeGhlMessage,
   recordGhlWebhookEvent,
   searchContacts,
+  upsertGhlAppointment,
+  upsertGhlContact,
 } from "./repository.js";
-import { normalizeGhlMessage } from "./normalizers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage } from "./normalizers.js";
+import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -69,6 +72,17 @@ async function processGhlWebhook(request, env) {
     processingState: message ? "projected" : "observed",
   }, now);
   if (!observed) return json(200, { accepted: true, duplicate: true });
+  if (["ContactCreate", "ContactUpdate", "ContactDndUpdate", "ContactTagUpdate"].includes(payload.type) && data.contactId) {
+    const contact = normalizeGhlContact(await fetchGhlContact(env, data.contactId));
+    if (contact) await upsertGhlContact(env.CRM_DB, contact, now);
+    return json(200, { accepted: true, projected: Boolean(contact) });
+  }
+  if (["AppointmentCreate", "AppointmentUpdate"].includes(payload.type) && data.contactId) {
+    const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
+    const appointment = normalizeGhlAppointment(data, data.contactId);
+    if (contactId && appointment) await upsertGhlAppointment(env.CRM_DB, appointment, contactId, now);
+    return json(200, { accepted: true, projected: Boolean(contactId && appointment) });
+  }
   if (!message) return json(202, { accepted: true, projected: false });
   const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
   if (!contactId) return json(202, { accepted: true, projected: false });
