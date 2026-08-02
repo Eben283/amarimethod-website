@@ -160,7 +160,7 @@ describe("buildSystemsBoard", () => {
         "cos:status:ready": {
           ok: true,
           checkedAt: new Date().toISOString(),
-          anthropic: true,
+          provider: "openrouter",
         },
         "ops:cos-auth:lastRun": {
           status: "ok",
@@ -203,19 +203,19 @@ describe("buildSystemsBoard", () => {
     expect(board.systems.find((s) => s.id === "stripe").status).toBe("green");
   });
 
-  it("marks CoS red when Anthropic readiness fails", async () => {
+  it("marks CoS red when OpenRouter readiness fails", async () => {
     const board = await buildSystemsBoard(
       kvEnv({
         "cos:status:ready": {
           ok: false,
           checkedAt: new Date().toISOString(),
-          error: "ANTHROPIC_API_KEY not configured",
+          error: "OPENROUTER_API_KEY not configured",
         },
       }),
     );
     const cos = board.systems.find((s) => s.id === "chief_of_staff");
     expect(cos.status).toBe("red");
-    expect(cos.note).toMatch(/ANTHROPIC|not configured/i);
+    expect(cos.note).toMatch(/OPENROUTER|not configured/i);
   });
 
   it("surfaces live GHL token + reconcile + funnel signals as map_ok", async () => {

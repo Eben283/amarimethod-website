@@ -859,21 +859,16 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Message is required" }, 400, origin);
   }
 
-  const ANTHROPIC_API_KEY = context.env.ANTHROPIC_API_KEY;
-  if (!ANTHROPIC_API_KEY) {
+  const OPENROUTER_API_KEY = context.env.OPENROUTER_API_KEY;
+  if (!OPENROUTER_API_KEY) {
     await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
       ok: false,
       checkedAt: new Date().toISOString(),
-      anthropic: false,
-      error: "ANTHROPIC_API_KEY not configured",
+      provider: "openrouter",
+      error: "OPENROUTER_API_KEY not configured",
     });
-    return jsonResponse({ error: "Chat not configured (missing ANTHROPIC_API_KEY)" }, 500, origin);
+    return jsonResponse({ error: "Chat not configured (missing OpenRouter key)" }, 500, origin);
   }
-  await writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
-    ok: true,
-    checkedAt: new Date().toISOString(),
-    anthropic: true,
-  });
 
   const kv = context.env.PORTAL_KV;
   const dateKey = todayKey();
@@ -1111,7 +1106,7 @@ export async function onRequestPost(context) {
 
     try {
       const result = await streamWithTools({
-        apiKey: ANTHROPIC_API_KEY,
+        apiKey: OPENROUTER_API_KEY,
         requestBody,
         onTextDelta: async (delta) => {
           fullContent += delta;
@@ -1235,6 +1230,17 @@ export async function onRequestPost(context) {
       await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "done", actions })}\n\n`));
     } catch (err) {
       console.error("[cos-chat] Stream error:", err.message);
+      const status = String(err?.message || "").match(/OpenRouter (\d{3})/)?.[1] || null;
+      const error = status ? `OpenRouter ${status} chat request failed` : "OpenRouter chat stream failed";
+      await Promise.all([
+        writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.cosChat, { status: "error", user: cosUser, error }),
+        writeOpsLastRun(context.env, OPS_READY_KEYS.cos, {
+          ok: false,
+          checkedAt: new Date().toISOString(),
+          provider: "openrouter",
+          error,
+        }),
+      ]);
       await writer.write(encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Stream interrupted" })}\n\n`));
     } finally {
       await writer.close();
