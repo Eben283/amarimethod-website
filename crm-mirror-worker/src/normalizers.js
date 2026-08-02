@@ -71,7 +71,7 @@ export function normalizeGhlConversation(raw) {
 }
 
 export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
-  const externalId = text(raw?.id);
+  const externalId = text(raw?.id || raw?.messageId || raw?.emailMessageId);
   const channel = messageChannel(raw?.messageType || raw?.type);
   const occurredAt = raw?.dateAdded || raw?.createdAt || raw?.date;
   if (!externalId || !channel || !threadExternalId || !contactExternalId || !occurredAt) return null;

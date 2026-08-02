@@ -10,18 +10,22 @@ import {
   contactProfile,
   decideLedgerCutoverCandidate,
   decideReconciliationCandidate,
+  findContactIdByGhlId,
   mirrorStatus,
   ledgerCutoverReview,
   reconciliationQueue,
   reconciliationReview,
   reconciliationStatus,
+  recordRealtimeGhlMessage,
   searchContacts,
 } from "./repository.js";
+import { normalizeGhlMessage } from "./normalizers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe"];
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+const GHL_ED25519_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=\n-----END PUBLIC KEY-----";
 const DASHBOARD_ACCESS_WORDS = Object.freeze([
   "aloe", "amber", "apricot", "arc", "ash", "bay", "birch", "bloom", "brook", "cedar", "clay", "cove", "dawn", "dune", "elm", "fern",
   "field", "flint", "glen", "gold", "grove", "harbor", "hazel", "iris", "jade", "lark", "laurel", "leaf", "lilac", "moss", "ocean", "olive",
@@ -31,6 +35,36 @@ const DASHBOARD_ACCESS_WORDS = Object.freeze([
 
 function json(status, body, headers = {}) {
   return new Response(JSON.stringify(body), { status, headers: { ...JSON_HEADERS, ...headers } });
+}
+
+function pemToBytes(pem) {
+  const base64 = pem.replace(/-----[^-]+-----|\s/g, "");
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function validGhlSignature(rawBody, signature) {
+  if (!signature) return false;
+  try {
+    const key = await crypto.subtle.importKey("spki", pemToBytes(GHL_ED25519_PUBLIC_KEY), { name: "Ed25519" }, false, ["verify"]);
+    return crypto.subtle.verify({ name: "Ed25519" }, key, pemToBytes(`-----BEGIN SIGNATURE-----\n${signature}\n-----END SIGNATURE-----`), new TextEncoder().encode(rawBody));
+  } catch { return false; }
+}
+
+async function processGhlWebhook(request, env) {
+  const rawBody = await request.text();
+  if (rawBody.length > 262144 || !await validGhlSignature(rawBody, request.headers.get("X-GHL-Signature"))) return json(401, { error: "invalid webhook signature" });
+  let payload;
+  try { payload = JSON.parse(rawBody); } catch { return json(400, { error: "invalid JSON" }); }
+  if (payload.locationId !== env.GHL_LOCATION_ID) return json(202, { accepted: false });
+  if (payload.type !== "InboundMessage" && payload.type !== "OutboundMessage") return json(202, { accepted: false });
+  const data = payload.data && typeof payload.data === "object" ? payload.data : payload;
+  const message = normalizeGhlMessage(data, data.conversationId, data.contactId);
+  if (!message) return json(202, { accepted: false });
+  const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
+  if (!contactId) return json(202, { accepted: false });
+  const recorded = await recordRealtimeGhlMessage(env.CRM_DB, message, contactId, new Date().toISOString());
+  return json(200, { accepted: true, duplicate: recorded.duplicate });
 }
 
 function html(body) {
@@ -109,6 +143,7 @@ async function actionPayload(request) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (request.method === "POST" && url.pathname === "/webhooks/ghl") return processGhlWebhook(request, env);
     // The shell has no data or action controls. Data endpoints remain protected.
     // Browser sessions come only from /dashboard-access/:code (never a pasted secret).
     const dashboardAccess = url.pathname.match(/^\/dashboard-access\/([^/]+)$/);
