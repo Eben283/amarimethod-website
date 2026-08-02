@@ -15,6 +15,7 @@
 /staff/triage /staff/ 200
 /staff/balances /staff/ 200
 /staff/clients /staff/ 200
+/staff/client-desk /staff/ 200
 /staff/client/* /staff/ 200
 /staff/playbook /staff/ 200
 /staff/sharpen /staff/ 200
