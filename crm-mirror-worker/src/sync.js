@@ -156,6 +156,7 @@ export async function syncRequestedProviders(env, sources, limit, now) {
   const selected = new Set(sources);
   const results = {};
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
+  if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;
