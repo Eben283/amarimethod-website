@@ -148,6 +148,25 @@ export async function ensureCommunicationThread(db, event, contactId, now) {
   return threadId;
 }
 
+// Webhook deliveries can be retried. Only a newly inserted provider message may
+// update the unread count, so retries are harmless.
+export async function recordRealtimeGhlMessage(db, event, contactId, now) {
+  const prior = await db.prepare("SELECT id FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?").bind(event.externalId).first();
+  if (prior) return { duplicate: true };
+  const threadId = await ensureCommunicationThread(db, event, contactId, now);
+  await upsertCommunicationEvent(db, event, threadId, contactId, now);
+  await db.prepare(
+    `UPDATE communication_threads
+       SET contact_id = ?, channel = ?,
+           last_event_at = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_event_at END,
+           last_preview = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_preview END,
+           last_direction = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_direction END,
+           unread_inbound_count = unread_inbound_count + ?, updated_at = ?
+     WHERE id = ?`,
+  ).bind(contactId, event.channel, event.occurredAt, event.occurredAt, event.occurredAt, event.body, event.occurredAt, event.direction, event.direction === "inbound" ? 1 : 0, now, threadId).run();
+  return { duplicate: false };
+}
+
 // After a GHL full pass, drop external_records for contacts confirmed deleted in
 // GHL so completeness does not stay stuck in "needs review" on ghost rows.
 // Mirror contact history is retained; only the provider linkage row is removed.
