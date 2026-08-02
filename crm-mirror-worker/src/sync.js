@@ -9,9 +9,10 @@ import {
   upsertStripeCharge,
   upsertCommunicationEvent,
   upsertCommunicationThread,
+  ensureCommunicationThread,
 } from "./repository.js";
 import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -101,6 +102,39 @@ export async function syncGhlConversations(env, limit, now) {
   return outcome;
 }
 
+// Historical export uses a short-lived cursor. Consume bounded pages in one
+// invocation; never persist the cursor for a later cron run.
+export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 } = {}, now) {
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", "message-export", now);
+  const outcome = result();
+  let cursor = null;
+  try {
+    for (let page = 0; page < pages; page += 1) {
+      const response = await fetchGhlMessageExport(env, cursor, pageSize);
+      for (const rawMessage of response.messages) {
+        outcome.recordsRead += 1;
+        const message = normalizeGhlMessage(rawMessage, rawMessage.conversationId, rawMessage.contactId);
+        if (!message) { outcome.recordsSkipped += 1; continue; }
+        const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
+        if (!contactId) { outcome.recordsSkipped += 1; continue; }
+        const threadId = await ensureCommunicationThread(env.CRM_DB, message, contactId, now);
+        await upsertCommunicationEvent(env.CRM_DB, message, threadId, contactId, now);
+        outcome.recordsWritten += 1;
+      }
+      cursor = response.nextCursor;
+      if (!cursor || !response.messages.length) break;
+    }
+    outcome.cursorAfter = cursor ? "more-history" : null;
+    outcome.status = cursor ? "partial" : "succeeded";
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
+
 export async function syncStripe(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "stripe");
   const runId = await beginSyncRun(env.CRM_DB, "stripe", cursorBefore, now);
@@ -152,11 +186,12 @@ export async function syncStripe(env, limit, now) {
   return outcome;
 }
 
-export async function syncRequestedProviders(env, sources, limit, now) {
+export async function syncRequestedProviders(env, sources, limit, now, pages = 8) {
   const selected = new Set(sources);
   const results = {};
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
+  if (selected.has("ghl-message-export")) results.ghlMessageExport = await backfillGhlMessageExport(env, { pages, pageSize: limit }, now);
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;

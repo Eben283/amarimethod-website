@@ -140,6 +140,14 @@ export async function upsertCommunicationEvent(db, event, threadId, contactId, n
   return eventId;
 }
 
+export async function ensureCommunicationThread(db, event, contactId, now) {
+  const existing = await db.prepare("SELECT id FROM communication_threads WHERE provider = 'ghl' AND provider_thread_id = ?").bind(event.threadExternalId).first();
+  if (existing) return existing.id;
+  const threadId = id();
+  await db.prepare(`INSERT INTO communication_threads (id, contact_id, provider, provider_thread_id, channel, last_event_at, last_preview, last_direction, unread_inbound_count, created_at, updated_at) VALUES (?, ?, 'ghl', ?, ?, ?, ?, ?, 0, ?, ?)`).bind(threadId, contactId, event.threadExternalId, event.channel, event.occurredAt, event.body, event.direction, now, now).run();
+  return threadId;
+}
+
 // After a GHL full pass, drop external_records for contacts confirmed deleted in
 // GHL so completeness does not stay stuck in "needs review" on ghost rows.
 // Mirror contact history is retained; only the provider linkage row is removed.
@@ -310,7 +318,7 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
 }
 
 export async function mirrorStatus(db, now = new Date().toISOString()) {
-  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestConversationImport] = await db.batch([
+  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestCommunicationImport] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
     db.prepare("SELECT COUNT(*) AS count FROM appointments"),
     db.prepare("SELECT COUNT(*) AS count FROM purchases"),
@@ -320,7 +328,7 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
     db.prepare("SELECT provider, status, finished_at FROM sync_runs ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
-    db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'conversations:%' ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND (cursor_before = 'message-export' OR cursor_before LIKE 'conversations:%') ORDER BY started_at DESC LIMIT 1"),
   ]);
   return {
     contacts: Number(contacts.results?.[0]?.count || 0),
@@ -330,7 +338,7 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
       threads: Number(threads.results?.[0]?.count || 0),
       events: Number(events.results?.[0]?.count || 0),
       unreadInbound: Number(unread.results?.[0]?.count || 0),
-      latestImport: latestConversationImport.results?.[0] || null,
+      latestImport: latestCommunicationImport.results?.[0] || null,
     },
     lastSync: lastSync.results?.[0] || null,
     syncHealth: syncHealthForRuns({

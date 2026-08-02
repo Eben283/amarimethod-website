@@ -69,6 +69,13 @@ export async function fetchGhlConversationMessages(env, conversationExternalId, 
   return messages.slice(0, limit);
 }
 
+export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {
+  const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, limit: String(Math.min(100, Math.max(10, limit))) });
+  if (cursor) params.set("cursor", cursor);
+  const payload = await ghlGet(env, `/conversations/messages/export?${params}`);
+  return { messages: Array.isArray(payload.messages) ? payload.messages : [], nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null };
+}
+
 export async function fetchGhlAppointmentsForContact(env, contactExternalId) {
   const payload = await ghlGet(env, `/contacts/${encodeURIComponent(contactExternalId)}/appointments?limit=100`);
   const appointments = Array.isArray(payload.events)
