@@ -4,6 +4,8 @@ import {
   normalizeGhlContact,
   normalizeGhlConversation,
   normalizeGhlMessage,
+  normalizeGhlNote,
+  normalizeGhlTask,
   normalizeStripeCharge,
   normalizedPhone,
 } from "./normalizers.js";
@@ -57,6 +59,13 @@ describe("CRM mirror normalizers", () => {
       calendarId: "calendar_1",
       status: "no_show",
     });
+  });
+
+  it("normalizes notes and tasks into durable client-record shapes", () => {
+    expect(normalizeGhlNote({ id: "note_1", body: "<p>Prefers afternoon appointments.</p>", userName: "Garrett", dateAdded: 1_700_000_000_000 }))
+      .toMatchObject({ externalId: "note_1", body: "Prefers afternoon appointments.", authoredBy: "Garrett" });
+    expect(normalizeGhlTask({ taskId: "task_1", title: "Call before next session", status: "completed", dueDate: "2026-08-05T17:00:00Z", completedAt: "2026-08-04T17:00:00Z" }))
+      .toMatchObject({ externalId: "task_1", title: "Call before next session", status: "completed", dueAt: "2026-08-05T17:00:00Z" });
   });
 
   it("imports only settled Stripe charges and never guesses unknown packages", () => {
