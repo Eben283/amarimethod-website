@@ -18,6 +18,7 @@ import CommunityPage from './pages/CommunityPage';
 import RevenuePage from './pages/RevenuePage';
 import PosPage from './pages/PosPage';
 import OperationsPage from './pages/OperationsPage';
+import ClientDeskPage from './pages/ClientDeskPage';
 import StaffHomeWidget from './components/StaffHomeWidget';
 import { Loader2 } from 'lucide-react';
 
@@ -96,13 +97,8 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* The former Client Desk was a second, directory-style view. The staff
-          communication surface is Follow-Up: one ordered queue for prospects
-          and clients, replies, reasons, and next moves. Keep direct links
-          working while sending everyone to that canonical surface. */}
-      <Route path="/client-desk" element={<Navigate to="/follow-up" replace />} />
-      {/* Messages retired into Follow-Up (unanswered replies rank on top there) */}
-      <Route path="/messages" element={<Navigate to="/follow-up" replace />} />
+      <Route path="/client-desk" element={<ProtectedRoute><Layout><ClientDeskPage /></Layout></ProtectedRoute>} />
+      <Route path="/messages" element={<Navigate to="/client-desk" replace />} />
       <Route
         path="/balances"
         element={
