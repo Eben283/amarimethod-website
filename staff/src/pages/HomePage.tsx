@@ -217,6 +217,11 @@ export default function HomePage() {
           <span className="staff-resources__copy"><strong>$5,400 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
+        <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer">
+          <span className="staff-resources__icon"><CalendarDays aria-hidden="true" /></span>
+          <span className="staff-resources__copy"><strong>Booking rules</strong><small>Durations, buffers, and booking starts · opens in a new tab</small></span>
+          <ArrowUpRight aria-hidden="true" />
+        </a>
       </section>
 
     </main>
