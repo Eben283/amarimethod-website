@@ -59,8 +59,8 @@ function requestedView(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "stripe"))];
-  if (!sources.length) throw new Error("sources must contain ghl and/or stripe");
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "stripe"))];
+  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, and/or stripe");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   return { sources, limit };
