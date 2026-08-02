@@ -416,6 +416,16 @@ export const OPS_REGISTRY = Object.freeze([
     laws: Object.freeze([]),
     instrumentation: "full",
   }),
+  Object.freeze({
+    id: "ops_monitor",
+    label: "Operations monitor",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
 ]);
 
 export function registryPath(pathId) {

@@ -169,6 +169,14 @@ export const OPS_BOARD_META = Object.freeze({
       talkHint: "Fix client portal login email/verify; GHL tag + Resend/GHL mail.",
     },
   },
+  ops_monitor: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "claude-config/scripts/amari-cloud-health.sh + its launchd schedule + /api/ops/monitor-event.",
+      blastRadius: ["chief_of_staff", "ghl_token", "series_reconcile", "crm_mirror"],
+      talkHint: "Restore the independent operations monitor; do not change customer-facing systems.",
+    },
+  },
   public_slots: {
     autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
