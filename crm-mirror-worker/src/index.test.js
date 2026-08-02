@@ -68,5 +68,12 @@ describe("CRM mirror dashboard access handoff", () => {
     const embedHandoff = await worker.fetch(new Request(`${embedBody.url}?embed=1`), env);
     expect(embedHandoff.status).toBe(302);
     expect(embedHandoff.headers.get("Location")).toBe("/?embed=1");
+
+    const deskMinted = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const deskBody = await deskMinted.json();
+    const deskHandoff = await worker.fetch(new Request(deskBody.url), env);
+    expect(deskHandoff.headers.get("Location")).toBe("/client-desk");
   });
 });

@@ -61,6 +61,18 @@ describe("staff-crm-mirror-access", () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it("requests the dedicated Client Desk handoff without exposing the worker secret", async () => {
+    requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } });
+    global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ url: "https://crm.test/dashboard-access/desk", expiresInSeconds: 300 }) });
+    const deskContext = context();
+    deskContext.request.url = "https://www.amarimethod.com/api/staff-crm-mirror-access?view=client-desk";
+    await onRequestPost(deskContext);
+    expect(global.fetch).toHaveBeenCalledWith(
+      "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link?view=client-desk",
+      expect.objectContaining({ headers: { Authorization: "Bearer worker-secret" } }),
+    );
+  });
+
   it("fails closed when WORKER_AUTH_SECRET is missing", async () => {
     requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } });
     const response = await onRequestPost(context({}));

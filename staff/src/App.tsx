@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import TodayPage from './pages/TodayPage';
 import HomePage from './pages/HomePage';
 import ClientsPage from './pages/ClientsPage';
+import ClientDeskPage from './pages/ClientDeskPage';
 import ClientDetailPage from './pages/ClientDetailPage';
 import BalancesPage from './pages/BalancesPage';
 import PlaybookPage from './pages/PlaybookPage';
@@ -95,6 +96,10 @@ function AppRoutes() {
             </Layout>
           </ProtectedRoute>
         }
+      />
+      <Route
+        path="/client-desk"
+        element={<ProtectedRoute><Layout fullBleed><ClientDeskPage /></Layout></ProtectedRoute>}
       />
       {/* Messages retired into Follow-Up (unanswered replies rank on top there) */}
       <Route path="/messages" element={<Navigate to="/follow-up" replace />} />
