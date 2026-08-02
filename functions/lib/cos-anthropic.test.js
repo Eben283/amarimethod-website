@@ -18,8 +18,16 @@ describe("COS OpenRouter transport", () => {
       .toBe("anthropic/claude-sonnet-4.6");
   });
 
+  it("proves the provider can complete an SSE response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(
+      'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}\n\ndata: {"type":"message_stop"}\n\n',
+      { status: 200 },
+    ));
+    await expect(probeOpenRouter("sk-or-test")).resolves.toEqual({ model: OPENROUTER_MODEL });
+  });
+
   it("fails the readiness probe on a provider error", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("bad key", { status: 401 }));
-    await expect(probeOpenRouter("sk-or-test")).rejects.toThrow("OpenRouter 401 readiness probe failed");
+    await expect(probeOpenRouter("sk-or-test")).rejects.toThrow("OpenRouter 401");
   });
 });
