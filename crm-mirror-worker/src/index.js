@@ -17,6 +17,7 @@ import {
   reconciliationReview,
   reconciliationStatus,
   recordRealtimeGhlMessage,
+  recordGhlWebhookEvent,
   searchContacts,
 } from "./repository.js";
 import { normalizeGhlMessage } from "./normalizers.js";
@@ -57,14 +58,22 @@ async function processGhlWebhook(request, env) {
   let payload;
   try { payload = JSON.parse(rawBody); } catch { return json(400, { error: "invalid JSON" }); }
   if (payload.locationId !== env.GHL_LOCATION_ID) return json(202, { accepted: false });
-  if (payload.type !== "InboundMessage" && payload.type !== "OutboundMessage") return json(202, { accepted: false });
   const data = payload.data && typeof payload.data === "object" ? payload.data : payload;
-  const message = normalizeGhlMessage(data, data.conversationId, data.contactId);
-  if (!message) return json(202, { accepted: false });
+  const now = new Date().toISOString();
+  const webhookId = String(payload.webhookId || `${payload.type}:${data.messageId || data.emailMessageId || data.id || now}`);
+  const message = (payload.type === "InboundMessage" || payload.type === "OutboundMessage")
+    ? normalizeGhlMessage(data, data.conversationId, data.contactId) : null;
+  const observed = await recordGhlWebhookEvent(env.CRM_DB, {
+    id: webhookId, type: String(payload.type || "unknown"), contactExternalId: data.contactId || null,
+    conversationExternalId: data.conversationId || null, occurredAt: data.dateAdded || payload.timestamp || null,
+    processingState: message ? "projected" : "observed",
+  }, now);
+  if (!observed) return json(200, { accepted: true, duplicate: true });
+  if (!message) return json(202, { accepted: true, projected: false });
   const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
-  if (!contactId) return json(202, { accepted: false });
-  const recorded = await recordRealtimeGhlMessage(env.CRM_DB, message, contactId, new Date().toISOString());
-  return json(200, { accepted: true, duplicate: recorded.duplicate });
+  if (!contactId) return json(202, { accepted: true, projected: false });
+  const recorded = await recordRealtimeGhlMessage(env.CRM_DB, message, contactId, now);
+  return json(200, { accepted: true, projected: true, duplicate: recorded.duplicate });
 }
 
 function html(body) {
