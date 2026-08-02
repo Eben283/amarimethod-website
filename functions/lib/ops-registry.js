@@ -397,6 +397,16 @@ export const OPS_REGISTRY = Object.freeze([
     instrumentation: "full",
   }),
   Object.freeze({
+    id: "outreach_snapshot",
+    label: "Outreach snapshot",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
     id: "ecosystem_scan",
     label: "Ecosystem scan",
     kind: "dependency",
