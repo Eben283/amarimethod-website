@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Rules | Amari Staff</title>
+  <style>
+    :root { --ink:#20363b; --muted:#60777d; --line:#dce4e5; --paper:#fffdf9; --canvas:#f4f0e9; --coral:#c76e58; --moss:#496b58; --amber:#927442; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--canvas); color:var(--ink); font:16px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:980px; margin:0 auto; padding:44px 24px 72px; }.eyebrow { color:var(--amber); font:700 11px/1 ui-monospace,monospace; letter-spacing:.12em; text-transform:uppercase; } h1 { margin:12px 0 8px; font:700 clamp(32px,5vw,52px)/1.05 Georgia,serif; letter-spacing:-.035em; } h2 { margin:0; font:700 22px/1.2 Georgia,serif; }.lede { max-width:700px; margin:0; color:var(--muted); font-size:18px; }
+    .card { margin-top:22px; padding:26px; background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:0 5px 18px rgba(35,55,60,.06); }.rule { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:18px; }.metric { padding:15px; border:1px solid var(--line); border-radius:12px; background:#fff; }.metric strong { display:block; font-size:24px; line-height:1.1; }.metric span { display:block; margin-top:5px; color:var(--muted); font-size:12px; }
+    .notice { margin-top:16px; padding:14px 16px; border-left:4px solid var(--coral); border-radius:8px; background:#fbf0ec; color:#714335; }.notice strong { color:#582f25; } table { width:100%; margin-top:16px; border-collapse:collapse; font-size:14px; } th,td { padding:13px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { color:var(--muted); font-size:11px; letter-spacing:.08em; text-transform:uppercase; } td:first-child { font-weight:700; }.yes { color:var(--moss); font-weight:700; }
+    .flow { display:grid; grid-template-columns:1fr auto 1fr auto 1fr; align-items:center; gap:10px; margin-top:18px; }.flow div { min-height:94px; padding:15px; border:1px solid var(--line); border-radius:12px; background:#fff; }.flow b { display:block; font-size:14px; }.flow small { color:var(--muted); font-size:12px; }.arrow { color:var(--amber); font-size:25px; }.source { margin:24px 0 0; color:var(--muted); font-size:12px; text-align:center; }
+    @media (max-width:700px) { main { padding:32px 16px 52px; }.card { padding:20px; }.rule { grid-template-columns:repeat(2,1fr); }.flow { grid-template-columns:1fr; }.arrow { text-align:center; transform:rotate(90deg); } table { font-size:12px; } th,td { padding:10px 6px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Amari staff reference · Booking policy</p>
+    <h1>Booking rules</h1>
+    <p class="lede">Use this page to distinguish session duration, the post-session buffer, and the spacing of bookable starts. GHL remains the availability source of truth.</p>
+    <section class="card"><h2>The three separate rules</h2><div class="rule"><div class="metric"><strong>Duration</strong><span>How long the client is in session.</span></div><div class="metric"><strong>Buffer</strong><span>Protected time after the session.</span></div><div class="metric"><strong>Interval</strong><span>Spacing between bookable start times.</span></div><div class="metric"><strong>Block</strong><span>Duration + post-session buffer.</span></div></div><div class="notice"><strong>Do not equate interval with duration.</strong> A 50-minute Assessment occupies a full hour because it has a 10-minute buffer.</div></section>
+    <section class="card"><h2>Studio rules in effect</h2><table><thead><tr><th>Service</th><th>Duration</th><th>Post-buffer</th><th>Booking starts</th><th>Staff note</th></tr></thead><tbody>
+      <tr><td>Amari Assessment ($29)</td><td>50 min</td><td>10 min</td><td>Hourly / 60-min interval</td><td><span class="yes">Public first visit.</span> 50 + 10 packs to one hour.</td></tr>
+      <tr><td>Follow-up</td><td>50 min</td><td>10 min</td><td>On the hour</td><td><span class="yes">Main session rhythm.</span></td></tr>
+      <tr><td>Initial</td><td>60 min</td><td>None</td><td>On the hour</td><td>Packs hour to hour.</td></tr>
+      <tr><td>Partner Initial</td><td>60 min</td><td>None</td><td>On the hour</td><td>Separate complimentary partner calendar.</td></tr>
+      <tr><td>Discovery Call</td><td>15 min</td><td>15 min</td><td>15-min grid</td><td>Intro path; denser starts are permitted.</td></tr>
+      <tr><td>Discovery Call — Virtual</td><td>15 min</td><td>None</td><td>15-min grid</td><td>Intro path.</td></tr>
+      <tr><td>Ambassador Discovery</td><td>15 min</td><td>15 min</td><td>15-min grid</td><td>Intro path.</td></tr>
+      <tr><td>Entrainment</td><td>30 min</td><td>None</td><td>15-min grid</td><td>Standalone session.</td></tr>
+    </tbody></table></section>
+    <section class="card"><h2>Availability and timing</h2><div class="flow"><div><b>Work hours</b><small>Monday–Friday<br>10:00 AM–7:00 PM Pacific</small></div><span class="arrow">→</span><div><b>GHL availability</b><small>Calendar, existing appointments, and calendar settings determine what is actually free.</small></div><span class="arrow">→</span><div><b>Amari display layer</b><small>May thin or prefer approved slots. It never invents availability.</small></div></div><div class="notice"><strong>Operational rule:</strong> Do not manually promise a time that is not available in the calendar. If a duration, interval, or buffer looks wrong, flag it before booking rather than working around it.</div></section>
+    <p class="source">Canonical source: Booking slot model and GHL calendars source of truth · Updated August 1, 2026</p>
+  </main>
+</body>
+</html>
