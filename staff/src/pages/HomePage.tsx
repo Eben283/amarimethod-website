@@ -1,4 +1,4 @@
-import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Users, Wallet } from 'lucide-react';
+import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, FileText, Kanban, ListChecks, Loader2, MapPinned, PenLine, ShoppingBag, Sparkles, TrendingUp, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDayData } from '../lib/api';
@@ -23,8 +23,7 @@ type BackOfficeTool = {
 
 const TOOLS: HomeTool[] = [
   { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
-  { label: 'Follow-Up', detail: 'Outreach', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
-  { label: 'Client Desk', detail: 'Last communication', Icon: Users, to: '/client-desk', tone: 'coral' },
+  { label: 'Follow-Up', detail: 'Communication', Icon: ListChecks, to: '/follow-up', tone: 'coral' },
   { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
   { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
   { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
