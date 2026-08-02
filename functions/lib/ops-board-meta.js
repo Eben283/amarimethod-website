@@ -185,6 +185,14 @@ export const OPS_BOARD_META = Object.freeze({
       talkHint: "Restore the snapshot job and its upload only; never send outreach from this repair.",
     },
   },
+  crm_mirror: {
+    role: OPS_BOARD_ROLE.MAP,
+    changeSurface: {
+      touch: "crm-mirror-worker readiness/status/repository/migrations plus the cloud-health probe only; read-only provider observations only.",
+      blastRadius: ["conversation_cache", "ops_monitor"],
+      talkHint: "Diagnose CRM readiness without reading client records or changing GHL, Stripe, sync scheduling, or the paused conversation importer.",
+    },
+  },
   public_slots: {
     autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
