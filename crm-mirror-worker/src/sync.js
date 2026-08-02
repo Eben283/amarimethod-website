@@ -184,9 +184,9 @@ async function writeCrmMirrorLastRun(env, results, now) {
 
 export async function runScheduledSync(env, now) {
   const results = {};
-  // Conversations use their own 25-thread cursor so a dense message history
-  // cannot starve the ordinary contact/appointment or Stripe mirror passes.
-  for (const [provider, sync, limit] of [["ghl", syncGhl, SCHEDULED_SYNC_LIMIT], ["ghlConversations", syncGhlConversations, 25], ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT]]) {
+  // Conversation history is intentionally not scheduled until its GHL cursor
+  // is proven to advance; rerunning the first page would waste API capacity.
+  for (const [provider, sync, limit] of [["ghl", syncGhl, SCHEDULED_SYNC_LIMIT], ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT]]) {
     try {
       results[provider] = await sync(env, limit, now);
     } catch (error) {
