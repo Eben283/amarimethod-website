@@ -188,6 +188,11 @@ describe("CRM mirror client profiles", () => {
         { results: [{ title: "Follow up", status: "open" }] },
         { results: [{ channel: "sms", state: "granted" }] },
         { results: [{ activity_type: "message", body: "Can we reschedule?" }] },
+        { results: [] },
+        { results: [] },
+        { results: [] },
+        { results: [] },
+        { results: [] },
       ],
     };
     await expect(contactProfile(profileDb, "contact_1", 25, "2026-07-26T00:00:00.000Z")).resolves.toMatchObject({

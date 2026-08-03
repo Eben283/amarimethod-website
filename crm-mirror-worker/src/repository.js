@@ -716,7 +716,7 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
 }
 
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, activityResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
     db.prepare(
       `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
        FROM contacts WHERE id = ?`,
@@ -811,39 +811,48 @@ export async function contactProfile(db, contactId, limit, now) {
        FROM consents WHERE contact_id = ?
        ORDER BY channel, datetime(effective_at) DESC`,
     ).bind(contactId),
-    // This is the client-visible activity history—not a webhook log. Each row
-    // is a recognised client record with one common chronological shape.
     db.prepare(
-      `SELECT * FROM (
-         SELECT 'message' AS activity_type, event.occurred_at, event.direction,
-                COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
-                event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
-                NULL AS amount_cents, NULL AS currency
-         FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
-         WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
-         UNION ALL
-         SELECT 'appointment', appointment.starts_at, NULL, NULL, NULL, NULL, NULL,
-                appointment.status, COALESCE(service.name, 'Appointment'), NULL, NULL
-         FROM appointments appointment LEFT JOIN services service ON service.id = appointment.service_id
-         WHERE appointment.contact_id = ?
-         UNION ALL
-         SELECT 'payment', purchase.purchased_at, NULL, NULL, purchase.provider_status, NULL,
-                purchase.classification, NULL, NULL, purchase.amount_cents, purchase.currency
-         FROM purchases purchase WHERE purchase.contact_id = ?
-         UNION ALL
-         SELECT 'invoice', invoice.issued_at, NULL, NULL, invoice.provider_status, invoice.invoice_number,
-                invoice.description, invoice.collection_method, invoice.due_at, invoice.amount_paid_cents, invoice.currency
-         FROM stripe_invoices invoice WHERE invoice.contact_id = ?
-         UNION ALL
-         SELECT 'note', note.created_at, NULL, NULL, NULL, NULL, note.body, NULL,
-                note.authored_by, NULL, NULL
-         FROM client_notes note WHERE note.contact_id = ?
-         UNION ALL
-         SELECT 'task', task.created_at, NULL, NULL, NULL, task.title, NULL,
-                task.status, task.due_at, NULL, NULL
-         FROM client_tasks task WHERE task.contact_id = ?
-       ) ORDER BY datetime(occurred_at) DESC LIMIT ?`,
-    ).bind(contactId, contactId, contactId, contactId, contactId, contactId, limit),
+      `SELECT 'message' AS activity_type, event.occurred_at, event.direction,
+              COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
+              event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
+              NULL AS amount_cents, NULL AS currency
+       FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
+       WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
+       ORDER BY datetime(event.occurred_at) DESC, event.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT 'appointment' AS activity_type, appointment.starts_at AS occurred_at, NULL AS direction,
+              NULL AS channel, NULL AS delivery_status, NULL AS subject, NULL AS body,
+              appointment.status, COALESCE(service.name, 'Appointment') AS detail, NULL AS amount_cents, NULL AS currency
+       FROM appointments appointment LEFT JOIN services service ON service.id = appointment.service_id
+       WHERE appointment.contact_id = ? ORDER BY datetime(appointment.starts_at) DESC, appointment.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT 'payment' AS activity_type, purchase.purchased_at AS occurred_at, NULL AS direction,
+              NULL AS channel, purchase.provider_status AS delivery_status, NULL AS subject,
+              purchase.classification AS body, NULL AS status, NULL AS detail,
+              purchase.amount_cents, purchase.currency
+       FROM purchases purchase WHERE purchase.contact_id = ? ORDER BY datetime(purchase.purchased_at) DESC, purchase.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT 'invoice' AS activity_type, invoice.issued_at AS occurred_at, NULL AS direction,
+              NULL AS channel, invoice.provider_status AS delivery_status, invoice.invoice_number AS subject,
+              invoice.description AS body, invoice.collection_method AS status, invoice.due_at AS detail,
+              invoice.amount_paid_cents AS amount_cents, invoice.currency
+       FROM stripe_invoices invoice WHERE invoice.contact_id = ? ORDER BY datetime(invoice.issued_at) DESC, invoice.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT 'note' AS activity_type, note.created_at AS occurred_at, NULL AS direction,
+              NULL AS channel, NULL AS delivery_status, NULL AS subject, note.body,
+              NULL AS status, note.authored_by AS detail, NULL AS amount_cents, NULL AS currency
+       FROM client_notes note WHERE note.contact_id = ? ORDER BY datetime(note.created_at) DESC, note.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT 'task' AS activity_type, task.created_at AS occurred_at, NULL AS direction,
+              NULL AS channel, NULL AS delivery_status, task.title AS subject, NULL AS body,
+              task.status, task.due_at AS detail, NULL AS amount_cents, NULL AS currency
+       FROM client_tasks task WHERE task.contact_id = ? ORDER BY datetime(task.created_at) DESC, task.id DESC LIMIT ?`,
+    ).bind(contactId, limit),
   ]);
   const contact = contactResult.results?.[0] || null;
   if (!contact) return null;
@@ -860,7 +869,13 @@ export async function contactProfile(db, contactId, limit, now) {
     notes: notesResult.results || [],
     tasks: tasksResult.results || [],
     consents: consentResult.results || [],
-    activityTimeline: activityResult.results || [],
+    // D1 has a lower compound-SELECT term ceiling than local SQLite. Merge the
+    // six independently bounded source queries here instead of a UNION, while
+    // keeping the exact same read-only client timeline shape.
+    activityTimeline: [messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult]
+      .flatMap((result) => result.results || [])
+      .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
+      .slice(0, limit),
     communications: communicationsResult.results || [],
     communicationTimeline: timelineResult.results || [],
   };
