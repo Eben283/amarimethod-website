@@ -220,7 +220,7 @@ export default function HomePage() {
           <span className="staff-resources__copy"><strong>Booking rules</strong><small>Durations, buffers, and booking starts · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
-        <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/premium-capability-positioning-v2.md" target="_blank" rel="noreferrer">
+        <a href="/staff/resources/amari-practice-positioning-v2.html" target="_blank" rel="noreferrer">
           <span className="staff-resources__icon"><BookOpen aria-hidden="true" /></span>
           <span className="staff-resources__copy"><strong>Amari Practice Positioning V2</strong><small>Internal positioning draft · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
