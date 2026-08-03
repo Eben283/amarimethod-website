@@ -141,6 +141,20 @@ function requestedView(value) {
   return value === "client-desk" ? "client-desk" : "dashboard";
 }
 
+function requestedStaffActor(value) {
+  const actor = String(value || "").trim();
+  return /^[A-Za-z][A-Za-z .'-]{0,78}$/.test(actor) ? actor : null;
+}
+
+function dashboardAccessRecord(value) {
+  if (typeof value !== "string" || !value) return null;
+  if (value === "client-desk" || value === "dashboard") return { view: value, actor: null };
+  try {
+    const parsed = JSON.parse(value);
+    return { view: requestedView(parsed?.view), actor: requestedStaffActor(parsed?.actor) };
+  } catch { return null; }
+}
+
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
   const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices"))];
@@ -199,16 +213,16 @@ export default {
     if (request.method === "GET" && dashboardAccess) {
       const code = decodeURIComponent(dashboardAccess[1]);
       const accessKey = dashboardAccessKey(code);
-      const valid = await env.PORTAL_KV.get(accessKey);
+      const valid = dashboardAccessRecord(await env.PORTAL_KV.get(accessKey));
       if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
       await env.PORTAL_KV.delete(accessKey);
       const embed = url.searchParams.get("embed") === "1" ? "?embed=1" : "";
-      const destination = valid === "client-desk" ? "/client-desk" : "/";
+      const destination = valid.view === "client-desk" ? "/client-desk" : "/";
       return new Response(null, {
         status: 302,
         headers: {
           Location: `${destination}${embed}`,
-          "Set-Cookie": await dashboardSessionCookie(env),
+          "Set-Cookie": await dashboardSessionCookie(env, valid.actor || "Staff"),
           "Cache-Control": "no-store",
           "Referrer-Policy": "no-referrer",
         },
@@ -228,7 +242,7 @@ export default {
       if (request.method === "POST" && url.pathname === "/dashboard-session") {
         const denied = requireWorkerAuth(request, env);
         if (denied) return denied;
-        const cookie = await dashboardSessionCookie(env);
+        const cookie = await dashboardSessionCookie(env, "Staff");
         return json(200, { success: true, expiresInSeconds: 8 * 60 * 60 }, { "Set-Cookie": cookie });
       }
       if (request.method === "POST" && url.pathname === "/dashboard-access-link") {
@@ -236,7 +250,8 @@ export default {
         if (denied) return denied;
         const code = dashboardAccessCode();
         const view = requestedView(url.searchParams.get("view"));
-        await env.PORTAL_KV.put(dashboardAccessKey(code), view, { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS });
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        await env.PORTAL_KV.put(dashboardAccessKey(code), JSON.stringify({ view, actor }), { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS });
         return json(200, {
           success: true,
           expiresInSeconds: DASHBOARD_ACCESS_TTL_SECONDS,

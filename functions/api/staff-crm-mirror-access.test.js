@@ -46,7 +46,7 @@ describe("staff-crm-mirror-access", () => {
       "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link",
       expect.objectContaining({
         method: "POST",
-        headers: { Authorization: "Bearer worker-secret" },
+        headers: { Authorization: "Bearer worker-secret", "X-Staff-Actor": "Garrett" },
       }),
     );
   });
@@ -69,7 +69,7 @@ describe("staff-crm-mirror-access", () => {
     await onRequestPost(deskContext);
     expect(global.fetch).toHaveBeenCalledWith(
       "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link?view=client-desk",
-      expect.objectContaining({ headers: { Authorization: "Bearer worker-secret" } }),
+      expect.objectContaining({ headers: { Authorization: "Bearer worker-secret", "X-Staff-Actor": "Eben" } }),
     );
   });
 

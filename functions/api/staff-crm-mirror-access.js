@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
   const headers = { ...corsHeaders(origin), "Content-Type": "application/json" };
 
   try {
-    const { error } = await requireStaffAuth(context, headers);
+    const { error, payload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
     const secret = context.env.WORKER_AUTH_SECRET;
@@ -41,7 +41,10 @@ export async function onRequestPost(context) {
       const requestedView = new URL(context.request.url || "https://www.amarimethod.com/api/staff-crm-mirror-access").searchParams.get("view") === "client-desk" ? "?view=client-desk" : "";
       const res = await fetch(`${WORKER_URL}${requestedView}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${secret}` },
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          "X-Staff-Actor": String(payload?.user || "").slice(0, 80),
+        },
         signal: ac.signal,
       });
       body = await res.json().catch(() => ({}));

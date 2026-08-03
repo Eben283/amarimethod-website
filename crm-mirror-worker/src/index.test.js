@@ -51,7 +51,7 @@ describe("CRM mirror dashboard access handoff", () => {
       },
     };
     const minted = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
-      method: "POST", headers: { Authorization: "Bearer test-secret" },
+      method: "POST", headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett" },
     }), env);
     expect(minted.status).toBe(200);
     const body = await minted.json();
