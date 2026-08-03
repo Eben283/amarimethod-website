@@ -6,7 +6,73 @@ const GHL_FIELD_IDS = Object.freeze({
   sessionsRemaining: "wrQSkx6BhXwDGIn1d0V4",
   sessionsCompleted: "TE0udwVH1Km5RsKaN5H0",
   seriesType: "3i93lTkmuAV49s9nh0q8",
+  portalAccess: "O0xmwyRqeNK2EA1GGGye",
+  livingPracticeAccess: "1EnVtI70jC5MTshZjWvw",
 });
+
+// This is display-only interpretation of already-linked, settled Stripe
+// payments. It deliberately does not derive credits or change GHL access.
+// Keep it aligned with functions/lib/ghl-products.js's package definitions.
+const PACKAGE_ACCESS_EXPECTATIONS = Object.freeze({
+  "4-Session Series": { seriesType: "4-session", livingPractice: false },
+  "8-Session Series": { seriesType: "8-session", livingPractice: true },
+  "The 6-Week Amari Practice": { seriesType: "6-week", livingPractice: true },
+  "The 12-Week Amari Practice": { seriesType: "12-week", livingPractice: true },
+  "Upgrade Initial→4": { seriesType: "4-session", livingPractice: false },
+  "Upgrade Initial→8": { seriesType: "8-session", livingPractice: true },
+  "Upgrade 4→8": { seriesType: "8-session", livingPractice: true },
+});
+
+function isEnabled(value) {
+  return value === true || String(value || "").trim().toLowerCase() === "true";
+}
+
+function seriesSatisfies(actual, expected) {
+  return actual === expected || (expected === "4-session" && actual === "8-session");
+}
+
+export function paymentAccessState(purchases, importedCurrentState) {
+  const payment = (purchases || []).find((purchase) =>
+    purchase.provider_status === "succeeded" &&
+    Number(purchase.amount_cents || 0) > Number(purchase.amount_refunded_cents || 0) &&
+    PACKAGE_ACCESS_EXPECTATIONS[purchase.classification],
+  );
+  if (!payment) {
+    return {
+      status: "no_linked_package_payment",
+      label: "No linked package payment",
+      detail: "No settled Stripe package payment is linked to this client record.",
+      payment: null,
+    };
+  }
+
+  const expected = PACKAGE_ACCESS_EXPECTATIONS[payment.classification];
+  const state = importedCurrentState || {};
+  const missing = [];
+  if (!seriesSatisfies(state.series_type, expected.seriesType)) missing.push("series");
+  if (state.sessions_remaining == null || String(state.sessions_remaining).trim() === "") missing.push("session balance");
+  if (!isEnabled(state.portal_access)) missing.push("portal access");
+  if (expected.livingPractice && !isEnabled(state.living_practice_access)) missing.push("Living Practice access");
+
+  if (missing.length) {
+    return {
+      status: "review_access_state",
+      label: "Review current access",
+      detail: `A linked Stripe package payment is recorded, but the GHL access mirror is missing: ${missing.join(", ")}.`,
+      payment,
+      expected,
+      missing,
+    };
+  }
+  return {
+    status: "aligned",
+    label: "Payment and access aligned",
+    detail: "A linked Stripe package payment and the expected current GHL access state are both mirrored.",
+    payment,
+    expected,
+    missing: [],
+  };
+}
 
 // The Client Desk is a client workspace, not an operations-message inbox.
 // Keep this narrow: only known machine-status markers are excluded. We do not
@@ -737,10 +803,19 @@ export async function contactProfile(db, contactId, limit, now) {
       `SELECT
          MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS sessions_remaining,
          MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS sessions_completed,
-         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS series_type
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS series_type,
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS portal_access,
+         MAX(CASE WHEN attribute_key = ? THEN attribute_value END) AS living_practice_access
        FROM contact_attributes
        WHERE contact_id = ? AND source = 'ghl'`,
-    ).bind(GHL_FIELD_IDS.sessionsRemaining, GHL_FIELD_IDS.sessionsCompleted, GHL_FIELD_IDS.seriesType, contactId),
+    ).bind(
+      GHL_FIELD_IDS.sessionsRemaining,
+      GHL_FIELD_IDS.sessionsCompleted,
+      GHL_FIELD_IDS.seriesType,
+      GHL_FIELD_IDS.portalAccess,
+      GHL_FIELD_IDS.livingPracticeAccess,
+      contactId,
+    ),
     db.prepare(
       `SELECT appointment.starts_at, appointment.status, service.name AS service_name
        FROM appointments appointment
@@ -856,15 +931,18 @@ export async function contactProfile(db, contactId, limit, now) {
   ]);
   const contact = contactResult.results?.[0] || null;
   if (!contact) return null;
+  const importedCurrentState = stateResult.results?.[0] || {};
+  const purchases = purchasesResult.results || [];
   return {
     contact,
     tags: (tagsResult.results || []).map((row) => row.tag),
     roles: (rolesResult.results || []).map((row) => row.role),
     fields: attributesResult.results || [],
-    importedCurrentState: stateResult.results?.[0] || {},
+    importedCurrentState,
+    paymentAccess: paymentAccessState(purchases, importedCurrentState),
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
-    purchases: purchasesResult.results || [],
+    purchases,
     invoices: invoicesResult.results || [],
     notes: notesResult.results || [],
     tasks: tasksResult.results || [],

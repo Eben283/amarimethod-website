@@ -15,6 +15,36 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("event.activity_type === 'invoice'");
   });
 
+  it("keeps Stripe payment evidence separate from the mirrored GHL access state", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("Payment &amp; access");
+    expect(html).toContain("Stripe payment evidence and GHL access are mirrored separately.");
+    expect(html).toContain("This view never changes either system.");
+    expect(html).toContain("paymentAccess.label");
+  });
+
+  it("renders a review state without presenting it as an access change", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { display_name: "Test client" },
+      paymentAccess: {
+        status: "review_access_state",
+        label: "Review current access",
+        detail: "A linked Stripe package payment is recorded, but the GHL access mirror is missing: portal access.",
+        payment: { classification: "8-Session Series" },
+      },
+    });
+    expect(rendered).toContain("Payment &amp; access");
+    expect(rendered).toContain("Stripe payment");
+    expect(rendered).toContain("Review current access");
+    expect(rendered).not.toContain("Activate access");
+  });
+
   it("renders email destinations as safe labelled links", () => {
     const html = clientDeskHtml();
     for (const label of ["Upgrade to 4 sessions", "Upgrade to 8 sessions", "Share feedback", "Book a session", "Visit Amari Method", "Unsubscribe", "Open link"]) {

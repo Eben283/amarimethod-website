@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, paymentAccessState, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
 
 describe("CRM mirror absent GHL contacts", () => {
   it("removes external_records for contacts confirmed deleted in GHL", async () => {
@@ -146,6 +146,47 @@ describe("CRM mirror historical package classification", () => {
     const purchaseUpdate = writes.find((write) => write.sql.startsWith("UPDATE purchases"));
     expect(purchaseUpdate.values[1]).toBe(null);
     expect(purchaseUpdate.values[8]).toBe("Legacy package — pre-current pricing");
+  });
+});
+
+describe("Client Desk payment and access state", () => {
+  const paidEightSessionSeries = [{
+    classification: "8-Session Series",
+    provider_status: "succeeded",
+    amount_cents: 129500,
+    amount_refunded_cents: 0,
+  }];
+
+  it("reports aligned Stripe payment evidence and mirrored GHL access without changing either source", () => {
+    expect(paymentAccessState(paidEightSessionSeries, {
+      series_type: "8-session",
+      sessions_remaining: "0",
+      portal_access: "true",
+      living_practice_access: "true",
+    })).toMatchObject({
+      status: "aligned",
+      label: "Payment and access aligned",
+      missing: [],
+    });
+  });
+
+  it("flags a linked paid package with incomplete GHL access fields for review", () => {
+    expect(paymentAccessState(paidEightSessionSeries, {
+      series_type: "8-session",
+      sessions_remaining: "6",
+      portal_access: "false",
+    })).toMatchObject({
+      status: "review_access_state",
+      label: "Review current access",
+      missing: ["portal access", "Living Practice access"],
+    });
+  });
+
+  it("does not infer access from an unrelated or refunded payment", () => {
+    expect(paymentAccessState([{ classification: "Follow-up Session", provider_status: "succeeded", amount_cents: 19000, amount_refunded_cents: 0 }], {}))
+      .toMatchObject({ status: "no_linked_package_payment" });
+    expect(paymentAccessState([{ ...paidEightSessionSeries[0], provider_status: "refunded" }], {}))
+      .toMatchObject({ status: "no_linked_package_payment" });
   });
 });
 
