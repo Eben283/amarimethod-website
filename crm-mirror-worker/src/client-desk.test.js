@@ -48,4 +48,25 @@ describe("Client Desk message rendering", () => {
     expect(helpers.emailLinkLabel("https://services.msgsndr.com/unsubscribe?token=private", "")).toBe("Unsubscribe");
     expect(helpers.emailLinkLabel("https://cdn.example.com/image.png", "")).toBe("Open link");
   });
+
+  it("replaces bracketed appointment URLs with concise clickable actions", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { emailBody }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const booking = "https://link.amarimethod.com/widget/booking?event_id=private";
+    const cancel = "https://link.amarimethod.com/widget/cancel-booking?event_id=private";
+    const google = "https://link.amarimethod.com/google/calendar/add-event/private";
+    const ics = "https://link.amarimethod.com/google/calendar/get-ics/private";
+    const rendered = helpers.emailBody(`Reschedule [${booking}] · Cancel [${cancel}] Add to Google Calendar [${google}] · Add to iCal / Outlook [${ics}]`);
+    for (const label of ["Reschedule", "Cancel", "Add to Google Calendar", "Add to iCal / Outlook"]) expect(rendered).toContain(`>${label}<`);
+    for (const url of [booking, cancel, google, ics]) expect(rendered).toContain(`href=\"${url.replace("&", "&amp;")}\"`);
+    expect(rendered).not.toContain(`[${booking}]`);
+    expect(rendered).not.toContain(`[${cancel}]`);
+    expect(rendered).toContain('target="_blank"');
+    expect(rendered).toContain('rel="noopener noreferrer"');
+    expect(rendered).toContain('referrerpolicy="no-referrer"');
+  });
 });
