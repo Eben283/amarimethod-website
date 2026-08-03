@@ -8,12 +8,11 @@
 
 import { corsHeaders, parseJsonBody, requireStaffAuth } from '../lib/endpoint-guards.js';
 import { ghlFetch } from '../lib/ghl.js';
-import { STUDIES, STUDY_CALENDAR_ID } from '../lib/studies.js';
+import { STUDIES, STUDY_CALENDAR_ID, STUDY_NAME_FIELD_ID, studyAppointmentTitle } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
-const STUDY_NAME_FIELD_ID = '1xhxStKyEN47shwjOKC0';
 // GHL number field contact.study_sessions_done. This is the first completed
 // table session; later study sessions advance the same field.
 const STUDY_SESSIONS_DONE_FIELD_ID = 'Q9DqX2C4ml2TGW679UlM';
@@ -315,7 +314,7 @@ export async function onRequestPost(context) {
           startTime,
           endTime: appointmentEndTime(startTime, 15),
           selectedTimezone: timezone,
-          title: 'Amari Study 15-Minute Session',
+          title: studyAppointmentTitle(record.studyName),
           appointmentStatus: 'confirmed',
           firstName: record.firstName,
           lastName: record.lastName,
