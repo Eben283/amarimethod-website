@@ -80,4 +80,19 @@ describe("CRM mirror dashboard access handoff", () => {
     const deskHandoff = await worker.fetch(new Request(deskBody.url), env);
     expect(deskHandoff.headers.get("Location")).toBe("/client-desk");
   });
+
+  it("keeps sender readiness behind staff authentication and explicitly shadow-only", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret" };
+    const denied = await worker.fetch(new Request("https://crm.test/sender/readiness"), env);
+    expect(denied.status).toBe(401);
+
+    const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const response = await worker.fetch(new Request("https://crm.test/sender/readiness", {
+      headers: { Cookie: session.headers.get("Set-Cookie") },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ mode: "shadow", deliveryEnabled: false });
+  });
 });
