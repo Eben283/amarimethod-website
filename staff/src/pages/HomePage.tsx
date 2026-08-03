@@ -225,6 +225,11 @@ export default function HomePage() {
           <span className="staff-resources__copy"><strong>Amari Practice Positioning V2</strong><small>Internal positioning draft · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
+        <a href="https://pub-784b8d75a8d440188ba1ff351c9297d4.r2.dev/acq-closer-handbook-how-to-win.pdf" target="_blank" rel="noreferrer">
+          <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
+          <span className="staff-resources__copy"><strong>ACQ Closer Handbook: How to Win</strong><small>PDF · opens in a new tab</small></span>
+          <ArrowUpRight aria-hidden="true" />
+        </a>
       </section>
 
     </main>
