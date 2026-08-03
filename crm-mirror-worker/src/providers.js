@@ -130,6 +130,18 @@ export async function fetchStripeChargesPage(env, cursor, limit) {
   return { charges, nextCursor: payload.has_more ? charges.at(-1)?.id || null : null };
 }
 
+export async function fetchStripeInvoicesPage(env, cursor, limit) {
+  if (!env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("starting_after", cursor);
+  const response = await fetch(`${STRIPE_BASE}/invoices?${params}`, {
+    headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+  });
+  const payload = await readJson(response, "Stripe invoices");
+  const invoices = Array.isArray(payload.data) ? payload.data.slice(0, limit) : [];
+  return { invoices, nextCursor: payload.has_more ? invoices.at(-1)?.id || null : null };
+}
+
 export async function fetchStripeCustomer(env, customerExternalId) {
   if (!env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY is not configured");
   if (!customerExternalId) return null;

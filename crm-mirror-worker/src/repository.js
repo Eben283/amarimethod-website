@@ -382,6 +382,72 @@ export async function upsertStripeCharge(db, charge, now) {
   return { purchaseId, linked: Boolean(contactId), hasEmailCandidate };
 }
 
+async function findUniqueContactIdByStripeCustomer(db, customerExternalId) {
+  if (!customerExternalId) return null;
+  const result = await db.prepare(
+    `SELECT DISTINCT contact_id
+     FROM purchases
+     WHERE provider_customer_id = ? AND contact_id IS NOT NULL
+     ORDER BY contact_id
+     LIMIT 2`,
+  ).bind(customerExternalId).all();
+  const rows = result.results || [];
+  return rows.length === 1 ? rows[0].contact_id : null;
+}
+
+// An invoice can join a client record only through an explicit GHL contact ID
+// from Stripe metadata or one unambiguous Stripe-customer association already
+// established by an authoritative/reviewed charge. Billing email is never used
+// to auto-link an invoice.
+export async function upsertStripeInvoice(db, invoice, now) {
+  const sourceContactId = invoice.contactExternalId
+    ? await findContactIdByGhlId(db, invoice.contactExternalId)
+    : null;
+  const existing = await db.prepare(
+    "SELECT id, contact_id FROM stripe_invoices WHERE provider_invoice_id = ?",
+  ).bind(invoice.externalId).first();
+  const mappedCustomerContactId = sourceContactId ? null
+    : await findUniqueContactIdByStripeCustomer(db, invoice.customerExternalId);
+  const contactId = sourceContactId || existing?.contact_id || mappedCustomerContactId || null;
+  const invoiceId = existing?.id || id();
+  if (existing) {
+    await db.prepare(
+      `UPDATE stripe_invoices
+       SET contact_id = ?, provider_customer_id = ?, stripe_payment_intent_id = ?, invoice_number = ?,
+           description = ?, provider_status = ?, collection_method = ?, amount_due_cents = ?,
+           amount_paid_cents = ?, amount_remaining_cents = ?, currency = ?, issued_at = ?, due_at = ?,
+           paid_at = ?, updated_at = ?
+       WHERE id = ?`,
+    ).bind(
+      contactId, invoice.customerExternalId, invoice.paymentIntentExternalId, invoice.invoiceNumber,
+      invoice.description, invoice.providerStatus, invoice.collectionMethod, invoice.amountDueCents,
+      invoice.amountPaidCents, invoice.amountRemainingCents, invoice.currency, invoice.issuedAt,
+      invoice.dueAt, invoice.paidAt, now, invoiceId,
+    ).run();
+  } else {
+    await db.prepare(
+      `INSERT INTO stripe_invoices
+       (id, contact_id, provider_invoice_id, provider_customer_id, stripe_payment_intent_id, invoice_number,
+        description, provider_status, collection_method, amount_due_cents, amount_paid_cents,
+        amount_remaining_cents, currency, issued_at, due_at, paid_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      invoiceId, contactId, invoice.externalId, invoice.customerExternalId, invoice.paymentIntentExternalId,
+      invoice.invoiceNumber, invoice.description, invoice.providerStatus, invoice.collectionMethod,
+      invoice.amountDueCents, invoice.amountPaidCents, invoice.amountRemainingCents, invoice.currency,
+      invoice.issuedAt, invoice.dueAt, invoice.paidAt, now, now,
+    ).run();
+  }
+  await db.prepare(
+    `INSERT INTO external_records
+     (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+     VALUES (?, 'stripe', 'invoice', ?, ?, 'stripe_invoice', ?, ?)
+     ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
+       contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
+  ).bind(id(), invoice.externalId, contactId, invoiceId, now).run();
+  return { invoiceId, linked: Boolean(contactId) };
+}
+
 export const SYNC_STALE_AFTER_MINUTES = 45;
 
 function providerSyncHealth(run, nowMs) {
@@ -408,16 +474,18 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
 }
 
 export async function mirrorStatus(db, now = new Date().toISOString()) {
-  const [contacts, appointments, purchases, threads, events, unread, lastSync, latestGhl, latestStripe, latestCommunicationImport, latestClientRecordImport] = await db.batch([
+  const [contacts, appointments, purchases, invoices, threads, events, unread, lastSync, latestGhl, latestStripe, latestInvoiceImport, latestCommunicationImport, latestClientRecordImport] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
     db.prepare("SELECT COUNT(*) AS count FROM appointments"),
     db.prepare("SELECT COUNT(*) AS count FROM purchases"),
+    db.prepare("SELECT COUNT(*) AS count FROM stripe_invoices"),
     db.prepare("SELECT COUNT(*) AS count FROM communication_threads"),
     db.prepare("SELECT COUNT(*) AS count FROM communication_events"),
     db.prepare("SELECT COALESCE(SUM(unread_inbound_count), 0) AS count FROM communication_threads"),
     db.prepare("SELECT provider, status, finished_at FROM sync_runs ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT status, finished_at, records_read, records_written, records_skipped, failure_detail FROM sync_runs WHERE provider = 'stripe' AND cursor_before LIKE 'invoices:%' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND (cursor_before = 'message-export' OR cursor_before LIKE 'conversations:%') ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT status, finished_at, records_read, records_written, records_skipped, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'client-records:%' ORDER BY started_at DESC LIMIT 1"),
   ]);
@@ -425,6 +493,10 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
     contacts: Number(contacts.results?.[0]?.count || 0),
     appointments: Number(appointments.results?.[0]?.count || 0),
     purchases: Number(purchases.results?.[0]?.count || 0),
+    invoices: {
+      total: Number(invoices.results?.[0]?.count || 0),
+      latestImport: latestInvoiceImport.results?.[0] || null,
+    },
     communications: {
       threads: Number(threads.results?.[0]?.count || 0),
       events: Number(events.results?.[0]?.count || 0),
@@ -626,7 +698,7 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
 }
 
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, notesResult, tasksResult, consentResult, activityResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, activityResult] = await db.batch([
     db.prepare(
       `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
        FROM contacts WHERE id = ?`,
@@ -698,6 +770,14 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
+      `SELECT invoice_number, description, provider_status, collection_method, amount_due_cents,
+              amount_paid_cents, amount_remaining_cents, currency, issued_at, due_at, paid_at
+       FROM stripe_invoices
+       WHERE contact_id = ?
+       ORDER BY datetime(issued_at) DESC, id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
       `SELECT body, authored_by, created_at, updated_at
        FROM client_notes WHERE contact_id = ?
        ORDER BY datetime(created_at) DESC, id DESC LIMIT ?`,
@@ -733,6 +813,10 @@ export async function contactProfile(db, contactId, limit, now) {
                 purchase.classification, NULL, NULL, purchase.amount_cents, purchase.currency
          FROM purchases purchase WHERE purchase.contact_id = ?
          UNION ALL
+         SELECT 'invoice', invoice.issued_at, NULL, NULL, invoice.provider_status, invoice.invoice_number,
+                invoice.description, invoice.collection_method, invoice.due_at, invoice.amount_paid_cents, invoice.currency
+         FROM stripe_invoices invoice WHERE invoice.contact_id = ?
+         UNION ALL
          SELECT 'note', note.created_at, NULL, NULL, NULL, NULL, note.body, NULL,
                 note.authored_by, NULL, NULL
          FROM client_notes note WHERE note.contact_id = ?
@@ -741,7 +825,7 @@ export async function contactProfile(db, contactId, limit, now) {
                 task.status, task.due_at, NULL, NULL
          FROM client_tasks task WHERE task.contact_id = ?
        ) ORDER BY datetime(occurred_at) DESC LIMIT ?`,
-    ).bind(contactId, contactId, contactId, contactId, contactId, limit),
+    ).bind(contactId, contactId, contactId, contactId, contactId, contactId, limit),
   ]);
   const contact = contactResult.results?.[0] || null;
   if (!contact) return null;
@@ -754,6 +838,7 @@ export async function contactProfile(db, contactId, limit, now) {
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
     purchases: purchasesResult.results || [],
+    invoices: invoicesResult.results || [],
     notes: notesResult.results || [],
     tasks: tasksResult.results || [],
     consents: consentResult.results || [],

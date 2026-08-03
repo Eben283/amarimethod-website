@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
+  it("renders separate Stripe invoice context without calling an invoice a payment", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("<h3>Invoices</h3>");
+    expect(html).toContain("Invoices are mirrored from Stripe when their source customer relationship is unambiguous.");
+    expect(html).toContain("event.activity_type === 'invoice'");
+  });
+
   it("renders email destinations as safe labelled links", () => {
     const html = clientDeskHtml();
     for (const label of ["Upgrade to 4 sessions", "Upgrade to 8 sessions", "Share feedback", "Book a session", "Visit Amari Method", "Unsubscribe", "Open link"]) {

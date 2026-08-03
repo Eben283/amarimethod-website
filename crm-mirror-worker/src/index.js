@@ -31,7 +31,7 @@ import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
-const DEFAULT_SOURCES = ["ghl", "stripe"];
+const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
 const GHL_ED25519_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=\n-----END PUBLIC KEY-----";
 const DASHBOARD_ACCESS_WORDS = Object.freeze([
@@ -143,8 +143,8 @@ function requestedView(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe"))];
-  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, and/or stripe");
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices"))];
+  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContactExists, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchStripeCustomer } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContactExists, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 
 const env = {
   GHL_LOCATION_ID: "location_1",
@@ -77,5 +77,12 @@ describe("GHL contact pagination", () => {
     await expect(fetchStripeCustomer({ STRIPE_SECRET_KEY: "sk_test" }, "cus_1"))
       .resolves.toMatchObject({ id: "cus_1", email: "ada@example.com" });
     expect(fetch.mock.calls[0][0]).toContain("/customers/cus_1");
+  });
+
+  it("paginates Stripe invoices independently from settled charges", async () => {
+    fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: "in_1" }], has_more: true }) });
+    const page = await fetchStripeInvoicesPage({ STRIPE_SECRET_KEY: "sk_test" }, null, 25);
+    expect(page).toEqual({ invoices: [{ id: "in_1" }], nextCursor: "in_1" });
+    expect(fetch.mock.calls[0][0]).toContain("/invoices?");
   });
 });

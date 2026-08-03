@@ -10,12 +10,13 @@ import {
   upsertClientNote,
   upsertClientTask,
   upsertStripeCharge,
+  upsertStripeInvoice,
   upsertCommunicationEvent,
   upsertCommunicationThread,
   ensureCommunicationThread,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer } from "./providers.js";
+import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -247,6 +248,39 @@ export async function syncStripe(env, limit, now) {
   return outcome;
 }
 
+// Invoices are a separate source stream from settled charges. They provide
+// invoice status and balance context in Client Desk, without treating an
+// invoice as a payment or inferring a contact from billing email.
+export async function syncStripeInvoices(env, limit, now) {
+  const cursorKey = "stripe-invoices";
+  const cursorBefore = await getSyncCursor(env.CRM_DB, cursorKey);
+  const runId = await beginSyncRun(env.CRM_DB, "stripe", `invoices:${cursorBefore || "start"}`, now);
+  const outcome = result();
+  try {
+    const page = await fetchStripeInvoicesPage(env, cursorBefore, limit);
+    for (const rawInvoice of page.invoices) {
+      outcome.recordsRead += 1;
+      const invoice = normalizeStripeInvoice(rawInvoice);
+      if (!invoice) {
+        outcome.recordsSkipped += 1;
+        continue;
+      }
+      const upserted = await upsertStripeInvoice(env.CRM_DB, invoice, now);
+      outcome.recordsWritten += 1;
+      if (!upserted.linked) outcome.recordsSkipped += 1;
+    }
+    outcome.cursorAfter = page.nextCursor;
+    outcome.status = page.nextCursor ? "partial" : "succeeded";
+    await setSyncCursor(env.CRM_DB, cursorKey, page.nextCursor, now);
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
+
 export async function syncRequestedProviders(env, sources, limit, now, pages = 8) {
   const selected = new Set(sources);
   const results = {};
@@ -268,6 +302,7 @@ export async function syncRequestedProviders(env, sources, limit, now, pages = 8
     }
   }
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
+  if (selected.has("stripe-invoices")) results.stripeInvoices = await syncStripeInvoices(env, limit, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;
 }
@@ -301,6 +336,7 @@ export async function runScheduledSync(env, now) {
   for (const [provider, sync, limit] of [
     ["ghl", syncGhl, SCHEDULED_SYNC_LIMIT],
     ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],
+    ["stripe-invoices", syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
     ["ghl-client-records", backfillGhlClientRecords, 10],
   ]) {
     try {

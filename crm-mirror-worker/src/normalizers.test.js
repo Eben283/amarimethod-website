@@ -7,6 +7,7 @@ import {
   normalizeGhlNote,
   normalizeGhlTask,
   normalizeStripeCharge,
+  normalizeStripeInvoice,
   normalizedPhone,
 } from "./normalizers.js";
 
@@ -89,5 +90,18 @@ describe("CRM mirror normalizers", () => {
     });
     expect(normalizeStripeCharge({ id: "ch_2", paid: false, status: "failed" })).toBeNull();
     expect(normalizedPhone("not a phone")).toBe("not a phone");
+  });
+
+  it("normalizes Stripe invoices as record context without treating them as payments", () => {
+    expect(normalizeStripeInvoice({
+      id: "in_1", customer: "cus_1", payment_intent: "pi_1", number: "AMARI-001",
+      description: "Practice membership", status: "open", collection_method: "send_invoice",
+      amount_due: 34700, amount_paid: 0, amount_remaining: 34700, currency: "usd",
+      created: 1_700_000_000, due_date: 1_700_086_400, metadata: { contactId: "ghl_1" },
+    })).toMatchObject({
+      externalId: "in_1", contactExternalId: "ghl_1", customerExternalId: "cus_1",
+      paymentIntentExternalId: "pi_1", invoiceNumber: "AMARI-001", providerStatus: "open",
+      amountDueCents: 34700, amountPaidCents: 0, amountRemainingCents: 34700,
+    });
   });
 });

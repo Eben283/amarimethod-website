@@ -228,3 +228,37 @@ export function normalizeStripeCharge(raw) {
     packageId: classification.label ? PACKAGE_IDS[classification.label] || null : null,
   };
 }
+
+function stripeId(value) {
+  return text(typeof value === "object" ? value?.id : value);
+}
+
+// Invoices are useful client-record context even when they are open, void, or
+// uncollectible. They are not treated as payment evidence: settled Stripe
+// charges remain the money source of truth in the existing purchases table.
+export function normalizeStripeInvoice(raw) {
+  const externalId = text(raw?.id);
+  if (!externalId) return null;
+  const createdAt = Number.isFinite(raw?.created) ? new Date(raw.created * 1000).toISOString() : null;
+  const dueAt = Number.isFinite(raw?.due_date) ? new Date(raw.due_date * 1000).toISOString() : null;
+  const paidAt = Number.isFinite(raw?.status_transitions?.paid_at)
+    ? new Date(raw.status_transitions.paid_at * 1000).toISOString()
+    : null;
+  return {
+    externalId,
+    contactExternalId: text(raw?.metadata?.contactId),
+    customerExternalId: stripeId(raw?.customer),
+    paymentIntentExternalId: stripeId(raw?.payment_intent),
+    invoiceNumber: text(raw?.number),
+    description: text(raw?.description),
+    providerStatus: text(raw?.status)?.toLowerCase() || "unknown",
+    collectionMethod: text(raw?.collection_method),
+    amountDueCents: Number.isInteger(raw?.amount_due) ? raw.amount_due : 0,
+    amountPaidCents: Number.isInteger(raw?.amount_paid) ? raw.amount_paid : 0,
+    amountRemainingCents: Number.isInteger(raw?.amount_remaining) ? raw.amount_remaining : 0,
+    currency: text(raw?.currency)?.toLowerCase() || "usd",
+    issuedAt: createdAt,
+    dueAt,
+    paidAt,
+  };
+}

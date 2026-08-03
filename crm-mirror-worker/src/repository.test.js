@@ -170,6 +170,7 @@ describe("CRM mirror client profiles", () => {
         { results: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }] },
         { results: [{ direction: "inbound", body_clean: "Can we reschedule?" }] },
         { results: [{ classification: "8-Session Series" }] },
+        { results: [{ invoice_number: "AMARI-001", provider_status: "open", amount_due_cents: 34700 }] },
         { results: [{ body: "Call before next session" }] },
         { results: [{ title: "Follow up", status: "open" }] },
         { results: [{ channel: "sms", state: "granted" }] },
@@ -178,6 +179,7 @@ describe("CRM mirror client profiles", () => {
     };
     await expect(contactProfile(profileDb, "contact_1", 25, "2026-07-26T00:00:00.000Z")).resolves.toMatchObject({
       contact: { id: "contact_1", display_name: "Eben" },
+      invoices: [{ invoice_number: "AMARI-001", provider_status: "open", amount_due_cents: 34700 }],
       tags: ["client"],
       roles: ["client"],
       importedCurrentState: { sessions_remaining: "3", series_type: "8-session" },
