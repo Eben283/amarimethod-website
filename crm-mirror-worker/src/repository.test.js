@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
 
 describe("CRM mirror absent GHL contacts", () => {
   it("removes external_records for contacts confirmed deleted in GHL", async () => {
@@ -150,7 +150,20 @@ describe("CRM mirror historical package classification", () => {
 });
 
 describe("CRM mirror client profiles", () => {
+  it("keeps known machine-status traffic out of the client inbox", async () => {
+    const calls = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => { calls.push({ sql, values }); return { results: [] }; } }) }),
+    };
+    await expect(communicationsInbox(db, { limit: 25 })).resolves.toEqual([]);
+    expect(calls[0].sql).toContain("NOT EXISTS");
+    expect(calls[0].sql).toContain("UPPER(TRIM(COALESCE(operational_event.body_clean, ''))) LIKE 'OPS-%'");
+    expect(calls[0].sql).toContain("%local codex exit%");
+    expect(calls[0].sql).toContain("%github branch-creation%");
+  });
+
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {
+    const profileQueries = [];
     const searchDb = {
       prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ id: "contact_1", display_name: "Eben" }] }) }) }),
     };
@@ -158,7 +171,7 @@ describe("CRM mirror client profiles", () => {
     await expect(searchContacts(searchDb, null, 25)).resolves.toEqual([]);
 
     const profileDb = {
-      prepare: () => ({ bind: () => ({}) }),
+      prepare: (sql) => { profileQueries.push(sql); return { bind: () => ({}) }; },
       batch: async () => [
         { results: [{ id: "contact_1", display_name: "Eben" }] },
         { results: [{ tag: "client" }] },
@@ -192,6 +205,7 @@ describe("CRM mirror client profiles", () => {
       consents: [{ channel: "sms", state: "granted" }],
       activityTimeline: [{ activity_type: "message", body: "Can we reschedule?" }],
     });
+    expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).toContain("NOT (\n    UPPER(TRIM(COALESCE(event.body_clean, ''))) LIKE 'OPS-%'");
   });
 
   it("returns a bounded client directory with the latest communication only", async () => {

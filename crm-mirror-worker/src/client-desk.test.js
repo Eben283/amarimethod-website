@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
+  it("identifies the desk as a client inbox rather than an operations-message view", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("Known operations-status traffic stays out of this inbox.");
+    expect(html).toContain("selected client record beside them");
+  });
+
   it("renders separate Stripe invoice context without calling an invoice a payment", () => {
     const html = clientDeskHtml();
     expect(html).toContain("<h3>Invoices</h3>");

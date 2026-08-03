@@ -8,6 +8,19 @@ const GHL_FIELD_IDS = Object.freeze({
   seriesType: "3i93lTkmuAV49s9nh0q8",
 });
 
+// The Client Desk is a client workspace, not an operations-message inbox.
+// Keep this narrow: only known machine-status markers are excluded. We do not
+// infer that a conversation is internal from a person's name, email, or
+// generic words such as "automation", which could hide a legitimate client.
+function operationalMessageSql(event = "event") {
+  const text = `LOWER(COALESCE(${event}.subject, '') || char(10) || COALESCE(${event}.body_clean, ''))`;
+  return `(
+    UPPER(TRIM(COALESCE(${event}.body_clean, ''))) LIKE 'OPS-%'
+    OR ${text} LIKE '%local codex exit%'
+    OR ${text} LIKE '%github branch-creation%'
+  )`;
+}
+
 export async function beginSyncRun(db, provider, cursorBefore, now) {
   const runId = id();
   await db.prepare(
@@ -671,8 +684,13 @@ export async function clientDeskContacts(db, { query = null, limit = 50, scope =
 export async function communicationsInbox(db, { query = null, limit = 50 } = {}) {
   const values = [];
   const filters = [
-    "COALESCE(thread.last_preview, '') NOT LIKE 'OPS-%'",
+    "UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'",
     "lower(COALESCE(contact.email_normalized, '')) <> 'eben@ebenforrest.com'",
+    `NOT EXISTS (
+      SELECT 1 FROM communication_events operational_event
+      WHERE operational_event.thread_id = thread.id
+        AND ${operationalMessageSql("operational_event")}
+    )`,
   ];
   if (query) {
     const pattern = likePattern(query);
@@ -747,7 +765,7 @@ export async function contactProfile(db, contactId, limit, now) {
               COALESCE(event.subject, event.body_clean) AS subject_or_preview
        FROM communication_events event
        LEFT JOIN communication_threads thread ON thread.id = event.thread_id
-       WHERE event.contact_id = ?
+       WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
        ORDER BY datetime(event.occurred_at) DESC, event.id DESC
        LIMIT ?`,
     ).bind(contactId, limit),
@@ -802,7 +820,7 @@ export async function contactProfile(db, contactId, limit, now) {
                 event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
                 NULL AS amount_cents, NULL AS currency
          FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
-         WHERE event.contact_id = ?
+         WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
          UNION ALL
          SELECT 'appointment', appointment.starts_at, NULL, NULL, NULL, NULL, NULL,
                 appointment.status, COALESCE(service.name, 'Appointment'), NULL, NULL
