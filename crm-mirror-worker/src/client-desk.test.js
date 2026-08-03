@@ -45,6 +45,17 @@ describe("Client Desk message rendering", () => {
     expect(rendered).not.toContain("Activate access");
   });
 
+  it("cleans inbox previews without changing the underlying message record", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { cleanMessage }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const preview = helpers.cleanMessage(".ProseMirror > p {margin: 0px;} Hi there https://link.amarimethod.com/track?private=token If you no longer wish to receive these emails unsubscribe");
+    expect(preview).toBe("Hi there [Amari link]");
+  });
+
   it("renders email destinations as safe labelled links", () => {
     const html = clientDeskHtml();
     for (const label of ["Upgrade to 4 sessions", "Upgrade to 8 sessions", "Share feedback", "Book a session", "Visit Amari Method", "Unsubscribe", "Open link"]) {
