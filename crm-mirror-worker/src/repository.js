@@ -836,9 +836,10 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
   return result.results || [];
 }
 
-// Read-only queue for staff to see which records still lack channel-specific,
-// auditable consent evidence. It intentionally contains no action to change a
-// source record or treat an email address/DND-off as permission.
+// Read-only queue for staff to see which records have no channel-specific
+// evidence. It intentionally contains no action to change a source record.
+// Per the approved delivery policy, "unknown" is eligible only when the
+// channel is otherwise usable and has no explicit DND/opt-out block.
 export async function consentReviewQueue(db, limit) {
   const currentConsent = `
     WITH ranked AS (

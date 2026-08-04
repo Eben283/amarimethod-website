@@ -1,5 +1,10 @@
 // Provider-neutral sender boundary. It is deliberately shadow-only: no
 // credentials are read here and this module contains no provider network call.
+//
+// Amari policy (approved 2026-08-04): a contact is eligible for an individual
+// staff communication unless that channel has an explicit opt-out / DND block.
+// An absent historical opt-in is not itself a block. This does not override
+// provider suppressions, legal requirements, or the shadow-mode delivery gate.
 export const OWNED_DELIVERY_MODE = "shadow";
 
 export const DELIVERY_PROVIDERS = Object.freeze({
@@ -26,7 +31,7 @@ export function deliveryReadiness() {
       configured: provider.configured,
       deliveryEnabled: false,
     })),
-    safeguards: ["staff session", "explicit consent", "DND check", "immutable audit", "separate activation approval"],
+    safeguards: ["staff session", "channel opt-out and DND check", "immutable audit", "provider suppression check", "separate activation approval"],
   };
 }
 
@@ -36,7 +41,7 @@ export function evaluateDeliveryEligibility({ contact, consents, channel, dnd })
   const consentState = latestConsent(consents, channel);
   const reasons = [];
   if (!destination) reasons.push("missing_destination");
-  if (consentState !== "granted") reasons.push("explicit_consent_required");
+  if (consentState === "revoked") reasons.push("channel_opted_out");
   if (normalizedDnd(dnd)) reasons.push("do_not_disturb");
   return {
     channel,
