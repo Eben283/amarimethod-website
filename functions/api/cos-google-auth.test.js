@@ -24,7 +24,7 @@ function context({ request, env = {} } = {}) {
 }
 
 describe("POST /api/cos-google-auth", () => {
-  it("creates a signed-in Eben-only, one-time Google Calendar consent URL", async () => {
+  it("creates a signed-in Eben-only, one-time Google Workspace consent URL", async () => {
     const auth = await token({ role: "cos", user: "Eben", exp: Date.now() + 60_000 });
     const ctx = context({
       request: new Request("https://www.amarimethod.com/api/cos-google-auth", {
@@ -39,7 +39,7 @@ describe("POST /api/cos-google-auth", () => {
     const url = new URL(authorizationUrl);
     expect(url.origin).toBe("https://accounts.google.com");
     expect(url.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/cos-google-callback");
-    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar");
+    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send");
     expect(url.searchParams.get("state")).toHaveLength(64);
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith(
       `cos:google-oauth:${url.searchParams.get("state")}`,
