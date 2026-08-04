@@ -104,6 +104,10 @@
   .staff-home__wordmark i { width: 9px; height: 9px; border-radius: 50%; background: #e48769; box-shadow: 13px 0 0 #d7a63f; }
   .staff-home__masthead h1 { margin: 14px 0 0; color: #19343d; font-size: clamp(2.35rem, 11vw, 3.25rem); font-weight: 400; letter-spacing: -.055em; line-height: .92; }
   .staff-home__masthead p { margin: 12px 0 0; color: #64777d; font-size: 14px; }
+  .staff-ops-alert-note { margin: -11px 0 22px; padding: 13px 15px; border: 1px solid #c6d7d5; border-radius: 15px; background: #eef4f0; color: #486568; }
+  .staff-ops-alert-note > span { display: block; color: #52747c; font: 700 9px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
+  .staff-ops-alert-note p { margin: 7px 0 0; font-size: 12px; line-height: 1.45; }
+  .staff-ops-alert-note strong { color: #254c52; font-weight: 700; }
   .staff-session-door { margin: 0 0 30px; border-radius: 24px; background: #19343d; box-shadow: 0 11px 23px rgba(25,52,61,.18); overflow: hidden; }
   .staff-session-door button { display: flex; width: 100%; min-height: 132px; flex-direction: column; align-items: flex-start; padding: 18px 20px; border: 0; background: transparent; color: white; text-align: left; transition: background 180ms ease, transform 180ms ease; }
   .staff-session-door button:active { transform: scale(.985); }

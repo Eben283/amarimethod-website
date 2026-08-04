@@ -166,6 +166,11 @@ export default function HomePage() {
         <p>Choose a work area.</p>
       </header>
 
+      <aside className="staff-ops-alert-note" aria-label="Operations text alerts">
+        <span>Ops alerts</span>
+        <p>You’ll get a text when a monitored system needs attention or recovers. Text <strong>OPS</strong> to <strong>(628) 600-0806</strong> for the command menu.</p>
+      </aside>
+
       <section className="staff-session-door" aria-label="Session access">
         {sessionLoading ? (
           <div className="staff-session-door__loading"><Loader2 aria-hidden="true" /> Finding today’s session…</div>
