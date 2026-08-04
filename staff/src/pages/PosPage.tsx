@@ -25,14 +25,14 @@ import "./PosPage.css";
 const CATALOG = [
   ["12-week-practice", "12-Week Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
   ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
-  ["8-session-series", "8-session series", 129500, "Series", "Series"],
-  ["4-session-series", "4-session series", 72000, "Series", "Series"],
+  ["8-session-series", "8-session series", 129500, "Founders Circle", "Series"],
+  ["4-session-series", "4-session series", 72000, "Founders Circle", "Series"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
-  ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],
+  ["follow-up", "Single follow-up", 19000, "Founders Circle", "Follow-up session"],
   ["upgrade-initial-to-4", "Initial → 4-session", 49500, "Founders Circle", "Legacy continuation price"],
   ["upgrade-initial-to-8", "Initial → 8-session", 107000, "Founders Circle", "Legacy continuation price"],
   ["upgrade-4-to-8", "4 → 8-session", 57500, "Founders Circle", "Legacy continuation price"],
-  ["entrainment", "Entrainment", 9000, "Upgrades", "Add-on"],
+  ["entrainment", "Entrainment", 9000, "Founders Circle", "Add-on"],
   ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],
 ] as const;
 
@@ -129,7 +129,7 @@ export default function PosPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [panel, setPanel] = useState<Panel>(null);
-  const [category, setCategory] = useState<CatalogGroup>("Series");
+  const [category, setCategory] = useState<CatalogGroup>("Founders Circle");
   const [client, setClient] = useState<PosClient | null>(null);
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
@@ -863,25 +863,13 @@ export default function PosPage() {
                 <strong>Assessment</strong>
                 <small>{money(2900)}</small>
               </button>
-              <button type="button" className="pos-tile pos-tile--series" onClick={() => openCategory("Series")}>
-                <strong>Series</strong>
-                <small>4- and 8-session</small>
-              </button>
               <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("Upgrades")}>
                 <strong>Upgrades</strong>
-                <small>Entrainment & Living Practice</small>
+                <small>Living Practice</small>
               </button>
               <button type="button" className="pos-tile pos-tile--founders" onClick={() => openCategory("Founders Circle")}>
                 <strong>Founders Circle</strong>
-                <small>Legacy continuation prices</small>
-              </button>
-              <button
-                type="button"
-                className="pos-tile pos-tile--sessions"
-                onClick={() => openCategory("Single sessions")}
-              >
-                <strong>Single sessions</strong>
-                <small>Follow-up sessions</small>
+                <small>Series, follow-ups & legacy prices</small>
               </button>
             </div>
           </div>
