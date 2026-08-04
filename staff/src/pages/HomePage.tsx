@@ -210,6 +210,11 @@ export default function HomePage() {
           <p>Resources</p>
           <span>Reference materials</span>
         </header>
+        <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/current-amari-positioning.md" target="_blank" rel="noreferrer">
+          <span className="staff-resources__icon"><BookOpen aria-hidden="true" /></span>
+          <span className="staff-resources__copy"><strong>Current Amari Positioning</strong><small>Four Lines + Practice V2 · opens in a new tab</small></span>
+          <ArrowUpRight aria-hidden="true" />
+        </a>
         <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
           <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
           <span className="staff-resources__copy"><strong>$5,400 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
