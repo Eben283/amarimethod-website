@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   upsertGhlContact: vi.fn(async (_db, contact) => `owned_${contact.externalId}`),
   upsertClientNote: vi.fn(async () => {}),
   upsertClientTask: vi.fn(async () => {}),
+  recordConsentObservation: vi.fn(async () => ({ inserted: true })),
+  backfillNativeBookingConsents: vi.fn(async () => ({ recordsRead: 0, recordsWritten: 0 })),
   upsertStripeCharge: vi.fn(),
   upsertStripeInvoice: vi.fn(async () => ({ linked: true })),
   upsertCommunicationEvent: vi.fn(),
@@ -36,6 +38,7 @@ vi.mock("./repository.js", () => ({
   listGhlContactExternalIds: mocks.listGhlContactExternalIds, setSyncCursor: mocks.setSyncCursor,
   upsertGhlAppointment: mocks.upsertGhlAppointment, upsertGhlContact: mocks.upsertGhlContact,
   upsertClientNote: mocks.upsertClientNote, upsertClientTask: mocks.upsertClientTask,
+  recordConsentObservation: mocks.recordConsentObservation, backfillNativeBookingConsents: mocks.backfillNativeBookingConsents,
   upsertStripeCharge: mocks.upsertStripeCharge, upsertStripeInvoice: mocks.upsertStripeInvoice, upsertCommunicationEvent: mocks.upsertCommunicationEvent,
   upsertCommunicationThread: mocks.upsertCommunicationThread, ensureCommunicationThread: mocks.ensureCommunicationThread,
 }));
@@ -49,7 +52,7 @@ vi.mock("./providers.js", () => ({
 vi.mock("./normalizers.js", () => ({
   normalizeGhlAppointment: (value) => value, normalizeGhlContact: (value) => value,
   normalizeGhlConversation: (value) => value, normalizeGhlMessage: (value) => value,
-  normalizeGhlNote: (value) => value, normalizeGhlTask: (value) => value,
+  normalizeGhlNote: (value) => value, normalizeGhlTask: (value) => value, nativeBookingConsentObservations: () => [],
   normalizeStripeCharge: (value) => value, normalizeStripeInvoice: (value) => value, normalizedEmail: (value) => value,
 }));
 vi.mock("../../functions/lib/ops-last-run.js", () => ({

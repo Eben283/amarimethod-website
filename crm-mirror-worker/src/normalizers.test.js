@@ -6,6 +6,7 @@ import {
   normalizeGhlMessage,
   normalizeGhlNote,
   normalizeGhlTask,
+  nativeBookingConsentObservations,
   normalizeStripeCharge,
   normalizeStripeInvoice,
   normalizedPhone,
@@ -73,6 +74,14 @@ describe("CRM mirror normalizers", () => {
       .toMatchObject({ externalId: "note_1", body: "Prefers afternoon appointments.", authoredBy: "Garrett" });
     expect(normalizeGhlTask({ taskId: "task_1", title: "Call before next session", status: "completed", dueDate: "2026-08-05T17:00:00Z", completedAt: "2026-08-04T17:00:00Z" }))
       .toMatchObject({ externalId: "task_1", title: "Call before next session", status: "completed", dueAt: "2026-08-05T17:00:00Z" });
+  });
+
+  it("extracts only explicit native-booking communications choices", () => {
+    expect(nativeBookingConsentObservations({ externalId: "note_1", createdAt: "2026-08-04T10:00:00Z", body: "Native booking flow\nCommunications consent: yes" }))
+      .toEqual(expect.arrayContaining([expect.objectContaining({ channel: "email", state: "granted", source: "ghl_native_booking_note", evidenceRef: "note_1" }), expect.objectContaining({ channel: "sms", state: "granted", source: "ghl_native_booking_note", evidenceRef: "note_1" })]));
+    expect(nativeBookingConsentObservations({ externalId: "note_2", body: "Native booking flow\nCommunications consent: no (optional, declined)" }))
+      .toEqual(expect.arrayContaining([expect.objectContaining({ channel: "email", state: "revoked" }), expect.objectContaining({ channel: "sms", state: "revoked" })]));
+    expect(nativeBookingConsentObservations({ externalId: "note_3", body: "A client has an email address." })).toEqual([]);
   });
 
   it("imports only settled Stripe charges and never guesses unknown packages", () => {
