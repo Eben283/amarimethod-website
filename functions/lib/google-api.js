@@ -140,7 +140,7 @@ async function refreshGoogleToken(context, user, refreshToken) {
  * @param {number} minutesFromNow - When the event should be (minutes from now)
  * @param {number} reminderMinutes - Reminder before event (default 10)
  * @param {string} description - Optional event description
- * @returns {object} Created event data or null
+ * @returns {object} Created event data, or { error } when Google rejects it
  */
 export async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
   try {
@@ -182,7 +182,7 @@ export async function createCalendarReminder(context, user, title, minutesFromNo
 
     if (!response.ok) {
       console.error("[google] Calendar event create failed:", response.status);
-      return null;
+      return { error: `Google Calendar rejected the reminder (HTTP ${response.status})`, status: response.status };
     }
 
     const data = await response.json();
@@ -194,7 +194,7 @@ export async function createCalendarReminder(context, user, title, minutesFromNo
     };
   } catch (err) {
     console.error("[google] Calendar reminder error:", err.message);
-    return null;
+    return { error: "Google Calendar is not connected. Reconnect it, then try again.", status: 0 };
   }
 }
 

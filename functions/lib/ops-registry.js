@@ -427,6 +427,16 @@ export const OPS_REGISTRY = Object.freeze([
     instrumentation: "full",
   }),
   Object.freeze({
+    id: "github_actions",
+    label: "GitHub Actions · day-write",
+    kind: "dependency",
+    severity: OPS_SEVERITY.INFRA,
+    group: "infra",
+    hops: Object.freeze([]),
+    laws: Object.freeze([]),
+    instrumentation: "full",
+  }),
+  Object.freeze({
     id: "ops_monitor",
     label: "Operations monitor",
     kind: "dependency",

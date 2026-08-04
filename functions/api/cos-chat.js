@@ -1207,6 +1207,7 @@ export async function onRequestPost(context) {
       const reminders = parseReminders(fullContent);
       const spotifyActions = parseSpotifyActions(fullContent);
       const cleanContent = stripSpotify(stripReminders(stripContext(stripActions(fullContent))));
+      const calendarFailures = [];
 
       // Save conversation to KV
       conversation.messages.push({ role: "assistant", content: cleanContent, timestamp: Date.now() });
@@ -1254,6 +1255,10 @@ export async function onRequestPost(context) {
               30,
               description
             );
+            if (created?.error) {
+              calendarFailures.push(created.error);
+              console.error("[cos-chat] Calendar reminder was not created:", created.error);
+            }
             if (isParking && kv && created && created.id) {
               await kv.put(
                 parkingKey,
@@ -1288,6 +1293,13 @@ export async function onRequestPost(context) {
         }
 
         await Promise.all(kvWrites);
+      }
+
+      if (calendarFailures.length > 0) {
+        await writer.write(encoder.encode(`data: ${JSON.stringify({
+          type: "chunk",
+          text: "\n\n⚠ I could not create the Google Calendar reminder. Reconnect Google Calendar, then try again.",
+        })}\n\n`));
       }
 
       // Send done event with parsed actions
