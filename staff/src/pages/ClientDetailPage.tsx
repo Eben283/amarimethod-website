@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus,
+  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
-import type { ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
+import type { ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
@@ -17,6 +17,7 @@ import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
 import { studyFromTags } from '../data/studies';
+import { isEditableStaffNote, isSystemNote } from '../../../shared/staff-note-policy.js';
 import '../styles/session-a.css';
 
 // Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
@@ -51,26 +52,6 @@ const PAYMENT_PILL: Record<PaymentStatus, { label: string; bg: string; fg: strin
   unknown: null,
 };
 
-// Returns true for system-generated notes that should never surface in the client sheet.
-// Only Garrett's manually-written notes belong here.
-function isSystemNote(body: string): boolean {
-  const t = body.trim();
-  return (
-    /^migrat/i.test(t) ||
-    /^\[?reconciliation/i.test(t) ||
-    /^outcome:/i.test(t) ||
-    /^touch:/i.test(t) ||
-    /^skip:/i.test(t) ||
-    /^enrichment/i.test(t) ||
-    /^audit/i.test(t) ||
-    /^correction/i.test(t) ||
-    /^ip:/i.test(t) ||
-    /^user.?agent:/i.test(t) ||
-    /captured at:/i.test(t) ||
-    /^next: customer redirected/i.test(t)
-  );
-}
-
 // A note body can carry an embedded signature as a base64 <img> (the policy-attestation
 // flow does this). Pull the image out so it renders as an actual small image, and strip
 // the raw <img>/base64 markup from the text so we don't dump a wall of base64.
@@ -96,6 +77,7 @@ export default function ClientDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
+  const [editingNote, setEditingNote] = useState<ContactNote | null>(null);
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
   // Per-session payment capture: which appointment's "how was this paid?"
@@ -551,7 +533,7 @@ export default function ClientDetailPage() {
                   const nb = splitNoteBody(n.body);
                   return (
                     <div key={n.id} className="sa-note">
-                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span></div>
+                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span>{isEditableStaffNote(n.body) && <button type="button" className="sa-note-edit" onClick={() => setEditingNote(n)} aria-label="Edit note"><Pencil size={13} /> Edit</button>}</div>
                       {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
                       {nb.signature && (
                         <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
@@ -728,6 +710,14 @@ export default function ClientDetailPage() {
           contactId={client.id}
           onClose={() => setShowAddNote(false)}
           onSaved={() => { setShowAddNote(false); loadClient(); }}
+        />
+      )}
+      {editingNote && (
+        <AddNoteModal
+          contactId={client.id}
+          note={editingNote}
+          onClose={() => setEditingNote(null)}
+          onSaved={() => { setEditingNote(null); loadClient(); }}
         />
       )}
     </div>

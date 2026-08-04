@@ -100,6 +100,13 @@ export async function addNote(contactId: string, body: string): Promise<{ succes
   });
 }
 
+export async function updateNote(contactId: string, noteId: string, body: string): Promise<{ success: boolean }> {
+  return fetchApi('/staff-note', {
+    method: 'PUT',
+    body: JSON.stringify({ contactId, noteId, body }),
+  });
+}
+
 export interface MarkAttendedResult {
   success: boolean;
   alreadyAttended: boolean;
