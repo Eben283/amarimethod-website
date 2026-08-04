@@ -291,6 +291,61 @@ export async function upsertClientNote(db, note, contactId, now) {
   return noteId;
 }
 
+// Consent evidence is append-only. The source note ID makes a webhook retry or
+// repeat backfill harmless while retaining the original GHL evidence reference.
+export async function recordConsentObservation(db, observation, contactId, now) {
+  const existing = await db.prepare(
+    `SELECT id FROM consents
+     WHERE contact_id = ? AND channel = ? AND source = ? AND evidence_ref = ?`,
+  ).bind(contactId, observation.channel, observation.source, observation.evidenceRef).first();
+  if (existing?.id) return { id: existing.id, inserted: false };
+  const consentId = id();
+  await db.prepare(
+    `INSERT INTO consents
+     (id, contact_id, channel, state, effective_at, source, evidence_ref, recorded_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'crm_mirror')`,
+  ).bind(
+    consentId,
+    contactId,
+    observation.channel,
+    observation.state,
+    observation.effectiveAt || now,
+    observation.source,
+    observation.evidenceRef,
+  ).run();
+  return { id: consentId, inserted: true };
+}
+
+// Project existing, auditable native-booking notes into the owned ledger. This
+// makes no source-provider call or write, and a missing choice remains unknown.
+export async function backfillNativeBookingConsents(db, now) {
+  const result = await db.prepare(
+    `SELECT contact_id, provider_note_id, body, created_at
+     FROM client_notes
+     WHERE lower(body) LIKE '%native booking flow%'
+       AND lower(body) LIKE '%communications consent:%'`,
+  ).all();
+  let recordsRead = 0;
+  let recordsWritten = 0;
+  for (const row of result.results || []) {
+    recordsRead += 1;
+    const matched = String(row.body || "").match(/communications consent:\s*(yes|no\s*\(optional,\s*declined\))/i);
+    if (!matched || !row.provider_note_id) continue;
+    const state = matched[1].toLowerCase() === "yes" ? "granted" : "revoked";
+    for (const channel of ["email", "sms"]) {
+      const recorded = await recordConsentObservation(db, {
+        channel,
+        state,
+        source: "ghl_native_booking_note",
+        evidenceRef: row.provider_note_id,
+        effectiveAt: row.created_at,
+      }, row.contact_id, now);
+      if (recorded.inserted) recordsWritten += 1;
+    }
+  }
+  return { recordsRead, recordsWritten };
+}
+
 export async function deleteClientNote(db, providerNoteId) {
   await db.prepare("DELETE FROM client_notes WHERE provider_note_id = ?").bind(providerNoteId).run();
 }

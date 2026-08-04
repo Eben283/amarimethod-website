@@ -192,6 +192,24 @@ export function normalizeGhlNote(raw) {
   };
 }
 
+// Native booking stores the optional communications choice in a GHL audit note.
+// DND and a present email/phone are never interpreted as a grant.
+export function nativeBookingConsentObservations(note) {
+  const body = text(note?.body);
+  const evidenceRef = text(note?.externalId);
+  if (!body || !evidenceRef || !/native booking flow/i.test(body)) return [];
+  const matched = body.match(/communications consent:\s*(yes|no\s*\(optional,\s*declined\))/i);
+  if (!matched) return [];
+  const state = matched[1].toLowerCase() === "yes" ? "granted" : "revoked";
+  return ["email", "sms"].map((channel) => ({
+    channel,
+    state,
+    source: "ghl_native_booking_note",
+    evidenceRef,
+    effectiveAt: text(note?.createdAt) || null,
+  }));
+}
+
 export function normalizeGhlTask(raw) {
   const externalId = text(raw?.id || raw?.taskId);
   const title = cleanMessage(raw?.title || raw?.name || raw?.body || raw?.description);

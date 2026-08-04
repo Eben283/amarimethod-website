@@ -26,8 +26,9 @@ import {
   upsertGhlContact,
   upsertClientNote,
   upsertClientTask,
+  recordConsentObservation,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
+import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 
@@ -96,7 +97,12 @@ async function processGhlWebhook(request, env) {
       return json(200, { accepted: true, projected: Boolean(noteId) });
     }
     const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
-    if (contactId && note) await upsertClientNote(env.CRM_DB, note, contactId, now);
+    if (contactId && note) {
+      await upsertClientNote(env.CRM_DB, note, contactId, now);
+      for (const observation of nativeBookingConsentObservations(note)) {
+        await recordConsentObservation(env.CRM_DB, observation, contactId, now);
+      }
+    }
     return json(200, { accepted: true, projected: Boolean(contactId && note) });
   }
   if (["TaskCreate", "TaskComplete", "TaskDelete"].includes(payload.type) && data.contactId) {
@@ -158,7 +164,7 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices"))];
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
   if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;

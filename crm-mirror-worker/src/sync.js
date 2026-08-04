@@ -9,13 +9,15 @@ import {
   upsertGhlContact,
   upsertClientNote,
   upsertClientTask,
+  backfillNativeBookingConsents,
+  recordConsentObservation,
   upsertStripeCharge,
   upsertStripeInvoice,
   upsertCommunicationEvent,
   upsertCommunicationThread,
   ensureCommunicationThread,
 } from "./repository.js";
-import { normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
+import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
@@ -176,6 +178,10 @@ export async function backfillGhlClientRecords(env, requestedLimit, now) {
         if (!note) { outcome.recordsSkipped += 1; continue; }
         await upsertClientNote(env.CRM_DB, note, contactId, now);
         outcome.recordsWritten += 1;
+        for (const observation of nativeBookingConsentObservations(note)) {
+          const recorded = await recordConsentObservation(env.CRM_DB, observation, contactId, now);
+          if (recorded.inserted) outcome.recordsWritten += 1;
+        }
       }
       for (const rawTask of rawTasks) {
         const task = normalizeGhlTask(rawTask);
@@ -195,6 +201,11 @@ export async function backfillGhlClientRecords(env, requestedLimit, now) {
   await finishSyncRun(env.CRM_DB, runId, outcome, now);
   if (outcome.status === "failed") throw new Error(outcome.failureDetail);
   return outcome;
+}
+
+export async function syncNativeBookingConsents(env, now) {
+  const details = await backfillNativeBookingConsents(env.CRM_DB, now);
+  return { ...result("succeeded"), ...details, cursorAfter: "owned-notes" };
 }
 
 export async function syncStripe(env, limit, now) {
@@ -303,6 +314,7 @@ export async function syncRequestedProviders(env, sources, limit, now, pages = 8
   }
   if (selected.has("stripe")) results.stripe = await syncStripe(env, limit, now);
   if (selected.has("stripe-invoices")) results.stripeInvoices = await syncStripeInvoices(env, limit, now);
+  if (selected.has("consents")) results.consents = await syncNativeBookingConsents(env, now);
   await writeCrmMirrorLastRun(env, results, now);
   return results;
 }
@@ -338,6 +350,7 @@ export async function runScheduledSync(env, now) {
     ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],
     ["stripe-invoices", syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
     ["ghl-client-records", backfillGhlClientRecords, 10],
+    ["consents", syncNativeBookingConsents, 0],
   ]) {
     try {
       results[provider] = await sync(env, limit, now);
