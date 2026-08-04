@@ -29,6 +29,8 @@ describe("staff POS model", () => {
       amountCents: 2900,
       ghlProductId: "6a66cf0103821ea09ea13f1b",
     });
+    expect(POS_CATALOG["initial-in-person"]).toBeUndefined();
+    expect(POS_CATALOG["initial-virtual"]).toBeUndefined();
     expect(normalizeCart([{ productKey: "amari-assessment", quantity: 1 }])).toEqual([
       expect.objectContaining({
         kind: "catalog",
@@ -49,29 +51,29 @@ describe("staff POS model", () => {
   });
 
   it("requires payment allocations to equal the calculated cart total", () => {
-    expect(() => normalizePaymentLegs([{ method: "hsa-card", amountCents: 20000 }], 22500)).toThrow("must equal the sale total");
+    expect(() => normalizePaymentLegs([{ method: "hsa-card", amountCents: 18000 }], 19000)).toThrow("must equal the sale total");
     expect(normalizePaymentLegs([
       { method: "hsa-card", amountCents: 3000 },
-      { method: "checkout-link", amountCents: 19500 },
-    ], 22500)).toHaveLength(2);
+      { method: "checkout-link", amountCents: 16000 },
+    ], 19000)).toHaveLength(2);
     expect(buildPosSale({
       id: "pos_12345678",
       client: { id: "contact_12345678", name: "Jordan Lee", phone: "+15551234567" },
-      cart: [{ productKey: "initial-in-person" }],
-      paymentLegs: [{ method: "checkout-link", amountCents: 22500 }],
+      cart: [{ productKey: "follow-up" }],
+      paymentLegs: [{ method: "checkout-link", amountCents: 19000 }],
       reviewer: "Eben",
       now: "2026-07-27T12:00:00.000Z",
-    })).toMatchObject({ totalCents: 22500, status: "draft", version: 1 });
+    })).toMatchObject({ totalCents: 19000, status: "draft", version: 1 });
   });
 
   it("marks a sale paid only after every payment leg settles", () => {
     const sale = buildPosSale({
       id: "pos_abcdefgh",
       client: { id: "contact_abcdefgh", name: "Jordan Lee", email: "j@example.com" },
-      cart: [{ productKey: "initial-in-person" }],
+      cart: [{ productKey: "follow-up" }],
       paymentLegs: [
         { method: "hsa-card", amountCents: 10000 },
-        { method: "manual-card", amountCents: 12500 },
+        { method: "manual-card", amountCents: 9000 },
       ],
       reviewer: "Eben",
     });

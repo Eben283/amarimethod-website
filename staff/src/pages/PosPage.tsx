@@ -28,12 +28,10 @@ const CATALOG = [
   ["8-session-series", "8-session series", 129500, "Series", "Series"],
   ["4-session-series", "4-session series", 72000, "Series", "Series"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
-  ["initial-in-person", "Initial — in person", 22500, "Single sessions", "Single session"],
-  ["initial-virtual", "Initial — virtual", 22500, "Single sessions", "Single session"],
   ["follow-up", "Single follow-up", 19000, "Single sessions", "Single session"],
-  ["upgrade-initial-to-4", "Initial → 4 upgrade", 49500, "Upgrades", "Upgrade"],
-  ["upgrade-initial-to-8", "Initial → 8 upgrade", 107000, "Upgrades", "Upgrade"],
-  ["upgrade-4-to-8", "4 → 8 upgrade", 57500, "Upgrades", "Upgrade"],
+  ["upgrade-initial-to-4", "Initial → 4-session", 49500, "Founders Circle", "Legacy continuation price"],
+  ["upgrade-initial-to-8", "Initial → 8-session", 107000, "Founders Circle", "Legacy continuation price"],
+  ["upgrade-4-to-8", "4 → 8-session", 57500, "Founders Circle", "Legacy continuation price"],
   ["entrainment", "Entrainment", 9000, "Upgrades", "Add-on"],
   ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],
 ] as const;
@@ -871,7 +869,11 @@ export default function PosPage() {
               </button>
               <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("Upgrades")}>
                 <strong>Upgrades</strong>
-                <small>Continuation</small>
+                <small>Entrainment & Living Practice</small>
+              </button>
+              <button type="button" className="pos-tile pos-tile--founders" onClick={() => openCategory("Founders Circle")}>
+                <strong>Founders Circle</strong>
+                <small>Legacy continuation prices</small>
               </button>
               <button
                 type="button"
@@ -879,7 +881,7 @@ export default function PosPage() {
                 onClick={() => openCategory("Single sessions")}
               >
                 <strong>Single sessions</strong>
-                <small>Initials & follow-ups</small>
+                <small>Follow-up sessions</small>
               </button>
             </div>
           </div>
