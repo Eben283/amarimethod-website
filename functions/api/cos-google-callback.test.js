@@ -29,6 +29,9 @@ describe("GET /api/cos-google-callback", () => {
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/cos/?google=connected");
     expect(ctx.env.PORTAL_KV.delete).toHaveBeenCalledWith("cos:google-oauth:one-time");
+    expect(ctx.env.PORTAL_KV.delete).toHaveBeenCalledWith(
+      `cos:cache:eben:${new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" })}`,
+    );
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:access_token", "access");
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:refresh_token", "refresh");
   });

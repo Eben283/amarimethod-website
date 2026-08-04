@@ -6,6 +6,10 @@ const CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
 const SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
 const FAILURE_URL = "https://www.amarimethod.com/cos/?google=failed";
 
+function todayKey() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+}
+
 function redirect(url) {
   return new Response(null, {
     status: 302,
@@ -69,6 +73,13 @@ export async function onRequestGet(context) {
     context.env.PORTAL_KV.put(`google:${user}:refresh_token`, token.refresh_token),
     context.env.PORTAL_KV.put(`google:${user}:token_expiry`, String(expiry)),
   ]);
+
+  // The chat endpoint caches its assembled Calendar context for five minutes.
+  // Without clearing a pre-consent cache, the first post-reconnect answer can
+  // still be told that Calendar is unavailable even though the new grant works.
+  await context.env.PORTAL_KV.delete(`cos:cache:${user}:${todayKey()}`).catch((err) => {
+    console.error("[cos-google-callback] failed to invalidate Calendar context cache", err);
+  });
 
   return redirect(SUCCESS_URL);
 }
