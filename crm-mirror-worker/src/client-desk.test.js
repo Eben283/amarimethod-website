@@ -8,6 +8,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("selected client record beside them");
   });
 
+  it("includes a read-only consent evidence review queue", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("Contactability review · read-only");
+    expect(html).toContain("/consent-review?limit=50");
+    expect(html).toContain("Nothing here can send or change a contact.");
+    expect(html).toContain("no_auditable_evidence");
+  });
+
   it("renders separate Stripe invoice context without calling an invoice a payment", () => {
     const html = clientDeskHtml();
     expect(html).toContain("<h3>Invoices</h3>");

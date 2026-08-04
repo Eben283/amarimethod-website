@@ -836,6 +836,60 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
   return result.results || [];
 }
 
+// Read-only queue for staff to see which records still lack channel-specific,
+// auditable consent evidence. It intentionally contains no action to change a
+// source record or treat an email address/DND-off as permission.
+export async function consentReviewQueue(db, limit) {
+  const currentConsent = `
+    WITH ranked AS (
+      SELECT contact_id, channel, state, source, effective_at,
+             ROW_NUMBER() OVER (PARTITION BY contact_id, channel ORDER BY datetime(effective_at) DESC, id DESC) AS rank
+      FROM consents
+    ), current AS (
+      SELECT contact_id,
+             MAX(CASE WHEN channel = 'email' AND rank = 1 THEN state END) AS email_state,
+             MAX(CASE WHEN channel = 'email' AND rank = 1 THEN source END) AS email_source,
+             MAX(CASE WHEN channel = 'sms' AND rank = 1 THEN state END) AS sms_state,
+             MAX(CASE WHEN channel = 'sms' AND rank = 1 THEN source END) AS sms_source
+      FROM ranked
+      WHERE rank = 1
+      GROUP BY contact_id
+    )`;
+  const [summary, rows] = await db.batch([
+    db.prepare(`${currentConsent}
+      SELECT
+        SUM(CASE WHEN COALESCE(current.email_state, 'unknown') = 'unknown' THEN 1 ELSE 0 END) AS email_unknown,
+        SUM(CASE WHEN COALESCE(current.sms_state, 'unknown') = 'unknown' THEN 1 ELSE 0 END) AS sms_unknown,
+        SUM(CASE WHEN COALESCE(current.email_state, 'unknown') = 'granted' THEN 1 ELSE 0 END) AS email_granted,
+        SUM(CASE WHEN COALESCE(current.sms_state, 'unknown') = 'granted' THEN 1 ELSE 0 END) AS sms_granted
+      FROM contacts contact
+      LEFT JOIN current ON current.contact_id = contact.id`).bind(),
+    db.prepare(`${currentConsent}
+      SELECT contact.id AS contact_id, contact.display_name,
+             COALESCE(current.email_state, 'unknown') AS email_state,
+             COALESCE(current.email_source, 'no_auditable_evidence') AS email_source,
+             COALESCE(current.sms_state, 'unknown') AS sms_state,
+             COALESCE(current.sms_source, 'no_auditable_evidence') AS sms_source
+      FROM contacts contact
+      LEFT JOIN current ON current.contact_id = contact.id
+      WHERE COALESCE(current.email_state, 'unknown') = 'unknown'
+         OR COALESCE(current.sms_state, 'unknown') = 'unknown'
+      ORDER BY lower(contact.display_name), contact.id
+      LIMIT ?`).bind(limit),
+  ]);
+  const counts = summary.results?.[0] || {};
+  return {
+    readOnly: true,
+    summary: {
+      emailUnknown: Number(counts.email_unknown || 0),
+      smsUnknown: Number(counts.sms_unknown || 0),
+      emailGranted: Number(counts.email_granted || 0),
+      smsGranted: Number(counts.sms_granted || 0),
+    },
+    contacts: rows.results || [],
+  };
+}
+
 export async function contactProfile(db, contactId, limit, now) {
   const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
     db.prepare(
