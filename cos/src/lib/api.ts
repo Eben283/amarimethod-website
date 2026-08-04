@@ -55,6 +55,27 @@ export async function cosLogin(pin: string): Promise<{ token: string }> {
   return response.json();
 }
 
+/** Start the signed-in Eben user's one-time Google Calendar reconnect. */
+export async function startGoogleCalendarReconnect(): Promise<string> {
+  const token = getToken();
+  if (!token) {
+    clearCosSession();
+    throw new ApiError('Session expired. Please log in again.', 401);
+  }
+  const response = await fetch(`${API_BASE}/cos-google-auth`, {
+    method: 'POST',
+    headers: authHeaders(),
+  });
+  if (!response.ok) {
+    handleUnauthorized(response.status);
+    const data = await response.json().catch(() => ({ error: 'Could not start Google Calendar reconnect.' }));
+    throw new ApiError(data.error || 'Could not start Google Calendar reconnect.', response.status);
+  }
+  const data = await response.json();
+  if (!data.authorizationUrl) throw new ApiError('Could not start Google Calendar reconnect.', 500);
+  return data.authorizationUrl;
+}
+
 export async function sendMessage(
   message: string,
   images: string[] | undefined,

@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { sendMessage } from '../lib/api';
+import { sendMessage, startGoogleCalendarReconnect } from '../lib/api';
 import MessageBubble from '../components/MessageBubble';
 import ChatInput from '../components/ChatInput';
 import ActionCard from '../components/ActionCard';
 import type { ChatMessage, QueuedAction } from '../types/cos';
-import { LogOut, RotateCcw } from 'lucide-react';
+import { CalendarDays, LogOut, RotateCcw } from 'lucide-react';
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -16,6 +16,8 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [googleError, setGoogleError] = useState('');
+  const [googleStatus, setGoogleStatus] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -26,6 +28,13 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
+
+  useEffect(() => {
+    const google = new URLSearchParams(window.location.search).get('google');
+    if (google === 'connected') setGoogleStatus('Google Calendar connected.');
+    if (google === 'failed') setGoogleError('Google Calendar could not be connected. Please try again.');
+    if (google) window.history.replaceState({}, '', window.location.pathname);
+  }, []);
 
   const handleSend = useCallback(async (text: string, images?: string[]) => {
     if (isStreaming) return;
@@ -82,6 +91,17 @@ export default function ChatPage() {
     setStreamingContent('');
   }, [isStreaming]);
 
+  const handleGoogleReconnect = useCallback(async () => {
+    if (isStreaming) return;
+    setGoogleError('');
+    try {
+      const authorizationUrl = await startGoogleCalendarReconnect();
+      window.location.assign(authorizationUrl);
+    } catch (error) {
+      setGoogleError(error instanceof Error ? error.message : 'Could not start Google Calendar reconnect.');
+    }
+  }, [isStreaming]);
+
   return (
     <div className="h-screen h-[100dvh] flex flex-col bg-cos-bg">
       {/* Header */}
@@ -97,6 +117,14 @@ export default function ChatPage() {
             <RotateCcw className="w-5 h-5" />
           </button>
           <button
+            onClick={handleGoogleReconnect}
+            disabled={isStreaming}
+            className="cos-btn-ghost disabled:opacity-30"
+            title="Reconnect Google Calendar"
+          >
+            <CalendarDays className="w-5 h-5" />
+          </button>
+          <button
             onClick={logout}
             className="cos-btn-ghost"
             title="Sign out"
@@ -105,6 +133,8 @@ export default function ChatPage() {
           </button>
         </div>
       </header>
+      {googleStatus && <p className="px-4 py-2 text-sm text-emerald-300">{googleStatus}</p>}
+      {googleError && <p className="px-4 py-2 text-sm text-red-300">{googleError}</p>}
 
       {/* Messages */}
       <div
