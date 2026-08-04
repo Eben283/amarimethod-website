@@ -56,6 +56,22 @@ describe("Client Desk message rendering", () => {
     expect(preview).toBe("Hi there [Amari link]");
   });
 
+  it("keeps each inbox preview compact while preserving the full timeline content", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain(".thread-row > span:nth-child(2) { min-width: 0; }");
+    expect(html).toContain("max-height: 2.76em");
+    const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { inboxPreview }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const longPreview = "A concise first sentence " + "additional detail ".repeat(30);
+    expect(helpers.inboxPreview(longPreview).length).toBeLessThanOrEqual(170);
+    expect(helpers.inboxPreview(longPreview)).toMatch(/…$/);
+    expect(html).toContain("event.body || event.body_clean || event.subject || 'No message content mirrored.';");
+  });
+
   it("renders email destinations as safe labelled links", () => {
     const html = clientDeskHtml();
     for (const label of ["Upgrade to 4 sessions", "Upgrade to 8 sessions", "Share feedback", "Book a session", "Visit Amari Method", "Unsubscribe", "Open link"]) {
