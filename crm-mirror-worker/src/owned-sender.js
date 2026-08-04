@@ -8,7 +8,7 @@ export const DELIVERY_PROVIDERS = Object.freeze({
 });
 
 function latestConsent(consents, channel) {
-  return (consents || []).find((consent) => consent.channel === channel)?.state || "unknown";
+  return (consents || []).find((consent) => consent.channel === channel && consent.state !== "unknown")?.state || "unknown";
 }
 
 function normalizedDnd(value) {

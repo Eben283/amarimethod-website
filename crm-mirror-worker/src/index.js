@@ -6,6 +6,7 @@ import { deliveryReadiness } from "./owned-sender.js";
 import {
   activeClientOperations,
   communicationsInbox,
+  consentReviewQueue,
   classifyPurchase,
   deleteClientNote,
   deleteClientTask,
@@ -321,7 +322,7 @@ export default {
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -369,6 +370,10 @@ export default {
           worker: "amari-crm-mirror",
           threads: await communicationsInbox(env.CRM_DB, { query, limit }),
         });
+      }
+      if (request.method === "GET" && url.pathname === "/consent-review") {
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, { success: true, worker: "amari-crm-mirror", ...(await consentReviewQueue(env.CRM_DB, limit)) });
       }
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

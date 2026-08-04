@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, paymentAccessState, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, paymentAccessState, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("Client Desk consent review", () => {
+  it("returns a read-only unknown-evidence queue without deriving a grant", async () => {
+    const db = {
+      prepare: (sql) => ({ bind: () => ({ all: async () => ({ results: sql.includes("email_unknown") ? [{ email_unknown: 10, sms_unknown: 9, email_granted: 2, sms_granted: 2 }] : [{ contact_id: "contact_1", email_state: "unknown", sms_state: "granted" }] }) }) }),
+      batch: async (statements) => Promise.all(statements.map((statement) => statement.all())),
+    };
+    await expect(consentReviewQueue(db, 50)).resolves.toMatchObject({
+      readOnly: true,
+      summary: { emailUnknown: 10, smsUnknown: 9, emailGranted: 2, smsGranted: 2 },
+      contacts: [{ contact_id: "contact_1", email_state: "unknown", sms_state: "granted" }],
+    });
+  });
+});
 
 describe("CRM mirror absent GHL contacts", () => {
   it("removes external_records for contacts confirmed deleted in GHL", async () => {
