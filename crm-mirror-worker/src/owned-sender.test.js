@@ -16,9 +16,12 @@ describe("owned sender foundation", () => {
     ]));
   });
 
-  it("requires an explicit grant and honors DND before a future provider is considered", () => {
-    expect(evaluateDeliveryEligibility({ contact, channel: "email", consents: [] }).reasons)
-      .toEqual(expect.arrayContaining(["explicit_consent_required", "sender_shadow_mode"]));
+  it("allows a contact without a recorded opt-in unless the channel is opted out, and honors DND", () => {
+    const unknown = evaluateDeliveryEligibility({ contact, channel: "email", consents: [] });
+    expect(unknown.policyEligible).toBe(true);
+    expect(unknown.reasons).toEqual(["sender_shadow_mode"]);
+    expect(evaluateDeliveryEligibility({ contact, channel: "email", consents: [{ channel: "email", state: "revoked" }] }).reasons)
+      .toEqual(expect.arrayContaining(["channel_opted_out", "sender_shadow_mode"]));
     expect(evaluateDeliveryEligibility({ contact, channel: "sms", consents: [{ channel: "sms", state: "granted" }], dnd: "on" }).reasons)
       .toEqual(expect.arrayContaining(["do_not_disturb", "sender_shadow_mode"]));
   });
