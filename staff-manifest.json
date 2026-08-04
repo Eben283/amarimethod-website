@@ -1,7 +1,7 @@
 {
   "name": "Amari Method Staff",
   "short_name": "Amari Staff",
-  "description": "Staff dashboard — today's schedule, client lookup, session checklists.",
+  "description": "Staff dashboard — today's schedule, practice member lookup, session checklists.",
   "start_url": "/staff/",
   "scope": "/staff/",
   "display": "standalone",

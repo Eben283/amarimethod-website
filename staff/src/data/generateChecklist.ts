@@ -136,12 +136,12 @@ function buildPartner(ctx: SessionContext): ChecklistTemplate {
   if (lastSession && daysSinceLast !== null) {
     items.push(item('checkin', 'conversational',
       `Check in on ${firstName} — last time was ${cleanTitle(lastSession.title, firstName)}, ${daysSinceLast} days ago`,
-      `They're a client first. Ask how they've been feeling since. Don't open with referral talk.`
+      `They're a practice member first. Ask how they've been feeling since. Don't open with referral talk.`
     ));
   } else {
     items.push(item('checkin', 'conversational',
       `Check in on ${firstName} — how they're feeling, what's changed`,
-      `They're a client first. Don't open with referral talk — that makes it transactional.`
+      `They're a practice member first. Don't open with referral talk — that makes it transactional.`
     ));
   }
 

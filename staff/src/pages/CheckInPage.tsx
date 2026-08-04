@@ -61,7 +61,7 @@ export default function CheckInPage() {
           logout();
           return;
         }
-        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load client');
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load practice member');
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -159,7 +159,7 @@ export default function CheckInPage() {
         {attestationLookupFailed && (
           <div className="mb-3 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
             Couldn't verify whether policies were already signed (connection issue).
-            If this client signed before, no need to sign again — otherwise proceed.
+            If this practice member signed before, no need to sign again — otherwise proceed.
           </div>
         )}
         {alreadySigned && attestation.found ? (
@@ -205,7 +205,7 @@ function SignedView({
         </p>
         <h2 className="text-lg font-serif text-amari-charcoal">Practice policies — on file</h2>
         <p className="text-sm text-amari-charcoal/80 leading-relaxed mt-2">
-          This client signed the practice policies on {formattedDate}.
+          This practice member signed the practice policies on {formattedDate}.
         </p>
       </section>
 

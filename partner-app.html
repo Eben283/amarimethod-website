@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
   <title>Amari Partner | Your Toolkit</title>
-  <meta name="description" content="Refer clients, track earnings, and grow with Amari Method.">
+  <meta name="description" content="Refer practice members, track earnings, and grow with Amari Method.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1411,7 +1411,7 @@
       </div>
     </div>
     <p class="earnings-nudge" id="earnings-nudge">
-      Earn <em style="font-style:italic;color:var(--pa-accent);">$50</em> when a referred client attends their Assessment. A collected enrollment raises your total reward to $400 or $700.
+      Earn <em style="font-style:italic;color:var(--pa-accent);">$50</em> when a referred practice member attends their Assessment. A collected enrollment raises your total reward to $400 or $700.
     </p>
   </section>
 
@@ -1420,7 +1420,7 @@
     <button class="cta-card cta-card-primary" id="btn-refer" type="button">
       <span class="cta-icon">+</span>
       <div>
-        <span class="cta-label">Refer a client</span>
+        <span class="cta-label">Refer a practice member</span>
         <span class="cta-desc">With their permission, submit their name and number. We handle the rest.</span>
       </div>
       <span class="cta-earn-tag">+$50</span>
@@ -1428,20 +1428,20 @@
 
   </div>
 
-  <!-- Refer form (hidden, shown when "Refer a client" tapped) -->
+  <!-- Refer form (hidden, shown when "Refer a practice member" tapped) -->
   <div class="inline-form" id="refer-form-panel">
-    <h3>Refer a client</h3>
+    <h3>Refer a practice member</h3>
     <div class="form-subtitle">With their permission, share their name and number. We’ll send them the $29 Assessment link and handle everything from there.</div>
     <form id="refer-form" novalidate>
       <div class="field">
-        <label for="refer-name">Client first name</label>
+        <label for="refer-name">Practice Member first name</label>
         <input type="text" id="refer-name" name="clientFirstName" autocomplete="given-name" required>
       </div>
       <div class="field">
-        <label for="refer-phone">Client phone</label>
+        <label for="refer-phone">Practice Member phone</label>
         <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
       </div>
-      <label class="checkbox-row"><input type="checkbox" name="confirmedPermission" required><span>I have permission to share this client’s contact information with Amari.</span></label>
+      <label class="checkbox-row"><input type="checkbox" name="confirmedPermission" required><span>I have permission to share this practice member’s contact information with Amari.</span></label>
       <div class="form-error" id="refer-error"></div>
       <button type="submit" class="submit-btn" id="refer-submit-btn">Submit referral</button>
     </form>
@@ -1547,7 +1547,7 @@
         </button>
         <button class="video-share-btn video-share-btn--send" id="btn-share-video" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Send to client
+          Send to practice member
         </button>
       </div>
     </div>
@@ -1922,7 +1922,7 @@
 
           var nameSpan = document.createElement('span');
           nameSpan.className = 'referral-name';
-          nameSpan.textContent = r.name || 'Client';
+          nameSpan.textContent = r.name || 'Practice Member';
 
           var earningSpan = document.createElement('span');
           earningSpan.className = 'referral-earning';
@@ -2002,7 +2002,7 @@
       navigator.clipboard.writeText(videoShareText + '\n' + videoUrl).then(function () {
         var btn = document.getElementById('btn-share-video');
         btn.textContent = 'Copied to clipboard!';
-        setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to client'; }, 2000);
+        setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to practice member'; }, 2000);
       });
     }
   });

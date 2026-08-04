@@ -23,7 +23,7 @@ type BackOfficeTool = {
 
 const TOOLS: HomeTool[] = [
   { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
-  { label: 'Communication', detail: 'Clients & messages', Icon: ListChecks, to: '/client-desk', tone: 'coral' },
+  { label: 'Communication', detail: 'Practice Members & messages', Icon: ListChecks, to: '/client-desk', tone: 'coral' },
   { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
   { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
   { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
@@ -167,7 +167,7 @@ export default function HomePage() {
           <button type="button" onClick={() => navigate('/today')}>
             <span className="staff-session-door__signal"><i aria-hidden="true" /> No session queued</span>
             <span className="staff-session-door__person">Open today’s schedule</span>
-            <span className="staff-session-door__meta">Find the next client <ChevronRight aria-hidden="true" /></span>
+            <span className="staff-session-door__meta">Find the next practice member <ChevronRight aria-hidden="true" /></span>
           </button>
         )}
       </section>

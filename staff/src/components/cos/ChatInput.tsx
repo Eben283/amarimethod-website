@@ -205,7 +205,7 @@ export default function ChatInput({ onSend, disabled }: Props) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isListening ? 'Listening…' : "Ask about a client, schedule, anything…"}
+          placeholder={isListening ? 'Listening…' : "Ask about a practice member, schedule, anything…"}
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none rounded-xl border border-amari-border px-3 py-2 text-[15px] focus:outline-none focus:border-amari-accent-warm"

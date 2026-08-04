@@ -21,7 +21,7 @@ export default function MessageHistory({ messages }: Props) {
           >
             <div className="flex items-center gap-2 mb-1">
               <span className={`text-xs font-medium ${isInbound ? 'text-amari-accent-warm' : 'text-amari-text-muted'}`}>
-                {isInbound ? 'Client' : 'Sent'}
+                {isInbound ? 'Practice Member' : 'Sent'}
               </span>
               <span className="text-xs text-amari-text-muted">
                 {msg.type === 'SMS' ? 'SMS' : 'Email'}

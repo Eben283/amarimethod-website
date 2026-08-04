@@ -53,7 +53,7 @@ export default function ClientsPage() {
 
   return (
     <div className="px-4 pt-6 pb-4">
-      <h1 className="staff-pagehead text-xl font-serif text-amari-charcoal">Clients</h1>
+      <h1 className="staff-pagehead text-xl font-serif text-amari-charcoal">Practice Members</h1>
 
       {/* Search across the full GHL contact database (clients, leads, anyone). */}
       <div className="relative mb-4">
@@ -75,11 +75,11 @@ export default function ClientsPage() {
         </div>
       ) : !hasSearched ? (
         <div className="text-center py-12">
-          <p className="text-amari-text-muted text-sm">Type to search clients</p>
+          <p className="text-amari-text-muted text-sm">Type to search practice members</p>
         </div>
       ) : contacts.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-amari-text-muted text-sm">No clients found</p>
+          <p className="text-amari-text-muted text-sm">No practice members found</p>
         </div>
       ) : (
         <div className="space-y-2">
