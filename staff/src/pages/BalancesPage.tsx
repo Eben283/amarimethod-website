@@ -209,7 +209,7 @@ export default function BalancesPage() {
       {/* Summary card */}
       <div className="staff-card mb-4 flex items-center justify-between">
         <div>
-          <p className="staff-mlabel">Prepaid clients</p>
+          <p className="staff-mlabel">Prepaid practice members</p>
           <p className="text-2xl font-serif text-amari-charcoal">{rows.length}</p>
         </div>
         <div className="text-right">
@@ -225,7 +225,7 @@ export default function BalancesPage() {
           {owedLoading ? (
             <Loader2 className="w-4 h-4 animate-spin text-amari-text-muted" />
           ) : !owedError && owedRows.length > 0 ? (
-            <span className="text-[11px] text-amari-text-muted">{owing.length} of {owedRows.length} clients</span>
+            <span className="text-[11px] text-amari-text-muted">{owing.length} of {owedRows.length} practice members</span>
           ) : null}
         </div>
         {owedLoading ? (
@@ -233,9 +233,9 @@ export default function BalancesPage() {
         ) : owedError ? (
           <p className="text-xs text-amber-700">Couldn't check payments right now — try refreshing.</p>
         ) : owedRows.length === 0 ? (
-          <p className="text-xs text-amari-text-muted">No recent clients to check.</p>
+          <p className="text-xs text-amari-text-muted">No recent practice members to check.</p>
         ) : owing.length === 0 ? (
-          <p className="text-xs text-amari-text-muted">All {owedRows.length} recent clients are paid up.</p>
+          <p className="text-xs text-amari-text-muted">All {owedRows.length} recent practice members are paid up.</p>
         ) : (
           <div className="space-y-1">
             {owing.map((r) => (
@@ -263,7 +263,7 @@ export default function BalancesPage() {
           <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-xs text-amber-800">
             Accurate ledger unavailable — showing values from custom fields. Numbers may be stale for{' '}
-            <strong>{lowConfidenceCount}</strong> clients.
+            <strong>{lowConfidenceCount}</strong> practice members.
           </div>
         </div>
       )}

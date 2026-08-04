@@ -254,7 +254,7 @@ export default function QuickActions({ client, onBookSession, onBooked: _onBooke
   const partnerAction: Action | null = client.isPartner
     ? {
         label: 'Referral toolkit',
-        description: 'Refer clients & track your referrals.',
+        description: 'Refer practice members & track your referrals.',
         cta: 'Open',
         href: 'https://www.amarimethod.com/partner-app',
         testId: 'partner-toolkit-card',

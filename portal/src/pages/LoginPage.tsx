@@ -55,7 +55,7 @@ export default function LoginPage() {
         <a href="/" className="sa-wordmark">
           AMARI
         </a>
-        <span className="sa-eyebrow">Client portal</span>
+        <span className="sa-eyebrow">Practice Member Portal</span>
         <h1 className="sa-title">
           {status === 'sent' ? (
             <>Check your <em>email.</em></>

@@ -675,7 +675,7 @@ export default function PosPage() {
 
   async function confirmSplit() {
     if (!client) {
-      setNotice("Select a client to continue.");
+      setNotice("Select a practice member to continue.");
       return;
     }
     if (legs.length !== 2 || allocation !== total) {

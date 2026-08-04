@@ -979,7 +979,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
               ? <Reply className="h-3.5 w-3.5 shrink-0 text-amari-accent-warm" />
               : effAction && <span className={`h-2 w-2 shrink-0 rounded-full ${URGENCY_DOT[effAction]}`} />}
             <span className="truncate font-medium text-amari-charcoal">{name}</span>
-            {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">client</span>}
+            {isClient && <span className="shrink-0 rounded-full bg-amari-accent-warm/15 px-2 py-0.5 text-[11px] text-amari-charcoal">practice member</span>}
             {industry && <span className="shrink-0 rounded-full bg-amari-light-sand px-2 py-0.5 text-[11px] capitalize text-amari-text-muted">{industry}</span>}
           </div>
           {isReply ? (

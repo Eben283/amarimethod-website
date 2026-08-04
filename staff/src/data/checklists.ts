@@ -12,7 +12,7 @@ const TWENTY_ONE_DAYS_MS = 21 * 24 * 60 * 60 * 1000;
 const templates: ChecklistTemplate[] = [
   {
     id: 'new-client',
-    name: 'New Client Session',
+    name: 'New Practice Member Session',
     description: 'First session — set the foundation',
     items: [
       { id: 'nc-1', text: 'Confirm they completed the pain assessment quiz', category: 'operational' },
@@ -29,9 +29,9 @@ const templates: ChecklistTemplate[] = [
   {
     id: 'referral-partner',
     name: 'Referral Partner Session',
-    description: 'They\'re a client first, partner second — earn the referrals through the experience',
+    description: 'They\'re a practice member first, partner second — earn the referrals through the experience',
     items: [
-      { id: 'rp-1', text: 'Check in on THEM first — how they\'re feeling, what\'s changed', category: 'conversational', hint: 'They\'re a client first. Don\'t open with referral talk — that makes it transactional.' },
+      { id: 'rp-1', text: 'Check in on THEM first — how they\'re feeling, what\'s changed', category: 'conversational', hint: 'They\'re a practice member first. Don\'t open with referral talk — that makes it transactional.' },
       { id: 'rp-2', text: 'Session work — give them your best', category: 'operational', hint: 'Reciprocity: the better their experience, the more naturally they refer. This IS the referral strategy.' },
       { id: 'rp-3', text: 'Show them their progress — be specific about what changed', category: 'conversational', hint: 'Identity reinforcement: "You\'re someone who takes this seriously, and your body is responding."' },
       { id: 'rp-4', text: 'Share how their referral is doing (if appropriate)', category: 'conversational', hint: 'Social proof: "By the way, [name] is making real progress — that hip issue is resolving." They feel like they made a difference, not a transaction.' },
@@ -57,7 +57,7 @@ const templates: ChecklistTemplate[] = [
   {
     id: 'returning-after-gap',
     name: 'Returning After Gap',
-    description: 'Client returning after 3+ weeks — re-assess',
+    description: 'Practice member returning after 3+ weeks — re-assess',
     items: [
       { id: 'rg-1', text: 'Welcome back — ask what brought them in again', category: 'conversational', hint: '"It\'s great to see you. What\'s been going on since last time?"' },
       { id: 'rg-2', text: 'Re-assess — check what held and what reverted', category: 'operational' },
@@ -85,7 +85,7 @@ const templates: ChecklistTemplate[] = [
   {
     id: 'ongoing',
     name: 'Ongoing Session',
-    description: 'Regular client (4+ sessions) — maintain and deepen',
+    description: 'Regular practice member (4+ sessions) — maintain and deepen',
     items: [
       { id: 'og-1', text: 'Quick check-in: "Anything new since last time?"', category: 'conversational' },
       { id: 'og-2', text: 'Session work', category: 'operational' },

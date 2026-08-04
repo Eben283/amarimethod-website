@@ -225,7 +225,7 @@ export default function ClientDetailPage() {
         logout();
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load client');
+      setError(err instanceof Error ? err.message : 'Failed to load practice member');
     } finally {
       setIsLoading(false);
     }
@@ -288,10 +288,10 @@ export default function ClientDetailPage() {
   const roleWord = isPartner
     ? 'Referral partner'
     : isFoundersCircle
-      ? "Founder's Circle client"
+      ? "Founder's Circle practice member"
       : client.seriesType !== 'none'
-        ? `${client.seriesType.replace('-session', '')}-session client`
-        : 'Client';
+        ? `${client.seriesType.replace('-session', '')}-session practice member`
+        : 'Practice Member';
 
   // session progress numbers (same math as SessionStats)
   const totalSessions = client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
@@ -332,7 +332,7 @@ export default function ClientDetailPage() {
               <House size={16} /><span>Home</span>
             </button>
             <button className="sa-back" onClick={() => navigate('/clients')}>
-              <ArrowLeft size={18} /><span>All clients</span>
+              <ArrowLeft size={18} /><span>All practice members</span>
             </button>
           </div>
           <button className="sa-sync" onClick={loadClient} disabled={isLoading}>
@@ -356,7 +356,7 @@ export default function ClientDetailPage() {
 
       <main className="sa-body">
         {/* ============ IN SESSION ============ */}
-        <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">What you do with the client today</span><span className="gl" /></div>
+        <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">What you do with the practice member today</span><span className="gl" /></div>
 
         {/* policy agreement — one-time signature, only shown until signed */}
         {!alreadySigned && (
