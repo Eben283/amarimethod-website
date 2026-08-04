@@ -9,8 +9,6 @@ const MAX_LEGS = 6;
 
 export const POS_CATALOG = Object.freeze({
   "amari-assessment": { label: "Amari Assessment ($29)", amountCents: 2900, ghlProductId: "6a66cf0103821ea09ea13f1b" },
-  "initial-in-person": { label: "Initial Session — In Person", amountCents: 22500, ghlProductId: "688a1cd770362828afbf08a2" },
-  "initial-virtual": { label: "Initial Session — Virtual", amountCents: 22500, ghlProductId: "690b6b4d333ffa59d40c1823" },
   "4-session-series": { label: "4-Session Series", amountCents: 72000, ghlProductId: "69986faa724ecd2343ebaa6e" },
   "8-session-series": { label: "8-Session Series", amountCents: 129500, ghlProductId: "69987357c839790426996114" },
   "12-week-practice": { label: "The 12-Week Amari Practice ($5,400)", amountCents: 540000, ghlProductId: "6a66cde7ef7b07f122ad46fb" },
