@@ -1,11 +1,16 @@
 // Cloudflare Pages Function: POST /api/cos-google-auth
-// Starts an authenticated, one-time Google Calendar OAuth reconnect for COS.
+// Starts an authenticated, one-time Google Workspace OAuth reconnect for COS.
+// The same Eben-owned grant supplies Calendar and the future Client Desk Gmail
+// sender; it is never a customer-facing authorization flow.
 
 import { verifySessionToken } from "../lib/auth.js";
 
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
-const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
+const GOOGLE_WORKSPACE_SCOPES = [
+  "https://www.googleapis.com/auth/calendar",
+  "https://www.googleapis.com/auth/gmail.send",
+].join(" ");
 const STATE_TTL_SECONDS = 10 * 60;
 const ALLOWED_ORIGINS = new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
 
@@ -68,7 +73,7 @@ export async function onRequestPost(context) {
     client_id: context.env.GOOGLE_OAUTH_CLIENT_ID,
     redirect_uri: CALLBACK_URL,
     response_type: "code",
-    scope: CALENDAR_SCOPE,
+    scope: GOOGLE_WORKSPACE_SCOPES,
     access_type: "offline",
     prompt: "consent",
     state,
