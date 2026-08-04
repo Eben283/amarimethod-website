@@ -1,7 +1,7 @@
 import { Activity, ChevronLeft, Database, Loader2, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getCrmMirrorAccessUrl } from '../lib/api';
+import { getAutomationWatchAccessUrl, getCrmMirrorAccessUrl } from '../lib/api';
 
 type OpsTab = 'systems' | 'crm' | 'automation';
 
@@ -12,7 +12,6 @@ const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }
 ];
 
 const SYSTEMS_SRC = 'https://www.amarimethod.com/ops?embed=1';
-const AUTOMATION_SRC = 'https://reminder-engine.eben-fa2.workers.dev/dashboard?embed=1';
 
 function tabFromSearch(value: string | null): OpsTab {
   if (value === 'crm' || value === 'crm-mirror') return 'crm';
@@ -26,6 +25,9 @@ export default function OperationsPage() {
   const [crmSrc, setCrmSrc] = useState<string | null>(null);
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState<string | null>(null);
+  const [automationSrc, setAutomationSrc] = useState<string | null>(null);
+  const [automationLoading, setAutomationLoading] = useState(false);
+  const [automationError, setAutomationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tab !== 'crm') return;
@@ -49,11 +51,33 @@ export default function OperationsPage() {
     return () => { cancelled = true; };
   }, [tab, crmSrc, crmLoading]);
 
+  useEffect(() => {
+    if (tab !== 'automation') return;
+    if (automationSrc || automationLoading) return;
+    let cancelled = false;
+    setAutomationLoading(true);
+    setAutomationError(null);
+    void getAutomationWatchAccessUrl()
+      .then(({ url }) => {
+        if (cancelled) return;
+        const joined = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+        setAutomationSrc(joined);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setAutomationError(err instanceof Error ? err.message : 'Could not open Automation Watch');
+      })
+      .finally(() => {
+        if (!cancelled) setAutomationLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [tab, automationSrc, automationLoading]);
+
   function selectTab(next: OpsTab) {
     setParams(next === 'systems' ? {} : { tab: next }, { replace: true });
   }
 
-  const frameSrc = tab === 'systems' ? SYSTEMS_SRC : tab === 'automation' ? AUTOMATION_SRC : crmSrc;
+  const frameSrc = tab === 'systems' ? SYSTEMS_SRC : tab === 'automation' ? automationSrc : crmSrc;
 
   return (
     <main className="ops-hub">
@@ -88,9 +112,15 @@ export default function OperationsPage() {
         {tab === 'crm' && crmError ? (
           <div className="ops-hub__status ops-hub__status--error" role="alert">{crmError}</div>
         ) : null}
+        {tab === 'automation' && automationLoading ? (
+          <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected Automation Watch…</div>
+        ) : null}
+        {tab === 'automation' && automationError ? (
+          <div className="ops-hub__status ops-hub__status--error" role="alert">{automationError}</div>
+        ) : null}
         {frameSrc ? (
           <iframe title={TABS.find((item) => item.id === tab)?.label} src={frameSrc} />
-        ) : tab !== 'crm' || (!crmLoading && !crmError) ? (
+        ) : (tab === 'crm' && !crmLoading && !crmError) || (tab === 'automation' && !automationLoading && !automationError) ? (
           <div className="ops-hub__status">Loading…</div>
         ) : null}
       </section>

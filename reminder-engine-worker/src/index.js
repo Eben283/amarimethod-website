@@ -16,10 +16,27 @@ import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
 import { handleWebhook } from "./webhook.js";
 import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
+import { dashboardSessionCookie } from "./dashboard-session.js";
 import { handleGhlEvent } from "./ghl-events.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
+const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+
+function dashboardAccessCode() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function dashboardAccessKey(code) {
+  return `automation-dashboard-access:${code}`;
+}
+
+function requestedStaffActor(value) {
+  const actor = String(value || "").trim();
+  return /^[A-Za-z][A-Za-z .'-]{0,78}$/.test(actor) ? actor : "Staff";
+}
 
 export default {
   async scheduled(event, env, ctx) {
@@ -28,6 +45,20 @@ export default {
 
   async fetch(request, env) {
     const url0 = new URL(request.url);
+    const dashboardAccess = url0.pathname.match(/^\/dashboard-access\/([a-f0-9]{48})$/);
+    if (request.method === "GET" && dashboardAccess) {
+      const key = dashboardAccessKey(dashboardAccess[1]);
+      const access = await env.PORTAL_KV?.get(key, "json");
+      if (!access) return new Response("Dashboard access link expired. Generate a new one from Staff.", { status: 410 });
+      await env.PORTAL_KV.delete(key);
+      const cookie = await dashboardSessionCookie(env, access.actor || "Staff");
+      if (!cookie) return new Response("Dashboard session is not configured.", { status: 503 });
+      const embed = url0.searchParams.get("embed") === "1" ? "?embed=1" : "";
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `/dashboard${embed}`, "Set-Cookie": cookie, "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
+      });
+    }
     // The watch dashboard: a public shell (no data) + a data route gated by its own
     // read-only DASHBOARD_KEY — not the worker bearer (that secret gates GHL-write routes
     // elsewhere and doesn't belong in a browser).
@@ -62,6 +93,20 @@ export default {
 
     const url = new URL(request.url);
     try {
+      if (request.method === "POST" && url.pathname === "/dashboard-access-link") {
+        if (!env.PORTAL_KV) return json(503, { error: "dashboard access storage is not configured" });
+        const code = dashboardAccessCode();
+        await env.PORTAL_KV.put(
+          dashboardAccessKey(code),
+          JSON.stringify({ actor: requestedStaffActor(request.headers.get("X-Staff-Actor")) }),
+          { expirationTtl: DASHBOARD_ACCESS_TTL_SECONDS },
+        );
+        return json(200, {
+          success: true,
+          expiresInSeconds: DASHBOARD_ACCESS_TTL_SECONDS,
+          url: `${url.origin}/dashboard-access/${code}`,
+        }, { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" });
+      }
       if (request.method === "POST" && url.pathname === "/event") {
         const event = await request.json();
         const { actions } = await handleEvent(env, event, Date.now());

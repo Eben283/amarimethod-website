@@ -1045,4 +1045,8 @@ export async function getCrmMirrorAccessUrl(view?: 'client-desk'): Promise<{ url
   return fetchApi(`/staff-crm-mirror-access${query}`, { method: 'POST' });
 }
 
+export async function getAutomationWatchAccessUrl(): Promise<{ url: string; expiresInSeconds: number }> {
+  return fetchApi('/staff-automation-watch-access', { method: 'POST' });
+}
+
 export { ApiError };

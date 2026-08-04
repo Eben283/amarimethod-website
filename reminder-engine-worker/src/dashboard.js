@@ -14,6 +14,7 @@
 import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { OPS_SURFACE_NAV_CSS, opsEmbedBootScript, opsSurfaceNavHtml } from "../../functions/lib/ops-surface-nav.js";
+import { hasDashboardSession } from "./dashboard-session.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -173,7 +174,8 @@ export async function handleDashboardData(request, env) {
   if (!key) return json(503, { error: "dashboard key not configured" });
   const header = request.headers.get("Authorization") || "";
   const provided = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!provided || !timingSafeEqual(provided, key)) return json(401, { error: "unauthorized" });
+  const sessionActive = await hasDashboardSession(request, env);
+  if ((!provided || !timingSafeEqual(provided, key)) && !sessionActive) return json(401, { error: "unauthorized" });
 
   const url = new URL(request.url);
   const hours = Math.min(Math.max(parseInt(url.searchParams.get("hours") || "48", 10) || 48, 1), 24 * 90);
