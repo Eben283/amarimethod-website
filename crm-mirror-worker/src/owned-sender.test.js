@@ -23,6 +23,15 @@ describe("owned sender foundation", () => {
       .toEqual(expect.arrayContaining(["do_not_disturb", "sender_shadow_mode"]));
   });
 
+  it("does not let an unknown observation mask explicit consent evidence", () => {
+    const decision = evaluateDeliveryEligibility({
+      contact,
+      channel: "sms",
+      consents: [{ channel: "sms", state: "unknown" }, { channel: "sms", state: "granted" }],
+    });
+    expect(decision.consentState).toBe("granted");
+  });
+
   it("writes an append-only shadow audit without a provider call or raw message content", async () => {
     const statements = [];
     const db = {

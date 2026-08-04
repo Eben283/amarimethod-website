@@ -845,6 +845,7 @@ export async function consentReviewQueue(db, limit) {
       SELECT contact_id, channel, state, source, effective_at,
              ROW_NUMBER() OVER (PARTITION BY contact_id, channel ORDER BY datetime(effective_at) DESC, id DESC) AS rank
       FROM consents
+      WHERE state <> 'unknown'
     ), current AS (
       SELECT contact_id,
              MAX(CASE WHEN channel = 'email' AND rank = 1 THEN state END) AS email_state,
@@ -992,7 +993,7 @@ export async function contactProfile(db, contactId, limit, now) {
     ).bind(contactId, limit),
     db.prepare(
       `SELECT channel, state, source, effective_at
-       FROM consents WHERE contact_id = ?
+       FROM consents WHERE contact_id = ? AND state <> 'unknown'
        ORDER BY channel, datetime(effective_at) DESC`,
     ).bind(contactId),
     db.prepare(
