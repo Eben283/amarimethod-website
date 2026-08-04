@@ -77,9 +77,11 @@ export async function onRequestGet(context) {
   // The chat endpoint caches its assembled Calendar context for five minutes.
   // Without clearing a pre-consent cache, the first post-reconnect answer can
   // still be told that Calendar is unavailable even though the new grant works.
-  await context.env.PORTAL_KV.delete(`cos:cache:${user}:${todayKey()}`).catch((err) => {
+  try {
+    await context.env.PORTAL_KV.delete(`cos:cache:${user}:${todayKey()}`);
+  } catch (err) {
     console.error("[cos-google-callback] failed to invalidate Calendar context cache", err);
-  });
+  }
 
   return redirect(SUCCESS_URL);
 }
