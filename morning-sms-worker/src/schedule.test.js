@@ -5,6 +5,7 @@ import {
   computeMorningTimes,
   dateKeyInZone,
   dueKinds,
+  formatDailyAgenda,
   messageForKind,
   zonedTimeToUtcMs,
 } from "./schedule.js";
@@ -65,10 +66,21 @@ describe("dueKinds", () => {
 });
 
 describe("copy", () => {
-  it("matches requested wording", () => {
-    assert.equal(messageForKind("prepare"), COPY.prepare);
+  it("keeps the staff-meeting wording", () => {
     assert.equal(messageForKind("meeting"), COPY.meeting);
-    assert.equal(COPY.prepare, "Good morning, time to prepare for the day.");
     assert.equal(COPY.meeting, "Staff meeting");
+  });
+
+  it("formats every active appointment as a Pacific-time agenda", () => {
+    const body = formatDailyAgenda([
+      { startMs: Date.parse("2026-07-30T15:00:00Z"), contactName: "Ada Lovelace", calendarName: "Initial Session" },
+      { startMs: Date.parse("2026-07-30T18:30:00Z"), contactName: "Grace Hopper", calendarName: "Follow-up Session" },
+    ]);
+    assert.equal(body, "Today's appointments:\n8:00 AM — Ada Lovelace · Initial Session\n11:30 AM — Grace Hopper · Follow-up Session\n\nTime to prepare for the day.");
+  });
+
+  it("makes an empty day explicit and does not pretend an unavailable agenda is empty", () => {
+    assert.equal(formatDailyAgenda([]), "Good morning — no appointments today.");
+    assert.equal(formatDailyAgenda(null), "Good morning, time to prepare for the day. Today's appointment list could not be loaded.");
   });
 });
