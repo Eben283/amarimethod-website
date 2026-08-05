@@ -7,11 +7,13 @@
 
 import { requireOpsReadKey } from "../../lib/ops-auth.js";
 import { recordOpsEvent, openOpsIncident, resolveOpsIncident } from "../../lib/ops-events.js";
-import { registryPath } from "../../lib/ops-registry.js";
+import { EXTERNAL_MONITOR_PATH_IDS, registryPath } from "../../lib/ops-registry.js";
 
 const HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 const STATES = new Set(["green", "red", "unknown"]);
 const MAX_NOTE_LENGTH = 500;
+const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
+const EXTERNAL_MONITOR_PATHS = new Set(EXTERNAL_MONITOR_PATH_IDS);
 
 function text(value, max = MAX_NOTE_LENGTH) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -25,6 +27,14 @@ async function readBody(request) {
   }
 }
 
+function monitorTimestamp(value) {
+  const raw = text(value, 64);
+  if (!raw) return new Date().toISOString();
+  const atMs = Date.parse(raw);
+  if (!Number.isFinite(atMs) || atMs > Date.now() + MAX_FUTURE_SKEW_MS) return null;
+  return new Date(atMs).toISOString();
+}
+
 export async function onRequestPost(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
@@ -33,10 +43,11 @@ export async function onRequestPost(context) {
   const pathId = text(body?.pathId, 100);
   const state = text(body?.state, 20).toLowerCase();
   const note = text(body?.note) || "external health monitor reported no detail";
-  const observedAt = text(body?.observedAt, 64) || new Date().toISOString();
+  const observedAt = monitorTimestamp(body?.observedAt);
+  const heartbeat = body?.heartbeat === true && state === "green";
   const path = registryPath(pathId);
 
-  if (!path || !STATES.has(state)) {
+  if (!path || !EXTERNAL_MONITOR_PATHS.has(pathId) || !STATES.has(state) || !observedAt) {
     return new Response(JSON.stringify({ error: "invalid monitor event" }), { status: 400, headers: HEADERS });
   }
 
@@ -46,8 +57,10 @@ export async function onRequestPost(context) {
     pathId,
     hopId: "synthetic_monitor",
     outcome: failed ? "fail" : "ok",
-    reasonCode: failed ? (state === "unknown" ? "monitor_unverified" : "monitor_failed") : "monitor_recovered",
-    summary: `${path.label} external monitor ${failed ? state : "recovered"}: ${note}`,
+    reasonCode: failed
+      ? (state === "unknown" ? "monitor_unverified" : "monitor_failed")
+      : heartbeat ? "monitor_heartbeat" : "monitor_recovered",
+    summary: `${path.label} external monitor ${failed ? state : heartbeat ? "heartbeat" : "recovered"}: ${note}`,
     correlationId,
     condition: { expected: "green synthetic health check", observed: state },
     source: "amari-cloud-health",
@@ -80,4 +93,4 @@ export async function onRequestPost(context) {
   });
 }
 
-export const __test = { STATES, text, readBody };
+export const __test = { STATES, text, readBody, monitorTimestamp };

@@ -304,6 +304,159 @@ describe("buildSystemsBoard", () => {
     expect(board.systems.find((s) => s.id === "crm_mirror").status).toBe("green");
   });
 
+  it("surfaces external GitHub and monitor heartbeats on their Operations rows", async () => {
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => {
+      if (pathId === "github_actions") {
+        return [{
+          id: "evt_github",
+          at: new Date().toISOString(),
+          pathId,
+          hopId: "synthetic_monitor",
+          outcome: "fail",
+          reasonCode: "monitor_failed",
+          summary: "GitHub Actions day-write failed",
+          condition: { expected: "green synthetic health check", observed: "red" },
+          source: "amari-cloud-health",
+          personLabel: "must not leak",
+          contactId: "must-not-leak",
+        }];
+      }
+      if (pathId === "ops_monitor") {
+        return [{
+          id: "evt_monitor",
+          at: new Date().toISOString(),
+          pathId,
+          hopId: "synthetic_monitor",
+          outcome: "ok",
+          reasonCode: "monitor_recovered",
+          summary: "All registered critical paths checked",
+          condition: { expected: "green synthetic health check", observed: "green" },
+          source: "amari-cloud-health",
+        }];
+      }
+      if (pathId === "outreach_snapshot") {
+        return [{
+          id: "evt_outreach",
+          at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+          pathId,
+          hopId: "synthetic_monitor",
+          outcome: "ok",
+          reasonCode: "monitor_recovered",
+          summary: "Outreach snapshot is current",
+          condition: { expected: "green synthetic health check", observed: "green" },
+          source: "amari-cloud-health",
+        }];
+      }
+      return [];
+    });
+
+    const board = await buildSystemsBoard(kvEnv());
+    const github = board.systems.find((s) => s.id === "github_actions");
+    const monitor = board.systems.find((s) => s.id === "ops_monitor");
+    expect(github.status).toBe("red");
+    expect(github.state).toBe(OPS_ROW_STATE.MAP_BAD);
+    expect(github.note).toMatch(/day-write failed/i);
+    expect(monitor.status).toBe("green");
+    expect(monitor.state).toBe(OPS_ROW_STATE.MAP_OK);
+    expect(board.systems.find((s) => s.id === "outreach_snapshot").status).toBe("green");
+  });
+
+  it("lets an external failure override a green native dependency signal", async () => {
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => pathId === "chief_of_staff"
+      ? [{
+          id: "evt_cos_failed",
+          at: new Date().toISOString(),
+          pathId,
+          hopId: "synthetic_monitor",
+          outcome: "fail",
+          reasonCode: "monitor_failed",
+          summary: "Google Calendar readiness probe failed",
+          condition: { expected: "green synthetic health check", observed: "red" },
+          source: "amari-cloud-health",
+        }]
+      : []);
+    const board = await buildSystemsBoard(kvEnv({
+      "cos:status:ready": {
+        ok: true,
+        checkedAt: new Date().toISOString(),
+        provider: "openrouter",
+      },
+    }));
+    const cos = board.systems.find((s) => s.id === "chief_of_staff");
+    expect(cos.status).toBe("red");
+    expect(cos.state).toBe(OPS_ROW_STATE.MAP_BAD);
+    expect(cos.note).toMatch(/Calendar readiness probe failed/i);
+  });
+
+  it("turns stale external monitor heartbeats red", async () => {
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => {
+      if (pathId !== "ops_monitor") return [];
+      return [{
+        id: "evt_stale_monitor",
+        at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+        pathId,
+        hopId: "synthetic_monitor",
+        outcome: "ok",
+        reasonCode: "monitor_recovered",
+        summary: "All registered critical paths checked",
+        condition: { expected: "green synthetic health check", observed: "green" },
+        source: "amari-cloud-health",
+      }];
+    });
+
+    const board = await buildSystemsBoard(kvEnv());
+    const monitor = board.systems.find((s) => s.id === "ops_monitor");
+    expect(monitor.status).toBe("red");
+    expect(monitor.state).toBe(OPS_ROW_STATE.MAP_BAD);
+    expect(monitor.note).toMatch(/stale/i);
+  });
+
+  it("uses the newest external monitor transition after recovery", async () => {
+    const recoveredAt = new Date().toISOString();
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => pathId === "github_actions"
+      ? [
+          {
+            id: "evt_recovered",
+            at: recoveredAt,
+            pathId,
+            hopId: "synthetic_monitor",
+            outcome: "ok",
+            reasonCode: "monitor_recovered",
+            summary: "Latest day-write run succeeded",
+            condition: { expected: "green synthetic health check", observed: "green" },
+            source: "amari-cloud-health",
+          },
+          {
+            id: "evt_failed",
+            at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+            pathId,
+            hopId: "synthetic_monitor",
+            outcome: "fail",
+            reasonCode: "monitor_failed",
+            summary: "Earlier day-write run failed",
+            condition: { expected: "green synthetic health check", observed: "red" },
+            source: "amari-cloud-health",
+          },
+        ]
+      : []);
+
+    const board = await buildSystemsBoard(kvEnv());
+    const github = board.systems.find((s) => s.id === "github_actions");
+    expect(github.status).toBe("green");
+    expect(github.state).toBe(OPS_ROW_STATE.MAP_OK);
+    expect(github.note).toMatch(/succeeded/i);
+    expect(github.lastAt).toBe(recoveredAt);
+  });
+
+  it("does not paint a dependency green while its incident remains open", async () => {
+    countOpenIncidentsByPath.mockResolvedValue({ github_actions: 1 });
+    const board = await buildSystemsBoard(kvEnv());
+    const github = board.systems.find((s) => s.id === "github_actions");
+    expect(github.status).toBe("red");
+    expect(github.state).toBe(OPS_ROW_STATE.MAP_BAD);
+    expect(github.note).toMatch(/1 open incident/i);
+  });
+
   it("marks newly full money/booking paths as full instrumentation", async () => {
     const board = await buildSystemsBoard(kvEnv());
     for (const id of [
@@ -343,6 +496,12 @@ describe("buildSystemsBoard", () => {
     });
     listOpsIncidents.mockResolvedValue([
       {
+        pathId: "github_actions",
+        correlationId: "monitor:github_actions",
+        title: "GitHub Actions monitor red",
+        failedHopId: "synthetic_monitor",
+      },
+      {
         pathId: PATH_ASSESSMENT_PAID_BOOK,
         personLabel: "Holly Brinkman",
         contactId: "c_holly",
@@ -354,6 +513,8 @@ describe("buildSystemsBoard", () => {
     expect(board.hotStrip.tone).toBe("stuck");
     expect(board.hotStrip.paidToBook).toBe("stuck");
     expect(board.hotStrip.people[0].personLabel).toBe("Holly Brinkman");
+    expect(board.hotStrip.people).toHaveLength(1);
+    expect(board.hotStrip.people.some((person) => person.correlationId?.startsWith("monitor:"))).toBe(false);
     const assessment = board.systems.find((s) => s.id === PATH_ASSESSMENT_PAID_BOOK);
     expect(assessment.state).toBe(OPS_ROW_STATE.STUCK);
   });
@@ -411,6 +572,41 @@ describe("buildPathDetail", () => {
     expect(detail.state).toBe(OPS_ROW_STATE.MAP_OK);
     expect(detail.why).toMatch(/remaining/i);
     expect(detail.events.length).toBeGreaterThan(0);
+  });
+
+  it("dependency detail exposes a sanitized external monitor event", async () => {
+    listOpsIncidents.mockResolvedValue([{
+      id: "inc_github",
+      pathId: "github_actions",
+      status: "open",
+      correlationId: "monitor:github_actions",
+      title: "GitHub Actions monitor red",
+    }]);
+    listOpsEvents.mockImplementation(async (_env, { pathId } = {}) => pathId === "github_actions"
+      ? [{
+          id: "evt_github",
+          at: new Date().toISOString(),
+          pathId,
+          hopId: "synthetic_monitor",
+          outcome: "fail",
+          reasonCode: "monitor_failed",
+          summary: "GitHub Actions day-write failed",
+          condition: { expected: "green synthetic health check", observed: "red" },
+          source: "amari-cloud-health",
+          personLabel: "must not leak",
+          contactId: "must-not-leak",
+          message: { body: "must not leak" },
+        }]
+      : []);
+
+    const detail = await buildPathDetail(kvEnv(), "github_actions");
+    expect(detail.status).toBe("red");
+    expect(detail.events).toHaveLength(1);
+    expect(detail.incidents).toHaveLength(1);
+    expect(detail.events[0].summary).toMatch(/day-write failed/i);
+    expect(detail.events[0]).not.toHaveProperty("personLabel");
+    expect(detail.events[0]).not.toHaveProperty("contactId");
+    expect(detail.events[0]).not.toHaveProperty("message");
   });
 });
 

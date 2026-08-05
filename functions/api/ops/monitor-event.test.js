@@ -68,4 +68,48 @@ describe("POST /api/ops/monitor-event", () => {
     expect(response.status).toBe(400);
     expect(recordOpsEvent).not.toHaveBeenCalled();
   });
+
+  it("rejects registered paths the external monitor does not own", async () => {
+    const res = await onRequestPost(context({
+      pathId: "assessment_paid_book",
+      state: "red",
+      note: "forged customer path signal",
+    }));
+    expect(res.status).toBe(400);
+    expect(recordOpsEvent).not.toHaveBeenCalled();
+    expect(openOpsIncident).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid or materially future observation timestamps", async () => {
+    const invalid = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "green",
+      observedAt: "not-a-time",
+    }));
+    const future = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "green",
+      observedAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    }));
+    expect(invalid.status).toBe(400);
+    expect(future.status).toBe(400);
+    expect(recordOpsEvent).not.toHaveBeenCalled();
+    expect(resolveOpsIncident).not.toHaveBeenCalled();
+  });
+
+  it("records a healthy refresh as a heartbeat rather than a recovery", async () => {
+    const response = await onRequestPost(context({
+      pathId: "ops_monitor",
+      state: "green",
+      note: "all critical paths checked",
+      heartbeat: true,
+    }));
+    expect(response.status).toBe(200);
+    expect(recordOpsEvent).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
+      pathId: "ops_monitor",
+      outcome: "ok",
+      reasonCode: "monitor_heartbeat",
+      summary: expect.stringMatching(/heartbeat/i),
+    }));
+  });
 });

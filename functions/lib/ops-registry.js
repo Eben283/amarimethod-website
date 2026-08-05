@@ -455,3 +455,21 @@ export function registryPath(pathId) {
 export function registryPathIds() {
   return OPS_REGISTRY.filter((p) => p.kind === "path").map((p) => p.id);
 }
+
+// Exact contract owned by the independent Mac health monitor. Keep this narrow:
+// a valid service key must not be enough to forge synthetic state for customer
+// journey paths or dependencies the external monitor does not actually check.
+export const EXTERNAL_MONITOR_PATH_IDS = Object.freeze([
+  "ops_monitor",
+  "chief_of_staff",
+  "ghl_token",
+  "series_reconcile",
+  "partner_refresh",
+  "daily_audit",
+  "funnel_refresh",
+  "outreach_snapshot",
+  "field_id_check",
+  "conversation_cache",
+  "crm_mirror",
+  "github_actions",
+]);

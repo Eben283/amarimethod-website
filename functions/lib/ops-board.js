@@ -5,7 +5,12 @@
 // Row roles (ops-board-meta): hot = pay/book early warning; quiet = messaging;
 // map = blast-radius. States: healthy | sick | stuck | idle | blind | map_ok | map_bad.
 
-import { OPS_ERR_PATH_SOURCES, OPS_REGISTRY, registryPath } from "./ops-registry.js";
+import {
+  EXTERNAL_MONITOR_PATH_IDS,
+  OPS_ERR_PATH_SOURCES,
+  OPS_REGISTRY,
+  registryPath,
+} from "./ops-registry.js";
 import {
   countOpenIncidentsByPath,
   listOpsEvents,
@@ -25,6 +30,8 @@ import { isAutoFixable, listActiveFixJobs } from "./ops-fix.js";
 const HOUR = 3600 * 1000;
 const ERR_LOOKBACK_H = 72;
 const HOT_HEALTHY_MAX_AGE_H = 72;
+const EXTERNAL_MONITOR_MAX_AGE_H = 1;
+const EXTERNAL_MONITOR_HEARTBEAT_PATHS = new Set(["github_actions", "ops_monitor"]);
 const STUCK_REASON_CODES = new Set([
   "book_failed",
   "no_appointment_silent",
@@ -79,6 +86,89 @@ function signalFromJudged(id, judged, why) {
     log: lastRunAsLog(id, judged),
     detail: judged.detail,
   };
+}
+
+function sanitizedMonitorLog(evt) {
+  return {
+    id: evt.id,
+    at: evt.at,
+    atMs: evt.atMs ?? (Date.parse(evt.at) || null),
+    pathId: evt.pathId,
+    hopId: evt.hopId,
+    outcome: evt.outcome,
+    reasonCode: evt.reasonCode || null,
+    summary: evt.summary,
+    condition: evt.condition || null,
+    source: evt.source || null,
+  };
+}
+
+function signalFromMonitorEvent(evt) {
+  const age = ageHours(evt.at);
+  const observed = String(evt.condition?.observed || "").toLowerCase();
+  const healthy = evt.outcome === "ok" && observed === "green";
+  const stale = healthy && EXTERNAL_MONITOR_HEARTBEAT_PATHS.has(evt.pathId)
+    && (age == null || age > EXTERNAL_MONITOR_MAX_AGE_H);
+  const status = healthy && !stale ? "green" : "red";
+  const note = stale
+    ? `monitor heartbeat stale — last ${fmtAge(age)} (want < ${EXTERNAL_MONITOR_MAX_AGE_H}h)`
+    : evt.summary;
+  return {
+    status,
+    note,
+    why: stale ? `${note}; last report: ${evt.summary}` : evt.summary,
+    lastAt: evt.at || null,
+    log: [sanitizedMonitorLog(evt)],
+    detail: {
+      observed: observed || null,
+      reasonCode: evt.reasonCode || null,
+      source: evt.source || null,
+    },
+  };
+}
+
+async function readExternalMonitorSignals(env) {
+  const out = {};
+  await Promise.all(EXTERNAL_MONITOR_PATH_IDS.map(async (pathId) => {
+    try {
+      const events = await listOpsEvents(env, { pathId, limit: 20 });
+      const latest = events.find(
+        (evt) => evt.hopId === "synthetic_monitor" && evt.source === "amari-cloud-health",
+      );
+      if (latest) out[pathId] = signalFromMonitorEvent(latest);
+    } catch {
+      // Leave the row unknown; a read failure must never be painted green.
+    }
+  }));
+  return out;
+}
+
+function mergeNativeAndMonitorSignals(nativeSignals, monitorSignals) {
+  const merged = { ...nativeSignals };
+  for (const [pathId, monitor] of Object.entries(monitorSignals)) {
+    const native = nativeSignals[pathId];
+    if (!native) {
+      merged[pathId] = monitor;
+      continue;
+    }
+
+    const primary = monitor.status === "red"
+      ? monitor
+      : native.status === "red"
+        ? native
+        : native.status === "green"
+          ? native
+          : monitor;
+    merged[pathId] = {
+      ...primary,
+      log: [...(monitor.log || []), ...(native.log || [])],
+      detail: {
+        native: native.detail || null,
+        externalMonitor: monitor.detail || null,
+      },
+    };
+  }
+  return merged;
 }
 
 function eventLooksStuck(evt) {
@@ -212,6 +302,7 @@ function buildHotStrip(systems, openIncidentsSample) {
   const healthy = hot.filter((s) => s.state === OPS_ROW_STATE.HEALTHY);
   const people = (openIncidentsSample || [])
     .filter((i) => i.personLabel || i.contactId || i.correlationId)
+    .filter((i) => !String(i.correlationId || "").startsWith("monitor:"))
     .slice(0, 5)
     .map((i) => ({
       personLabel: i.personLabel || null,
@@ -295,6 +386,12 @@ export async function buildSystemsBoard(env) {
         state = OPS_ROW_STATE.IDLE;
         note = "on map · no signal yet";
         status = "unknown";
+      }
+      if (openCount > 0 && status !== "red") {
+        state = OPS_ROW_STATE.MAP_BAD;
+        status = "red";
+        note = openCount === 1 ? "1 open incident" : `${openCount} open incidents`;
+        why = "An Operations incident remains open for this dependency.";
       }
     } else {
       const judged = judgePathRow(reg, {
@@ -399,7 +496,11 @@ export async function buildPathDetail(env, pathId) {
   const metaRow = boardMetaFor(pathId);
 
   if (reg.kind === "dependency") {
-    const infra = await readInfraSignals(env);
+    const [infra, incidents, relatedErrs] = await Promise.all([
+      readInfraSignals(env),
+      listOpsIncidents(env, { pathId, status: "open", limit: 20 }),
+      relatedOpsErrors(env, pathId),
+    ]);
     const signal = infra[reg.id] || {
       status: "unknown",
       note: "no signal",
@@ -407,8 +508,11 @@ export async function buildPathDetail(env, pathId) {
       lastAt: null,
       log: [],
     };
-    const relatedErrs = await relatedOpsErrors(env, pathId);
-    const state = mapInfraToRowState(signal.status);
+    const hasOpenIncident = incidents.length > 0;
+    const status = hasOpenIncident ? "red" : signal.status;
+    const state = mapInfraToRowState(status);
+    const incidentNote = incidents.length === 1 ? "1 open incident" : `${incidents.length} open incidents`;
+    const incidentOverridesSignal = hasOpenIncident && signal.status !== "red";
     return {
       id: reg.id,
       label: reg.label,
@@ -418,13 +522,15 @@ export async function buildPathDetail(env, pathId) {
       instrumentation: reg.instrumentation,
       boardRole: metaRow.role,
       state,
-      status: signal.status,
-      note: signal.note,
+      status,
+      note: incidentOverridesSignal ? incidentNote : signal.note,
       hops: [],
-      incidents: [],
+      incidents,
       people: [],
       events: signal.log || [],
-      why: signal.why,
+      why: incidentOverridesSignal
+        ? "An Operations incident remains open for this dependency."
+        : signal.why,
       signalDetail: signal.detail || null,
       relatedErrors: relatedErrs,
       changeSurface: metaRow.changeSurface,
@@ -747,9 +853,10 @@ async function relatedOpsErrors(env, pathId) {
 }
 
 async function readInfraSignals(env) {
+  const monitorSignals = await readExternalMonitorSignals(env);
   const out = {};
   const kv = env?.PORTAL_KV;
-  if (!kv) return out;
+  if (!kv) return monitorSignals;
 
   // GHL token (expiry is the money-critical signal; refresh lastRun is secondary).
   try {
@@ -1227,7 +1334,7 @@ async function readInfraSignals(env) {
     out.stripe = { status: "unknown", note: "read failed", why: null, lastAt: null, log: [] };
   }
 
-  return out;
+  return mergeNativeAndMonitorSignals(out, monitorSignals);
 }
 
 /** Interactive apps: green on last ok (no stale-red), idle if never, red on error. */
