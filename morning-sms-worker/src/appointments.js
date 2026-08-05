@@ -1,5 +1,5 @@
-// Read today's first GHL appointment (for schedule pull-forward). Optional —
-// if GHL creds/token are missing, the runner falls back to 08:00 / 09:30.
+// Read today's GHL appointments. Optional — if GHL credentials are missing,
+// the runner keeps its normal schedule and reports that the agenda is unavailable.
 
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { dateKeyInZone, zonedTimeToUtcMs } from "./schedule.js";
@@ -53,11 +53,32 @@ function isActive(event) {
   return true;
 }
 
+function text(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function appointmentFromEvent(event, calendar) {
+  const startMs = apptStartMs(event);
+  if (startMs == null || !isActive(event)) return null;
+
+  return {
+    startMs,
+    contactName: text(
+      event?.contactName ||
+      event?.contact_name ||
+      [event?.firstName, event?.lastName].filter(Boolean).join(" "),
+    ) || null,
+    calendarName: text(event?.calendarName || calendar?.name) || null,
+    title: text(event?.title) || null,
+  };
+}
+
 /**
- * Earliest active appointment start (ms) for the Pacific day containing nowMs.
- * Returns null when none / GHL unavailable.
+ * Active appointments for the Pacific day containing nowMs, sorted by start.
+ * Returns null when any required GHL read is unavailable and [] only when the
+ * complete calendar set was read successfully and the day is genuinely empty.
  */
-export async function fetchFirstAppointmentMs(env, nowMs, timeZone = "America/Los_Angeles") {
+export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Los_Angeles") {
   if (!env?.PORTAL_KV) return null;
   if (!env.GHL_CLIENT_ID || !env.GHL_CLIENT_SECRET) return null;
 
@@ -73,7 +94,7 @@ export async function fetchFirstAppointmentMs(env, nowMs, timeZone = "America/Lo
     return null;
   }
 
-  let earliest = null;
+  const appointments = [];
   for (const cal of calendars) {
     try {
       const params = new URLSearchParams({
@@ -84,14 +105,19 @@ export async function fetchFirstAppointmentMs(env, nowMs, timeZone = "America/Lo
       });
       const data = await ghlGet(env, `/calendars/events?${params}`);
       for (const event of data.events || []) {
-        if (!isActive(event)) continue;
-        const ms = apptStartMs(event);
-        if (ms == null) continue;
-        if (earliest == null || ms < earliest) earliest = ms;
+        const appointment = appointmentFromEvent(event, cal);
+        if (appointment) appointments.push(appointment);
       }
     } catch (err) {
       console.warn(`[morning-sms] events ${cal.id} failed: ${err.message}`);
+      return null;
     }
   }
-  return earliest;
+  return appointments.sort((a, b) => a.startMs - b.startMs);
+}
+
+/** Earliest active appointment start for schedule pull-forward. */
+export async function fetchFirstAppointmentMs(env, nowMs, timeZone = "America/Los_Angeles") {
+  const appointments = await fetchTodaysAppointments(env, nowMs, timeZone);
+  return appointments?.[0]?.startMs ?? null;
 }

@@ -6,13 +6,14 @@
   "description": "Amari Method website with integrated pain assessment quiz",
   "scripts": {
     "dev": "cd quiz-astro && npm run dev",
-    "build": "mkdir -p dist && node scripts/build-html.js && cp -r css js images videos blog book favicon* apple-touch-icon.png cos-icon-180.png cos-icon-512.png staff-icon.png robots.txt sitemap.xml _redirects partner-manifest.json staff-manifest.json cos-manifest.json staff-sw.js dist/ 2>/dev/null || true && cd quiz-astro && npm install && npx astro build && cd .. && rm -rf dist/quiz && mkdir -p dist/quiz && cp -R quiz-astro/dist/. dist/quiz/ && cd portal && npm install && vite build && cd ../staff && npm install && vite build && cd ../cos && npm install && vite build",
+    "build": "mkdir -p dist && node scripts/build-html.js && cp -r css js images videos book favicon* apple-touch-icon.png cos-icon-180.png cos-icon-512.png staff-icon.png robots.txt sitemap.xml _redirects partner-manifest.json staff-manifest.json cos-manifest.json staff-sw.js dist/ && npm --prefix quiz-astro ci && npm --prefix quiz-astro run build && rm -rf dist/quiz && mkdir -p dist/quiz && cp -R quiz-astro/dist/. dist/quiz/ && npm --prefix portal ci && npm --prefix portal run build && npm --prefix staff ci && npm --prefix staff run build && npm --prefix cos ci && npm --prefix cos run build",
     "build:legacy-quiz": "cd quiz && vite build",
     "preview": "cd quiz-astro && npm run preview",
     "lint": "cd quiz && eslint .",
     "check:field-ids": "node scripts/check-field-ids.mjs",
     "check:owned-access": "node scripts/check-owned-access.mjs",
-    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js"
+    "check:build-contract": "node scripts/check-build-contract.mjs",
+    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

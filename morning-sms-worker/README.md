@@ -4,7 +4,7 @@ Morning texts to **Eben + Garrett** via **GoHighLevel** SMS (not Twilio).
 
 | Send | Copy | When (America/Los_Angeles) |
 |------|------|----------------------------|
-| `prepare` | `Good morning, time to prepare for the day.` | **08:00**, or **2 hours before the first appointment** when that is earlier |
+| `prepare` | Today’s active appointments, with Pacific time, practice-member name, and calendar/session type | **08:00**, or **2 hours before the first appointment** when that is earlier |
 | `meeting` | `Staff meeting` | **90 minutes after** the prepare text (09:30 on a normal day) |
 
 ## Recipients
@@ -43,6 +43,10 @@ curl -sS -H "Authorization: Bearer $WORKER_AUTH_SECRET" \
 ```
 
 Cron: `*/5 11-19 * * *` (UTC morning window). Mode: `MORNING_SMS_MODE=active`.
+
+Cancelled, invalid, and no-show appointments are excluded. If any required GHL
+calendar read fails, the message says the agenda could not be loaded rather
+than incorrectly reporting an empty or partial day.
 
 ## Note on Twilio
 
