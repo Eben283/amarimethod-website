@@ -69,9 +69,9 @@ describe("GET /api/heartbeats", () => {
     expect(res.status).toBe(401);
   });
 
-  it("503s when OPS_READ_KEY is not configured (fail closed)", async () => {
+  it("500s when OPS_READ_KEY is not configured (fail closed)", async () => {
     const res = await onRequestGet(ctx({ env: {} }));
-    expect(res.status).toBe(503);
+    expect(res.status).toBe(500);
   });
 
   it("500s when authorized but PORTAL_KV is not bound", async () => {

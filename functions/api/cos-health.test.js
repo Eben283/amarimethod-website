@@ -59,7 +59,7 @@ describe("GET /api/cos-health", () => {
 
   it("does not expose the endpoint without the ops key", async () => {
     const response = await onRequestGet({ request: new Request("https://www.amarimethod.com/api/cos-health"), env: {} });
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(500);
     expect(probeOpenRouter).not.toHaveBeenCalled();
   });
 });

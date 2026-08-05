@@ -1,8 +1,8 @@
-// GET /api/ops/systems — Amari Ops board (click-to-view, no PIN).
+// GET /api/ops/systems — authenticated Staff Operations board (Eben or Garrett).
 //   ?pathId=assessment_paid_book → path detail (hops + people + log)
 //   ?pathId=...&contactId=... | &correlationId=... → person timeline
 
-import { corsHeaders } from "../../lib/endpoint-guards.js";
+import { corsHeaders, requireStaffAuth } from "../../lib/endpoint-guards.js";
 import {
   buildPathDetail,
   buildPersonTimeline,
@@ -24,6 +24,8 @@ export async function onRequestGet(context) {
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex, nofollow",
   };
+  const { error } = await requireStaffAuth(context, headers);
+  if (error) return error;
 
   const url = new URL(context.request.url);
   const pathId = url.searchParams.get("pathId");

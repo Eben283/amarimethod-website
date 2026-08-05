@@ -6,12 +6,20 @@ const req = (headers) =>
   new Request("https://amarimethod.com/api/daily-audit", headers ? { headers } : undefined);
 
 describe("requireOpsReadKey", () => {
-  it("503s (fails CLOSED) + logs when no key is configured — deny PII, don't expose", () => {
+  it("500s (fails CLOSED) + logs when no key is configured — deny PII without a Cloudflare-replaced 503", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(requireOpsReadKey(req(), {}).status).toBe(503);
-    expect(requireOpsReadKey(req({ "X-Service-Key": "whatever" }), { OPS_READ_KEY: "" }).status).toBe(503);
+    expect(requireOpsReadKey(req(), {}).status).toBe(500);
+    expect(requireOpsReadKey(req({ "X-Service-Key": "whatever" }), { OPS_READ_KEY: "" }).status).toBe(500);
     expect(err).toHaveBeenCalled();
     err.mockRestore();
+  });
+
+  it("preserves caller response headers on every denial", () => {
+    const headers = { "Access-Control-Allow-Origin": "https://www.amarimethod.com" };
+    const response = requireOpsReadKey(req(), { OPS_READ_KEY: KEY }, headers);
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://www.amarimethod.com");
+    expect(response.headers.get("Content-Type")).toBe("application/json");
   });
 
   it("ALLOWS a correct key via X-Service-Key or Authorization: Bearer", () => {
