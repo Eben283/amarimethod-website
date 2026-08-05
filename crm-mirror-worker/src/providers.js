@@ -2,6 +2,138 @@ import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 const STRIPE_BASE = "https://api.stripe.com/v1";
+const GHL_MAX_ATTEMPTS = 3;
+const GHL_MIN_INTERVAL_MS = 200;
+const GHL_MAX_RETRY_DELAY_MS = 10_000;
+const GHL_FALLBACK_BASE_MS = 250;
+const GHL_SERVER_JITTER_MS = 100;
+
+let ghlReadTail = Promise.resolve();
+let lastGhlRequestAt = null;
+let ghlTimingOverride = null;
+
+function defaultTiming() {
+  return {
+    minIntervalMs: GHL_MIN_INTERVAL_MS,
+    maxRetryDelayMs: GHL_MAX_RETRY_DELAY_MS,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    random: () => Math.random(),
+  };
+}
+
+function timing() {
+  return { ...defaultTiming(), ...(ghlTimingOverride || {}) };
+}
+
+// Test-only hooks keep retry/pacing assertions deterministic without exposing
+// a production environment switch that could accidentally disable the gate.
+export function _setGhlProviderTimingForTests(overrides) {
+  ghlTimingOverride = { ...(overrides || {}) };
+}
+
+export function _resetGhlProviderGateForTests() {
+  ghlReadTail = Promise.resolve();
+  lastGhlRequestAt = null;
+  ghlTimingOverride = null;
+}
+
+function numericHeader(response, name) {
+  const raw = response?.headers?.get?.(name);
+  if (raw == null || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function retryDelayMs(response, attempt, clock) {
+  const retryAfter = response?.headers?.get?.("Retry-After");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      const serverDelayMs = Math.round(seconds * 1_000);
+      return {
+        capDelayMs: serverDelayMs,
+        waitMs: serverDelayMs + Math.floor(clock.random() * GHL_SERVER_JITTER_MS),
+      };
+    }
+    const at = Date.parse(retryAfter);
+    if (Number.isFinite(at)) {
+      const serverDelayMs = Math.max(0, at - clock.now());
+      return {
+        capDelayMs: serverDelayMs,
+        waitMs: serverDelayMs + Math.floor(clock.random() * GHL_SERVER_JITTER_MS),
+      };
+    }
+  }
+
+  const intervalMs = numericHeader(response, "X-RateLimit-Interval-Milliseconds");
+  if (intervalMs != null) {
+    const serverDelayMs = Math.round(intervalMs);
+    return {
+      capDelayMs: serverDelayMs,
+      waitMs: serverDelayMs + Math.floor(clock.random() * GHL_SERVER_JITTER_MS),
+    };
+  }
+
+  const ceiling = GHL_FALLBACK_BASE_MS * (2 ** Math.max(0, attempt - 1));
+  const waitMs = Math.floor(clock.random() * ceiling);
+  return { capDelayMs: waitMs, waitMs };
+}
+
+function ghlRateError(response, deferredMs = null) {
+  const metadata = [
+    ["max", numericHeader(response, "X-RateLimit-Max")],
+    ["remaining", numericHeader(response, "X-RateLimit-Remaining")],
+    ["intervalMs", numericHeader(response, "X-RateLimit-Interval-Milliseconds")],
+    ["dailyRemaining", numericHeader(response, "X-RateLimit-Daily-Remaining")],
+    ["retryAfterMs", deferredMs],
+  ]
+    .filter(([, value]) => value != null)
+    .map(([key, value]) => `${key}=${Math.round(value)}`);
+  const suffix = metadata.length ? `; ${metadata.join("; ")}` : "";
+  return new Error(`GHL read failed (429${suffix})`);
+}
+
+async function paceGhlRead(clock) {
+  if (lastGhlRequestAt != null) {
+    const waitMs = lastGhlRequestAt + clock.minIntervalMs - clock.now();
+    if (waitMs > 0) await clock.sleep(waitMs);
+  }
+  lastGhlRequestAt = clock.now();
+}
+
+function serializeGhlRead(task) {
+  const current = ghlReadTail.then(task, task);
+  ghlReadTail = current.catch(() => {});
+  return current;
+}
+
+async function ghlResponse(env, path) {
+  return serializeGhlRead(async () => {
+    const clock = timing();
+    const token = await getAccessToken(env);
+
+    for (let attempt = 1; attempt <= GHL_MAX_ATTEMPTS; attempt += 1) {
+      await paceGhlRead(clock);
+      const response = await fetch(`${GHL_BASE}${path}`, {
+        headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+      });
+      if (response.status !== 429) return response;
+      if (attempt === GHL_MAX_ATTEMPTS) {
+        const finalDelay = retryDelayMs(response, attempt, clock);
+        throw ghlRateError(response, finalDelay.waitMs);
+      }
+
+      const retryDelay = retryDelayMs(response, attempt, clock);
+      if (retryDelay.capDelayMs > clock.maxRetryDelayMs) {
+        throw ghlRateError(response, retryDelay.waitMs);
+      }
+      await clock.sleep(retryDelay.waitMs);
+    }
+
+    throw new Error("GHL read failed (429)");
+  });
+}
 
 async function readJson(response, provider) {
   if (!response.ok) throw new Error(`${provider} read failed (${response.status})`);
@@ -9,10 +141,7 @@ async function readJson(response, provider) {
 }
 
 async function ghlGet(env, path) {
-  const token = await getAccessToken(env);
-  const response = await fetch(`${GHL_BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
-  });
+  const response = await ghlResponse(env, path);
   return readJson(response, "GHL");
 }
 
@@ -109,10 +238,10 @@ export async function fetchGhlContactTasks(env, contactExternalId) {
 // refresh. GHL returns 400 "Contact not found" for deleted IDs; those are ghosts
 // in the mirror, not missing source records that need operator recovery.
 export async function fetchGhlContactExists(env, contactExternalId) {
-  const token = await getAccessToken(env);
-  const response = await fetch(`${GHL_BASE}/contacts/${encodeURIComponent(contactExternalId)}`, {
-    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
-  });
+  const response = await ghlResponse(
+    env,
+    `/contacts/${encodeURIComponent(contactExternalId)}`,
+  );
   if (response.status === 400 || response.status === 404) return false;
   if (!response.ok) throw new Error(`GHL contact probe failed (${response.status})`);
   return true;
