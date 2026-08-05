@@ -53,6 +53,32 @@ function makeContext({ body, secret = SECRET, kvStore = {}, contact = { id: 'c1'
   return { env, request };
 }
 
+function makeProcessedEventDb() {
+  const rows = new Set();
+  return {
+    prepare(sql) {
+      return {
+        args: [],
+        bind(...args) { this.args = args; return this; },
+        async run() {
+          const key = this.args[0];
+          if (/^INSERT INTO processed_events/.test(sql)) {
+            if (rows.has(key)) return { meta: { changes: 0 } };
+            rows.add(key);
+            return { meta: { changes: 1 } };
+          }
+          if (/^DELETE FROM processed_events/.test(sql)) {
+            const deleted = rows.delete(key);
+            return { meta: { changes: deleted ? 1 : 0 } };
+          }
+          return { meta: { changes: 0 } };
+        },
+      };
+    },
+    rows,
+  };
+}
+
 const putToContact = () =>
   fetchCalls.find((c) => c.opts?.method === 'PUT' && /\/contacts\//.test(c.url));
 
@@ -275,8 +301,9 @@ describe('purchase-webhook — write orchestration', () => {
     ctx.waitUntil = vi.fn();
 
     const res = await onRequestPost(ctx);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const body = JSON.parse(await res.text());
+    expect(body.retryable).toBe(true);
     expect(body.appointmentId).toBeNull();
 
     const urgentNote = [...ghlFetch.mock.calls].find(([, url, opts]) =>
@@ -288,6 +315,202 @@ describe('purchase-webhook — write orchestration', () => {
       call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
     );
     expect(appointmentCreate).toBeFalsy();
+  });
+
+  it('Assessment booking failure releases its order claim and returns retryable failure', async () => {
+    const contact = {
+      id: 'assessment-retry',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: '2026-08-21T11:00:00-07:00' },
+      ],
+    };
+    const db = makeProcessedEventDb();
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-retry-order' },
+      contact,
+    });
+    ctx.env.ATTEND_DB = db;
+    global.fetch = vi.fn(async (url, opts) => {
+      fetchCalls.push({ url, opts });
+      if (String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST') {
+        return { ok: false, status: 500, json: async () => ({}), text: async () => 'temporary calendar failure' };
+      }
+      return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
+    });
+
+    const failed = await onRequestPost(ctx);
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ success: false, retryable: true, appointmentId: null });
+    expect(db.rows.has('order:assessment-retry-order')).toBe(false);
+    expect(ctx.env.PURCHASE_KV.put.mock.calls.some(([key]) => key === 'order:assessment-retry-order')).toBe(false);
+
+    const retry = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-retry-order' },
+      contact,
+    });
+    retry.env.ATTEND_DB = db;
+    global.fetch = vi.fn(async (url, opts) => {
+      fetchCalls.push({ url, opts });
+      const creating = String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST';
+      return { ok: true, status: 200, json: async () => creating ? { id: 'appt_retry_ok' } : {}, text: async () => '' };
+    });
+    const recovered = await onRequestPost(retry);
+    expect(recovered.status).toBe(200);
+    expect(await recovered.json()).toMatchObject({ appointmentId: 'appt_retry_ok' });
+    expect(db.rows.has('order:assessment-retry-order')).toBe(true);
+  });
+
+  it('Assessment contact-fetch failure releases its order claim for redelivery', async () => {
+    const db = makeProcessedEventDb();
+    const ctx = makeContext({
+      body: {
+        contact_id: 'assessment-contact-fetch-fail',
+        product_id: ASSESSMENT_ID,
+        order_id: 'assessment-contact-fetch-order',
+      },
+    });
+    ctx.env.ATTEND_DB = db;
+    ctx.waitUntil = vi.fn();
+    ghlFetch.mockResolvedValueOnce({ ok: false, status: 503 });
+
+    const failed = await onRequestPost(ctx);
+
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({
+      error: 'Contact not found',
+      retryable: true,
+    });
+    expect(db.rows.has('order:assessment-contact-fetch-order')).toBe(false);
+    expect(ctx.env.PURCHASE_KV.put.mock.calls.some(
+      ([key]) => key === 'order:assessment-contact-fetch-order',
+    )).toBe(false);
+  });
+
+  it('Assessment retry confirms an existing new appointment instead of treating it as fulfilled', async () => {
+    const slot = '2026-08-21T14:00:00-07:00';
+    const contact = {
+      id: 'assessment-existing-new',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: slot },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-new-order' },
+      contact,
+    });
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return {
+          ok: true,
+          json: async () => ({ events: [{
+            id: 'appt_existing_new',
+            calendarId: ASSESSMENT_CALENDAR_ID,
+            startTime: slot,
+            appointmentStatus: 'new',
+          }] }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ appointmentId: 'appt_existing_new' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/calendars\/events\/appointments\/appt_existing_new$/),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ appointmentStatus: 'confirmed' }) }),
+    );
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(false);
+  });
+
+  it('does not treat an unrelated future Assessment as fulfillment of the paid slot', async () => {
+    const paidSlot = '2026-08-21T14:00:00-07:00';
+    const contact = {
+      id: 'assessment-different-slot',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: paidSlot },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-different-order' },
+      contact,
+    });
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return {
+          ok: true,
+          json: async () => ({ events: [{
+            id: 'appt_other_time',
+            calendarId: ASSESSMENT_CALENDAR_ID,
+            startTime: '2026-08-21T09:00:00-07:00',
+            appointmentStatus: 'confirmed',
+          }] }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ appointmentId: 'appt_native_1' });
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(true);
+  });
+
+  it('fails closed when Assessment appointment reconciliation cannot be read', async () => {
+    const slot = '2026-08-21T15:00:00-07:00';
+    const contact = {
+      id: 'assessment-reconcile-fail',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: slot },
+      ],
+    };
+    const db = makeProcessedEventDb();
+    const ctx = makeContext({
+      body: {
+        contact_id: contact.id,
+        product_id: ASSESSMENT_ID,
+        order_id: 'assessment-reconcile-order',
+      },
+      contact,
+    });
+    ctx.env.ATTEND_DB = db;
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return { ok: false, status: 503, json: async () => ({}) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const failed = await onRequestPost(ctx);
+
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ success: false, retryable: true });
+    expect(db.rows.has('order:assessment-reconcile-order')).toBe(false);
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(false);
   });
 
   // Amari Ops Phase 1: Holly-class fail must leave a reconstructable trail
@@ -339,7 +562,7 @@ describe('purchase-webhook — write orchestration', () => {
     ctx.env.OPS_ALERT_CONTACT_ID = 'ebenOps';
 
     const res = await onRequestPost(ctx);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
 
     expect(opsRows).toEqual(expect.arrayContaining([
       expect.objectContaining({
