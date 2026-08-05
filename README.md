@@ -30,6 +30,11 @@ A high-performance, SEO-optimized website for the Amari Method - natural back pa
 
 ### Cloudflare Pages (Recommended)
 
+Cloudflare Pages is the canonical deployment for this repository, including the
+Pages Functions under `functions/`. Do not connect the repository to a separate
+Workers Builds project: there is no root Worker entry point, and doing so creates
+an invalid duplicate deployment check.
+
 1. Push this repository to GitHub
 2. Log in to [Cloudflare Pages](https://pages.cloudflare.com)
 3. Create a new project and select this repository
