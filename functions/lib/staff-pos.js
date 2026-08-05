@@ -19,6 +19,7 @@ export const POS_CATALOG = Object.freeze({
   "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
   "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
+  "single-session": { label: "Single Session (50 min)", amountCents: 28500, ghlProductId: "6a6b8bb7a1753b65945372f1" },
 });
 
 export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);

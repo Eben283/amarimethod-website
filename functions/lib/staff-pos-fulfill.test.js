@@ -92,6 +92,27 @@ describe("staff POS fulfillment planning", () => {
     expect(plan.packagePurchased).toBe(false);
   });
 
+  it("adds one prepaid session for the $285 single session", () => {
+    const effects = buildPosFulfillmentEffects([
+      {
+        kind: "catalog",
+        ghlProductId: "6a6b8bb7a1753b65945372f1",
+        label: "Single Session (50 min)",
+        quantity: 1,
+        lineTotalCents: 28500,
+      },
+    ]);
+    expect(effects).toEqual([
+      expect.objectContaining({ type: "add_session", sessions: 1, productId: "6a6b8bb7a1753b65945372f1" }),
+    ]);
+    const plan = computeFulfillmentFields(effects, {
+      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "2" }],
+    });
+    expect(plan.remaining).toBe(3);
+    expect(plan.portalAccess).toBe(true);
+    expect(plan.packagePurchased).toBe(false);
+  });
+
   it("adds for the additive 4→8 upgrade instead of wiping unused balance", () => {
     const effects = buildPosFulfillmentEffects([
       {

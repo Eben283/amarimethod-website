@@ -27,6 +27,7 @@ const CATALOG = [
   ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
   ["8-session-series", "8-session series", 129500, "Founders Circle", "Series"],
   ["4-session-series", "4-session series", 72000, "Founders Circle", "Series"],
+  ["single-session", "Single session", 28500, "Single sessions", "50 min · adds 1 prepaid session"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
   ["follow-up", "Single follow-up", 19000, "Founders Circle", "Follow-up session"],
   ["upgrade-initial-to-4", "Initial → 4-session", 49500, "Founders Circle", "Legacy continuation price"],
@@ -862,6 +863,14 @@ export default function PosPage() {
               >
                 <strong>Assessment</strong>
                 <small>{money(2900)}</small>
+              </button>
+              <button
+                type="button"
+                className="pos-tile pos-tile--sessions"
+                onClick={() => addOrIncrementCatalog("single-session")}
+              >
+                <strong>Single session</strong>
+                <small>{money(28500)} · 50 min</small>
               </button>
               <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("Upgrades")}>
                 <strong>Upgrades</strong>
