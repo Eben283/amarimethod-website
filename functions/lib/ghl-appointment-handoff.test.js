@@ -45,4 +45,41 @@ describe("createConfirmedAppointment", () => {
       .rejects.toBeInstanceOf(AppointmentHandoffError);
     expect(request).toHaveBeenCalledTimes(1);
   });
+
+  it("checkpoints the appointment id before confirmation", async () => {
+    const events = [];
+    const request = vi.fn(async (_url, options) => {
+      const status = JSON.parse(options.body).appointmentStatus;
+      events.push(status);
+      return jsonResponse(status === "new" ? { id: "appt_checkpoint" } : { success: true });
+    });
+    const onCreated = vi.fn(async (id) => events.push(`checkpoint:${id}`));
+
+    await createConfirmedAppointment({
+      request,
+      endpoint: "https://example.test/appointments",
+      payload: {},
+      onCreated,
+    });
+
+    expect(events).toEqual(["new", "checkpoint:appt_checkpoint", "confirmed"]);
+  });
+
+  it("cancels an uncheckpointed appointment and reports the checkpoint phase", async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ id: "appt_uncheckpointed" }))
+      .mockResolvedValueOnce(jsonResponse({ success: true }));
+
+    await expect(createConfirmedAppointment({
+      request,
+      endpoint: "https://example.test/appointments",
+      payload: {},
+      onCreated: async () => { throw new Error("D1 unavailable"); },
+    })).rejects.toMatchObject({
+      phase: "checkpoint",
+      appointmentId: "appt_uncheckpointed",
+      cleanupStatus: 200,
+    });
+    expect(JSON.parse(request.mock.calls[1][1].body).appointmentStatus).toBe("cancelled");
+  });
 });

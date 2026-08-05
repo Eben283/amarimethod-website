@@ -20,6 +20,13 @@ import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
 import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
+import {
+  checkpointBookingAppointment,
+  claimBookingOperation,
+  clearBookingAppointmentCheckpoint,
+  completeBookingOperation,
+  failBookingOperation,
+} from "../lib/booking-operations.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -90,6 +97,51 @@ function json(data, status = 200, requestOrigin = '') {
   });
 }
 
+function appointmentInstant(value) {
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+export function matchingPortalAppointments(appointments, { appointmentId, calendarId, startTime }) {
+  const requested = appointmentInstant(startTime);
+  return (appointments || []).filter((appointment) => {
+    const status = String(appointment.appointmentStatus || '').toLowerCase();
+    if (status === 'cancelled' || status === 'noshow') return false;
+    if (appointmentId) return appointment.id === appointmentId;
+    if (appointment.calendarId !== calendarId) return false;
+    const actual = appointmentInstant(appointment.startTime);
+    return Number.isFinite(requested) && Number.isFinite(actual) && Math.abs(requested - actual) <= 60_000;
+  });
+}
+
+async function listContactAppointments(contactId, token) {
+  const response = await fetch(
+    `https://services.leadconnectorhq.com/contacts/${encodeURIComponent(contactId)}/appointments`,
+    { headers: ghlHeaders(token) },
+  );
+  if (!response.ok) throw new Error(`GHL appointment reconciliation failed: ${response.status}`);
+  const data = await response.json();
+  return data.events || data.appointments || [];
+}
+
+async function confirmAppointment(appointment, token) {
+  const status = String(appointment.appointmentStatus || '').toLowerCase();
+  if (status === 'confirmed') return appointment;
+  const response = await fetch(
+    `https://services.leadconnectorhq.com/calendars/events/appointments/${encodeURIComponent(appointment.id)}`,
+    {
+      method: 'PUT',
+      headers: ghlHeaders(token),
+      body: JSON.stringify({ appointmentStatus: 'confirmed' }),
+    },
+  );
+  if (!response.ok) {
+    const detail = await response.text().catch(() => 'response body unavailable');
+    throw new Error(`GHL appointment confirmation failed (${response.status}): ${detail.slice(0, 300)}`);
+  }
+  return { ...appointment, appointmentStatus: 'confirmed' };
+}
+
 export async function onRequestOptions({ request }) {
   const origin = request.headers.get('Origin') || '';
   return new Response(null, { status: 204, headers: cors(origin) });
@@ -126,13 +178,8 @@ export async function onRequestPost(context) {
     return json({ error: 'startTime, timezone, and sessionType are required' }, 400, origin);
   }
 
-  // Idempotency: if the client supplied a key and we've already processed it,
-  // return the cached result instead of double-booking. KV TTL = 1 hour (long
-  // enough to cover any retry storm; GHL booking slots don't move mid-session).
-  const kvKey = idempotencyKey ? `portal-book:${contactId}:${idempotencyKey}` : null;
-  if (kvKey && context.env.PORTAL_KV) {
-    const cached = await context.env.PORTAL_KV.get(kvKey, 'json').catch(() => null);
-    if (cached) return json(cached, 200, origin);
+  if (typeof idempotencyKey !== 'string' || idempotencyKey.length < 8 || idempotencyKey.length > 200) {
+    return json({ error: 'A valid booking idempotencyKey is required' }, 400, origin);
   }
 
   // B2: derive the calendar server-side from sessionType — never trust a
@@ -142,6 +189,39 @@ export async function onRequestPost(context) {
   if (!calendarId) {
     return json({ error: 'Invalid sessionType' }, 400, origin);
   }
+
+  const opKey = `portal-book:${contactId}:${idempotencyKey}`;
+  let claim;
+  try {
+    claim = await claimBookingOperation(env.ATTEND_DB, {
+      opKey,
+      kind: 'portal_followup',
+      contactId,
+      calendarId,
+      startTime,
+    });
+  } catch (err) {
+    console.error('Portal booking state unavailable:', err);
+    return json({ error: 'Booking is temporarily unavailable. Please try again.', retryable: true }, 503, origin);
+  }
+  if (claim.state === 'completed') return json(claim.operation.result, 200, origin);
+  if (claim.state === 'in_progress') {
+    return json({ error: 'This booking is already processing. Please try again shortly.', retryable: true }, 409, origin);
+  }
+  if (claim.state === 'conflict') {
+    return json({ error: 'This booking key was already used for a different time.' }, 409, origin);
+  }
+  if (claim.state === 'manual_review') {
+    return json({ error: 'This booking needs staff review. Please contact Amari Method.' }, 409, origin);
+  }
+
+  const failOperation = async (err, manualReview = false) => {
+    try {
+      await failBookingOperation(env.ATTEND_DB, opKey, err, { manualReview });
+    } catch (stateErr) {
+      console.error('Portal booking failure state could not be saved:', stateErr);
+    }
+  };
 
   // Fetch contact details from GHL to get name/phone (and the session balance).
   let contact;
@@ -157,6 +237,7 @@ export async function onRequestPost(context) {
     contact = contactData.contact;
   } catch (err) {
     console.error('Failed to fetch contact:', err);
+    await failOperation(err);
     return json({ error: 'Failed to retrieve contact information' }, 422, origin);
   }
 
@@ -180,6 +261,7 @@ export async function onRequestPost(context) {
         },
       }),
     );
+    await failOperation('no sessions remaining');
     return json(
       { error: 'No sessions remaining in your package. Please purchase a new series to book another session.' },
       403,
@@ -209,12 +291,6 @@ export async function onRequestPost(context) {
   // (start + 50 min, handling midnight crossings) and the offset.
   const endTime = appointmentEndTime(startTime, 50);
 
-  try {
-    await assertSlotRespectsAppBuffer(context, startTime, calendarId);
-  } catch {
-    return json({ error: 'That time is no longer available. Choose another one.' }, 422, origin);
-  }
-
   // Build the appointment payload
   const appointmentPayload = {
     calendarId,
@@ -232,11 +308,49 @@ export async function onRequestPost(context) {
   };
 
   try {
-    const apptData = await createConfirmedAppointment({
-      endpoint: 'https://services.leadconnectorhq.com/calendars/events/appointments',
-      request: (url, options) => fetch(url, { ...options, headers: ghlHeaders(GHL_API_KEY) }),
-      payload: appointmentPayload,
+    const appointments = await listContactAppointments(contactId, GHL_API_KEY);
+    let checkpointId = claim.operation.appointmentId;
+    let matches = matchingPortalAppointments(appointments, {
+      appointmentId: checkpointId,
+      calendarId,
+      startTime,
     });
+
+    if (checkpointId && matches.length === 0) {
+      const checkpointed = appointments.find((appointment) => appointment.id === checkpointId);
+      const checkpointStatus = String(checkpointed?.appointmentStatus || '').toLowerCase();
+      if (checkpointed && (checkpointStatus === 'cancelled' || checkpointStatus === 'noshow')) {
+        await clearBookingAppointmentCheckpoint(env.ATTEND_DB, opKey, checkpointId);
+        checkpointId = null;
+        matches = matchingPortalAppointments(appointments, { calendarId, startTime });
+      } else {
+        throw Object.assign(new Error('checkpointed appointment could not be reconciled'), { manualReview: true });
+      }
+    }
+
+    if (!checkpointId) {
+      matches = matchingPortalAppointments(appointments, { calendarId, startTime });
+      if (matches.length > 1) {
+        throw Object.assign(new Error('multiple matching appointments require staff review'), { manualReview: true });
+      }
+      if (matches.length === 1) {
+        checkpointId = matches[0].id;
+        await checkpointBookingAppointment(env.ATTEND_DB, opKey, checkpointId);
+      }
+    }
+
+    let apptData;
+    if (matches.length === 1) {
+      apptData = await confirmAppointment(matches[0], GHL_API_KEY);
+    } else {
+      await assertSlotRespectsAppBuffer(context, startTime, calendarId);
+      apptData = await createConfirmedAppointment({
+        endpoint: 'https://services.leadconnectorhq.com/calendars/events/appointments',
+        request: (url, options) => fetch(url, { ...options, headers: ghlHeaders(GHL_API_KEY) }),
+        payload: appointmentPayload,
+        onCreated: (appointmentId) => checkpointBookingAppointment(env.ATTEND_DB, opKey, appointmentId),
+      });
+    }
 
     const result = {
       success: true,
@@ -263,16 +377,13 @@ export async function onRequestPost(context) {
       }),
     );
 
-    // Cache the successful result so duplicate confirms return the same
-    // appointment instead of creating a second one.
-    if (kvKey && context.env.PORTAL_KV) {
-      await context.env.PORTAL_KV.put(kvKey, JSON.stringify(result), { expirationTtl: 3600 }).catch(() => {});
-    }
+    await completeBookingOperation(env.ATTEND_DB, opKey, result);
 
     return json(result, 200, origin);
   } catch (err) {
     const detail = String(err?.detail || err?.message || err);
     console.error('GHL booking error:', err?.status || 0, detail);
+    await failOperation(detail, !!err?.manualReview);
     context.waitUntil?.(
       recordOpsError(env, "portal-book", "Portal package book failed", {
         contactId,

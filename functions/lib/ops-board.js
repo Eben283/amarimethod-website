@@ -1337,8 +1337,8 @@ async function readInfraSignals(env) {
   return mergeNativeAndMonitorSignals(out, monitorSignals);
 }
 
-/** Interactive apps: green on last ok (no stale-red), idle if never, red on error. */
-function judgeInteractiveOk(rec, { label }) {
+/** Interactive evidence expires to unknown; an old success must never stay green forever. */
+function judgeInteractiveOk(rec, { label, maxAgeH = 24 }) {
   if (!rec) {
     return {
       status: "unknown",
@@ -1357,6 +1357,14 @@ function judgeInteractiveOk(rec, { label }) {
       detail: rec,
     };
   }
+  if (age == null || age > maxAgeH) {
+    return {
+      status: "unknown",
+      note: `stale ${label} evidence · ${fmtAge(age)} (want < ${maxAgeH}h)`,
+      lastAt: at,
+      detail: rec,
+    };
+  }
   return {
     status: "green",
     note: `last ok · ${fmtAge(age)}`,
@@ -1365,7 +1373,7 @@ function judgeInteractiveOk(rec, { label }) {
   };
 }
 
-function judgePortalAuth(auth, verify) {
+function judgePortalAuth(auth, verify, { maxAgeH = 168 } = {}) {
   const latest = [auth, verify]
     .filter(Boolean)
     .sort((a, b) => {
@@ -1381,6 +1389,15 @@ function judgePortalAuth(auth, verify) {
     return {
       status: "red",
       note: latest.error || "portal auth failed",
+      lastAt: at,
+      detail: { auth, verify },
+    };
+  }
+  const age = ageHours(at);
+  if (age == null || age > maxAgeH) {
+    return {
+      status: "unknown",
+      note: `stale portal auth evidence · ${fmtAge(age)} (want < ${maxAgeH}h)`,
       lastAt: at,
       detail: { auth, verify },
     };
@@ -1440,6 +1457,22 @@ async function judgeChiefOfStaff(kv) {
     };
   }
   if (ready?.ok || auth?.status === "ok" || chat?.status === "ok") {
+    const age = ageHours(lastAt);
+    if (age == null || age > 24) {
+      return {
+        status: "unknown",
+        note: `stale CoS evidence · ${fmtAge(age)} (want < 24h)`,
+        why: "The last successful CoS readiness/login/chat evidence is too old to prove current health.",
+        lastAt,
+        detail: { ready, auth, chat },
+        log: lastRunAsLog("chief_of_staff", {
+          status: "unknown",
+          lastAt,
+          detail: { ready, auth, chat },
+          note: "stale evidence",
+        }),
+      };
+    }
     const bits = [];
     if (ready?.ok) bits.push("OpenRouter ready");
     if (auth?.status === "ok") bits.push(`login ${fmtAge(ageHours(authAt))}`);

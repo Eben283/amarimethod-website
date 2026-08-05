@@ -23,7 +23,7 @@ async function responseText(response) {
   }
 }
 
-export async function createConfirmedAppointment({ request, endpoint, payload }) {
+export async function createConfirmedAppointment({ request, endpoint, payload, onCreated }) {
   if (typeof request !== "function") throw new TypeError("request callback required");
   if (!endpoint) throw new TypeError("appointment endpoint required");
 
@@ -42,6 +42,29 @@ export async function createConfirmedAppointment({ request, endpoint, payload })
   }
 
   const appointmentUrl = `${endpoint}/${encodeURIComponent(appointmentId)}`;
+  if (typeof onCreated === "function") {
+    try {
+      await onCreated(appointmentId, data);
+    } catch (err) {
+      let cleanupStatus = null;
+      try {
+        const cleanup = await request(appointmentUrl, {
+          method: "PUT",
+          body: JSON.stringify({ appointmentStatus: "cancelled" }),
+        });
+        cleanupStatus = cleanup.status;
+      } catch {
+        cleanupStatus = 0;
+      }
+      throw new AppointmentHandoffError(
+        "checkpoint",
+        err?.status || 500,
+        err?.message || err,
+        appointmentId,
+        cleanupStatus,
+      );
+    }
+  }
   const confirmResponse = await request(appointmentUrl, {
     method: "PUT",
     body: JSON.stringify({ appointmentStatus: "confirmed" }),

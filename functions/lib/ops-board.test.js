@@ -218,6 +218,25 @@ describe("buildSystemsBoard", () => {
     expect(cos.note).toMatch(/OPENROUTER|not configured/i);
   });
 
+  it("does not leave stale interactive successes green indefinitely", async () => {
+    const old = new Date(Date.now() - 8 * 24 * 3600 * 1000).toISOString();
+    const board = await buildSystemsBoard(kvEnv({
+      "cos:status:ready": { ok: true, checkedAt: old },
+      "ops:staff-auth:lastRun": { status: "ok", finishedAt: old },
+      "ops:portal-auth:lastRun": { status: "ok", finishedAt: old },
+    }));
+
+    const cos = board.systems.find((system) => system.id === "chief_of_staff");
+    const staff = board.systems.find((system) => system.id === "staff_auth");
+    const portal = board.systems.find((system) => system.id === "portal_auth");
+    expect(cos.status).toBe("unknown");
+    expect(cos.note).toMatch(/stale/i);
+    expect(staff.status).toBe("unknown");
+    expect(staff.note).toMatch(/stale/i);
+    expect(portal.status).toBe("unknown");
+    expect(portal.note).toMatch(/stale/i);
+  });
+
   it("surfaces live GHL token + reconcile + funnel signals as map_ok", async () => {
     const expiry = String(Date.now() + 20 * 3600 * 1000);
     const board = await buildSystemsBoard(

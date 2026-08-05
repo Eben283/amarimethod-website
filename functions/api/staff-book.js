@@ -121,7 +121,9 @@ export async function onRequestPost(context) {
       const slots = await freeSlots(context, booking.calendarId, startDate, endDate, timezone);
       return json({ slots, sessionType, calendarId: booking.calendarId }, 200, headers);
     } catch (err) {
-      return json({ error: err.message || "Could not load available times." }, 502, headers);
+      // Pages may replace 502/503 responses with Cloudflare HTML. Keep this a
+      // JSON application error so Staff always receives the contract above.
+      return json({ error: err.message || "Could not load available times." }, 500, headers);
     }
   }
 

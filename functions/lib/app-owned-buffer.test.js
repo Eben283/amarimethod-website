@@ -80,6 +80,24 @@ describe("app-owned-buffer", () => {
     expect(applyGarrettSchedulePreference(slots, events).map((slot) => slot.datetime.slice(11, 16))).toEqual(["10:00", "11:00", "12:00", "13:00", "15:00"]);
   });
 
+  it("uses a morning discovery call as a clustering anchor", () => {
+    const events = [{
+      id: "discovery-morning",
+      calendarId: DISCOVERY,
+      startTime: "2026-08-04T09:00:00-07:00",
+      endTime: "2026-08-04T09:15:00-07:00",
+      appointmentStatus: "confirmed",
+    }];
+    const slots = [9, 10, 11, 13, 15, 16].map((hour) => ({
+      date: "2026-08-04",
+      datetime: `2026-08-04T${String(hour).padStart(2, "0")}:00:00-07:00`,
+    }));
+
+    expect(
+      applyGarrettSchedulePreference(slots, events).map((slot) => slot.datetime.slice(11, 16)),
+    ).toEqual(["09:00", "10:00", "11:00", "13:00", "15:00"]);
+  });
+
   it("keeps morning and evening clusters while withholding the middle", () => {
     const events = [
       { id: "morning", calendarId: FOLLOWUP, startTime: "2026-08-04T10:00:00-07:00", endTime: "2026-08-04T10:50:00-07:00", appointmentStatus: "confirmed" },
