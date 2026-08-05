@@ -2,6 +2,7 @@
 // Main chat endpoint — streams Claude responses via SSE through OpenRouter
 
 import { verifySessionToken } from "../lib/auth.js";
+import { readStaffSessionToken } from "../lib/endpoint-guards.js";
 import { getTodayCalendar, getRecentEmails, createCalendarReminder, deleteCalendarEvent, getPacificOffset } from "../lib/google-api.js";
 import { ghlFetch } from "../lib/ghl.js";
 import { deriveLedger, hydrateOrders } from "../lib/session-ledger.js";
@@ -856,7 +857,7 @@ export async function onRequestPost(context) {
 
   // Verify auth
   const authHeader = context.request.headers.get("Authorization") || "";
-  const token = authHeader.replace("Bearer ", "");
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : readStaffSessionToken(context.request);
   if (!token) {
     return jsonResponse({ error: "Not authenticated" }, 401, origin);
   }

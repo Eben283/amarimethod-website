@@ -30,8 +30,8 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
     try {
-      const { token } = await staffLogin(pinValue);
-      login(token);
+      await staffLogin(pinValue);
+      login();
     } catch (err) {
       setPin('');
       if (err instanceof ApiError) {

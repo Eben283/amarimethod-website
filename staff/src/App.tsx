@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
+import SessionBridgePage from './pages/SessionBridgePage';
 import TodayPage from './pages/TodayPage';
 import HomePage from './pages/HomePage';
 import ClientsPage from './pages/ClientsPage';
@@ -237,6 +238,7 @@ function AppRoutes() {
           </PublicRoute>
         }
       />
+      <Route path="/access" element={<SessionBridgePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     <StaffHomeWidget />
