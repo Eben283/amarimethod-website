@@ -19,9 +19,12 @@ describe("Client Desk message rendering", () => {
   it("includes an explicit staff email composer rather than automatic outreach", () => {
     const html = clientDeskHtml();
     expect(html).toContain('id="email-compose"');
+    expect(html).toContain('name="from"');
+    expect(html).toContain("/client-desk/email-senders");
     expect(html).toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
     expect(html).toContain("Sends email now");
     expect(html).toContain("blocked for email opt-out or DND");
+    expect(html).toContain("from: fields.get('from')");
   });
 
   it("keeps the composer anchored below a separately scrollable timeline", () => {

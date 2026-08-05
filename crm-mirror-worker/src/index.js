@@ -33,11 +33,15 @@ import {
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
-import { sendGmailEmail } from "./gmail.js";
+import { listGmailSenders, sendGmailEmail } from "./gmail.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+const DEFAULT_SENDER_BY_STAFF_ACTOR = Object.freeze({
+  eben: "eben@amarimethod.com",
+  garrett: "garrett@amarimethod.com",
+});
 const GHL_ED25519_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=\n-----END PUBLIC KEY-----";
 const DASHBOARD_ACCESS_WORDS = Object.freeze([
   "aloe", "amber", "apricot", "arc", "ash", "bay", "birch", "bloom", "brook", "cedar", "clay", "cove", "dawn", "dune", "elm", "fern",
@@ -216,8 +220,19 @@ async function actionPayload(request, maximum = 4096) {
 function emailPayload(payload) {
   const subject = String(payload?.subject || "").replace(/[\r\n]+/g, " ").trim();
   const body = String(payload?.body || "").trim();
+  const from = String(payload?.from || "").replace(/[\r\n]+/g, " ").trim().toLowerCase();
   if (!subject || subject.length > 160 || !body || body.length > 20_000) throw new Error("subject and message are required");
-  return { subject, body };
+  if (from && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from) || from.length > 320)) throw new Error("invalid sender");
+  return { subject, body, from };
+}
+
+export function preferredGmailSender(actor, senders) {
+  const available = Array.isArray(senders) ? senders : [];
+  const preferred = DEFAULT_SENDER_BY_STAFF_ACTOR[String(actor || "").trim().toLowerCase()];
+  return available.find((sender) => sender.address === preferred)?.address
+    || available.find((sender) => sender.isDefault)?.address
+    || available[0]?.address
+    || null;
 }
 
 export default {
@@ -334,7 +349,7 @@ export default {
         const actor = await dashboardSessionActor(request, env);
         if (!actor) return json(401, { error: "staff session required" });
         if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid request origin" });
-        const { subject, body } = emailPayload(await actionPayload(request, 25_000));
+        const { subject, body, from } = emailPayload(await actionPayload(request, 25_000));
         const contactId = decodeURIComponent(emailSend[1]);
         const profile = await contactProfile(env.CRM_DB, contactId, 1, new Date().toISOString());
         if (!profile?.contact) return json(404, { error: "contact not found" });
@@ -342,14 +357,17 @@ export default {
         const eligibility = evaluateDeliveryEligibility({ contact: profile.contact, consents: profile.consents, channel: "email", dnd });
         if (!eligibility.policyEligible) return json(422, { error: "email blocked by contact policy" });
         const now = new Date().toISOString();
-        const result = await sendGmailEmail(env, { to: profile.contact.email_normalized, subject, text: body });
-        await recordDeliveredAttempt(env.CRM_DB, { contactId, actor, channel: "email", contact: profile.contact, consents: profile.consents, dnd, content: `${subject}\n${body}` }, now);
+        const senders = await listGmailSenders(env);
+        const sender = from || preferredGmailSender(actor, senders);
+        if (!sender || !senders.some((identity) => identity.address === sender)) return json(422, { error: "no Google-authorized sender is available" });
+        const result = await sendGmailEmail(env, { to: profile.contact.email_normalized, subject, text: body, from: sender, senders });
+        await recordDeliveredAttempt(env.CRM_DB, { contactId, actor, channel: "email", contact: profile.contact, consents: profile.consents, dnd, content: `From: ${sender}\n${subject}\n${body}` }, now);
         await recordOwnedOutboundEmail(env.CRM_DB, { contactId, providerEventId: result.id, subject, body, actor }, now);
-        return json(200, { success: true, channel: "email" });
+        return json(200, { success: true, channel: "email", from: sender });
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/client-desk/email-senders", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -361,6 +379,16 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/sender/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness(env) });
+      }
+      if (request.method === "GET" && url.pathname === "/client-desk/email-senders") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff session required" });
+        try {
+          const senders = await listGmailSenders(env);
+          return json(200, { senders, defaultAddress: preferredGmailSender(actor, senders) });
+        } catch {
+          return json(503, { error: "Google Workspace sender identities are unavailable" });
+        }
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

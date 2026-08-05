@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
+import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest, preferredGmailSender } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -36,6 +36,17 @@ describe("CRM mirror request validation", () => {
 
   it("does not make approval actions a sync source", () => {
     expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+  });
+
+  it("defaults the sender by signed staff identity only when Google authorized it", () => {
+    const senders = [
+      { address: "eben@amarimethod.com", isDefault: false },
+      { address: "garrett@amarimethod.com", isDefault: true },
+    ];
+    expect(preferredGmailSender("Eben", senders)).toBe("eben@amarimethod.com");
+    expect(preferredGmailSender("Garrett", senders)).toBe("garrett@amarimethod.com");
+    expect(preferredGmailSender("Unknown", senders)).toBe("garrett@amarimethod.com");
+    expect(preferredGmailSender("Eben", [{ address: "garrett@amarimethod.com", isDefault: true }])).toBe("garrett@amarimethod.com");
   });
 });
 
