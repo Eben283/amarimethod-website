@@ -15,6 +15,7 @@ export const POS_CATALOG = Object.freeze({
   "6-week-practice": { label: "The 6-Week Amari Practice ($3,000)", amountCents: 300000, ghlProductId: "6a683360017263178d05d1a3" },
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },
   "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
+  "entrainment-20": { label: "Entrainment — 20 Minutes", amountCents: 9000, ghlProductId: "6a734f0cecc97342c37bdbbb" },
   "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
   "single-session": { label: "Single Session (50 min)", amountCents: 28500, ghlProductId: "6a6b8bb7a1753b65945372f1" },

@@ -477,7 +477,9 @@ async function getGhlSummary(context) {
       "ZO1jlGfy01rsxVqicoSB", // Follow-up — In Person (Package)
       "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
       "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
+      "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes
       "B5aGXLoS4kzAjZAMMXxk", // Entrainment
+      "wO5lnu7BOQOHEJ5YQU0f", // Entrainment — 20 Minutes
       "lfsnaiGiLNL2z12pLKDP", // Partner Initial
       "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual
       "USgPsktqRcuomdUgpShL", // Your Free Discovery Call

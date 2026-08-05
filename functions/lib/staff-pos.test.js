@@ -33,6 +33,10 @@ describe("staff POS model", () => {
       amountCents: 28500,
       ghlProductId: "6a6b8bb7a1753b65945372f1",
     });
+    expect(POS_CATALOG["entrainment-20"]).toMatchObject({
+      amountCents: 9000,
+      ghlProductId: "6a734f0cecc97342c37bdbbb",
+    });
     expect(POS_CATALOG["initial-in-person"]).toBeUndefined();
     expect(POS_CATALOG["initial-virtual"]).toBeUndefined();
     expect(POS_CATALOG["upgrade-initial-to-4"]).toBeUndefined();

@@ -56,6 +56,18 @@ export const STAFF_BOOK_TYPES = {
     title: "Amari Method Entrainment",
     label: "Entrainment",
   },
+  entrainment_20: {
+    calendarId: "wO5lnu7BOQOHEJ5YQU0f",
+    durationMinutes: 20,
+    title: "Amari Method Entrainment — 20 Minutes",
+    label: "Entrainment · 20 min",
+  },
+  single_session: {
+    calendarId: "waHmG2mHNThPfMVuNJWG",
+    durationMinutes: 50,
+    title: "Amari Method Single Session",
+    label: "Single Session · 50 min",
+  },
 };
 
 export function resolveStaffBookType(sessionType) {

@@ -20,6 +20,8 @@ describe("staff-book-calendars", () => {
     expect(types.some((t) => t.id === "discovery_virtual")).toBe(true);
     expect(types.some((t) => t.id === "ambassador_discovery")).toBe(true);
     expect(types.some((t) => t.id === "entrainment")).toBe(true);
+    expect(types.some((t) => t.id === "entrainment_20")).toBe(true);
+    expect(types.some((t) => t.id === "single_session")).toBe(true);
   });
 });
 

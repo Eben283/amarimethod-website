@@ -32,6 +32,7 @@ const CATALOG = [
   ["follow-up", "Single follow-up", 19000, "Founders Circle", "Follow-up session"],
   ["upgrade-4-to-8", "4 → 8-session", 57500, "Founders Circle", "Legacy continuation price"],
   ["entrainment", "Entrainment", 9000, "Founders Circle", "Add-on"],
+  ["entrainment-20", "Entrainment — 20 min", 9000, "Upgrades", "Add-on"],
   ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],
 ] as const;
 

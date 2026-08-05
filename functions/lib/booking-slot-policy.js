@@ -62,6 +62,7 @@ export const SLOT_POLICIES = {
       "oVn77FcecFY16iS2pHyP", // virtual
       "ZO1jlGfy01rsxVqicoSB", // package IP
       "bJFkhVP35Ecwh4tLnSmy", // package virtual
+      "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes
     ],
     durationMinutes: 50,
     bufferMinutes: 20,
@@ -123,6 +124,16 @@ export const SLOT_POLICIES = {
     durationMinutes: 30,
     bufferMinutes: 20,
     intervalMinutes: 15,
+    lattice: "short",
+    preferOnHour: false,
+  },
+  entrainment_20: {
+    id: "entrainment_20",
+    label: "Entrainment — 20 Minutes",
+    calendarIds: ["wO5lnu7BOQOHEJ5YQU0f"],
+    durationMinutes: 20,
+    bufferMinutes: 20,
+    intervalMinutes: 30,
     lattice: "short",
     preferOnHour: false,
   },
