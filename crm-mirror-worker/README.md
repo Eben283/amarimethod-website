@@ -28,6 +28,7 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 ## Authenticated endpoints
 
 - `GET /status` — counts and last sync result; no client data.
+- `GET /readiness` — aggregate completeness, current source health, recovery evidence, and open exception counts; no client data and no sync trigger.
 - `GET /reconciliation` — aggregate pending-review counts; no client data.
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.

@@ -106,4 +106,39 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ mode: "staff_email", deliveryEnabled: false });
   });
+
+  it("serves aggregate CRM readiness only behind the existing auth boundary", async () => {
+    const fresh = new Date().toISOString();
+    const results = [
+      [{ completed_at: "2026-08-01T12:00:00.000Z", records_seen: 400, known_records: 400, missing_records: 0 }],
+      [{ completed_at: "2026-08-01T12:00:00.000Z", records_seen: 55, known_records: 55, missing_records: 0 }],
+      [{ status: "partial", finished_at: fresh, failure_detail: null }],
+      [{ status: "succeeded", finished_at: fresh, failure_detail: null }],
+      [{ count: 396 }], [{ count: 1694 }], [{ count: 0 }],
+      [{ result: "ready", checked_at: "2026-07-27T18:10:04.000Z" }],
+      [],
+    ];
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare: (sql) => ({ sql }),
+        batch: async (statements) => statements.map((_statement, index) => ({ results: results[index] })),
+      },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/readiness"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/readiness", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      worker: "amari-crm-mirror",
+      shadowOnly: true,
+      completeness: { ghl: { state: "complete" }, stripe: { state: "complete" } },
+      recovery: { result: "ready" },
+      currentSyncOverall: "healthy",
+    });
+  });
 });
