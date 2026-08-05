@@ -1,8 +1,8 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
-import { dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
-import { deliveryReadiness } from "./owned-sender.js";
+import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { deliveryReadiness, evaluateDeliveryEligibility, recordDeliveredAttempt } from "./owned-sender.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -22,6 +22,7 @@ import {
   reconciliationStatus,
   recordRealtimeGhlMessage,
   recordGhlWebhookEvent,
+  recordOwnedOutboundEmail,
   searchContacts,
   upsertGhlAppointment,
   upsertGhlContact,
@@ -32,6 +33,7 @@ import {
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
+import { sendGmailEmail } from "./gmail.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -201,14 +203,21 @@ async function requireReviewWriteAuth(request, env) {
   return bearerDenied;
 }
 
-async function actionPayload(request) {
+async function actionPayload(request, maximum = 4096) {
   const length = Number(request.headers.get("Content-Length") || 0);
-  if (length > 4096) throw new Error("request body too large");
+  if (length > maximum) throw new Error("request body too large");
   try {
     return await request.json();
   } catch {
     throw new Error("invalid JSON");
   }
+}
+
+function emailPayload(payload) {
+  const subject = String(payload?.subject || "").replace(/[\r\n]+/g, " ").trim();
+  const body = String(payload?.body || "").trim();
+  if (!subject || subject.length > 160 || !body || body.length > 20_000) throw new Error("subject and message are required");
+  return { subject, body };
 }
 
 export default {
@@ -320,6 +329,24 @@ export default {
         );
         return json(200, { success: true, result });
       }
+      const emailSend = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)\/email$/);
+      if (request.method === "POST" && emailSend) {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff session required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid request origin" });
+        const { subject, body } = emailPayload(await actionPayload(request, 25_000));
+        const contactId = decodeURIComponent(emailSend[1]);
+        const profile = await contactProfile(env.CRM_DB, contactId, 1, new Date().toISOString());
+        if (!profile?.contact) return json(404, { error: "contact not found" });
+        const dnd = (profile.fields || []).find((field) => field.attribute_key === "system.dnd")?.attribute_value;
+        const eligibility = evaluateDeliveryEligibility({ contact: profile.contact, consents: profile.consents, channel: "email", dnd });
+        if (!eligibility.policyEligible) return json(422, { error: "email blocked by contact policy" });
+        const now = new Date().toISOString();
+        const result = await sendGmailEmail(env, { to: profile.contact.email_normalized, subject, text: body });
+        await recordDeliveredAttempt(env.CRM_DB, { contactId, actor, channel: "email", contact: profile.contact, consents: profile.consents, dnd, content: `${subject}\n${body}` }, now);
+        await recordOwnedOutboundEmail(env.CRM_DB, { contactId, providerEventId: result.id, subject, body, actor }, now);
+        return json(200, { success: true, channel: "email" });
+      }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
@@ -333,7 +360,7 @@ export default {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB, new Date().toISOString())) });
       }
       if (request.method === "GET" && url.pathname === "/sender/readiness") {
-        return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness() });
+        return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness(env) });
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
