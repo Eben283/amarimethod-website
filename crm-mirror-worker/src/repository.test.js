@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, paymentAccessState, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
 
 describe("Client Desk consent review", () => {
   it("returns a read-only unknown-evidence queue without deriving a grant", async () => {
@@ -91,6 +91,45 @@ describe("CRM mirror sync health", () => {
     expect(health.overall).toBe("failed");
     expect(health.providers.ghl.state).toBe("failed");
     expect(health.providers.stripe.state).toBe("missing");
+  });
+
+  it("lets a current source failure override older complete evidence", () => {
+    const readiness = readinessCompletenessForProvider(
+      { completed_at: "2026-08-01T12:00:00.000Z", records_seen: 50, known_records: 50, missing_records: 0 },
+      { state: "failed", ageMinutes: 2, lastRun: { status: "failed", finished_at: "2026-08-05T12:00:00.000Z", failure_detail: "GHL read failed (429)" } },
+    );
+    expect(readiness).toMatchObject({
+      state: "failed",
+      records_seen: 50,
+      currentSync: { state: "failed", status: "failed", failureDetail: "GHL read failed (429)" },
+    });
+  });
+
+  it("returns the authenticated monitor contract from aggregate-only queries", async () => {
+    const results = [
+      [{ completed_at: "2026-08-01T12:00:00.000Z", records_seen: 400, known_records: 400, missing_records: 0 }],
+      [{ completed_at: "2026-08-01T12:00:00.000Z", records_seen: 55, known_records: 55, missing_records: 0 }],
+      [{ status: "partial", finished_at: "2026-08-05T12:00:00.000Z", records_read: 50, records_written: 50, failure_detail: null }],
+      [{ status: "succeeded", finished_at: "2026-08-05T12:00:00.000Z", records_read: 17, records_written: 14, failure_detail: null }],
+      [{ count: 396 }],
+      [{ count: 1694 }],
+      [{ count: 3 }],
+      [{ result: "ready", checked_at: "2026-07-27T18:10:04.000Z" }],
+      [{ health_key: "completeness:ghl", state: "healthy", detected_at: "2026-08-05T12:00:00.000Z" }],
+    ];
+    const db = {
+      prepare: (sql) => ({ sql }),
+      batch: async (statements) => statements.map((_statement, index) => ({ results: results[index] })),
+    };
+    await expect(mirrorReadiness(db, "2026-08-05T12:10:00.000Z")).resolves.toMatchObject({
+      shadowOnly: true,
+      completeness: { ghl: { state: "complete" }, stripe: { state: "complete" } },
+      communications: 396,
+      consentObservations: 1694,
+      openPaymentIdentityExceptions: 3,
+      recovery: { result: "ready" },
+      currentSyncOverall: "healthy",
+    });
   });
 });
 

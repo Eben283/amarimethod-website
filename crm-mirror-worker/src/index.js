@@ -15,6 +15,7 @@ import {
   decideLedgerCutoverCandidate,
   decideReconciliationCandidate,
   findContactIdByGhlId,
+  mirrorReadiness,
   mirrorStatus,
   ledgerCutoverReview,
   reconciliationQueue,
@@ -367,7 +368,7 @@ export default {
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/operations", "/contacts", "/client-desk/contacts", "/client-desk/email-senders", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/operations", "/contacts", "/client-desk/contacts", "/client-desk/email-senders", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -376,6 +377,9 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB, new Date().toISOString())) });
+      }
+      if (request.method === "GET" && url.pathname === "/readiness") {
+        return json(200, { success: true, worker: "amari-crm-mirror", ...(await mirrorReadiness(env.CRM_DB, new Date().toISOString())) });
       }
       if (request.method === "GET" && url.pathname === "/sender/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness(env) });

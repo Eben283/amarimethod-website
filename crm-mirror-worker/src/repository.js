@@ -635,6 +635,41 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
   return { overall, staleAfterMinutes: SYNC_STALE_AFTER_MINUTES, providers };
 }
 
+function completedReadinessEvidence(row, current) {
+  if (row) {
+    return {
+      state: Number(row.missing_records || 0) > 0 ? "review" : "complete",
+      ...row,
+    };
+  }
+  if (current?.lastRun?.status === "succeeded") {
+    return {
+      state: "complete",
+      records_seen: null,
+      known_records: null,
+      missing_records: 0,
+      completed_at: current.lastRun.finished_at || null,
+    };
+  }
+  return { state: "in_progress" };
+}
+
+export function readinessCompletenessForProvider(row, current) {
+  const evidence = completedReadinessEvidence(row, current);
+  const currentState = current?.state || "missing";
+  return {
+    ...evidence,
+    state: currentState === "healthy" ? evidence.state : currentState,
+    currentSync: {
+      state: currentState,
+      ageMinutes: current?.ageMinutes ?? null,
+      status: current?.lastRun?.status || null,
+      finishedAt: current?.lastRun?.finished_at || null,
+      failureDetail: current?.lastRun?.failure_detail || null,
+    },
+  };
+}
+
 export async function mirrorStatus(db, now = new Date().toISOString()) {
   const [contacts, appointments, purchases, invoices, threads, events, unread, lastSync, latestGhl, latestStripe, latestInvoiceImport, latestCommunicationImport, latestClientRecordImport] = await db.batch([
     db.prepare("SELECT COUNT(*) AS count FROM contacts"),
@@ -673,6 +708,63 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
       ghl: latestGhl.results?.[0] || null,
       stripe: latestStripe.results?.[0] || null,
     }, now),
+  };
+}
+
+// Aggregate-only contract for the deterministic monitor and /day. Historical
+// completeness/recovery evidence is useful, but a current failed/stale source
+// must override it so this endpoint cannot become a false-green snapshot.
+export async function mirrorReadiness(db, now = new Date().toISOString()) {
+  const result = await db.batch([
+    db.prepare(
+      `SELECT started_at, completed_at, records_seen, known_records, missing_records
+       FROM mirror_sync_cycles WHERE provider = 'ghl' AND status = 'completed'
+       ORDER BY datetime(completed_at) DESC LIMIT 1`,
+    ),
+    db.prepare(
+      `SELECT started_at, completed_at, records_seen, known_records, missing_records
+       FROM mirror_sync_cycles WHERE provider = 'stripe' AND status = 'completed'
+       ORDER BY datetime(completed_at) DESC LIMIT 1`,
+    ),
+    db.prepare(
+      `SELECT status, finished_at, records_read, records_written, failure_detail
+       FROM sync_runs
+       WHERE provider = 'ghl' AND finished_at IS NOT NULL
+         AND (cursor_before IS NULL OR (cursor_before <> 'message-export'
+           AND cursor_before NOT LIKE 'conversations:%'
+           AND cursor_before NOT LIKE 'client-records:%'))
+       ORDER BY datetime(started_at) DESC LIMIT 1`,
+    ),
+    db.prepare(
+      `SELECT status, finished_at, records_read, records_written, failure_detail
+       FROM sync_runs
+       WHERE provider = 'stripe' AND finished_at IS NOT NULL
+         AND (cursor_before IS NULL OR cursor_before NOT LIKE 'invoices:%')
+       ORDER BY datetime(started_at) DESC LIMIT 1`,
+    ),
+    db.prepare("SELECT COUNT(*) AS count FROM communications"),
+    db.prepare("SELECT COUNT(*) AS count FROM consents"),
+    db.prepare("SELECT COUNT(*) AS count FROM payment_identity_exceptions WHERE state = 'open'"),
+    db.prepare("SELECT result, checked_at FROM mirror_recovery_checks ORDER BY datetime(checked_at) DESC LIMIT 1"),
+    db.prepare("SELECT health_key, state, detected_at FROM mirror_health_events WHERE resolved_at IS NULL ORDER BY datetime(detected_at) DESC LIMIT 25"),
+  ]);
+  const syncHealth = syncHealthForRuns({
+    ghl: result[2].results?.[0] || null,
+    stripe: result[3].results?.[0] || null,
+  }, now);
+  return {
+    shadowOnly: true,
+    completeness: {
+      ghl: readinessCompletenessForProvider(result[0].results?.[0] || null, syncHealth.providers.ghl),
+      stripe: readinessCompletenessForProvider(result[1].results?.[0] || null, syncHealth.providers.stripe),
+    },
+    communications: Number(result[4].results?.[0]?.count || 0),
+    consentObservations: Number(result[5].results?.[0]?.count || 0),
+    openPaymentIdentityExceptions: Number(result[6].results?.[0]?.count || 0),
+    recovery: result[7].results?.[0] || { result: "unverified", checked_at: null },
+    openHealthEvents: result[8].results || [],
+    currentSyncOverall: syncHealth.overall,
+    staleAfterMinutes: syncHealth.staleAfterMinutes,
   };
 }
 
