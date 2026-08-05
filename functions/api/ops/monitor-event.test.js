@@ -1,13 +1,19 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
 
 vi.mock("../../lib/ops-events.js", () => ({
+  listOpsEvents: vi.fn(async () => []),
   recordOpsEvent: vi.fn(async () => ({ recorded: true, id: "evt_monitor" })),
   openOpsIncident: vi.fn(async () => ({ opened: true, id: "inc_monitor" })),
   resolveOpsIncident: vi.fn(async () => ({ resolved: 1 })),
 }));
 
 import { onRequestPost } from "./monitor-event.js";
-import { openOpsIncident, recordOpsEvent, resolveOpsIncident } from "../../lib/ops-events.js";
+import {
+  listOpsEvents,
+  openOpsIncident,
+  recordOpsEvent,
+  resolveOpsIncident,
+} from "../../lib/ops-events.js";
 
 afterEach(() => vi.clearAllMocks());
 
@@ -111,5 +117,53 @@ describe("POST /api/ops/monitor-event", () => {
       reasonCode: "monitor_heartbeat",
       summary: expect.stringMatching(/heartbeat/i),
     }));
+  });
+
+  it("fails closed when event or incident persistence is not accepted", async () => {
+    recordOpsEvent.mockResolvedValueOnce({ recorded: false, reason: "threw" });
+    const eventFailure = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "red",
+    }));
+    expect(eventFailure.status).toBe(500);
+    expect(openOpsIncident).not.toHaveBeenCalled();
+
+    recordOpsEvent.mockResolvedValueOnce({ recorded: true, id: "evt_retry" });
+    openOpsIncident.mockResolvedValueOnce({ opened: false, reason: "threw" });
+    const incidentFailure = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "red",
+    }));
+    expect(incidentFailure.status).toBe(500);
+  });
+
+  it("fails closed when recovery resolution throws so the producer retries", async () => {
+    resolveOpsIncident.mockResolvedValueOnce({ resolved: 0, reason: "threw" });
+    const response = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "green",
+    }));
+    expect(response.status).toBe(500);
+  });
+
+  it("ignores an older green report without resolving a newer red state", async () => {
+    listOpsEvents.mockResolvedValueOnce([{
+      id: "evt_newer_red",
+      at: "2026-08-05T22:00:00.000Z",
+      atMs: Date.parse("2026-08-05T22:00:00.000Z"),
+      pathId: "github_actions",
+      hopId: "synthetic_monitor",
+      outcome: "fail",
+      source: "amari-cloud-health",
+    }]);
+    const response = await onRequestPost(context({
+      pathId: "github_actions",
+      state: "green",
+      observedAt: "2026-08-05T21:59:00.000Z",
+    }));
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ ok: true, action: "ignored_stale" });
+    expect(recordOpsEvent).not.toHaveBeenCalled();
+    expect(resolveOpsIncident).not.toHaveBeenCalled();
   });
 });
