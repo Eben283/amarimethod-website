@@ -86,6 +86,7 @@ const PID = {
   followupInPerson: '69aee204e80b62d627d8e922',
   followupVirtual: '69aee3ebcf9cf8ed9f6c928d',
   singleFollowup: '6998ace59dfde469ecb2aab6',
+  singleSession: '6a6b8bb7a1753b65945372f1',
   prePurchased: '67b1299f080422451447bdd0',
   entrainment: '69c5d29c4019ce8e80e2513b',
   livingPractice: '6998d7f2606fa79c54fa3ff5',
@@ -109,7 +110,9 @@ const CAL = {
   followup: 'SKDVOL8wtUN6Ne0ppbC9',
   followupPackage: 'ZO1jlGfy01rsxVqicoSB',
   followupVirtual: 'oVn77FcecFY16iS2pHyP',
+  singleSession: 'waHmG2mHNThPfMVuNJWG',
   entrainment: 'B5aGXLoS4kzAjZAMMXxk',
+  entrainment20: 'wO5lnu7BOQOHEJ5YQU0f',
   discovery: 'USgPsktqRcuomdUgpShL',
   partner: 'lfsnaiGiLNL2z12pLKDP',
 };
@@ -275,8 +278,8 @@ describe('classifyInvoice', () => {
     ).toMatchObject({ type: '8-upgrade', sessions: 7 });
   });
 
-  it('classifies follow-ups (in person, virtual, single, pre-purchased) as 1 session', () => {
-    for (const pid of [PID.followupInPerson, PID.followupVirtual, PID.singleFollowup, PID.prePurchased]) {
+  it('classifies follow-ups (in person, virtual, both single prices, pre-purchased) as 1 session', () => {
+    for (const pid of [PID.followupInPerson, PID.followupVirtual, PID.singleFollowup, PID.singleSession, PID.prePurchased]) {
       expect(classifyInvoice(invoice({ productId: pid, amountPaid: 190 }))).toMatchObject({
         sessions: 1,
       });
@@ -343,8 +346,8 @@ describe('classifyInvoice', () => {
 // ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
 
 describe('ACTIVE_PRODUCTS map', () => {
-  it('contains the 17 currently-sold products', () => {
-    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(17);
+  it('contains the 18 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(18);
   });
 
   it('contains the canonical 8-Session and 4-Session Series IDs', () => {
@@ -1713,16 +1716,37 @@ describe('computeSessionLedger — POS order hydration', () => {
 });
 
 describe('SERIES_CALENDAR_IDS', () => {
-  it('contains the 6 series calendar IDs (2 initial + 4 follow-up)', () => {
-    expect(SERIES_CALENDAR_IDS.size).toBe(6);
+  it('contains the 7 series calendar IDs (2 initial + 5 follow-up)', () => {
+    expect(SERIES_CALENDAR_IDS.size).toBe(7);
     expect(SERIES_CALENDAR_IDS.has(CAL.initial)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.initialVirtual)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.followup)).toBe(true);
+    expect(SERIES_CALENDAR_IDS.has(CAL.singleSession)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.entrainment)).toBe(false);
+    expect(SERIES_CALENDAR_IDS.has(CAL.entrainment20)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.discovery)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.partner)).toBe(false);
     // "Paid at Partner" — paid at partner POS, no GHL order, excluded from series
     expect(SERIES_CALENDAR_IDS.has(CAL.initialPaidAtPartner)).toBe(false);
+  });
+});
+
+describe('Single Session calendar', () => {
+  it('consumes the prepaid credit granted by the $285 Single Session product', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [order({
+        sourceName: '',
+        amount: 285,
+        items: [{ product: { _id: PID.singleSession } }],
+      })],
+      invoices: [],
+      appointments: [appt({ calendarId: CAL.singleSession })],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(1);
+    expect(result.attended).toBe(1);
+    expect(result.remaining).toBe(0);
   });
 });
 

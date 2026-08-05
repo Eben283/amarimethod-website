@@ -145,6 +145,12 @@ export const GHL_PRODUCTS = {
     sessions: 0, // billed individually, does not count against series
     isPackagePurchase: false,
   },
+  "6a734f0cecc97342c37bdbbb": {
+    name: "Entrainment — 20 Minutes",
+    classification: "entrainment",
+    sessions: 0, // standalone service; never grants or draws a prepaid session
+    isPackagePurchase: false,
+  },
   "6998d7f2606fa79c54fa3ff5": {
     name: "Living Practice",
     classification: "living-practice",
@@ -206,6 +212,7 @@ export const PRICE_IDS = {
   "6a6b8bb7a1753b65945372f1": ["6a6b8bb7a1753b0f3f5372f5"], // Single Session @ $285
   "67b1299f080422451447bdd0": ["67b1299f0804221b3947bdd4"], // Pre Purchased (draw-down)
   "69c5d29c4019ce8e80e2513b": ["69c5d29c5b50e82344c2d6ec"], // Entrainment
+  "6a734f0cecc97342c37bdbbb": ["6a734f0cecc973849d7bdbbf"], // Entrainment — 20 Minutes @ $90
   "6998d7f2606fa79c54fa3ff5": ["6998d7f2606fa7edc0fa3ffa"], // Living Practice
   "6a66cf0103821ea09ea13f1b": ["6a66cf0103821e836fa13f20"], // Amari Assessment ($29)
 };

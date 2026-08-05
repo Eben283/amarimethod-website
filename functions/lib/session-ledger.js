@@ -59,12 +59,14 @@ export const SERIES_CALENDAR_IDS = new Set([
   "ZO1jlGfy01rsxVqicoSB", // Follow-up Session — In Person (Package)
   "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
+  "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes (uses its prepaid credit)
 ]);
 
 // Calendars that are explicitly NOT against series. Kept for documentation;
 // SERIES_CALENDAR_IDS is the actual filter (anything not in it is excluded).
 export const NON_SERIES_CALENDAR_IDS = new Set([
   "B5aGXLoS4kzAjZAMMXxk", // Entrainment (billed individually, not via series)
+  "wO5lnu7BOQOHEJ5YQU0f", // Entrainment — 20 Minutes (billed individually, not via series)
   "USgPsktqRcuomdUgpShL", // Your Free Discovery Call
   "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call - Virtual
   "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call

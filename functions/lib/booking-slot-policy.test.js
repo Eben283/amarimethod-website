@@ -62,6 +62,8 @@ describe("booking-slot-policy — app-owned buffers", () => {
     expect(SLOT_POLICIES.initial.durationMinutes).toBe(60);
     expect(SLOT_POLICIES.discovery_call.intervalMinutes).toBe(15);
     expect(SLOT_POLICIES.entrainment.durationMinutes).toBe(30);
+    expect(SLOT_POLICIES.entrainment_20.durationMinutes).toBe(20);
+    expect(SLOT_POLICIES.entrainment_20.bufferMinutes).toBe(20);
   });
 
   it("marks prefer-on-hour for Assessment and Follow-up", () => {
@@ -75,6 +77,8 @@ describe("booking-slot-policy — lookup and drift", () => {
   it("resolves known calendar ids", () => {
     expect(policyForCalendarId("SKDVOL8wtUN6Ne0ppbC9")?.id).toBe("followup");
     expect(policyForCalendarId("EM6vB2mq7EAdGCbUb3j1")?.id).toBe("assessment");
+    expect(policyForCalendarId("waHmG2mHNThPfMVuNJWG")?.id).toBe("followup");
+    expect(policyForCalendarId("wO5lnu7BOQOHEJ5YQU0f")?.id).toBe("entrainment_20");
     expect(policyForCalendarId("unknown")).toBe(null);
   });
 

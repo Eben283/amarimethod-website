@@ -12,8 +12,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 17 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(17);
+  it('contains 18 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(18);
   });
 
   it('every entry has required shape', () => {
@@ -124,6 +124,8 @@ const ID = {
   fuVirt: '69aee3ebcf9cf8ed9f6c928d', // draw-down
   prePurchased: '67b1299f080422451447bdd0', // draw-down
   entrainment: '69c5d29c4019ce8e80e2513b',
+  entrainment20: '6a734f0cecc97342c37bdbbb',
+  entrainment20Price: '6a734f0cecc973849d7bdbbf',
   livingPractice: '6998d7f2606fa79c54fa3ff5',
   assessment: '6a66cf0103821ea09ea13f1b',
   assessmentPrice: '6a66cf0103821e836fa13f20',
@@ -157,6 +159,11 @@ describe('any-id resolver (productId + priceId)', () => {
     expect(productIdForAnyId(ID.singleSessionPrice)).toBe(ID.singleSession);
     expect(productForAnyId(ID.singleSessionPrice).name).toBe('Single Session');
   });
+  it('resolves the $90 20-minute Entrainment product and its current price', () => {
+    expect(productIdForAnyId(ID.entrainment20)).toBe(ID.entrainment20);
+    expect(productIdForAnyId(ID.entrainment20Price)).toBe(ID.entrainment20);
+    expect(productForAnyId(ID.entrainment20Price).name).toBe('Entrainment — 20 Minutes');
+  });
   it('resolves a HISTORICAL priceId too (the stale-id case the audit hit)', () => {
     expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
     expect(productIdForAnyId(ID.fourSeriesPriceOld)).toBe(ID.fourSeries);
@@ -187,6 +194,7 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
     expect(PURCHASE_CREDIT_MAP[ID.fuVirt]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.prePurchased]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.entrainment]).toBeUndefined();
+    expect(PURCHASE_CREDIT_MAP[ID.entrainment20]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.livingPractice]).toBeUndefined();
     expect(PURCHASE_CREDIT_MAP[ID.assessment]).toBeUndefined();
   });

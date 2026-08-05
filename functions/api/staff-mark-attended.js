@@ -44,6 +44,7 @@ const FOLLOWUP_CALENDAR_IDS = new Set([
   "SKDVOL8wtUN6Ne0ppbC9", // Follow-up Session — In Person
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
   "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
+  "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes
 ]);
 const PAIR_WINDOW_MS = 90 * 60 * 1000;
 
