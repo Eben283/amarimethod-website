@@ -834,12 +834,6 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
   const values = [];
   const filters = [
     "UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'",
-    "lower(COALESCE(contact.email_normalized, '')) <> 'eben@ebenforrest.com'",
-    `NOT EXISTS (
-      SELECT 1 FROM communication_events operational_event
-      WHERE operational_event.thread_id = thread.id
-        AND ${operationalMessageSql("operational_event")}
-    )`,
   ];
   if (query) {
     const pattern = likePattern(query);
