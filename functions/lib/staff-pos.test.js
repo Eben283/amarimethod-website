@@ -35,6 +35,8 @@ describe("staff POS model", () => {
     });
     expect(POS_CATALOG["initial-in-person"]).toBeUndefined();
     expect(POS_CATALOG["initial-virtual"]).toBeUndefined();
+    expect(POS_CATALOG["upgrade-initial-to-4"]).toBeUndefined();
+    expect(POS_CATALOG["upgrade-initial-to-8"]).toBeUndefined();
     expect(normalizeCart([{ productKey: "amari-assessment", quantity: 1 }])).toEqual([
       expect.objectContaining({
         kind: "catalog",
