@@ -38,12 +38,4 @@ for (const file of htmlFiles) {
   if (changed) processed++;
 }
 
-// The homepage Assessment modal needs the native booking UI in an iframe.
-// Keep this dedicated output outside the legacy /book/* redirect family while
-// deriving it from the canonical booking-page source.
-writeFileSync(
-  join(DIST, 'assessment-booking.html'),
-  readFileSync(join(ROOT, 'book', 'initial-in-person.html'), 'utf-8'),
-);
-
 console.log(`Processed ${processed} HTML files with includes (${htmlFiles.length} total copied to dist)`);
