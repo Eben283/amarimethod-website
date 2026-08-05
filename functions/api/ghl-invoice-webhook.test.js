@@ -122,6 +122,10 @@ describe('INVOICE_PURCHASE_PRODUCTS map', () => {
     expect(INVOICE_PURCHASE_PRODUCTS[PID.entrainment]).toBeUndefined();
     expect(INVOICE_PURCHASE_PRODUCTS[PID.livingPractice]).toBeUndefined();
   });
+
+  it('preserves classification so downstream purchase consumers receive a canonical product', () => {
+    expect(INVOICE_PURCHASE_PRODUCTS[PID.eightSeries].classification).toBe('8-series');
+  });
 });
 
 describe('KV idempotency TTL (H2 — must cover the replay window)', () => {
@@ -161,6 +165,19 @@ describe('selectSeriesInvoice', () => {
     );
     expect(result.invoice._id).toBe('old');
     expect(result.pkg.name).toBe('4-Session Series');
+  });
+
+  it('never credits a preferred package invoice unless it is fully paid', () => {
+    for (const [status, amountPaid] of [
+      ['draft', 0],
+      ['sent', 0],
+      ['void', 1295],
+      ['paid', 0],
+    ]) {
+      expect(selectSeriesInvoice([
+        invoice({ id: `preferred-${status}-${amountPaid}`, productId: PID.eightSeries, status, amountPaid }),
+      ], `preferred-${status}-${amountPaid}`)).toBe(null);
+    }
   });
 
   // H2 (2026-06-11 review): when the triggering invoice matched preferredInvoiceId

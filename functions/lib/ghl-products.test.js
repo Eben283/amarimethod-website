@@ -87,9 +87,15 @@ describe('WEBHOOK_PURCHASE_MAP (invoice webhook consumer)', () => {
     expect(Object.keys(WEBHOOK_PURCHASE_MAP).length).toBe(7);
   });
 
-  it('exposes name, sessionsRemaining, seriesType, livingPractice', () => {
+  it('exposes the full invoice-fulfillment classification contract', () => {
     for (const entry of Object.values(WEBHOOK_PURCHASE_MAP)) {
-      expect(Object.keys(entry).sort()).toEqual(['livingPractice', 'name', 'seriesType', 'sessionsRemaining']);
+      expect(Object.keys(entry).sort()).toEqual([
+        'classification',
+        'livingPractice',
+        'name',
+        'seriesType',
+        'sessionsRemaining',
+      ]);
     }
   });
 

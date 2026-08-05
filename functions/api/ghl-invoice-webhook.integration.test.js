@@ -30,10 +30,10 @@ const [SERIES_PID, seriesPkg] = Object.entries(INVOICE_PURCHASE_PRODUCTS).find((
 let fetchCalls;
 const putToContact = () => fetchCalls.find((c) => c.opts?.method === 'PUT' && /\/contacts\//.test(c.url));
 
-function makeContext({ invoices, secret = SECRET, kvStore = {}, body = { contact_id: 'c1', invoice_id: 'inv1' }, contact = { id: 'c1', customFields: [], tags: [] } }) {
+function makeContext({ invoices, secret = SECRET, kvStore = {}, body = { contact_id: 'c1', invoice_id: 'inv1' }, contact = { id: 'c1', customFields: [], tags: [] }, contactStatus = 200, attendDb = null }) {
   ghlFetch.mockImplementation(async (_ctx, url) => {
     if (url.includes('/invoices/')) return { ok: true, json: async () => ({ invoices }) };
-    if (url.includes('/contacts/')) return { ok: true, json: async () => ({ contact }) };
+    if (url.includes('/contacts/')) return { ok: contactStatus < 400, status: contactStatus, json: async () => ({ contact }) };
     return { ok: true, json: async () => ({}) };
   });
   const env = {
@@ -42,8 +42,9 @@ function makeContext({ invoices, secret = SECRET, kvStore = {}, body = { contact
       get: vi.fn(async (k) => (k in kvStore ? kvStore[k] : null)),
       put: vi.fn(async (k, v) => { kvStore[k] = v; }),
     },
+    ATTEND_DB: attendDb,
   };
-  return { env, request: { json: async () => body, headers: { get: (h) => (h === 'X-Webhook-Secret' ? secret : null) } } };
+  return { env, waitUntil: vi.fn(), request: { json: async () => body, headers: { get: (h) => (h === 'X-Webhook-Secret' ? secret : null) } } };
 }
 
 const seriesInvoice = (id = 'inv1') => ({ _id: id, status: 'paid', amountPaid: 1295, invoiceItems: [{ productId: SERIES_PID }] });
@@ -90,6 +91,27 @@ describe('invoice-webhook — write orchestration', () => {
     expect(ctx.env.PURCHASE_KV.put).toHaveBeenCalledWith('invoice:inv1', expect.any(String), expect.objectContaining({ expirationTtl: expect.any(Number) }));
   });
 
+  it('a Staff POS invoice never applies the confirmation-email trigger tag', async () => {
+    const invoice = {
+      ...seriesInvoice('inv-pos'),
+      name: 'Staff POS pos_messagequiet1',
+      termsNotes: 'Payment already collected externally. Staff POS sale pos_messagequiet1. Do not send.',
+    };
+    const ctx = makeContext({
+      invoices: [invoice],
+      body: { contact_id: 'c1', invoice_id: 'inv-pos' },
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(200);
+    expect(applyTagDelta).toHaveBeenCalledWith(
+      expect.anything(),
+      'c1',
+      expect.objectContaining({ add: [] }),
+    );
+  });
+
   it('no series/upgrade invoice → 200 no-op, no contact PUT', async () => {
     const ctx = makeContext({ invoices: [] });
     const res = await onRequestPost(ctx);
@@ -104,5 +126,25 @@ describe('invoice-webhook — write orchestration', () => {
     expect(res.status).toBe(200);
     expect(JSON.parse(await res.text()).alreadyProcessed).toBe(true);
     expect(putToContact()).toBeFalsy();
+  });
+
+  it('releases a won D1 claim when downstream contact fulfillment fails', async () => {
+    const statements = [];
+    const attendDb = {
+      prepare: (sql) => {
+        statements.push(sql);
+        return { bind() { return this; }, run: async () => ({ meta: { changes: 1 } }) };
+      },
+    };
+    const ctx = makeContext({
+      invoices: [seriesInvoice('inv1')],
+      contactStatus: 503,
+      attendDb,
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(404);
+    expect(statements.some((sql) => sql.includes('DELETE FROM processed_events'))).toBe(true);
   });
 });
