@@ -1,4 +1,4 @@
-// GET /api/ops/systems — authenticated Staff Operations board.
+// GET /api/ops/systems — authenticated Staff Operations board (Eben or Garrett).
 //   ?pathId=assessment_paid_book → path detail (hops + people + log)
 //   ?pathId=...&contactId=... | &correlationId=... → person timeline
 

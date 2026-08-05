@@ -88,6 +88,15 @@ describe("GET /api/ops/fix", () => {
     expect(readFixJob).not.toHaveBeenCalled();
   });
 
+  it("allows Garrett's separately authenticated job-status read", async () => {
+    const res = await onRequestGet(ctx(
+      "https://www.amarimethod.com/api/ops/fix?pathId=assessment_paid_book",
+      { user: "Garrett" },
+    ));
+    expect(res.status).toBe(200);
+    expect(readFixJob).toHaveBeenCalled();
+  });
+
   it("requires pathId", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/fix"));
     expect(res.status).toBe(400);
@@ -141,7 +150,19 @@ describe("POST /api/ops/fix", () => {
     expect(launchFixForPath).not.toHaveBeenCalled();
   });
 
-  it("queues a Staff-authenticated request", async () => {
+  it("allows Garrett's separately authenticated browser repair request", async () => {
+    const res = await onRequestPost(
+      ctx("https://www.amarimethod.com/api/ops/fix", {
+        method: "POST",
+        body: { action: "request", pathId: "assessment_paid_book" },
+        user: "Garrett",
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(queueFixRequest).toHaveBeenCalled();
+  });
+
+  it("queues an Eben-authenticated request", async () => {
     const res = await onRequestPost(
       ctx("https://www.amarimethod.com/api/ops/fix", {
         method: "POST",
@@ -152,7 +173,7 @@ describe("POST /api/ops/fix", () => {
     expect(queueFixRequest).toHaveBeenCalled();
   });
 
-  it("fix action launches manually with Staff auth and cannot force cooldown bypass", async () => {
+  it("fix action launches manually with Eben auth and cannot force cooldown bypass", async () => {
     launchFixForPath.mockResolvedValueOnce({
       ok: true,
       promptReady: true,

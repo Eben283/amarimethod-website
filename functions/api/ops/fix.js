@@ -1,6 +1,6 @@
 // GET  /api/ops/fix?pathId=… — fix job status
 // POST /api/ops/fix { pathId, action: "fix"|"request"|"sweep"|"launch" }
-//   fix     — authenticated Staff Fix button: launch now (or return copy-paste prompt)
+//   fix     — authenticated Staff Fix button: launch now (Eben or Garrett)
 //   request — authenticated Staff queue-only request for cron
 //   sweep / launch — worker auth only
 

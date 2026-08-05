@@ -74,13 +74,13 @@ describe("GET /api/ops/systems", () => {
     expect(buildPersonTimeline).not.toHaveBeenCalled();
   });
 
-  it("accepts Garrett's valid shared-PIN Staff session", async () => {
+  it("accepts Garrett's separately authenticated Staff session", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems", "Garrett"));
     expect(res.status).toBe(200);
     expect(buildSystemsBoard).toHaveBeenCalled();
   });
 
-  it("returns the board for a valid Staff session", async () => {
+  it("returns the board for Eben's Staff session", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
     expect(res.status).toBe(200);
     const body = await res.json();
