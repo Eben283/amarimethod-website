@@ -8,6 +8,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("selected client record beside them");
   });
 
+  it("includes an explicit staff email composer rather than automatic outreach", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain('id="email-compose"');
+    expect(html).toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
+    expect(html).toContain("Sends email now");
+    expect(html).toContain("blocked for email opt-out or DND");
+  });
+
   it("includes a read-only consent evidence review queue", () => {
     const html = clientDeskHtml();
     expect(html).toContain("Contactability review · read-only");
