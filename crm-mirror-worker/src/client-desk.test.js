@@ -4,24 +4,41 @@ import { clientDeskHtml } from "./client-desk.js";
 describe("Client Desk message rendering", () => {
   it("identifies the desk as a client inbox rather than an operations-message view", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("Known operations-status traffic stays out of this inbox.");
+    expect(html).toContain("Automated status notices are filtered without hiding the person’s record.");
     expect(html).toContain("selected client record beside them");
+  });
+
+  it("does not expose operator-surface navigation inside Client Desk", () => {
+    const html = clientDeskHtml();
+    expect(html).not.toContain("Systems");
+    expect(html).not.toContain("CRM Mirror");
+    expect(html).not.toContain("Automation Watch");
+    expect(html).not.toContain("Staff hub");
   });
 
   it("includes an explicit staff email composer rather than automatic outreach", () => {
     const html = clientDeskHtml();
     expect(html).toContain('id="email-compose"');
+    expect(html).toContain('name="from"');
+    expect(html).toContain("/client-desk/email-senders");
     expect(html).toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
     expect(html).toContain("Sends email now");
     expect(html).toContain("blocked for email opt-out or DND");
+    expect(html).toContain("from: fields.get('from')");
   });
 
-  it("includes a read-only consent evidence review queue", () => {
+  it("keeps the composer anchored below a separately scrollable timeline", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("Contactability review · read-only");
-    expect(html).toContain("/consent-review?limit=50");
-    expect(html).toContain("Nothing here can send or change a contact.");
-    expect(html).toContain("no_auditable_evidence");
+    expect(html).toContain(".timeline-scroll { min-height: 0; flex: 1; overflow: auto; }");
+    expect(html).toContain("height: clamp(560px, calc(100vh - 230px), 840px)");
+    expect(html).toContain('<div class="timeline-scroll"><div class="timeline">');
+    expect(html).toContain("flex: 0 0 auto");
+  });
+
+  it("keeps consent auditing out of the Client Desk interface", () => {
+    const html = clientDeskHtml();
+    expect(html).not.toContain("Contactability review");
+    expect(html).not.toContain("/consent-review");
   });
 
   it("renders separate Stripe invoice context without calling an invoice a payment", () => {

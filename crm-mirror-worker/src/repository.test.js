@@ -205,16 +205,15 @@ describe("Client Desk payment and access state", () => {
 });
 
 describe("CRM mirror client profiles", () => {
-  it("keeps known machine-status traffic out of the client inbox", async () => {
+  it("filters a machine-status thread preview without suppressing the contact record", async () => {
     const calls = [];
     const db = {
       prepare: (sql) => ({ bind: (...values) => ({ all: async () => { calls.push({ sql, values }); return { results: [] }; } }) }),
     };
     await expect(communicationsInbox(db, { limit: 25 })).resolves.toEqual([]);
-    expect(calls[0].sql).toContain("NOT EXISTS");
-    expect(calls[0].sql).toContain("UPPER(TRIM(COALESCE(operational_event.body_clean, ''))) LIKE 'OPS-%'");
-    expect(calls[0].sql).toContain("%local codex exit%");
-    expect(calls[0].sql).toContain("%github branch-creation%");
+    expect(calls[0].sql).toContain("UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'");
+    expect(calls[0].sql).not.toContain("eben@ebenforrest.com");
+    expect(calls[0].sql).not.toContain("NOT EXISTS");
   });
 
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {

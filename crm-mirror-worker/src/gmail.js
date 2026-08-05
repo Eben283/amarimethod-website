@@ -1,5 +1,6 @@
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
+const GMAIL_SEND_AS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs";
 const USER = "eben";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
@@ -16,6 +17,12 @@ function cleanHeader(value, name, maximum) {
   const text = String(value || "").replace(/[\r\n]+/g, " ").trim();
   if (!text || text.length > maximum) throw new Error(`invalid ${name}`);
   return text;
+}
+
+function cleanEmail(value, name) {
+  const email = cleanHeader(value, name, 320).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(`invalid ${name}`);
+  return email;
 }
 
 export async function getGoogleWorkspaceToken(env) {
@@ -44,13 +51,33 @@ export function gmailConfigured(env) {
   return Boolean(env?.PORTAL_KV && env?.GOOGLE_OAUTH_CLIENT_ID && env?.GOOGLE_OAUTH_CLIENT_SECRET);
 }
 
-export async function sendGmailEmail(env, { to, subject, text }) {
-  const recipient = cleanHeader(to, "recipient", 320);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) throw new Error("invalid recipient");
+// Gmail, not the Staff UI, is the authority for usable From identities. This
+// endpoint needs gmail.settings.basic; it never reads client email content.
+export async function listGmailSenders(env) {
+  const token = await getGoogleWorkspaceToken(env);
+  const response = await fetch(GMAIL_SEND_AS_URL, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response.ok) throw new Error(`Gmail sender identities unavailable (${response.status})`);
+  const payload = await response.json();
+  return (payload.sendAs || [])
+    .filter((identity) => identity?.sendAsEmail && (identity.isPrimary || String(identity.verificationStatus || "").toLowerCase() === "accepted"))
+    .map((identity) => ({
+      address: cleanEmail(identity.sendAsEmail, "sender"),
+      name: String(identity.displayName || "").replace(/[\r\n]+/g, " ").trim(),
+      isDefault: Boolean(identity.isDefault),
+      isPrimary: Boolean(identity.isPrimary),
+    }));
+}
+
+export async function sendGmailEmail(env, { to, subject, text, from, senders }) {
+  const recipient = cleanEmail(to, "recipient");
+  const sender = cleanEmail(from, "sender");
+  const allowedSenders = Array.isArray(senders) ? senders : await listGmailSenders(env);
+  if (!allowedSenders.some((identity) => identity.address === sender)) throw new Error("sender is not authorized by Google Workspace");
   const safeSubject = cleanHeader(subject, "subject", 160);
   const body = String(text || "").trim();
   if (!body || body.length > 20_000) throw new Error("invalid email body");
   const raw = [
+    `From: ${sender}`,
     `To: ${recipient}`,
     `Subject: ${safeSubject}`,
     "MIME-Version: 1.0",

@@ -10,6 +10,7 @@ const CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
 const GOOGLE_WORKSPACE_SCOPES = [
   "https://www.googleapis.com/auth/calendar",
   "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.settings.basic",
 ].join(" ");
 const STATE_TTL_SECONDS = 10 * 60;
 const ALLOWED_ORIGINS = new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);

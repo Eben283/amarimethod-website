@@ -39,7 +39,7 @@ describe("POST /api/cos-google-auth", () => {
     const url = new URL(authorizationUrl);
     expect(url.origin).toBe("https://accounts.google.com");
     expect(url.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/cos-google-callback");
-    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send");
+    expect(url.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.settings.basic");
     expect(url.searchParams.get("state")).toHaveLength(64);
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith(
       `cos:google-oauth:${url.searchParams.get("state")}`,
