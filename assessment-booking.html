@@ -167,13 +167,13 @@
 
       <nav class="format-toggle" id="formatToggle" aria-label="Session format">
         <div class="format-toggle-inner" role="tablist">
-          <a href="/book/initial-in-person" class="ft-option ft-active" role="tab" aria-selected="true" aria-current="page">
-            <span class="ft-label">In person</span>
-            <span class="ft-detail">San Francisco</span>
+          <a href="/book/initial-in-person" id="formatPrimary" class="ft-option ft-active" role="tab" aria-selected="true" aria-current="page">
+            <span class="ft-label" id="formatPrimaryLabel">In person</span>
+            <span class="ft-detail" id="formatPrimaryDetail">San Francisco</span>
           </a>
-          <a href="/book/initial-virtual" class="ft-option" role="tab" aria-selected="false">
-            <span class="ft-label">Virtual</span>
-            <span class="ft-detail">Anywhere</span>
+          <a href="/book/initial-virtual" id="formatSecondary" class="ft-option" role="tab" aria-selected="false">
+            <span class="ft-label" id="formatSecondaryLabel">Virtual</span>
+            <span class="ft-detail" id="formatSecondaryDetail">Anywhere</span>
           </a>
         </div>
       </nav>
@@ -289,7 +289,7 @@
           </div>
 
           <div class="form-row" style="margin-top: 32px;">
-            <label class="checkbox-row" data-error-for="agreePolicies">
+            <label class="checkbox-row" id="policyRow" data-error-for="agreePolicies">
               <input type="checkbox" id="agreePolicies" name="agreePolicies" required>
               <span>I have read and agree to the <a href="/client-info">Missed Appointment Policy</a>.</span>
             </label>
@@ -334,10 +334,13 @@
       const query = new URLSearchParams(window.location.search);
       const IS_ASSESSMENT = query.get('assessment') === '1';
       const IS_EMBEDDED = query.get('embed') === '1';
-      const BOOKING = IS_ASSESSMENT ? {
+      const BOOKING_CONFIGS = {
+        amari_assessment: {
         calendarId: 'EM6vB2mq7EAdGCbUb3j1',
         sessionType: 'amari_assessment',
         price: 29,
+        requiresPolicy: true,
+        hideFormat: true,
         agreementVersion: 'agreed-pma-v2026-06-16',
         kicker: 'Amari Assessment · San Francisco',
         headline: 'Explore what your <em>body is asking for.</em>',
@@ -345,10 +348,13 @@
         meta: '50 minutes · In person',
         summaryLabel: 'Amari Assessment · In Person',
         title: 'Book an Amari Assessment | Amari Method'
-      } : {
+        },
+        initial_in_person: {
         calendarId: 'G7OAnnJuFbMF6nQSlZVQ',
         sessionType: 'initial_in_person',
         price: 225,
+        requiresPolicy: true,
+        formatPair: 'initial',
         agreementVersion: 'missed-appointment-v2026-06-16',
         kicker: 'Initial session · San Francisco',
         headline: 'Book your <em>first session.</em>',
@@ -356,6 +362,71 @@
         meta: 'Pay over time with Affirm',
         summaryLabel: 'Initial Session · In Person',
         title: 'Book Your First Session · In Person | Amari Method'
+        },
+        initial_virtual: {
+          calendarId: 'ySmht5hx4uZGEpgZrlCw', sessionType: 'initial_virtual', price: 225,
+          requiresPolicy: true, formatPair: 'initial', agreementVersion: 'missed-appointment-v2026-06-16',
+          kicker: 'Initial session · Virtual', headline: 'Book your <em>first session.</em>',
+          sub: '60 minutes with Garrett over video. Full assessment, your first guided protocol, and a take-home practice.',
+          meta: 'Virtual · from anywhere', summaryLabel: 'Initial Session · Virtual',
+          title: 'Book Your First Session · Virtual | Amari Method'
+        },
+        discovery_call: {
+          calendarId: 'USgPsktqRcuomdUgpShL', sessionType: 'discovery_call', price: 0,
+          requiresPolicy: false, formatPair: 'discovery', agreementVersion: 'free-discovery-v2026-08-04',
+          kicker: 'Free discovery call · Phone', headline: 'Find out if Amari is <em>the right next step.</em>',
+          sub: 'A free 15-minute call with Garrett to hear what you are dealing with and decide whether an Amari practice makes sense.',
+          meta: '15 minutes · Phone', summaryLabel: 'Free Discovery Call · Phone',
+          title: 'Book a Free Discovery Call | Amari Method'
+        },
+        discovery_virtual: {
+          calendarId: 'ZEIGFHBi17SpZ3Ezi5DR', sessionType: 'discovery_virtual', price: 0,
+          requiresPolicy: false, formatPair: 'discovery', agreementVersion: 'free-discovery-v2026-08-04',
+          kicker: 'Free discovery call · Virtual', headline: 'Find out if Amari is <em>the right next step.</em>',
+          sub: 'A free 15-minute video call with Garrett to hear what you are dealing with and decide whether an Amari practice makes sense.',
+          meta: '15 minutes · Video', summaryLabel: 'Free Discovery Call · Virtual',
+          title: 'Book a Virtual Discovery Call | Amari Method'
+        },
+        ambassador_discovery: {
+          calendarId: 'aVE54Qf4lrbYTB0zFqXy', sessionType: 'ambassador_discovery', price: 0,
+          requiresPolicy: false, hideFormat: true, agreementVersion: 'partnership-discovery-v2026-08-04',
+          kicker: 'Partnership · Discovery call', headline: 'Explore an Amari <em>partnership.</em>',
+          sub: 'A free 15-minute call with Garrett to talk through the practice, who it helps, and whether a partnership makes sense.',
+          meta: '15 minutes · Free', summaryLabel: 'Partnership Discovery Call',
+          title: 'Book a Partnership Discovery Call | Amari Method'
+        },
+        partner_initial_in_person: {
+          calendarId: 'lfsnaiGiLNL2z12pLKDP', sessionType: 'partner_initial_in_person', price: 0,
+          requiresPolicy: true, formatPair: 'partner', agreementVersion: 'agreed-pma-v2026-04-17',
+          kicker: 'Partner session · San Francisco', headline: 'Experience the work <em>for yourself.</em>',
+          sub: 'A complimentary 60-minute session with Garrett before you decide whether you would like to partner with Amari.',
+          meta: '60 minutes · In person', summaryLabel: 'Partner Initial Session · In Person',
+          title: 'Book Your Partner Session | Amari Method'
+        },
+        partner_initial_virtual: {
+          calendarId: 'P7T6M1w8wtuRfwAqzOVw', sessionType: 'partner_initial_virtual', price: 0,
+          requiresPolicy: true, formatPair: 'partner', agreementVersion: 'agreed-pma-v2026-04-17',
+          kicker: 'Partner session · Virtual', headline: 'Experience the work <em>for yourself.</em>',
+          sub: 'A complimentary 60-minute virtual session with Garrett before you decide whether you would like to partner with Amari.',
+          meta: '60 minutes · Virtual', summaryLabel: 'Partner Initial Session · Virtual',
+          title: 'Book Your Virtual Partner Session | Amari Method'
+        }
+      };
+      const requestedType = IS_ASSESSMENT ? 'amari_assessment' : query.get('type');
+      const BOOKING = BOOKING_CONFIGS[requestedType] || BOOKING_CONFIGS.initial_in_person;
+      const FORMAT_PAIRS = {
+        initial: [
+          { type: 'initial_in_person', label: 'In person', detail: 'San Francisco' },
+          { type: 'initial_virtual', label: 'Virtual', detail: 'Anywhere' }
+        ],
+        discovery: [
+          { type: 'discovery_call', label: 'Phone', detail: '15 minutes' },
+          { type: 'discovery_virtual', label: 'Video', detail: '15 minutes' }
+        ],
+        partner: [
+          { type: 'partner_initial_in_person', label: 'In person', detail: 'San Francisco' },
+          { type: 'partner_initial_virtual', label: 'Virtual', detail: 'Anywhere' }
+        ]
       };
       const CALENDAR_ID = BOOKING.calendarId;
       const SESSION_TYPE = BOOKING.sessionType;
@@ -416,21 +487,40 @@
         $('bookKicker').textContent = BOOKING.kicker;
         $('bookHeadline').innerHTML = BOOKING.headline;
         $('bookSub').textContent = BOOKING.sub;
-        $('bookPrice').textContent = '$' + SESSION_PRICE;
         $('bookMetaSecondary').textContent = BOOKING.meta;
         document.querySelectorAll('[data-booking-label]').forEach(function (el) {
           el.textContent = BOOKING.summaryLabel;
         });
-        document.querySelectorAll('[data-booking-price]').forEach(function (el) {
-          el.textContent = '$' + SESSION_PRICE;
-        });
-        $('step2SubmitLabel').textContent = 'Continue to payment · $' + SESSION_PRICE;
+        const priceText = SESSION_PRICE === 0 ? 'Free' : ('$' + SESSION_PRICE);
+        $('bookPrice').textContent = priceText;
+        document.querySelectorAll('[data-booking-price]').forEach(function (el) { el.textContent = priceText; });
+        $('step2SubmitLabel').textContent = SESSION_PRICE === 0 ? 'Book this time' : ('Continue to payment · $' + SESSION_PRICE);
+        const progress3 = document.querySelector('#progressStep3 .book-progress-label');
+        if (progress3) progress3.textContent = SESSION_PRICE === 0 ? 'Confirmed' : 'Payment';
         document.title = BOOKING.title;
-        if (IS_ASSESSMENT) {
+        $('policyRow').hidden = !BOOKING.requiresPolicy;
+        $('agreePolicies').required = !!BOOKING.requiresPolicy;
+        const pair = FORMAT_PAIRS[BOOKING.formatPair];
+        if (BOOKING.hideFormat || !pair) {
           $('formatToggle').hidden = true;
           $('formatToggle').setAttribute('aria-hidden', 'true');
+        } else {
+          [elsFormatPrimary(), elsFormatSecondary()].forEach(function (el, index) {
+            const option = pair[index];
+            const active = option.type === SESSION_TYPE;
+            el.link.href = '/assessment-booking.html?type=' + encodeURIComponent(option.type);
+            el.label.textContent = option.label;
+            el.detail.textContent = option.detail;
+            el.link.classList.toggle('ft-active', active);
+            el.link.setAttribute('aria-selected', active ? 'true' : 'false');
+            if (active) el.link.setAttribute('aria-current', 'page');
+            else el.link.removeAttribute('aria-current');
+          });
         }
       }
+
+      function elsFormatPrimary() { return { link: $('formatPrimary'), label: $('formatPrimaryLabel'), detail: $('formatPrimaryDetail') }; }
+      function elsFormatSecondary() { return { link: $('formatSecondary'), label: $('formatSecondaryLabel'), detail: $('formatSecondaryDetail') }; }
 
       function track(event, params) {
         if (window.gtag) {
@@ -705,7 +795,7 @@
         else if (!isValidEmail(data.email)) { setFieldError('email', 'Enter a valid email'); ok = false; }
         if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
         else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
-        if (!data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
+        if (BOOKING.requiresPolicy && !data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
         return ok;
       }
 
@@ -724,7 +814,7 @@
 
         state.submitting = true;
         els.step2SubmitBtn.disabled = true;
-        els.step2SubmitLabel.textContent = 'Redirecting to secure payment…';
+        els.step2SubmitLabel.textContent = SESSION_PRICE === 0 ? 'Booking your time…' : 'Redirecting to secure payment…';
 
         const payload = {
           firstName: data.firstName,

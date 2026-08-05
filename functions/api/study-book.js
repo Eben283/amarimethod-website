@@ -3,6 +3,8 @@
 import { ghlFetch } from '../lib/ghl.js';
 import { STUDY_CALENDAR_ID } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
+import { assertSlotRespectsAppBuffer, fetchAppBufferEvents, filterSlotsByAppBuffer } from '../lib/app-owned-buffer.js';
+import { createConfirmedAppointment } from '../lib/ghl-appointment-handoff.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -31,7 +33,9 @@ async function slots(context, startDate, endDate, timezone) {
   const start = Date.parse(`${startDate}T00:00:00Z`); const end = Date.parse(`${endDate}T23:59:59Z`) + 12 * 60 * 60 * 1000;
   const response = await ghlFetch(context, `${GHL_API_BASE}/calendars/${STUDY_CALENDAR_ID}/free-slots?startDate=${start}&endDate=${end}&timezone=${encodeURIComponent(timezone)}`);
   if (!response.ok) throw new Error('Could not load available times.');
-  return flattenSlots(await response.json());
+  const rawSlots = flattenSlots(await response.json());
+  const events = await fetchAppBufferEvents(context, start, end);
+  return filterSlotsByAppBuffer(rawSlots, STUDY_CALENDAR_ID, events);
 }
 
 async function rateLimit(context, key) {
@@ -64,8 +68,24 @@ export async function onRequestPost(context) {
     if (!upsert.ok) throw new Error('contact upsert failed');
     const contactId = (await upsert.json()).contact?.id;
     if (!contactId) throw new Error('contact ID missing');
-    const appointment = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, { method: 'POST', body: JSON.stringify({ calendarId: STUDY_CALENDAR_ID, locationId: GHL_LOCATION_ID, contactId, startTime, endTime: appointmentEndTime(startTime, 15), selectedTimezone: timezone, title: 'Amari Study 15-Minute Session', appointmentStatus: 'confirmed', firstName, lastName, email: cleanEmail, phone: cleanPhone }) });
-    if (!appointment.ok) return json({ error: 'That time was just taken. Please choose another.' }, 422, origin);
+    await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
+    await createConfirmedAppointment({
+      endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
+      request: (url, options) => ghlFetch(context, url, options),
+      payload: {
+        calendarId: STUDY_CALENDAR_ID,
+        locationId: GHL_LOCATION_ID,
+        contactId,
+        startTime,
+        endTime: appointmentEndTime(startTime, 15),
+        selectedTimezone: timezone,
+        title: 'Amari Study 15-Minute Session',
+        firstName,
+        lastName,
+        email: cleanEmail,
+        phone: cleanPhone,
+      },
+    });
     return json({ success: true, appointment: { startTime } }, 200, origin);
   } catch (error) { console.error('[study-book] booking:', error.message); return json({ error: 'We could not save that booking. Please try again.' }, 422, origin); }
 }

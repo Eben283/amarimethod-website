@@ -10,13 +10,13 @@
 import { ghlFetch } from "../../lib/ghl.js";
 import { applyLookBusy } from "../../lib/look-busy.js";
 import { applyHourPackPreference } from "../../lib/booking-slot-policy.js";
+import { applyGarrettSchedulePreference, fetchAppBufferEvents, filterSlotsByAppBuffer } from "../../lib/app-owned-buffer.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../lib/ops-last-run.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 
-// Only the public booking calendars. Anything else returns 403 — this prevents
-// the endpoint from exposing internal calendars (Entrainment, partner-side, etc.)
-// even though they share the same GHL location.
+// Only calendars intentionally exposed through Amari-owned booking pages.
+// Entrainment remains staff-only and is not enumerable here.
 const ALLOWED_CALENDARS = new Set([
   "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person ($225, 60 min)
   "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual ($225, 60 min)
@@ -24,6 +24,10 @@ const ALLOWED_CALENDARS = new Set([
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual ($190, 50 min)
   "USgPsktqRcuomdUgpShL", // Discovery Call (free, 15 min)
   "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment — In Person ($29, 50 min)
+  "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual (free, 15 min)
+  "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call (free, 15 min)
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial — In Person (comp, 60 min)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual (comp, 60 min)
 ]);
 
 function corsHeaders(requestOrigin) {
@@ -192,10 +196,20 @@ export async function onRequestGet(context) {
     }
   }
 
-  // Prefer on-hour main sessions / intro slots that leave the next Follow-up
-  // hour free, then thin with look-busy. Both only filter GHL-approved times.
-  const packed = applyHourPackPreference(slots, { calendarId });
-  const thinned = applyLookBusy(packed, { calendarId });
+  let bufferEvents;
+  try {
+    bufferEvents = await fetchAppBufferEvents(context, startMs, endMs);
+  } catch (err) {
+    console.error("[book/public-slots] app-owned buffer lookup failed:", err?.message);
+    return json({ error: "Availability is temporarily unavailable" }, 422, origin);
+  }
+
+  // GHL supplies raw free slots. Amari then enforces its 20/10 minute buffer,
+  // ranks the remaining approved times, and applies the display thinning.
+  const buffered = filterSlotsByAppBuffer(slots, calendarId, bufferEvents);
+  const packed = applyHourPackPreference(buffered, { calendarId });
+  const clustered = applyGarrettSchedulePreference(packed, bufferEvents);
+  const thinned = applyLookBusy(clustered, { calendarId });
   await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.publicSlots, {
     status: "ok",
     calendarId,

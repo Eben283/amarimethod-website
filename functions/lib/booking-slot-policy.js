@@ -1,15 +1,13 @@
 /**
  * Canonical booking slot policy (duration · interval · buffer).
  *
- * Public bodywork rhythm: Assessment + Follow-up are both 50 min on the hour
- * (interval 60, buffer 10 → block 60). Partner Initial stays 60. Discovery /
- * study / phone stay 15. Entrainment stays 30.
- * GHL remains availability truth; Amari ranks/filters what to show.
+ * GHL supplies the raw availability; Amari owns post-session buffers and the
+ * displayed slot shape. GHL slotBuffer remains zero on every calendar.
  * See amari-method-docs/ops/memory/decision_booking_slot_model.md
  *
  * Knobs:
  *   durationMinutes — client session length (appointment endTime)
- *   bufferMinutes   — post-session turnover (occupied block = duration + buffer)
+ *   bufferMinutes   — Amari-owned post-session turnover (occupied block = duration + buffer)
  *   intervalMinutes — candidate start lattice (NOT "match duration")
  */
 
@@ -66,7 +64,7 @@ export const SLOT_POLICIES = {
       "bJFkhVP35Ecwh4tLnSmy", // package virtual
     ],
     durationMinutes: 50,
-    bufferMinutes: 10,
+    bufferMinutes: 20,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
     priority: true,
@@ -83,7 +81,7 @@ export const SLOT_POLICIES = {
       "P7T6M1w8wtuRfwAqzOVw", // partner virtual — keep 60
     ],
     durationMinutes: 60, // Partner Initial stays 60; legacy paid Initial calendars still 60 in GHL
-    bufferMinutes: 0,
+    bufferMinutes: 20,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
     preferOnHour: true,
@@ -93,7 +91,7 @@ export const SLOT_POLICIES = {
     label: "Amari Assessment",
     calendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
     durationMinutes: 50, // was 40 — public first visit
-    bufferMinutes: 10,
+    bufferMinutes: 20,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,
     lattice: "studio",
     preferOnHour: true,
@@ -103,7 +101,7 @@ export const SLOT_POLICIES = {
     label: "Discovery Call (phone)",
     calendarIds: ["USgPsktqRcuomdUgpShL"],
     durationMinutes: 15,
-    bufferMinutes: 15,
+    bufferMinutes: 10,
     intervalMinutes: 15,
     lattice: "phone",
     preferOnHour: false,
@@ -113,7 +111,7 @@ export const SLOT_POLICIES = {
     label: "Discovery Call (virtual)",
     calendarIds: ["ZEIGFHBi17SpZ3Ezi5DR"],
     durationMinutes: 15,
-    bufferMinutes: 0,
+    bufferMinutes: 10,
     intervalMinutes: 15,
     lattice: "phone",
     preferOnHour: false,
@@ -123,8 +121,28 @@ export const SLOT_POLICIES = {
     label: "Entrainment",
     calendarIds: ["B5aGXLoS4kzAjZAMMXxk"],
     durationMinutes: 30,
-    bufferMinutes: 0,
+    bufferMinutes: 20,
     intervalMinutes: 15,
+    lattice: "short",
+    preferOnHour: false,
+  },
+  partnership_discovery: {
+    id: "partnership_discovery",
+    label: "Partnership Discovery Call",
+    calendarIds: ["aVE54Qf4lrbYTB0zFqXy"],
+    durationMinutes: 15,
+    bufferMinutes: 10,
+    intervalMinutes: 20,
+    lattice: "phone",
+    preferOnHour: false,
+  },
+  study: {
+    id: "study",
+    label: "Amari Study Session",
+    calendarIds: ["J1N09B6bRYPOGNyVAfmX"],
+    durationMinutes: 15,
+    bufferMinutes: 20,
+    intervalMinutes: 30,
     lattice: "short",
     preferOnHour: false,
   },
@@ -177,7 +195,8 @@ export function policyForCalendarId(calendarId) {
 }
 
 /**
- * Compare live GHL calendar fields to policy. Returns drift rows.
+ * Compare live GHL calendar fields to the underlying GHL policy. Buffers are
+ * deliberately app-owned, so every GHL slotBuffer must remain zero.
  * @param {{ id: string, slotDuration?: number, slotInterval?: number, slotBuffer?: number }} live
  */
 export function driftAgainstPolicy(live) {
@@ -198,11 +217,11 @@ export function driftAgainstPolicy(live) {
       policy: policy.intervalMinutes,
     });
   }
-  if (Number(live.slotBuffer ?? 0) !== policy.bufferMinutes) {
+  if (Number(live.slotBuffer ?? 0) !== 0) {
     drifts.push({
       field: "slotBuffer",
       live: Number(live.slotBuffer ?? 0),
-      policy: policy.bufferMinutes,
+      policy: 0,
     });
   }
   return {

@@ -16,6 +16,10 @@ describe("staff-book-calendars", () => {
     const types = listStaffBookTypes();
     expect(types.some((t) => t.id === "assessment")).toBe(true);
     expect(types.some((t) => t.id === "partner_initial")).toBe(true);
+    expect(types.some((t) => t.id === "partner_initial_virtual")).toBe(true);
+    expect(types.some((t) => t.id === "discovery_virtual")).toBe(true);
+    expect(types.some((t) => t.id === "ambassador_discovery")).toBe(true);
+    expect(types.some((t) => t.id === "entrainment")).toBe(true);
   });
 });
 
@@ -40,6 +44,9 @@ describe("staff-book API", () => {
   it("books assessment for a contact with idempotency", async () => {
     const kv = new Map();
     const ghlFetch = vi.fn(async (ctx, url, opts = {}) => {
+      if (String(url).includes("/calendars/events?") && !opts.method) {
+        return { ok: true, json: async () => ({ events: [] }) };
+      }
       if (String(url).includes("/contacts/") && !String(url).includes("/appointments") && opts.method !== "POST") {
         return {
           ok: true,

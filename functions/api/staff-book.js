@@ -9,6 +9,8 @@ import { appointmentEndTime } from "../lib/datetime.js";
 import { listStaffBookTypes, resolveStaffBookType, flattenSlots } from "../lib/staff-book-calendars.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { applyGarrettSchedulePreference, assertSlotRespectsAppBuffer, fetchAppBufferEvents, filterSlotsByAppBuffer } from "../lib/app-owned-buffer.js";
+import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -58,7 +60,12 @@ async function freeSlots(context, calendarId, startDate, endDate, timezone) {
     }
   }
   if (!succeeded) throw new Error("Could not load available times.");
-  return flattenSlots(merged);
+  const slots = flattenSlots(merged);
+  const events = await fetchAppBufferEvents(context, start, end);
+  return applyGarrettSchedulePreference(
+    filterSlotsByAppBuffer(slots, calendarId, events),
+    events,
+  );
 }
 
 async function findUpcomingOnCalendar(context, contactId, calendarId) {
@@ -138,6 +145,12 @@ export async function onRequestPost(context) {
     const existing = await context.env.PORTAL_KV?.get(cacheKey, "json");
     if (existing) return json(existing, 200, headers);
 
+    try {
+      await assertSlotRespectsAppBuffer(context, startTime, booking.calendarId);
+    } catch (err) {
+      return json({ error: "That time is no longer available. Choose another one." }, 422, headers);
+    }
+
     const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
     if (!contactRes.ok) {
       return json({ error: "Could not load that contact." }, 404, headers);
@@ -153,33 +166,35 @@ export async function onRequestPost(context) {
       }, 409, headers);
     }
 
-    const createRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, {
-      method: "POST",
-      body: JSON.stringify({
-        calendarId: booking.calendarId,
-        locationId: GHL_LOCATION_ID,
-        contactId,
-        startTime,
-        endTime: appointmentEndTime(startTime, booking.durationMinutes),
-        selectedTimezone: timezone,
-        title: booking.title,
-        appointmentStatus: "confirmed",
-        toNotify: notify,
-        ignoreDateRange: false,
-        firstName: contact.firstName || contact.first_name || "",
-        lastName: contact.lastName || contact.last_name || "",
-        email: contact.email || "",
-        phone: contact.phone || "",
-      }),
-    });
-    if (!createRes.ok) {
-      const detail = await createRes.text();
-      console.error("[staff-book] create error:", createRes.status, detail.slice(0, 300));
+    let data;
+    try {
+      data = await createConfirmedAppointment({
+        endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
+        request: (url, options) => ghlFetch(context, url, options),
+        payload: {
+          calendarId: booking.calendarId,
+          locationId: GHL_LOCATION_ID,
+          contactId,
+          startTime,
+          endTime: appointmentEndTime(startTime, booking.durationMinutes),
+          selectedTimezone: timezone,
+          title: booking.title,
+          toNotify: notify,
+          ignoreDateRange: false,
+          firstName: contact.firstName || contact.first_name || "",
+          lastName: contact.lastName || contact.last_name || "",
+          email: contact.email || "",
+          phone: contact.phone || "",
+        },
+      });
+    } catch (err) {
+      const detail = String(err?.detail || err?.message || err);
+      console.error("[staff-book] create error:", err?.status || 0, detail.slice(0, 300));
       context.waitUntil?.(
         recordOpsError(context.env, "staff-book", "Staff book appointment failed", {
           contactId,
           sessionType,
-          status: createRes.status,
+          status: err?.status || 0,
           error: detail.slice(0, 300),
         }),
       );
@@ -196,7 +211,6 @@ export async function onRequestPost(context) {
       );
       return json({ error: "That time is no longer available. Choose another one." }, 422, headers);
     }
-    const data = await createRes.json();
     const result = {
       appointment: {
         id: data.id || data.appointment?.id || "",

@@ -22,6 +22,8 @@ import { FIELD_IDS } from "../../lib/ghl-fields.js";
 import { recordOpsError } from "../../lib/ops-alert.js";
 import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
 import { emitPathHop } from "../../lib/ops-path-emit.js";
+import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
+import { createConfirmedAppointment } from "../../lib/ghl-appointment-handoff.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -86,6 +88,55 @@ const ALLOWED_BOOKINGS = {
     sessionTag: "booked-discovery-call",
     paymentLinkUrl: null,
     isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  discovery_virtual: {
+    calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
+    productId: null,
+    price: 0,
+    title: "Amari Method Discovery Call — Virtual",
+    durationMinutes: 15,
+    pmaTag: null,
+    sessionTag: "booked-discovery-call",
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  ambassador_discovery: {
+    calendarId: "aVE54Qf4lrbYTB0zFqXy",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partnership Discovery Call",
+    durationMinutes: 15,
+    pmaTag: null,
+    sessionTag: "booked-discovery-call",
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  partner_initial_in_person: {
+    calendarId: "lfsnaiGiLNL2z12pLKDP",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partner Initial Session — In Person",
+    durationMinutes: 60,
+    pmaTag: "agreed-pma-v2026-04-17",
+    sessionTag: null,
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: true,
+  },
+  partner_initial_virtual: {
+    calendarId: "P7T6M1w8wtuRfwAqzOVw",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partner Initial Session — Virtual",
+    durationMinutes: 60,
+    pmaTag: "agreed-pma-v2026-04-17",
+    sessionTag: null,
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: true,
   },
 };
 
@@ -245,10 +296,10 @@ function validateBody(b) {
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }
-  // Missed Appointment Policy agreement is only required for paid
-  // bookings. Discovery call is free and has no policy gate.
+  // Paid bookings and complimentary partner sessions require the policy.
+  // Short discovery calls remain free of that gate.
   // agreeCommunications is always optional.
-  if (!booking.isFreeBooking && !b.agreePolicies) {
+  if ((!booking.isFreeBooking || booking.requiresPolicy) && !b.agreePolicies) {
     return "Missed Appointment Policy must be agreed to";
   }
   return null;
@@ -345,8 +396,8 @@ export async function upsertContact(context, GHL_API_KEY, locationId, payload, b
  * contact arrived, even before payment lands.
  */
 async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booking) {
-  // Build tag list. pmaTag is null for free bookings (no PMA gate on a
-  // discovery call). sessionTag is set on both paid + free, so we know
+  // Build tag list. pmaTag is null for discovery calls and set for partner
+  // sessions. sessionTag is set on both paid + free where lifecycle routing
   // what they booked. native-booking-started flags the contact as having
   // moved through the new flow vs the old GHL funnel iframe.
   const tags = ["native-booking-started"];
@@ -369,16 +420,16 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
   const isFree = !!booking.isFreeBooking;
   const noteBody = [
     isFree
-      ? `Native booking flow — discovery call booked directly`
+      ? `Native booking flow — free appointment booked directly`
       : `Native booking flow — checkout initiated`,
     ``,
     `Session: ${booking.title}`,
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
     isFree
-      ? `Free booking: no payment or policy gate`
+      ? `Free booking: no payment${booking.requiresPolicy ? "; policy accepted" : " or policy gate"}`
       : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
-    ...(isFree
+    ...(!booking.requiresPolicy && isFree
       ? []
       : [
           `Missed Appointment Policy: yes (clickwrap)`,
@@ -408,10 +459,9 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
 
 /**
  * Book a free appointment directly via GHL Calendar API. Used for the
- * discovery call flow (no Stripe step). The created appointment fires
- * GHL's normal "appointment created" workflows (confirmation SMS/email,
- * reminders, etc.) so the customer experience matches the legacy GHL
- * funnel booking.
+ * discovery call flow (no Stripe step). Availability is verified again here
+ * immediately before the write so an abandoned browser tab cannot consume a
+ * protected turnover window after another appointment has been made.
  *
  * Returns the appointment id on success. Throws on failure so the caller
  * can return a 422 to the browser instead of redirecting to a confirm
@@ -423,35 +473,27 @@ async function bookFreeAppointment(context, locationId, contactId, payload, book
   // as "not available". appointmentEndTime preserves both the instant and the
   // offset (see functions/lib/datetime.js).
   const endTime = appointmentEndTime(payload.startTime, booking.durationMinutes);
+  await assertSlotRespectsAppBuffer(context, payload.startTime, booking.calendarId);
 
-  const res = await ghlFetch(
-    context,
-    "https://services.leadconnectorhq.com/calendars/events/appointments",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        calendarId: booking.calendarId,
-        locationId,
-        contactId,
-        startTime: payload.startTime,
-        endTime,
-        selectedTimezone: payload.timezone,
-        title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
-        appointmentStatus: "confirmed",
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        email: payload.email,
-        phone: payload.phone,
-        ignoreDateRange: false,
-        toNotify: true,
-      }),
+  const data = await createConfirmedAppointment({
+    endpoint: "https://services.leadconnectorhq.com/calendars/events/appointments",
+    request: (url, options) => ghlFetch(context, url, options),
+    payload: {
+      calendarId: booking.calendarId,
+      locationId,
+      contactId,
+      startTime: payload.startTime,
+      endTime,
+      selectedTimezone: payload.timezone,
+      title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      phone: payload.phone,
+      ignoreDateRange: false,
+      toNotify: true,
     },
-  );
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`GHL appointment create failed (${res.status}): ${errText}`);
-  }
-  const data = await res.json();
+  });
   return data?.id || data?.appointment?.id || null;
 }
 
@@ -476,6 +518,15 @@ export async function onRequestPost(context) {
     request.headers.get("X-Forwarded-For") ||
     "";
   const userAgent = request.headers.get("User-Agent") || "";
+
+  // First availability check: prevents starting a payment flow for a slot
+  // that already conflicts with an app-owned session turnover window. Paid
+  // bookings are checked a second time by ghl-purchase-webhook at handoff.
+  try {
+    await assertSlotRespectsAppBuffer(context, body.startTime, booking.calendarId);
+  } catch {
+    return json({ error: "That time is no longer available. Please choose another." }, 422, origin);
+  }
 
   let contactId;
   try {

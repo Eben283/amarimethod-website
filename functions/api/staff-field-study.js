@@ -10,6 +10,8 @@ import { corsHeaders, parseJsonBody, requireStaffAuth } from '../lib/endpoint-gu
 import { ghlFetch } from '../lib/ghl.js';
 import { STUDIES, STUDY_CALENDAR_ID } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
+import { assertSlotRespectsAppBuffer, fetchAppBufferEvents, filterSlotsByAppBuffer } from '../lib/app-owned-buffer.js';
+import { createConfirmedAppointment } from '../lib/ghl-appointment-handoff.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -105,7 +107,9 @@ async function studySlots(context, startDate, endDate, timezone) {
     }
   }
   if (!succeeded) throw new Error('Could not load available study times.');
-  return flattenSlots(merged);
+  const slots = flattenSlots(merged);
+  const events = await fetchAppBufferEvents(context, start, end);
+  return filterSlotsByAppBuffer(slots, STUDY_CALENDAR_ID, events);
 }
 
 export function isValidPhone(phone) {
@@ -306,29 +310,36 @@ export async function onRequestPost(context) {
         if (existing) return json(existing, 200, headers);
       }
 
-      const booking = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, {
-        method: 'POST',
-        body: JSON.stringify({
-          calendarId: STUDY_CALENDAR_ID,
-          locationId: GHL_LOCATION_ID,
-          contactId: record.contactId,
-          startTime,
-          endTime: appointmentEndTime(startTime, 15),
-          selectedTimezone: timezone,
-          title: 'Amari Study 15-Minute Session',
-          appointmentStatus: 'confirmed',
-          firstName: record.firstName,
-          lastName: record.lastName,
-          email: record.email,
-          phone: record.phone,
-        }),
-      });
-      if (!booking.ok) {
-        const detail = await booking.text();
-        console.error('[staff-field-study] study booking error:', booking.status, detail.slice(0, 300));
+      try {
+        await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
+      } catch {
         return json({ error: 'That time is no longer available. Choose another one.' }, 422, headers);
       }
-      const data = await booking.json();
+
+      let data;
+      try {
+        data = await createConfirmedAppointment({
+          endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
+          request: (url, options) => ghlFetch(context, url, options),
+          payload: {
+            calendarId: STUDY_CALENDAR_ID,
+            locationId: GHL_LOCATION_ID,
+            contactId: record.contactId,
+            startTime,
+            endTime: appointmentEndTime(startTime, 15),
+            selectedTimezone: timezone,
+            title: 'Amari Study 15-Minute Session',
+            firstName: record.firstName,
+            lastName: record.lastName,
+            email: record.email,
+            phone: record.phone,
+          },
+        });
+      } catch (err) {
+        const detail = String(err?.detail || err?.message || err);
+        console.error('[staff-field-study] study booking error:', err?.status || 0, detail.slice(0, 300));
+        return json({ error: 'That time is no longer available. Choose another one.' }, 422, headers);
+      }
       const result = { appointment: { id: data.id || data.appointment?.id || '', startTime } };
       if (cacheKey) await env.PORTAL_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
       return json(result, 200, headers);

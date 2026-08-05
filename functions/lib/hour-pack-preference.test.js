@@ -27,7 +27,7 @@ describe("applyHourPackPreference", () => {
   const discoveryId = "USgPsktqRcuomdUgpShL";
 
   it("filters Follow-up and Assessment to on-the-hour starts only", () => {
-    expect(blockMinutes(SLOT_POLICIES.assessment)).toBe(60);
+    expect(blockMinutes(SLOT_POLICIES.assessment)).toBe(70);
     const slots = [
       { date: "2026-08-05", time: "10:00", hour: 10, minute: 0, datetime: "2026-08-05T10:00:00-07:00" },
       { date: "2026-08-05", time: "10:40", hour: 10, minute: 40, datetime: "2026-08-05T10:40:00-07:00" },

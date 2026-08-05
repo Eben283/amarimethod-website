@@ -61,7 +61,8 @@ beforeEach(() => {
   fetchCalls = [];
   global.fetch = vi.fn(async (url, opts) => {
     fetchCalls.push({ url, opts });
-    return { ok: true, json: async () => ({}), text: async () => '' };
+    const isAppointmentCreate = String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST';
+    return { ok: true, status: 200, json: async () => (isAppointmentCreate ? { id: 'appt_native_1' } : {}), text: async () => '' };
   });
 });
 
@@ -150,8 +151,12 @@ describe('purchase-webhook — write orchestration', () => {
       startTime: '2026-08-03T10:00:00-07:00',
       endTime: '2026-08-03T10:50:00-07:00',
       title: 'Amari Assessment — In Person',
-      appointmentStatus: 'confirmed',
+      appointmentStatus: 'new',
     });
+    const appointmentConfirm = fetchCalls.find((call) =>
+      call.url.endsWith('/calendars/events/appointments/appt_native_1') && call.opts?.method === 'PUT',
+    );
+    expect(JSON.parse(appointmentConfirm.opts.body)).toEqual({ appointmentStatus: 'confirmed' });
 
     expect(ghlFetch).toHaveBeenCalledWith(
       ctx,
