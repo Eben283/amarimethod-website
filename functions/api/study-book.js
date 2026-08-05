@@ -4,6 +4,7 @@ import { ghlFetch } from '../lib/ghl.js';
 import { STUDY_CALENDAR_ID } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
 import { assertSlotRespectsAppBuffer, fetchAppBufferEvents, filterSlotsByAppBuffer } from '../lib/app-owned-buffer.js';
+import { createConfirmedAppointment } from '../lib/ghl-appointment-handoff.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -68,8 +69,23 @@ export async function onRequestPost(context) {
     const contactId = (await upsert.json()).contact?.id;
     if (!contactId) throw new Error('contact ID missing');
     await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
-    const appointment = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, { method: 'POST', body: JSON.stringify({ calendarId: STUDY_CALENDAR_ID, locationId: GHL_LOCATION_ID, contactId, startTime, endTime: appointmentEndTime(startTime, 15), selectedTimezone: timezone, title: 'Amari Study 15-Minute Session', appointmentStatus: 'confirmed', firstName, lastName, email: cleanEmail, phone: cleanPhone }) });
-    if (!appointment.ok) return json({ error: 'That time was just taken. Please choose another.' }, 422, origin);
+    await createConfirmedAppointment({
+      endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
+      request: (url, options) => ghlFetch(context, url, options),
+      payload: {
+        calendarId: STUDY_CALENDAR_ID,
+        locationId: GHL_LOCATION_ID,
+        contactId,
+        startTime,
+        endTime: appointmentEndTime(startTime, 15),
+        selectedTimezone: timezone,
+        title: 'Amari Study 15-Minute Session',
+        firstName,
+        lastName,
+        email: cleanEmail,
+        phone: cleanPhone,
+      },
+    });
     return json({ success: true, appointment: { startTime } }, 200, origin);
   } catch (error) { console.error('[study-book] booking:', error.message); return json({ error: 'We could not save that booking. Please try again.' }, 422, origin); }
 }

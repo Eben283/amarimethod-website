@@ -32,6 +32,7 @@ import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
 import { describeSlotFields, recordAssessmentBookPath } from "../lib/ops-assessment.js";
 import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
+import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 import {
   emitPathHop,
   paidBookPathForProduct,
@@ -376,30 +377,17 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
     endTime,
     selectedTimezone: "America/Los_Angeles", // safe default; appointment's local TZ
     title: sessionTitle,
-    appointmentStatus: "confirmed",
     firstName: contact.firstName || "",
     lastName: contact.lastName || "",
     email: contact.email || "",
     phone: contact.phone || "",
   };
 
-  const res = await fetch(
-    `${GHL_API_BASE}/calendars/events/appointments`,
-    {
-      method: "POST",
-      headers: ghlHeaders(token),
-      body: JSON.stringify(payload),
-    },
-  );
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(
-      `Appointment create failed (${res.status}): ${errText.slice(0, 500)}`,
-    );
-  }
-
-  const data = await res.json();
+  const data = await createConfirmedAppointment({
+    endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
+    request: (url, options) => fetch(url, { ...options, headers: ghlHeaders(token) }),
+    payload,
+  });
   console.log(
     `[ghl-purchase-webhook] Booked paid native appointment for ${contact.id} at ${slot} on ${calendarId} (apptId: ${data.id || data.appointment?.id})`,
   );

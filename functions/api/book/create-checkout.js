@@ -23,6 +23,7 @@ import { recordOpsError } from "../../lib/ops-alert.js";
 import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
 import { emitPathHop } from "../../lib/ops-path-emit.js";
 import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
+import { createConfirmedAppointment } from "../../lib/ghl-appointment-handoff.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -425,34 +426,25 @@ async function bookFreeAppointment(context, locationId, contactId, payload, book
   const endTime = appointmentEndTime(payload.startTime, booking.durationMinutes);
   await assertSlotRespectsAppBuffer(context, payload.startTime, booking.calendarId);
 
-  const res = await ghlFetch(
-    context,
-    "https://services.leadconnectorhq.com/calendars/events/appointments",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        calendarId: booking.calendarId,
-        locationId,
-        contactId,
-        startTime: payload.startTime,
-        endTime,
-        selectedTimezone: payload.timezone,
-        title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
-        appointmentStatus: "confirmed",
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        email: payload.email,
-        phone: payload.phone,
-        ignoreDateRange: false,
-        toNotify: true,
-      }),
+  const data = await createConfirmedAppointment({
+    endpoint: "https://services.leadconnectorhq.com/calendars/events/appointments",
+    request: (url, options) => ghlFetch(context, url, options),
+    payload: {
+      calendarId: booking.calendarId,
+      locationId,
+      contactId,
+      startTime: payload.startTime,
+      endTime,
+      selectedTimezone: payload.timezone,
+      title: `${booking.title} - ${payload.firstName} ${payload.lastName}`,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      email: payload.email,
+      phone: payload.phone,
+      ignoreDateRange: false,
+      toNotify: true,
     },
-  );
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`GHL appointment create failed (${res.status}): ${errText}`);
-  }
-  const data = await res.json();
+  });
   return data?.id || data?.appointment?.id || null;
 }
 

@@ -19,6 +19,7 @@ import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
+import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -223,7 +224,6 @@ export async function onRequestPost(context) {
     endTime,
     selectedTimezone: timezone,
     title,
-    appointmentStatus: 'confirmed',
     // Pre-fill contact details
     firstName: contact?.firstName || '',
     lastName: contact?.lastName || '',
@@ -232,45 +232,11 @@ export async function onRequestPost(context) {
   };
 
   try {
-    const bookRes = await fetch(
-      'https://services.leadconnectorhq.com/calendars/events/appointments',
-      {
-        method: 'POST',
-        headers: ghlHeaders(GHL_API_KEY),
-        body: JSON.stringify(appointmentPayload),
-      }
-    );
-
-    if (!bookRes.ok) {
-      const errText = await bookRes.text();
-      console.error('GHL booking error:', bookRes.status, errText);
-      context.waitUntil?.(
-        recordOpsError(env, "portal-book", "Portal package book failed", {
-          contactId,
-          status: bookRes.status,
-          error: String(errText).slice(0, 300),
-        }),
-      );
-      context.waitUntil?.(
-        emitPathHop(env, {
-          pathId: "portal_package_book",
-          hopId: "create_appointment",
-          outcome: "fail",
-          summary: "Portal prepaid follow-up book failed",
-          source: "portal-book",
-          contactId,
-          reasonCode: "book_failed",
-          condition: {
-            expected: "GHL appointment created",
-            observed: `${bookRes.status}: ${String(errText).slice(0, 80)}`,
-          },
-        }),
-      );
-      // Surface the actual GHL error so the modal can display it for debugging
-      return json({ error: `Booking failed (${bookRes.status}): ${errText}` }, 422, origin);
-    }
-
-    const apptData = await bookRes.json();
+    const apptData = await createConfirmedAppointment({
+      endpoint: 'https://services.leadconnectorhq.com/calendars/events/appointments',
+      request: (url, options) => fetch(url, { ...options, headers: ghlHeaders(GHL_API_KEY) }),
+      payload: appointmentPayload,
+    });
 
     const result = {
       success: true,
@@ -305,7 +271,30 @@ export async function onRequestPost(context) {
 
     return json(result, 200, origin);
   } catch (err) {
-    console.error('portal-book error:', err);
-    return json({ error: 'Internal server error' }, 500, origin);
+    const detail = String(err?.detail || err?.message || err);
+    console.error('GHL booking error:', err?.status || 0, detail);
+    context.waitUntil?.(
+      recordOpsError(env, "portal-book", "Portal package book failed", {
+        contactId,
+        status: err?.status || 0,
+        error: detail.slice(0, 300),
+      }),
+    );
+    context.waitUntil?.(
+      emitPathHop(env, {
+        pathId: "portal_package_book",
+        hopId: "create_appointment",
+        outcome: "fail",
+        summary: "Portal prepaid follow-up book failed",
+        source: "portal-book",
+        contactId,
+        reasonCode: "book_failed",
+        condition: {
+          expected: "GHL appointment created and transitioned to confirmed",
+          observed: `${err?.status || 0}: ${detail.slice(0, 80)}`,
+        },
+      }),
+    );
+    return json({ error: 'That time is no longer available. Choose another one.' }, 422, origin);
   }
 }
