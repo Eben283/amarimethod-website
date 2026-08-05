@@ -9,6 +9,21 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
+export const STAFF_SESSION_COOKIE = "__Host-amari_staff_session";
+
+function readCookie(request, name) {
+  const cookieHeader = request.headers.get("Cookie") || "";
+  for (const segment of cookieHeader.split(";")) {
+    const [key, ...value] = segment.trim().split("=");
+    if (key === name) return value.join("=");
+  }
+  return null;
+}
+
+export function readStaffSessionToken(request) {
+  return readCookie(request, STAFF_SESSION_COOKIE);
+}
+
 // Standard CORS headers. Pass the HTTP methods the endpoint supports,
 // e.g. "GET, OPTIONS" (default) or "POST, OPTIONS".
 export function corsHeaders(origin, methods = "GET, OPTIONS") {
@@ -21,7 +36,9 @@ export function corsHeaders(origin, methods = "GET, OPTIONS") {
   };
 }
 
-// Validates the staff Bearer JWT.
+// Validates the staff JWT from the HttpOnly session cookie, with a temporary
+// Bearer-token fallback for browsers upgrading from the legacy localStorage
+// session. New Staff API calls use the cookie only.
 //
 // Pass the already-computed response headers so error Responses include CORS headers.
 //
@@ -40,13 +57,16 @@ export async function requireStaffAuth(context, headers) {
   }
 
   const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) {
+  const bearerToken = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
+  const cookieToken = readStaffSessionToken(context.request);
+  const token = bearerToken || cookieToken;
+  if (!token) {
     return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers }) };
   }
 
   let payload;
   try {
-    payload = await verifySessionToken(auth.slice(7), secret);
+    payload = await verifySessionToken(token, secret);
   } catch {
     return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers }) };
   }

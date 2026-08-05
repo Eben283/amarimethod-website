@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import type { StaffAuthState } from '../types/staff';
 
 interface AuthContextType extends StaffAuthState {
-  login: (token: string) => void;
+  login: () => void;
   logout: () => void;
 }
 
@@ -18,30 +18,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const logout = useCallback(() => {
+    void fetch('/api/staff-session', { method: 'DELETE', credentials: 'same-origin' });
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EXPIRY_KEY);
     setState({ isAuthenticated: false, isLoading: false });
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const expiry = localStorage.getItem(EXPIRY_KEY);
-
-    if (token && expiry && Date.now() < parseInt(expiry, 10)) {
-      setState({ isAuthenticated: true, isLoading: false });
-    } else {
-      if (token) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(EXPIRY_KEY);
-      }
-      setState({ isAuthenticated: false, isLoading: false });
-    }
+    void fetch('/api/staff-session', { credentials: 'same-origin' })
+      .then(response => response.ok)
+      .then(isAuthenticated => setState({ isAuthenticated, isLoading: false }))
+      .catch(() => setState({ isAuthenticated: false, isLoading: false }));
   }, []);
 
-  function login(token: string) {
-    const expiry = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(EXPIRY_KEY, expiry.toString());
+  function login() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EXPIRY_KEY);
     setState({ isAuthenticated: true, isLoading: false });
   }
 

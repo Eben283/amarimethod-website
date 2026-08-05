@@ -3,6 +3,7 @@
 // Env vars: STAFF_PIN_GARRETT, STAFF_PIN_EBEN (each a 4-8 digit PIN)
 
 import { checkPinAttempts, recordFailedPinAttempt, clearPinAttempts } from "../lib/rate-limit.js";
+import { STAFF_SESSION_COOKIE } from "../lib/endpoint-guards.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
 
 const ALLOWED_ORIGINS = [
@@ -134,8 +135,15 @@ export async function onRequestPost(context) {
     });
 
     return new Response(
-      JSON.stringify({ token }),
-      { status: 200, headers }
+      JSON.stringify({ authenticated: true, user: matchedUser.name }),
+      {
+        status: 200,
+        headers: {
+          ...headers,
+          "Cache-Control": "no-store",
+          "Set-Cookie": `${STAFF_SESSION_COOKIE}=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; Secure; SameSite=Strict`,
+        },
+      }
     );
   } catch (err) {
     console.error("[staff-auth] Unexpected error:", err.message);

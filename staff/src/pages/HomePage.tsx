@@ -220,9 +220,9 @@ export default function HomePage() {
           <span className="staff-resources__copy"><strong>Current Amari Positioning</strong><small>Four Lines + Practice V2 · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
-        <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
+        <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer">
           <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>$5,400 Amari Practice Sales Worksheet</strong><small>PDF · opens in a new tab</small></span>
+          <span className="staff-resources__copy"><strong>Sales Scripts &amp; Hormozi Closer Handbook Sections</strong><small>PDF · opens in a new tab</small></span>
           <ArrowUpRight aria-hidden="true" />
         </a>
         <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer">

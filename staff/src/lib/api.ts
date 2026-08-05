@@ -10,25 +10,10 @@ class ApiError extends Error {
 }
 
 async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('staff_token');
-
-  if (token) {
-    const expiry = localStorage.getItem('staff_token_expiry');
-    if (expiry && Date.now() > parseInt(expiry, 10)) {
-      localStorage.removeItem('staff_token');
-      localStorage.removeItem('staff_token_expiry');
-      throw new ApiError('Session expired. Please log in again.', 401);
-    }
-  }
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
   };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -37,6 +22,7 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
     const response = await fetch(`${API_BASE}${endpoint}`, {
       ...options,
       headers,
+      credentials: 'same-origin',
       signal: controller.signal,
     });
 
@@ -56,7 +42,7 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
-export async function staffLogin(pin: string): Promise<{ token: string }> {
+export async function staffLogin(pin: string): Promise<{ authenticated: boolean; user: string }> {
   return fetchApi('/staff-auth', {
     method: 'POST',
     body: JSON.stringify({ pin }),
@@ -710,9 +696,7 @@ export interface FunnelRefreshResult {
 // (15s timeout) this uses a 90s ceiling so the inline run isn't cut off. The
 // caller should poll getFunnel() afterward until generatedAt advances.
 export async function triggerFunnelRefresh(): Promise<FunnelRefreshResult> {
-  const token = localStorage.getItem('staff_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 90000);
@@ -720,6 +704,7 @@ export async function triggerFunnelRefresh(): Promise<FunnelRefreshResult> {
     const response = await fetch(`${API_BASE}/staff-funnel-refresh`, {
       method: 'POST',
       headers,
+      credentials: 'same-origin',
       signal: controller.signal,
     });
     const data = await response.json().catch(() => ({ triggered: false, error: 'Request failed' }));
@@ -752,9 +737,7 @@ export async function buildFollowupBrief(
   contactId: string,
   contact: Record<string, unknown>,
 ): Promise<FollowupBrief> {
-  const token = localStorage.getItem('staff_token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -762,6 +745,7 @@ export async function buildFollowupBrief(
     const response = await fetch(`${API_BASE}/staff-followup-brief`, {
       method: 'POST',
       headers,
+      credentials: 'same-origin',
       body: JSON.stringify({ contactId, contact }),
       signal: controller.signal,
     });
