@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../../lib/endpoint-guards.js", () => ({
   corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
+  requireStaffAuth: vi.fn(async (context, headers) => {
+    const user = context.request.headers.get("X-Test-User");
+    if (user) return { payload: { role: "staff", user } };
+    return {
+      error: new Response(JSON.stringify({ error: "Not authenticated" }), {
+        status: 401,
+        headers,
+      }),
+    };
+  }),
 }));
 
 vi.mock("../../lib/ops-board.js", () => ({
@@ -45,18 +55,32 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function ctx(url) {
+function ctx(url, user = "Eben") {
   return {
     env: { AUTOMATION_DB: {} },
     request: {
       url,
-      headers: { get: () => null },
+      headers: { get: (name) => name === "X-Test-User" ? user : null },
     },
   };
 }
 
 describe("GET /api/ops/systems", () => {
-  it("returns board with no auth", async () => {
+  it("rejects an unauthenticated request before reading Operations data", async () => {
+    const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems", null));
+    expect(res.status).toBe(401);
+    expect(buildSystemsBoard).not.toHaveBeenCalled();
+    expect(buildPathDetail).not.toHaveBeenCalled();
+    expect(buildPersonTimeline).not.toHaveBeenCalled();
+  });
+
+  it("accepts Garrett's valid shared-PIN Staff session", async () => {
+    const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems", "Garrett"));
+    expect(res.status).toBe(200);
+    expect(buildSystemsBoard).toHaveBeenCalled();
+  });
+
+  it("returns the board for a valid Staff session", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
     expect(res.status).toBe(200);
     const body = await res.json();

@@ -1,10 +1,10 @@
 // GET  /api/ops/fix?pathId=… — fix job status
 // POST /api/ops/fix { pathId, action: "fix"|"request"|"sweep"|"launch" }
-//   fix     — Fix button: launch now (or return copy-paste prompt). Public.
-//   request — queue only for cron (public)
-//   sweep / launch — worker auth
+//   fix     — authenticated Staff Fix button: launch now (or return copy-paste prompt)
+//   request — authenticated Staff queue-only request for cron
+//   sweep / launch — worker auth only
 
-import { corsHeaders } from "../../lib/endpoint-guards.js";
+import { corsHeaders, requireStaffAuth } from "../../lib/endpoint-guards.js";
 import { requireWorkerAuth } from "../../lib/worker-auth.js";
 import { buildSystemsBoard, buildPathDetail } from "../../lib/ops-board.js";
 import {
@@ -33,6 +33,9 @@ export async function onRequestGet(context) {
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
   };
+  const { error } = await requireStaffAuth(context, headers);
+  if (error) return error;
+
   const pathId = new URL(context.request.url).searchParams.get("pathId");
   if (!pathId) return json({ error: "pathId required" }, 400, headers);
   const job = await readFixJob(context.env, pathId);
@@ -87,6 +90,9 @@ export async function onRequestPost(context) {
     return json(result, result.ok ? 200 : 409, headers);
   }
 
+  const { error } = await requireStaffAuth(context, headers);
+  if (error) return error;
+
   if (action === "request") {
     // Queue only — cron may pick up later (when OPS_FIX_MODE=auto).
     if (!pathId) return json({ error: "pathId required" }, 400, headers);
@@ -107,7 +113,7 @@ export async function onRequestPost(context) {
   const result = await launchFixForPath(context.env, detail, {
     requested: true,
     manual: true,
-    force: !!body.force,
+    force: false,
   });
   return json(
     {
