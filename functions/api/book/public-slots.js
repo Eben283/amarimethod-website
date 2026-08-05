@@ -15,9 +15,8 @@ import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../lib/ops-last-run.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
 
-// Only the public booking calendars. Anything else returns 403 — this prevents
-// the endpoint from exposing internal calendars (Entrainment, partner-side, etc.)
-// even though they share the same GHL location.
+// Only calendars intentionally exposed through Amari-owned booking pages.
+// Entrainment remains staff-only and is not enumerable here.
 const ALLOWED_CALENDARS = new Set([
   "G7OAnnJuFbMF6nQSlZVQ", // Initial Session — In Person ($225, 60 min)
   "ySmht5hx4uZGEpgZrlCw", // Initial Session — Virtual ($225, 60 min)
@@ -25,6 +24,10 @@ const ALLOWED_CALENDARS = new Set([
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual ($190, 50 min)
   "USgPsktqRcuomdUgpShL", // Discovery Call (free, 15 min)
   "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment — In Person ($29, 50 min)
+  "ZEIGFHBi17SpZ3Ezi5DR", // Discovery Call — Virtual (free, 15 min)
+  "aVE54Qf4lrbYTB0zFqXy", // Partnership Discovery Call (free, 15 min)
+  "lfsnaiGiLNL2z12pLKDP", // Partner Initial — In Person (comp, 60 min)
+  "P7T6M1w8wtuRfwAqzOVw", // Partner Initial — Virtual (comp, 60 min)
 ]);
 
 function corsHeaders(requestOrigin) {

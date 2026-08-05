@@ -88,6 +88,55 @@ const ALLOWED_BOOKINGS = {
     sessionTag: "booked-discovery-call",
     paymentLinkUrl: null,
     isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  discovery_virtual: {
+    calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
+    productId: null,
+    price: 0,
+    title: "Amari Method Discovery Call — Virtual",
+    durationMinutes: 15,
+    pmaTag: null,
+    sessionTag: "booked-discovery-call",
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  ambassador_discovery: {
+    calendarId: "aVE54Qf4lrbYTB0zFqXy",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partnership Discovery Call",
+    durationMinutes: 15,
+    pmaTag: null,
+    sessionTag: "booked-discovery-call",
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: false,
+  },
+  partner_initial_in_person: {
+    calendarId: "lfsnaiGiLNL2z12pLKDP",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partner Initial Session — In Person",
+    durationMinutes: 60,
+    pmaTag: "agreed-pma-v2026-04-17",
+    sessionTag: null,
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: true,
+  },
+  partner_initial_virtual: {
+    calendarId: "P7T6M1w8wtuRfwAqzOVw",
+    productId: null,
+    price: 0,
+    title: "Amari Method Partner Initial Session — Virtual",
+    durationMinutes: 60,
+    pmaTag: "agreed-pma-v2026-04-17",
+    sessionTag: null,
+    paymentLinkUrl: null,
+    isFreeBooking: true,
+    requiresPolicy: true,
   },
 };
 
@@ -247,10 +296,10 @@ function validateBody(b) {
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }
-  // Missed Appointment Policy agreement is only required for paid
-  // bookings. Discovery call is free and has no policy gate.
+  // Paid bookings and complimentary partner sessions require the policy.
+  // Short discovery calls remain free of that gate.
   // agreeCommunications is always optional.
-  if (!booking.isFreeBooking && !b.agreePolicies) {
+  if ((!booking.isFreeBooking || booking.requiresPolicy) && !b.agreePolicies) {
     return "Missed Appointment Policy must be agreed to";
   }
   return null;
@@ -347,8 +396,8 @@ export async function upsertContact(context, GHL_API_KEY, locationId, payload, b
  * contact arrived, even before payment lands.
  */
 async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booking) {
-  // Build tag list. pmaTag is null for free bookings (no PMA gate on a
-  // discovery call). sessionTag is set on both paid + free, so we know
+  // Build tag list. pmaTag is null for discovery calls and set for partner
+  // sessions. sessionTag is set on both paid + free where lifecycle routing
   // what they booked. native-booking-started flags the contact as having
   // moved through the new flow vs the old GHL funnel iframe.
   const tags = ["native-booking-started"];
@@ -371,16 +420,16 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
   const isFree = !!booking.isFreeBooking;
   const noteBody = [
     isFree
-      ? `Native booking flow — discovery call booked directly`
+      ? `Native booking flow — free appointment booked directly`
       : `Native booking flow — checkout initiated`,
     ``,
     `Session: ${booking.title}`,
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
     isFree
-      ? `Free booking: no payment or policy gate`
+      ? `Free booking: no payment${booking.requiresPolicy ? "; policy accepted" : " or policy gate"}`
       : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
-    ...(isFree
+    ...(!booking.requiresPolicy && isFree
       ? []
       : [
           `Missed Appointment Policy: yes (clickwrap)`,

@@ -16,6 +16,10 @@ describe("staff-book-calendars", () => {
     const types = listStaffBookTypes();
     expect(types.some((t) => t.id === "assessment")).toBe(true);
     expect(types.some((t) => t.id === "partner_initial")).toBe(true);
+    expect(types.some((t) => t.id === "partner_initial_virtual")).toBe(true);
+    expect(types.some((t) => t.id === "discovery_virtual")).toBe(true);
+    expect(types.some((t) => t.id === "ambassador_discovery")).toBe(true);
+    expect(types.some((t) => t.id === "entrainment")).toBe(true);
   });
 });
 

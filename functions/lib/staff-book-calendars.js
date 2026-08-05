@@ -14,6 +14,18 @@ export const STAFF_BOOK_TYPES = {
     title: "Amari Method Discovery Call",
     label: "Discovery call (free)",
   },
+  discovery_virtual: {
+    calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
+    durationMinutes: 15,
+    title: "Amari Method Discovery Call — Virtual",
+    label: "Discovery call · virtual (free)",
+  },
+  ambassador_discovery: {
+    calendarId: "aVE54Qf4lrbYTB0zFqXy",
+    durationMinutes: 15,
+    title: "Amari Method Partnership Discovery Call",
+    label: "Partnership discovery call (free)",
+  },
   followup_package_in_person: {
     calendarId: "ZO1jlGfy01rsxVqicoSB",
     durationMinutes: 50,
@@ -31,6 +43,18 @@ export const STAFF_BOOK_TYPES = {
     durationMinutes: 60,
     title: "Amari Method Partner Initial Session",
     label: "Partner Initial (comp)",
+  },
+  partner_initial_virtual: {
+    calendarId: "P7T6M1w8wtuRfwAqzOVw",
+    durationMinutes: 60,
+    title: "Amari Method Partner Initial Session — Virtual",
+    label: "Partner Initial · virtual (comp)",
+  },
+  entrainment: {
+    calendarId: "B5aGXLoS4kzAjZAMMXxk",
+    durationMinutes: 30,
+    title: "Amari Method Entrainment",
+    label: "Entrainment",
   },
 };
 
