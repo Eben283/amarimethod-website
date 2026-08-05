@@ -24,6 +24,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("blocked for email opt-out or DND");
   });
 
+  it("keeps the composer anchored below a separately scrollable timeline", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain(".timeline-scroll { min-height: 0; flex: 1; overflow: auto; }");
+    expect(html).toContain("height: clamp(560px, calc(100vh - 230px), 840px)");
+    expect(html).toContain('<div class="timeline-scroll"><div class="timeline">');
+    expect(html).toContain("flex: 0 0 auto");
+  });
+
   it("keeps consent auditing out of the Client Desk interface", () => {
     const html = clientDeskHtml();
     expect(html).not.toContain("Contactability review");
