@@ -9,9 +9,80 @@ import {
   assessPosInvoiceSupport,
   mirrorPaidPosSaleToGhlInvoice,
 } from "./staff-pos-invoice-bridge.js";
+import { GHL_PRODUCTS } from "./ghl-products.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "./ghl-fields.js";
 import { readPosSale, writePosSale } from "./staff-pos.js";
 
 const KV_TTL_SECONDS = 90 * 86400;
+
+function contactField(contact, id) {
+  const field = contact?.customFields?.find((candidate) => candidate.id === id);
+  return field ? (field.value ?? field.field_value ?? null) : null;
+}
+
+export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "GHL invoice webhook", now } = {}) {
+  if (!sale || sale.status !== "paid") throw new Error("POS sale is not fully paid");
+  if (!invoice?.id) throw new Error("Verified GHL invoice id is required");
+  const checkpointId = sale.fulfillment?.invoice?.id || sale.fulfillment?.invoiceId || null;
+  if (checkpointId !== invoice.id) throw new Error("GHL invoice does not match the POS checkpoint");
+  const support = assessPosInvoiceSupport(sale.cart);
+  if (!support.supported || support.effect !== "package" || !support.packageProductId) {
+    throw new Error("POS sale is not a supported package fulfillment");
+  }
+  const product = GHL_PRODUCTS[support.packageProductId];
+  if (!product || product.classification !== pkg?.classification) {
+    throw new Error("GHL invoice package does not match the POS cart");
+  }
+  const remaining = Number(contactField(contact, GHL_FIELD_IDS.sessions_remaining));
+  const seriesType = String(contactField(contact, GHL_FIELD_IDS.series_type) || "");
+  const portalAccess = contactField(contact, GHL_FIELD_IDS.portal_access);
+  const livingPractice = contactField(contact, GHL_FIELD_IDS.living_practice_access);
+  if (remaining !== Number(pkg.sessionsRemaining) || seriesType !== pkg.seriesType || portalAccess !== true) {
+    throw new Error("GHL package fields do not match the paid POS invoice");
+  }
+  if (pkg.livingPractice && livingPractice !== true) {
+    throw new Error("GHL Living Practice access was not verified");
+  }
+
+  const at = now || new Date().toISOString();
+  return {
+    ...sale,
+    fulfillmentStatus: "fulfilled",
+    fulfillmentError: null,
+    fulfilledAt: at,
+    fulfillment: {
+      ...sale.fulfillment,
+      adapter: "ghl_invoice",
+      stage: "verified",
+      invoice: {
+        ...sale.fulfillment?.invoice,
+        id: invoice.id,
+        number: invoice.number || sale.fulfillment?.invoice?.number || null,
+        status: "paid",
+        amountPaid: invoice.amountPaid,
+      },
+      verifiedEffect: {
+        classification: pkg.classification,
+        seriesType: pkg.seriesType,
+        sessionsRemaining: pkg.sessionsRemaining,
+        portalAccess: true,
+        livingPractice: !!pkg.livingPractice,
+      },
+      verifiedAt: at,
+    },
+    updatedAt: at,
+    version: (Number.isInteger(sale.version) ? sale.version : 0) + 1,
+    audit: [
+      ...(sale.audit || []),
+      {
+        at,
+        actor,
+        action: "ghl_invoice_fulfillment_verified",
+        detail: `GHL invoice ${invoice.id} and package fields verified.`,
+      },
+    ],
+  };
+}
 
 async function claimFulfillment(context, saleId) {
   const eventId = `pos-fulfill:${saleId}`;

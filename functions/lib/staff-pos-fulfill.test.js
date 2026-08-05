@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fulfillPaidPosSale } from "./staff-pos-fulfill.js";
+import { completeVerifiedPosSale, fulfillPaidPosSale } from "./staff-pos-fulfill.js";
 
 describe("staff POS fulfillment claims", () => {
   afterEach(() => {
@@ -182,5 +182,70 @@ describe("staff POS fulfillment claims", () => {
 
     expect(outcome.sale.fulfillmentStatus).toBe("failed");
     expect(statements.some((sql) => sql.includes("DELETE FROM processed_events"))).toBe(true);
+  });
+});
+
+describe("completeVerifiedPosSale", () => {
+  const sale = {
+    id: "pos_verified1",
+    status: "paid",
+    fulfillmentStatus: "pending",
+    client: { id: "contact_verified1", name: "Test" },
+    cart: [{
+      kind: "catalog",
+      label: "4-Session Series",
+      ghlProductId: "69986faa724ecd2343ebaa6e",
+      quantity: 1,
+      unitAmountCents: 72000,
+      lineTotalCents: 72000,
+    }],
+    fulfillment: {
+      adapter: "ghl_invoice",
+      stage: "verification_pending",
+      invoice: { id: "invoice-verified1", status: "paid" },
+    },
+    version: 2,
+    audit: [],
+  };
+  const pkg = {
+    classification: "4-series",
+    seriesType: "4-session",
+    sessionsRemaining: 4,
+    livingPractice: false,
+  };
+  const verifiedContact = {
+    customFields: [
+      { id: "wrQSkx6BhXwDGIn1d0V4", value: "4" },
+      { id: "3i93lTkmuAV49s9nh0q8", value: "4-session" },
+      { id: "O0xmwyRqeNK2EA1GGGye", value: true },
+    ],
+  };
+
+  it("marks fulfilled only after the exact invoice and package fields read back", () => {
+    const completed = completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-verified1", number: "INV-1", amountPaid: 720 },
+      pkg,
+      contact: verifiedContact,
+      now: "2026-08-05T23:00:00.000Z",
+    });
+    expect(completed).toMatchObject({
+      fulfillmentStatus: "fulfilled",
+      fulfilledAt: "2026-08-05T23:00:00.000Z",
+      fulfillment: {
+        stage: "verified",
+        invoice: { id: "invoice-verified1", status: "paid" },
+        verifiedEffect: { seriesType: "4-session", sessionsRemaining: 4 },
+      },
+    });
+  });
+
+  it("rejects a different invoice or missing downstream field evidence", () => {
+    expect(() => completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-other" }, pkg, contact: verifiedContact,
+    })).toThrow(/does not match/i);
+    expect(() => completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-verified1" }, pkg,
+      contact: { customFields: [] },
+    })).toThrow(/fields do not match/i);
   });
 });

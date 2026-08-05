@@ -48,6 +48,8 @@ import { timingSafeEqual } from "../lib/safe-equal.js";
 import { claimProcessedEvent, releaseProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
+import { completeVerifiedPosSale } from "../lib/staff-pos-fulfill.js";
+import { readPosSale, writePosSale } from "../lib/staff-pos.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -307,14 +309,22 @@ export async function onRequestPost(context) {
         if (claim !== null) {
           usedD1 = true;
           if (!claim.ok) {
-            console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) — skipping`);
-            return new Response(
-              JSON.stringify({ success: true, alreadyProcessed: true }),
-              { status: 200, headers },
-            );
+            if (!posSaleId) {
+              console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) — skipping`);
+              return new Response(
+                JSON.stringify({ success: true, alreadyProcessed: true }),
+                { status: 200, headers },
+              );
+            }
+            // POS invoices are safe to replay: their field writes are SETs,
+            // the message-trigger tag is suppressed, and replay closes a
+            // crash window between GHL fulfillment and POS sale completion.
+            console.warn(`[ghl-invoice-webhook] Replaying processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
           }
-          wonD1ClaimKey = idempotencyKey;
-          console.log(`[ghl-invoice-webhook] D1 claim won for invoice ${matchedInvoiceId}`);
+          if (claim.ok) {
+            wonD1ClaimKey = idempotencyKey;
+            console.log(`[ghl-invoice-webhook] D1 claim won for invoice ${matchedInvoiceId}`);
+          }
         }
       } catch (err) {
         console.warn(`[ghl-invoice-webhook] D1 idempotency failed: ${err.message} — falling back to KV`);
@@ -325,11 +335,14 @@ export async function onRequestPost(context) {
       try {
         const existing = await kv.get(idempotencyKey);
         if (existing) {
-          console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) — skipping`);
-          return new Response(
-            JSON.stringify({ success: true, alreadyProcessed: true }),
-            { status: 200, headers },
-          );
+          if (!posSaleId) {
+            console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) — skipping`);
+            return new Response(
+              JSON.stringify({ success: true, alreadyProcessed: true }),
+              { status: 200, headers },
+            );
+          }
+          console.warn(`[ghl-invoice-webhook] Replaying KV-processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
         }
       } catch (err) {
         console.warn(`[ghl-invoice-webhook] KV read failed: ${err.message} — proceeding without idempotency check`);
@@ -433,12 +446,52 @@ export async function onRequestPost(context) {
       );
     }
 
+    let completedPosSale = null;
+    if (posSaleId) {
+      if (!context.env.PORTAL_KV) {
+        throw new Error("PORTAL_KV is required to complete a Staff POS invoice");
+      }
+      // A successful PUT response is not the proof boundary. Read the contact
+      // again and compare the exact package effects before marking the Staff
+      // sale fulfilled.
+      const verifyContactResponse = await ghlFetch(
+        context,
+        `${GHL_API_BASE}/contacts/${sanitizedContactId}`,
+      );
+      if (!verifyContactResponse.ok) {
+        throw new Error(`POS fulfillment contact readback failed (${verifyContactResponse.status})`);
+      }
+      const verifiedContact = (await verifyContactResponse.json()).contact;
+      const posSale = await readPosSale(context.env.PORTAL_KV, posSaleId);
+      if (!posSale) throw new Error(`Staff POS sale ${posSaleId} was not found for invoice verification`);
+      completedPosSale = completeVerifiedPosSale(posSale, {
+        invoice: {
+          id: matchedInvoiceId,
+          number: invoice.invoiceNumber || invoice.number || null,
+          amountPaid: Number(invoice.amountPaid || 0),
+        },
+        pkg,
+        contact: verifiedContact,
+      });
+      await writePosSale(context.env.PORTAL_KV, completedPosSale);
+      await emitPathHop(context.env, {
+        pathId: "pos_card_fulfill",
+        hopId: "fulfill",
+        outcome: "ok",
+        summary: `POS sale fulfilled from verified GHL invoice ${matchedInvoiceId}`,
+        source: "ghl-invoice-webhook",
+        contactId: sanitizedContactId,
+        correlationId: `pos:${posSaleId}`,
+        money: { product: pkg.name },
+      });
+    }
+
     // Purchase event → nurture engine (Flow 3 exit). The invoice item may carry a price-id
     // alias, so emit the CANONICAL product id derived from the package classification.
     // Fire-and-forget, dormant until the worker URL exists.
     const canonicalProductId = Object.keys(GHL_PRODUCTS)
       .find((id) => GHL_PRODUCTS[id].classification === pkg.classification) || null;
-    if (canonicalProductId) {
+    if (canonicalProductId && !posSaleId) {
       emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: canonicalProductId });
     }
 
@@ -533,6 +586,8 @@ export async function onRequestPost(context) {
         product: pkg.name,
         seriesType: pkg.seriesType,
         sessionsRemaining: pkg.sessionsRemaining,
+        posSaleId,
+        posFulfilled: completedPosSale?.fulfillmentStatus === "fulfilled",
       }),
       { status: 200, headers },
     );
