@@ -7,6 +7,7 @@ import { policyForCalendarId, SLOT_POLICIES } from "./booking-slot-policy.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const EVENT_LOOKUP_CONCURRENCY = 3;
 const INACTIVE_STATUSES = new Set(["cancelled", "canceled", "no_show", "noshow"]);
 
 export const APP_BUFFER_CALENDAR_IDS = Object.freeze(
@@ -157,14 +158,26 @@ export async function fetchAppBufferEvents(context, startTime, endTime) {
   for (let cursor = start; cursor < end; cursor += 30 * 86400_000) {
     windows.push([cursor, Math.min(cursor + 30 * 86400_000, end)]);
   }
-  const responses = await Promise.all(
-    APP_BUFFER_CALENDAR_IDS.flatMap((calendarId) => windows.map(async ([windowStart, windowEnd]) => {
-      const response = await ghlFetch(context, eventUrl(calendarId, windowStart, windowEnd));
-      if (!response.ok) throw new Error(`Buffer event lookup failed (${response.status})`);
-      const data = await response.json();
-      return data.events || data.appointments || [];
-    })),
+  const requests = APP_BUFFER_CALENDAR_IDS.flatMap((calendarId) =>
+    windows.map(([windowStart, windowEnd]) => ({ calendarId, windowStart, windowEnd })),
   );
+  const responses = [];
+  // GHL applies location-wide rate limits. A public two-month lookup can fan
+  // out across every Amari calendar, so run bounded batches instead of sending
+  // the entire cross-calendar sweep at once. Any failed request still rejects
+  // the lookup and keeps availability fail-closed.
+  for (let i = 0; i < requests.length; i += EVENT_LOOKUP_CONCURRENCY) {
+    const batch = requests.slice(i, i + EVENT_LOOKUP_CONCURRENCY);
+    const batchResponses = await Promise.all(
+      batch.map(async ({ calendarId, windowStart, windowEnd }) => {
+        const response = await ghlFetch(context, eventUrl(calendarId, windowStart, windowEnd));
+        if (!response.ok) throw new Error(`Buffer event lookup failed (${response.status})`);
+        const data = await response.json();
+        return data.events || data.appointments || [];
+      }),
+    );
+    responses.push(...batchResponses);
+  }
   const seen = new Set();
   return responses.flat().filter((event) => {
     const id = String(event?.id || "");

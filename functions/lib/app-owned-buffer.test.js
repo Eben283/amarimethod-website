@@ -1,10 +1,30 @@
-import { describe, expect, it } from "vitest";
-import { applyGarrettSchedulePreference, filterSlotsByAppBuffer, slotRespectsAppBuffer } from "./app-owned-buffer.js";
+import { describe, expect, it, vi } from "vitest";
+import { ghlFetch } from "./ghl.js";
+import { APP_BUFFER_CALENDAR_IDS, applyGarrettSchedulePreference, fetchAppBufferEvents, filterSlotsByAppBuffer, slotRespectsAppBuffer } from "./app-owned-buffer.js";
+
+vi.mock("./ghl.js", () => ({ ghlFetch: vi.fn() }));
 
 const FOLLOWUP = "SKDVOL8wtUN6Ne0ppbC9";
 const DISCOVERY = "USgPsktqRcuomdUgpShL";
 
 describe("app-owned-buffer", () => {
+  it("bounds the cross-calendar event sweep to three requests at a time", async () => {
+    let active = 0;
+    let maxActive = 0;
+    ghlFetch.mockImplementation(async () => {
+      active += 1;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      active -= 1;
+      return new Response(JSON.stringify({ events: [] }), { status: 200 });
+    });
+
+    await fetchAppBufferEvents({}, Date.parse("2026-08-04T00:00:00Z"), Date.parse("2026-08-05T00:00:00Z"));
+
+    expect(ghlFetch).toHaveBeenCalledTimes(APP_BUFFER_CALENDAR_IDS.length);
+    expect(maxActive).toBeLessThanOrEqual(3);
+  });
+
   it("keeps a 20-minute turnover after a 50-minute session", () => {
     const events = [{
       id: "existing",
