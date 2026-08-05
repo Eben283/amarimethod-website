@@ -261,6 +261,34 @@ export async function recordRealtimeGhlMessage(db, event, contactId, now) {
   return { duplicate: false };
 }
 
+// Staff-owned sends retain their content in the owned CRM timeline and their
+// immutable delivery audit separately. They never write a GHL conversation.
+export async function recordOwnedOutboundEmail(db, { contactId, providerEventId, subject, body, actor }, now) {
+  const existingThread = await db.prepare(
+    `SELECT id FROM communication_threads WHERE contact_id = ? AND channel = 'email' ORDER BY datetime(last_event_at) DESC LIMIT 1`,
+  ).bind(contactId).first();
+  const threadId = existingThread?.id || id();
+  if (!existingThread) {
+    await db.prepare(
+      `INSERT INTO communication_threads
+       (id, contact_id, provider, provider_thread_id, channel, last_event_at, last_preview, last_direction, unread_inbound_count, created_at, updated_at)
+       VALUES (?, ?, 'google-workspace', ?, 'email', ?, ?, 'outbound', 0, ?, ?)`,
+    ).bind(threadId, contactId, `owned:${contactId}`, now, body, now, now).run();
+  }
+  const eventId = id();
+  await db.batch([
+    db.prepare(
+      `INSERT INTO communication_events
+       (id, thread_id, contact_id, provider, provider_event_id, event_kind, direction, delivery_status, subject, body_clean, occurred_at, sender_label, created_at, updated_at)
+       VALUES (?, ?, ?, 'google-workspace', ?, 'email', 'outbound', 'sent', ?, ?, ?, ?, ?, ?)`,
+    ).bind(eventId, threadId, contactId, providerEventId, subject, body, now, actor, now, now),
+    db.prepare(
+      `UPDATE communication_threads SET last_event_at = ?, last_preview = ?, last_direction = 'outbound', updated_at = ? WHERE id = ?`,
+    ).bind(now, body, now, threadId),
+  ]);
+  return { threadId, eventId };
+}
+
 export async function recordGhlWebhookEvent(db, webhook, now) {
   const result = await db.prepare(
     `INSERT INTO ghl_webhook_events (webhook_id, event_type, contact_external_id, conversation_external_id, occurred_at, received_at, processing_state)

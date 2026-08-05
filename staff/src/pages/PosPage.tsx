@@ -30,8 +30,6 @@ const CATALOG = [
   ["single-session", "Single session", 28500, "Single sessions", "50 min · adds 1 prepaid session"],
   ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
   ["follow-up", "Single follow-up", 19000, "Founders Circle", "Follow-up session"],
-  ["upgrade-initial-to-4", "Initial → 4-session", 49500, "Founders Circle", "Legacy continuation price"],
-  ["upgrade-initial-to-8", "Initial → 8-session", 107000, "Founders Circle", "Legacy continuation price"],
   ["upgrade-4-to-8", "4 → 8-session", 57500, "Founders Circle", "Legacy continuation price"],
   ["entrainment", "Entrainment", 9000, "Founders Circle", "Add-on"],
   ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],

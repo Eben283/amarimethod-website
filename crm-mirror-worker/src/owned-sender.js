@@ -1,11 +1,11 @@
-// Provider-neutral sender boundary. It is deliberately shadow-only: no
-// credentials are read here and this module contains no provider network call.
+// Provider-neutral sender boundary. Individual staff-initiated email is live;
+// SMS remains inactive until its provider is separately implemented.
 //
 // Amari policy (approved 2026-08-04): a contact is eligible for an individual
 // staff communication unless that channel has an explicit opt-out / DND block.
 // An absent historical opt-in is not itself a block. This does not override
 // provider suppressions, legal requirements, or the shadow-mode delivery gate.
-export const OWNED_DELIVERY_MODE = "shadow";
+export const OWNED_DELIVERY_MODE = "staff_email";
 
 export const DELIVERY_PROVIDERS = Object.freeze({
   email: Object.freeze({ id: "google-workspace", label: "Google Workspace", configured: false }),
@@ -20,18 +20,19 @@ function normalizedDnd(value) {
   return ["true", "1", "yes", "on", "dnd"].includes(String(value || "").trim().toLowerCase());
 }
 
-export function deliveryReadiness() {
+export function deliveryReadiness(env = {}) {
+  const emailConfigured = Boolean(env.PORTAL_KV && env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET);
   return {
     mode: OWNED_DELIVERY_MODE,
-    deliveryEnabled: false,
+    deliveryEnabled: emailConfigured,
     channels: Object.entries(DELIVERY_PROVIDERS).map(([channel, provider]) => ({
       channel,
       provider: provider.id,
       label: provider.label,
-      configured: provider.configured,
-      deliveryEnabled: false,
+      configured: channel === "email" ? emailConfigured : provider.configured,
+      deliveryEnabled: channel === "email" && emailConfigured,
     })),
-    safeguards: ["staff session", "channel opt-out and DND check", "immutable audit", "provider suppression check", "separate activation approval"],
+    safeguards: ["signed staff session", "same-origin compose request", "channel opt-out and DND check", "immutable audit", "Gmail authorization"],
   };
 }
 
@@ -48,8 +49,8 @@ export function evaluateDeliveryEligibility({ contact, consents, channel, dnd })
     provider: DELIVERY_PROVIDERS[channel].id,
     consentState,
     policyEligible: reasons.length === 0,
-    deliveryAllowed: false,
-    reasons: [...reasons, "sender_shadow_mode"],
+    deliveryAllowed: reasons.length === 0,
+    reasons,
   };
 }
 
@@ -78,6 +79,21 @@ export async function recordShadowDeliveryAttempt(db, { contactId, actor, channe
       `INSERT INTO outbound_delivery_events (id, attempt_id, event_type, detail_json, occurred_at)
        VALUES (?, ?, ?, ?, ?)`,
     ).bind(eventId, attemptId, "shadow_evaluated", JSON.stringify({ reasons: eligibility.reasons, deliveryAllowed: false }), now),
+  ]);
+  return { attemptId, ...eligibility };
+}
+
+export async function recordDeliveredAttempt(db, { contactId, actor, channel, contact, consents, dnd, content }, now) {
+  const safeActor = String(actor || "").trim();
+  if (!contactId || !safeActor) throw new Error("contactId and actor are required");
+  const eligibility = evaluateDeliveryEligibility({ contact, consents, channel, dnd });
+  if (!eligibility.policyEligible) throw new Error("delivery blocked by policy");
+  const attemptId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  const contentHash = await sha256(content);
+  await db.batch([
+    db.prepare(`INSERT INTO outbound_delivery_attempts (id, contact_id, actor, channel, provider, consent_state, policy_state, content_sha256, created_at) VALUES (?, ?, ?, ?, ?, ?, 'eligible', ?, ?)`).bind(attemptId, contactId, safeActor, channel, eligibility.provider, eligibility.consentState, contentHash, now),
+    db.prepare(`INSERT INTO outbound_delivery_events (id, attempt_id, event_type, detail_json, occurred_at) VALUES (?, ?, 'provider_accepted', ?, ?)`).bind(eventId, attemptId, JSON.stringify({ provider: eligibility.provider }), now),
   ]);
   return { attemptId, ...eligibility };
 }

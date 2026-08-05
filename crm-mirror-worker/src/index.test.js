@@ -81,7 +81,7 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(deskHandoff.headers.get("Location")).toBe("/client-desk");
   });
 
-  it("keeps sender readiness behind staff authentication and explicitly shadow-only", async () => {
+  it("keeps sender readiness behind staff authentication", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret" };
     const denied = await worker.fetch(new Request("https://crm.test/sender/readiness"), env);
     expect(denied.status).toBe(401);
@@ -93,6 +93,6 @@ describe("CRM mirror dashboard access handoff", () => {
       headers: { Cookie: session.headers.get("Set-Cookie") },
     }), env);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ mode: "shadow", deliveryEnabled: false });
+    await expect(response.json()).resolves.toMatchObject({ mode: "staff_email", deliveryEnabled: false });
   });
 });
