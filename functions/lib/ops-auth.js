@@ -6,7 +6,7 @@
 // no browser, no CORS, no user session.
 //
 // ── Fail-CLOSED semantics ──
-// If OPS_READ_KEY is NOT configured, requests are DENIED with 503 (the endpoint
+// If OPS_READ_KEY is NOT configured, requests are DENIED with 500 (the endpoint
 // refuses to serve PII unauthenticated). Rollout-safe (fail-open) through
 // 2026-07-03; the key is now set in the Pages env, so as of 2026-07-04 it fails
 // closed — a future unset/rotation-gap can't silently expose the audit/scan PII.
