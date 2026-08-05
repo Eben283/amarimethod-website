@@ -343,8 +343,8 @@ describe('classifyInvoice', () => {
 // ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
 
 describe('ACTIVE_PRODUCTS map', () => {
-  it('contains the 16 currently-sold products', () => {
-    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(16);
+  it('contains the 17 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(17);
   });
 
   it('contains the canonical 8-Session and 4-Session Series IDs', () => {

@@ -12,8 +12,8 @@ import {
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
-  it('contains 16 currently-sold products', () => {
-    expect(Object.keys(GHL_PRODUCTS).length).toBe(16);
+  it('contains 17 currently-sold products', () => {
+    expect(Object.keys(GHL_PRODUCTS).length).toBe(17);
   });
 
   it('every entry has required shape', () => {
@@ -118,6 +118,8 @@ const ID = {
   initialIP: '688a1cd770362828afbf08a2',
   initialVirt: '690b6b4d333ffa59d40c1823',
   singleFU: '6998ace59dfde469ecb2aab6',
+  singleSession: '6a6b8bb7a1753b65945372f1',
+  singleSessionPrice: '6a6b8bb7a1753b0f3f5372f5',
   fuIP: '69aee204e80b62d627d8e922', // draw-down
   fuVirt: '69aee3ebcf9cf8ed9f6c928d', // draw-down
   prePurchased: '67b1299f080422451447bdd0', // draw-down
@@ -149,6 +151,11 @@ describe('any-id resolver (productId + priceId)', () => {
     expect(productIdForAnyId(ID.assessment)).toBe(ID.assessment);
     expect(productIdForAnyId(ID.assessmentPrice)).toBe(ID.assessment);
     expect(productForAnyId(ID.assessmentPrice).name).toBe('Amari Assessment');
+  });
+  it('resolves the $285 Single Session product and its current price', () => {
+    expect(productIdForAnyId(ID.singleSession)).toBe(ID.singleSession);
+    expect(productIdForAnyId(ID.singleSessionPrice)).toBe(ID.singleSession);
+    expect(productForAnyId(ID.singleSessionPrice).name).toBe('Single Session');
   });
   it('resolves a HISTORICAL priceId too (the stale-id case the audit hit)', () => {
     expect(productIdForAnyId(ID.eightSeriesPriceOld)).toBe(ID.eightSeries);
