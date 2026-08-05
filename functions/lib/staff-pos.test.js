@@ -7,6 +7,7 @@ import {
   normalizePaymentLegs,
   POS_CATALOG,
   recomputeSaleStatus,
+  updatePosSale,
 } from "./staff-pos.js";
 
 describe("staff POS model", () => {
@@ -104,5 +105,32 @@ describe("staff POS model", () => {
     const paid = markLegPaid(partial, "leg-2", { paymentIntentId: "pi_2", source: "webhook" });
     expect(paid.status).toBe("paid");
     expect(paid.fulfillmentStatus).toBe("pending");
+  });
+
+  it("does not let a partially paid sale move its paid amount onto a different cart", () => {
+    const sale = buildPosSale({
+      id: "pos_locked123",
+      client: { id: "contact_locked123", name: "Jordan Lee", email: "j@example.com" },
+      cart: [{ productKey: "follow-up" }],
+      paymentLegs: [
+        { method: "saved-card", amountCents: 3000 },
+        { method: "cash", amountCents: 16000 },
+      ],
+      reviewer: "Eben",
+    });
+    const partial = markLegPaid(sale, "leg-1", {
+      paymentIntentId: "pi_paid",
+      source: "saved-card",
+    });
+
+    expect(() => updatePosSale(partial, {
+      client: partial.client,
+      cart: [{ productKey: "6-week-practice" }],
+      paymentLegs: [
+        { method: "saved-card", amountCents: 3000 },
+        { method: "cash", amountCents: 297000 },
+      ],
+      reviewer: "Eben",
+    })).toThrow("cannot be edited after a payment");
   });
 });

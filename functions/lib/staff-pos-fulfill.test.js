@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { buildPosFulfillmentEffects, computeFulfillmentFields } from "./staff-pos-fulfill.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildPosFulfillmentEffects, computeFulfillmentFields, fulfillPaidPosSale } from "./staff-pos-fulfill.js";
 import { FIELD_IDS } from "./ghl-fields.js";
 
 describe("staff POS fulfillment planning", () => {
@@ -132,5 +132,75 @@ describe("staff POS fulfillment planning", () => {
     });
     expect(plan.remaining).toBe(6);
     expect(plan.seriesType).toBe("8-session");
+  });
+});
+
+describe("staff POS fulfillment claims", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("does not report fulfillment success when another attempt only holds the claim", async () => {
+    const db = {
+      prepare: () => ({
+        bind: () => ({
+          run: async () => ({ meta: { changes: 0 } }),
+        }),
+      }),
+    };
+    const sale = {
+      id: "pos_claimheld1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      client: { id: "contact_claimheld1" },
+      cart: [],
+      paymentLegs: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({ env: { ATTEND_DB: db } }, sale);
+
+    expect(outcome.sale).toBe(sale);
+    expect(outcome.sale.fulfillmentStatus).toBe("pending");
+    expect(outcome.result).toEqual({
+      ok: false,
+      duplicate: true,
+      reason: "claim_held",
+    });
+  });
+
+  it("releases the D1 claim after a failed GHL attempt so the sale can be retried", async () => {
+    const statements = [];
+    const db = {
+      prepare: (sql) => {
+        statements.push(sql);
+        return {
+          bind: () => ({
+            run: async () => ({ meta: { changes: 1 } }),
+          }),
+        };
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      text: async () => "test failure",
+    })));
+    const sale = {
+      id: "pos_retryable1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      client: { id: "contact_retryable1" },
+      cart: [],
+      paymentLegs: [],
+      version: 1,
+      audit: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({
+      env: { ATTEND_DB: db, GHL_API_KEY: "test-key" },
+    }, sale);
+
+    expect(outcome.sale.fulfillmentStatus).toBe("failed");
+    expect(statements.some((sql) => sql.includes("DELETE FROM processed_events"))).toBe(true);
   });
 });

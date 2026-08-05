@@ -11,7 +11,7 @@ import {
   GHL_PRODUCTS,
   PURCHASE_CREDIT_MAP,
 } from "./ghl-products.js";
-import { claimProcessedEvent } from "./processed-events.js";
+import { claimProcessedEvent, releaseProcessedEvent } from "./processed-events.js";
 import { recordOpsError } from "./ops-alert.js";
 import { emitPathHop } from "./ops-path-emit.js";
 import { recordSeriesPurchase } from "./purchase-confirmations.js";
@@ -182,17 +182,18 @@ function buildSaleNote(sale, plan) {
 }
 
 async function claimFulfillment(context, saleId) {
+  const eventId = `pos-fulfill:${saleId}`;
   if (context.env.ATTEND_DB) {
-    const claim = await claimProcessedEvent(context.env.ATTEND_DB, `pos-fulfill:${saleId}`);
-    if (claim?.duplicate) return { ok: false, duplicate: true };
-    if (claim?.ok) return { ok: true };
+    const claim = await claimProcessedEvent(context.env.ATTEND_DB, eventId);
+    if (claim?.duplicate) return { ok: false, duplicate: true, backend: "d1", key: eventId };
+    if (claim?.ok) return { ok: true, backend: "d1", key: eventId };
   }
   if (context.env.PORTAL_KV) {
     const key = `staff-pos:fulfill:${saleId}`;
     const existing = await context.env.PORTAL_KV.get(key);
-    if (existing) return { ok: false, duplicate: true };
+    if (existing) return { ok: false, duplicate: true, backend: "kv", key };
     await context.env.PORTAL_KV.put(key, new Date().toISOString(), { expirationTtl: KV_TTL_SECONDS });
-    return { ok: true };
+    return { ok: true, backend: "kv", key };
   }
   return { ok: true };
 }
@@ -214,12 +215,10 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
 
   const claim = await claimFulfillment(context, sale.id);
   if (claim.duplicate) {
-    const next = {
-      ...sale,
-      fulfillmentStatus: "fulfilled",
-      updatedAt: new Date().toISOString(),
+    return {
+      sale,
+      result: { ok: false, duplicate: true, reason: "claim_held" },
     };
-    return { sale: next, result: { ok: true, duplicate: true } };
   }
 
   const effects = buildPosFulfillmentEffects(sale.cart);
@@ -365,9 +364,12 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
         },
       ],
     };
-    // Allow retry: clear KV claim on failure if we used KV
-    if (context.env.PORTAL_KV) {
-      try { await context.env.PORTAL_KV.delete(`staff-pos:fulfill:${sale.id}`); } catch { /* ignore */ }
+    // A failed attempt did not complete the protected work. Release only the
+    // claim this attempt actually won so a later retry can proceed.
+    if (claim.backend === "d1") {
+      try { await releaseProcessedEvent(context.env.ATTEND_DB, claim.key); } catch { /* ignore */ }
+    } else if (claim.backend === "kv" && context.env.PORTAL_KV) {
+      try { await context.env.PORTAL_KV.delete(claim.key); } catch { /* ignore */ }
     }
     return { sale: failed, result: { ok: false, error: message } };
   }

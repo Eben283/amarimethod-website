@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: POST /api/stripe-pos-webhook
 // Stripe → Staff POS payment-leg settlement → GHL fulfillment when fully paid.
 
-import { claimProcessedEvent } from "../lib/processed-events.js";
+import { claimProcessedEvent, releaseProcessedEvent } from "../lib/processed-events.js";
 import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
 import { markLegPaid, posSessionKey, readPosSale, writePosSale } from "../lib/staff-pos.js";
 import { verifyStripeWebhookSignature } from "../lib/stripe-api.js";
@@ -113,14 +113,18 @@ export async function onRequestPost(context) {
   }
 
   const eventId = typeof event.id === "string" ? event.id : "";
+  let eventClaim = null;
   if (eventId && context.env.ATTEND_DB) {
-    const claim = await claimProcessedEvent(context.env.ATTEND_DB, `stripe:${eventId}`);
+    const key = `stripe:${eventId}`;
+    const claim = await claimProcessedEvent(context.env.ATTEND_DB, key);
     if (claim && claim.duplicate) return json({ received: true, duplicate: true });
+    if (claim?.ok) eventClaim = { backend: "d1", key };
   } else if (eventId && context.env.PORTAL_KV) {
     const key = `staff-pos:stripe-event:${eventId}`;
     const existing = await context.env.PORTAL_KV.get(key);
     if (existing) return json({ received: true, duplicate: true });
     await context.env.PORTAL_KV.put(key, new Date().toISOString(), { expirationTtl: 90 * 86400 });
+    eventClaim = { backend: "kv", key };
   }
 
   try {
@@ -140,6 +144,11 @@ export async function onRequestPost(context) {
     return json({ received: true, ignored: event.type });
   } catch (error) {
     console.error("[stripe-pos-webhook]", error instanceof Error ? error.message : error);
+    if (eventClaim?.backend === "d1") {
+      try { await releaseProcessedEvent(context.env.ATTEND_DB, eventClaim.key); } catch { /* retry will remain blocked; ops state records the failure */ }
+    } else if (eventClaim?.backend === "kv") {
+      try { await context.env.PORTAL_KV.delete(eventClaim.key); } catch { /* retry will remain blocked; ops state records the failure */ }
+    }
     await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.stripeWebhook, {
       status: "error",
       eventType: event?.type || null,
