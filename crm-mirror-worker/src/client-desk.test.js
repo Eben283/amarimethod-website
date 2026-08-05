@@ -8,6 +8,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("selected client record beside them");
   });
 
+  it("does not expose operator-surface navigation inside Client Desk", () => {
+    const html = clientDeskHtml();
+    expect(html).not.toContain("Systems");
+    expect(html).not.toContain("CRM Mirror");
+    expect(html).not.toContain("Automation Watch");
+    expect(html).not.toContain("Staff hub");
+  });
+
   it("includes an explicit staff email composer rather than automatic outreach", () => {
     const html = clientDeskHtml();
     expect(html).toContain('id="email-compose"');
@@ -16,12 +24,10 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("blocked for email opt-out or DND");
   });
 
-  it("includes a read-only consent evidence review queue", () => {
+  it("keeps consent auditing out of the Client Desk interface", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("Contactability review · read-only");
-    expect(html).toContain("/consent-review?limit=50");
-    expect(html).toContain("Nothing here can send or change a contact.");
-    expect(html).toContain("no_auditable_evidence");
+    expect(html).not.toContain("Contactability review");
+    expect(html).not.toContain("/consent-review");
   });
 
   it("renders separate Stripe invoice context without calling an invoice a payment", () => {
