@@ -20,21 +20,22 @@
 
 import { timingSafeEqual } from "./safe-equal.js";
 
-// Returns null when authorized, or a Response when denied: 503 when the key is
+// Returns null when authorized, or a Response when denied: 500 when the key is
 // unset (fail closed — misconfigured), or 401 when a configured key is
 // missing/incorrect. Call at the very top of onRequestGet:
 //   const denied = requireOpsReadKey(context.request, context.env);
 //   if (denied) return denied;
-export function requireOpsReadKey(request, env) {
+export function requireOpsReadKey(request, env, responseHeaders = {}) {
+  const headers = { ...responseHeaders, "Content-Type": "application/json" };
   const key = env.OPS_READ_KEY;
   if (!key) {
     console.error(
-      "[ops-auth] OPS_READ_KEY not set — DENYING /api/daily-audit + /api/ecosystem-scan (fail closed). " +
-        "Set the secret (wrangler pages secret put OPS_READ_KEY) to serve these endpoints."
+      "[ops-auth] OPS_READ_KEY not set — denying protected Ops read (fail closed). " +
+        "Set the Pages secret to serve this endpoint."
     );
     return new Response(JSON.stringify({ error: "auth not configured" }), {
-      status: 503,
-      headers: { "Content-Type": "application/json" },
+      status: 500,
+      headers,
     });
   }
   const headerKey = request.headers.get("X-Service-Key") || "";
@@ -44,7 +45,7 @@ export function requireOpsReadKey(request, env) {
   if (!provided || !timingSafeEqual(provided, key)) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
   }
   return null;

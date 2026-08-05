@@ -4,16 +4,6 @@ vi.mock("../../lib/endpoint-guards.js", () => ({
   corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
 }));
 
-vi.mock("../../lib/ops-auth.js", () => ({
-  requireOpsReadKey: vi.fn((request, env) => {
-    if (!env.OPS_READ_KEY) return new Response("unconfigured", { status: 503 });
-    if (request.headers.get("X-Service-Key") !== env.OPS_READ_KEY) {
-      return new Response("unauthorized", { status: 401 });
-    }
-    return null;
-  }),
-}));
-
 vi.mock("../../lib/ops-events.js", () => ({
   listOpsIncidents: vi.fn(async () => [{ id: "incident-1", pathId: "crm_mirror" }]),
 }));
@@ -37,9 +27,15 @@ beforeEach(() => {
 
 describe("GET /api/ops/incidents", () => {
   it("fails closed when service auth is unconfigured or invalid", async () => {
-    expect((await onRequestGet(ctx({ configured: false }))).status).toBe(503);
-    expect((await onRequestGet(ctx())).status).toBe(401);
-    expect((await onRequestGet(ctx({ key: "wrong" }))).status).toBe(401);
+    const unconfigured = await onRequestGet(ctx({ configured: false }));
+    const missing = await onRequestGet(ctx());
+    const wrong = await onRequestGet(ctx({ key: "wrong" }));
+    expect(unconfigured.status).toBe(500);
+    expect(missing.status).toBe(401);
+    expect(wrong.status).toBe(401);
+    expect(unconfigured.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(missing.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(wrong.headers.get("Access-Control-Allow-Origin")).toBe("*");
     expect(listOpsIncidents).not.toHaveBeenCalled();
   });
 

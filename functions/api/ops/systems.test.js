@@ -80,6 +80,21 @@ describe("GET /api/ops/systems", () => {
     expect(buildSystemsBoard).toHaveBeenCalled();
   });
 
+  it("allows Garrett's separately authenticated path and person reads", async () => {
+    const path = await onRequestGet(ctx(
+      "https://www.amarimethod.com/api/ops/systems?pathId=assessment_paid_book",
+      "Garrett",
+    ));
+    const person = await onRequestGet(ctx(
+      "https://www.amarimethod.com/api/ops/systems?pathId=assessment_paid_book&contactId=c_holly",
+      "Garrett",
+    ));
+    expect(path.status).toBe(200);
+    expect(person.status).toBe(200);
+    expect(buildPathDetail).toHaveBeenCalled();
+    expect(buildPersonTimeline).toHaveBeenCalled();
+  });
+
   it("returns the board for Eben's Staff session", async () => {
     const res = await onRequestGet(ctx("https://www.amarimethod.com/api/ops/systems"));
     expect(res.status).toBe(200);

@@ -196,6 +196,22 @@ describe("POST /api/ops/fix", () => {
     expect(data.promptReady).toBe(true);
   });
 
+  it("allows Garrett's separately authenticated Fix launch without cooldown bypass", async () => {
+    const res = await onRequestPost(
+      ctx("https://www.amarimethod.com/api/ops/fix", {
+        method: "POST",
+        body: { action: "fix", pathId: "assessment_paid_book", force: true },
+        user: "Garrett",
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(launchFixForPath).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: "assessment_paid_book" }),
+      expect.objectContaining({ manual: true, requested: true, force: false }),
+    );
+  });
+
   it("sweep requires worker auth even with a valid Staff session", async () => {
     const denied = await onRequestPost(
       ctx("https://www.amarimethod.com/api/ops/fix", {

@@ -19,7 +19,7 @@ export async function onRequestGet(context) {
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex, nofollow",
   };
-  const denied = requireOpsReadKey(context.request, context.env);
+  const denied = requireOpsReadKey(context.request, context.env, headers);
   if (denied) return denied;
 
   const url = new URL(context.request.url);
