@@ -10,6 +10,7 @@ import { corsHeaders, parseJsonBody, requireStaffAuth } from '../lib/endpoint-gu
 import { ghlFetch } from '../lib/ghl.js';
 import { STUDIES, STUDY_CALENDAR_ID } from '../lib/studies.js';
 import { appointmentEndTime } from '../lib/datetime.js';
+import { assertSlotRespectsAppBuffer, fetchAppBufferEvents, filterSlotsByAppBuffer } from '../lib/app-owned-buffer.js';
 
 const GHL_API_BASE = 'https://services.leadconnectorhq.com';
 const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
@@ -105,7 +106,9 @@ async function studySlots(context, startDate, endDate, timezone) {
     }
   }
   if (!succeeded) throw new Error('Could not load available study times.');
-  return flattenSlots(merged);
+  const slots = flattenSlots(merged);
+  const events = await fetchAppBufferEvents(context, start, end);
+  return filterSlotsByAppBuffer(slots, STUDY_CALENDAR_ID, events);
 }
 
 export function isValidPhone(phone) {
@@ -304,6 +307,12 @@ export async function onRequestPost(context) {
       if (cacheKey) {
         const existing = await env.PORTAL_KV.get(cacheKey, 'json');
         if (existing) return json(existing, 200, headers);
+      }
+
+      try {
+        await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
+      } catch {
+        return json({ error: 'That time is no longer available. Choose another one.' }, 422, headers);
       }
 
       const booking = await ghlFetch(context, `${GHL_API_BASE}/calendars/events/appointments`, {

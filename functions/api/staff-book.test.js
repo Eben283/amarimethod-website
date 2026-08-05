@@ -40,6 +40,9 @@ describe("staff-book API", () => {
   it("books assessment for a contact with idempotency", async () => {
     const kv = new Map();
     const ghlFetch = vi.fn(async (ctx, url, opts = {}) => {
+      if (String(url).includes("/calendars/events?") && !opts.method) {
+        return { ok: true, json: async () => ({ events: [] }) };
+      }
       if (String(url).includes("/contacts/") && !String(url).includes("/appointments") && opts.method !== "POST") {
         return {
           ok: true,

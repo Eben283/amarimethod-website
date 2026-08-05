@@ -31,6 +31,7 @@ import { checkPackageBalance } from "../lib/session-consistency.js";
 import { recordSeriesPurchase } from "../lib/purchase-confirmations.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
 import { describeSlotFields, recordAssessmentBookPath } from "../lib/ops-assessment.js";
+import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
 import {
   emitPathHop,
   paidBookPathForProduct,
@@ -360,6 +361,12 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
   // slot's timezone offset (GHL rejects appointments where the offset is
   // stripped). See functions/lib/datetime.js.
   const endTime = appointmentEndTime(slot, booking.durationMinutes);
+
+  // Recheck immediately before creating the paid appointment. The public
+  // calendar has already filtered this slot, but a booking that landed while
+  // the buyer was checking out must never consume another appointment's
+  // app-owned buffer.
+  await assertSlotRespectsAppBuffer(context, slot, calendarId);
 
   const payload = {
     calendarId,

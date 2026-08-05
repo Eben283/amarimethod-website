@@ -8,6 +8,7 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { verifySessionToken } from "../lib/auth.js";
 import { applyLookBusy } from "../lib/look-busy.js";
 import { applyHourPackPreference } from "../lib/booking-slot-policy.js";
+import { applyGarrettSchedulePreference, fetchAppBufferEvents, filterSlotsByAppBuffer } from "../lib/app-owned-buffer.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -125,7 +126,12 @@ export async function onRequestGet(context) {
       }
     }
 
-    const packed = applyHourPackPreference(slots, { calendarId });
+    const bufferEvents = await fetchAppBufferEvents(context, startTimestamp, endTimestamp);
+    const buffered = filterSlotsByAppBuffer(slots, calendarId, bufferEvents);
+    const packed = applyGarrettSchedulePreference(
+      applyHourPackPreference(buffered, { calendarId }),
+      bufferEvents,
+    );
     return json(
       { slots: applyLookBusy(packed, { calendarId }) },
       200,

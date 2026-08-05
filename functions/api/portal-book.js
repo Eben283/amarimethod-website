@@ -18,6 +18,7 @@ import { appointmentEndTime } from "../lib/datetime.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
 
 const allowedOrigin = 'https://www.amarimethod.com';
 
@@ -206,6 +207,12 @@ export async function onRequestPost(context) {
   // as "not available". appointmentEndTime preserves both the instant
   // (start + 50 min, handling midnight crossings) and the offset.
   const endTime = appointmentEndTime(startTime, 50);
+
+  try {
+    await assertSlotRespectsAppBuffer(context, startTime, calendarId);
+  } catch {
+    return json({ error: 'That time is no longer available. Choose another one.' }, 422, origin);
+  }
 
   // Build the appointment payload
   const appointmentPayload = {

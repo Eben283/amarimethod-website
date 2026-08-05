@@ -10,6 +10,7 @@
 import { ghlFetch } from "../../lib/ghl.js";
 import { applyLookBusy } from "../../lib/look-busy.js";
 import { applyHourPackPreference } from "../../lib/booking-slot-policy.js";
+import { applyGarrettSchedulePreference, fetchAppBufferEvents, filterSlotsByAppBuffer } from "../../lib/app-owned-buffer.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../lib/ops-last-run.js";
 
 const ALLOWED_ORIGIN = "https://www.amarimethod.com";
@@ -192,10 +193,20 @@ export async function onRequestGet(context) {
     }
   }
 
-  // Prefer on-hour main sessions / intro slots that leave the next Follow-up
-  // hour free, then thin with look-busy. Both only filter GHL-approved times.
-  const packed = applyHourPackPreference(slots, { calendarId });
-  const thinned = applyLookBusy(packed, { calendarId });
+  let bufferEvents;
+  try {
+    bufferEvents = await fetchAppBufferEvents(context, startMs, endMs);
+  } catch (err) {
+    console.error("[book/public-slots] app-owned buffer lookup failed:", err?.message);
+    return json({ error: "Availability is temporarily unavailable" }, 422, origin);
+  }
+
+  // GHL supplies raw free slots. Amari then enforces its 20/10 minute buffer,
+  // ranks the remaining approved times, and applies the display thinning.
+  const buffered = filterSlotsByAppBuffer(slots, calendarId, bufferEvents);
+  const packed = applyHourPackPreference(buffered, { calendarId });
+  const clustered = applyGarrettSchedulePreference(packed, bufferEvents);
+  const thinned = applyLookBusy(clustered, { calendarId });
   await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.publicSlots, {
     status: "ok",
     calendarId,

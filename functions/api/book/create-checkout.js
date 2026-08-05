@@ -22,6 +22,7 @@ import { FIELD_IDS } from "../../lib/ghl-fields.js";
 import { recordOpsError } from "../../lib/ops-alert.js";
 import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
 import { emitPathHop } from "../../lib/ops-path-emit.js";
+import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -408,10 +409,9 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
 
 /**
  * Book a free appointment directly via GHL Calendar API. Used for the
- * discovery call flow (no Stripe step). The created appointment fires
- * GHL's normal "appointment created" workflows (confirmation SMS/email,
- * reminders, etc.) so the customer experience matches the legacy GHL
- * funnel booking.
+ * discovery call flow (no Stripe step). Availability is verified again here
+ * immediately before the write so an abandoned browser tab cannot consume a
+ * protected turnover window after another appointment has been made.
  *
  * Returns the appointment id on success. Throws on failure so the caller
  * can return a 422 to the browser instead of redirecting to a confirm
@@ -423,6 +423,7 @@ async function bookFreeAppointment(context, locationId, contactId, payload, book
   // as "not available". appointmentEndTime preserves both the instant and the
   // offset (see functions/lib/datetime.js).
   const endTime = appointmentEndTime(payload.startTime, booking.durationMinutes);
+  await assertSlotRespectsAppBuffer(context, payload.startTime, booking.calendarId);
 
   const res = await ghlFetch(
     context,
@@ -476,6 +477,15 @@ export async function onRequestPost(context) {
     request.headers.get("X-Forwarded-For") ||
     "";
   const userAgent = request.headers.get("User-Agent") || "";
+
+  // First availability check: prevents starting a payment flow for a slot
+  // that already conflicts with an app-owned session turnover window. Paid
+  // bookings are checked a second time by ghl-purchase-webhook at handoff.
+  try {
+    await assertSlotRespectsAppBuffer(context, body.startTime, booking.calendarId);
+  } catch {
+    return json({ error: "That time is no longer available. Please choose another." }, 422, origin);
+  }
 
   let contactId;
   try {
