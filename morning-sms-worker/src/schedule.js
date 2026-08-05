@@ -97,8 +97,39 @@ export function dueKinds(nowMs, firstAtMs, secondAtMs, graceMs = SEND_GRACE_MS) 
   return due;
 }
 
-export function messageForKind(kind) {
-  if (kind === "prepare") return COPY.prepare;
+function agendaTime(startMs, timeZone) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(startMs));
+}
+
+function appointmentLabel(appointment) {
+  const name = String(appointment?.contactName || "").trim();
+  const detail = String(
+    appointment?.calendarName || appointment?.title || "Appointment",
+  ).trim();
+  if (!name) return detail;
+  if (detail.toLowerCase().includes(name.toLowerCase())) return detail;
+  return `${name} · ${detail}`;
+}
+
+/** A compact internal SMS agenda. A null agenda means GHL was unavailable. */
+export function formatDailyAgenda(appointments, timeZone = "America/Los_Angeles") {
+  if (appointments == null) {
+    return `${COPY.prepare} Today's appointment list could not be loaded.`;
+  }
+  if (appointments.length === 0) return "Good morning — no appointments today.";
+
+  const lines = appointments.map((appointment) => (
+    `${agendaTime(appointment.startMs, timeZone)} — ${appointmentLabel(appointment)}`
+  ));
+  return `Today's appointments:\n${lines.join("\n")}\n\nTime to prepare for the day.`;
+}
+
+export function messageForKind(kind, appointments, timeZone) {
+  if (kind === "prepare") return formatDailyAgenda(appointments, timeZone);
   if (kind === "meeting") return COPY.meeting;
   return null;
 }

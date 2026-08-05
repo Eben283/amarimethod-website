@@ -1,4 +1,4 @@
-import { fetchFirstAppointmentMs } from "./appointments.js";
+import { fetchTodaysAppointments } from "./appointments.js";
 import {
   computeMorningTimes,
   dueKinds,
@@ -67,12 +67,14 @@ export async function runMorningSms(env, opts = {}) {
     return finish(env, summary);
   }
 
-  let firstAppointmentMs = null;
+  let appointments = null;
   try {
-    firstAppointmentMs = await fetchFirstAppointmentMs(env, nowMs, timeZone);
+    appointments = await fetchTodaysAppointments(env, nowMs, timeZone);
   } catch (err) {
     summary.errors.push(`appointment lookup: ${err.message}`);
   }
+
+  const firstAppointmentMs = appointments?.[0]?.startMs ?? null;
 
   const schedule = computeMorningTimes({ nowMs, firstAppointmentMs, timeZone });
   summary.schedule = {
@@ -81,6 +83,7 @@ export async function runMorningSms(env, opts = {}) {
     firstAt: new Date(schedule.firstAtMs).toISOString(),
     secondAt: new Date(schedule.secondAtMs).toISOString(),
     firstAppointmentAt: firstAppointmentMs ? new Date(firstAppointmentMs).toISOString() : null,
+    appointmentCount: appointments?.length ?? null,
   };
 
   const kinds = opts.forceKinds?.length
@@ -96,12 +99,14 @@ export async function runMorningSms(env, opts = {}) {
   const dry = Boolean(opts.dryRun) || mode === "shadow";
 
   for (const kind of kinds) {
-    const body = messageForKind(kind);
+    const body = messageForKind(kind, appointments, timeZone);
     if (!body) continue;
 
     for (const contactId of recipients) {
       const key = idemKey(schedule.dateKey, kind, contactId);
-      if (kv) {
+      // Dry runs are inspection-only and must show today's current message even
+      // after the real daily send has already recorded its idempotency key.
+      if (!dry && kv) {
         const seen = await kv.get(key);
         if (seen) {
           summary.skipped.push({ kind, contactId: maskId(contactId), reason: "already-sent" });
