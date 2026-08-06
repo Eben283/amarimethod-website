@@ -1,16 +1,11 @@
 // Cloudflare Pages Function: POST /api/affiliate-refer
-// Receives affiliate referral form data, creates/upserts contact in GHL,
-// tags with affiliate-referral, and adds a note with affiliate details.
-//
-// Accepts two payload formats:
-// NEW (simplified): { affiliateRef, clientFirstName, clientPhone, painArea }
-// OLD (legacy):     { affiliateName, affiliateEmail, clientFirstName, clientLastName, clientEmail, clientPhone, notes }
-//
-// If an Authorization: Bearer header is present, partner identity is resolved
-// from the session token (more accurate than affiliateRef field).
+// Receives an authenticated Partner Portal referral, creates/upserts the
+// referred contact in GHL, and records the signed-in partner as its source.
+// The partner identity is always derived from the verified session, never from
+// a request-supplied name, email, or reference.
 
-import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { verifySessionToken } from "../lib/auth.js";
+import { ghlHeaders } from "../lib/ghl.js";
+import { loadOwnedContact } from "../lib/owned-access.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -49,101 +44,32 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
+    const owned = await loadOwnedContact(context, headers, {
+      audience: "partner",
+      requireTag: "affiliate-partner",
+    });
+    if (owned.error) return owned.error;
+    const { tokenPayload, contactId: resolvedPartnerContactId, contact: partner, ghlToken: GHL_API_KEY } = owned;
+
     const body = await context.request.json();
-
-    const GHL_API_KEY = await getGhlToken(context);
-    const JWT_SECRET = context.env.JWT_SECRET;
-
-    if (!GHL_API_KEY) {
-      console.error("[affiliate-refer] GHL_API_KEY not configured");
+    if (!body.clientFirstName || !body.clientPhone) {
       return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers }
+        JSON.stringify({ error: "Client name and phone are required" }),
+        { status: 400, headers }
+      );
+    }
+    const phoneDigitCount = (String(body.clientPhone).match(/\d/g) || []).length;
+    if (phoneDigitCount < 10) {
+      return new Response(
+        JSON.stringify({ error: "Phone number must have at least 10 digits" }),
+        { status: 400, headers }
       );
     }
 
-    // ── Resolve partner identity ──
-    // Priority: Bearer token > body.affiliateName > body.affiliateRef
-    let resolvedPartnerName = null;
-    let resolvedPartnerEmail = null;
-    let resolvedPartnerContactId = null;
-
-    const authHeader = context.request.headers.get("Authorization");
-    if (authHeader && authHeader.startsWith("Bearer ") && JWT_SECRET) {
-      let tokenPayload = null;
-      try {
-        tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
-      } catch {
-        // Token verification failed — fall through to name-based resolution
-      }
-      if (tokenPayload && tokenPayload.contactId) {
-        resolvedPartnerContactId = tokenPayload.contactId;
-        try {
-          const partnerResponse = await fetch(`${GHL_API_BASE}/contacts/${tokenPayload.contactId}`, {
-            headers: ghlHeaders(GHL_API_KEY),
-          });
-          if (partnerResponse.ok) {
-            const partnerData = await partnerResponse.json();
-            const pc = partnerData.contact;
-            resolvedPartnerName = pc.firstName
-              ? pc.firstName.charAt(0).toUpperCase() + pc.firstName.slice(1).toLowerCase()
-              : null;
-            resolvedPartnerEmail = pc.email || tokenPayload.email;
-            console.log(`[affiliate-refer] Resolved partner from token: ${resolvedPartnerName} (${resolvedPartnerContactId})`);
-          }
-        } catch (err) {
-          console.error(`[affiliate-refer] Token partner lookup error: ${err.message}`);
-        }
-      }
-    }
-
-    // Detect payload format: new (affiliateRef) vs old (affiliateName + affiliateEmail)
-    const isNewFormat = body.affiliateRef !== undefined;
-
-    // Final affiliate name: token-resolved > body field
-    const affiliateName = resolvedPartnerName
-      || (isNewFormat ? String(body.affiliateRef || "unknown").slice(0, 100) : String(body.affiliateName || "").slice(0, 100));
-    const affiliateEmail = resolvedPartnerEmail || body.affiliateEmail || "";
-
-    // Validate required fields based on format
-    if (isNewFormat || resolvedPartnerName) {
-      // Simplified flow: only need client name + phone
-      if (!body.clientFirstName || !body.clientPhone) {
-        return new Response(
-          JSON.stringify({ error: "Client name and phone are required" }),
-          { status: 400, headers }
-        );
-      }
-      const phoneDigitCount = (String(body.clientPhone).match(/\d/g) || []).length;
-      if (phoneDigitCount < 10) {
-        return new Response(
-          JSON.stringify({ error: "Phone number must have at least 10 digits" }),
-          { status: 400, headers }
-        );
-      }
-    } else {
-      // Legacy format validation
-      const { clientFirstName, clientLastName, clientEmail } = body;
-      if (!affiliateName || !affiliateEmail || !clientFirstName || !clientLastName || !clientEmail) {
-        return new Response(
-          JSON.stringify({ error: "Missing required fields" }),
-          { status: 400, headers }
-        );
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(clientEmail)) {
-        return new Response(
-          JSON.stringify({ error: "Invalid client email format" }),
-          { status: 400, headers }
-        );
-      }
-      if (!emailRegex.test(affiliateEmail)) {
-        return new Response(
-          JSON.stringify({ error: "Invalid affiliate email format" }),
-          { status: 400, headers }
-        );
-      }
-    }
+    const affiliateName = partner.firstName
+      ? partner.firstName.charAt(0).toUpperCase() + partner.firstName.slice(1).toLowerCase()
+      : "Partner";
+    const affiliateEmail = partner.email || tokenPayload.email || "";
 
     // ---- STEP 1: Upsert client contact ----
     // Partners now introduce clients to Amari; they do not sell a session or
@@ -199,18 +125,12 @@ export async function onRequestPost(context) {
 
     // ---- STEP 2: Add note with referral details ----
     if (contactId) {
-      const noteParts = isNewFormat || resolvedPartnerName
-        ? [
-            `Affiliate Referral from partner: ${affiliateName}${affiliateEmail ? ` (${affiliateEmail})` : ""}`,
-            `Referral type: ${referralType}`,
-            body.painArea ? `Pain area: ${String(body.painArea).slice(0, 200)}` : null,
-            `Submitted: ${new Date().toISOString()}`,
-          ]
-        : [
-            `Affiliate Referral from ${String(affiliateName).slice(0, 100)}${affiliateEmail ? ` (${String(affiliateEmail).slice(0, 200)})` : ""}`,
-            body.notes ? `Notes: ${String(body.notes).slice(0, 500)}` : null,
-            `Submitted: ${new Date().toISOString()}`,
-          ];
+      const noteParts = [
+        `Affiliate Referral from partner: ${affiliateName}${affiliateEmail ? ` (${affiliateEmail})` : ""}`,
+        `Referral type: ${referralType}`,
+        body.painArea ? `Pain area: ${String(body.painArea).slice(0, 200)}` : null,
+        `Submitted: ${new Date().toISOString()}`,
+      ];
 
       const noteBody = noteParts.filter(Boolean).join("\n");
 
