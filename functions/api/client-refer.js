@@ -62,6 +62,14 @@ export async function onRequestPost(context) {
   const headers = corsHeaders(origin);
   headers["Content-Type"] = "application/json";
 
+  // Legacy public links embed a raw referrer contact ID. They are retired
+  // rather than accepting attribution that the visitor cannot prove they own.
+  // A future replacement must use an issued, signed referral link.
+  return new Response(
+    JSON.stringify({ error: "Client referral links are no longer active." }),
+    { status: 410, headers }
+  );
+
   try {
     const GHL_API_KEY = await getGhlToken(context);
 

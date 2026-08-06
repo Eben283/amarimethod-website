@@ -108,11 +108,13 @@
   const refParam = (urlParams.get('ref') || '').trim();
   const formContainer = document.getElementById('invite-form-container');
   const noRefFallback = document.getElementById('no-ref-fallback');
-  if (!refParam) {
-    formContainer.style.display = 'none';
-    noRefFallback.style.display = 'block';
-    document.getElementById('hero-subtitle').textContent = "Interested in a session? We'd love to have you.";
-  }
+  // Legacy client-referral links expose a raw contact ID and are intentionally
+  // retired. Study-flyer QR codes use separate routes and are not affected.
+  formContainer.style.display = 'none';
+  noRefFallback.style.display = 'block';
+  document.getElementById('hero-subtitle').textContent = refParam
+    ? "This invitation link is no longer active. You can still book directly."
+    : "Interested in a session? We'd love to have you.";
   document.getElementById('invite-form').addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = e.target;
