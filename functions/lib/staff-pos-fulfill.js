@@ -20,6 +20,13 @@ function contactField(contact, id) {
   return field ? (field.value ?? field.field_value ?? null) : null;
 }
 
+// GHL returns checkbox custom fields as either a scalar boolean or a one-item
+// boolean array, depending on the endpoint/field response shape. Preserve a
+// strict true-only check while accepting both documented live shapes.
+function checkedField(value) {
+  return value === true || (Array.isArray(value) && value.length === 1 && value[0] === true);
+}
+
 export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "GHL invoice webhook", now } = {}) {
   if (!sale || sale.status !== "paid") throw new Error("POS sale is not fully paid");
   if (!invoice?.id) throw new Error("Verified GHL invoice id is required");
@@ -37,10 +44,10 @@ export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "
   const seriesType = String(contactField(contact, GHL_FIELD_IDS.series_type) || "");
   const portalAccess = contactField(contact, GHL_FIELD_IDS.portal_access);
   const livingPractice = contactField(contact, GHL_FIELD_IDS.living_practice_access);
-  if (remaining !== Number(pkg.sessionsRemaining) || seriesType !== pkg.seriesType || portalAccess !== true) {
+  if (remaining !== Number(pkg.sessionsRemaining) || seriesType !== pkg.seriesType || !checkedField(portalAccess)) {
     throw new Error("GHL package fields do not match the paid POS invoice");
   }
-  if (pkg.livingPractice && livingPractice !== true) {
+  if (pkg.livingPractice && !checkedField(livingPractice)) {
     throw new Error("GHL Living Practice access was not verified");
   }
 
