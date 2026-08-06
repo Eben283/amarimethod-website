@@ -35,6 +35,19 @@ export async function claimProcessedEvent(db, eventId) {
 }
 
 /**
+ * Release a claim when its owner failed before completing the protected work.
+ * Callers must only release claims they won in the current attempt.
+ */
+export async function releaseProcessedEvent(db, eventId) {
+  if (!db || !eventId) return null;
+  const res = await db
+    .prepare("DELETE FROM processed_events WHERE event_id = ?")
+    .bind(eventId)
+    .run();
+  return { ok: changesOf(res) === 1 };
+}
+
+/**
  * Read-only existence check — has this event already been claimed?
  * Returns true/false, or null when the db isn't available (caller falls back
  * to its KV view). Never throws.

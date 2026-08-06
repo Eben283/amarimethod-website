@@ -187,6 +187,7 @@ export const WEBHOOK_PURCHASE_MAP = Object.fromEntries(
         sessionsRemaining: p.sessionsRemaining,
         seriesType: p.seriesType,
         livingPractice: p.livingPractice,
+        classification: p.classification,
       },
     ]),
 );

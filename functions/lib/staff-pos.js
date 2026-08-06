@@ -273,6 +273,9 @@ export function buildPosSale({ id, client, cart, paymentLegs, reviewer, now }) {
 export function updatePosSale(existing, { client, cart, paymentLegs, reviewer, now }) {
   if (!existing?.id) throw new Error("Sale not found");
   if (existing.status === "paid") throw new Error("This sale is already paid and cannot be edited");
+  if ((existing.paymentLegs || []).some((leg) => leg.status === "paid")) {
+    throw new Error("This sale cannot be edited after a payment has been recorded");
+  }
   const next = buildPosSale({ id: existing.id, client, cart, paymentLegs, reviewer, now });
   const at = next.updatedAt;
   // Preserve Stripe/cash settlement fields when the staff client re-saves allocations.

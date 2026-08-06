@@ -45,9 +45,11 @@ import { WEBHOOK_PURCHASE_MAP, GHL_PRODUCTS } from "../lib/ghl-products.js";
 import { emitNurtureEvent } from "../lib/engine-forward.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 import { timingSafeEqual } from "../lib/safe-equal.js";
-import { claimProcessedEvent } from "../lib/processed-events.js";
+import { claimProcessedEvent, releaseProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
+import { completeVerifiedPosSale } from "../lib/staff-pos-fulfill.js";
+import { readPosSale, writePosSale } from "../lib/staff-pos.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -133,6 +135,8 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
       );
     });
     if (match) {
+      const status = String(match.status || "").toLowerCase();
+      if (status !== "paid" || Number(match.amountPaid || 0) <= 0) return null;
       const pkg = findPackageInInvoice(match);
       if (pkg) return { invoice: match, pkg };
       // H2 (2026-06-11 review): the webhook is about THIS invoice and it isn't a
@@ -163,6 +167,13 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
   return null;
 }
 
+export function posSaleIdFromInvoice(invoice) {
+  const searchable = [invoice?.name, invoice?.title, invoice?.termsNotes]
+    .filter((value) => typeof value === "string")
+    .join(" ");
+  return searchable.match(/\bpos_[a-z0-9-]{8,80}\b/i)?.[0] || null;
+}
+
 // Try multiple possible field names on a webhook payload.
 function extractField(body, keys) {
   for (const key of keys) {
@@ -184,6 +195,17 @@ function extractField(body, keys) {
 
 export async function onRequestPost(context) {
   const headers = { "Content-Type": "application/json" };
+  let wonD1ClaimKey = null;
+  const releaseWonD1Claim = async () => {
+    if (!wonD1ClaimKey) return;
+    const key = wonD1ClaimKey;
+    wonD1ClaimKey = null;
+    try {
+      await releaseProcessedEvent(context.env.ATTEND_DB, key);
+    } catch (releaseError) {
+      console.error(`[ghl-invoice-webhook] Failed to release D1 claim ${key}: ${releaseError?.message || releaseError}`);
+    }
+  };
 
   try {
     // 1. Verify webhook secret
@@ -269,6 +291,7 @@ export async function onRequestPost(context) {
 
     const { invoice, pkg } = match;
     const matchedInvoiceId = invoice._id || invoice.id;
+    const posSaleId = posSaleIdFromInvoice(invoice);
     console.log(
       `[ghl-invoice-webhook] Matched invoice ${matchedInvoiceId}: ${pkg.name}`,
     );
@@ -286,13 +309,22 @@ export async function onRequestPost(context) {
         if (claim !== null) {
           usedD1 = true;
           if (!claim.ok) {
-            console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) — skipping`);
-            return new Response(
-              JSON.stringify({ success: true, alreadyProcessed: true }),
-              { status: 200, headers },
-            );
+            if (!posSaleId) {
+              console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) — skipping`);
+              return new Response(
+                JSON.stringify({ success: true, alreadyProcessed: true }),
+                { status: 200, headers },
+              );
+            }
+            // POS invoices are safe to replay: their field writes are SETs,
+            // the message-trigger tag is suppressed, and replay closes a
+            // crash window between GHL fulfillment and POS sale completion.
+            console.warn(`[ghl-invoice-webhook] Replaying processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
           }
-          console.log(`[ghl-invoice-webhook] D1 claim won for invoice ${matchedInvoiceId}`);
+          if (claim.ok) {
+            wonD1ClaimKey = idempotencyKey;
+            console.log(`[ghl-invoice-webhook] D1 claim won for invoice ${matchedInvoiceId}`);
+          }
         }
       } catch (err) {
         console.warn(`[ghl-invoice-webhook] D1 idempotency failed: ${err.message} — falling back to KV`);
@@ -303,11 +335,14 @@ export async function onRequestPost(context) {
       try {
         const existing = await kv.get(idempotencyKey);
         if (existing) {
-          console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) — skipping`);
-          return new Response(
-            JSON.stringify({ success: true, alreadyProcessed: true }),
-            { status: 200, headers },
-          );
+          if (!posSaleId) {
+            console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) — skipping`);
+            return new Response(
+              JSON.stringify({ success: true, alreadyProcessed: true }),
+              { status: 200, headers },
+            );
+          }
+          console.warn(`[ghl-invoice-webhook] Replaying KV-processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
         }
       } catch (err) {
         console.warn(`[ghl-invoice-webhook] KV read failed: ${err.message} — proceeding without idempotency check`);
@@ -326,6 +361,7 @@ export async function onRequestPost(context) {
       context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
         "Contact fetch failed after invoice — sessions_remaining NOT updated",
         { contactId: sanitizedContactId, status: contactRes.status, invoiceId: matchedInvoiceId }));
+      await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
         { status: 404, headers },
@@ -374,6 +410,7 @@ export async function onRequestPost(context) {
         { contactId: sanitizedContactId, status: updateRes.status, product: pkg.name,
           invoiceId: matchedInvoiceId, attemptedRemaining: pkg.sessionsRemaining,
           ghlError: String(errText).slice(0, 300) }));
+      await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Failed to update contact" }),
         { status: 500, headers },
@@ -386,7 +423,10 @@ export async function onRequestPost(context) {
     const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
     try {
       await applyTagDelta(context, sanitizedContactId, {
-        add: existingTags.includes(DOWNSTREAM_TRIGGER_TAG)
+        // Staff POS has a hard no-surprise-message gate. This tag starts the
+        // published Invoice Series Purchase Notification workflow, so a POS
+        // invoice must never add it.
+        add: posSaleId || existingTags.includes(DOWNSTREAM_TRIGGER_TAG)
           ? []
           : [DOWNSTREAM_TRIGGER_TAG],
         remove: TAGS_TO_REMOVE.filter((t) => existingTags.includes(t)),
@@ -399,10 +439,51 @@ export async function onRequestPost(context) {
         "Tag delta failed — balance updated but downstream trigger tag NOT applied (workflows may not fire)",
         { contactId: sanitizedContactId, invoiceId: matchedInvoiceId,
           message: String(err && err.message).slice(0, 300) }));
+      await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Failed to apply contact tags" }),
         { status: 500, headers },
       );
+    }
+
+    let completedPosSale = null;
+    if (posSaleId) {
+      if (!context.env.PORTAL_KV) {
+        throw new Error("PORTAL_KV is required to complete a Staff POS invoice");
+      }
+      // A successful PUT response is not the proof boundary. Read the contact
+      // again and compare the exact package effects before marking the Staff
+      // sale fulfilled.
+      const verifyContactResponse = await ghlFetch(
+        context,
+        `${GHL_API_BASE}/contacts/${sanitizedContactId}`,
+      );
+      if (!verifyContactResponse.ok) {
+        throw new Error(`POS fulfillment contact readback failed (${verifyContactResponse.status})`);
+      }
+      const verifiedContact = (await verifyContactResponse.json()).contact;
+      const posSale = await readPosSale(context.env.PORTAL_KV, posSaleId);
+      if (!posSale) throw new Error(`Staff POS sale ${posSaleId} was not found for invoice verification`);
+      completedPosSale = completeVerifiedPosSale(posSale, {
+        invoice: {
+          id: matchedInvoiceId,
+          number: invoice.invoiceNumber || invoice.number || null,
+          amountPaid: Number(invoice.amountPaid || 0),
+        },
+        pkg,
+        contact: verifiedContact,
+      });
+      await writePosSale(context.env.PORTAL_KV, completedPosSale);
+      await emitPathHop(context.env, {
+        pathId: "pos_card_fulfill",
+        hopId: "fulfill",
+        outcome: "ok",
+        summary: `POS sale fulfilled from verified GHL invoice ${matchedInvoiceId}`,
+        source: "ghl-invoice-webhook",
+        contactId: sanitizedContactId,
+        correlationId: `pos:${posSaleId}`,
+        money: { product: pkg.name },
+      });
     }
 
     // Purchase event → nurture engine (Flow 3 exit). The invoice item may carry a price-id
@@ -410,7 +491,7 @@ export async function onRequestPost(context) {
     // Fire-and-forget, dormant until the worker URL exists.
     const canonicalProductId = Object.keys(GHL_PRODUCTS)
       .find((id) => GHL_PRODUCTS[id].classification === pkg.classification) || null;
-    if (canonicalProductId) {
+    if (canonicalProductId && !posSaleId) {
       emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: canonicalProductId });
     }
 
@@ -419,7 +500,7 @@ export async function onRequestPost(context) {
     // running (the KNOWN GAP the invoice-series-purchased tag round-trip was built to close);
     // the code-side timer cancels here directly, plus the confirmation record (shadow:
     // would_send only). No-ops without AUTOMATION_DB; never throws.
-    if (pkg.seriesType) {
+    if (pkg.seriesType && !posSaleId) {
       const seam = await recordSeriesPurchase(context, {
         contactId: sanitizedContactId,
         seriesType: pkg.seriesType,
@@ -505,10 +586,13 @@ export async function onRequestPost(context) {
         product: pkg.name,
         seriesType: pkg.seriesType,
         sessionsRemaining: pkg.sessionsRemaining,
+        posSaleId,
+        posFulfilled: completedPosSale?.fulfillmentStatus === "fulfilled",
       }),
       { status: 200, headers },
     );
   } catch (err) {
+    await releaseWonD1Claim();
     console.error("[ghl-invoice-webhook] Unexpected error:", err);
     context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
       "Unhandled error processing an invoice webhook",

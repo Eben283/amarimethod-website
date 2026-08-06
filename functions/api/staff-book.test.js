@@ -132,4 +132,38 @@ describe("staff-book API", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("keeps slot-provider failures in the JSON 500 contract", async () => {
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { user: "eben" } })),
+      corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
+      parseJsonBody: vi.fn(async () => ({
+        body: {
+          action: "get-slots",
+          sessionType: "assessment",
+          startDate: "2026-08-04",
+          endDate: "2026-08-05",
+          timezone: "America/Los_Angeles",
+        },
+        error: null,
+      })),
+    }));
+    vi.doMock("../lib/ghl.js", () => ({
+      ghlFetch: vi.fn(async () => ({
+        ok: false,
+        status: 429,
+        text: async () => "rate limited",
+      })),
+    }));
+
+    const { onRequestPost } = await import("./staff-book.js");
+    const res = await onRequestPost({
+      request: new Request("https://example.com/api/staff-book", { method: "POST" }),
+      env: {},
+    });
+
+    expect(res.status).toBe(500);
+    expect(res.headers.get("Content-Type")).toBe("application/json");
+    await expect(res.json()).resolves.toEqual({ error: "Could not load available times." });
+  });
 });

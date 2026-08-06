@@ -12,6 +12,7 @@
 # to avoid Cloudflare's trailing-slash canonicalization.
 /staff/messages /staff/ 200
 /staff/today /staff/ 200
+/staff/triage /staff/ 200
 /staff/balances /staff/ 200
 /staff/clients /staff/ 200
 /staff/client-desk /staff/ 200
@@ -43,12 +44,16 @@
 # Assessment-first booking path. Public acquisition routes land on the one
 # paid Assessment calendar; existing clients continue to book follow-ups in
 # the portal.
-/book-initial-in-person /booking 301
-/book/initial-in-person /booking 301
-/book-initial-virtual /booking 301
-/book/initial-virtual /booking 301
-/book-discovery-call /booking 301
-/book/discovery-call /booking 301
+/book-initial-in-person /assessment-booking.html?type=initial_in_person 302
+/book/initial-in-person /assessment-booking.html?type=initial_in_person 302
+/book-initial-virtual /assessment-booking.html?type=initial_virtual 302
+/book/initial-virtual /assessment-booking.html?type=initial_virtual 302
+/book-discovery-call /assessment-booking.html?type=discovery_call 302
+/book/discovery-call /assessment-booking.html?type=discovery_call 302
+/book/discovery-virtual /assessment-booking.html?type=discovery_virtual 302
+/book/partnership-discovery /assessment-booking.html?type=ambassador_discovery 302
+/book/partner-session /assessment-booking.html?type=partner_initial_in_person 302
+/book/partner-session-virtual /assessment-booking.html?type=partner_initial_virtual 302
 /first-visit /booking 301
 /in-person-sessions /booking 301
 /virtual-sessions /booking 301

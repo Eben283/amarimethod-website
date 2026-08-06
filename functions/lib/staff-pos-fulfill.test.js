@@ -1,136 +1,251 @@
-import { describe, expect, it } from "vitest";
-import { buildPosFulfillmentEffects, computeFulfillmentFields } from "./staff-pos-fulfill.js";
-import { FIELD_IDS } from "./ghl-fields.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { completeVerifiedPosSale, fulfillPaidPosSale } from "./staff-pos-fulfill.js";
 
-describe("staff POS fulfillment planning", () => {
-  it("sets package balance and ignores custom lines for session credit", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
-        kind: "catalog",
-        ghlProductId: "6a66cde7ef7b07f122ad46fb",
-        label: "The 12-Week Amari Practice",
-        quantity: 1,
-        lineTotalCents: 540000,
-      },
-      {
-        kind: "custom",
-        ghlProductId: null,
-        label: "Gift wrap",
-        quantity: 1,
-        lineTotalCents: 500,
-      },
-    ]);
-    expect(effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ type: "set_package", sessions: 24, seriesType: "12-week" }),
-      expect.objectContaining({ type: "note", label: "Gift wrap" }),
-    ]));
+describe("staff POS fulfillment claims", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-    const plan = computeFulfillmentFields(effects, {
-      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "2" }],
+  it("keeps a paid sale pending and performs no GHL work while the invoice bridge is disabled", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const sale = {
+      id: "pos_bridgeoff1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      client: { id: "contact_bridgeoff1" },
+      cart: [],
+      paymentLegs: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({ env: {} }, sale);
+
+    expect(outcome.sale).toBe(sale);
+    expect(outcome.sale.fulfillmentStatus).toBe("pending");
+    expect(outcome.result).toMatchObject({
+      ok: false,
+      pending: true,
+      reason: "invoice_bridge_disabled",
     });
-    expect(plan.remaining).toBe(24);
-    expect(plan.seriesType).toBe("12-week");
-    expect(plan.livingPractice).toBe(true);
-    expect(plan.packagePurchased).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("credits the $3,000 6-week practice with 12 sessions", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
+  it("mirrors an enabled sale to an invoice but never directly PUTs session/access fields", async () => {
+    const kv = new Map();
+    const portalKv = {
+      get: vi.fn(async (key) => kv.get(key) || null),
+      put: vi.fn(async (key, value) => { kv.set(key, value); }),
+      delete: vi.fn(async (key) => { kv.delete(key); }),
+    };
+    const fetchCalls = [];
+    vi.stubGlobal("fetch", vi.fn(async (url, options = {}) => {
+      fetchCalls.push({ url, options });
+      if (options.method === "GET") {
+        return { ok: true, status: 200, json: async () => ({ invoices: [] }) };
+      }
+      if (url.endsWith("/invoices/")) {
+        return { ok: true, status: 200, json: async () => ({ _id: "invoice-enabled-1", status: "draft" }) };
+      }
+      if (url.endsWith("/record-payment")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ success: true, invoice: { _id: "invoice-enabled-1", status: "paid", amountPaid: 720 } }),
+        };
+      }
+      throw new Error(`Unexpected request ${url}`);
+    }));
+    const sale = {
+      id: "pos_bridgeenabled1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      totalCents: 72000,
+      client: { id: "contact_bridgeenabled1", name: "Test", phone: "+14155550100", email: "" },
+      cart: [{
         kind: "catalog",
-        ghlProductId: "6a683360017263178d05d1a3",
-        label: "The 6-Week Amari Practice ($3,000)",
+        label: "4-Session Series",
+        ghlProductId: "69986faa724ecd2343ebaa6e",
         quantity: 1,
-        lineTotalCents: 300000,
-      },
-    ]);
-    expect(effects).toEqual([
-      expect.objectContaining({ type: "set_package", sessions: 12, seriesType: "6-week" }),
-    ]);
-  });
+        unitAmountCents: 72000,
+        lineTotalCents: 72000,
+      }],
+      paymentLegs: [{ id: "leg-1", status: "paid", method: "saved-card", amountCents: 72000 }],
+      version: 1,
+      audit: [],
+    };
 
-  it("adds sessions for an initial and keeps living-practice grants separate", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
-        kind: "catalog",
-        ghlProductId: "688a1cd770362828afbf08a2",
-        label: "Initial Session — In Person",
-        quantity: 1,
-        lineTotalCents: 22500,
+    const outcome = await fulfillPaidPosSale({
+      env: {
+        PORTAL_KV: portalKv,
+        GHL_API_KEY: "test-key",
+        STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED: "true",
       },
-      {
-        kind: "catalog",
-        ghlProductId: "6998d7f2606fa79c54fa3ff5",
-        label: "Living Practice",
-        quantity: 1,
-        lineTotalCents: 34700,
-      },
-    ]);
-    const plan = computeFulfillmentFields(effects, {
-      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "0" }],
+    }, sale);
+
+    expect(outcome.sale.fulfillmentStatus).toBe("pending");
+    expect(outcome.sale.fulfillment).toMatchObject({
+      adapter: "ghl_invoice",
+      stage: "verification_pending",
+      invoice: { id: "invoice-enabled-1", status: "paid" },
     });
-    expect(plan.remaining).toBe(1);
-    expect(plan.livingPractice).toBe(true);
-    expect(plan.packagePurchased).toBe(false);
+    expect(outcome.result).toMatchObject({ ok: true, pending: true });
+    expect(fetchCalls.some((call) => call.options.method === "PUT" && call.url.includes("/contacts/"))).toBe(false);
+    expect(portalKv.put).toHaveBeenCalledWith(
+      "staff-pos:sale:pos_bridgeenabled1",
+      expect.stringContaining("invoice-enabled-1"),
+    );
   });
 
-  it("records the $29 assessment as a note and never credits a session", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
+  it("does not report fulfillment success when another attempt only holds the claim", async () => {
+    const db = {
+      prepare: () => ({
+        bind: () => ({
+          run: async () => ({ meta: { changes: 0 } }),
+        }),
+      }),
+    };
+    const sale = {
+      id: "pos_claimheld1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      client: { id: "contact_claimheld1" },
+      cart: [{
         kind: "catalog",
+        label: "Amari Assessment",
         ghlProductId: "6a66cf0103821ea09ea13f1b",
-        label: "Amari Assessment ($29)",
         quantity: 1,
+        unitAmountCents: 2900,
         lineTotalCents: 2900,
-      },
-    ]);
-    expect(effects).toEqual([expect.objectContaining({ type: "note", label: "Amari Assessment" })]);
-    const plan = computeFulfillmentFields(effects, {
-      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "0" }],
+      }],
+      paymentLegs: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({ env: {
+      ATTEND_DB: db,
+      PORTAL_KV: { get: async () => null, put: async () => {} },
+      STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED: "true",
+    } }, sale);
+
+    expect(outcome.sale).toBe(sale);
+    expect(outcome.sale.fulfillmentStatus).toBe("pending");
+    expect(outcome.result).toEqual({
+      ok: false,
+      duplicate: true,
+      reason: "claim_held",
     });
-    expect(plan.remaining).toBe(0);
-    expect(plan.packagePurchased).toBe(false);
   });
 
-  it("adds one prepaid session for the $285 single session", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
-        kind: "catalog",
-        ghlProductId: "6a6b8bb7a1753b65945372f1",
-        label: "Single Session (50 min)",
-        quantity: 1,
-        lineTotalCents: 28500,
+  it("releases the D1 claim after a failed GHL attempt so the sale can be retried", async () => {
+    const statements = [];
+    const db = {
+      prepare: (sql) => {
+        statements.push(sql);
+        return {
+          bind: () => ({
+            run: async () => ({ meta: { changes: 1 } }),
+          }),
+        };
       },
-    ]);
-    expect(effects).toEqual([
-      expect.objectContaining({ type: "add_session", sessions: 1, productId: "6a6b8bb7a1753b65945372f1" }),
-    ]);
-    const plan = computeFulfillmentFields(effects, {
-      customFields: [{ id: FIELD_IDS.sessions_remaining, value: "2" }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      text: async () => "test failure",
+    })));
+    const sale = {
+      id: "pos_retryable1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      client: { id: "contact_retryable1" },
+      cart: [{
+        kind: "catalog",
+        label: "Amari Assessment",
+        ghlProductId: "6a66cf0103821ea09ea13f1b",
+        quantity: 1,
+        unitAmountCents: 2900,
+        lineTotalCents: 2900,
+      }],
+      totalCents: 2900,
+      paymentLegs: [],
+      version: 1,
+      audit: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({
+      env: {
+        ATTEND_DB: db,
+        PORTAL_KV: { get: async () => null, put: async () => {}, delete: async () => {} },
+        GHL_API_KEY: "test-key",
+        STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED: "true",
+      },
+    }, sale);
+
+    expect(outcome.sale.fulfillmentStatus).toBe("failed");
+    expect(statements.some((sql) => sql.includes("DELETE FROM processed_events"))).toBe(true);
+  });
+});
+
+describe("completeVerifiedPosSale", () => {
+  const sale = {
+    id: "pos_verified1",
+    status: "paid",
+    fulfillmentStatus: "pending",
+    client: { id: "contact_verified1", name: "Test" },
+    cart: [{
+      kind: "catalog",
+      label: "4-Session Series",
+      ghlProductId: "69986faa724ecd2343ebaa6e",
+      quantity: 1,
+      unitAmountCents: 72000,
+      lineTotalCents: 72000,
+    }],
+    fulfillment: {
+      adapter: "ghl_invoice",
+      stage: "verification_pending",
+      invoice: { id: "invoice-verified1", status: "paid" },
+    },
+    version: 2,
+    audit: [],
+  };
+  const pkg = {
+    classification: "4-series",
+    seriesType: "4-session",
+    sessionsRemaining: 4,
+    livingPractice: false,
+  };
+  const verifiedContact = {
+    customFields: [
+      { id: "wrQSkx6BhXwDGIn1d0V4", value: "4" },
+      { id: "3i93lTkmuAV49s9nh0q8", value: "4-session" },
+      { id: "O0xmwyRqeNK2EA1GGGye", value: true },
+    ],
+  };
+
+  it("marks fulfilled only after the exact invoice and package fields read back", () => {
+    const completed = completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-verified1", number: "INV-1", amountPaid: 720 },
+      pkg,
+      contact: verifiedContact,
+      now: "2026-08-05T23:00:00.000Z",
     });
-    expect(plan.remaining).toBe(3);
-    expect(plan.portalAccess).toBe(true);
-    expect(plan.packagePurchased).toBe(false);
+    expect(completed).toMatchObject({
+      fulfillmentStatus: "fulfilled",
+      fulfilledAt: "2026-08-05T23:00:00.000Z",
+      fulfillment: {
+        stage: "verified",
+        invoice: { id: "invoice-verified1", status: "paid" },
+        verifiedEffect: { seriesType: "4-session", sessionsRemaining: 4 },
+      },
+    });
   });
 
-  it("adds for the additive 4→8 upgrade instead of wiping unused balance", () => {
-    const effects = buildPosFulfillmentEffects([
-      {
-        kind: "catalog",
-        ghlProductId: "6a010952e41b442c862d3c01",
-        label: "Upgrade: 4-Session → 8-Session",
-        quantity: 1,
-        lineTotalCents: 57500,
-      },
-    ]);
-    expect(effects[0].type).toBe("add_package");
-    const plan = computeFulfillmentFields(effects, {
-      customFields: [
-        { id: FIELD_IDS.sessions_remaining, value: "2" },
-        { id: FIELD_IDS.series_type, value: "4-session" },
-      ],
-    });
-    expect(plan.remaining).toBe(6);
-    expect(plan.seriesType).toBe("8-session");
+  it("rejects a different invoice or missing downstream field evidence", () => {
+    expect(() => completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-other" }, pkg, contact: verifiedContact,
+    })).toThrow(/does not match/i);
+    expect(() => completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-verified1" }, pkg,
+      contact: { customFields: [] },
+    })).toThrow(/fields do not match/i);
   });
 });

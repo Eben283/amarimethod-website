@@ -34,6 +34,16 @@ import { describeSlotFields, recordAssessmentBookPath } from "../lib/ops-assessm
 import { assertSlotRespectsAppBuffer } from "../lib/app-owned-buffer.js";
 import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 import {
+  checkpointBookingAppointment,
+  claimBookingOperation,
+  completeBookingOperation,
+  failBookingOperation,
+} from "../lib/booking-operations.js";
+import {
+  bindPaidBookingIntent,
+  completePaidBookingIntent,
+} from "../lib/paid-booking-intents.js";
+import {
   emitPathHop,
   paidBookPathForProduct,
   recordPaidBookPath,
@@ -273,6 +283,13 @@ function contactLooksLikeNativeCheckout(contact) {
   );
 }
 
+function bookingInstant(value) {
+  const raw = String(value || "");
+  if (!raw) return NaN;
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) return Date.parse(raw);
+  return parsePacificWallClock(raw);
+}
+
 /**
  * Book the appointment that the user picked during native-flow checkout.
  * Reads the picked slot off the contact (by field id — GHL contact GET does
@@ -280,8 +297,8 @@ function contactLooksLikeNativeCheckout(contact) {
  *   - legacy GHL calendar/funnel purchases → skip (they already booked)
  *   - native checkout (tags/type/calendar present) → throw so callers alert
  */
-async function bookPaidBookingAppointment(context, contact, booking, token) {
-  const slot = await resolveRequestedSlot(context, contact);
+async function bookPaidBookingAppointment(context, contact, booking, token, durable = null) {
+  const slot = durable?.startTime || await resolveRequestedSlot(context, contact);
   if (!slot) {
     if (contactLooksLikeNativeCheckout(contact)) {
       throw new Error(
@@ -294,7 +311,7 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
     return null;
   }
 
-  const requestedCalendar = getRequestedSessionField(
+  const requestedCalendar = durable?.calendarId || getRequestedSessionField(
     contact,
     "requested_session_calendar",
     REQUESTED_SLOT_FIELD_IDS.calendar,
@@ -321,25 +338,33 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
         ? "Amari Method Follow-up Session — In Person"
         : booking.sessionTitle;
 
-  // Guard against duplicate-booking: if the contact already has an upcoming
-  // appointment for this booking type, skip the auto-book. A requested slot
-  // can be stale from an abandoned website flow, which would otherwise create
-  // a second appointment for a slot the customer never paid to reserve.
+  // Reconcile the exact paid slot before creating. An unrelated future session
+  // must not satisfy this order, while a matching `new` appointment can be
+  // resumed at confirmation without issuing a second create.
   try {
     const apptRes = await ghlFetch(
       context,
       `${GHL_API_BASE}/contacts/${contact.id}/appointments`,
     );
+    if (!apptRes.ok && booking.isNonCreditBooking) {
+      throw new Error(
+        `Assessment appointment reconciliation failed (${apptRes.status || "unknown status"})`,
+      );
+    }
     if (apptRes.ok) {
       const apptData = await apptRes.json();
       const appointments = apptData.events || apptData.appointments || [];
       const now = Date.now();
+      const requestedStartMs = bookingInstant(slot);
       const existing = appointments.find((a) => {
         if (!allowedCalendars.includes(a.calendarId)) return false;
         // Naive-Pacific parse: a raw UTC parse made a later-today initial
         // read as PAST from ~8am PT, so the future-booking check missed it.
         const startMs = parsePacificWallClock(a.startTime || "");
         if (!Number.isFinite(startMs) || startMs < now) return false;
+        if (!Number.isFinite(requestedStartMs) || Math.abs(startMs - requestedStartMs) > 60_000) {
+          return false;
+        }
         const status = (a.appointmentStatus || "").toLowerCase();
         if (status === "cancelled" || status === "noshow") return false;
         return true;
@@ -348,10 +373,35 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
         console.log(
           `[ghl-purchase-webhook] Contact ${contact.id} already has an upcoming matching appointment (${existing.id} at ${existing.startTime}) — skipping auto-book to avoid duplicate`,
         );
+        const existingStatus = String(existing.appointmentStatus || "").toLowerCase();
+        if (durable?.db && durable?.opKey) {
+          await checkpointBookingAppointment(durable.db, durable.opKey, existing.id);
+        }
+        if (existingStatus === "new") {
+          const confirmResponse = await fetch(
+            `${GHL_API_BASE}/calendars/events/appointments/${encodeURIComponent(existing.id)}`,
+            {
+              method: "PUT",
+              headers: ghlHeaders(token),
+              body: JSON.stringify({ appointmentStatus: "confirmed" }),
+            },
+          );
+          if (!confirmResponse.ok) {
+            const detail = await confirmResponse.text().catch(() => "response body unavailable");
+            throw new Error(
+              `Existing GHL appointment confirm failed (${confirmResponse.status}): ${String(detail).slice(0, 500)}`,
+            );
+          }
+          return { ...existing, appointmentStatus: "confirmed" };
+        }
         return existing;
       }
     }
   } catch (err) {
+    // A paid Assessment must reconcile the exact selected slot before any
+    // create. If the lookup or an existing-appointment confirmation fails,
+    // another POST could double-book a payment whose first create succeeded.
+    if (booking.isNonCreditBooking) throw err;
     // Guard failure is non-fatal — fall through to the original auto-book.
     console.warn(
       `[ghl-purchase-webhook] Duplicate-appointment check failed: ${err.message} — proceeding with auto-book`,
@@ -387,6 +437,9 @@ async function bookPaidBookingAppointment(context, contact, booking, token) {
     endpoint: `${GHL_API_BASE}/calendars/events/appointments`,
     request: (url, options) => fetch(url, { ...options, headers: ghlHeaders(token) }),
     payload,
+    onCreated: durable?.db && durable?.opKey
+      ? (appointmentId) => checkpointBookingAppointment(durable.db, durable.opKey, appointmentId)
+      : undefined,
   });
   console.log(
     `[ghl-purchase-webhook] Booked paid native appointment for ${contact.id} at ${slot} on ${calendarId} (apptId: ${data.id || data.appointment?.id})`,
@@ -500,6 +553,7 @@ async function fetchRecentOrder(context, contactId) {
         return {
           productId,
           orderId: order._id || order.id || order.orderId,
+          orderCreatedAt: Date.parse(order.createdAt || order.updatedAt || "") || null,
         };
       }
     }
@@ -513,6 +567,22 @@ async function fetchRecentOrder(context, contactId) {
     return null;
   } catch (err) {
     console.error(`[ghl-purchase-webhook] fetchRecentOrder error: ${err.message}`);
+    return null;
+  }
+}
+
+async function fetchOrderDetail(context, orderId) {
+  if (!orderId) return null;
+  try {
+    const response = await ghlFetch(
+      context,
+      `${GHL_API_BASE}/payments/orders/${encodeURIComponent(orderId)}?altId=${LOCATION_ID}&altType=location`,
+    );
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.order || data.data || data;
+  } catch (err) {
+    console.error(`[ghl-purchase-webhook] order detail failed: ${err.message}`);
     return null;
   }
 }
@@ -536,6 +606,9 @@ function extractField(body, keys) {
 
 export async function onRequestPost(context) {
   const headers = { "Content-Type": "application/json" };
+  let assessmentOperationKey = null;
+  let assessmentOperationClaimed = false;
+  let assessmentIntent = null;
 
   try {
     // ── 1. Verify webhook secret ──
@@ -612,6 +685,9 @@ export async function onRequestPost(context) {
     // we look up the contact's most recent order via the GHL Payments API.
     let resolvedProductId = productId;
     let resolvedOrderId = orderId;
+    let resolvedOrderCreatedAt = Date.parse(extractField(body, [
+      "createdAt", "created_at", "data.createdAt", "data.created_at",
+    ]) || "") || null;
 
     if (!resolvedProductId || !isRecognizedPurchaseProduct(resolvedProductId)) {
       console.log(`[ghl-purchase-webhook] Product ID missing or unrecognized in payload (${productId}) — querying GHL Orders API`);
@@ -619,6 +695,7 @@ export async function onRequestPost(context) {
       if (orderLookup) {
         resolvedProductId = orderLookup.productId;
         resolvedOrderId = resolvedOrderId || orderLookup.orderId;
+        resolvedOrderCreatedAt = resolvedOrderCreatedAt || orderLookup.orderCreatedAt;
         console.log(`[ghl-purchase-webhook] Resolved product via Orders API: ${resolvedProductId} (order: ${resolvedOrderId})`);
       } else {
         console.log("[ghl-purchase-webhook] Could not determine product from payload or API — skipping");
@@ -638,6 +715,96 @@ export async function onRequestPost(context) {
         : `[ghl-purchase-webhook] Matched non-credit paid booking: ${productName}`,
     );
 
+    // Paid Assessment fulfillment uses its own leased order operation. The
+    // generic processed_events claim is terminal-at-start and cannot recover a
+    // worker crash after the remote appointment create. Bind the paid order to
+    // the immutable pre-checkout intent, then acquire a resumable order lease.
+    if (booking?.isNonCreditBooking) {
+      if (!resolvedOrderId) {
+        const orderLookup = await fetchRecentOrder(context, contactId);
+        resolvedOrderId = orderLookup?.orderId || null;
+        resolvedOrderCreatedAt = resolvedOrderCreatedAt || orderLookup?.orderCreatedAt || null;
+      }
+      if (resolvedOrderId && !resolvedOrderCreatedAt) {
+        const detail = await fetchOrderDetail(context, resolvedOrderId);
+        resolvedOrderCreatedAt = Date.parse(detail?.createdAt || detail?.updatedAt || "") || null;
+      }
+      if (!resolvedOrderId) {
+        await recordOpsError(context.env, "ghl-purchase-webhook:assessment", "Paid Assessment order has no durable order id", {
+          contactId,
+          product: productName,
+        });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Missing paid order identity" }), { status: 500, headers });
+      }
+
+      let intentBinding;
+      const recordIntentFailure = (error, observed) => recordAssessmentBookPath(context, {
+        contact: { id: contactId },
+        productName,
+        orderId: resolvedOrderId,
+        appointment: null,
+        bookError: error,
+        slotCondition: {
+          expected: "exactly one durable paid-booking intent",
+          observed,
+        },
+      });
+      try {
+        intentBinding = await bindPaidBookingIntent(context.env.ATTEND_DB, {
+          orderId: resolvedOrderId,
+          contactId,
+          productId: resolvedProductId,
+          orderCreatedAt: resolvedOrderCreatedAt,
+        });
+      } catch (err) {
+        console.error("[ghl-purchase-webhook] Assessment intent binding failed:", err);
+        await recordIntentFailure(err, "intent database unavailable");
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking intent unavailable" }), { status: 500, headers });
+      }
+      console.log(`[ghl-purchase-webhook] Assessment intent resolution: ${intentBinding.state}`);
+      if (intentBinding.state === "ambiguous") {
+        await recordIntentFailure(
+          new Error("multiple possible checkout slots — manual review required"),
+          `ambiguous intents: ${intentBinding.intents.map((intent) => intent.intentId).join(", ")}`,
+        );
+        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Ambiguous paid booking intent" }), { status: 200, headers });
+      }
+      if (intentBinding.state !== "bound") {
+        await recordIntentFailure(new Error("no matching durable checkout slot"), "no compatible intent");
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Paid booking intent not found" }), { status: 500, headers });
+      }
+
+      assessmentIntent = intentBinding.intent;
+      assessmentOperationKey = `paid-assessment:${resolvedOrderId}`;
+      let operationClaim;
+      try {
+        operationClaim = await claimBookingOperation(context.env.ATTEND_DB, {
+          opKey: assessmentOperationKey,
+          kind: "paid_assessment",
+          contactId,
+          calendarId: assessmentIntent.calendarId,
+          startTime: assessmentIntent.startTime,
+        });
+      } catch (err) {
+        await recordOpsError(context.env, "ghl-purchase-webhook:assessment", "Paid Assessment operation state unavailable", {
+          contactId,
+          orderId: resolvedOrderId,
+          error: err.message,
+        });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking operation unavailable" }), { status: 500, headers });
+      }
+      if (operationClaim.state === "completed") {
+        return new Response(JSON.stringify({ ...operationClaim.operation.result, alreadyProcessed: true }), { status: 200, headers });
+      }
+      if (operationClaim.state === "in_progress") {
+        return new Response(JSON.stringify({ success: false, retryable: true, processing: true }), { status: 500, headers });
+      }
+      if (operationClaim.state === "manual_review" || operationClaim.state === "conflict") {
+        return new Response(JSON.stringify({ success: false, manualReview: true }), { status: 200, headers });
+      }
+      assessmentOperationClaimed = true;
+    }
+
     // ── 4. Idempotency check ──
     // Primary: D1 atomic INSERT — race-safe (two concurrent requests can't both
     // pass a KV read before either writes, but only one INSERT wins a PRIMARY KEY
@@ -647,7 +814,7 @@ export async function onRequestPost(context) {
     const idempotencyKey = resolvedOrderId ? `order:${resolvedOrderId}` : null;
     let usedD1 = false;
 
-    if (idempotencyKey) {
+    if (!booking?.isNonCreditBooking && idempotencyKey) {
       try {
         const claim = await claimProcessedEvent(context.env.ATTEND_DB, idempotencyKey);
         if (claim !== null) {
@@ -667,7 +834,7 @@ export async function onRequestPost(context) {
       }
     }
 
-    if (!usedD1) {
+    if (!booking?.isNonCreditBooking && !usedD1) {
       if (kv && idempotencyKey) {
         try {
           const existing = await kv.get(idempotencyKey);
@@ -705,9 +872,20 @@ export async function onRequestPost(context) {
       context.waitUntil(recordOpsError(context.env, errSource,
         "Contact fetch failed after payment — fulfillment not completed",
         { contactId: sanitizedContactId, status: contactRes.status, product: productName, pathHint: errSource }));
+      if (booking?.isNonCreditBooking && assessmentOperationClaimed) {
+        try {
+          await failBookingOperation(context.env.ATTEND_DB, assessmentOperationKey, `contact fetch failed (${contactRes.status})`);
+          assessmentOperationClaimed = false;
+        } catch (releaseErr) {
+          console.error("[ghl-purchase-webhook] Assessment operation failure state failed:", releaseErr);
+        }
+      }
       return new Response(
-        JSON.stringify({ error: "Contact not found" }),
-        { status: 404, headers }
+        JSON.stringify({
+          error: "Contact not found",
+          retryable: !!booking?.isNonCreditBooking,
+        }),
+        { status: booking?.isNonCreditBooking ? 500 : 404, headers }
       );
     }
 
@@ -725,7 +903,7 @@ export async function onRequestPost(context) {
       let appointment = null;
       let bookError = null;
       let skippedReason = null;
-      const slotIsoRaw = getRequestedSessionField(
+      const slotIsoRaw = assessmentIntent?.startTime || getRequestedSessionField(
         contact,
         "requested_session_slot_iso",
         REQUESTED_SLOT_FIELD_IDS.slotIso,
@@ -735,18 +913,23 @@ export async function onRequestPost(context) {
         "requested_session_slot",
         REQUESTED_SLOT_FIELD_IDS.slot,
       );
-      const slotTypeRaw = getRequestedSessionField(
+      const slotTypeRaw = assessmentIntent ? "amari_assessment" : getRequestedSessionField(
         contact,
         "requested_session_type",
         REQUESTED_SLOT_FIELD_IDS.type,
       );
-      const slotCalRaw = getRequestedSessionField(
+      const slotCalRaw = assessmentIntent?.calendarId || getRequestedSessionField(
         contact,
         "requested_session_calendar",
         REQUESTED_SLOT_FIELD_IDS.calendar,
       );
       try {
-        appointment = await bookPaidBookingAppointment(context, contact, booking, token);
+        appointment = await bookPaidBookingAppointment(context, contact, booking, token, {
+          startTime: assessmentIntent.startTime,
+          calendarId: assessmentIntent.calendarId,
+          db: context.env.ATTEND_DB,
+          opKey: assessmentOperationKey,
+        });
         if (appointment) {
           await recordPaidBooking(context, sanitizedContactId, booking, appointment);
         } else if (!contactLooksLikeNativeCheckout(contact)) {
@@ -795,8 +978,9 @@ export async function onRequestPost(context) {
       // Amari Ops spine: always emit payment + book hop (ok/fail/skip) so path→why is real.
       // Awaited (not waitUntil) so Holly-class fails are durable before the 200 returns.
       // Flip alert + legacy ops:err mirror live inside recordAssessmentBookPath.
+      let assessmentPath = null;
       try {
-        await recordAssessmentBookPath(context, {
+        assessmentPath = await recordAssessmentBookPath(context, {
           contact,
           productName,
           orderId: resolvedOrderId,
@@ -807,6 +991,47 @@ export async function onRequestPost(context) {
         });
       } catch (opsErr) {
         console.error("[ghl-purchase-webhook] ops spine write failed:", opsErr?.message || opsErr);
+      }
+
+      const retryableBookingFailure = !!bookError || (!appointment && !skippedReason);
+      if (retryableBookingFailure) {
+        if (assessmentOperationClaimed) {
+          try {
+            await failBookingOperation(context.env.ATTEND_DB, assessmentOperationKey, bookError?.message || "appointment was not created");
+            assessmentOperationClaimed = false;
+          } catch (releaseErr) {
+            console.error("[ghl-purchase-webhook] Assessment operation failure state failed:", releaseErr);
+          }
+        }
+        return new Response(
+          JSON.stringify({
+            success: false,
+            retryable: true,
+            contactId: sanitizedContactId,
+            product: productName,
+            appointmentId: null,
+            sessionsAdded: 0,
+            outcome: assessmentPath?.outcome || "fail",
+          }),
+          { status: 500, headers },
+        );
+      }
+
+      const appointmentId = appointment?.id || appointment?.appointment?.id || null;
+      const durableResult = {
+        success: true,
+        contactId: sanitizedContactId,
+        product: productName,
+        appointmentId,
+        sessionsAdded: 0,
+      };
+      try {
+        await completePaidBookingIntent(context.env.ATTEND_DB, assessmentIntent.intentId, appointmentId);
+        await completeBookingOperation(context.env.ATTEND_DB, assessmentOperationKey, durableResult);
+        assessmentOperationClaimed = false;
+      } catch (err) {
+        console.error("[ghl-purchase-webhook] Assessment completion checkpoint failed:", err);
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking completion checkpoint failed" }), { status: 500, headers });
       }
 
       if (kv && idempotencyKey) {
@@ -823,13 +1048,7 @@ export async function onRequestPost(context) {
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          contactId: sanitizedContactId,
-          product: productName,
-          appointmentId: appointment?.id || appointment?.appointment?.id || null,
-          sessionsAdded: 0,
-        }),
+        JSON.stringify(durableResult),
         { status: 200, headers },
       );
     }
@@ -1155,7 +1374,14 @@ export async function onRequestPost(context) {
 
   } catch (err) {
     console.error("[ghl-purchase-webhook] Unexpected error:", err);
-    context.waitUntil(recordOpsError(context.env, "ghl-purchase-webhook:package",
+    if (assessmentOperationClaimed) {
+      try {
+        await failBookingOperation(context.env.ATTEND_DB, assessmentOperationKey, err?.message || err);
+      } catch (releaseErr) {
+        console.error("[ghl-purchase-webhook] Assessment operation failure state failed:", releaseErr);
+      }
+    }
+    context.waitUntil(recordOpsError(context.env, assessmentOperationKey ? "ghl-purchase-webhook:assessment" : "ghl-purchase-webhook:package",
       "Unhandled error processing a purchase webhook",
       { message: String(err && err.message).slice(0, 300) }));
     return new Response(

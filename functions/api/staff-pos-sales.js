@@ -27,6 +27,17 @@ function json(data, status, headers) {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
+const POS_PAYMENT_ACTIONS = new Set([
+  "start-checkout",
+  "charge-saved-card",
+  "record-cash",
+  "fulfill",
+]);
+
+export function posPaymentActionAvailable(env, action) {
+  return !POS_PAYMENT_ACTIONS.has(action) || env?.STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED === "true";
+}
+
 function saleId() {
   return `pos_${crypto.randomUUID()}`;
 }
@@ -274,6 +285,16 @@ export async function onRequestPost(context) {
   if (bodyError) return bodyError;
   const action = typeof body.action === "string" ? body.action : "";
   const reviewer = typeof payload?.user === "string" ? payload.user : "Staff";
+
+  // The invoice bridge is the fulfillment safety boundary. Do not let Staff
+  // collect or initiate payment while that boundary is disabled; otherwise a
+  // successful charge could be left honestly pending but operationally owed.
+  if (!posPaymentActionAvailable(context.env, action)) {
+    return json({
+      error: "POS payments are temporarily disabled while fulfillment is being verified.",
+      code: "pos_fulfillment_not_ready",
+    }, 409, headers);
+  }
 
   try {
     if (action === "create") {

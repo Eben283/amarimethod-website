@@ -10,7 +10,7 @@ function encodeForm(params) {
     .join("&");
 }
 
-export async function stripeRequest(secretKey, method, path, params) {
+export async function stripeRequest(secretKey, method, path, params, { idempotencyKey } = {}) {
   if (!secretKey) throw new Error("STRIPE_SECRET_KEY is not configured");
   const init = {
     method,
@@ -18,6 +18,7 @@ export async function stripeRequest(secretKey, method, path, params) {
       Authorization: `Bearer ${secretKey}`,
     },
   };
+  if (idempotencyKey) init.headers["Idempotency-Key"] = idempotencyKey;
   let url = `${STRIPE_API}${path}`;
   if (method === "GET") {
     const query = encodeForm(params);
@@ -285,6 +286,10 @@ export async function chargeCustomerCard(secretKey, {
     "metadata[payment_leg_id]": paymentLegId,
     "metadata[contactId]": contactId || "",
     "metadata[leg_method]": "saved-card",
+  }, {
+    // A staff retry after a timeout must resolve to the same Stripe operation,
+    // never a second charge for the same immutable payment leg.
+    idempotencyKey: `staff-pos:${saleId}:${paymentLegId}:saved-card`,
   });
 }
 

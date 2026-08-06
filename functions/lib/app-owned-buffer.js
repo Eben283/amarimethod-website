@@ -92,7 +92,10 @@ export function applyGarrettSchedulePreference(slots, events) {
   for (const event of events || []) {
     if (!isBlockingAppointment(event)) continue;
     const range = eventRange(event);
-    if (!range?.policy || range.policy.bufferMinutes < 20) continue;
+    // Every real appointment is a schedule anchor, including 10-minute-buffer
+    // Discovery calls. Buffer length controls collision safety above; it must
+    // not decide whether an existing booking influences day clustering.
+    if (!range?.policy) continue;
     const date = localDate(event?.startTime || event?.start_time);
     const minutes = localMinutes(event?.startTime || event?.start_time);
     if (!date || minutes == null) continue;

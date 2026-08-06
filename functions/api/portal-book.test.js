@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolvePortalCalendar, portalBalanceExhausted, PORTAL_FOLLOWUP_CALENDARS } from './portal-book.js';
+import { matchingPortalAppointments, resolvePortalCalendar, portalBalanceExhausted, PORTAL_FOLLOWUP_CALENDARS } from './portal-book.js';
 
 // B2 (2026-06-11 review): portal-book took calendarId straight from the request
 // body with no allowlist and no balance check, so a logged-in client with 0
@@ -85,5 +85,25 @@ describe('portalBookingBlocked (derived-ledger gate, 2026-07-02 audit)', () => {
     expect(portalBookingBlocked(empty, contactWithField('0'))).toBe(true);   // field says exhausted
     expect(portalBookingBlocked(empty, { customFields: [] })).toBe(false);   // field missing → fail open
     expect(portalBookingBlocked(null, { customFields: [] })).toBe(false);
+  });
+});
+
+describe('matchingPortalAppointments (durable retry reconciliation)', () => {
+  const selected = '2026-08-20T10:00:00-07:00';
+  const appointments = [
+    { id: 'same', calendarId: 'cal1', startTime: selected, appointmentStatus: 'new' },
+    { id: 'other-time', calendarId: 'cal1', startTime: '2026-08-20T11:00:00-07:00', appointmentStatus: 'confirmed' },
+    { id: 'cancelled', calendarId: 'cal1', startTime: selected, appointmentStatus: 'cancelled' },
+  ];
+
+  it('matches only the exact active calendar slot when no checkpoint exists', () => {
+    expect(matchingPortalAppointments(appointments, { calendarId: 'cal1', startTime: selected }))
+      .toEqual([appointments[0]]);
+  });
+
+  it('uses the checkpoint id as the authoritative retry identity', () => {
+    expect(matchingPortalAppointments(appointments, {
+      appointmentId: 'other-time', calendarId: 'cal1', startTime: selected,
+    })).toEqual([appointments[1]]);
   });
 });

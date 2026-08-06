@@ -376,6 +376,7 @@
         viewLeftMonth: null,  // "YYYY-MM" — left calendar's month
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles',
         submitting: false,
+        checkoutKey: null,
       };
 
       // ---------- DOM refs ----------
@@ -618,6 +619,7 @@
         state.selectedDate = dayStr;
         // Clear previously selected slot since date changed
         state.selectedSlot = null;
+        state.checkoutKey = null;
         // Re-render calendars to update is-selected highlight
         renderCalendar();
         // Render time slots for this date
@@ -649,6 +651,7 @@
 
       function selectSlot(slot, btn) {
         state.selectedSlot = slot;
+        state.checkoutKey = null;
         Array.prototype.forEach.call(els.timeSlots.children, function (el) {
           el.classList.toggle('is-selected', el === btn);
         });
@@ -726,6 +729,7 @@
         els.step2SubmitBtn.disabled = true;
         els.step2SubmitLabel.textContent = 'Redirecting to secure payment…';
 
+        if (!state.checkoutKey) state.checkoutKey = crypto.randomUUID();
         const payload = {
           firstName: data.firstName,
           lastName: data.lastName,
@@ -739,6 +743,7 @@
           sessionPrice: SESSION_PRICE,
           startTime: state.selectedSlot.datetime,
           timezone: state.timezone,
+          idempotencyKey: state.checkoutKey,
         };
 
         async function requestCheckout() {

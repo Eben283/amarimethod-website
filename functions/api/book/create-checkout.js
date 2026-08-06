@@ -24,6 +24,7 @@ import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
 import { emitPathHop } from "../../lib/ops-path-emit.js";
 import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
 import { createConfirmedAppointment } from "../../lib/ghl-appointment-handoff.js";
+import { createPaidBookingIntent } from "../../lib/paid-booking-intents.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -302,6 +303,13 @@ function validateBody(b) {
   if ((!booking.isFreeBooking || booking.requiresPolicy) && !b.agreePolicies) {
     return "Missed Appointment Policy must be agreed to";
   }
+  if (!booking.isFreeBooking && (
+    typeof b.idempotencyKey !== "string" ||
+    b.idempotencyKey.length < 8 ||
+    b.idempotencyKey.length > 200
+  )) {
+    return "A valid idempotencyKey is required";
+  }
   return null;
 }
 
@@ -565,6 +573,34 @@ export async function onRequestPost(context) {
     );
   }
 
+  // Persist the immutable payment-to-slot intent before the browser leaves
+  // Amari for GHL checkout. The order webhook binds only an unambiguous D1
+  // intent; mutable contact custom fields remain a legacy fallback, not the
+  // source of truth for newly issued paid checkouts.
+  if (!booking.isFreeBooking) {
+    try {
+      const intent = await createPaidBookingIntent(env.ATTEND_DB, {
+        intentId: body.idempotencyKey,
+        contactId,
+        productId: booking.productId,
+        calendarId: booking.calendarId,
+        startTime: body.startTime,
+        timezone: body.timezone,
+      });
+      if (intent.state === "conflict") {
+        return json({ error: "This checkout key was already used for a different booking." }, 409, origin);
+      }
+    } catch (err) {
+      console.error("[book/create-checkout] durable intent failed:", err);
+      context.waitUntil(recordOpsError(env, "book/create-checkout", "paid booking intent was not saved", {
+        contactId,
+        sessionType: body.sessionType,
+        message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300),
+      }));
+      return json({ error: "Secure payment is temporarily unavailable. Please try again.", retryable: true }, 503, origin);
+    }
+  }
+
   // Tags + audit note in parallel — neither blocks the redirect.
   context.waitUntil(
     recordPreCheckoutAudit(context, contactId, body, ip, userAgent, booking),
@@ -692,6 +728,9 @@ export async function onRequestPost(context) {
   paymentUrl.searchParams.set("first_name", body.firstName);
   paymentUrl.searchParams.set("last_name", body.lastName);
   paymentUrl.searchParams.set("phone", body.phone);
+  // Diagnostic correlation only. The webhook does not trust GHL to echo this
+  // parameter; it binds against the server-side D1 intent.
+  paymentUrl.searchParams.set("amari_intent", body.idempotencyKey);
 
   return json(
     { checkoutUrl: paymentUrl.toString(), contactId },

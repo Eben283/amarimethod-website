@@ -245,6 +245,9 @@ describe("chargeCustomerCard", () => {
     expect(body).toContain("confirm=true");
     expect(body).toContain("payment_method=pm_1");
     expect(body).toContain("customer=cus_1");
+    expect(fetchMock.mock.calls[0][1].headers["Idempotency-Key"]).toBe(
+      "staff-pos:pos_1:leg_1:saved-card",
+    );
   });
 });
 

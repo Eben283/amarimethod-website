@@ -32,7 +32,15 @@ const ASSESSMENT_CALENDAR_ID = 'EM6vB2mq7EAdGCbUb3j1';
 
 let fetchCalls;
 
-function makeContext({ body, secret = SECRET, kvStore = {}, contact = { id: 'c1', customFields: [] } }) {
+function requestedSlot(contact) {
+  return contact?.customFields?.find((field) =>
+    field.fieldKey === 'requested_session_slot_iso' ||
+    field.fieldKey === 'requested_session_slot' ||
+    field.id === 'Qj3v47KwlOkLwmCWkqAW'
+  )?.value || null;
+}
+
+function makeContext({ body, secret = SECRET, kvStore = {}, contact = { id: 'c1', customFields: [] }, attendDb, intentSlot }) {
   ghlFetch.mockImplementation(async (_ctx, url) => {
     if (url.includes('/contacts/') && !/\/(appointments|notes|tags)/.test(url)) {
       return { ok: true, json: async () => ({ contact }) };
@@ -46,11 +54,126 @@ function makeContext({ body, secret = SECRET, kvStore = {}, contact = { id: 'c1'
       put: vi.fn(async (k, v) => { kvStore[k] = v; }),
     },
   };
+  if (body?.product_id === ASSESSMENT_ID) {
+    const slot = intentSlot === undefined ? requestedSlot(contact) : intentSlot;
+    env.ATTEND_DB = attendDb || makeAttendDb();
+    if (slot) env.ATTEND_DB.seedIntent({
+      intentId: `intent-${body.order_id}`,
+      contactId: body.contact_id,
+      productId: ASSESSMENT_ID,
+      calendarId: ASSESSMENT_CALENDAR_ID,
+      startTime: slot,
+    });
+  } else if (attendDb) {
+    env.ATTEND_DB = attendDb;
+  }
   const request = {
     json: async () => body,
     headers: { get: (h) => (h === 'X-Webhook-Secret' ? secret : null) },
   };
   return { env, request };
+}
+
+function makeAttendDb() {
+  const rows = new Set();
+  const intents = new Map();
+  const operations = new Map();
+  return {
+    seedIntent({ intentId, contactId, productId, calendarId, startTime }) {
+      if (intents.has(intentId)) return;
+      const now = Date.now() - 1000;
+      intents.set(intentId, {
+        intent_id: intentId, contact_id: contactId, product_id: productId,
+        calendar_id: calendarId, start_time: startTime,
+        timezone: 'America/Los_Angeles', status: 'pending', order_id: null,
+        appointment_id: null, created_at: now, expires_at: now + 86_400_000,
+        updated_at: now,
+      });
+    },
+    prepare(sql) {
+      let args = [];
+      return {
+        bind(...values) { args = values; return this; },
+        async run() {
+          if (/^INSERT INTO processed_events/.test(sql)) {
+            const key = args[0];
+            if (rows.has(key)) return { meta: { changes: 0 } };
+            rows.add(key);
+            return { meta: { changes: 1 } };
+          }
+          if (/^DELETE FROM processed_events/.test(sql)) {
+            const key = args[0];
+            const deleted = rows.delete(key);
+            return { meta: { changes: deleted ? 1 : 0 } };
+          }
+          if (sql.startsWith('INSERT INTO booking_operations')) {
+            const [opKey, kind, contactId, calendarId, startTime, leaseUntil, createdAt, updatedAt] = args;
+            if (operations.has(opKey)) return { meta: { changes: 0 } };
+            operations.set(opKey, { op_key: opKey, kind, contact_id: contactId, calendar_id: calendarId, start_time: startTime, status: 'processing', appointment_id: null, result_json: null, lease_until: leaseUntil, attempts: 1, last_error: null, created_at: createdAt, updated_at: updatedAt });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes('attempts = attempts + 1')) {
+            const [leaseUntil, now, opKey, cutoff] = args;
+            const row = operations.get(opKey);
+            if (!row || row.lease_until > cutoff) return { meta: { changes: 0 } };
+            Object.assign(row, { status: 'processing', lease_until: leaseUntil, attempts: row.attempts + 1, updated_at: now, last_error: null });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes('SET appointment_id = ?') && sql.includes('booking_operations')) {
+            const [appointmentId, leaseUntil, now, opKey] = args;
+            const row = operations.get(opKey);
+            if (!row || row.status !== 'processing') return { meta: { changes: 0 } };
+            Object.assign(row, { appointment_id: appointmentId, lease_until: leaseUntil, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes("SET status = 'completed'") && sql.includes('booking_operations')) {
+            const [resultJson, now, opKey] = args;
+            const row = operations.get(opKey);
+            if (!row || row.status !== 'processing') return { meta: { changes: 0 } };
+            Object.assign(row, { status: 'completed', result_json: resultJson, lease_until: 0, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes('SET status = ?') && sql.includes('booking_operations')) {
+            const [status, error, now, opKey] = args;
+            const row = operations.get(opKey);
+            if (!row || row.status !== 'processing') return { meta: { changes: 0 } };
+            Object.assign(row, { status, last_error: error, lease_until: 0, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes("SET status = 'bound'") && sql.includes('paid_booking_intents')) {
+            const [orderId, now, intentId] = args;
+            const row = intents.get(intentId);
+            if (!row || row.status !== 'pending') return { meta: { changes: 0 } };
+            Object.assign(row, { status: 'bound', order_id: orderId, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes("SET status = 'completed'") && sql.includes('paid_booking_intents')) {
+            const [appointmentId, now, intentId] = args;
+            const row = intents.get(intentId);
+            if (!row || !['bound', 'completed'].includes(row.status)) return { meta: { changes: 0 } };
+            Object.assign(row, { status: 'completed', appointment_id: appointmentId, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          return { meta: { changes: 0 } };
+        },
+        async first() {
+          if (sql.includes('FROM paid_booking_intents WHERE order_id')) return [...intents.values()].find((row) => row.order_id === args[0]) || null;
+          if (sql.includes('FROM booking_operations')) return operations.get(args[0]) || null;
+          return null;
+        },
+        async all() {
+          if (sql.includes('FROM paid_booking_intents')) {
+            const [contactId, productId, createdCutoff, expiryCutoff] = args;
+            return { results: [...intents.values()].filter((row) => row.contact_id === contactId && row.product_id === productId && row.status === 'pending' && row.created_at <= createdCutoff && row.expires_at >= expiryCutoff).slice(0, 3) };
+          }
+          return { results: [] };
+        },
+      };
+    },
+    rows,
+    intents,
+    operations,
+  };
 }
 
 const putToContact = () =>
@@ -227,6 +350,7 @@ describe('purchase-webhook — write orchestration', () => {
     const ctx = makeContext({
       body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'note-order' },
       contact,
+      intentSlot: '2026-08-04T11:00:00-07:00',
     });
     ctx.waitUntil = vi.fn();
     ghlFetch.mockImplementation(async (_ctx, url) => {
@@ -259,7 +383,7 @@ describe('purchase-webhook — write orchestration', () => {
     expect(JSON.parse(appointmentCreate.opts.body).startTime).toBe('2026-08-04T11:00:00-07:00');
   });
 
-  it('Assessment native checkout with no bookable slot posts URGENT reconcile note', async () => {
+  it('Assessment payment with no durable checkout intent fails closed before appointment creation', async () => {
     const contact = {
       id: 'no-slot',
       tags: ['native-booking-started'],
@@ -275,19 +399,237 @@ describe('purchase-webhook — write orchestration', () => {
     ctx.waitUntil = vi.fn();
 
     const res = await onRequestPost(ctx);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const body = JSON.parse(await res.text());
-    expect(body.appointmentId).toBeNull();
-
-    const urgentNote = [...ghlFetch.mock.calls].find(([, url, opts]) =>
-      url.includes('/notes') && opts?.method === 'POST' &&
-      String(opts.body || '').includes('URGENT — RECONCILE NEEDED'),
-    );
-    expect(urgentNote).toBeTruthy();
+    expect(body.retryable).toBe(true);
+    expect(body.error).toBe('Paid booking intent not found');
     const appointmentCreate = fetchCalls.find((call) =>
       call.url.endsWith('/calendars/events/appointments') && call.opts?.method === 'POST',
     );
     expect(appointmentCreate).toBeFalsy();
+  });
+
+  it('Assessment booking failure releases its order claim and returns retryable failure', async () => {
+    const contact = {
+      id: 'assessment-retry',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: '2026-08-21T11:00:00-07:00' },
+      ],
+    };
+    const db = makeAttendDb();
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-retry-order' },
+      contact,
+      attendDb: db,
+    });
+    global.fetch = vi.fn(async (url, opts) => {
+      fetchCalls.push({ url, opts });
+      if (String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST') {
+        return { ok: false, status: 500, json: async () => ({}), text: async () => 'temporary calendar failure' };
+      }
+      return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
+    });
+
+    const failed = await onRequestPost(ctx);
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ success: false, retryable: true, appointmentId: null });
+    expect(db.operations.get('paid-assessment:assessment-retry-order')?.status).toBe('retryable');
+    expect(ctx.env.PURCHASE_KV.put.mock.calls.some(([key]) => key === 'order:assessment-retry-order')).toBe(false);
+
+    const retry = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-retry-order' },
+      contact,
+      attendDb: db,
+    });
+    retry.env.ATTEND_DB = db;
+    global.fetch = vi.fn(async (url, opts) => {
+      fetchCalls.push({ url, opts });
+      const creating = String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST';
+      return { ok: true, status: 200, json: async () => creating ? { id: 'appt_retry_ok' } : {}, text: async () => '' };
+    });
+    const recovered = await onRequestPost(retry);
+    expect(recovered.status).toBe(200);
+    expect(await recovered.json()).toMatchObject({ appointmentId: 'appt_retry_ok' });
+    expect(db.operations.get('paid-assessment:assessment-retry-order')?.status).toBe('completed');
+  });
+
+  it('Assessment contact-fetch failure releases its order claim for redelivery', async () => {
+    const db = makeAttendDb();
+    const ctx = makeContext({
+      body: {
+        contact_id: 'assessment-contact-fetch-fail',
+        product_id: ASSESSMENT_ID,
+        order_id: 'assessment-contact-fetch-order',
+        createdAt: new Date().toISOString(),
+      },
+      attendDb: db,
+      intentSlot: '2026-08-21T12:00:00-07:00',
+    });
+    ctx.waitUntil = vi.fn();
+    ghlFetch.mockResolvedValueOnce({ ok: false, status: 503 });
+
+    const failed = await onRequestPost(ctx);
+
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({
+      error: 'Contact not found',
+      retryable: true,
+    });
+    expect(db.operations.get('paid-assessment:assessment-contact-fetch-order')?.status).toBe('retryable');
+    expect(ctx.env.PURCHASE_KV.put.mock.calls.some(
+      ([key]) => key === 'order:assessment-contact-fetch-order',
+    )).toBe(false);
+  });
+
+  it('Assessment retry confirms an existing new appointment instead of treating it as fulfilled', async () => {
+    const slot = '2026-08-21T14:00:00-07:00';
+    const contact = {
+      id: 'assessment-existing-new',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: slot },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-new-order' },
+      contact,
+    });
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return {
+          ok: true,
+          json: async () => ({ events: [{
+            id: 'appt_existing_new',
+            calendarId: ASSESSMENT_CALENDAR_ID,
+            startTime: slot,
+            appointmentStatus: 'new',
+          }] }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ appointmentId: 'appt_existing_new' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/calendars\/events\/appointments\/appt_existing_new$/),
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ appointmentStatus: 'confirmed' }) }),
+    );
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(false);
+  });
+
+  it('does not treat an unrelated future Assessment as fulfillment of the paid slot', async () => {
+    const paidSlot = '2026-08-21T14:00:00-07:00';
+    const contact = {
+      id: 'assessment-different-slot',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: paidSlot },
+      ],
+    };
+    const ctx = makeContext({
+      body: { contact_id: contact.id, product_id: ASSESSMENT_ID, order_id: 'assessment-different-order' },
+      contact,
+    });
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return {
+          ok: true,
+          json: async () => ({ events: [{
+            id: 'appt_other_time',
+            calendarId: ASSESSMENT_CALENDAR_ID,
+            startTime: '2026-08-21T09:00:00-07:00',
+            appointmentStatus: 'confirmed',
+          }] }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const res = await onRequestPost(ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ appointmentId: 'appt_native_1' });
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(true);
+  });
+
+  it('never guesses a slot when two durable Assessment intents match one paid order', async () => {
+    const db = makeAttendDb();
+    db.seedIntent({
+      intentId: 'intent-a', contactId: 'assessment-ambiguous', productId: ASSESSMENT_ID,
+      calendarId: ASSESSMENT_CALENDAR_ID, startTime: '2026-08-22T10:00:00-07:00',
+    });
+    db.seedIntent({
+      intentId: 'intent-b', contactId: 'assessment-ambiguous', productId: ASSESSMENT_ID,
+      calendarId: ASSESSMENT_CALENDAR_ID, startTime: '2026-08-22T11:00:00-07:00',
+    });
+    const ctx = makeContext({
+      body: { contact_id: 'assessment-ambiguous', product_id: ASSESSMENT_ID, order_id: 'ambiguous-order' },
+      attendDb: db,
+      intentSlot: null,
+    });
+
+    const response = await onRequestPost(ctx);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: false, manualReview: true });
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(false);
+  });
+
+  it('fails closed when Assessment appointment reconciliation cannot be read', async () => {
+    const slot = '2026-08-21T15:00:00-07:00';
+    const contact = {
+      id: 'assessment-reconcile-fail',
+      tags: ['native-booking-started'],
+      customFields: [
+        { id: '4UZAVKtF7aGFPM51XUz4', value: 'amari_assessment' },
+        { id: 'vDAcRQ998BBVeHcdAnkl', value: ASSESSMENT_CALENDAR_ID },
+        { id: 'Qj3v47KwlOkLwmCWkqAW', value: slot },
+      ],
+    };
+    const db = makeAttendDb();
+    const ctx = makeContext({
+      body: {
+        contact_id: contact.id,
+        product_id: ASSESSMENT_ID,
+        order_id: 'assessment-reconcile-order',
+      },
+      contact,
+      attendDb: db,
+    });
+    ghlFetch.mockImplementation(async (_ctx, url) => {
+      if (url.endsWith(`/contacts/${contact.id}`)) {
+        return { ok: true, json: async () => ({ contact }) };
+      }
+      if (url.endsWith(`/contacts/${contact.id}/appointments`)) {
+        return { ok: false, status: 503, json: async () => ({}) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const failed = await onRequestPost(ctx);
+
+    expect(failed.status).toBe(500);
+    expect(await failed.json()).toMatchObject({ success: false, retryable: true });
+    expect(db.operations.get('paid-assessment:assessment-reconcile-order')?.status).toBe('retryable');
+    expect(global.fetch.mock.calls.some(([url, opts]) =>
+      String(url).endsWith('/calendars/events/appointments') && opts?.method === 'POST')).toBe(false);
   });
 
   // Amari Ops Phase 1: Holly-class fail must leave a reconstructable trail
@@ -339,7 +681,7 @@ describe('purchase-webhook — write orchestration', () => {
     ctx.env.OPS_ALERT_CONTACT_ID = 'ebenOps';
 
     const res = await onRequestPost(ctx);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
 
     expect(opsRows).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -352,11 +694,11 @@ describe('purchase-webhook — write orchestration', () => {
         path_id: 'assessment_paid_book',
         hop_id: 'create_appointment',
         outcome: 'fail',
-        condition_expected: 'requested_session_slot_iso bookable datetime',
+        condition_expected: 'exactly one durable paid-booking intent',
       }),
     ]));
     const fail = opsRows.find((r) => r.hop_id === 'create_appointment');
-    expect(fail.condition_observed).toMatch(/slot_iso=null/);
+    expect(fail.condition_observed).toMatch(/no compatible intent/);
     expect(incidents).toEqual([
       expect.objectContaining({
         path_id: 'assessment_paid_book',
