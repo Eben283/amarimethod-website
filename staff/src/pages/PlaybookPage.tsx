@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import discoveryMd from '@/content/playbooks/discovery-call.md?raw';
 import partnerMd from '@/content/playbooks/partner-call.md?raw';
 import therapistMd from '@/content/playbooks/therapist-call.md?raw';
+import positioningMd from '@/content/playbooks/amari-practice-positioning-v2.md?raw';
 
 // Garrett-facing playbooks for in-call lookup.
 // Source markdown lives in src/content/playbooks/*.md.
@@ -127,7 +128,7 @@ function PlaybookContent({ md }: { md: string }) {
   );
 }
 
-type Tab = 'discovery' | 'partner' | 'therapist';
+type Tab = 'discovery' | 'partner' | 'therapist' | 'positioning';
 
 export default function PlaybookPage() {
   const [tab, setTab] = useState<Tab>('discovery');
@@ -142,7 +143,7 @@ export default function PlaybookPage() {
   return (
     <div className="px-4 pt-4 pb-8 max-w-2xl mx-auto">
       <div className="sticky top-0 -mx-4 px-4 py-2 bg-amari-light-sand/95 backdrop-blur z-10 mb-3">
-        <div className="flex gap-1 p-1 bg-amari-border/30 rounded-lg">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-amari-border/30 rounded-lg">
           <button onClick={() => setTab('discovery')} className={tabClass(tab === 'discovery')}>
             Discovery Call
           </button>
@@ -152,12 +153,16 @@ export default function PlaybookPage() {
           <button onClick={() => setTab('therapist')} className={tabClass(tab === 'therapist')}>
             Therapist Call
           </button>
+          <button onClick={() => setTab('positioning')} className={tabClass(tab === 'positioning')}>
+            Positioning V2
+          </button>
         </div>
       </div>
 
       {tab === 'discovery' && <PlaybookContent md={discoveryMd} />}
       {tab === 'partner' && <PlaybookContent md={partnerMd} />}
       {tab === 'therapist' && <PlaybookContent md={therapistMd} />}
+      {tab === 'positioning' && <PlaybookContent md={positioningMd} />}
     </div>
   );
 }
