@@ -239,6 +239,19 @@ describe("completeVerifiedPosSale", () => {
     });
   });
 
+  it("accepts GHL's one-item checkbox array when verifying portal access", () => {
+    const liveShapedContact = {
+      customFields: verifiedContact.customFields.map((field) =>
+        field.id === "O0xmwyRqeNK2EA1GGGye" ? { ...field, value: [true] } : field,
+      ),
+    };
+    expect(completeVerifiedPosSale(sale, {
+      invoice: { id: "invoice-verified1", number: "INV-1", amountPaid: 720 },
+      pkg,
+      contact: liveShapedContact,
+    })).toMatchObject({ fulfillmentStatus: "fulfilled", fulfillment: { stage: "verified" } });
+  });
+
   it("rejects a different invoice or missing downstream field evidence", () => {
     expect(() => completeVerifiedPosSale(sale, {
       invoice: { id: "invoice-other" }, pkg, contact: verifiedContact,
