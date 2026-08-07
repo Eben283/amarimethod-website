@@ -37,6 +37,10 @@
 # SPA fallback for chief of staff
 /cos/* /cos/index.html 200
 
+# Separate personal parking app. It shares the PIN identity, but never appears
+# in Staff or the Chief of Staff opening screen.
+/parking/* /parking/index.html 200
+
 # Optional: Redirect old subdomain to new path (activate after DNS update)
 # https://quiz.amarimethod.com/* https://www.amarimethod.com/quiz/:splat 301
 
