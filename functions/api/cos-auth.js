@@ -79,10 +79,11 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers });
     }
 
-    // Check PIN against each user's env var
+    // COS and Staff deliberately share the same per-person PINs. Keeping one
+    // source of truth prevents the two PIN screens from silently drifting.
     const cosUsers = [
-      { envKey: "COS_PIN_EBEN", name: "Eben" },
-      { envKey: "COS_PIN_GARRETT", name: "Garrett" },
+      { envKey: "STAFF_PIN_EBEN", name: "Eben" },
+      { envKey: "STAFF_PIN_GARRETT", name: "Garrett" },
     ];
 
     let matchedUser = null;
