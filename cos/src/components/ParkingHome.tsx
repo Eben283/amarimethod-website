@@ -41,7 +41,7 @@ export default function ParkingHome({ parking, isLoading, error, onRefresh }: Pr
   }
 
   const parkedAt = formatDate(parking.parked_at);
-  const moveBy = formatDate(parking.deadline_iso, true);
+  const moveBy = formatDate(parking.deadline_iso, true) || parking.move_by_label;
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${parking.location}, San Francisco, CA`)}`;
 
   return (
