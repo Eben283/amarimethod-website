@@ -128,6 +128,42 @@ export async function getCurrentPark(env, user) {
   return history[0] || null;
 }
 
+// The home-screen read model deliberately stays inside KV: PIN unlock should
+// show the last park without opening a chat, contacting an LLM, or re-querying
+// City data. City rules are refreshed when a new location is recorded.
+export async function getCurrentParkingSnapshot(env, user) {
+  const current = await getCurrentPark(env, user);
+  if (!current) return null;
+
+  const rules = [];
+  const addRule = (type, detail, side) => {
+    if (!type || type === "unknown" || type === "none") return;
+    if (rules.some(rule => rule.type === type && rule.detail === (detail || null) && rule.side === (side || null))) return;
+    rules.push({ type, detail: detail || null, side: side || null });
+  };
+
+  addRule(current.rule_type, current.rule_detail, current.side);
+  const stored = await getAllRules(env);
+  const block = stored[current.block_key || normalizeLocation(current.location)];
+  if (block?.sides) {
+    for (const [side, value] of Object.entries(block.sides)) {
+      if (current.side && side !== current.side && side !== "unspecified") continue;
+      for (const rule of value.rules || []) {
+        addRule(rule.rule_type, rule.rule_detail, side === "unspecified" ? null : side);
+      }
+    }
+  }
+
+  return {
+    location: current.location,
+    side: current.side || null,
+    parked_at: current.parked_at || null,
+    deadline_iso: current.deadline_iso || null,
+    notes: current.notes || null,
+    rules,
+  };
+}
+
 export async function getAllRules(env) {
   const kv = env.PORTAL_KV;
   return readJSON(kv, RULES_KEY, {});
