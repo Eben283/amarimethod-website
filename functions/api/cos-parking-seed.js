@@ -6,22 +6,17 @@
 //
 // Idempotent — safe to re-run. Each call replaces the index.
 
-import { writeSfSweepIndex, getSfSweepIndexMeta } from "../lib/cos-parking.js";
+import { compactSfSweepRow, writeSfSweepIndex, getSfSweepIndexMeta } from "../lib/cos-parking.js";
 
 const DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
 const PAGE_SIZE = 5000;
 const MAX_PAGES = 12; // 60k row ceiling — dataset is ~30-35k
-
-function compactRow(row) {
-  return {
-    s: row.corridor || "",
-    l: row.limits || "",
-    b: row.blockside || "",
-    d: row.fullname || row.weekday || "",
-    fh: row.fromhour !== undefined ? Number(row.fromhour) : null,
-    th: row.tohour !== undefined ? Number(row.tohour) : null,
-  };
-}
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "https://www.amarimethod.com",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, X-Service-Key",
+};
+const JSON_HEADERS = { "content-type": "application/json", ...CORS_HEADERS };
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -31,7 +26,7 @@ export async function onRequestPost(context) {
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
 
@@ -50,12 +45,12 @@ export async function onRequestPost(context) {
         status: resp.status,
         page,
         detail: errText.slice(0, 400),
-      }), { status: 422, headers: { "content-type": "application/json" } });
+      }), { status: 422, headers: JSON_HEADERS });
     }
     const batch = await resp.json();
     if (!Array.isArray(batch) || batch.length === 0) break;
     for (const row of batch) {
-      const compact = compactRow(row);
+      const compact = compactSfSweepRow(row);
       // Skip rows missing the essentials we'd actually search on
       if (!compact.s || !compact.l) continue;
       rows.push(compact);
@@ -73,7 +68,7 @@ export async function onRequestPost(context) {
     meta,
   }, null, 2), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: JSON_HEADERS,
   });
 }
 
@@ -85,12 +80,16 @@ export async function onRequestGet(context) {
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: { "content-type": "application/json" },
+      headers: JSON_HEADERS,
     });
   }
   const meta = await getSfSweepIndexMeta(env);
   return new Response(JSON.stringify({ ok: true, meta }, null, 2), {
     status: 200,
-    headers: { "content-type": "application/json" },
+    headers: JSON_HEADERS,
   });
+}
+
+export function onRequestOptions() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
