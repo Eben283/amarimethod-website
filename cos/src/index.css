@@ -49,3 +49,113 @@
 }
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* The opening COS screen is a stored parking receipt, not a chat prompt. */
+.parking-home {
+  width: min(100%, 35rem);
+  margin: 0 auto;
+  padding: 1.25rem 0 2rem;
+}
+
+.parking-topline, .parking-kicker, .parking-deadline, .parking-map-copy strong {
+  display: flex;
+  align-items: center;
+}
+
+.parking-topline { justify-content: space-between; }
+.parking-kicker {
+  gap: .5rem;
+  color: #EBA584;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.parking-refresh, .parking-text-button {
+  color: #A0A0A0;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.parking-refresh:hover, .parking-text-button:hover { color: #E8E6E3; }
+.parking-refresh:focus-visible, .parking-text-button:focus-visible, .parking-map:focus-visible { outline: 2px solid #EBA584; outline-offset: 3px; }
+
+.parking-address { padding: 1.35rem 0 1.15rem; border-bottom: 1px solid #333; }
+.parking-address h2 {
+  margin: 0;
+  color: #F5D4C3;
+  font-family: "Bona Nova", Georgia, serif;
+  font-size: clamp(2rem, 8vw, 3rem);
+  font-weight: 400;
+  line-height: .98;
+  letter-spacing: -.04em;
+}
+.parking-address p, .parking-muted, .parking-empty p { color: #A0A0A0; font-size: .9rem; margin: .7rem 0 0; }
+
+.parking-deadline {
+  gap: .8rem;
+  margin: 1rem 0;
+  padding: .95rem 1rem;
+  border-left: 3px solid #EBA584;
+  background: #211B18;
+}
+.parking-deadline svg { color: #EBA584; flex: 0 0 auto; }
+.parking-deadline div { display: grid; gap: .12rem; }
+.parking-deadline span, .parking-section-label, .parking-rule span, .parking-map-copy span {
+  color: #A0A0A0;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.parking-deadline strong { color: #E8E6E3; font-size: .96rem; }
+
+.parking-rules { margin-top: 1.35rem; }
+.parking-section-label { margin-bottom: .55rem; }
+.parking-rule {
+  display: grid;
+  gap: .25rem;
+  padding: .85rem .9rem;
+  border: 1px solid #333;
+  background: #1E1E1E;
+}
+.parking-rule + .parking-rule { border-top: 0; }
+.parking-rule strong { color: #E8E6E3; font-size: .94rem; font-weight: 500; line-height: 1.35; }
+
+.parking-map {
+  display: block;
+  overflow: hidden;
+  margin-top: 1.35rem;
+  border: 1px solid #333;
+  color: inherit;
+  text-decoration: none;
+  background: #191b1c;
+}
+.parking-map-grid {
+  position: relative;
+  height: 7.25rem;
+  overflow: hidden;
+  background-color: #1D2120;
+  background-image: linear-gradient(90deg, rgba(235,165,132,.08) 1px, transparent 1px), linear-gradient(rgba(235,165,132,.08) 1px, transparent 1px);
+  background-size: 1.25rem 1.25rem;
+}
+.parking-road { position: absolute; display: block; background: #59605D; opacity: .9; }
+.parking-road-horizontal { width: 120%; height: 1.25rem; top: 3.35rem; left: -1rem; transform: rotate(-10deg); }
+.parking-road-vertical { width: 1.1rem; height: 130%; top: -1rem; left: 58%; transform: rotate(14deg); }
+.parking-map-pin { position: absolute; left: calc(58% - .8rem); top: 2.35rem; color: #EBA584; filter: drop-shadow(0 3px 3px rgba(0,0,0,.55)); }
+.parking-north { position: absolute; top: .55rem; right: .7rem; color: #A0A0A0; font-size: .65rem; font-weight: 700; }
+.parking-map-copy { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .75rem .9rem; }
+.parking-map-copy strong { gap: .28rem; color: #F5D4C3; font-size: .8rem; font-weight: 600; }
+
+.parking-empty { padding-top: 5rem; }
+.parking-empty h2 { margin: .9rem 0 0; color: #E8E6E3; font-family: "Bona Nova", Georgia, serif; font-size: 2rem; font-weight: 400; }
+.parking-text-button { margin-top: .8rem; padding: 0; min-width: auto; text-decoration: underline; }
+.parking-home-skeleton { width: min(100%, 35rem); height: 25rem; margin: 0 auto; background: linear-gradient(110deg, #1E1E1E 35%, #292929 50%, #1E1E1E 65%); background-size: 200% 100%; animation: parking-shimmer 1.2s ease-in-out infinite; }
+@keyframes parking-shimmer { to { background-position: -200% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .parking-home-skeleton { animation: none; }
+}

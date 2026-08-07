@@ -1,3 +1,5 @@
+import type { ParkingSnapshot } from '../types/cos';
+
 const API_BASE = '/api';
 
 export class ApiError extends Error {
@@ -53,6 +55,25 @@ export async function cosLogin(pin: string): Promise<{ token: string }> {
   }
 
   return response.json();
+}
+
+/** Read the saved parking card shown after PIN unlock. This endpoint is KV-only. */
+export async function getCurrentParking(): Promise<ParkingSnapshot | null> {
+  const response = await fetch(`${API_BASE}/cos-parking-current`, {
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    handleUnauthorized(response.status);
+    const data = await response.json().catch(() => ({ error: 'Could not load parking.' }));
+    throw new ApiError(
+      response.status === 401 ? 'Session expired. Please log in again.' : data.error || 'Could not load parking.',
+      response.status,
+    );
+  }
+
+  const data = await response.json();
+  return data.parking || null;
 }
 
 /** Start the signed-in Eben user's one-time Google Calendar reconnect. */

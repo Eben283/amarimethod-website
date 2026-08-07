@@ -30,3 +30,18 @@ export interface Conversation {
   created: number;
   updated: number;
 }
+
+export interface ParkingRule {
+  type: string;
+  detail: string | null;
+  side: string | null;
+}
+
+export interface ParkingSnapshot {
+  location: string;
+  side: string | null;
+  parked_at: string | null;
+  deadline_iso: string | null;
+  notes: string | null;
+  rules: ParkingRule[];
+}

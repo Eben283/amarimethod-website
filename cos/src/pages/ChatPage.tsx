@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { sendMessage, startGoogleCalendarReconnect } from '../lib/api';
+import { getCurrentParking, sendMessage, startGoogleCalendarReconnect } from '../lib/api';
 import MessageBubble from '../components/MessageBubble';
 import ChatInput from '../components/ChatInput';
 import ActionCard from '../components/ActionCard';
-import type { ChatMessage, QueuedAction } from '../types/cos';
+import ParkingHome from '../components/ParkingHome';
+import type { ChatMessage, ParkingSnapshot, QueuedAction } from '../types/cos';
 import { CalendarDays, LogOut, RotateCcw } from 'lucide-react';
 
 function generateId(): string {
@@ -18,6 +19,9 @@ export default function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [googleError, setGoogleError] = useState('');
   const [googleStatus, setGoogleStatus] = useState('');
+  const [parking, setParking] = useState<ParkingSnapshot | null>(null);
+  const [parkingLoading, setParkingLoading] = useState(true);
+  const [parkingError, setParkingError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -35,6 +39,22 @@ export default function ChatPage() {
     if (google === 'failed') setGoogleError('Google Calendar could not be connected. Please try again.');
     if (google) window.history.replaceState({}, '', window.location.pathname);
   }, []);
+
+  const loadParking = useCallback(async () => {
+    setParkingLoading(true);
+    setParkingError('');
+    try {
+      setParking(await getCurrentParking());
+    } catch (error) {
+      setParkingError(error instanceof Error ? error.message : 'Could not load saved parking.');
+    } finally {
+      setParkingLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadParking();
+  }, [loadParking]);
 
   const handleSend = useCallback(async (text: string, images?: string[]) => {
     if (isStreaming) return;
@@ -70,6 +90,7 @@ export default function ChatPage() {
         setMessages(prev => [...prev, assistantMessage]);
         setStreamingContent('');
         setIsStreaming(false);
+        void loadParking();
       },
       (error) => {
         const errorMessage: ChatMessage = {
@@ -142,12 +163,12 @@ export default function ChatPage() {
         className="flex-1 overflow-y-auto px-4 py-4 space-y-4"
       >
         {messages.length === 0 && !isStreaming && (
-          <div className="flex-1 flex items-center justify-center h-full">
-            <div className="text-center py-20">
-              <p className="text-cos-text-muted text-lg mb-1">What's on your mind?</p>
-              <p className="text-cos-text-muted text-sm">Brain dump, grocery list, whatever.</p>
-            </div>
-          </div>
+          <ParkingHome
+            parking={parking}
+            isLoading={parkingLoading}
+            error={parkingError}
+            onRefresh={() => void loadParking()}
+          />
         )}
 
         {messages.map((msg) => (
