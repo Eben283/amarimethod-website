@@ -1,6 +1,8 @@
 // Google API utility — OAuth2 auto-refresh via Cloudflare KV
 // Same pattern as ghl.js but for Google Calendar + Gmail
 
+import { appointmentEndTime, normalizeGhlTimestamp, parsePacificWallClock } from "./datetime.js";
+
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
@@ -133,31 +135,25 @@ async function refreshGoogleToken(context, user, refreshToken) {
   return newAccessToken;
 }
 
-/**
- * Create a Google Calendar event with a reminder.
- * @param {object} context - Cloudflare Pages context
- * @param {string} title - Event title
- * @param {number} minutesFromNow - When the event should be (minutes from now)
- * @param {number} reminderMinutes - Reminder before event (default 10)
- * @param {string} description - Optional event description
- * @returns {object} Created event data, or { error } when Google rejects it
- */
-export async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
+// Create an event at a caller-supplied Pacific wall-clock time. Keeping the
+// Calendar adapter separate from parking recurrence logic makes scheduling
+// testable without exposing Google details to parking callers.
+export async function createCalendarEventAt(context, user, title, startsAt, reminderMinutes = 30, description = "") {
   try {
     const token = await getGoogleToken(context, user);
-
-    const start = new Date(Date.now() + minutesFromNow * 60 * 1000);
-    const end = new Date(start.getTime() + 15 * 60 * 1000); // 15 min duration
+    const start = normalizeGhlTimestamp(startsAt);
+    if (!Number.isFinite(parsePacificWallClock(start))) throw new Error("Invalid Calendar event time");
+    const end = appointmentEndTime(start, 15);
 
     const event = {
       summary: title,
       description,
       start: {
-        dateTime: start.toISOString(),
+        dateTime: start,
         timeZone: "America/Los_Angeles",
       },
       end: {
-        dateTime: end.toISOString(),
+        dateTime: end,
         timeZone: "America/Los_Angeles",
       },
       reminders: {
@@ -196,6 +192,20 @@ export async function createCalendarReminder(context, user, title, minutesFromNo
     console.error("[google] Calendar reminder error:", err.message);
     return { error: "Google Calendar is not connected. Reconnect it, then try again.", status: 0 };
   }
+}
+
+/**
+ * Create a Google Calendar event with a reminder.
+ * @param {object} context - Cloudflare Pages context
+ * @param {string} title - Event title
+ * @param {number} minutesFromNow - When the event should be (minutes from now)
+ * @param {number} reminderMinutes - Reminder before event (default 10)
+ * @param {string} description - Optional event description
+ * @returns {object} Created event data, or { error } when Google rejects it
+ */
+export async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
+  const start = new Date(Date.now() + minutesFromNow * 60 * 1000);
+  return createCalendarEventAt(context, user, title, start.toISOString(), reminderMinutes, description);
 }
 
 /**
