@@ -128,6 +128,46 @@ export async function getCurrentPark(env, user) {
   return history[0] || null;
 }
 
+const SWEEP_WEEKDAYS = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
+function pacificCalendarDate(iso) {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "numeric", day: "numeric",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
+}
+
+// A sweep time means the car needs to be moved the prior calendar day. The
+// model may later set an exact reminder time; this date-only fallback makes a
+// saved City schedule useful on the static home card immediately.
+function deriveSweepMoveByLabel(parkedAt, rules) {
+  const parkedDay = pacificCalendarDate(parkedAt);
+  if (!parkedDay) return null;
+  const detail = rules.find(rule => rule.type === "street_sweeping" && rule.detail)?.detail;
+  if (!detail) return null;
+  const weekdayMatch = detail.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i);
+  const weeks = [...detail.matchAll(/\b([1-5])(?:st|nd|rd|th)\b/gi)].map(match => Number(match[1]));
+  if (!weekdayMatch || weeks.length === 0) return null;
+
+  const weekday = SWEEP_WEEKDAYS[weekdayMatch[1].toLowerCase()];
+  for (let daysAhead = 1; daysAhead <= 62; daysAhead++) {
+    const candidate = new Date(parkedDay.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const weekOfMonth = Math.floor((candidate.getUTCDate() - 1) / 7) + 1;
+    if (candidate.getUTCDay() !== weekday || !weeks.includes(weekOfMonth)) continue;
+    const moveBy = new Date(candidate.getTime() - 24 * 60 * 60 * 1000);
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC", weekday: "long", month: "long", day: "numeric",
+    }).format(moveBy);
+  }
+  return null;
+}
+
 // The home-screen read model deliberately stays inside KV: PIN unlock should
 // show the last park without opening a chat, contacting an LLM, or re-querying
 // City data. City rules are refreshed when a new location is recorded.
@@ -138,7 +178,9 @@ export async function getCurrentParkingSnapshot(env, user) {
   const rules = [];
   const addRule = (type, detail, side) => {
     if (!type || type === "unknown" || type === "none") return;
-    if (rules.some(rule => rule.type === type && rule.detail === (detail || null) && rule.side === (side || null))) return;
+    // One current rule of each kind is clearer than echoing the City wording
+    // and the older user note for the same sweeping restriction.
+    if (rules.some(rule => rule.type === type)) return;
     rules.push({ type, detail: detail || null, side: side || null });
   };
 
@@ -159,6 +201,7 @@ export async function getCurrentParkingSnapshot(env, user) {
     side: current.side || null,
     parked_at: current.parked_at || null,
     deadline_iso: current.deadline_iso || null,
+    move_by_label: current.deadline_iso ? null : deriveSweepMoveByLabel(current.parked_at, rules),
     notes: current.notes || null,
     rules,
   };

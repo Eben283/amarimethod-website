@@ -67,6 +67,39 @@ describe("GET /api/cos-parking-current", () => {
     ]);
   });
 
+  it("derives the next move-by date from a saved Public Works sweep rule", async () => {
+    const response = await onRequestGet(context([{
+      location: "727 10th Ave, Inner Richmond, SF", side: "east",
+      parked_at: "2026-08-06T23:08:00.000Z", rule_type: "street_sweeping",
+      rule_detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+    }]));
+
+    expect((await response.json()).parking).toMatchObject({
+      move_by_label: "Sunday, August 16",
+      rules: [{
+        type: "street_sweeping",
+        detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+      }],
+    });
+  });
+
+  it("does not repeat a City sweep rule from the older block note", async () => {
+    const response = await onRequestGet(context([{
+      location: "727 10th Ave, Inner Richmond, SF", block_key: "727 10th avenue inner richmond sf",
+      side: "east", parked_at: "2026-08-06T23:08:00.000Z", rule_type: "street_sweeping",
+      rule_detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+    }], {
+      "727 10th avenue inner richmond sf": {
+        sides: { east: { rules: [{
+          rule_type: "street_sweeping",
+          rule_detail: "East side: Mon 1st & 3rd 8am–10am (SF Public Works). West side rules TBD",
+        }] } },
+      },
+    }));
+
+    expect((await response.json()).parking.rules).toHaveLength(1);
+  });
+
   it("does not disclose a parking snapshot to a non-COS session", async () => {
     verifySessionToken.mockResolvedValueOnce({ role: "staff", user: "Eben" });
     const ctx = context([{ location: "763 10th Avenue" }]);

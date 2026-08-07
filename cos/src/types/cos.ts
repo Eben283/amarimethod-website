@@ -42,6 +42,7 @@ export interface ParkingSnapshot {
   side: string | null;
   parked_at: string | null;
   deadline_iso: string | null;
+  move_by_label: string | null;
   notes: string | null;
   rules: ParkingRule[];
 }
