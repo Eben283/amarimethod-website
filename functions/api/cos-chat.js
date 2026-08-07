@@ -199,14 +199,7 @@ EVENTS/ACTIVITIES: Cross-reference the calendar below. Flag conflicts, travel ti
 
 TASKS/IDEAS: Think about whether something is blocked by other things, connects to something else, or should happen before/after something on the calendar.
 
-PARKING: When ${userName} mentions parking, you'll have SF parking regulations for that area. Tell him the rules clearly. Reminders are for time-pressure situations only — apply these rules before deciding whether to set one:
-- **SF residential 2-hour and 4-hour time limits stop being enforced after 5 PM** in practice (posted hours are usually 8 AM–6 PM but late-afternoon enforcement is loose). If he parks at or after 3 PM in a residential zone with a 2hr or 4hr limit, do NOT set a reminder — tell him he's fine for the night and the limit resets at 8 AM.
-- Downtown peak-hour tow lanes (e.g. Battery, Sansome, Fell, Oak, market-street arteries — typically 7–9 AM and 3–7 PM) are the exception: those WILL tow. Always reminder for those.
-- RPP (residential permit) zones: if he doesn't have a permit and the limit applies right now, reminder before the window expires.
-- Street sweeping: reminder the night before if it's posted for the next morning.
-- Otherwise: just tell him the rule, don't set a reminder.
-
-When you DO set a parking reminder, prior parking reminders for ${userName} are auto-cancelled — you don't need to ask him about old spots.
+PARKING: When ${userName} says where he parked, tell him the rules clearly and always call record_park. For a calculated parking deadline, record_park itself creates the replacement Google Calendar event: it creates the new reminder and then removes the previously tracked parking event. Do NOT emit a <!--REMINDER--> block for a parking entry; the deterministic parking calendar rule handles it without asking him. For restrictions more than one day away it schedules 9:00 AM Pacific on the prior calendar day; for a next-day restriction it schedules the deadline with a 30-minute popup warning. If a deadline cannot be calculated, say exactly what posted information is still needed.
 
 PARKING DATABASE: There's a growing database of ${userName}'s parking history + posted rules per block. lookup_parking_rules returns TWO sources in one call: (a) user_rules — things ${userName} has previously told COS, and (b) sf_public_works — the canonical SF Public Works street-sweeping schedule for every block in the city (seeded once, ~30k rows). ALWAYS:
 1. When he mentions parking somewhere, FIRST call lookup_parking_rules with the location. If sf_public_works.matches contain the block, you already know the official sweep schedule — say it back without asking him. Use the side (north/south/east/west) to disambiguate if there are multiple sides.
@@ -1170,6 +1163,7 @@ export async function onRequestPost(context) {
     }
 
     let fullContent = "";
+    let parkingRecordedThisTurn = false;
 
     try {
       const result = await streamWithTools({
@@ -1182,7 +1176,9 @@ export async function onRequestPost(context) {
         },
         executeToolFn: async (name, input) => {
           console.log(`[cos-chat] tool call: ${name} input=${JSON.stringify(input).slice(0, 200)}`);
-          return await executeAnthropicTool(context, name, input, cosUser, userImages);
+          const toolResult = await executeAnthropicTool(context, name, input, cosUser, userImages);
+          if (name === "record_park") parkingRecordedThisTurn = true;
+          return toolResult;
         },
       });
 
@@ -1236,6 +1232,9 @@ export async function onRequestPost(context) {
             const title = reminder.title || "Reminder";
             const description = reminder.description || "";
             const isParking = PARKING_REMINDER_RE.test(title) || PARKING_REMINDER_RE.test(description);
+            // record_park owns parking events now. Ignore an accidental model
+            // marker here so a single parking entry cannot create two events.
+            if (isParking && parkingRecordedThisTurn) continue;
             const parkingKey = `cos:active-parking-reminder:${cosUser}`;
             if (isParking && kv) {
               const priorRaw = await kv.get(parkingKey);

@@ -143,29 +143,122 @@ function pacificCalendarDate(iso) {
   return new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
 }
 
+function pacificWallClock(iso) {
+  const date = new Date(iso);
+  if (!Number.isFinite(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return {
+    date: new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day))),
+    hour: Number(values.hour),
+    minute: Number(values.minute),
+  };
+}
+
+function localDateString(date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function formatMoveByLabel(date) {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC", weekday: "long", month: "long", day: "numeric",
+  }).format(date);
+}
+
+function parseSweepDetail(detail) {
+  const text = String(detail || "");
+  const weekdayMatch = text.match(/\b(sun(?:day)?|mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?)\b/i);
+  const weeks = [...text.matchAll(/\b([1-5])(?:st|nd|rd|th)\b/gi)].map(match => Number(match[1]));
+  const timeMatch = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if (!weekdayMatch || weeks.length === 0 || !timeMatch) return null;
+
+  const weekdayName = weekdayMatch[1].toLowerCase();
+  const weekday = SWEEP_WEEKDAYS[
+    Object.keys(SWEEP_WEEKDAYS).find(day => day.startsWith(weekdayName.slice(0, 3)))
+  ];
+  let hour = Number(timeMatch[1]) % 12;
+  if (timeMatch[3].toLowerCase() === "pm") hour += 12;
+  return { weekday, weeks, hour, minute: Number(timeMatch[2] || 0) };
+}
+
+function findNextSweep(parkedAt, detail) {
+  const parkedDay = pacificCalendarDate(parkedAt);
+  const parkedClock = pacificWallClock(parkedAt);
+  const sweep = parseSweepDetail(detail);
+  if (!parkedDay || !parkedClock || !sweep) return null;
+
+  for (let daysAhead = 0; daysAhead <= 62; daysAhead++) {
+    const candidate = new Date(parkedDay.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+    const weekOfMonth = Math.floor((candidate.getUTCDate() - 1) / 7) + 1;
+    const parkedAfterTodaySweep = daysAhead === 0 && (
+      parkedClock.hour > sweep.hour ||
+      (parkedClock.hour === sweep.hour && parkedClock.minute >= sweep.minute)
+    );
+    if (candidate.getUTCDay() === sweep.weekday && sweep.weeks.includes(weekOfMonth) && !parkedAfterTodaySweep) {
+      return { date: candidate, ...sweep };
+    }
+  }
+  return null;
+}
+
+function planFromDeadline(parkedDay, deadline) {
+  const daysAway = Math.round((deadline.date.getTime() - parkedDay.getTime()) / (24 * 60 * 60 * 1000));
+  const eventDay = daysAway > 1
+    ? new Date(deadline.date.getTime() - 24 * 60 * 60 * 1000)
+    : deadline.date;
+  const eventHour = daysAway > 1 ? 9 : deadline.hour;
+  const eventMinute = daysAway > 1 ? 0 : deadline.minute;
+  return {
+    starts_at: `${localDateString(eventDay)}T${String(eventHour).padStart(2, "0")}:${String(eventMinute).padStart(2, "0")}:00`,
+    reminder_minutes: daysAway > 1 ? 0 : 30,
+    move_by_label: formatMoveByLabel(eventDay),
+  };
+}
+
+// A single scheduling plan hides recurrence parsing from COS and guarantees
+// the same result powers both the static move-by card and Calendar reminder.
+// A future sweep receives a 9 AM alert on the preceding calendar day; a
+// next-day sweep is an 8 AM event with a 30-minute popup warning.
+export function deriveParkingReminderPlan(entry) {
+  const parkedDay = pacificCalendarDate(entry?.parked_at);
+  const savedDeadline = pacificWallClock(entry?.deadline_iso);
+  if (parkedDay && savedDeadline) {
+    return planFromDeadline(parkedDay, savedDeadline);
+  }
+
+  if (parkedDay && entry?.rule_type === "time_limit") {
+    const hours = Number(String(entry.rule_detail || "").match(/\b(\d+(?:\.\d+)?)\s*-?\s*(?:hours?|hrs?)\b/i)?.[1]);
+    const parkedAt = new Date(entry.parked_at);
+    if (Number.isFinite(hours) && hours > 0 && Number.isFinite(parkedAt.getTime())) {
+      return planFromDeadline(parkedDay, pacificWallClock(new Date(parkedAt.getTime() + hours * 60 * 60 * 1000).toISOString()));
+    }
+  }
+
+  if (entry?.rule_type !== "street_sweeping") return null;
+  const sweep = findNextSweep(entry.parked_at, entry.rule_detail);
+  if (!sweep) return null;
+
+  const daysAway = Math.round((sweep.date.getTime() - parkedDay.getTime()) / (24 * 60 * 60 * 1000));
+  const isImminent = daysAway <= 1;
+  const eventDay = isImminent ? sweep.date : new Date(sweep.date.getTime() - 24 * 60 * 60 * 1000);
+  const eventHour = isImminent ? sweep.hour : 9;
+  const eventMinute = isImminent ? sweep.minute : 0;
+  return {
+    starts_at: `${localDateString(eventDay)}T${String(eventHour).padStart(2, "0")}:${String(eventMinute).padStart(2, "0")}:00`,
+    reminder_minutes: isImminent ? 30 : 0,
+    move_by_label: formatMoveByLabel(eventDay),
+  };
+}
+
 // A sweep time means the car needs to be moved the prior calendar day. The
 // model may later set an exact reminder time; this date-only fallback makes a
 // saved City schedule useful on the static home card immediately.
 function deriveSweepMoveByLabel(parkedAt, rules) {
-  const parkedDay = pacificCalendarDate(parkedAt);
-  if (!parkedDay) return null;
   const detail = rules.find(rule => rule.type === "street_sweeping" && rule.detail)?.detail;
-  if (!detail) return null;
-  const weekdayMatch = detail.match(/\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i);
-  const weeks = [...detail.matchAll(/\b([1-5])(?:st|nd|rd|th)\b/gi)].map(match => Number(match[1]));
-  if (!weekdayMatch || weeks.length === 0) return null;
-
-  const weekday = SWEEP_WEEKDAYS[weekdayMatch[1].toLowerCase()];
-  for (let daysAhead = 1; daysAhead <= 62; daysAhead++) {
-    const candidate = new Date(parkedDay.getTime() + daysAhead * 24 * 60 * 60 * 1000);
-    const weekOfMonth = Math.floor((candidate.getUTCDate() - 1) / 7) + 1;
-    if (candidate.getUTCDay() !== weekday || !weeks.includes(weekOfMonth)) continue;
-    const moveBy = new Date(candidate.getTime() - 24 * 60 * 60 * 1000);
-    return new Intl.DateTimeFormat("en-US", {
-      timeZone: "UTC", weekday: "long", month: "long", day: "numeric",
-    }).format(moveBy);
-  }
-  return null;
+  return deriveParkingReminderPlan({ parked_at: parkedAt, rule_type: "street_sweeping", rule_detail: detail })?.move_by_label || null;
 }
 
 // The home-screen read model deliberately stays inside KV: PIN unlock should
@@ -201,7 +294,9 @@ export async function getCurrentParkingSnapshot(env, user) {
     side: current.side || null,
     parked_at: current.parked_at || null,
     deadline_iso: current.deadline_iso || null,
-    move_by_label: current.deadline_iso ? null : deriveSweepMoveByLabel(current.parked_at, rules),
+    move_by_label: deriveSweepMoveByLabel(current.parked_at, rules)
+      || deriveParkingReminderPlan(current)?.move_by_label
+      || null,
     notes: current.notes || null,
     rules,
   };

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatSfSweepForModel, lookupSfSweep } from "./cos-parking.js";
+import { deriveParkingReminderPlan, formatSfSweepForModel, lookupSfSweep } from "./cos-parking.js";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -14,6 +14,72 @@ function parkingEnv(rows) {
 }
 
 describe("SF sweeping lookup", () => {
+  it("plans a day-before parking calendar event for a sweep that is multiple days away", () => {
+    expect(deriveParkingReminderPlan({
+      location: "727 10th Ave, Inner Richmond, SF",
+      parked_at: "2026-08-06T23:08:00.000Z",
+      rule_type: "street_sweeping",
+      rule_detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+    })).toEqual({
+      starts_at: "2026-08-16T09:00:00",
+      reminder_minutes: 0,
+      move_by_label: "Sunday, August 16",
+    });
+  });
+
+  it("plans a 30-minute warning on the sweep morning when it is the next day", () => {
+    expect(deriveParkingReminderPlan({
+      location: "727 10th Ave, Inner Richmond, SF",
+      parked_at: "2026-08-16T23:08:00.000Z",
+      rule_type: "street_sweeping",
+      rule_detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+    })).toEqual({
+      starts_at: "2026-08-17T08:00:00",
+      reminder_minutes: 30,
+      move_by_label: "Monday, August 17",
+    });
+  });
+
+  it("uses a recorded non-sweeping deadline when a stored rule supplies one", () => {
+    expect(deriveParkingReminderPlan({
+      location: "5th & Clement",
+      parked_at: "2026-08-06T23:08:00.000Z",
+      rule_type: "time_limit",
+      rule_detail: "2-hour limit",
+      deadline_iso: "2026-08-07T18:08:00.000Z",
+    })).toEqual({
+      starts_at: "2026-08-07T11:08:00",
+      reminder_minutes: 30,
+      move_by_label: "Friday, August 7",
+    });
+  });
+
+  it("calculates a known hourly parking limit without relying on the chat model", () => {
+    expect(deriveParkingReminderPlan({
+      location: "5th & Clement",
+      parked_at: "2026-08-06T23:08:00.000Z",
+      rule_type: "time_limit",
+      rule_detail: "2-hour limit",
+    })).toEqual({
+      starts_at: "2026-08-06T18:08:00",
+      reminder_minutes: 30,
+      move_by_label: "Thursday, August 6",
+    });
+  });
+
+  it("uses today's sweep when the car is parked before that sweep starts", () => {
+    expect(deriveParkingReminderPlan({
+      location: "727 10th Ave, Inner Richmond, SF",
+      parked_at: "2026-08-17T14:00:00.000Z",
+      rule_type: "street_sweeping",
+      rule_detail: "1st and 3rd Monday, 8am–10am — east side (SF Public Works)",
+    })).toEqual({
+      starts_at: "2026-08-17T08:00:00",
+      reminder_minutes: 30,
+      move_by_label: "Monday, August 17",
+    });
+  });
+
   it("does not present an unavailable City index as an unregulated block", () => {
     expect(formatSfSweepForModel({ available: false, matches: [] }))
       .toBe("SF Public Works sweep schedule is currently unavailable; this does not mean the block has no restrictions.");

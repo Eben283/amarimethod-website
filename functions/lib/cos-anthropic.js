@@ -6,7 +6,7 @@
 import { ghlFetch } from "./ghl.js";
 import { deriveLedger } from "./session-ledger.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "./ghl-fields.js";
-import { listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
+import { createCalendarEventAt, listCalendarEventsRaw, deleteCalendarEvent } from "./google-api.js";
 import {
   recordPark,
   lookupParkingRules,
@@ -16,6 +16,7 @@ import {
   formatRulesForModel,
   formatSfSweepForModel,
 } from "./cos-parking.js";
+import { replaceParkingCalendarReminder } from "./cos-parking-calendar.js";
 import { recordFieldVisit, listFieldPartners } from "./cos-field-visits.js";
 
 // COS owns a scoped OpenRouter key. Use its Anthropic Messages-compatible
@@ -498,9 +499,16 @@ export async function executeTool(context, toolName, input, user = "Eben", field
         reminder_event_id: input.reminder_event_id,
         notes: input.notes,
       });
+      const calendar = await replaceParkingCalendarReminder({
+        kv: context.env.PORTAL_KV,
+        createEvent: ({ title, starts_at, reminder_minutes, description }) =>
+          createCalendarEventAt(context, user, title, starts_at, reminder_minutes, description),
+        deleteEvent: (eventId) => deleteCalendarEvent(context, user, eventId),
+      }, user, event);
       return JSON.stringify({
         recorded: true,
         event,
+        calendar,
         rule_saved: !!(input.rule_type && input.rule_type !== "unknown" && input.rule_type !== "none"),
       }, null, 2);
     }
