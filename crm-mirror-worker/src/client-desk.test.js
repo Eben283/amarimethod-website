@@ -221,7 +221,10 @@ describe("Client Desk message rendering", () => {
       appointments: [{ status: "confirmed", starts_at: "2026-08-10T14:00:00.000Z" }],
     });
 
-    for (const label of ["Record status", "Last mirrored activity", "Next appointment", "GHL mirror", "Stripe mirror"]) expect(rendered).toContain(label);
+    for (const label of ["Open record", "Activity", "Appointments", "Payments", "Notes"]) expect(rendered).toContain(label);
+    for (const target of ["activity", "appointments", "payments", "notes"]) expect(rendered).toContain(`data-record-target="${target}"`);
+    expect(rendered).toContain('<button class="status-card"');
+    expect(rendered).toContain('class="status-arrow"');
     expect(rendered).toContain("DND");
     expect(rendered).toContain(">Off<");
     expect(rendered).not.toContain("SMS permission");
@@ -231,6 +234,39 @@ describe("Client Desk message rendering", () => {
 
     const dndOn = helpers.profileMarkup({ contact: { display_name: "Test client" }, fields: [{ attribute_key: "system.dnd", attribute_value: "on" }] });
     expect(dndOn).toContain(">On<");
+  });
+
+  it("opens complete upcoming and past appointment views from the record launcher", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-08T17:00:00.000Z"));
+    try {
+      const rendered = helpers.profileMarkup({
+        contact: { display_name: "Test client" },
+        appointments: [
+          { status: "confirmed", starts_at: "2026-08-11T18:00:00.000Z", service_name: "Follow-up Session" },
+          { status: "showed", starts_at: "2026-08-04T20:00:00.000Z", service_name: "Assessment" },
+        ],
+        purchases: [{ amount_cents: 300000, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z" }],
+        notes: [{ authored_by: "Garrett", created_at: "2026-08-04T20:00:00.000Z", body: "Practice note" }],
+      });
+      expect(rendered).toContain('data-appointment-tab="upcoming"');
+      expect(rendered).toContain('data-appointment-tab="past"');
+      expect(rendered).toContain("Upcoming · 1");
+      expect(rendered).toContain("Past · 1");
+      expect(rendered).toContain("Follow-up Session");
+      expect(rendered).toContain("Assessment");
+      expect(rendered).toContain('id="record-payments"');
+      expect(rendered).toContain('id="record-notes"');
+      expect(rendered).toContain("Practice note");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps unread markers in the inbox and out of every timeline message", () => {
