@@ -1,0 +1,537 @@
+.staff-shell {
+  --practice-ink: #19343d;
+  --practice-ink-2: #284953;
+  --practice-paper: #f7faf9;
+  --practice-mist: #dce8e7;
+  --practice-line: rgba(188, 210, 209, .34);
+  --practice-lake: #78a3a2;
+  --practice-ochre: #d7a63f;
+  --practice-coral: #df8067;
+  min-height: 100dvh;
+  background: var(--practice-paper);
+}
+
+.practice-rail {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 80;
+  display: flex;
+  width: 252px;
+  height: 100dvh;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 19px 14px 14px;
+  background:
+    radial-gradient(circle at 31px 58px, rgba(137, 185, 181, .14), transparent 138px),
+    var(--practice-ink);
+  color: #f6faf9;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(215, 230, 228, .25) transparent;
+}
+
+.practice-rail button,
+.practice-rail input {
+  font: inherit;
+}
+
+.practice-rail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 0 5px;
+}
+
+.practice-rail__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  color: #f7fbfa;
+  text-decoration: none;
+}
+
+.practice-rail__brand-mark {
+  position: relative;
+  display: flex;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid rgba(226, 240, 238, .26);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .055);
+}
+
+.practice-rail__brand-mark i {
+  width: 3px;
+  border-radius: 99px;
+  background: #bad5d1;
+}
+
+.practice-rail__brand-mark i:nth-child(1) { height: 9px; }
+.practice-rail__brand-mark i:nth-child(2) { height: 17px; background: var(--practice-ochre); }
+.practice-rail__brand-mark i:nth-child(3) { height: 13px; background: #87b9b5; }
+
+.practice-rail__brand > span:last-child {
+  display: grid;
+  gap: 3px;
+}
+
+.practice-rail__brand strong {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.practice-rail__brand small,
+.practice-rail__section-label,
+.practice-rail__foot span {
+  color: #91adaf;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: .13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.practice-rail__close {
+  display: none;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #d6e4e3;
+}
+
+.practice-rail__close svg { width: 19px; height: 19px; }
+
+.practice-search {
+  position: relative;
+  z-index: 4;
+  margin: 17px 1px 14px;
+}
+
+.practice-search > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.practice-search__field {
+  display: grid;
+  min-height: 40px;
+  grid-template-columns: 18px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid rgba(215, 231, 229, .18);
+  border-radius: 11px;
+  background: rgba(242, 248, 247, .09);
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.practice-search:focus-within .practice-search__field {
+  border-color: #a8cbc8;
+  background: rgba(242, 248, 247, .14);
+}
+
+.practice-search__field > svg {
+  width: 16px;
+  height: 16px;
+  color: #8faeb0;
+  stroke-width: 1.9;
+}
+
+.practice-search__field input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+}
+
+.practice-search__field input::placeholder { color: #91a9ab; }
+.practice-search__field input::-webkit-search-cancel-button { display: none; }
+.practice-search__spinner { animation: practice-spin 800ms linear infinite; }
+
+.practice-search__results {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  width: min(330px, calc(100vw - 28px));
+  overflow: hidden;
+  border: 1px solid #cbdad9;
+  border-radius: 13px;
+  background: #fbfdfc;
+  box-shadow: 0 18px 45px rgba(10, 34, 39, .28);
+  color: var(--practice-ink);
+}
+
+.practice-search__results > p {
+  margin: 0;
+  padding: 19px 15px;
+  color: #6b7f82;
+  font-size: 11px;
+}
+
+.practice-search__results button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 31px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 7px 10px;
+  border: 0;
+  border-bottom: 1px solid #edf2f1;
+  background: #fbfdfc;
+  color: var(--practice-ink);
+  text-align: left;
+}
+
+.practice-search__results button:hover,
+.practice-search__results button:focus-visible { background: #edf5f2; }
+
+.practice-search__avatar {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  background: #dceae7;
+  color: #315c61;
+  font: 600 9px 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.practice-search__results button > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.practice-search__results strong {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.practice-search__results small {
+  overflow: hidden;
+  color: #6c8183;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.practice-search__results > a {
+  display: block;
+  padding: 11px 13px;
+  color: #276d72;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.practice-rail__nav {
+  position: relative;
+  display: grid;
+  gap: 2px;
+}
+
+.practice-rail__section-label { padding: 7px 13px 9px 34px; }
+
+/* The quiet, continuous practice thread is the shell's orientation device:
+   each work area is a position on one practice day, not a separate mini-app. */
+.practice-rail__thread {
+  position: absolute;
+  top: 35px;
+  bottom: 22px;
+  left: 21px;
+  width: 1px;
+  background: var(--practice-line);
+}
+
+.practice-rail__link {
+  position: relative;
+  display: grid;
+  min-height: 45px;
+  grid-template-columns: 10px 19px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: #c3d3d2;
+  text-decoration: none;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.practice-rail__link:hover { background: rgba(255, 255, 255, .055); color: #f7fbfa; }
+
+.practice-rail__link:focus-visible,
+.practice-rail__specialist-toggle:focus-visible,
+.practice-rail__foot button:focus-visible,
+.practice-rail__close:focus-visible,
+.practice-search__results button:focus-visible,
+.staff-shell__dock a:focus-visible,
+.staff-shell__dock button:focus-visible,
+.staff-shell__mobile-head button:focus-visible {
+  outline: 2px solid #e5bd6e;
+  outline-offset: 2px;
+}
+
+.practice-rail__link.is-active {
+  border-color: rgba(186, 216, 212, .2);
+  background: rgba(229, 241, 239, .12);
+  color: #fff;
+}
+
+.practice-rail__marker {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 7px;
+  height: 7px;
+  justify-self: center;
+  border: 2px solid var(--practice-ink);
+  border-radius: 50%;
+  background: #6f8e91;
+  box-shadow: 0 0 0 1px rgba(174, 205, 202, .46);
+}
+
+.practice-rail__link.is-active .practice-rail__marker {
+  background: var(--practice-ochre);
+  box-shadow: 0 0 0 3px rgba(215, 166, 63, .14);
+}
+
+.practice-rail__icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.75;
+}
+
+.practice-rail__copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.practice-rail__copy strong { font-size: 11px; font-weight: 600; line-height: 1.15; }
+.practice-rail__copy small { color: #849fa1; font-size: 8.5px; line-height: 1.2; }
+.practice-rail__link.is-active small { color: #abc1c1; }
+
+.practice-rail__badge {
+  display: inline-grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--practice-coral);
+  color: #fff;
+  font: 700 8px 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.practice-rail__badge--operations { background: var(--practice-ochre); color: #2f2c20; }
+
+.practice-rail__specialists {
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(203, 222, 220, .13);
+}
+
+.practice-rail__specialist-toggle {
+  display: grid;
+  width: 100%;
+  min-height: 42px;
+  grid-template-columns: 1fr 18px;
+  align-items: center;
+  padding: 5px 11px 5px 13px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #c3d3d2;
+  text-align: left;
+}
+
+.practice-rail__specialist-toggle:hover { background: rgba(255, 255, 255, .05); }
+.practice-rail__specialist-toggle > span { display: grid; gap: 3px; }
+.practice-rail__specialist-toggle strong { font-size: 10px; font-weight: 600; }
+.practice-rail__specialist-toggle small { color: #789598; font-size: 8px; }
+.practice-rail__specialist-toggle svg { width: 16px; height: 16px; transition: transform 160ms ease; }
+.practice-rail__specialists.is-open .practice-rail__specialist-toggle svg { transform: rotate(180deg); }
+.practice-rail__specialists nav { display: none; gap: 1px; margin-top: 4px; }
+.practice-rail__specialists.is-open nav { display: grid; }
+.practice-rail__specialists .practice-rail__link { grid-template-columns: 19px minmax(0, 1fr); padding-left: 16px; min-height: 40px; }
+.practice-rail__specialists .practice-rail__marker { display: none; }
+.practice-rail__specialists .practice-rail__copy small { display: none; }
+
+.practice-rail__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  padding: 22px 7px 2px;
+}
+
+.practice-rail__foot span { display: inline-flex; align-items: center; gap: 7px; }
+.practice-rail__foot span i { width: 6px; height: 6px; border-radius: 50%; background: #79ad91; box-shadow: 0 0 0 3px rgba(121, 173, 145, .1); }
+.practice-rail__foot button { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; color: #91a9ab; font-size: 8px; font-weight: 600; }
+.practice-rail__foot button:hover { background: rgba(255, 255, 255, .05); color: #fff; }
+.practice-rail__foot button svg { width: 13px; height: 13px; }
+
+.staff-shell__main { min-width: 0; min-height: 100dvh; margin-left: 252px; }
+.staff-shell__content { min-width: 0; min-height: 100dvh; }
+.staff-shell__mobile-head,
+.staff-shell__dock,
+.staff-shell__scrim { display: none; }
+
+@keyframes practice-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 1100px) and (min-width: 901px) {
+  .practice-rail { width: 224px; }
+  .staff-shell__main { margin-left: 224px; }
+  .practice-rail__copy small { display: none; }
+}
+
+@media (max-width: 900px) {
+  .staff-shell { --staff-shell-topbar-height: calc(57px + env(safe-area-inset-top, 0px)); }
+  .staff-shell__mobile-head {
+    position: sticky;
+    top: 0;
+    z-index: 70;
+    display: grid;
+    min-height: var(--staff-shell-topbar-height);
+    grid-template-columns: 44px 1fr 44px;
+    align-items: center;
+    padding: env(safe-area-inset-top, 0px) 8px 0;
+    border-bottom: 1px solid #dce6e5;
+    background: rgba(247, 250, 249, .94);
+    box-shadow: 0 1px 0 rgba(25, 52, 61, .03);
+    backdrop-filter: blur(14px);
+  }
+
+  .staff-shell__mobile-head button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--practice-ink);
+  }
+
+  .staff-shell__mobile-head button:hover { background: #e9f0ef; }
+  .staff-shell__mobile-head button:last-child { justify-self: end; }
+  .staff-shell__mobile-head svg { width: 20px; height: 20px; stroke-width: 1.8; }
+  .staff-shell__mobile-head div { display: grid; justify-items: center; gap: 1px; min-width: 0; }
+  .staff-shell__mobile-head span { color: #728789; font: 500 8px 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+  .staff-shell__mobile-head strong { overflow: hidden; max-width: 100%; color: var(--practice-ink); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+
+  .practice-rail {
+    inset: 0 auto 0 0;
+    width: min(318px, calc(100vw - 38px));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+    box-shadow: 20px 0 50px rgba(10, 30, 36, .25);
+    transform: translateX(-104%);
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
+  }
+
+  .practice-rail.is-open { transform: translateX(0); }
+  .practice-rail__close { display: grid; }
+  .practice-search { margin-top: 18px; }
+  .practice-search__field { min-height: 45px; }
+  .practice-search__field input { font-size: 13px; }
+  .practice-rail__link { min-height: 50px; }
+  .practice-rail__copy strong { font-size: 12px; }
+  .practice-rail__copy small { font-size: 9px; }
+
+  .staff-shell__scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 75;
+    display: block;
+    border: 0;
+    background: rgba(12, 30, 35, .43);
+    backdrop-filter: blur(2px);
+  }
+
+  .staff-shell__main { margin-left: 0; }
+  .staff-shell__content { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+  .staff-shell__content .staff-pagehead,
+  .staff-shell__content .sa-head { top: var(--staff-shell-topbar-height); }
+
+  .staff-shell__dock {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 68;
+    display: grid;
+    min-height: calc(62px + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: start;
+    padding: 6px 6px env(safe-area-inset-bottom, 0px);
+    border-top: 1px solid #d8e3e2;
+    background: rgba(249, 251, 250, .96);
+    box-shadow: 0 -8px 25px rgba(25, 52, 61, .07);
+    backdrop-filter: blur(14px);
+  }
+
+  .staff-shell__dock a,
+  .staff-shell__dock button {
+    display: grid;
+    min-width: 0;
+    min-height: 52px;
+    justify-items: center;
+    align-content: center;
+    gap: 3px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #74878a;
+    text-decoration: none;
+  }
+
+  .staff-shell__dock a.is-active { color: #1d6169; }
+  .staff-shell__dock a.is-active::before {
+    position: absolute;
+    width: 22px;
+    height: 2px;
+    margin-top: -47px;
+    border-radius: 99px;
+    background: #2f7a7e;
+    content: '';
+  }
+
+  .staff-shell__dock a > span,
+  .staff-shell__dock button > span { position: relative; display: grid; place-items: center; }
+  .staff-shell__dock svg { width: 19px; height: 19px; stroke-width: 1.8; }
+  .staff-shell__dock small { overflow: hidden; max-width: 100%; font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .staff-shell__dock .practice-rail__badge { position: absolute; top: -7px; right: -12px; min-width: 16px; height: 16px; padding: 0 4px; font-size: 7px; }
+
+  /* The old floating Home bubble would duplicate the persistent dock. */
+  .staff-home-widget { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-rail,
+  .practice-rail__link,
+  .practice-rail__specialist-toggle svg { transition: none; }
+}
