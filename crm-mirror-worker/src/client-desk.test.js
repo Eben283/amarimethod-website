@@ -202,4 +202,18 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain("Consent status not mirrored");
     expect(rendered).not.toContain("No opt-out recorded");
   });
+
+  it("keeps unread markers in the inbox and out of every timeline message", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.timelineItem({ activity_type: "message", channel: "sms", direction: "inbound", body: "Hello", occurred_at: "2026-08-08T14:00:00.000Z" });
+
+    expect(rendered).toContain("Client · sms");
+    expect(clientDeskHtml()).toContain('.message .channel-mark { display: none; }');
+    expect(clientDeskHtml()).toContain('blue-dot ');
+  });
 });
