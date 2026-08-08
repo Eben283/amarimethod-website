@@ -142,7 +142,7 @@ function html(body) {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
-      "Content-Security-Policy": "frame-ancestors https://www.amarimethod.com https://*.amarimethod-website.pages.dev",
+      "Content-Security-Policy": "frame-ancestors https://www.amarimethod.com https://amarimethod-website.pages.dev https://*.amarimethod-website.pages.dev",
     },
   });
 }

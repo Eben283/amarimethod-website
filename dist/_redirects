@@ -24,6 +24,8 @@
 /staff/follow-up /staff/ 200
 /staff/check-in/* /staff/ 200
 /staff/field-studies /staff/ 200
+/staff/operations /staff/ 200
+/staff/revenue /staff/ 200
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200
 /staff/cos /staff/ 200
