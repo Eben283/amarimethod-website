@@ -31,7 +31,7 @@ export default function OperationsPage() {
 
   useEffect(() => {
     if (tab !== 'crm') return;
-    if (crmSrc || crmLoading) return;
+    if (crmSrc) return;
     let cancelled = false;
     setCrmLoading(true);
     setCrmError(null);
@@ -49,11 +49,14 @@ export default function OperationsPage() {
         if (!cancelled) setCrmLoading(false);
       });
     return () => { cancelled = true; };
-  }, [tab, crmSrc, crmLoading]);
+  // Loading state is deliberately not a dependency. Setting it starts this
+  // request; including it would run the cleanup immediately and mark the
+  // pending request as cancelled before it can set the protected iframe URL.
+  }, [tab, crmSrc]);
 
   useEffect(() => {
     if (tab !== 'automation') return;
-    if (automationSrc || automationLoading) return;
+    if (automationSrc) return;
     let cancelled = false;
     setAutomationLoading(true);
     setAutomationError(null);
@@ -71,7 +74,9 @@ export default function OperationsPage() {
         if (!cancelled) setAutomationLoading(false);
       });
     return () => { cancelled = true; };
-  }, [tab, automationSrc, automationLoading]);
+  // See the CRM handoff above: this effect must outlive its own loading-state
+  // update so the resolved one-time access URL can be rendered.
+  }, [tab, automationSrc]);
 
   function selectTab(next: OpsTab) {
     setParams(next === 'systems' ? {} : { tab: next }, { replace: true });
