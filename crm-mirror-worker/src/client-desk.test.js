@@ -183,7 +183,7 @@ describe("Client Desk message rendering", () => {
     expect(helpers.filterTimeline(timeline, "tasks")).toEqual([timeline[5]]);
   });
 
-  it("marks a record's data boundaries and unknowns without treating them as client status", () => {
+  it("shows DND as an unambiguous on-or-off contact state", () => {
     const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
     const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
     const document = { getElementById: () => element };
@@ -196,9 +196,16 @@ describe("Client Desk message rendering", () => {
       appointments: [{ status: "confirmed", starts_at: "2026-08-10T14:00:00.000Z" }],
     });
 
-    for (const label of ["Record status", "Last mirrored activity", "Next appointment", "GHL mirror", "Stripe mirror", "Not mirrored"]) expect(rendered).toContain(label);
-    expect(rendered).toContain("Consent status not mirrored");
-    expect(rendered).not.toContain("No opt-out recorded");
+    for (const label of ["Record status", "Last mirrored activity", "Next appointment", "GHL mirror", "Stripe mirror"]) expect(rendered).toContain(label);
+    expect(rendered).toContain("DND");
+    expect(rendered).toContain(">Off<");
+    expect(rendered).not.toContain("SMS permission");
+    expect(rendered).not.toContain("Email permission");
+    expect(rendered).not.toContain("Consent status not mirrored");
+    expect(rendered).toContain("DND is shown as on or off.");
+
+    const dndOn = helpers.profileMarkup({ contact: { display_name: "Test client" }, fields: [{ attribute_key: "system.dnd", attribute_value: "on" }] });
+    expect(dndOn).toContain(">On<");
   });
 
   it("keeps unread markers in the inbox and out of every timeline message", () => {

@@ -119,10 +119,10 @@ function dndSummary(raw) {
   if (raw?.dnd === false) return "off";
   const settings = raw?.dndSettings;
   if (!settings || typeof settings !== "object") return null;
-  const channels = Object.entries(settings)
-    .filter(([, setting]) => setting && typeof setting === "object" && typeof setting.status === "string")
-    .map(([channel, setting]) => `${channel.toLowerCase()}: ${String(setting.status).toLowerCase() === "active" ? "on" : "off"}`);
-  return channels.length ? channels.join(" · ") : null;
+  const channels = Object.values(settings)
+    .filter((setting) => setting && typeof setting === "object" && typeof setting.status === "string")
+    .map((setting) => String(setting.status).toLowerCase() === "active");
+  return channels.length ? (channels.some(Boolean) ? "on" : "off") : null;
 }
 
 export function normalizeGhlContact(raw) {
