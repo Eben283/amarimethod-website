@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   RefreshCw, Loader2, ExternalLink, AlertCircle, Phone, MessageSquare,
   Voicemail, CheckCircle2, Clock, MoonStar, Ban, ChevronDown, ChevronUp,
@@ -27,16 +28,15 @@ import type {
 // follow-ups due → scheduled returns → end-of-rope decision. Everything else is
 // Waiting (cooling off, counted) or Set Aside (parked, reversible).
 //
-// GHL is the only sender — this page records outcomes + deep-links to the GHL
-// thread to actually call/text. It sends no messages itself.
+// This page records outcomes and opens the selected person's internal
+// Communication chronology. Sending is not available from Staff yet.
 //
 // Still placeholder (edit later): per-stage copy-paste variations (Garrett's
 // words), auto-emails (GHL workflows, fix-advisor first), inline field editing,
 // Garrett's real cadence intervals, full IA promotion to primary nav.
 
-const GHL_LOCATION_ID = '7pIO7FHVAyBT1jKGhfQM';
-const ghlContactUrl = (contactId: string) =>
-  `https://app.gohighlevel.com/v2/location/${GHL_LOCATION_ID}/contacts/detail/${contactId}`;
+const communicationUrl = (contactId: string) =>
+  `/client-desk?contact=${encodeURIComponent(contactId)}`;
 
 // Cadence thresholds + the frequency boost moved SERVER-SIDE (functions/api/
 // staff-partner-prospects.js) so the Act-Now decision lives in one place. The UI
@@ -640,10 +640,10 @@ export default function FollowUpPage() {
                       {item.d.asideReason || (item.d.kind === 'converted' ? 'Active partner' : 'Set aside')}
                     </p>
                   </div>
-                  <a href={ghlContactUrl(item.p.contactId)} target="_blank" rel="noopener noreferrer"
+                  <Link to={communicationUrl(item.p.contactId)}
                     className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
-                    <ExternalLink className="h-3.5 w-3.5" /> GHL
-                  </a>
+                    <MessageSquare className="h-3.5 w-3.5" /> Communication
+                  </Link>
                 </div>
               ) : (
                 <ActRow
@@ -728,10 +728,10 @@ export default function FollowUpPage() {
                     <span className="truncate font-medium text-amari-charcoal">{displayName(p.fullName) || 'Unknown'}</span>
                     <p className="text-[11px] text-amari-text-muted">{d.asideReason}</p>
                   </div>
-                  <a href={ghlContactUrl(p.contactId)} target="_blank" rel="noopener noreferrer"
+                  <Link to={communicationUrl(p.contactId)}
                     className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
-                    <ExternalLink className="h-3.5 w-3.5" /> GHL
-                  </a>
+                    <MessageSquare className="h-3.5 w-3.5" /> Communication
+                  </Link>
                 </div>
               ))}
             </div>
@@ -1010,13 +1010,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
         </div>
       </button>
 
-      {/* reply quick actions — reply in GHL, or clear it if nothing's needed */}
+      {/* Reply review opens the selected person's complete internal chronology. */}
       {isReply && (
         <div className="flex flex-wrap gap-1.5 px-3 pb-3">
-          <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+          <Link to={communicationUrl(contactId)}
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
-            <ExternalLink className="h-3.5 w-3.5" /> Reply in GHL
-          </a>
+            <MessageSquare className="h-3.5 w-3.5" /> Open Communication
+          </Link>
           <button type="button" onClick={onDismiss}
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-text-muted hover:bg-amari-light-sand">
             <CheckCircle2 className="h-3.5 w-3.5" /> No reply needed
@@ -1033,13 +1033,13 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
         </div>
       )}
 
-      {/* quick triage — prospects only (replies you handle in GHL) */}
+      {/* quick triage — prospects only */}
       {!isReply && (
         <div className="flex flex-wrap gap-1.5 px-3 pb-3">
-          <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+          <Link to={communicationUrl(contactId)}
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
-            <ExternalLink className="h-3.5 w-3.5" /> Open in GHL
-          </a>
+            <MessageSquare className="h-3.5 w-3.5" /> Open Communication
+          </Link>
           <Chip icon={Voicemail} label="Left voicemail" busy={busy} onClick={() => onOutcome('voicemail')} />
           <Chip icon={Phone} label="Talked" busy={busy} onClick={() => onOutcome('talked')} />
           {/* records which link Garrett sent (no send) — note shows in activity */}
@@ -1557,8 +1557,8 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
   );
 }
 
-// Editable draft only. The staff app never sends outreach: Garrett copies the
-// wording, then opens the real GHL conversation to send or adjust it there.
+// Editable draft only. Staff does not send outreach yet; Communication opens
+// the selected person's complete chronology for context.
 function EditSendText({ contactId, text, channel, onSent }: { contactId: string; text: string; channel?: string; onSent?: () => void }) {
   const [val, setVal] = useState(text);
   const [copied, setCopied] = useState(false);
@@ -1583,16 +1583,16 @@ function EditSendText({ contactId, text, channel, onSent }: { contactId: string;
           className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
           {copied ? '✓ Copied' : 'Copy'}
         </button>
-        <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+        <Link to={communicationUrl(contactId)}
           className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white">
-          Open GHL to send
-        </a>
+          Open Communication
+        </Link>
       </div>
     </div>
   );
 }
 
-// Email drafts follow the same boundary: editable here, sent only from GHL.
+// Email drafts follow the same boundary: editable here, but not sent by Staff.
 function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { contactId: string; defaultSubject: string; defaultBody: string; onSent?: () => void }) {
   const [subject, setSubject] = useState(defaultSubject);
   const [body, setBody] = useState(defaultBody);
@@ -1630,10 +1630,10 @@ function EditSendEmail({ contactId, defaultSubject, defaultBody, onSent }: { con
           className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-50">
           {copied ? '✓ Copied' : 'Copy email'}
         </button>
-        <a href={ghlContactUrl(contactId)} target="_blank" rel="noopener noreferrer"
+        <Link to={communicationUrl(contactId)}
           className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white">
-          Open GHL to send
-        </a>
+          Open Communication
+        </Link>
       </div>
     </div>
   );

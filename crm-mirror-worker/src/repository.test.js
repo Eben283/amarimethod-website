@@ -249,12 +249,15 @@ describe("CRM mirror client profiles", () => {
     const db = {
       prepare: (sql) => ({ bind: (...values) => ({ all: async () => { calls.push({ sql, values }); return { results: [] }; } }) }),
     };
-    await expect(communicationsInbox(db, { limit: 25 })).resolves.toEqual([]);
+    await expect(communicationsInbox(db, { query: "Eben", limit: 25, actor: "Garrett" })).resolves.toEqual([]);
     expect(calls[0].sql).toContain("FROM contacts contact");
     expect(calls[0].sql).toContain("LEFT JOIN latest_threads thread");
+    expect(calls[0].sql).toContain("source.external_id AS external_contact_id");
     expect(calls[0].sql).toContain("datetime(thread.last_event_at) DESC");
     expect(calls[0].sql).not.toContain("OPS-%");
     expect(calls[0].sql).not.toContain("EXISTS (SELECT 1 FROM appointments");
+    expect(calls[0].values[0]).toBe("Garrett");
+    expect(calls[0].values.at(-1)).toBe(25);
   });
 
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {

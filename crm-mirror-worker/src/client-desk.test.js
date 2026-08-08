@@ -11,6 +11,8 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("No communication mirrored yet.");
     expect(html).toContain("No activity");
     expect(html).toContain("timelineDayKey");
+    expect(html).toContain("requestedExternalContact");
+    expect(html).toContain("row.external_contact_id === requestedExternalContact");
   });
 
   it("shows accurate relative ages and the exact source timestamp on contact cards", () => {

@@ -88,7 +88,7 @@ Last updated: 2026-07-30.
 | Portal magic link | Native | `portal/src/pages/LoginPage.tsx`, `VerifyPage.tsx`; `functions/api/portal-auth.js`, `portal-verify.js` | |
 | Partner auth twin | Native | `functions/api/partner-auth.js`, `partner-verify.js` | |
 | Portal chrome | Native | `PortalNav`, `portal/src/styles/portal.css` (`--cp-*`) | |
-| Staff chrome | Native | `staff/src/**` | |
+| Staff workspace shell | Native | `staff/src/components/StaffShell.tsx`, `staff/src/styles/staff-shell.css`, `staff/src/App.tsx` | Persistent task-oriented practice rail, global member search, read-only inbox/operations badges, and compact mobile dock/drawer. Field Studies remains under Specialist Tools rather than primary CRM navigation. |
 | site-v6 marketing system | Native | `css/site-v6.css`, `js/site-v6.js`, `DESIGN.md` | |
 
 ### Staff ops surfaces (owned — don't replace with GHL screens)

@@ -105,6 +105,12 @@ export async function getContactDetail(
   return fetchApi(`/staff-contact?id=${encodeURIComponent(id)}${debug ? '&debug=1' : ''}`);
 }
 
+export async function getContactAutomationEvidence(
+  contactId: string,
+): Promise<import('../types/staff').ContactAutomationEvidence> {
+  return fetchApi(`/staff-automations?view=contact&contactId=${encodeURIComponent(contactId)}`);
+}
+
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
   return fetchApi('/staff-note', {
     method: 'POST',

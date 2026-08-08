@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
+  ArrowLeft, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
+  CalendarDays, CircleDollarSign, Dumbbell,
+  NotebookPen, Workflow,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import { buildGoogleReviewRequest } from '../lib/review-request';
-import type { ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
+import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
@@ -33,6 +35,19 @@ function fmtDate(iso: string): string {
 
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function fmtDateTime(value: string | number): string {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return 'Time unavailable';
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+  });
+}
+
+function humanizeEvidence(value: string): string {
+  return value.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 // "2026-05-22" → "May 22, 2026" (noon avoids any timezone off-by-one).
@@ -98,6 +113,9 @@ export default function ClientDetailPage() {
   const [reviewStatus, setReviewStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [reviewError, setReviewError] = useState('');
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
+  const [automationEvidence, setAutomationEvidence] = useState<ContactAutomationEvidence | null>(null);
+  const [automationEvidenceLoading, setAutomationEvidenceLoading] = useState(false);
+  const [automationEvidenceError, setAutomationEvidenceError] = useState('');
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -296,6 +314,29 @@ export default function ClientDetailPage() {
     return () => { cancelled = true; };
   }, [id]);
 
+  // Read-only automation evidence is intentionally independent from the GHL
+  // contact request. If the D1 evidence spine is unavailable, the rest of the
+  // person workspace still renders and says exactly what is missing.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setAutomationEvidence(null);
+    setAutomationEvidenceError('');
+    setAutomationEvidenceLoading(true);
+    getContactAutomationEvidence(id)
+      .then((data) => { if (!cancelled) setAutomationEvidence(data); })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 401) {
+          logout();
+          return;
+        }
+        setAutomationEvidenceError(err instanceof Error ? err.message : 'Automation evidence unavailable');
+      })
+      .finally(() => { if (!cancelled) setAutomationEvidenceLoading(false); });
+    return () => { cancelled = true; };
+  }, [id, logout]);
+
   // Refetch when the tab regains focus.
   useEffect(() => {
     function onVisible() {
@@ -359,6 +400,17 @@ export default function ClientDetailPage() {
     (a) => new Date(a.startTime).getTime() >= now && a.status !== 'cancelled',
   );
   const showPaymentBanner = !(hasActiveSeries || !hasUpcomingAppt);
+  const nextAppointment = client.appointments
+    .filter((appointment) => new Date(appointment.startTime).getTime() >= now && appointment.status !== 'cancelled')
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
+  const automationEvents = (automationEvidence?.events || []).slice(0, 8);
+  const automationEnrollments = automationEvidence?.enrollments || [];
+  const activeEnrollments = automationEnrollments.filter((enrollment) => enrollment.status === 'active');
+  const nextScheduledSteps = activeEnrollments
+    .filter((enrollment) => enrollment.nextStep?.dueAt)
+    .sort((a, b) => (a.nextStep?.dueAt || 0) - (b.nextStep?.dueAt || 0));
+  const nextScheduledStep = nextScheduledSteps[0]?.nextStep || null;
+  const failedAutomationEvents = automationEvents.filter((event) => ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase()));
   // This action is deliberately available only from a particular appointment,
   // not a general client lookup. Garrett makes the positive-session judgment
   // and still has to review/edit and explicitly send the text.
@@ -403,16 +455,33 @@ export default function ClientDetailPage() {
               <span className="sa-chip"><User size={13} />{roleWord} · {visitLabel(client).toLowerCase()}</span>
             </div>
           </div>
-          <div className="sa-contact">
-            {/* All client communication happens in GHL — one button straight to the contact there. */}
-            <a href={`https://app.gohighlevel.com/v2/location/7pIO7FHVAyBT1jKGhfQM/contacts/detail/${client.id}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} /><span>Open in GHL</span></a>
-          </div>
         </div>
+        <div className="sa-context" aria-label="Practice member context">
+          <span><b>Email</b>{client.email || 'Not on file'}</span>
+          <span><b>Mobile</b>{client.phone || 'Not on file'}</span>
+          <span><b>Next appointment</b>{nextAppointment ? fmtDateTime(nextAppointment.startTime) : 'None scheduled'}</span>
+          <span><b>Sessions left</b>{client.sessionsRemaining}</span>
+          <span><b>Balance</b>{owed?.status === 'owed' ? `${owed.shortBy || 0} session${owed.shortBy === 1 ? '' : 's'} owed` : owed?.status === 'square' ? 'Paid up' : 'Verify if needed'}</span>
+        </div>
+        <nav className="sa-workspace-nav" aria-label={`${fullName} session workspace`}>
+          <a href="#overview"><User size={15} />Overview</a>
+          <a href="#workflows"><Workflow size={15} />Workflows</a>
+          <a href="#sessions"><Dumbbell size={15} />Sessions</a>
+          <a href="#appointments"><CalendarDays size={15} />Appointments</a>
+          <a href="#money"><CircleDollarSign size={15} />Money</a>
+          <a href="#notes"><NotebookPen size={15} />Notes</a>
+        </nav>
       </header>
 
       <main className="sa-body">
         {/* ============ IN SESSION ============ */}
-        <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">What you do with the practice member today</span><span className="gl" /></div>
+        <div id="overview" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Overview</span><span className="gs">What matters for this practice member now</span><span className="gl" /></div>
+
+        <section className="sa-brief">
+          <span className="lbl">Person brief</span>
+          <p>{buildSessionBrief(client)}</p>
+        </section>
 
         {/* policy agreement — one-time signature, only shown until signed */}
         {!alreadySigned && (
@@ -445,7 +514,7 @@ export default function ClientDetailPage() {
               </span>
               <span className="tx">
                 <b>{reviewStatus === 'sent' ? 'Google review request sent' : 'Ask for a Google review'}</b>
-                <span>{reviewStatus === 'sent' ? 'Logged in the client’s GHL conversation' : 'Review, edit, then send a text to this client'}</span>
+                <span>{reviewStatus === 'sent' ? 'Logged in the client’s communication history' : 'Review, edit, then send a text to this client'}</span>
               </span>
               {reviewStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
             </button>
@@ -478,13 +547,10 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {/* Study capture — intake + before/after pain for tagged participants */}
-        {study && <StudyCapturePanel contactId={client.id} study={study} />}
-
         {/* partner toolkit — pinned near the top; mirrors the pay-link pattern:
             tap to reveal a confirm, then tap to actually send (it fires a real
             message to the client, so no single-press accidental sends). */}
-        <div>
+        {isPartner && <div>
           <button
             className={`sa-paytrigger${toolkitOpen ? ' open' : ''}`}
             onClick={() => toolkitStatus === 'sent' ? undefined : setToolkitOpen((v) => !v)}
@@ -508,10 +574,78 @@ export default function ClientDetailPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>}
+
+        {/* ============ READ-ONLY WORKFLOW INSIGHT ============ */}
+        <div id="workflows" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Workflows</span><span className="gs">What is active, next, and recently happened</span><span className="gl" /></div>
+
+        <section className="sa-workflow-insight" aria-labelledby="workflow-insight-title">
+          <div className="sa-workflow-head">
+            <span className="ic"><Workflow size={19} /></span>
+            <div>
+              <h2 id="workflow-insight-title">Read-only automation insight</h2>
+              <p>This is the owned reminder and nurture record for this person. Use Communication for exact message content; compare its timestamp and message reference with the events here before deciding what caused a send.</p>
+            </div>
+          </div>
+
+          <div className="sa-workflow-summary" aria-label="Automation summary">
+            <span><b>{activeEnrollments.length}</b><small>Active enrollment{activeEnrollments.length === 1 ? '' : 's'}</small></span>
+            <span><b>{nextScheduledStep ? fmtDateTime(nextScheduledStep.dueAt) : 'None recorded'}</b><small>Next scheduled step</small></span>
+            <span className={failedAutomationEvents.length ? 'is-alert' : undefined}><b>{failedAutomationEvents.length}</b><small>Recent failed or bounced</small></span>
+          </div>
+
+          {automationEvidenceLoading ? (
+            <p className="sa-evidence-empty"><Loader2 size={14} className="sa-spin" /> Loading read-only workflow evidence…</p>
+          ) : automationEvidenceError ? (
+            <p className="sa-evidence-empty">Workflow evidence could not be loaded: {automationEvidenceError}</p>
+          ) : automationEvidence?.configured === false ? (
+            <p className="sa-evidence-empty">Mirror gap: the owned-automation evidence database is not connected to this Staff environment. No conclusion about enrollment or sends can be made from this panel.</p>
+          ) : (
+            <div className="sa-workflow-grid">
+              <div className="sa-evidence-block">
+                <div className="sa-evidence-title"><Workflow size={15} /><b>Enrollments</b><span>{automationEnrollments.length}</span></div>
+                {automationEnrollments.length ? automationEnrollments.map((enrollment) => (
+                  <article key={enrollment.enrollmentId} className="sa-enrollment-row">
+                    <p><b>{enrollment.engine === 'reminder' ? 'Reminder engine' : enrollment.engine === 'nurture' ? 'Nurture engine' : humanizeEvidence(enrollment.engine)}</b><em className={enrollment.status === 'active' ? 'is-active' : undefined}>{enrollment.status}</em></p>
+                    <dl>
+                      <div><dt>Key</dt><dd>{enrollment.key || 'Not mirrored'}</dd></div>
+                      <div><dt>Enrollment</dt><dd>{enrollment.enrollmentId || 'Not mirrored'}</dd></div>
+                      <div><dt>Entered</dt><dd>{enrollment.enteredAt ? fmtDateTime(enrollment.enteredAt) : 'Not mirrored'}</dd></div>
+                      <div><dt>Starts</dt><dd>{enrollment.startAt ? fmtDateTime(enrollment.startAt) : 'Not recorded for this engine'}</dd></div>
+                      <div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not attached'}</dd></div>
+                      <div><dt>Next type</dt><dd>{enrollment.nextStep?.type ? humanizeEvidence(enrollment.nextStep.type) : 'Not mirrored'}</dd></div>
+                      <div><dt>Next template</dt><dd>{enrollment.nextStep?.template || 'Not mirrored'}</dd></div>
+                      <div><dt>Due</dt><dd>{enrollment.nextStep?.dueAt ? fmtDateTime(enrollment.nextStep.dueAt) : 'No pending step mirrored'}</dd></div>
+                    </dl>
+                  </article>
+                )) : <p className="sa-evidence-empty">No owned enrollment is mirrored. This can mean there is no enrollment or that its source has not reached the mirror yet.</p>}
+              </div>
+
+              <div className="sa-evidence-block">
+                <div className="sa-evidence-title"><Workflow size={15} /><b>Recent events and outcomes</b><span>{automationEvents.length}</span></div>
+                {automationEvents.length ? automationEvents.map((event, index) => {
+                  const isFailure = ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase());
+                  return (
+                    <article key={`${event.ts}-${event.messageRef || index}`} className={`sa-automation-row${isFailure ? ' is-failure' : ''}`}>
+                      <time dateTime={new Date(event.ts).toISOString()}>{fmtDateTime(event.ts)}</time>
+                      <p><b>{event.engine === 'reminder' ? 'Reminder engine' : event.engine === 'nurture' ? 'Nurture engine' : 'Automation engine'}</b>{event.action ? ` · ${humanizeEvidence(event.action)}` : ''}{event.channel ? ` · ${humanizeEvidence(event.channel)}` : ''}</p>
+                      <span>{event.outcome ? humanizeEvidence(event.outcome) : 'Outcome not recorded'}{event.flowKey ? ` · key ${event.flowKey}` : ''}{event.stepIndex != null ? ` · step ${event.stepIndex}` : ''}{event.appointmentId ? ` · appointment ${event.appointmentId}` : ''}{event.messageRef ? ` · message ${event.messageRef}` : ''}</span>
+                    </article>
+                  );
+                }) : <p className="sa-evidence-empty">No owned event is mirrored for this person. Treat this as an evidence gap, not proof that nothing ran.</p>}
+              </div>
+            </div>
+          )}
+
+          <div className="sa-evidence-actions">
+            <button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}><MessageSquareText size={15} />Open this person in Communication</button>
+          </div>
+        </section>
 
         {/* ============ ADMIN & CHECKOUT ============ */}
-        <div className="sa-group admin"><span className="gm" /><span className="gt">Admin & checkout</span><span className="gs">Payment, products, records</span><span className="gl" /></div>
+        <div id="money" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group admin"><span className="gm" /><span className="gt">Money</span><span className="gs">Payment, products, and purchase record</span><span className="gl" /></div>
 
         {/* pay status banner */}
         {showPaymentBanner && (
@@ -555,11 +689,26 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        {/* session brief */}
-        <section className="sa-brief">
-          <span className="lbl">Session brief</span>
-          <p>{buildSessionBrief(client)}</p>
-        </section>
+        {/* purchase history — from Stripe (lazy-loaded with owed status) */}
+        {owed?.purchases && owed.purchases.length > 0 && (
+          <section className="sa-card">
+            <div className="sa-card-h">
+              <span className="t">Purchase history</span>
+              <span className="sa-mod-count">${Math.round(owed.totalPaid ?? 0)} total</span>
+            </div>
+            <div className="sa-kv">
+              {owed.purchases.map((p, i) => (
+                <div className="row" key={i}>
+                  <span className="k">{fmtPurchaseDate(p.date)} · {p.label}</span>
+                  <span className="v">${p.amount}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <div id="sessions" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Sessions</span><span className="gs">Progress, practice work, and session context</span><span className="gl" /></div>
 
         {/* session progress */}
         <section className="sa-card">
@@ -590,24 +739,6 @@ export default function ClientDetailPage() {
           {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
         </section>
 
-        {/* purchase history — from Stripe (lazy-loaded with owed status) */}
-        {owed?.purchases && owed.purchases.length > 0 && (
-          <section className="sa-card">
-            <div className="sa-card-h">
-              <span className="t">Purchase history</span>
-              <span className="sa-mod-count">${Math.round(owed.totalPaid ?? 0)} total</span>
-            </div>
-            <div className="sa-kv">
-              {owed.purchases.map((p, i) => (
-                <div className="row" key={i}>
-                  <span className="k">{fmtPurchaseDate(p.date)} · {p.label}</span>
-                  <span className="v">${p.amount}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* quiz results */}
         {quiz && (
           <section className="sa-card">
@@ -624,34 +755,16 @@ export default function ClientDetailPage() {
           </section>
         )}
 
-        {/* notes */}
-        <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
-          {(() => {
-            const visible = client.notes.filter((n) => !isSystemNote(n.body));
-            return visible.length === 0 ? (
-              <p className="sa-empty">No notes yet</p>
-            ) : (
-              <div className="sa-notes">
-                {visible.map((n) => {
-                  const nb = splitNoteBody(n.body);
-                  return (
-                    <div key={n.id} className="sa-note">
-                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span>{isEditableStaffNote(n.body) && <button type="button" className="sa-note-edit" onClick={() => setEditingNote(n)} aria-label="Edit note"><Pencil size={13} /> Edit</button>}</div>
-                      {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
-                      {nb.signature && (
-                        <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-        </section>
+        {/* Field Studies is deliberately a niche, tagged-person section—not a
+            primary CRM destination or a generic person-workspace capability. */}
+        {study && (
+          <section className="sa-specialist">
+            <div className="sa-specialist-label">Specialist study record</div>
+            <StudyCapturePanel contactId={client.id} study={study} />
+          </section>
+        )}
 
-        {/* ============ IN SESSION (cont.) ============ */}
-        <div className="sa-group"><span className="gm" /><span className="gt">In session</span><span className="gs">Modules, body map &amp; appointments</span><span className="gl" /></div>
+        <div className="sa-group sa-subgroup"><span className="gm" /><span className="gt">Practice work</span><span className="gs">Modules and body map</span><span className="gl" /></div>
 
         {/* modules taught + body map — side by side on wider screens, stacked on narrow */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' }}>
@@ -695,6 +808,9 @@ export default function ClientDetailPage() {
           <BodyMapCanvas data={progress} onUpdate={handleProgressUpdate} />
         </div>
         </div>
+
+        <div id="appointments" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Appointments</span><span className="gs">Past and future visits in one record</span><span className="gl" /></div>
 
         {/* appointments */}
         <section className="sa-card">
@@ -796,6 +912,35 @@ export default function ClientDetailPage() {
               })}
             </div>
           )}
+        </section>
+
+        <div id="notes" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Notes</span><span className="gs">Human context and signed records</span><span className="gl" /></div>
+
+        {/* notes */}
+        <section className="sa-card">
+          <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
+          {(() => {
+            const visible = client.notes.filter((n) => !isSystemNote(n.body));
+            return visible.length === 0 ? (
+              <p className="sa-empty">No notes yet</p>
+            ) : (
+              <div className="sa-notes">
+                {visible.map((n) => {
+                  const nb = splitNoteBody(n.body);
+                  return (
+                    <div key={n.id} className="sa-note">
+                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span>{isEditableStaffNote(n.body) && <button type="button" className="sa-note-edit" onClick={() => setEditingNote(n)} aria-label="Edit note"><Pencil size={13} /> Edit</button>}</div>
+                      {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
+                      {nb.signature && (
+                        <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </section>
 
         {/* debug */}

@@ -9,7 +9,7 @@ const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }
   { id: 'overview', label: 'Overview', detail: 'What needs attention', Icon: Activity },
   { id: 'systems', label: 'Systems', detail: 'Paths · heartbeats · fix', Icon: Activity },
   { id: 'crm', label: 'CRM Mirror', detail: 'GHL + Stripe import', Icon: Database },
-  { id: 'automation', label: 'Automation Watch', detail: 'Would-send vs GHL', Icon: Workflow },
+  { id: 'automation', label: 'Automation Watch', detail: 'Technical cutover diagnostics', Icon: Workflow },
 ];
 
 const SYSTEMS_SRC = 'https://www.amarimethod.com/ops?embed=1';
@@ -47,7 +47,7 @@ const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
     label: 'Control and reference',
     items: [
       { label: 'CRM mirror', detail: 'Imported GHL and Stripe record', Icon: Database, tab: 'crm' },
-      { label: 'Automation watch', detail: 'What would send and why', Icon: Workflow, tab: 'automation' },
+      { label: 'Automation watch', detail: 'Cutover delivery checks, not daily work', Icon: Workflow, tab: 'automation' },
       { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
       { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
     ],

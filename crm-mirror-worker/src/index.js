@@ -252,6 +252,10 @@ export default {
       if (embed && parentOrigin === "https://www.amarimethod.com") {
         destinationParams.set("parent_origin", parentOrigin);
       }
+      const requestedContact = url.searchParams.get("contact");
+      if (valid.view === "client-desk" && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact || "")) {
+        destinationParams.set("contact", requestedContact);
+      }
       const destinationQuery = destinationParams.size ? `?${destinationParams}` : "";
       const destination = valid.view === "client-desk" ? "/client-desk" : "/";
       return new Response(null, {

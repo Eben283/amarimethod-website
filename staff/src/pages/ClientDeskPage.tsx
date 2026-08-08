@@ -1,10 +1,12 @@
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getCrmMirrorAccessUrl } from '../lib/api';
 
 export default function ClientDeskPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedContact = searchParams.get('contact');
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -17,13 +19,16 @@ export default function ClientDeskPage() {
         const deskUrl = new URL(url);
         deskUrl.searchParams.set('embed', '1');
         deskUrl.searchParams.set('parent_origin', window.location.origin);
+        if (requestedContact && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact)) {
+          deskUrl.searchParams.set('contact', requestedContact);
+        }
         setSrc(deskUrl.toString());
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not open Practice Member Desk');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [requestedContact]);
 
   useEffect(() => {
     if (!src) return;

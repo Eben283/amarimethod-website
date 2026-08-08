@@ -946,19 +946,24 @@ export async function communicationsInbox(db, { query = null, limit = 50, actor 
             CASE WHEN thread.unread_inbound_count > 0
                     AND (seen.seen_at IS NULL OR datetime(thread.last_event_at) > datetime(seen.seen_at))
                  THEN 1 ELSE 0 END AS unread_inbound_count,
-            contact.id AS contact_id, contact.display_name, contact.email_normalized, contact.phone_e164
+            contact.id AS contact_id, contact.display_name, contact.email_normalized, contact.phone_e164,
+            source.external_id AS external_contact_id
        FROM contacts contact
        LEFT JOIN latest_threads thread
          ON thread.contact_id = contact.id AND thread.recency_rank = 1
        LEFT JOIN client_desk_seen seen
          ON seen.contact_id = contact.id AND seen.staff_actor = ?
+       LEFT JOIN external_records source
+         ON source.contact_id = contact.id
+        AND source.provider = 'ghl'
+        AND source.object_type = 'contact'
        ${where}
        ORDER BY CASE WHEN thread.last_event_at IS NULL THEN 1 ELSE 0 END,
                 datetime(thread.last_event_at) DESC,
                 datetime(contact.created_at) DESC,
                 lower(contact.display_name), contact.id
        LIMIT ?`,
-  ).bind(...values, actor, limit).all();
+  ).bind(actor, ...values, limit).all();
   return result.results || [];
 }
 
