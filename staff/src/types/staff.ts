@@ -133,6 +133,45 @@ export interface ContactMessage {
   type: string;
 }
 
+export interface ContactAutomationEvent {
+  ts: number;
+  engine: string | null;
+  flowKey: string | null;
+  contactId: string | null;
+  appointmentId: string | null;
+  stepIndex: number | null;
+  action: string | null;
+  outcome: string | null;
+  channel: string | null;
+  messageRef: string | null;
+  detail: Record<string, unknown> | null;
+}
+
+export interface ContactAutomationEnrollment {
+  engine: string;
+  key: string;
+  enrollmentId: string;
+  appointmentId?: string | null;
+  startAt?: number | null;
+  enteredAt: number | null;
+  status: string;
+  guardUnchecked?: boolean;
+  nextStep: {
+    stepIndex: number;
+    template: string | null;
+    dueAt: number;
+    type: string | null;
+  } | null;
+}
+
+export interface ContactAutomationEvidence {
+  success: boolean;
+  configured: boolean;
+  contactId?: string;
+  enrollments?: ContactAutomationEnrollment[];
+  events?: ContactAutomationEvent[];
+}
+
 export interface QuizResults {
   patternSignature: string;
   recoveryPotentialScore: string | null;
