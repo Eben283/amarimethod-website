@@ -35,6 +35,28 @@ const ALLOWED_ORIGINS = [
   "https://amarimethod.com",
 ];
 
+const TEXT_LIMITS = Object.freeze({
+  firstName: 100,
+  lastName: 100,
+  email: 254,
+  phone: 20,
+  patternSignature: 120,
+  primaryPainLocation: 160,
+  painDuration: 240,
+  treatmentsTried: 1200,
+  painTrigger: 1200,
+  additionalPainAreas: 1200,
+  painIntensity: 240,
+  painTiming: 1200,
+  painType: 1200,
+  aggravatingActivities: 1600,
+  dailyImpact: 1600,
+  treatmentResults: 1200,
+  healthConditions: 1600,
+});
+
+const REFERRAL_SOURCE_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+
 function corsHeaders(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
@@ -43,6 +65,87 @@ function corsHeaders(origin) {
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
   };
+}
+
+function json(headers, body, status) {
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
+function isAllowedOrigin(origin) {
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+function cleanText(value, key, { required = false } = {}) {
+  if (value == null || value === "") return required ? null : "";
+  if (typeof value !== "string") return null;
+  const cleaned = value.trim();
+  if ((required && !cleaned) || cleaned.length > TEXT_LIMITS[key]) return null;
+  return cleaned;
+}
+
+// The quiz is public, but it is still a narrowly defined lead-intake contract.
+// Reject objects, oversized bodies, and arbitrary referral values before they can
+// become GHL fields/tags. This does not authenticate an existing contact: a
+// configured bot-verification gate remains the next required control for that.
+export function normalizeQuizSubmission(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+
+  const normalized = {};
+  for (const key of Object.keys(TEXT_LIMITS)) {
+    const value = cleanText(body[key], key, {
+      required: key === "firstName" || key === "lastName" || key === "email",
+    });
+    if (value == null) return null;
+    normalized[key] = value;
+  }
+
+  normalized.email = normalized.email.toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized.email)) return null;
+
+  const score = Number(body.recoveryPotentialScore);
+  if (!Number.isFinite(score) || score < 0 || score > 100) return null;
+  normalized.recoveryPotentialScore = score;
+  normalized.painSeverity = ["mild", "moderate", "severe"].includes(body.painSeverity)
+    ? body.painSeverity
+    : "moderate";
+
+  if (body.scores != null) {
+    if (!body.scores || typeof body.scores !== "object" || Array.isArray(body.scores)) return null;
+    const scoreKeys = ["softTissueTension", "jointBoneAlignment", "patternDuration", "dailyActivitiesImpact", "bodyAdaptations"];
+    normalized.scores = {};
+    for (const key of scoreKeys) {
+      const value = Number(body.scores[key]);
+      if (!Number.isFinite(value) || value < 0 || value > 100) return null;
+      normalized.scores[key] = value;
+    }
+  } else {
+    normalized.scores = null;
+  }
+
+  if (body.insights != null) {
+    if (!Array.isArray(body.insights) || body.insights.length > 4) return null;
+    normalized.insights = [];
+    for (const insight of body.insights) {
+      if (!insight || typeof insight !== "object" || Array.isArray(insight)) return null;
+      const title = typeof insight.title === "string" ? insight.title.trim() : "";
+      const description = typeof insight.description === "string" ? insight.description.trim() : "";
+      if (!title || !description || title.length > 160 || description.length > 1200) return null;
+      normalized.insights.push({ title, description });
+    }
+  } else {
+    normalized.insights = [];
+  }
+
+  if (body.referralSource != null && body.referralSource !== "") {
+    if (typeof body.referralSource !== "string") return null;
+    const referralSource = body.referralSource.trim();
+    if (!REFERRAL_SOURCE_RE.test(referralSource)) return null;
+    normalized.referralSource = referralSource;
+  } else {
+    normalized.referralSource = null;
+  }
+
+  return normalized;
 }
 
 // Build the formatted quiz results summary for GHL (used for text to Garrett)
@@ -103,24 +206,16 @@ export async function onRequestPost(context) {
   headers["Content-Type"] = "application/json";
 
   try {
-    const body = await context.request.json();
+    if (!isAllowedOrigin(origin)) {
+      return json(headers, { error: "Submission must come from the Amari quiz." }, 403);
+    }
+    if (!context.request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
+      return json(headers, { error: "Expected a JSON quiz submission." }, 415);
+    }
 
-    // Validate required fields
+    const body = normalizeQuizSubmission(await context.request.json());
+    if (!body) return json(headers, { error: "Invalid quiz submission." }, 400);
     const { firstName, lastName, email } = body;
-    if (!firstName || !lastName || !email) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: firstName, lastName, email" }),
-        { status: 400, headers }
-      );
-    }
-
-    // Basic email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid email format" }),
-        { status: 400, headers }
-      );
-    }
 
     // Protect GHL from abuse without blocking legitimate people on a shared
     // network. Invalid or incomplete attempts must never consume this quota.
@@ -131,10 +226,7 @@ export async function onRequestPost(context) {
       const rateKey = `quiz_submission_rate:${clientIP}`;
       const currentCount = parseInt(await kv.get(rateKey) || "0", 10);
       if (currentCount >= 10) {
-        return new Response(
-          JSON.stringify({ error: "Too many submissions from this network. Please try again in an hour." }),
-          { status: 429, headers }
-        );
+        return json(headers, { error: "Too many submissions from this network. Please try again in an hour." }, 429);
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
@@ -142,10 +234,7 @@ export async function onRequestPost(context) {
     const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {
       console.error("[send-to-ghl] GHL_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers }
-      );
+      return json(headers, { error: "Server configuration error" }, 500);
     }
 
     // Build tags array
@@ -192,7 +281,7 @@ export async function onRequestPost(context) {
     }
 
     // Referral tracking
-    const referralSource = body.referralSource ? String(body.referralSource).trim() : null;
+    const referralSource = body.referralSource;
     if (referralSource) {
       tags.push(`referred-by-${referralSource.toLowerCase()}`);
     }
@@ -201,10 +290,10 @@ export async function onRequestPost(context) {
     // Only send basic contact info + tags + source
     // Custom fields are set in Step 2 via PUT (upsert doesn't reliably save them)
     const upsertPayload = {
-      firstName: String(firstName).slice(0, 100),
-      lastName: String(lastName).slice(0, 100),
-      email: String(email).slice(0, 200),
-      phone: body.phone ? String(body.phone).slice(0, 20) : undefined,
+      firstName,
+      lastName,
+      email,
+      phone: body.phone || undefined,
       locationId: GHL_LOCATION_ID,
       tags,
       source: referralSource
@@ -229,7 +318,6 @@ export async function onRequestPost(context) {
 
     const upsertData = await upsertResponse.json();
     const contactId = upsertData.contact?.id;
-    console.log(`[send-to-ghl] Contact upserted: ${contactId || "unknown"}`);
 
     // Quiz-submitted event → nurture engine (Flow 1 entry). Fire-and-forget, dormant until
     // the NURTURE_ENGINE_URL Pages env exists (GHL exit — replaces the "quiz submitted" tag
