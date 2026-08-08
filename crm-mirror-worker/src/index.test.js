@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
+import worker, { parseClientDeskLimit, parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -25,6 +25,13 @@ describe("CRM mirror request validation", () => {
     expect(parseQueueLimit(null)).toBe(25);
     expect(parseQueueLimit("0")).toBe(1);
     expect(parseQueueLimit("99")).toBe(50);
+  });
+
+  it("loads the complete mirrored contact index without relaxing queue limits", () => {
+    expect(parseClientDeskLimit(null)).toBe(1000);
+    expect(parseClientDeskLimit("0")).toBe(1);
+    expect(parseClientDeskLimit("1500")).toBe(1000);
+    expect(parseQueueLimit("1500")).toBe(50);
   });
 
   it("requires a bounded contact search term", () => {

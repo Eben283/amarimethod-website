@@ -195,6 +195,14 @@ export function parseQueueLimit(value) {
   return Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
 }
 
+// The operational Desk deliberately loads the complete mirrored contact index.
+// Diagnostic/review queues stay at their smaller bounded limit above.
+export function parseClientDeskLimit(value) {
+  if (value == null || value === "") return 1000;
+  const requestedLimit = Number(value);
+  return Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 1000) : 1000;
+}
+
 export function parseContactSearch(value) {
   const query = String(value || "").trim();
   if (!query) return null;
@@ -391,7 +399,7 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/communications/inbox") {
         const query = parseContactSearch(url.searchParams.get("query"));
-        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const limit = parseClientDeskLimit(url.searchParams.get("limit"));
         const actor = await dashboardSessionActor(request, env) || "Staff";
         return json(200, {
           success: true,
@@ -404,7 +412,7 @@ export default {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await consentReviewQueue(env.CRM_DB, limit)) });
       }
       if (request.method === "GET" && clientDeskDetail) {
-        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const limit = parseClientDeskLimit(url.searchParams.get("limit"));
         const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
         return profile ? json(200, { success: true, worker: "amari-crm-mirror", ...profile }) : json(404, { error: "contact not found" });
       }

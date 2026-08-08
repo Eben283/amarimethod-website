@@ -341,12 +341,12 @@ async function writeCrmMirrorLastRun(env, results, now) {
 
 export async function runScheduledSync(env, now) {
   const results = {};
-  // Conversation history is intentionally not scheduled until its GHL cursor
-  // is proven to advance; rerunning the first page would waste API capacity.
-  // Historic client records are different: each run has its own durable cursor
-  // and is deliberately capped well below the provider rate limit.
+  // Conversation sync advances its own durable GHL page cursor each pass, so
+  // the complete communication mirror stays current without re-reading page 1.
+  // Historic client records are separately capped below provider rate limits.
   for (const [provider, sync, limit] of [
     ["ghl", syncGhl, SCHEDULED_SYNC_LIMIT],
+    ["ghl-conversations", syncGhlConversations, SCHEDULED_SYNC_LIMIT],
     ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],
     ["stripe-invoices", syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
     ["ghl-client-records", backfillGhlClientRecords, 10],

@@ -244,15 +244,17 @@ describe("Client Desk payment and access state", () => {
 });
 
 describe("CRM mirror client profiles", () => {
-  it("filters a machine-status thread preview without suppressing the contact record", async () => {
+  it("returns every mirrored contact and preserves operational communication", async () => {
     const calls = [];
     const db = {
       prepare: (sql) => ({ bind: (...values) => ({ all: async () => { calls.push({ sql, values }); return { results: [] }; } }) }),
     };
     await expect(communicationsInbox(db, { limit: 25 })).resolves.toEqual([]);
-    expect(calls[0].sql).toContain("UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'");
-    expect(calls[0].sql).not.toContain("eben@ebenforrest.com");
-    expect(calls[0].sql).not.toContain("NOT EXISTS");
+    expect(calls[0].sql).toContain("FROM contacts contact");
+    expect(calls[0].sql).toContain("LEFT JOIN latest_threads thread");
+    expect(calls[0].sql).toContain("datetime(thread.last_event_at) DESC");
+    expect(calls[0].sql).not.toContain("OPS-%");
+    expect(calls[0].sql).not.toContain("EXISTS (SELECT 1 FROM appointments");
   });
 
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {
@@ -303,7 +305,7 @@ describe("CRM mirror client profiles", () => {
       consents: [{ channel: "sms", state: "granted" }],
       activityTimeline: [{ activity_type: "message", body: "Can we reschedule?" }],
     });
-    expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).toContain("NOT (\n    UPPER(TRIM(COALESCE(event.body_clean, ''))) LIKE 'OPS-%'");
+    expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).not.toContain("OPS-%");
   });
 
   it("returns a bounded client directory with the latest communication only", async () => {

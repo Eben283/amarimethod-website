@@ -2,10 +2,15 @@ import { describe, expect, it } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
-  it("identifies the desk as a client inbox rather than an operations-message view", () => {
+  it("identifies the desk as the complete chronological communication surface", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("Automated status notices are filtered without hiding the person’s record.");
-    expect(html).toContain("selected client record beside them");
+    expect(html).toContain("Every mirrored contact, ordered by most recent activity.");
+    expect(html).toContain("Client, automated, and operational messages remain visible");
+    expect(html).toContain(">All contacts<");
+    expect(html).toContain("limit: '1000'");
+    expect(html).toContain("No communication mirrored yet.");
+    expect(html).toContain("No activity");
+    expect(html).toContain("timelineDayKey");
   });
 
   it("does not expose operator-surface navigation inside Client Desk", () => {
