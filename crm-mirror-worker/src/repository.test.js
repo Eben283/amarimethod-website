@@ -278,6 +278,7 @@ describe("CRM mirror client profiles", () => {
         { results: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }] },
         { results: [{ direction: "inbound", body_clean: "Can we reschedule?" }] },
         { results: [{ classification: "8-Session Series" }] },
+        { results: [{ classification: "6-Week Amari Practice", identity_status: "match_review" }] },
         { results: [{ invoice_number: "AMARI-001", provider_status: "open", amount_due_cents: 34700 }] },
         { results: [{ body: "Call before next session" }] },
         { results: [{ title: "Follow up", status: "open" }] },
@@ -299,6 +300,7 @@ describe("CRM mirror client profiles", () => {
       nextAppointment: { starts_at: "2026-07-27 13:00:00" },
       appointments: [{ status: "confirmed" }],
       purchases: [{ classification: "8-Session Series" }],
+      purchaseCandidates: [{ classification: "6-Week Amari Practice", identity_status: "match_review" }],
       communications: [{ direction: "inbound", subject_or_preview: "Can we reschedule?" }],
       notes: [{ body: "Call before next session" }],
       tasks: [{ title: "Follow up", status: "open" }],
@@ -306,6 +308,7 @@ describe("CRM mirror client profiles", () => {
       activityTimeline: [{ activity_type: "message", body: "Can we reschedule?" }],
     });
     expect(profileQueries[0]).toContain("source.external_id AS ghl_contact_id");
+    expect(profileQueries.some((sql) => sql.includes("candidate.state = 'pending_review'") && sql.includes("purchase.contact_id IS NULL"))).toBe(true);
     expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).not.toContain("OPS-%");
   });
 

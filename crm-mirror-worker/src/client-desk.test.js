@@ -279,16 +279,20 @@ describe("Client Desk message rendering", () => {
     const rendered = helpers.profileMarkup({
       contact: { display_name: "Test client", ghl_contact_id: "ghl contact/1" },
       purchases: [
-        { amount_cents: 300000, amount_refunded_cents: 10000, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z" },
         { amount_cents: 2900, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-07-29T20:00:00.000Z" },
         { amount_cents: 5000, amount_refunded_cents: 0, currency: "usd", provider_status: "failed", purchased_at: "2026-07-28T20:00:00.000Z" },
+      ],
+      purchaseCandidates: [
+        { amount_cents: 300000, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z", identity_status: "match_review" },
       ],
     });
 
     expect(rendered).toContain('class="payment-ledger"');
     for (const heading of ["Date", "Amount", "Status"]) expect(rendered).toContain(`>${heading}<`);
-    expect(rendered).toContain("$2,929.00");
-    expect(rendered).toContain("−$100.00 refunded");
+    expect(rendered).toContain("$3,029.00");
+    expect(rendered).toContain("Stripe evidence");
+    expect(rendered).toContain("Match review");
+    expect(rendered).toContain("not yet used for access or session records");
     expect(rendered).toContain('data-payment-actions');
     expect(rendered).toContain("Charge now");
     expect(rendered).toContain("contact=ghl%20contact%2F1&amp;action=charge");

@@ -1019,7 +1019,7 @@ export async function consentReviewQueue(db, limit) {
 }
 
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, purchaseCandidatesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
     db.prepare(
       `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
               contact.referral_source_label, contact.created_at,
@@ -1104,6 +1104,18 @@ export async function contactProfile(db, contactId, limit, now) {
        FROM purchases
        WHERE contact_id = ?
        ORDER BY datetime(purchased_at) DESC, id DESC
+       LIMIT ?`,
+    ).bind(contactId, limit),
+    db.prepare(
+      `SELECT purchase.amount_cents, purchase.amount_refunded_cents, purchase.currency,
+              purchase.purchased_at, purchase.provider_status, purchase.classification,
+              purchase.classification_review_state, 'match_review' AS identity_status
+       FROM purchase_reconciliation_candidates candidate
+       JOIN purchases purchase ON purchase.id = candidate.purchase_id
+       WHERE candidate.contact_id = ?
+         AND candidate.state = 'pending_review'
+         AND purchase.contact_id IS NULL
+       ORDER BY datetime(purchase.purchased_at) DESC, purchase.id DESC
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
@@ -1192,6 +1204,7 @@ export async function contactProfile(db, contactId, limit, now) {
     nextAppointment: nextAppointmentResult.results?.[0] || null,
     appointments: appointmentsResult.results || [],
     purchases,
+    purchaseCandidates: purchaseCandidatesResult.results || [],
     invoices: invoicesResult.results || [],
     notes: notesResult.results || [],
     tasks: tasksResult.results || [],
