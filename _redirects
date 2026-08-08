@@ -50,10 +50,12 @@
 # Assessment-first booking path. Public acquisition routes land on the one
 # paid Assessment calendar; existing clients continue to book follow-ups in
 # the portal.
-/book-initial-in-person /assessment-booking.html?type=initial_in_person 302
-/book/initial-in-person /assessment-booking.html?type=initial_in_person 302
-/book-initial-virtual /assessment-booking.html?type=initial_virtual 302
-/book/initial-virtual /assessment-booking.html?type=initial_virtual 302
+/book-initial-in-person /assessment-booking 301
+/book/initial-in-person /assessment-booking 301
+/book-initial-virtual /assessment-booking 301
+/book/initial-virtual /assessment-booking 301
+/book-initial-in-person.html /assessment-booking 301
+/book-initial-virtual.html /assessment-booking 301
 /book-discovery-call /assessment-booking.html?type=discovery_call 302
 /book/discovery-call /assessment-booking.html?type=discovery_call 302
 /book/discovery-virtual /assessment-booking.html?type=discovery_virtual 302

@@ -97,33 +97,24 @@
   <script>
     (function() {
       var url = new URL(window.location.href);
-      var product = url.searchParams.get('product') || 'initial_in_person';
+      var product = url.searchParams.get('product') || 'amari_assessment';
       var slotParam = url.searchParams.get('slot') || '';
       var transactionId = url.searchParams.get('order_id')
         || url.searchParams.get('session_id')
         || ('ghl-' + Date.now());
 
       // Full product catalog. `hasSlot: true` products show the recap +
-      // calendar buttons (initial sessions only — they book an appointment
+      // calendar buttons (booked sessions only — they book an appointment
       // at a specific time). Everything else is a package purchase that
       // unlocks future bookings without a fixed slot.
       var PRODUCT_CATALOG = {
-        initial_in_person: {
-          item_name: 'Amari Method Initial Session — In Person',
-          short_name: 'Initial Session · In Person',
-          price: 225,
-          durationMinutes: 60,
+        amari_assessment: {
+          item_name: 'Amari Assessment — In Person',
+          short_name: 'Amari Assessment · In Person',
+          price: 29,
+          durationMinutes: 50,
           location: '662 8th Ave, San Francisco, CA',
-          details: 'Your first 60-minute session with Garrett Hewstan. Full assessment, your first guided protocol, and a take-home practice.',
-          hasSlot: true,
-        },
-        initial_virtual: {
-          item_name: 'Amari Method Initial Session — Virtual',
-          short_name: 'Initial Session · Virtual',
-          price: 225,
-          durationMinutes: 60,
-          location: 'Video call (link sent before your session)',
-          details: 'Your first 60-minute session with Garrett Hewstan over secure video. Full assessment, your first guided protocol, and a take-home practice.',
+          details: 'Your 50-minute, in-person Amari Assessment with Garrett.',
           hasSlot: true,
         },
         single_followup: {
@@ -161,7 +152,7 @@
           isFreeBooking: true,
         },
       };
-      var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.initial_in_person;
+      var item = PRODUCT_CATALOG[product] || PRODUCT_CATALOG.amari_assessment;
 
       // ---------- GA4 conversion events ----------
       // Free bookings (discovery call) fire `discovery_call_booked` so they

@@ -37,31 +37,8 @@ const DEFAULT_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // after we've prepped the contact + stored the slot info on them.
 //
 // productId references GHL Products (see lib/ghl-products.js) so the
-// purchase webhook can recognize this payment as an initial-session
-// booking and create the appointment.
-const ALLOWED_BOOKINGS = {
-  initial_in_person: {
-    calendarId: "G7OAnnJuFbMF6nQSlZVQ",
-    productId: "688a1cd770362828afbf08a2",
-    price: 225,
-    title: "Amari Method Initial Session — In Person",
-    durationMinutes: 60,
-    pmaTag: "agreed-pma-v2026-04-17",
-    sessionTag: "booked-initial-in-person",
-    paymentLinkUrl:
-      "https://link.amarimethod.com/payment-link/6a00f7c1c959774531bed6b6",
-  },
-  initial_virtual: {
-    calendarId: "ySmht5hx4uZGEpgZrlCw",
-    productId: "690b6b4d333ffa59d40c1823",
-    price: 225,
-    title: "Amari Method Initial Session — Virtual",
-    durationMinutes: 60,
-    pmaTag: "agreed-pma-v2026-04-17",
-    sessionTag: "booked-initial-virtual",
-    paymentLinkUrl:
-      "https://link.amarimethod.com/payment-link/6a00f80c1d5a394a682e3fcb",
-  },
+// purchase webhook can recognize this payment and create the appointment.
+export const ALLOWED_BOOKINGS = {
   // Public first visit. This uses the native Amari calendar interface, then
   // hands payment to the existing GHL payment link. The purchase webhook
   // creates the selected Assessment appointment after payment, without
@@ -553,9 +530,7 @@ export async function onRequestPost(context) {
         ? "book/create-checkout:discovery"
         : body.sessionType === "amari_assessment"
           ? "book/create-checkout:assessment"
-          : body.sessionType?.startsWith("initial_")
-            ? "book/create-checkout:intro"
-            : "book/create-checkout";
+          : "book/create-checkout";
     context.waitUntil(
       recordOpsError(env, errSource, "contact upsert failed", {
         sessionType: body.sessionType,
@@ -616,28 +591,6 @@ export async function onRequestPost(context) {
         personLabel,
         startTime: body.startTime,
         sessionType: body.sessionType,
-      }),
-    );
-  }
-
-  // Intro checkout hop.
-  if (body.sessionType === "initial_in_person" || body.sessionType === "initial_virtual") {
-    context.waitUntil(
-      emitPathHop(env, {
-        pathId: "intro_paid_book",
-        hopId: "create_checkout",
-        outcome: "ok",
-        summary: "Intro checkout created; contact slot fields written",
-        source: "book/create-checkout:intro",
-        contactId,
-        personLabel,
-        correlationId: contactId && body.startTime ? `checkout:${contactId}:${body.startTime}` : null,
-        trigger: { type: "book.create_checkout", id: body.sessionType },
-        condition: {
-          expected: "requested_session_slot_iso set to selected startTime",
-          observed: body.startTime ? String(body.startTime) : "null",
-        },
-        money: { product: booking?.name || "Intro" },
       }),
     );
   }
