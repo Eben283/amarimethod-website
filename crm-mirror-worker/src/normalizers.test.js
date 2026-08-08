@@ -47,10 +47,12 @@ describe("CRM mirror normalizers", () => {
     });
   });
 
-  it("preserves source DND and follower state without treating it as consent", () => {
+  it("collapses source DND to one on-or-off communication state", () => {
     expect(normalizeGhlContact({
       id: "ghl_2", firstName: "Ada", dndSettings: { Email: { status: "active" }, SMS: { status: "inactive" } }, followers: [],
-    }).attributes).toEqual([["system.dnd", "email: on · sms: off"], ["system.followers", "None"]]);
+    }).attributes).toEqual([["system.dnd", "on"], ["system.followers", "None"]]);
+    expect(normalizeGhlContact({ id: "ghl_3", firstName: "Ada", dndSettings: { Email: { status: "inactive" }, SMS: { status: "inactive" } } }).attributes)
+      .toContainEqual(["system.dnd", "off"]);
   });
 
   it("normalizes appointment aliases and keeps unknown statuses visible", () => {
