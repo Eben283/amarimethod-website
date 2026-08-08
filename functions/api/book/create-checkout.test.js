@@ -17,6 +17,7 @@ import {
   slotDateOnly,
   looksLikeDuplicateContactError,
   findContactIdByEmail,
+  ALLOWED_BOOKINGS,
 } from './create-checkout.js';
 import { ghlFetch } from '../../lib/ghl.js';
 import { FIELD_IDS } from '../../lib/ghl-fields.js';
@@ -35,6 +36,19 @@ const paidBooking = { isFreeBooking: false, calendarId: 'EM6vB2mq7EAdGCbUb3j1' }
 const freeBooking = { isFreeBooking: true, calendarId: 'cal-disco' };
 
 beforeEach(() => vi.clearAllMocks());
+
+describe('public paid booking catalog', () => {
+  it('offers only the $29, 50-minute Assessment as the public paid first visit', () => {
+    expect(ALLOWED_BOOKINGS.amari_assessment).toMatchObject({
+      calendarId: 'EM6vB2mq7EAdGCbUb3j1',
+      productId: '6a66cf0103821ea09ea13f1b',
+      price: 29,
+      durationMinutes: 50,
+    });
+    expect(ALLOWED_BOOKINGS.initial_in_person).toBeUndefined();
+    expect(ALLOWED_BOOKINGS.initial_virtual).toBeUndefined();
+  });
+});
 
 describe('slotDateOnly / duplicate detection', () => {
   it('extracts YYYY-MM-DD from an offset ISO slot', () => {
