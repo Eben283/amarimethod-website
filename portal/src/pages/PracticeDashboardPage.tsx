@@ -67,9 +67,8 @@ function practiceCopy(seriesType: string) {
 }
 
 /**
- * Portal v2 home: Practice products and any client who is not tagged
- * founders-circle. Intentionally omits 4/8-pack repurchase CTAs (those stay
- * on the Founder's Circle / v1 dashboard only).
+ * The single member home. It preserves each member's access and balance while
+ * keeping retired founder offers off every client-facing portal surface.
  */
 export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashboardPageProps) {
   const { client, appointments, upcomingAppointments } = data;

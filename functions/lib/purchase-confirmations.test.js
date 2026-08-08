@@ -53,18 +53,18 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("confirmationForSeries — verbatim invoice-confirmation copy, branch on the reconcile result", () => {
-  it("4-session template exists and does NOT mention Living Practice", () => {
+describe("confirmationForSeries — founder fulfillment confirmation", () => {
+  it("uses the same neutral confirmation for a 4-session legacy fulfillment", () => {
     const t = confirmationForSeries("4-session");
-    expect(t.subject).toBe("Your 4-Session Series is confirmed, {{contact.first_name}}");
-    expect(t.body).toContain("Your 4-Session Series is confirmed.");
-    expect(t.body).not.toMatch(/Living Practice/);
+    expect(t.subject).toBe("Your Amari plan is confirmed, {{contact.first_name}}");
+    expect(t.body).toContain("Your Amari plan is confirmed.");
+    expect(t.body).not.toMatch(/4-Session|8-Session|\$|credit/i);
   });
 
-  it("8-session template mentions Living Practice access (the only one that does)", () => {
+  it("uses the same neutral confirmation for an 8-session legacy fulfillment", () => {
     const t = confirmationForSeries("8-session");
-    expect(t.subject).toBe("Your 8-Session Series is Confirmed, {{contact.first_name}}");
-    expect(t.body).toContain("your Living Practice access is included");
+    expect(t.key).toBe("founder-fulfillment-confirmation");
+    expect(t.body).not.toMatch(/4-Session|8-Session|\$|credit/i);
   });
 
   it("Single/unknown series types get NO email (documented silent fall-through)", () => {
@@ -73,22 +73,18 @@ describe("confirmationForSeries — verbatim invoice-confirmation copy, branch o
     expect(confirmationForSeries(null)).toBeNull();
   });
 
-  it("an 8-UPGRADE order gets the verified upgrade variant with the initial-credit line (MASTER C2b, confirmed live 2026-07-12)", () => {
+  it("an 8-UPGRADE order gets the neutral founder confirmation", () => {
     const t = confirmationForSeries("8-session", "8-upgrade");
-    expect(t.key).toBe("confirm-8-upgrade");
-    expect(t.body).toContain("your initial session credit has been applied");
-    expect(t.body).toContain("Living Practice access is included");
-    // unknown/absent classification falls back to the seriesType template
-    expect(confirmationForSeries("8-session", "8-series").key).toBe("confirm-8-session");
-    expect(confirmationForSeries("8-session").key).toBe("confirm-8-session");
+    expect(t.key).toBe("founder-fulfillment-confirmation");
+    expect(t.body).not.toMatch(/4-Session|8-Session|\$|credit/i);
+    expect(confirmationForSeries("8-session", "8-series").key).toBe("founder-fulfillment-confirmation");
+    expect(confirmationForSeries("8-session").key).toBe("founder-fulfillment-confirmation");
   });
 
-  it("a 4-UPGRADE order gets its verified variant: credit line present, NO Living Practice (MASTER C1b, confirmed live 2026-07-12)", () => {
+  it("a 4-UPGRADE order gets the neutral founder confirmation", () => {
     const t = confirmationForSeries("4-session", "4-upgrade");
-    expect(t.key).toBe("confirm-4-upgrade");
-    expect(t.subject).toBe("Your 4-Session Series is confirmed, {{contact.first_name}}");
-    expect(t.body).toContain("your initial session credit has been applied");
-    expect(t.body).not.toMatch(/Living Practice/);
+    expect(t.key).toBe("founder-fulfillment-confirmation");
+    expect(t.body).not.toMatch(/4-Session|8-Session|\$|credit/i);
   });
 });
 

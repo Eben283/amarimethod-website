@@ -34,12 +34,13 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("LP_ONBOARDING_EMAIL — the 2026-06-17 shortened post-scrub copy, verbatim", () => {
+describe("LP_ONBOARDING_EMAIL — neutral fulfillment copy", () => {
   it("carries the live subject, sender, and portal link", () => {
     expect(LP_ONBOARDING_EMAIL.subject).toBe("Your Living Practice is ready, {{contact.first_name}}");
     expect(LP_ONBOARDING_EMAIL.from).toEqual({ name: "Garrett", email: "garrett@amarimethod.com" });
     expect(LP_ONBOARDING_EMAIL.body).toContain("https://www.amarimethod.com/portal/");
     expect(LP_ONBOARDING_EMAIL.body).toContain("full protocol library with video walkthroughs");
+    expect(LP_ONBOARDING_EMAIL.body).not.toMatch(/8-session|\$/i);
   });
 
   it("never resurrects the retired pre-6/17 body", () => {

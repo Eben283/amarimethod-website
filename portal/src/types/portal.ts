@@ -58,11 +58,7 @@ export interface ClientData {
   hasLivingPractice: boolean;
   portalAccess: boolean;
   isPartner: boolean;
-  /**
-   * Legacy clients tagged `founders-circle` keep portal v1 (Founder's Circle
-   * home with pack repurchase). Untagged clients get v2. This replaced the
-   * old seriesType === '12-week' gate.
-   */
+  /** Legacy relationship marker retained for private fulfillment only. */
   isFoundersCircle?: boolean;
   referralCount?: number;
   rewardCode?: string | null;

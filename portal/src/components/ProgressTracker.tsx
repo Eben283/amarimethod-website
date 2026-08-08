@@ -30,7 +30,7 @@ type DashboardState =
   | 'pay-as-you-go'    // has past sessions, no package
   | 'mid-package'      // has remaining > 1 on a package
   | 'last-left'        // exactly 1 remaining on a package
-  | 'zero-left'        // package exhausted, time to re-up
+  | 'zero-left'        // package exhausted, prompt a conversation about next steps
   | 'low-confidence';  // ledger flagged ambiguity — surface gentle prompt
 
 function getDashboardState(client: ClientData, lifetimeCount: number): DashboardState {
@@ -321,7 +321,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
             {dashboardState === 'last-left' && (
               <p className="cp-journey-next cp-journey-soft-reup">
-                Last session in your {packLabel}. <em>Ready for what's next?</em> Re-up anytime.
+                Last session in your {packLabel}. <em>Want to talk about what comes next?</em>
               </p>
             )}
             {dashboardState === 'mid-package' && lifetimeCount > 0 && (
@@ -339,13 +339,10 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
             <h2 className="cp-journey-title">
               <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
             </h2>
-            <p className="cp-journey-next">Keep the momentum going — pick a package to continue.</p>
+            <p className="cp-journey-next">Contact Amari when you want to talk about what comes next.</p>
             <div className="cp-dash-cta cp-dash-cta-stack">
-              <a href="/book/8-session-series" className="cp-btn cp-btn-primary">
-                <span>Continue with 8 more sessions</span><span className="cp-arrow">→</span>
-              </a>
-              <a href="/book/4-session-series" className="cp-btn cp-btn-ghost">
-                <span>Or try a 4-session pack</span>
+              <a href="mailto:hello@amarimethod.com?subject=Practice%20next%20steps" className="cp-btn cp-btn-primary">
+                <span>Contact Amari</span><span className="cp-arrow">→</span>
               </a>
             </div>
           </div>

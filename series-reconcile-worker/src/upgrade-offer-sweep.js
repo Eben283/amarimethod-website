@@ -20,30 +20,26 @@ import { FIELD_IDS, readField } from "./reconcile.js";
 // Flip to "active" only at the purchase-cluster cutover (one release, all sources together).
 const MODE = "shadow";
 
-// Verbatim 2026-06-17 live post-scrub copy (twin: post-initial-upgrade-offer.yaml). Never
-// migrate the stale 2026-04-01 memory-doc version; the removed "short window" urgency line
-// stays dead. RESOLVE FIRST before active mode: current {{custom_values.*}} price values
-// (resolve to config constants at cutover).
+// Mirrors the current Draft GHL workflow. Legacy founder pricing and checkout
+// links must never return if this shadow path is activated in the future.
 export const UPGRADE_OFFER_EMAIL = Object.freeze({
   key: "upgrade-offer-email",
   from: Object.freeze({ name: "Garrett", email: "garrett@amarimethod.com" }),
-  subject: "Ready to go deeper",
-  preheader: "One thing I wanted to mention after our session.",
+  subject: "If you want to continue",
+  preheader: "The two current Amari Practice options.",
   body: `Hi {{contact.first_name}},
 
-It was great working with you. I hope you're already feeling the difference.
+It was great working with you. I hope you are already noticing a difference.
 
-I'll be honest, I think continuing the work is what gets you where you want to go. One session starts it, but a series is where the change holds. So I want to make it easy to keep going. You can apply your {{custom_values.initial_session_price}} initial session toward either one.
+Continuing the work gives you time to build on what you noticed in the session and make it part of your life.
 
-4-Session Series, {{custom_values.4session_series_price}}
-Your initial session applied, plus four sessions to build real momentum.
-Upgrade to 4 sessions → https://link.amarimethod.com/payment-link/699873a81a8400115e0381db
+6-Week Amari Practice — $3,000
+12 sessions of guided practice.
+Choose the 6-Week Practice → https://link.amarimethod.com/payment-link/6a6833c27b99151a54040da5
 
-8-Session Series, {{custom_values.8session_series_price}}
-Your initial session applied, plus eight sessions and access to the Living Practice program.
-Upgrade to 8 sessions → https://link.amarimethod.com/payment-link/699873e31a840007c0038223
-
-Either way, your portal has everything you need to book and track your progress.
+12-Week Amari Practice — $5,400
+24 sessions of guided practice.
+Choose the 12-Week Practice → https://link.amarimethod.com/payment-link/6a66ce547b99151a540409b0
 
 Let me know if you have any questions.
 
