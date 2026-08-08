@@ -2,11 +2,13 @@
 // Manages the action queue — read pending, update status
 
 import { verifySessionToken } from "../lib/auth.js";
+import { timingSafeEqual } from "../lib/safe-equal.js";
 
 const ALLOWED_ORIGINS = [
   "https://www.amarimethod.com",
   "https://amarimethod.com",
 ];
+const COS_QUEUE_USERS = new Set(["Eben", "Garrett"]);
 
 function corsHeaders(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -28,7 +30,7 @@ function jsonResponse(data, status, origin) {
 async function authenticate(context) {
   // Service key auth for /inbox skill
   const serviceKey = context.request.headers.get("X-Service-Key");
-  if (serviceKey && serviceKey === context.env.COS_SERVICE_KEY) {
+  if (serviceKey && timingSafeEqual(serviceKey, context.env.COS_SERVICE_KEY)) {
     return { role: "service", user: "inbox" };
   }
 
@@ -44,6 +46,19 @@ async function authenticate(context) {
   } catch {
     return null;
   }
+}
+
+function queueUser(requestedUser, auth) {
+  // Browser sessions are always restricted to the subject in their signed token.
+  // The separately authenticated /inbox service must name one of the two
+  // documented queues instead of inheriting the synthetic "inbox" identity.
+  if (auth.role === "service") {
+    return COS_QUEUE_USERS.has(requestedUser) ? requestedUser : null;
+  }
+
+  if (!COS_QUEUE_USERS.has(auth.user)) return null;
+  if (requestedUser && requestedUser !== auth.user) return null;
+  return auth.user;
 }
 
 export async function onRequestOptions(context) {
@@ -65,7 +80,8 @@ export async function onRequestGet(context) {
 
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status") || "pending";
-  const user = url.searchParams.get("user") || auth.user || "Eben";
+  const user = queueUser(url.searchParams.get("user"), auth);
+  if (!user) return jsonResponse({ error: "Forbidden queue" }, 403, origin);
 
   const key = status === "completed" ? `cos:actions:${user}:completed` : `cos:actions:${user}:pending`;
   const raw = await kv.get(key);
@@ -92,7 +108,8 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "actionId and status required" }, 400, origin);
   }
 
-  const user = body.user || auth.user || "Eben";
+  const user = queueUser(body.user, auth);
+  if (!user) return jsonResponse({ error: "Forbidden queue" }, 403, origin);
 
   const pendingRaw = await kv.get(`cos:actions:${user}:pending`);
   const pending = pendingRaw ? JSON.parse(pendingRaw) : [];
