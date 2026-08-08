@@ -60,7 +60,7 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Follow-up', detail: 'Replies and next moves', to: '/follow-up', Icon: ListChecks },
   { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards, matches: (path) => path === '/balances' || path === '/revenue' || path === '/pos' },
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
-  { label: 'Operations', detail: 'Systems and automation', to: '/operations', Icon: Activity, badge: 'operations' },
+  { label: 'Operations', detail: 'System health and cutover checks', to: '/operations', Icon: Activity, badge: 'operations' },
 ];
 
 const SPECIALIST_ITEMS: RailItem[] = [

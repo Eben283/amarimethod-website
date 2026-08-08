@@ -640,7 +640,6 @@ export default function ClientDetailPage() {
 
           <div className="sa-evidence-actions">
             <button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}><MessageSquareText size={15} />Open this person in Communication</button>
-            <button type="button" onClick={() => navigate('/operations?tab=automation')}><Workflow size={15} />Open Automation Watch</button>
           </div>
         </section>
 

@@ -106,7 +106,6 @@ export default function HomePage() {
     .sort((a, b) => (b.recommendation?.priority || 0) - (a.recommendation?.priority || 0))
     .slice(0, 3), [state.followUps.data]);
   const sickSystems = (state.systems.data?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
-  const automationFailures = state.automation.data?.configured ? state.automation.data.failures : [];
   const refreshedLabel = state.refreshedAt
     ? new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(state.refreshedAt))
     : null;
@@ -175,18 +174,12 @@ export default function HomePage() {
         <div className="home-attention">
           <header className="home-panel-head">
             <div><p>Attention</p><span>Work that needs a person</span></div>
-            <strong>{(state.conversations.data?.length || 0) + (state.systems.data?.attentionCount || 0) + automationFailures.length}</strong>
+            <strong>{(state.conversations.data?.length || 0) + (state.systems.data?.attentionCount || 0)}</strong>
           </header>
 
           {sickSystems.slice(0, 2).map((system) => (
             <button key={system.id} type="button" className="home-attention__item home-attention__item--danger" onClick={() => navigate('/operations?tab=systems')}>
               <Activity aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || 'System needs attention'}</small></span><ChevronRight aria-hidden="true" />
-            </button>
-          ))}
-
-          {automationFailures.slice(0, 2).map((failure, index) => (
-            <button key={`${failure.ts}-${failure.flowKey}-${index}`} type="button" className="home-attention__item home-attention__item--danger" onClick={() => navigate('/operations?tab=automation')}>
-              <Workflow aria-hidden="true" /><span><strong>{failure.channel ? `${failure.channel.toUpperCase()} automation ${failure.outcome || 'failed'}` : `Automation ${failure.outcome || 'failed'}`}</strong><small>{failure.flowKey || failure.action || 'Open Automation Watch'} · {relativeTime(failure.ts)}</small></span><ChevronRight aria-hidden="true" />
             </button>
           ))}
 
@@ -200,14 +193,14 @@ export default function HomePage() {
             ))}
           </StateMessage>
 
-          {!state.conversations.loading && !state.conversations.error && !replies.length && !sickSystems.length && !automationFailures.length ? (
-            <div className="home-clear"><span>Clear</span><p>No unanswered replies, automation failures, or system incidents are showing.</p></div>
+          {!state.conversations.loading && !state.conversations.error && !replies.length && !sickSystems.length ? (
+            <div className="home-clear"><span>Clear</span><p>No unanswered replies or system incidents are showing.</p></div>
           ) : null}
 
           <div className="home-incident-path">
             <Workflow aria-hidden="true" />
-            <span><strong>Someone received the wrong automated email?</strong><small>{state.automation.loading ? 'Checking whether automation evidence is available…' : state.automation.error ? 'Automation evidence could not load here. Check Communication and treat the missing workflow record as an internal mirror gap.' : state.automation.data?.configured ? 'Compare Communication with Automation Watch. Staff can investigate, but cannot stop a workflow here.' : 'Automation evidence is not connected here yet. Check Communication and treat the workflow record as an internal mirror gap.'}</small></span>
-            <div><button type="button" onClick={() => navigate('/client-desk')}>Find the email</button><button type="button" onClick={() => navigate('/operations?tab=automation')}>Trace automation</button></div>
+            <span><strong>Someone received the wrong automated email?</strong><small>Find the exact email in Communication, open that person, then compare its time and message reference with their Workflows section.</small></span>
+            <div><button type="button" onClick={() => navigate('/client-desk')}>Find the person and email</button></div>
           </div>
         </div>
 
@@ -260,7 +253,7 @@ export default function HomePage() {
             { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
             { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
             { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
-            { label: 'Operations', detail: 'Systems and automation', Icon: Activity, to: '/operations' },
+            { label: 'Operations', detail: 'System health and cutover checks', Icon: Activity, to: '/operations' },
           ].map(({ label, detail, Icon, to }) => <button key={label} type="button" onClick={() => navigate(to)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{detail}</small></span><ChevronRight aria-hidden="true" /></button>)}
         </div>
       </section>

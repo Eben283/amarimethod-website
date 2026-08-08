@@ -20,26 +20,12 @@ type HomeResource<T> = {
   error: string | null;
 };
 
-export type HomeAutomationFailure = {
-  ts: number | string;
-  flowKey: string | null;
-  action: string | null;
-  outcome: string | null;
-  channel: string | null;
-};
-
-export type HomeAutomationFailures = {
-  configured: boolean;
-  failures: HomeAutomationFailure[];
-};
-
 export type HomeOperationsState = {
   schedule: HomeResource<TodayAppointment[]>;
   conversations: HomeResource<ConversationSummary[]>;
   followUps: HomeResource<OutreachSnapshotResponse>;
   revenue: HomeResource<StaffRevenueData>;
   systems: HomeResource<OpsSystemsBoard>;
-  automation: HomeResource<HomeAutomationFailures>;
   refreshedAt: number | null;
 };
 
@@ -67,7 +53,6 @@ export function useHomeOperations() {
     followUps: pending(),
     revenue: pending(),
     systems: pending(),
-    automation: pending(),
     refreshedAt: null,
   });
 
@@ -88,7 +73,6 @@ export function useHomeOperations() {
       followUps: { ...current.followUps, loading: true, error: null },
       revenue: { ...current.revenue, loading: true, error: null },
       systems: { ...current.systems, loading: true, error: null },
-      automation: { ...current.automation, loading: true, error: null },
     }));
 
     void getCalendarSummary(pacificDate())
@@ -110,18 +94,6 @@ export function useHomeOperations() {
     void getOpsSystemsBoard()
       .then((data) => update('systems', { data, loading: false, error: null }))
       .catch((error) => update('systems', { data: null, loading: false, error: message(error, 'System health could not be loaded.') }));
-
-    void fetch('/api/staff-automations?view=failures&sinceHours=168', { credentials: 'same-origin' })
-      .then(async (response) => {
-        if (!response.ok) throw new Error('Automation evidence could not be loaded.');
-        const data = await response.json() as Partial<HomeAutomationFailures>;
-        update('automation', {
-          data: { configured: data.configured === true, failures: Array.isArray(data.failures) ? data.failures : [] },
-          loading: false,
-          error: null,
-        });
-      })
-      .catch((error) => update('automation', { data: null, loading: false, error: message(error, 'Automation evidence could not be loaded.') }));
 
     return () => { active = false; };
   }, []);
