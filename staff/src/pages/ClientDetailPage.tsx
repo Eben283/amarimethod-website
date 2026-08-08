@@ -228,7 +228,7 @@ export default function ClientDetailPage() {
     }
   }
 
-  function renderPayRow(product: PayLinkProduct, label: string, price: string) {
+  function renderPayRow(product: PayLinkProduct, label: string, price: string, legacy = false) {
     const status = payLinkStatus[product] || 'idle';
     const isSending = status === 'sending';
     const isSent = status === 'sent';
@@ -243,7 +243,10 @@ export default function ClientDetailPage() {
         <span className="ic">
           {isSending ? <Loader2 size={15} className="sa-spin" /> : isSent ? <Check size={15} /> : <Send size={15} />}
         </span>
-        <span className="nm">{isSent ? `${label} sent` : isError ? `${label} — retry` : `Send ${label}`}</span>
+        <span className="nm">
+          {isSent ? `${label} sent` : isError ? `${label} — retry` : `Send ${label}`}
+          {legacy && <span className="sa-legacy-badge">Legacy</span>}
+        </span>
         <span className="pr">{price}</span>
       </button>
     );
@@ -525,22 +528,25 @@ export default function ClientDetailPage() {
           <div>
             <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
               <span className="ic"><Send size={17} /></span>
-              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
+              <span className="tx"><b>Send pay link</b><span>Current Practice options, plus legacy links when needed</span></span>
               <span className="cv"><ChevronRight size={18} /></span>
             </button>
             <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
               <div className="sa-collapse-in">
-                {renderPayRow('8-session-series', '8-Pack', '$1,295')}
-                {renderPayRow('4-session-series', '4-Pack', '$720')}
-                {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                {renderPayRow('6-week-practice', '6-Week Practice', '$3,000')}
+                {renderPayRow('12-week-practice', '12-Week Practice', '$5,400')}
+                <p className="sa-legacy-note">Legacy options are kept for existing founding-member support.</p>
+                {renderPayRow('8-session-series', '8-Pack', '$1,295', true)}
+                {renderPayRow('4-session-series', '4-Pack', '$720', true)}
+                {renderPayRow('initial-in-person', 'Initial — In Person', '$225', true)}
                 {showMorePayLinks && (
                   <>
-                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
-                    {renderPayRow('follow-up', 'Follow-up', '$190')}
-                    {renderPayRow('living-practice', 'Living Practice', '$347')}
-                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
-                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
-                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225', true)}
+                    {renderPayRow('follow-up', 'Follow-up', '$190', true)}
+                    {renderPayRow('living-practice', 'Living Practice', '$347', true)}
+                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495', true)}
+                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070', true)}
+                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575', true)}
                   </>
                 )}
                 <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>
