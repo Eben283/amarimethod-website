@@ -1,56 +1,42 @@
-import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, FileText, Kanban, ListChecks, Loader2, MapPinned, ShoppingBag, Sparkles, TrendingUp, Wallet } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import {
+  Activity,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  CircleDollarSign,
+  ClipboardPlus,
+  FileText,
+  Kanban,
+  ListChecks,
+  Loader2,
+  MapPinned,
+  MessageCircleMore,
+  RefreshCw,
+  Search,
+  ShoppingBag,
+  Sparkles,
+  TrendingUp,
+  TriangleAlert,
+  UsersRound,
+  Wallet,
+  Workflow,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCalendarSummary } from '../lib/api';
-import type { TodayAppointment } from '../types/staff';
+import { useHomeOperations } from '../hooks/useHomeOperations';
+import type { OutreachCard, TodayAppointment } from '../types/staff';
+import './HomePage.css';
 
-type HomeTool = {
-  label: string;
-  detail: string;
-  Icon: typeof CalendarDays;
-  to?: string;
-  href?: string;
-  tone: 'ink' | 'lake' | 'coral' | 'moss' | 'ochre' | 'violet';
-};
-
-type BackOfficeTool = {
-  label: string;
-  detail: string;
-  Icon: typeof CalendarDays;
-  to?: string;
-  href?: string;
-};
-
-const TOOLS: HomeTool[] = [
-  { label: 'Today', detail: 'Schedule', Icon: CalendarDays, to: '/today', tone: 'ochre' },
-  { label: 'Communication', detail: 'Practice Members & messages', Icon: ListChecks, to: '/client-desk', tone: 'coral' },
-  { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos', tone: 'ink' },
-  { label: 'Studies', detail: 'Sessions', Icon: ClipboardPlus, to: '/field-studies', tone: 'moss' },
-  { label: 'Money', detail: 'Balances', Icon: Wallet, to: '/balances', tone: 'violet' },
-  { label: 'Revenue', detail: 'Stripe sales', Icon: CircleDollarSign, to: '/revenue', tone: 'ink' },
-  { label: 'Staff POS', detail: 'Draft checkout', Icon: ShoppingBag, to: '/pos', tone: 'ink' },
-  { label: 'Funnel', detail: 'Lead flow', Icon: TrendingUp, to: '/funnel', tone: 'ochre' },
-  { label: 'Pipeline', detail: 'Care flow', Icon: Kanban, to: '/pipeline', tone: 'lake' },
-  { label: 'Playbooks', detail: 'Reference', Icon: BookOpen, to: '/playbook', tone: 'moss' },
-];
-
-const BACK_OFFICE: BackOfficeTool[] = [
-  { label: 'Operations', detail: 'Systems · CRM · automation', Icon: Activity, to: '/operations' },
-  { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
-];
-
-type SessionDoor = { appointment: TodayAppointment; state: 'now' | 'next' };
 const OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
 const NAIVE_DATETIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/;
-
-function pacificDate() {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts();
-  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || '';
-  return `${value('year')}-${value('month')}-${value('day')}`;
-}
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 
 function pacificWallClockAsUtc(ms: number) {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(new Date(ms));
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(new Date(ms));
   const value = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value || '0';
   return Date.UTC(+value('year'), +value('month') - 1, +value('day'), +value('hour') % 24, +value('minute'), +value('second'));
 }
@@ -66,182 +52,231 @@ function appointmentMs(value: string) {
   return ms;
 }
 
-function appointmentTime(iso: string) {
-  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' }).format(new Date(appointmentMs(iso)));
+function time(value: string) {
+  const ms = appointmentMs(value);
+  if (!Number.isFinite(ms)) return 'Time unavailable';
+  return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' }).format(new Date(ms));
+}
+
+function relativeTime(value: string | number | null | undefined) {
+  if (!value) return 'Time unavailable';
+  const ms = typeof value === 'number' ? value : new Date(value).getTime();
+  if (!Number.isFinite(ms)) return 'Time unavailable';
+  const minutes = Math.max(0, Math.floor((Date.now() - ms) / 60_000));
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1_440) return `${Math.floor(minutes / 60)}h ago`;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(ms));
+}
+
+function scheduleStatus(appointment: TodayAppointment, now: number) {
+  const start = appointmentMs(appointment.startTime);
+  const end = appointmentMs(appointment.endTime);
+  if (start <= now && now < end) return 'now';
+  if (end <= now) return 'past';
+  return 'upcoming';
+}
+
+function appointmentRoute(appointment: TodayAppointment) {
+  return `/client/${appointment.contactId}?appointment=${appointment.id}`;
+}
+
+function StateMessage({ loading, error, children }: { loading: boolean; error: string | null; children: React.ReactNode }) {
+  if (loading) return <div className="home-state"><Loader2 aria-hidden="true" /> Loading…</div>;
+  if (error) return <div className="home-state home-state--error"><TriangleAlert aria-hidden="true" /><span>{error}</span></div>;
+  return <>{children}</>;
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [sessionDoor, setSessionDoor] = useState<SessionDoor | null>(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
-  const [sessionError, setSessionError] = useState(false);
-
-  const loadSessionDoor = useCallback(async () => {
-    try {
-      setSessionError(false);
-      const appointments = await getCalendarSummary(pacificDate());
-      const now = Date.now();
-      const scheduled = appointments
-        .filter((appointment) => appointment.appointmentStatus?.toLowerCase() !== 'cancelled')
-        .sort((a, b) => appointmentMs(a.startTime) - appointmentMs(b.startTime));
-      const current = scheduled.find((appointment) => appointmentMs(appointment.startTime) <= now && now < appointmentMs(appointment.endTime));
-      const next = scheduled.find((appointment) => appointmentMs(appointment.startTime) > now);
-      setSessionDoor(current ? { appointment: current, state: 'now' } : next ? { appointment: next, state: 'next' } : null);
-      return current ? appointmentMs(current.endTime) : next ? appointmentMs(next.startTime) : now + 60_000;
-    } catch {
-      setSessionDoor(null);
-      setSessionError(true);
-      return Date.now() + 60_000;
-    } finally {
-      setSessionLoading(false);
-    }
-  }, []);
-
+  const { state, refresh } = useHomeOperations();
+  const [now, setNow] = useState(Date.now());
   useEffect(() => {
-    let timer: number | undefined;
-    let disposed = false;
-    const refresh = async () => {
-      const boundary = await loadSessionDoor();
-      if (disposed) return;
-      const delay = Math.max(10_000, boundary - Date.now() + 1_000);
-      timer = window.setTimeout(() => { void refresh(); }, delay);
-    };
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (timer) window.clearTimeout(timer);
-      setSessionLoading(true);
-      void refresh();
-    };
-    void refresh();
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { disposed = true; if (timer) window.clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); };
-  }, [loadSessionDoor]);
-
-  function open(tool: HomeTool) {
-    if (tool.to) navigate(tool.to);
-    if (tool.href) window.location.assign(tool.href);
-  }
-
-  function openBackOffice(tool: BackOfficeTool) {
-    if (tool.to) navigate(tool.to);
-    if (tool.href) window.location.assign(tool.href);
-  }
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const schedule = useMemo(() => (state.schedule.data || [])
+    .filter((appointment) => appointment.appointmentStatus?.toLowerCase() !== 'cancelled')
+    .sort((a, b) => appointmentMs(a.startTime) - appointmentMs(b.startTime)), [state.schedule.data]);
+  const current = schedule.find((appointment) => scheduleStatus(appointment, now) === 'now');
+  const next = schedule.find((appointment) => scheduleStatus(appointment, now) === 'upcoming');
+  const sessionDoor = current || next || null;
+  const replies = (state.conversations.data || []).slice(0, 4);
+  const followUps = useMemo(() => [...(state.followUps.data?.cards || [])]
+    .filter((card) => (card.recommendation?.priority || 0) > 0)
+    .sort((a, b) => (b.recommendation?.priority || 0) - (a.recommendation?.priority || 0))
+    .slice(0, 3), [state.followUps.data]);
+  const sickSystems = (state.systems.data?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
+  const automationFailures = state.automation.data?.configured ? state.automation.data.failures : [];
+  const refreshedLabel = state.refreshedAt
+    ? new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(state.refreshedAt))
+    : null;
 
   return (
-    <main className="staff-home">
-      <header className="staff-home__masthead">
-        <div className="staff-home__wordmark">
-          <i aria-hidden="true" />
-          <span>Amari Method</span>
+    <main className="integrated-home">
+      <header className="integrated-home__header">
+        <div>
+          <p className="integrated-home__eyebrow">Amari Method · staff</p>
+          <h1>Here’s the practice right now.</h1>
+          <span>{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles' }).format(new Date())}</span>
         </div>
-        <h1>Operations</h1>
-        <p>Choose a work area.</p>
+        <div className="integrated-home__header-actions">
+          <button type="button" onClick={() => navigate('/client-desk')}><Search aria-hidden="true" /> Find a person</button>
+          <button type="button" onClick={() => { void refresh(); }} aria-label="Refresh home"><RefreshCw aria-hidden="true" />{refreshedLabel ? `Updated ${refreshedLabel}` : 'Refresh'}</button>
+        </div>
       </header>
 
-      <aside className="staff-ops-alert-note" aria-label="Operations text alerts">
-        <span>Ops alerts</span>
-        <p>You’ll get a text when a monitored system needs attention or recovers. Text <strong>OPS</strong> to <strong>(628) 600-0806</strong> for the command menu.</p>
-      </aside>
+      <section className="home-shift" aria-label="Current session and today’s schedule">
+        <div className="home-now">
+          <p>{current ? 'In session now' : next ? 'Next session' : 'Session desk'}</p>
+          <StateMessage loading={state.schedule.loading} error={state.schedule.error}>
+            {sessionDoor ? (
+              <button type="button" onClick={() => navigate(appointmentRoute(sessionDoor))}>
+                <span className="home-now__time">{time(sessionDoor.startTime)}</span>
+                <strong>{sessionDoor.contactName}</strong>
+                <small>{sessionDoor.title || sessionDoor.calendarName}</small>
+                <span className="home-now__action">Open session record <ArrowRight aria-hidden="true" /></span>
+              </button>
+            ) : (
+              <button type="button" onClick={() => navigate('/today')}>
+                <span className="home-now__time">Clear</span>
+                <strong>No more sessions today</strong>
+                <small>Review the full day or prepare tomorrow.</small>
+                <span className="home-now__action">Open calendar <ArrowRight aria-hidden="true" /></span>
+              </button>
+            )}
+          </StateMessage>
+        </div>
 
-      <section className="staff-session-door" aria-label="Session access">
-        {sessionLoading ? (
-          <div className="staff-session-door__loading"><Loader2 aria-hidden="true" /> Finding today’s session…</div>
-        ) : sessionError ? (
-          <button type="button" onClick={() => { setSessionLoading(true); void loadSessionDoor(); }}>
-            <span className="staff-session-door__signal staff-session-door__signal--error"><i aria-hidden="true" /> Schedule unavailable</span>
-            <span className="staff-session-door__person">Couldn’t load today’s session</span>
-            <span className="staff-session-door__meta">Tap to try again <ChevronRight aria-hidden="true" /></span>
-          </button>
-        ) : sessionDoor ? (
-          <button type="button" onClick={() => navigate(`/client/${sessionDoor.appointment.contactId}?appointment=${sessionDoor.appointment.id}`)}>
-            <span className={`staff-session-door__signal staff-session-door__signal--${sessionDoor.state}`}>
-              <i aria-hidden="true" /> {sessionDoor.state === 'now' ? 'In session now' : 'Next session'}
-            </span>
-            <span className="staff-session-door__person">{sessionDoor.appointment.contactName}</span>
-            <span className="staff-session-door__meta">
-              {sessionDoor.state === 'now' ? 'Open the session view' : `${appointmentTime(sessionDoor.appointment.startTime)} · Open session view`}
-              <ChevronRight aria-hidden="true" />
-            </span>
-          </button>
-        ) : (
-          <button type="button" onClick={() => navigate('/today')}>
-            <span className="staff-session-door__signal"><i aria-hidden="true" /> No session queued</span>
-            <span className="staff-session-door__person">Open today’s schedule</span>
-            <span className="staff-session-door__meta">Find the next practice member <ChevronRight aria-hidden="true" /></span>
-          </button>
-        )}
-      </section>
-
-      <section aria-label="Amari tools" className="staff-home__tools">
-        {TOOLS.map((tool) => {
-          const { Icon } = tool;
-          return (
-            <button
-              key={tool.label}
-              type="button"
-              onClick={() => open(tool)}
-              className={`staff-home-tool staff-home-tool--${tool.tone}`}
-            >
-              <span className="staff-home-tool__face"><Icon aria-hidden="true" /></span>
-              <span className="staff-home-tool__copy">
-                <span className="staff-home-tool__label">{tool.label}</span>
-                <span className="staff-home-tool__detail">{tool.detail}</span>
-              </span>
-              {tool.href && <ArrowUpRight className="staff-home-tool__outbound" aria-label="Opens outside Staff" />}
-            </button>
-          );
-        })}
-      </section>
-
-      <section className="staff-backoffice" aria-label="Back office dashboards">
-        <header>
-          <p>Back office</p>
-          <span>Operator dashboards</span>
-        </header>
-        <div className="staff-backoffice__links">
-          {BACK_OFFICE.map((tool) => {
-            const { label, detail, Icon } = tool;
-            return <button key={label} type="button" onClick={() => openBackOffice(tool)}>
-              <span className="staff-backoffice__icon"><Icon aria-hidden="true" /></span>
-              <span className="staff-backoffice__copy"><strong>{label}</strong><small>{detail}</small></span>
-              {tool.href ? <ArrowUpRight aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
-            </button>;
-          })}
+        <div className="home-day">
+          <header className="home-panel-head">
+            <div><p>Today</p><span>{schedule.length} {schedule.length === 1 ? 'appointment' : 'appointments'}</span></div>
+            <button type="button" onClick={() => navigate('/today')}>Full calendar <ChevronRight aria-hidden="true" /></button>
+          </header>
+          <StateMessage loading={state.schedule.loading} error={state.schedule.error}>
+            {schedule.length ? (
+              <ol className="home-day__rail">
+                {schedule.map((appointment) => {
+                  const status = scheduleStatus(appointment, now);
+                  return <li key={appointment.id} className={`home-day__item home-day__item--${status}`}>
+                    <button type="button" onClick={() => navigate(appointmentRoute(appointment))}>
+                      <time>{time(appointment.startTime)}</time>
+                      <span><strong>{appointment.contactName}</strong><small>{appointment.title || appointment.calendarName}</small></span>
+                      {status === 'now' ? <em>Now</em> : <ChevronRight aria-hidden="true" />}
+                    </button>
+                  </li>;
+                })}
+              </ol>
+            ) : <div className="home-empty">No appointments remain on today’s schedule. <button type="button" onClick={() => navigate('/today')}>Open the calendar</button></div>}
+          </StateMessage>
         </div>
       </section>
 
-      <section className="staff-resources" aria-label="Staff resources">
-        <header>
-          <p>Resources</p>
-          <span>Reference materials</span>
-        </header>
-        <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/current-amari-positioning.md" target="_blank" rel="noreferrer">
-          <span className="staff-resources__icon"><BookOpen aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>Current Amari Positioning</strong><small>Four Lines + Practice V2 · opens in a new tab</small></span>
-          <ArrowUpRight aria-hidden="true" />
-        </a>
-        <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer">
-          <span className="staff-resources__icon"><FileText aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>Sales Scripts &amp; Hormozi Closer Handbook Sections</strong><small>PDF · opens in a new tab</small></span>
-          <ArrowUpRight aria-hidden="true" />
-        </a>
-        <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer">
-          <span className="staff-resources__icon"><CalendarDays aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>Booking rules</strong><small>Durations, buffers, and booking starts · opens in a new tab</small></span>
-          <ArrowUpRight aria-hidden="true" />
-        </a>
-        <a href="/staff/resources/amari-practice-positioning-v2.html" target="_blank" rel="noreferrer">
-          <span className="staff-resources__icon"><BookOpen aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>Amari Practice Positioning V2</strong><small>Internal positioning draft · opens in a new tab</small></span>
-          <ArrowUpRight aria-hidden="true" />
-        </a>
-        <a href="/field-signup" target="_blank" rel="noreferrer">
-          <span className="staff-resources__icon"><ClipboardPlus aria-hidden="true" /></span>
-          <span className="staff-resources__copy"><strong>Study session links</strong><small>All active study signups · opens in a new tab</small></span>
-          <ArrowUpRight aria-hidden="true" />
-        </a>
+      <section className="home-workboard" aria-label="Practice workboard">
+        <div className="home-attention">
+          <header className="home-panel-head">
+            <div><p>Attention</p><span>Work that needs a person</span></div>
+            <strong>{(state.conversations.data?.length || 0) + (state.systems.data?.attentionCount || 0) + automationFailures.length}</strong>
+          </header>
+
+          {sickSystems.slice(0, 2).map((system) => (
+            <button key={system.id} type="button" className="home-attention__item home-attention__item--danger" onClick={() => navigate('/operations?tab=systems')}>
+              <Activity aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || 'System needs attention'}</small></span><ChevronRight aria-hidden="true" />
+            </button>
+          ))}
+
+          {automationFailures.slice(0, 2).map((failure, index) => (
+            <button key={`${failure.ts}-${failure.flowKey}-${index}`} type="button" className="home-attention__item home-attention__item--danger" onClick={() => navigate('/operations?tab=automation')}>
+              <Workflow aria-hidden="true" /><span><strong>{failure.channel ? `${failure.channel.toUpperCase()} automation ${failure.outcome || 'failed'}` : `Automation ${failure.outcome || 'failed'}`}</strong><small>{failure.flowKey || failure.action || 'Open Automation Watch'} · {relativeTime(failure.ts)}</small></span><ChevronRight aria-hidden="true" />
+            </button>
+          ))}
+
+          <StateMessage loading={state.conversations.loading} error={state.conversations.error}>
+            {replies.map((reply) => (
+              <button key={reply.id} type="button" className="home-attention__item" onClick={() => navigate('/client-desk')}>
+                <MessageCircleMore aria-hidden="true" />
+                <span><strong>{reply.contactName || reply.email || reply.phone}</strong><small>{reply.lastMessagePreview || 'New message'} · {relativeTime(reply.lastMessageDate)}</small></span>
+                <i aria-label="Needs reply" />
+              </button>
+            ))}
+          </StateMessage>
+
+          {!state.conversations.loading && !state.conversations.error && !replies.length && !sickSystems.length && !automationFailures.length ? (
+            <div className="home-clear"><span>Clear</span><p>No unanswered replies, automation failures, or system incidents are showing.</p></div>
+          ) : null}
+
+          <div className="home-incident-path">
+            <Workflow aria-hidden="true" />
+            <span><strong>Someone received the wrong automated email?</strong><small>{state.automation.loading ? 'Checking whether automation evidence is available…' : state.automation.error ? 'Automation evidence could not load here. Check the chronology, then use GHL to trace the send.' : state.automation.data?.configured ? 'Compare their chronology with Automation Watch. Staff can investigate, but cannot stop a workflow here.' : 'Automation evidence is not connected here yet. Check the chronology, then use GHL to trace the send.'}</small></span>
+            <div><button type="button" onClick={() => navigate('/client-desk')}>Find the email</button><button type="button" onClick={() => navigate('/operations?tab=automation')}>Trace automation</button></div>
+          </div>
+        </div>
+
+        <div className="home-replies">
+          <header className="home-panel-head">
+            <div><p>Follow-ups</p><span>{state.followUps.data?.generatedAt ? `Snapshot ${relativeTime(state.followUps.data.generatedAt)}` : 'Latest outreach snapshot'}</span></div>
+            <button type="button" onClick={() => navigate('/follow-up')}>Open queue <ChevronRight aria-hidden="true" /></button>
+          </header>
+          <StateMessage loading={state.followUps.loading} error={state.followUps.error}>
+            {followUps.length ? followUps.map((card: OutreachCard) => (
+              <button type="button" key={card.contactId} className="home-followup" onClick={() => navigate(`/client/${card.contactId}`)}>
+                <span><strong>{card.name}</strong><small>{card.recommendation.headline}</small></span><ChevronRight aria-hidden="true" />
+              </button>
+            )) : <div className="home-empty">No due follow-ups in the latest snapshot. <button type="button" onClick={() => navigate('/follow-up')}>Review the full queue</button></div>}
+          </StateMessage>
+        </div>
+
+        <div className="home-money">
+          <header className="home-panel-head"><div><p>Money &amp; balances</p><span>Read-only practice signals</span></div></header>
+          <div className="home-money__figures">
+            <button type="button" onClick={() => navigate('/revenue')}>
+              <CircleDollarSign aria-hidden="true" /><span><small>This month</small><strong>{state.revenue.loading ? '…' : state.revenue.error ? 'Unavailable' : money.format(state.revenue.data?.thisMonth.gross || 0)}</strong><em>{state.revenue.data?.thisMonth.chargeCount || 0} successful charges</em></span>
+            </button>
+            <button type="button" onClick={() => navigate('/balances')}>
+              <Wallet aria-hidden="true" /><span><small>Session balances</small><strong>Review</strong><em>Open the full ledger and payment checks</em></span>
+            </button>
+          </div>
+          {state.revenue.error ? <p className="home-inline-error">Revenue is unavailable. Open its workspace to retry.</p> : null}
+        </div>
+
+        <div className="home-health">
+          <header className="home-panel-head"><div><p>System health</p><span>{state.systems.data?.generatedAt ? `Updated ${relativeTime(state.systems.data.generatedAt)}` : 'Live monitoring'}</span></div></header>
+          <StateMessage loading={state.systems.loading} error={state.systems.error}>
+            <button type="button" onClick={() => navigate('/operations?tab=systems')} className={`home-health__signal home-health__signal--${state.systems.data?.overall || 'unknown'}`}>
+              <span>{state.systems.data?.attentionCount || 0}</span><div><strong>{state.systems.data?.attentionCount ? 'systems need attention' : 'Monitored systems are clear'}</strong><small>Open Operations for paths, heartbeats, and incident details.</small></div><ChevronRight aria-hidden="true" />
+            </button>
+            <p className="home-health__sms">Ops alerts still arrive by text. Text <strong>OPS</strong> to <strong>(628) 600-0806</strong> for the command menu.</p>
+          </StateMessage>
+        </div>
       </section>
 
+      <section className="home-tools" aria-label="More Staff tools">
+        <header className="home-panel-head"><div><p>More tools</p><span>Use these when the work calls for them</span></div></header>
+        <div className="home-tools__grid">
+          {[
+            { label: 'Practice members', detail: 'All records and chronology', Icon: UsersRound, to: '/client-desk' },
+            { label: 'Staff POS', detail: 'Create a draft checkout', Icon: ShoppingBag, to: '/pos' },
+            { label: 'Funnel', detail: 'Lead flow and pace', Icon: TrendingUp, to: '/funnel' },
+            { label: 'Pipeline', detail: 'Current care flow', Icon: Kanban, to: '/pipeline' },
+            { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
+            { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
+            { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
+            { label: 'Operations', detail: 'Systems and automation', Icon: Activity, to: '/operations' },
+          ].map(({ label, detail, Icon, to }) => <button key={label} type="button" onClick={() => navigate(to)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{detail}</small></span><ChevronRight aria-hidden="true" /></button>)}
+        </div>
+      </section>
+
+      <details className="home-specialist">
+        <summary><ClipboardPlus aria-hidden="true" /><span><strong>Specialist tools &amp; references</strong><small>Field Studies lives here; it is not part of the daily CRM.</small></span><ChevronRight aria-hidden="true" /></summary>
+        <div>
+          <button type="button" onClick={() => navigate('/field-studies')}><ListChecks aria-hidden="true" /><span><strong>Field Studies</strong><small>Study-session records</small></span></button>
+          <a href="/field-signup" target="_blank" rel="noreferrer"><ClipboardPlus aria-hidden="true" /><span><strong>Study session links</strong><small>Public signup directory</small></span></a>
+          <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer"><CalendarDays aria-hidden="true" /><span><strong>Booking rules</strong><small>Durations, buffers, and starts</small></span></a>
+          <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /><span><strong>Sales scripts</strong><small>Staff PDF reference</small></span></a>
+          <a href="/staff/resources/amari-practice-positioning-v2.html" target="_blank" rel="noreferrer"><BookOpen aria-hidden="true" /><span><strong>Practice Positioning V2</strong><small>Internal reference</small></span></a>
+          <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/current-amari-positioning.md" target="_blank" rel="noreferrer"><BookOpen aria-hidden="true" /><span><strong>Current Amari Positioning</strong><small>Canonical source</small></span></a>
+        </div>
+      </details>
     </main>
   );
 }
