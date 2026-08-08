@@ -16,15 +16,13 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("Staff hub");
   });
 
-  it("includes an explicit staff email composer rather than automatic outreach", () => {
+  it("keeps the Desk read-only until Gmail replies and delivery reconciliation are mirrored", () => {
     const html = clientDeskHtml();
-    expect(html).toContain('id="email-compose"');
-    expect(html).toContain('name="from"');
-    expect(html).toContain("/client-desk/email-senders");
-    expect(html).toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
-    expect(html).toContain("Sends email now");
-    expect(html).toContain("blocked for email opt-out or DND");
-    expect(html).toContain("from: fields.get('from')");
+    expect(html).toContain("This mirror does not send messages.");
+    expect(html).toContain("Sending stays in the approved staff channel.");
+    expect(html).not.toContain('id="email-compose"');
+    expect(html).not.toContain("/client-desk/email-senders");
+    expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
   });
 
   it("keeps the composer anchored below a separately scrollable timeline", () => {
@@ -215,5 +213,28 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain("Client · sms");
     expect(clientDeskHtml()).toContain('.message .channel-mark { display: none; }');
     expect(clientDeskHtml()).toContain('blue-dot ');
+  });
+
+  it("uses an attention marker that is cleared only after a selected client record loads", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("needs attention");
+    expect(html).toContain("/seen', { method: 'POST'");
+    expect(html).toContain("unread_inbound_count: 0");
+  });
+
+  it("does not let a late detail response overwrite a newer selection", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("detailController?.abort()");
+    expect(html).toContain("requestId !== detailRequest || selected !== contactId");
+  });
+
+  it("does not describe an unknown-direction message as client-authored", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    expect(helpers.timelineItem({ activity_type: "message", channel: "sms", direction: "unknown", body: "Hello", occurred_at: "2026-08-08T14:00:00.000Z" })).toContain("Unclassified message · sms");
   });
 });

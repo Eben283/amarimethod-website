@@ -1,6 +1,6 @@
 # Amari CRM mirror worker
 
-This Worker is the read-only GHL and Stripe import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads those providers into its own D1 database and never writes back to either. Separately, the authenticated Staff Client Desk can send an individual email through an already-authorized Google Workspace identity after a same-origin staff action, opt-out/DND check, and immutable audit record. It has no SMS sender.
+This Worker is the read-only GHL and Stripe import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads those providers into its own D1 database and never writes back to either. The authenticated Staff Client Desk is intentionally read-only until Gmail inbound replies and delivery reconciliation are mirrored end-to-end; it has no SMS sender.
 
 ## What it mirrors
 
