@@ -1,11 +1,12 @@
-import { Activity, ChevronLeft, Database, Loader2, Workflow } from 'lucide-react';
+import { Activity, CalendarDays, ChevronLeft, CircleDollarSign, Database, Loader2, MessageSquare, UsersRound, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { getAutomationWatchAccessUrl, getCrmMirrorAccessUrl } from '../lib/api';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { getAutomationWatchAccessUrl, getCrmMirrorAccessUrl, getOpsSystemsBoard, type OpsSystemsBoard } from '../lib/api';
 
-type OpsTab = 'systems' | 'crm' | 'automation';
+type OpsTab = 'overview' | 'systems' | 'crm' | 'automation';
 
 const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }[] = [
+  { id: 'overview', label: 'Overview', detail: 'What needs attention', Icon: Activity },
   { id: 'systems', label: 'Systems', detail: 'Paths · heartbeats · fix', Icon: Activity },
   { id: 'crm', label: 'CRM Mirror', detail: 'GHL + Stripe import', Icon: Database },
   { id: 'automation', label: 'Automation Watch', detail: 'Would-send vs GHL', Icon: Workflow },
@@ -16,18 +17,30 @@ const SYSTEMS_SRC = 'https://www.amarimethod.com/ops?embed=1';
 function tabFromSearch(value: string | null): OpsTab {
   if (value === 'crm' || value === 'crm-mirror') return 'crm';
   if (value === 'automation' || value === 'automation-watch') return 'automation';
-  return 'systems';
+  return value === 'systems' ? 'systems' : 'overview';
 }
 
 export default function OperationsPage() {
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   const tab = tabFromSearch(params.get('tab'));
+  const [board, setBoard] = useState<OpsSystemsBoard | null>(null);
+  const [boardError, setBoardError] = useState<string | null>(null);
   const [crmSrc, setCrmSrc] = useState<string | null>(null);
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState<string | null>(null);
   const [automationSrc, setAutomationSrc] = useState<string | null>(null);
   const [automationLoading, setAutomationLoading] = useState(false);
   const [automationError, setAutomationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tab !== 'overview' || board) return;
+    let cancelled = false;
+    void getOpsSystemsBoard()
+      .then((data) => { if (!cancelled) setBoard(data); })
+      .catch((err) => { if (!cancelled) setBoardError(err instanceof Error ? err.message : 'Could not load system status'); });
+    return () => { cancelled = true; };
+  }, [tab, board]);
 
   useEffect(() => {
     if (tab !== 'crm') return;
@@ -79,10 +92,11 @@ export default function OperationsPage() {
   }, [tab, automationSrc]);
 
   function selectTab(next: OpsTab) {
-    setParams(next === 'systems' ? {} : { tab: next }, { replace: true });
+    setParams(next === 'overview' ? {} : { tab: next }, { replace: true });
   }
 
-  const frameSrc = tab === 'systems' ? SYSTEMS_SRC : tab === 'automation' ? automationSrc : crmSrc;
+  const frameSrc = tab === 'systems' ? SYSTEMS_SRC : tab === 'automation' ? automationSrc : tab === 'crm' ? crmSrc : null;
+  const attention = (board?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
 
   return (
     <main className="ops-hub">
@@ -91,7 +105,7 @@ export default function OperationsPage() {
         <div>
           <p>Operator surfaces</p>
           <h1>Operations</h1>
-          <span>Systems, CRM mirror, and automation watch in one place.</span>
+          <span>The working picture of the practice, with a direct route into each workspace.</span>
         </div>
       </header>
 
@@ -110,7 +124,28 @@ export default function OperationsPage() {
         ))}
       </nav>
 
-      <section className="ops-hub__frame" aria-label={TABS.find((item) => item.id === tab)?.label}>
+      {tab === 'overview' ? (
+        <section className="ops-overview" aria-label="Operations overview">
+          <div className={`ops-overview__signal ops-overview__signal--${board?.overall || 'unknown'}`}>
+            <span>{board ? board.attentionCount : '—'}</span>
+            <div><strong>{board?.attentionCount ? 'systems need attention' : board ? 'systems are clear' : 'checking systems'}</strong><small>{board?.generatedAt ? `Updated ${new Date(board.generatedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Live read-only status'}</small></div>
+          </div>
+          {boardError ? <p className="ops-overview__error" role="alert">{boardError}</p> : null}
+          {attention.length ? (
+            <div className="ops-overview__attention"><p>Needs attention</p>{attention.slice(0, 4).map((system) => <button key={system.id} type="button" onClick={() => selectTab('systems')}><i aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || system.state}</small></span></button>)}</div>
+          ) : null}
+          <div className="ops-overview__workspaces">
+            <button type="button" onClick={() => navigate('/today')}><CalendarDays aria-hidden="true" /><span><strong>Today</strong><small>Schedule and session work</small></span></button>
+            <button type="button" onClick={() => navigate('/client-desk')}><MessageSquare aria-hidden="true" /><span><strong>Practice members</strong><small>Relationship history</small></span></button>
+            <button type="button" onClick={() => navigate('/follow-up')}><UsersRound aria-hidden="true" /><span><strong>Follow-up</strong><small>Replies and next moves</small></span></button>
+            <button type="button" onClick={() => navigate('/revenue')}><CircleDollarSign aria-hidden="true" /><span><strong>Revenue</strong><small>Sales and payment record</small></span></button>
+            <button type="button" onClick={() => selectTab('crm')}><Database aria-hidden="true" /><span><strong>CRM mirror</strong><small>Imported GHL and Stripe record</small></span></button>
+            <button type="button" onClick={() => selectTab('automation')}><Workflow aria-hidden="true" /><span><strong>Automation watch</strong><small>What would send and why</small></span></button>
+          </div>
+        </section>
+      ) : null}
+
+      {tab !== 'overview' ? <section className="ops-hub__frame" aria-label={TABS.find((item) => item.id === tab)?.label}>
         {tab === 'crm' && crmLoading ? (
           <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected CRM session…</div>
         ) : null}
@@ -129,6 +164,7 @@ export default function OperationsPage() {
           <div className="ops-hub__status">Loading…</div>
         ) : null}
       </section>
+      : null}
     </main>
   );
 }
