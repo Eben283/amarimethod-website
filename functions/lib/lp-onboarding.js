@@ -31,7 +31,7 @@ export const LP_ONBOARDING_EMAIL = Object.freeze({
   preheader: "Your full protocol library is ready in your portal.",
   body: `Hi {{contact.first_name}},
 
-Your 8-session package includes access to the Living Practice, the full protocol library with video walkthroughs. It's in your portal now, worth looking at between sessions. Everything we've been working on is in there.
+Your Living Practice access is ready. The full protocol library with video walkthroughs is in your portal now, worth looking at between sessions. Everything we've been working on is in there.
 
 Access Living Practice → https://www.amarimethod.com/portal/
 

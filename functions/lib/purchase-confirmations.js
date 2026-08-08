@@ -28,84 +28,25 @@ const MODE = "shadow";
 
 const FROM = Object.freeze({ name: "Amari Method", email: "eben@amarimethod.com" });
 
-const TEMPLATES = Object.freeze({
-  "4-session": Object.freeze({
-    key: "confirm-4-session",
-    from: FROM,
-    subject: "Your 4-Session Series is confirmed, {{contact.first_name}}",
-    preheader: "Here's what's next",
-    body: `Hi {{contact.first_name}},
+// Founder fulfillment remains supported, but non-receipt messages never name
+// or price the retired legacy offers. This source is shadow-only today; it is
+// intentionally aligned with that policy before any future code cutover.
+const FOUNDER_FULFILLMENT_CONFIRMATION = Object.freeze({
+  key: "founder-fulfillment-confirmation",
+  from: FROM,
+  subject: "Your Amari plan is confirmed, {{contact.first_name}}",
+  preheader: "Here's what's next.",
+  body: `Hi {{contact.first_name}},
 
-You're all set. Your 4-Session Series is confirmed.
+You're all set. Your Amari plan is confirmed.
 
-Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
+Your portal has everything you need to view your progress, manage your sessions, and access any available materials.
 
-Access Your Portal  → https://www.amarimethod.com/portal/
-
-If you have any questions, reply here or call us at (628) 877-7673.
-
-Amari Method`,
-  }),
-  "8-session": Object.freeze({
-    key: "confirm-8-session",
-    from: FROM,
-    subject: "Your 8-Session Series is Confirmed, {{contact.first_name}}",
-    preheader: "Here's what's next",
-    body: `Hi {{contact.first_name}},
-
-You're all set. Your 8-Session Series is confirmed and your Living Practice access is included.
-
-Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
-
-Access Your Portal  → https://www.amarimethod.com/portal/
+Access your portal → https://www.amarimethod.com/portal/
 
 If you have any questions, reply here or call us at (628) 877-7673.
 
 Amari Method`,
-  }),
-});
-
-// Classification-specific variants override the seriesType default. Both upgrade bodies are
-// VERBATIM from GHL-WORKFLOWS-MASTER.md C1b/C2b, confirmed live 2026-07-12 (builder AI
-// reads) — the upgrade variants carry the initial-credit line the plain series emails lack.
-// The live bodies' em-dashes are ported as-is; any de-slop is a separate copy change, never
-// silent. Plain series orders fall back to the seriesType templates above, which the same
-// builder pass verified word-for-word against the live T4 emails.
-const CLASSIFICATION_TEMPLATES = Object.freeze({
-  "4-upgrade": Object.freeze({
-    key: "confirm-4-upgrade",
-    from: FROM,
-    subject: "Your 4-Session Series is confirmed, {{contact.first_name}}",
-    preheader: "Here's what's next.",
-    body: `Hi {{contact.first_name}},
-
-You're all set. Your 4-Session Series is confirmed — your initial session credit has been applied.
-
-Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
-
-[Access Your Portal]  → https://www.amarimethod.com/portal/
-
-If you have any questions, reply here or call us at (628) 877-7673.
-
-Amari Method`,
-  }),
-  "8-upgrade": Object.freeze({
-    key: "confirm-8-upgrade",
-    from: FROM,
-    subject: "Your 8-Session Series is Confirmed, {{contact.first_name}}",
-    preheader: "Here's what's next.",
-    body: `Hi {{contact.first_name}},
-
-You're all set. Your 8-Session Series is confirmed — your initial session credit has been applied, and your Living Practice access is included.
-
-Your client portal has everything you need: your progress tracker, session history, and booking for your next session.
-
-[Access Your Portal]  → https://www.amarimethod.com/portal/
-
-If you have any questions, reply here or call us at (628) 877-7673.
-
-Amari Method`,
-  }),
 });
 
 /**
@@ -114,11 +55,9 @@ Amari Method`,
  * fall-through). Pure.
  */
 export function confirmationForSeries(seriesType, classification) {
-  return (
-    CLASSIFICATION_TEMPLATES[String(classification ?? "")] ||
-    TEMPLATES[String(seriesType ?? "")] ||
-    null
-  );
+  const isFounderFulfillment = ["4-session", "8-session"].includes(String(seriesType ?? "")) ||
+    ["4-upgrade", "8-upgrade"].includes(String(classification ?? ""));
+  return isFounderFulfillment ? FOUNDER_FULFILLMENT_CONFIRMATION : null;
 }
 
 function changesOf(res) {

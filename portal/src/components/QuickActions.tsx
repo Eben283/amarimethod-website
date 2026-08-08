@@ -17,12 +17,7 @@ const BOOKING_URLS = {
   initial_virtual: '/book/initial-virtual',
 };
 
-// GHL Payment Links
 const PAYMENT_LINKS = {
-  series_4:        'https://link.amarimethod.com/payment-link/69986ff988a3f0163e84003d',
-  series_8:        'https://link.amarimethod.com/payment-link/6998736ab409476885754915',
-  upgrade_to_4:    'https://link.amarimethod.com/payment-link/699873a81a8400115e0381db',
-  upgrade_to_8:    'https://link.amarimethod.com/payment-link/699873e31a840007c0038223',
   living_practice: 'https://groups.amarimethod.com/courses/offers/e339a945-b4f8-49d5-8c13-36c83a1e1afd',
 };
 const GIFT_CARD_URL = 'https://link.amarimethod.com/gift-card/69ae353a47ad8b40dc3cdb13';
@@ -41,73 +36,6 @@ interface Action {
   muted?: boolean;
   testId?: string;
   external?: boolean; // open in new tab
-}
-
-function getSeriesActions(client: ClientData): Action[] {
-  const { seriesType, sessionsCompleted, sessionsRemaining, isPartner } = client;
-  const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
-  const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
-
-  // Exactly 1 pay-as-you-go session — credit upgrade beats buying full price.
-  // initialPurchaseCount gates on a PAID initial in the books (orders +
-  // invoices): the lifetime count alone also matched comped partner-initials
-  // and paid-at-partner sessions, offering "$225 already applied" to clients
-  // who never paid $225 through GHL. Undefined (cached pre-field response)
-  // fails the === 1 check, so the offer just doesn't show until refresh.
-  if (seriesType === 'none' && sessionsCompleted === 1 && client.initialPurchaseCount === 1 && !isPartner) {
-    return [
-      {
-        label: 'Upgrade to a 4-session series',
-        description: 'Continue with 3 more sessions — your $225 is already applied.',
-        price: '$495',
-        cta: 'Upgrade',
-        href: PAYMENT_LINKS.upgrade_to_4,
-        testId: 'upgrade-to-4-card',
-      },
-      {
-        label: 'Upgrade to an 8-session series',
-        description: 'Full 8-step protocol + Living Practice — your $225 is already applied.',
-        price: '$1,070',
-        cta: 'Upgrade',
-        href: PAYMENT_LINKS.upgrade_to_8,
-        testId: 'upgrade-to-8-card',
-      },
-    ];
-  }
-
-  const isEstablished = hasActiveSeries || seriesFinished || sessionsCompleted >= 2;
-  const hasHadInitialForCopy = client.sessionsCompleted > 0;
-
-  const pack4Description = isEstablished
-    ? 'Maintain and evolve your at-home practice.'
-    : hasHadInitialForCopy
-      ? 'Four sessions at a package rate.'
-      : 'Four follow-up sessions at a package rate (initial purchased separately).';
-
-  const pack8Description = isEstablished
-    ? 'Deepen your at-home practice with 8 sessions + Living Practice.'
-    : hasHadInitialForCopy
-      ? 'Eight sessions + Living Practice included.'
-      : 'Eight follow-up sessions + Living Practice (initial purchased separately).';
-
-  return [
-    {
-      label: '4-session series',
-      description: pack4Description,
-      price: '$720',
-      cta: 'Buy',
-      href: PAYMENT_LINKS.series_4,
-      testId: 'series-4-card',
-    },
-    {
-      label: '8-session series',
-      description: pack8Description,
-      price: '$1,295',
-      cta: 'Buy',
-      href: PAYMENT_LINKS.series_8,
-      testId: 'series-8-card',
-    },
-  ];
 }
 
 function ActionCard({ a }: { a: Action }) {
@@ -215,8 +143,6 @@ export default function QuickActions({ client, onBookSession, onBooked: _onBooke
     );
   }
 
-  const seriesActions = getSeriesActions(client);
-
   const livingPracticeAction: Action = client.hasLivingPractice
     ? {
         label: 'Continue Living Practice',
@@ -270,7 +196,6 @@ export default function QuickActions({ client, onBookSession, onBooked: _onBooke
   };
 
   const secondaryActions: Action[] = [
-    ...seriesActions,
     livingPracticeAction,
     toolsAction,
     ...(giftCardAction ? [giftCardAction] : []),

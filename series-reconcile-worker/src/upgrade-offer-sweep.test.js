@@ -60,18 +60,19 @@ function deps(over = {}) {
 
 beforeEach(() => vi.clearAllMocks());
 
-describe("UPGRADE_OFFER_EMAIL — the 2026-06-17 post-scrub copy, verbatim", () => {
-  it("carries the live subject, sender, and both upgrade payment links", () => {
-    expect(UPGRADE_OFFER_EMAIL.subject).toBe("Ready to go deeper");
+describe("UPGRADE_OFFER_EMAIL — current Practice copy", () => {
+  it("carries the current subject, sender, and current Practice checkout links", () => {
+    expect(UPGRADE_OFFER_EMAIL.subject).toBe("If you want to continue");
     expect(UPGRADE_OFFER_EMAIL.from).toEqual({ name: "Garrett", email: "garrett@amarimethod.com" });
-    expect(UPGRADE_OFFER_EMAIL.body).toContain("https://link.amarimethod.com/payment-link/699873a81a8400115e0381db");
-    expect(UPGRADE_OFFER_EMAIL.body).toContain("https://link.amarimethod.com/payment-link/699873e31a840007c0038223");
+    expect(UPGRADE_OFFER_EMAIL.body).toContain("https://link.amarimethod.com/payment-link/6a6833c27b99151a54040da5");
+    expect(UPGRADE_OFFER_EMAIL.body).toContain("https://link.amarimethod.com/payment-link/6a66ce547b99151a540409b0");
   });
 
   it("never regresses to the retired pre-scrub copy", () => {
     expect(UPGRADE_OFFER_EMAIL.body).not.toMatch(/short window/i); // manufactured-urgency line stays dead
     expect(UPGRADE_OFFER_EMAIL.body).not.toMatch(/Dr\./);
     expect(UPGRADE_OFFER_EMAIL.body).not.toMatch(/reach out personally/i);
+    expect(UPGRADE_OFFER_EMAIL.body).not.toMatch(/4-session|8-session|initial session applied/i);
   });
 });
 

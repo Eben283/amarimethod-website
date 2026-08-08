@@ -134,46 +134,14 @@
           purchaseLabel: 'Follow-up session purchased',
           purchaseBody: 'Your session credit is on your account. Book your follow-up from the practice member portal whenever you\'re ready.',
         },
-        '4_session_series': {
-          item_name: 'Amari Method 4-Session Series',
-          short_name: '4-Session Series',
-          price: 720,
-          hasSlot: false,
-          purchaseLabel: '4-Session Series unlocked',
-          purchaseBody: 'Four sessions are now on your account. Book each one from the practice member portal as you\'re ready.',
-        },
-        '8_session_series': {
-          item_name: 'Amari Method 8-Session Series',
-          short_name: '8-Session Series',
-          price: 1295,
-          hasSlot: false,
-          purchaseLabel: '8-Session Series + Living Practice unlocked',
-          purchaseBody: 'Eight sessions are on your account, and Living Practice is now available in your portal. Book your sessions whenever you\'re ready.',
-        },
-        upgrade_initial_to_4: {
-          item_name: 'Amari Method Upgrade: Initial → 4-Session',
-          short_name: 'Upgrade to 4-Session Series',
-          price: 495,
-          hasSlot: false,
-          purchaseLabel: 'Upgraded to 4-Session Series',
-          purchaseBody: 'Three more sessions are on your account (your initial counts as the first). Book each one from the practice member portal.',
-        },
-        upgrade_initial_to_8: {
-          item_name: 'Amari Method Upgrade: Initial → 8-Session',
-          short_name: 'Upgrade to 8-Session Series',
-          price: 1070,
-          hasSlot: false,
-          purchaseLabel: 'Upgraded to 8-Session Series + Living Practice',
-          purchaseBody: 'Seven more sessions are on your account (your initial counts as the first), and Living Practice is now available in your portal.',
-        },
-        upgrade_4_to_8: {
-          item_name: 'Amari Method Upgrade: 4-Session → 8-Session',
-          short_name: 'Upgrade to 8-Session Series',
-          price: 575,
-          hasSlot: false,
-          purchaseLabel: 'Upgraded to 8-Session Series',
-          purchaseBody: 'Four more sessions are on your account, and Living Practice is now available in your portal.',
-        },
+        // Retired founder purchases remain fulfillable when arranged directly,
+        // but the confirmation page never displays the retired offer, price,
+        // credit, or session count. The receipt is the financial record.
+        '4_session_series': { item_name: 'Amari Method plan', short_name: 'Amari Method plan', hasSlot: false, purchaseLabel: 'Your plan is confirmed', purchaseBody: 'Your session access is now available in the practice member portal.' },
+        '8_session_series': { item_name: 'Amari Method plan', short_name: 'Amari Method plan', hasSlot: false, purchaseLabel: 'Your plan is confirmed', purchaseBody: 'Your session access and available materials are now in the practice member portal.' },
+        upgrade_initial_to_4: { item_name: 'Amari Method plan', short_name: 'Amari Method plan', hasSlot: false, purchaseLabel: 'Your plan is confirmed', purchaseBody: 'Your session access is now available in the practice member portal.' },
+        upgrade_initial_to_8: { item_name: 'Amari Method plan', short_name: 'Amari Method plan', hasSlot: false, purchaseLabel: 'Your plan is confirmed', purchaseBody: 'Your session access and available materials are now in the practice member portal.' },
+        upgrade_4_to_8: { item_name: 'Amari Method plan', short_name: 'Amari Method plan', hasSlot: false, purchaseLabel: 'Your plan is confirmed', purchaseBody: 'Your session access and available materials are now in the practice member portal.' },
         living_practice: {
           item_name: 'Amari Method Living Practice',
           short_name: 'Living Practice',
@@ -214,7 +182,7 @@
             value: 0,
             currency: 'USD',
           });
-        } else {
+        } else if (Number.isFinite(item.price)) {
           window.gtag('event', 'purchase', {
             transaction_id: transactionId,
             value: item.price,

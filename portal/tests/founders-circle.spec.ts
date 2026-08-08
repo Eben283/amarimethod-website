@@ -34,10 +34,13 @@ const untaggedSeriesClient: PortalDataResponse = {
 };
 
 test.describe('Founders Circle portal routing', () => {
-  test('tagged Founders Circle clients stay on the legacy dashboard (not Practice home)', async ({ page }) => {
+  test('tagged Founders Circle clients use the Practice home without legacy checkout offers', async ({ page }) => {
     await mountAsUser(page, foundersClient);
     await expect(page.getByTestId('dashboard')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /12-Week Amari Practice|6-Week Amari Practice|Your Amari visits/i })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Your Amari visits/i })).toBeVisible();
+    await expect(page.getByText('$720')).toHaveCount(0);
+    await expect(page.getByText('$1,295')).toHaveCount(0);
+    await expect(page.locator('a[href*="4-session-series"], a[href*="8-session-series"]')).toHaveCount(0);
   });
 
   test('untagged clients see Practice home without pack repurchase prices', async ({ page }) => {
