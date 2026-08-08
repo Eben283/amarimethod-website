@@ -297,6 +297,9 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain("Charge now");
     expect(rendered).toContain("contact=ghl%20contact%2F1&amp;action=charge");
     expect(rendered).toContain('target="_top"');
+    expect(rendered).toContain('data-staff-handoff');
+    expect(clientDeskHtml()).toContain("window.parent.postMessage({ type: 'amari:staff-navigate'");
+    expect(clientDeskHtml()).toContain('bindRecordNavigation();');
   });
 
   it("keeps unread markers in the inbox and out of every timeline message", () => {
