@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<link rel="stylesheet" href="/css/site-v6.css?v=footer-1">
 <style>
   /* ---------- How-It-Works-page-specific styles ---------- */
 
@@ -52,8 +52,8 @@
   .principle-grid .txt p{margin-top:20px;max-width:58ch;font-size:1.05rem}
   .principle-grid .txt p strong{color:var(--ink);font-weight:500}
   .pq-panel{position:relative;margin:clamp(40px,6vw,72px) 0;padding-left:clamp(44px,6vw,80px)}
-  .pq-panel::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
-  .pq-panel blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .pq-panel::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:normal;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .pq-panel blockquote{font-family:var(--serif);font-style:normal;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
   .pq-panel cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .pq-panel cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
 
@@ -64,7 +64,7 @@
   .axis-card .label{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--peach);display:block}
   .axis-card h3{font-size:clamp(1.5rem,2.4vw,2rem);font-weight:500;margin-top:14px}
   .axis-card p{margin-top:16px;max-width:52ch}
-  .axis-card p em{font-style:italic;color:var(--ink)}
+  .axis-card p em{font-style:normal;color:var(--ink)}
   .axis-closer{margin-top:36px;max-width:72ch}
   .axis-closer strong{color:var(--ink);font-weight:500}
 
@@ -85,12 +85,12 @@
   .proto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(16px,1.7vw,22px)}
   .proto{position:relative;background:var(--cream);padding:30px 24px 28px;display:flex;flex-direction:column;gap:12px;min-height:196px;border-radius:2px;border-top:2px solid var(--peach);transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
   .proto:hover{transform:translateY(-4px);box-shadow:0 16px 34px rgba(33,29,25,.10)}
-  .proto .pnum{font-family:var(--serif);font-style:italic;font-size:1rem;color:var(--peach);letter-spacing:.06em;line-height:1}
+  .proto .pnum{font-family:var(--serif);font-style:normal;font-size:1rem;color:var(--peach);letter-spacing:.06em;line-height:1}
   .proto .pname{font-family:var(--serif);font-size:1.42rem;font-weight:500;line-height:1.15;color:var(--ink)}
   .proto .pdesc{font-size:13.5px;color:var(--body);line-height:1.55;margin-top:auto}
   .proto-closer{position:relative;margin-top:44px;padding-left:clamp(40px,5vw,68px);max-width:72ch}
-  .proto-closer::before{content:"\201C";position:absolute;left:-.04em;top:-.32em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(3.6rem,7vw,5.5rem);line-height:1;color:var(--peach);opacity:.4;pointer-events:none}
-  .proto-closer blockquote{font-family:var(--serif);font-style:italic;font-size:clamp(1.2rem,1.9vw,1.5rem);line-height:1.42;color:var(--ink);margin:0}
+  .proto-closer::before{content:"\201C";position:absolute;left:-.04em;top:-.32em;font-family:var(--serif);font-style:normal;font-weight:500;font-size:clamp(3.6rem,7vw,5.5rem);line-height:1;color:var(--peach);opacity:.4;pointer-events:none}
+  .proto-closer blockquote{font-family:var(--serif);font-style:normal;font-size:clamp(1.2rem,1.9vw,1.5rem);line-height:1.42;color:var(--ink);margin:0}
   .proto-closer cite{display:flex;align-items:center;gap:14px;margin-top:16px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .proto-closer cite::before{content:"";width:30px;height:1px;background:var(--ink);flex:none}
 
@@ -99,7 +99,7 @@
   .rings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
   .ring{padding:40px clamp(20px,2.4vw,36px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
   .ring:first-child{border-left:1px solid var(--line)}
-  .ring .rnum{font-family:var(--serif);font-style:italic;font-size:.95rem;color:var(--peach);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:14px}
+  .ring .rnum{font-family:var(--serif);font-style:normal;font-size:.95rem;color:var(--peach);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:14px}
   .ring h3{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:500}
   .ring p{margin-top:14px;font-size:15px;max-width:40ch}
 
@@ -110,7 +110,7 @@
   .phase .ltag{font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--body);display:block}
   .phase h3{font-size:clamp(1.7rem,2.6vw,2.2rem);font-weight:500;margin-top:12px}
   .phase p{margin-top:14px;font-size:15px}
-  .phase p em{font-style:italic;color:var(--ink)}
+  .phase p em{font-style:normal;color:var(--ink)}
 
   /* How it's different (centered prose) */
   .different{padding:clamp(80px,10vw,130px) 0}
@@ -124,7 +124,7 @@
   .obj-item{padding:30px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1.5fr;gap:40px;align-items:start}
   .obj-item:last-child{border-bottom:1px solid var(--line)}
   .obj-item .q{font-family:var(--serif);font-size:clamp(1.25rem,1.9vw,1.5rem);font-weight:500;line-height:1.3;color:var(--ink)}
-  .obj-item .q em{font-style:italic}
+  .obj-item .q em{font-style:normal}
   .obj-item .a{font-size:15.5px;color:var(--body);line-height:1.6}
 
   /* FAQ accordion */
@@ -212,7 +212,7 @@
   <div class="hero-bg" style="background-image:url('/images/photos/black-man42-room-roller.jpg')"></div>
   <div class="hero-inner">
     <span class="eyebrow light">How It Works · The Amari Method</span>
-    <h1>Your body can heal <em>you.</em></h1>
+    <h1>Your body can heal you.</h1>
     <p>Most people in chronic pain have spent years being told their body is broken and someone else needs to fix it. The Amari Method starts from the opposite premise: your body is already trying to rebalance itself, and the work is teaching you to listen. You're guided through it, and you do the healing.</p>
     <div class="hero-meta">
       <span>25+ years of hands-on practice</span>
@@ -230,11 +230,11 @@
   <div class="wrap">
     <div class="sec-head left reveal">
       <span class="eyebrow">The principle</span>
-      <h2>The body is <em>simple.</em></h2>
+      <h2>The body is simple.</h2>
     </div>
     <div class="principle-grid">
       <div class="txt reveal">
-        <p>Almost every chronic pain pattern reduces to one sentence: <em>something is working too hard because something else isn't working enough.</em> A muscle that should be supporting your spine has gone offline, so a different one overworks. A joint that's supposed to glide is locked, so the joint above it absorbs all the load. The diagnosis you've been given (disc degeneration, impingement, sciatica, frozen shoulder, runner's knee) is downstream of that pattern, not the cause of it.</p>
+        <p>Almost every chronic pain pattern reduces to one sentence: something is working too hard because something else isn't working enough. A muscle that should be supporting your spine has gone offline, so a different one overworks. A joint that's supposed to glide is locked, so the joint above it absorbs all the load. The diagnosis you've been given (disc degeneration, impingement, sciatica, frozen shoulder, runner's knee) is downstream of that pattern, not the cause of it.</p>
         <p><strong>The body wants balance, not pain relief.</strong> Pain is the messenger. The work isn't silencing the messenger. It's listening, finding what's overworking and what's underworking, and bringing them back into balance. That's what every session is. That's the whole method.</p>
       </div>
       <div class="pq-panel reveal">
@@ -293,19 +293,19 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">The assessment</span>
-      <h2>Two kinds of bodies. Two <em>opposite paths.</em></h2>
-      <p>Your first session figures out where you sit. Most people are <em>a combination of both</em>, and the work is matched to your mix.</p>
+      <h2>Two kinds of bodies. Two opposite paths.</h2>
+      <p>Your first session figures out where you sit. Most people are a combination of both, and the work is matched to your mix.</p>
     </div>
     <div class="axis-grid">
       <div class="axis-card reveal">
         <span class="label">Active body · Hypertonic</span>
-        <h3>If you're an <em>active body&hellip;</em></h3>
-        <p>Your muscles are gripping. You feel tight, contracted, lifted up in your body. After a session, you say <em>&ldquo;I feel more grounded.&rdquo;</em> Your work is in letting go, finding positions where the overworked tissues finally release. The protocols look passive: lying on a yoga block, hanging from rings, breathing.</p>
+        <h3>If you're an active body&hellip;</h3>
+        <p>Your muscles are gripping. You feel tight, contracted, lifted up in your body. After a session, you say &ldquo;I feel more grounded.&rdquo; Your work is in letting go, finding positions where the overworked tissues finally release. The protocols look passive: lying on a yoga block, hanging from rings, breathing.</p>
       </div>
       <div class="axis-card reveal" style="transition-delay:.06s">
         <span class="label">Passive body · Hypermobile</span>
-        <h3>If you're a <em>passive body&hellip;</em></h3>
-        <p>Your joints move easily but your muscles aren't engaging. You feel heavy, slack, loaded into your bones. After a session, you say <em>&ldquo;I feel lighter.&rdquo;</em> Your work is in waking up the muscles that stopped doing their job. The protocols look active: bridges, hand presses, micro-engagements you can feel.</p>
+        <h3>If you're a passive body&hellip;</h3>
+        <p>Your joints move easily but your muscles aren't engaging. You feel heavy, slack, loaded into your bones. After a session, you say &ldquo;I feel lighter.&rdquo; Your work is in waking up the muscles that stopped doing their job. The protocols look active: bridges, hand presses, micro-engagements you can feel.</p>
       </div>
     </div>
     <p class="axis-closer reveal">Giving an active person more activation makes them worse. Giving a passive person more release makes them worse. Most clinicians don't make this distinction. <strong>The first session figures out where you are and matches the work to your body, not a generic protocol.</strong></p>
@@ -317,7 +317,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">What happens</span>
-      <h2>Your first session, in <em>four parts.</em></h2>
+      <h2>Your first session, in four parts.</h2>
       <p>Full assessment, guided protocols, and a take-home practice. 60 minutes.</p>
     </div>
     <div class="fourparts-grid">
@@ -347,7 +347,7 @@
     <div class="protocols-panel reveal">
       <div class="sec-head left">
         <span class="eyebrow">The protocols</span>
-        <h2>Eight protocols. <em>Your body leads.</em></h2>
+        <h2>Eight protocols. Your body leads.</h2>
         <p>Every practice member eventually does all eight. Which you start with depends on what your body is asking for.</p>
       </div>
       <div class="proto-grid">
@@ -405,22 +405,22 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">What you get</span>
-      <h2>Three things you <em>get back.</em></h2>
+      <h2>Three things you get back.</h2>
     </div>
     <div class="rings-grid">
       <div class="ring reveal">
         <span class="rnum">Ring 01</span>
-        <h3>Pain relief: <em>it works.</em></h3>
+        <h3>Pain relief: it works.</h3>
         <p>Most practice members feel a shift in their first session. That's the proof. It's the reason you came. It's the floor, not the ceiling.</p>
       </div>
       <div class="ring reveal" style="transition-delay:.06s">
         <span class="rnum">Ring 02</span>
-        <h3>Rebalancing: <em>your body holds itself.</em></h3>
+        <h3>Rebalancing: your body holds itself.</h3>
         <p>Once the pattern starts correcting, your body stops fighting itself. People walking out describe feeling stacked, not efforting, rooted to the ground. Pain relief is the side effect. Balance is the actual product.</p>
       </div>
       <div class="ring reveal" style="transition-delay:.12s">
         <span class="rnum">Ring 03</span>
-        <h3>Self-connection: <em>a much better human experience.</em></h3>
+        <h3>Self-connection: a much better human experience.</h3>
         <p>Long-term practice members describe slowing down, becoming more emotionally available, feeling more present in their lives. Pain-free is the starting line, not the finish.</p>
       </div>
     </div>
@@ -432,13 +432,13 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">The journey</span>
-      <h2>Where this <em>takes you.</em></h2>
+      <h2>Where this takes you.</h2>
     </div>
     <div class="journey-grid">
       <div class="phase reveal">
         <span class="ltag">Phase 01</span>
         <h3>Discovery</h3>
-        <p>Pure experience. First sessions are about being guided and feeling what's possible. No curriculum. No homework you don't want. <em>&ldquo;Let me just walk you through it.&rdquo;</em></p>
+        <p>Pure experience. First sessions are about being guided and feeling what's possible. No curriculum. No homework you don't want. &ldquo;Let me just walk you through it.&rdquo;</p>
       </div>
       <div class="phase reveal" style="transition-delay:.06s">
         <span class="ltag">Phase 02</span>
@@ -462,7 +462,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">How it's different</span>
-      <h2>The body wants <em>balance,</em> not pain relief.</h2>
+      <h2>The body wants balance, not pain relief.</h2>
     </div>
     <p class="different-body body reveal">Other approaches can help. Manual therapy, injections, physical therapy, painkillers all do something. They can buy real relief in the short term. But they share an assumption: <strong>someone else does the work, and you receive it.</strong> The Amari Method inverts that. You're not on a table. You're moving, finding positions, learning what your body is doing and why. The relief is the side effect. The change in pattern is the point. And once you've made the change yourself, you don't need someone else to keep making it for you.</p>
   </div>
@@ -483,7 +483,7 @@
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">FAQ</span>
-      <h2>The questions <em>everyone asks.</em></h2>
+      <h2>The questions everyone asks.</h2>
     </div>
     <div class="faq-list reveal">
       <details>
@@ -564,7 +564,7 @@
 <section class="appt" id="appt">
   <div class="wrap">
     <span class="eyebrow">The guarantee</span>
-    <h2>Start by listening to your <em>whole body.</em></h2>
+    <h2>Start by listening to your whole body.</h2>
     <p>Start with an Amari Assessment. Garrett will meet you in person, move with you, and explain what a fuller practice could look like.</p>
     <div class="btn-row">
       <a href="/booking" class="btn">Book a $29 Assessment</a>
@@ -575,6 +575,6 @@
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=27" data-nav="method"></script>
+<script src="/js/site-v6.js?v=footer-1" data-nav="method"></script>
 </body>
 </html>
