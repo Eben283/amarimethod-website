@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
@@ -11,6 +11,26 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("No communication mirrored yet.");
     expect(html).toContain("No activity");
     expect(html).toContain("timelineDayKey");
+  });
+
+  it("shows accurate relative ages and the exact source timestamp on contact cards", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { activityAge, threadTime }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-08T17:00:00.000Z"));
+    try {
+      expect(helpers.activityAge("2026-08-08T16:05:00.000Z")).toBe("55 minutes ago");
+      expect(helpers.activityAge("2026-08-08T16:00:00.000Z")).toBe("1 hour ago");
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).toContain("55 minutes ago");
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).toContain('class="thread-exact-time"');
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).not.toContain("Now");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not expose operator-surface navigation inside Client Desk", () => {
