@@ -1,4 +1,4 @@
-import { Activity, CalendarDays, ChevronLeft, CircleDollarSign, Database, Loader2, MessageSquare, UsersRound, Workflow } from 'lucide-react';
+import { Activity, BookOpen, CalendarDays, ChevronLeft, CircleDollarSign, ClipboardPlus, Database, Kanban, Loader2, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getAutomationWatchAccessUrl, getCrmMirrorAccessUrl, getOpsSystemsBoard, type OpsSystemsBoard } from '../lib/api';
@@ -13,6 +13,46 @@ const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }
 ];
 
 const SYSTEMS_SRC = 'https://www.amarimethod.com/ops?embed=1';
+
+type Workspace = {
+  label: string;
+  detail: string;
+  Icon: typeof Activity;
+  to?: string;
+  tab?: OpsTab;
+};
+
+const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
+  {
+    label: 'Care and relationships',
+    items: [
+      { label: 'Today', detail: 'Schedule and session work', Icon: CalendarDays, to: '/today' },
+      { label: 'Practice members', detail: 'Relationship history', Icon: MessageSquare, to: '/client-desk' },
+      { label: 'Follow-up', detail: 'Replies and next moves', Icon: UsersRound, to: '/follow-up' },
+      { label: 'Balances', detail: 'Session entitlements', Icon: Wallet, to: '/balances' },
+      { label: 'Care pipeline', detail: 'Current client flow', Icon: Kanban, to: '/pipeline' },
+    ],
+  },
+  {
+    label: 'Revenue and growth',
+    items: [
+      { label: 'Revenue', detail: 'Sales and payment record', Icon: CircleDollarSign, to: '/revenue' },
+      { label: 'Staff POS', detail: 'Draft checkout', Icon: ShoppingBag, to: '/pos' },
+      { label: 'Funnel', detail: 'Lead flow and pace', Icon: TrendingUp, to: '/funnel' },
+      { label: 'Field studies', detail: 'Study sessions', Icon: ClipboardPlus, to: '/field-studies' },
+      { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
+    ],
+  },
+  {
+    label: 'Control and reference',
+    items: [
+      { label: 'CRM mirror', detail: 'Imported GHL and Stripe record', Icon: Database, tab: 'crm' },
+      { label: 'Automation watch', detail: 'What would send and why', Icon: Workflow, tab: 'automation' },
+      { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
+      { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
+    ],
+  },
+];
 
 function tabFromSearch(value: string | null): OpsTab {
   if (value === 'crm' || value === 'crm-mirror') return 'crm';
@@ -134,13 +174,19 @@ export default function OperationsPage() {
           {attention.length ? (
             <div className="ops-overview__attention"><p>Needs attention</p>{attention.slice(0, 4).map((system) => <button key={system.id} type="button" onClick={() => selectTab('systems')}><i aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || system.state}</small></span></button>)}</div>
           ) : null}
-          <div className="ops-overview__workspaces">
-            <button type="button" onClick={() => navigate('/today')}><CalendarDays aria-hidden="true" /><span><strong>Today</strong><small>Schedule and session work</small></span></button>
-            <button type="button" onClick={() => navigate('/client-desk')}><MessageSquare aria-hidden="true" /><span><strong>Practice members</strong><small>Relationship history</small></span></button>
-            <button type="button" onClick={() => navigate('/follow-up')}><UsersRound aria-hidden="true" /><span><strong>Follow-up</strong><small>Replies and next moves</small></span></button>
-            <button type="button" onClick={() => navigate('/revenue')}><CircleDollarSign aria-hidden="true" /><span><strong>Revenue</strong><small>Sales and payment record</small></span></button>
-            <button type="button" onClick={() => selectTab('crm')}><Database aria-hidden="true" /><span><strong>CRM mirror</strong><small>Imported GHL and Stripe record</small></span></button>
-            <button type="button" onClick={() => selectTab('automation')}><Workflow aria-hidden="true" /><span><strong>Automation watch</strong><small>What would send and why</small></span></button>
+          <div className="ops-overview__workspace-groups">
+            {WORKSPACE_GROUPS.map((group) => (
+              <section key={group.label} className="ops-overview__workspace-group" aria-label={group.label}>
+                <p>{group.label}</p>
+                <div className="ops-overview__workspaces">
+                  {group.items.map(({ label, detail, Icon, to, tab: targetTab }) => (
+                    <button key={label} type="button" onClick={() => targetTab ? selectTab(targetTab) : navigate(to!)}>
+                      <Icon aria-hidden="true" /><span><strong>{label}</strong><small>{detail}</small></span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         </section>
       ) : null}
