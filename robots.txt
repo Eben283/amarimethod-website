@@ -4,6 +4,15 @@ Allow: /
 
 # Block private/app routes
 Disallow: /portal/
+Disallow: /partner-app
+Disallow: /partner-app.html
+Disallow: /partner-approved
+Disallow: /partner-approved.html
+Disallow: /staff/
+Disallow: /cos/
+Disallow: /parking/
+Disallow: /internal/
+Disallow: /wordmark-study.html
 Disallow: /dist/
 Disallow: /member-agreement
 Disallow: /cdn-cgi/

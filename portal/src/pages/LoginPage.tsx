@@ -51,16 +51,20 @@ export default function LoginPage() {
 
   return (
     <div className="sa-screen">
+      <aside className="sa-context" aria-label="Amari Method client portal">
+        <a href="/" className="sa-context-mark"><img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method" /></a>
+        <span className="sa-context-label">Client<br />portal</span>
+      </aside>
       <main className="sa-main">
         <a href="/" className="sa-wordmark">
-          AMARI
+          <img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method" />
         </a>
-        <span className="sa-eyebrow">Practice Member Portal</span>
+        <span className="sa-eyebrow">Client portal</span>
         <h1 className="sa-title">
           {status === 'sent' ? (
-            <>Check your <em>email.</em></>
+            <>Check your email.</>
           ) : (
-            <>Sign <em>in.</em></>
+            <>Sign in.</>
           )}
         </h1>
         <p className="sa-lead">
@@ -154,7 +158,7 @@ export default function LoginPage() {
         )}
 
         <p className="sa-footer">
-          New here? <a href="/booking">Book your first session</a>
+          New here? <a href="/assessment-booking">Book an Amari Assessment</a>
         </p>
       </main>
     </div>

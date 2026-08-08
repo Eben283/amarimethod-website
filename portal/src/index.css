@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "ABC Diatype";
+  src: url("/fonts/ABCDiatype-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ABC Diatype";
+  src: url("/fonts/ABCDiatype-Medium.otf") format("opentype");
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* HSL mirrors of site-v6 cream / ink / peach */
@@ -41,8 +56,8 @@
   body {
     @apply bg-amari-bone-white text-amari-charcoal font-sans antialiased;
     min-height: 100vh;
-    background-color: #F8F1E8;
-    color: #211D19;
+    background-color: #F4F3EE;
+    color: #171A18;
   }
 
   h1, h2, h3, h4, h5, h6 {

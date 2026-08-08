@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Bona+Nova:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap">
   <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
   <title>Amari Partner | Your Toolkit</title>
-  <meta name="description" content="Refer practice members, track earnings, and grow with Amari Method.">
+  <meta name="description" content="Refer clients, track earnings, and grow with Amari Method.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -33,6 +33,20 @@
     gtag('config', 'G-DGQM32BMYZ');
   </script>
 <style>
+    @font-face {
+      font-family: "ABC Diatype";
+      src: url("/fonts/ABCDiatype-Regular.otf") format("opentype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "ABC Diatype";
+      src: url("/fonts/ABCDiatype-Medium.otf") format("opentype");
+      font-weight: 500 700;
+      font-style: normal;
+      font-display: swap;
+    }
     /* ===== Partner App — editorial dashboard (rebuilt 2026-05-17) ===== */
     body {
       background: var(--pa-paper, #F7F2E8);
@@ -45,19 +59,19 @@
     }
 
     :root {
-      --pa-paper: #F8F1E8;
-      --pa-display: "Cormorant Garamond", Georgia, serif;
-      --pa-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
-      --pa-paper-2: #F1E7DA;
-      --pa-paper-3: #EBE2CC;
-      --pa-ink: #211D19;
-      --pa-ink-2: #3A3733;
-      --pa-mute: #7A746B;
-      --pa-line: #E0D7C2;
-      --pa-line-2: #CCC1A8;
-      --pa-accent: #466151;
-      --pa-accent-strong: #31483B;
-      --pa-accent-soft: #D9E4D6;
+      --pa-paper: #F4F3EE;
+      --pa-display: "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+      --pa-sans: "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
+      --pa-paper-2: #E5E7E0;
+      --pa-paper-3: #FFFFFF;
+      --pa-ink: #171A18;
+      --pa-ink-2: #525854;
+      --pa-mute: #6D746F;
+      --pa-line: #D4D7D0;
+      --pa-line-2: #B9BEB7;
+      --pa-accent: #5B7376;
+      --pa-accent-strong: #445B5E;
+      --pa-accent-soft: #D9E1E1;
       --pa-err: #A1402B;
       --pa-ok: #3F7A4F;
       --pa-warn: #B58836;
@@ -1069,7 +1083,7 @@
       vertical-align: middle;
     }
 
-    /* ===== Login Screen — match marketing site-v6 ===== */
+    /* ===== Partner access — aligned to the public identity ===== */
     .app-shell:has(#login-screen.active) {
       max-width: none;
       min-height: 100vh;
@@ -1077,13 +1091,12 @@
       background: #F8F1E8;
     }
     .login-screen {
-      --sa-cream: #F8F1E8;
-      --sa-paper: #FCF7F1;
-      --sa-ink: #211D19;
-      --sa-body: #5C554D;
-      --sa-line: rgba(33,29,25,.14);
-      --sa-serif: "Cormorant Garamond", Georgia, serif;
-      --sa-sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+      --sa-cream: #F4F3EE;
+      --sa-paper: #FFFFFF;
+      --sa-ink: #171A18;
+      --sa-body: #525854;
+      --sa-line: #C8CBC3;
+      --sa-sans: "ABC Diatype", ui-sans-serif, system-ui, sans-serif;
       --sa-ease: cubic-bezier(0.32,0.72,0,1);
 
       display: none;
@@ -1091,7 +1104,7 @@
       min-height: 100dvh;
       width: 100%;
       margin: 0;
-      padding: 48px 24px;
+      padding: 40px 24px;
       box-sizing: border-box;
       align-items: center;
       justify-content: center;
@@ -1105,54 +1118,46 @@
     }
     .login-screen.active { display: flex; }
     .login-screen > img { display: none; }
+    .login-context { display: none; }
     .login-main {
       width: 100%;
-      max-width: 440px;
+      max-width: 438px;
     }
     .login-wordmark {
       display: inline-block;
-      font-family: var(--sa-serif);
-      font-weight: 500;
-      font-size: clamp(28px, 5vw, 38px);
-      letter-spacing: .34em;
-      padding-left: .34em;
-      color: var(--sa-ink);
-      line-height: 1;
-      margin-bottom: 36px;
+      width: min(230px, 68vw);
+      line-height: 0;
+      margin-bottom: 42px;
       text-decoration: none;
     }
+    .login-wordmark img { width: 100%; height: auto; display: block; }
     .login-eyebrow {
       display: block;
       font-family: var(--sa-sans);
-      font-weight: 600;
-      font-size: 11px;
+      font-weight: 500;
+      font-size: 12px;
       text-transform: uppercase;
-      letter-spacing: .2em;
+      letter-spacing: .14em;
       color: var(--sa-body);
-      margin-bottom: 18px;
+      margin-bottom: 20px;
     }
     .login-screen h1 {
-      font-family: var(--sa-serif);
+      font-family: var(--sa-sans);
       font-weight: 500;
-      font-size: clamp(2rem, 5vw, 3rem);
-      letter-spacing: 0;
-      line-height: 1.14;
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      letter-spacing: -0.055em;
+      line-height: .96;
       color: var(--sa-ink);
       margin: 0;
       text-wrap: balance;
     }
-    .login-screen h1 em {
-      font-style: italic;
-      color: var(--sa-ink);
-      font-weight: 500;
-    }
     .login-lead {
-      margin: 18px auto 0;
-      max-width: 34ch;
+      margin: 20px 0 0;
+      max-width: 35ch;
       font-family: var(--sa-sans);
-      font-size: clamp(1rem, 1.4vw, 1.125rem);
+      font-size: 16px;
       color: var(--sa-body);
-      line-height: 1.65;
+      line-height: 1.55;
     }
     .login-screen .login-subtitle { display: none; }
 
@@ -1162,31 +1167,31 @@
       border-radius: 0;
       padding: 0;
       box-shadow: none;
-      margin-top: 34px;
+      margin-top: 38px;
       text-align: left;
     }
     .login-card label {
       display: block;
       font-family: var(--sa-sans);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .16em;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--sa-body);
       margin-bottom: 9px;
     }
     .login-card input[type="email"] {
       width: 100%;
-      padding: 14px 16px;
+      padding: 16px;
       background: var(--sa-paper);
       border: 1px solid var(--sa-line);
-      border-radius: 2px;
+      border-radius: 0;
       font-family: var(--sa-sans);
       font-size: 15px;
       font-weight: 400;
       color: var(--sa-ink);
       box-sizing: border-box;
-      margin-bottom: 22px;
+      margin-bottom: 14px;
       transition: border-color .3s var(--sa-ease);
     }
     .login-card input[type="email"]::placeholder {
@@ -1205,21 +1210,21 @@
     }
     .login-card .login-btn {
       width: 100%;
-      padding: 18px 34px;
+      padding: 18px 22px;
       border: 0;
-      border-radius: 2px;
+      border-radius: 0;
       background: var(--sa-ink);
       color: #fff;
       font-family: var(--sa-sans);
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: .16em;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .08em;
       text-transform: uppercase;
       cursor: pointer;
       transition: background .4s var(--sa-ease), transform .4s var(--sa-ease);
     }
     .login-card .login-btn:hover:not(:disabled) {
-      background: #000;
+      background: var(--sa-body);
       transform: translateY(-1px);
     }
     .login-card .login-btn:active:not(:disabled) { transform: scale(.985); }
@@ -1259,19 +1264,14 @@
     }
     .login-success .check-circle { display: none; }
     .login-success h3 {
-      font-family: var(--sa-serif);
+      font-family: var(--sa-sans);
       font-weight: 500;
-      font-size: clamp(2rem, 5vw, 3rem);
-      letter-spacing: 0;
-      line-height: 1.14;
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      letter-spacing: -0.055em;
+      line-height: .96;
       color: var(--sa-ink);
       margin: 0 0 18px;
       text-wrap: balance;
-    }
-    .login-success h3 em {
-      font-style: italic;
-      color: var(--sa-ink);
-      font-weight: 500;
     }
     .login-success p {
       font-size: 15px;
@@ -1299,9 +1299,70 @@
       padding: 0;
     }
     .login-apply a:hover { opacity: .75; }
+    @media (min-width: 760px) {
+      .login-screen.active {
+        display: grid;
+        grid-template-columns: minmax(280px, 5fr) minmax(480px, 7fr);
+        align-items: stretch;
+        justify-content: stretch;
+        padding: 0;
+        text-align: left;
+      }
+      .login-context {
+        display: flex;
+        min-height: 100dvh;
+        padding: clamp(32px, 5vw, 80px);
+        background: #5B7376;
+        border-right: 1px solid #445B5E;
+        color: #F4F3EE;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .login-context-mark { display: block; line-height: 0; }
+      .login-context-mark img {
+        display: block;
+        width: min(250px, 82%);
+        height: auto;
+        filter: brightness(0) invert(1);
+      }
+      .login-context-label {
+        display: block;
+        max-width: 14ch;
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: .14em;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+      .login-main {
+        width: min(438px, calc(100% - 96px));
+        margin: auto;
+        padding: 64px 0;
+      }
+      .login-wordmark { display: none; }
+      .login-lead { margin-right: 0; }
+    }
     @media (max-width: 520px) {
       .login-screen { padding: 40px 20px; }
       .login-card input[type="email"] { font-size: 16px; }
+    }
+
+    /* Partner workspace — broader, quieter desktop field without changing controls. */
+    .dashboard-screen em { font-style: normal !important; }
+    .app-header img.app-header-wordmark { width: 162px; height: auto; border-radius: 0; }
+    @media (min-width: 760px) {
+      body:has(.dashboard-screen.active) { background: #E5E7E0; }
+      .app-shell:has(.dashboard-screen.active) { max-width: 1080px; margin: 0 auto; border-left: 1px solid var(--pa-line); border-right: 1px solid var(--pa-line); }
+      .app-header { padding: 22px 32px; }
+      .app-greeting { padding: 48px 32px 6px; font-family: var(--pa-sans); font-size: 46px; font-weight: 500; letter-spacing: -.055em; }
+      .app-subtext { padding: 6px 32px 30px; font-size: 15px; }
+      .earnings-card { margin: 0 32px; padding: 30px 28px; }
+      .earnings-amount { font-family: var(--pa-sans); font-size: 64px; font-weight: 500; letter-spacing: -.06em; }
+      .action-stack { margin: 18px 32px 0; display: grid; grid-template-columns: 1.35fr 1fr; gap: 10px; }
+      .cta-card-primary, .cta-card-secondary { min-height: 108px; }
+      .app-share-section, .pitch-card, .referral-history { margin-left: 32px; margin-right: 32px; }
+      .section-label { margin-left: 32px; margin-right: 32px; }
+      .inline-form, .inline-success { margin-left: 32px; margin-right: 32px; }
     }
 
     /* Dashboard wrapper */
@@ -1352,10 +1413,14 @@
 
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
+    <aside class="login-context" aria-label="Amari Method partner portal">
+      <a href="/" class="login-context-mark"><img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method"></a>
+      <span class="login-context-label">Partner<br>portal</span>
+    </aside>
     <div class="login-main">
-      <a href="/" class="login-wordmark">AMARI</a>
+      <a href="/" class="login-wordmark"><img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method"></a>
       <span class="login-eyebrow">Partner portal</span>
-      <h1 id="login-heading">Sign <em>in.</em></h1>
+      <h1 id="login-heading">Sign in.</h1>
       <p class="login-lead" id="login-lead">Use the email on your partner account. We&rsquo;ll send a one-time login link.</p>
 
       <div class="login-card">
@@ -1390,8 +1455,7 @@
 
   <!-- Top bar -->
   <div class="app-header">
-    <img src="/apple-touch-icon.png" alt="Amari Method">
-    <span style="font-family:var(--pa-display,'Bona Nova',Georgia,serif);font-size:16px;letter-spacing:-0.005em;color:var(--pa-ink);">Amari Method</span>
+    <img class="app-header-wordmark" src="/images/identity/amari-method-wordmark.svg" alt="Amari Method">
   </div>
 
   <h1 class="app-greeting" id="greeting">Hey, <em style="font-style:italic;color:var(--pa-accent);">there</em>.</h1>
@@ -1403,51 +1467,79 @@
       <div>
         <span class="earnings-amount" id="earnings-amount">$0</span>
         <div class="earnings-paid" id="earnings-paid" style="display:none;"></div>
-        <div class="earnings-label">Assessment rewards earned</div>
+        <div class="earnings-label">Earned from referrals</div>
       </div>
       <div class="earnings-breakdown" id="earnings-breakdown">
-        <div data-label="Attended"><strong id="stat-booked">0</strong></div>
+        <div data-label="Booked"><strong id="stat-booked">0</strong></div>
         <div data-label="Referred"><strong id="stat-total">0</strong></div>
       </div>
     </div>
     <p class="earnings-nudge" id="earnings-nudge">
-      Earn <em style="font-style:italic;color:var(--pa-accent);">$50</em> when a referred practice member attends their Assessment. A collected enrollment raises your total reward to $400 or $700.
+      Your first referral earns <em style="font-style:italic;color:var(--pa-accent);">$50 cash</em> &mdash; just a name and a phone number.
     </p>
   </section>
 
-  <!-- 2. ACTION STACK -->
+  <!-- 2. ACTION STACK — Refer primary + Sold secondary -->
   <div class="action-stack">
     <button class="cta-card cta-card-primary" id="btn-refer" type="button">
       <span class="cta-icon">+</span>
       <div>
-        <span class="cta-label">Refer a practice member</span>
-        <span class="cta-desc">With their permission, submit their name and number. We handle the rest.</span>
+        <span class="cta-label">Refer a client</span>
+        <span class="cta-desc">Submit their name and number. We handle the rest.</span>
       </div>
       <span class="cta-earn-tag">+$50</span>
     </button>
 
+    <button class="cta-card cta-card-secondary" id="btn-sold" type="button">
+      <div>
+        <span class="cta-label">Send a client to Amari</span>
+        <span class="cta-desc">Log their details and we&rsquo;ll follow up directly.</span>
+      </div>
+      <span class="cta-earn-tag">→</span>
+    </button>
   </div>
 
-  <!-- Refer form (hidden, shown when "Refer a practice member" tapped) -->
+  <!-- Refer form (hidden, shown when "Refer a client" tapped) -->
   <div class="inline-form" id="refer-form-panel">
-    <h3>Refer a practice member</h3>
-    <div class="form-subtitle">With their permission, share their name and number. We’ll send them the $29 Assessment link and handle everything from there.</div>
+    <h3>Refer a client</h3>
+    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
     <form id="refer-form" novalidate>
       <div class="field">
-        <label for="refer-name">Practice Member first name</label>
+        <label for="refer-name">Client first name</label>
         <input type="text" id="refer-name" name="clientFirstName" autocomplete="given-name" required>
       </div>
       <div class="field">
-        <label for="refer-phone">Practice Member phone</label>
+        <label for="refer-phone">Client phone</label>
         <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
       </div>
-      <label class="checkbox-row"><input type="checkbox" name="confirmedPermission" required><span>I have permission to share this practice member’s contact information with Amari.</span></label>
       <div class="form-error" id="refer-error"></div>
       <button type="submit" class="submit-btn" id="refer-submit-btn">Submit referral</button>
     </form>
   </div>
 
-  <!-- Shared success state -->
+  <!-- Sold form (hidden, shown when "Sold a session?" tapped) -->
+  <div class="inline-form" id="sold-form-panel">
+    <h3>Client info</h3>
+    <div class="form-subtitle">Submit your client's details so Garrett can send the intake and get them booked.</div>
+    <form id="sold-form" novalidate>
+      <div class="field">
+        <label for="sold-name">Client first name</label>
+        <input type="text" id="sold-name" name="clientFirstName" autocomplete="given-name" required>
+      </div>
+      <div class="field">
+        <label for="sold-phone">Client phone</label>
+        <input type="tel" id="sold-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="sold-email">Client email <span style="font-weight:400;color:var(--pa-mute);">(optional)</span></label>
+        <input type="email" id="sold-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
+      </div>
+      <div class="form-error" id="sold-error"></div>
+      <button type="submit" class="submit-btn" id="sold-submit-btn">Submit client</button>
+    </form>
+  </div>
+
+  <!-- Shared success state — content swaps per type (refer / sold) -->
   <div class="inline-success" id="referral-success">
     <div class="success-glyph" id="success-glyph">&#x2726;</div>
     <h3 id="success-heading">Got it.</h3>
@@ -1469,7 +1561,17 @@
     </div>
   </div>
 
-  <!-- 3. WHAT TO SAY (collapsible reference) -->
+  <!-- 3. SHARE LINK -->
+  <section class="app-share-section" id="share-panel">
+    <h3>Share your link</h3>
+    <p>Text this to anyone you know with pain. When they book through your link, you earn $50.</p>
+    <div class="share-link-row">
+      <input type="text" class="share-link-input" id="share-link" readonly>
+      <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
+    </div>
+  </section>
+
+  <!-- 4. WHAT TO SAY (collapsible reference) -->
   <div class="section-label">Reference</div>
   <section class="pitch-card" id="pitch-card">
     <button type="button" class="pitch-card-summary" id="pitch-card-toggle" aria-expanded="false">
@@ -1493,8 +1595,8 @@
             <p class="talking-point-copy">Amari teaches you to bring your body back into balance yourself.</p>
           </div>
           <div class="talking-point">
-            <span class="talking-point-label">The invitation</span>
-            <p class="talking-point-copy">Amari starts with a $29 Assessment so you can see whether it feels like a useful next step.</p>
+            <span class="talking-point-label">The comparison</span>
+            <p class="talking-point-copy">Like chiropractic, except you learn to do it yourself.</p>
           </div>
           <div class="talking-point">
             <span class="talking-point-label">The big promise</span>
@@ -1516,11 +1618,10 @@
       <div class="pitch-section">
         <div class="pitch-section-title">What they're buying</div>
         <ul class="spec-list">
-          <li><span class="spec-k">First step</span><span class="spec-v">Amari Assessment</span></li>
-          <li><span class="spec-k">Price</span><span class="spec-v"><em>$29</em></span></li>
-          <li><span class="spec-k">Format</span><span class="spec-v">In person</span></li>
-          <li><span class="spec-k">Payment</span><span class="spec-v">Paid directly to Amari</span></li>
-          <li><span class="spec-k">Includes</span><span class="spec-v">A clear understanding of what’s driving their pain and what to do next</span></li>
+          <li><span class="spec-k">Session</span><span class="spec-v">60 minutes with the Amari team</span></li>
+          <li><span class="spec-k">Format</span><span class="spec-v">In-person or virtual</span></li>
+          <li><span class="spec-k">Payment</span><span class="spec-v">Affirm available</span></li>
+          <li><span class="spec-k">Includes</span><span class="spec-v">A full look at their pattern, hands-on work, and take-home protocols</span></li>
         </ul>
       </div>
     </div>
@@ -1547,7 +1648,7 @@
         </button>
         <button class="video-share-btn video-share-btn--send" id="btn-share-video" type="button">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          Send to practice member
+          Send to client
         </button>
       </div>
     </div>
@@ -1693,7 +1794,7 @@
           if (applyLine) applyLine.style.display = '';
           var heading = document.getElementById('login-heading');
           var lead = document.getElementById('login-lead');
-          if (heading) heading.innerHTML = 'Sign <em>in.</em>';
+          if (heading) heading.textContent = 'Sign in.';
           if (lead) lead.textContent = 'Use the email on your partner account. We\u2019ll send a one-time login link.';
           var emailInput = document.getElementById('login-email');
           if (emailInput) emailInput.focus();
@@ -1743,7 +1844,7 @@
       if (applyLine) applyLine.style.display = 'none';
       var heading = document.getElementById('login-heading');
       var lead = document.getElementById('login-lead');
-      if (heading) heading.innerHTML = 'Check your <em>email.</em>';
+      if (heading) heading.textContent = 'Check your email.';
       if (lead) lead.textContent = 'Open the login link we just sent — it takes you straight into your toolkit.';
       startResendCooldown(document.getElementById('login-resend'), form, successDiv, 60);
     } catch (err) {
@@ -1781,7 +1882,7 @@
     if (applyLine) applyLine.style.display = '';
     var heading = document.getElementById('login-heading');
     var lead = document.getElementById('login-lead');
-    if (heading) { heading.style.display = ''; heading.innerHTML = 'Sign <em>in.</em>'; }
+    if (heading) { heading.style.display = ''; heading.textContent = 'Sign in.'; }
     if (lead) {
       lead.style.display = '';
       lead.textContent = 'Use the email on your partner account. We\u2019ll send a one-time login link.';
@@ -1863,13 +1964,17 @@
       var firstName = partner.firstName || partner.lastName || 'there';
       document.getElementById('greeting').textContent = 'Hey, ' + firstName;
 
-      // Update earnings card — $50 is earned only after the Assessment is attended.
+      // Set share link
+      var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
+      document.getElementById('share-link').value = partnerLink;
+
+      // Update earnings card — only refer-path booked/completed referrals earn $50
       var total = stats.total || 0;
       var referEarned = 0;
       var referPaid = 0;
       for (var i = 0; i < referrals.length; i++) {
         var ref = referrals[i];
-        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && ref.status === 'completed') {
+        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && (ref.status === 'booked' || ref.status === 'completed')) {
           referEarned++;
           if (ref.feeStatus === 'paid') referPaid++;
         }
@@ -1922,7 +2027,7 @@
 
           var nameSpan = document.createElement('span');
           nameSpan.className = 'referral-name';
-          nameSpan.textContent = r.name || 'Practice Member';
+          nameSpan.textContent = r.name || 'Client';
 
           var earningSpan = document.createElement('span');
           earningSpan.className = 'referral-earning';
@@ -2002,13 +2107,14 @@
       navigator.clipboard.writeText(videoShareText + '\n' + videoUrl).then(function () {
         var btn = document.getElementById('btn-share-video');
         btn.textContent = 'Copied to clipboard!';
-        setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to practice member'; }, 2000);
+        setTimeout(function () { btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send to client'; }, 2000);
       });
     }
   });
 
-  // ── Referral form toggle ──
+  // ── Dual-path form toggles ──
   var referPanel = document.getElementById('refer-form-panel');
+  var soldPanel = document.getElementById('sold-form-panel');
   var successPanel = document.getElementById('referral-success');
 
   // Track which form triggered the success state
@@ -2016,6 +2122,7 @@
 
   function closeAllForms() {
     referPanel.classList.remove('active');
+    soldPanel.classList.remove('active');
     successPanel.classList.remove('active');
   }
 
@@ -2028,7 +2135,16 @@
     }
   });
 
-  // ── Referral submit handler ──
+  document.getElementById('btn-sold').addEventListener('click', function () {
+    var isActive = soldPanel.classList.contains('active');
+    closeAllForms();
+    if (!isActive) {
+      soldPanel.classList.add('active');
+      document.getElementById('sold-name').focus();
+    }
+  });
+
+  // ── Generic referral submit handler ──
   function handleReferralSubmit(form, errorId, submitBtnId, type) {
     return async function (e) {
       e.preventDefault();
@@ -2056,7 +2172,15 @@
         clientPhone: rawPhone,
       };
 
-      payload.referralType = 'refer';
+      // Include email if present (sold form has email field)
+      var emailField = form.clientEmail;
+      if (emailField) {
+        var emailVal = emailField.value.trim();
+        if (emailVal) payload.clientEmail = emailVal;
+      }
+
+      // Include referral type for future backend differentiation
+      payload.referralType = type;
 
       var fetchHeaders = { 'Content-Type': 'application/json' };
       if (session && session.token) {
@@ -2096,15 +2220,29 @@
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
         });
 
-        glyphEl.textContent = '✦';
-        headingEl.innerHTML = "We've got " + nameHtml + " from here.";
-        messageEl.textContent = "We'll send them the $29 Assessment link. Earn $50 if they attend.";
-        metaK1.textContent = 'Sent to';
-        metaV1.textContent = payload.clientPhone;
-        metaK2.textContent = 'Submitted';
-        metaV2.textContent = submittedAt;
-        metaEl.style.display = '';
-        if (anotherBtn) anotherBtn.textContent = 'Refer another';
+        if (type === 'refer') {
+          glyphEl.textContent = '✦'; // ✦
+          headingEl.innerHTML = "We've got " + nameHtml + " from here.";
+          messageEl.textContent =
+            "We'll reach out within 24 hours and let you know when they book. Your $50 lands on the next payout.";
+          metaK1.textContent = 'Sent to';
+          metaV1.textContent = payload.clientPhone;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Refer another';
+        } else {
+          glyphEl.innerHTML = '&#x2295;'; // ⊕
+          headingEl.textContent = 'Logged.';
+          messageEl.textContent =
+            "We'll confirm the next step with " + clientName + " and put it on the calendar.";
+          metaK1.textContent = 'Client';
+          metaV1.textContent = clientName;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Log another';
+        }
 
         closeAllForms();
         successPanel.classList.add('active');
@@ -2122,11 +2260,31 @@
   document.getElementById('refer-form').addEventListener('submit',
     handleReferralSubmit(document.getElementById('refer-form'), 'refer-error', 'refer-submit-btn', 'refer'));
 
+  document.getElementById('sold-form').addEventListener('submit',
+    handleReferralSubmit(document.getElementById('sold-form'), 'sold-error', 'sold-submit-btn', 'sold'));
+
   // Submit another
   document.getElementById('btn-another').addEventListener('click', function () {
     successPanel.classList.remove('active');
-    referPanel.classList.add('active');
-    document.getElementById('refer-name').focus();
+    if (lastFormType === 'refer') {
+      referPanel.classList.add('active');
+      document.getElementById('refer-name').focus();
+    } else {
+      soldPanel.classList.add('active');
+      document.getElementById('sold-name').focus();
+    }
+  });
+
+  // ── Copy link ──
+  document.getElementById('btn-copy').addEventListener('click', function () {
+    var linkInput = document.getElementById('share-link');
+    linkInput.select();
+    navigator.clipboard.writeText(linkInput.value).then(function () {
+      document.getElementById('btn-copy').textContent = 'Copied!';
+      setTimeout(function () {
+        document.getElementById('btn-copy').textContent = 'Copy';
+      }, 2000);
+    });
   });
 
   // ── Install banner ──
