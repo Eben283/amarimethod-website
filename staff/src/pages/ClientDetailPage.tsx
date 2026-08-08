@@ -11,7 +11,6 @@ import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolk
 import { buildGoogleReviewRequest } from '../lib/review-request';
 import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
-import Checklist from '../components/Checklist';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
@@ -495,11 +494,6 @@ export default function ClientDetailPage() {
               <span>No signed copy on file yet — tap to sign</span>
             </span>
           </button>
-        )}
-
-        {/* checklist (only when navigated from Today) */}
-        {appointmentId && (
-          <div className="sa-card"><Checklist appointmentId={appointmentId} client={client} /></div>
         )}
 
         {canRequestReview && (
