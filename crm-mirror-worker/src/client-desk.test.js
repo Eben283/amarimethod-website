@@ -1,11 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
-  it("identifies the desk as a client inbox rather than an operations-message view", () => {
+  it("identifies the desk as the complete chronological communication surface", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("Automated status notices are filtered without hiding the person’s record.");
-    expect(html).toContain("selected client record beside them");
+    expect(html).toContain("Every mirrored contact, ordered by most recent activity.");
+    expect(html).toContain("Client, automated, and operational messages remain visible");
+    expect(html).toContain(">All contacts<");
+    expect(html).toContain("limit: '1000'");
+    expect(html).toContain("No communication mirrored yet.");
+    expect(html).toContain("No activity");
+    expect(html).toContain("timelineDayKey");
+  });
+
+  it("shows accurate relative ages and the exact source timestamp on contact cards", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { activityAge, threadTime }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-08T17:00:00.000Z"));
+    try {
+      expect(helpers.activityAge("2026-08-08T16:05:00.000Z")).toBe("55 minutes ago");
+      expect(helpers.activityAge("2026-08-08T16:00:00.000Z")).toBe("1 hour ago");
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).toContain("55 minutes ago");
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).toContain('class="thread-exact-time"');
+      expect(helpers.threadTime("2026-08-08T16:05:00.000Z")).not.toContain("Now");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("does not expose operator-surface navigation inside Client Desk", () => {
@@ -183,7 +208,7 @@ describe("Client Desk message rendering", () => {
     expect(helpers.filterTimeline(timeline, "tasks")).toEqual([timeline[5]]);
   });
 
-  it("marks a record's data boundaries and unknowns without treating them as client status", () => {
+  it("shows DND as an unambiguous on-or-off contact state", () => {
     const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
     const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
     const document = { getElementById: () => element };
@@ -196,9 +221,85 @@ describe("Client Desk message rendering", () => {
       appointments: [{ status: "confirmed", starts_at: "2026-08-10T14:00:00.000Z" }],
     });
 
-    for (const label of ["Record status", "Last mirrored activity", "Next appointment", "GHL mirror", "Stripe mirror", "Not mirrored"]) expect(rendered).toContain(label);
-    expect(rendered).toContain("Consent status not mirrored");
-    expect(rendered).not.toContain("No opt-out recorded");
+    for (const label of ["Open record", "Activity", "Appointments", "Payments", "Notes"]) expect(rendered).toContain(label);
+    for (const target of ["activity", "appointments", "payments", "notes"]) expect(rendered).toContain(`data-record-target="${target}"`);
+    expect(rendered).toContain('<button class="status-card"');
+    expect(rendered).toContain('class="status-arrow"');
+    expect(rendered).toContain("DND");
+    expect(rendered).toContain(">Off<");
+    expect(rendered).not.toContain("SMS permission");
+    expect(rendered).not.toContain("Email permission");
+    expect(rendered).not.toContain("Consent status not mirrored");
+    expect(rendered).toContain("DND is shown as on or off.");
+
+    const dndOn = helpers.profileMarkup({ contact: { display_name: "Test client" }, fields: [{ attribute_key: "system.dnd", attribute_value: "on" }] });
+    expect(dndOn).toContain(">On<");
+  });
+
+  it("opens complete upcoming and past appointment views from the record launcher", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-08T17:00:00.000Z"));
+    try {
+      const rendered = helpers.profileMarkup({
+        contact: { display_name: "Test client" },
+        appointments: [
+          { status: "confirmed", starts_at: "2026-08-11T18:00:00.000Z", service_name: "Follow-up Session" },
+          { status: "showed", starts_at: "2026-08-04T20:00:00.000Z", service_name: "Assessment" },
+        ],
+        purchases: [{ amount_cents: 300000, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z" }],
+        notes: [{ authored_by: "Garrett", created_at: "2026-08-04T20:00:00.000Z", body: "Practice note" }],
+      });
+      expect(rendered).toContain('data-appointment-tab="upcoming"');
+      expect(rendered).toContain('data-appointment-tab="past"');
+      expect(rendered).toContain("Upcoming · 1");
+      expect(rendered).toContain("Past · 1");
+      expect(rendered).toContain("Follow-up Session");
+      expect(rendered).toContain("Assessment");
+      expect(rendered).toContain('id="record-payments"');
+      expect(rendered).toContain('id="record-notes"');
+      expect(rendered).toContain("Practice note");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("opens a complete payment ledger and an exact-member Staff POS charge flow", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { display_name: "Test client", ghl_contact_id: "ghl contact/1" },
+      purchases: [
+        { amount_cents: 2900, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-07-29T20:00:00.000Z" },
+        { amount_cents: 5000, amount_refunded_cents: 0, currency: "usd", provider_status: "failed", purchased_at: "2026-07-28T20:00:00.000Z" },
+      ],
+      purchaseCandidates: [
+        { amount_cents: 300000, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z", identity_status: "match_review" },
+      ],
+    });
+
+    expect(rendered).toContain('class="payment-ledger"');
+    for (const heading of ["Date", "Amount", "Status"]) expect(rendered).toContain(`>${heading}<`);
+    expect(rendered).toContain("$3,029.00");
+    expect(rendered).toContain("Stripe evidence");
+    expect(rendered).toContain("Match review");
+    expect(rendered).toContain("not yet used for access or session records");
+    expect(rendered).toContain('data-payment-actions');
+    expect(rendered).toContain("Charge now");
+    expect(rendered).toContain("contact=ghl%20contact%2F1&amp;action=charge");
+    expect(rendered).toContain('target="_top"');
+    expect(rendered).toContain('data-staff-handoff');
+    expect(clientDeskHtml()).toContain("window.parent.postMessage({ type: 'amari:staff-navigate'");
+    expect(clientDeskHtml()).toContain('bindRecordNavigation();');
   });
 
   it("keeps unread markers in the inbox and out of every timeline message", () => {

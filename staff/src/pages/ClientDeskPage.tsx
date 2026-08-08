@@ -1,9 +1,11 @@
 import { ChevronLeft, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCrmMirrorAccessUrl } from '../lib/api';
 
 export default function ClientDeskPage() {
+  const navigate = useNavigate();
+  const frameRef = useRef<HTMLIFrameElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,13 +13,31 @@ export default function ClientDeskPage() {
     let cancelled = false;
     void getCrmMirrorAccessUrl('client-desk')
       .then(({ url }) => {
-        if (!cancelled) setSrc(url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`);
+        if (cancelled) return;
+        const deskUrl = new URL(url);
+        deskUrl.searchParams.set('embed', '1');
+        deskUrl.searchParams.set('parent_origin', window.location.origin);
+        setSrc(deskUrl.toString());
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not open Practice Member Desk');
       });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    if (!src) return;
+    const deskOrigin = new URL(src).origin;
+    const receiveDeskNavigation = (event: MessageEvent) => {
+      if (event.source !== frameRef.current?.contentWindow || event.origin !== deskOrigin) return;
+      if (event.data?.type !== 'amari:staff-navigate' || typeof event.data.path !== 'string') return;
+      const destination = new URL(event.data.path, window.location.origin);
+      if (destination.origin !== window.location.origin || destination.pathname !== '/staff/pos') return;
+      navigate(`/pos${destination.search}`);
+    };
+    window.addEventListener('message', receiveDeskNavigation);
+    return () => window.removeEventListener('message', receiveDeskNavigation);
+  }, [navigate, src]);
 
   return (
     <main className="ops-hub">
@@ -27,7 +47,7 @@ export default function ClientDeskPage() {
       </header>
       <section className="ops-hub__frame" aria-label="Practice Member Desk">
         {error ? <div className="ops-hub__status ops-hub__status--error" role="alert">{error}</div> : null}
-        {src ? <iframe title="Practice Member Desk" src={src} /> : !error ? <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected Practice Member Desk…</div> : null}
+        {src ? <iframe ref={frameRef} title="Practice Member Desk" src={src} /> : !error ? <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected Practice Member Desk…</div> : null}
       </section>
     </main>
   );
