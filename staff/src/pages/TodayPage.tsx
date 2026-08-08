@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getDayData, ApiError } from '../lib/api';
+import { getCalendarSummary, getDayData, ApiError } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
 import SessionDocSheet from '../components/SessionDocSheet';
@@ -79,7 +79,7 @@ export default function TodayPage() {
       const startStr = toDateStr(dates[0]);
       const endStr = toDateStr(dates[6]);
       // Single API call for the full week range
-      const allAppts = await getDayData(startStr, endStr);
+      const allAppts = await getCalendarSummary(startStr, endStr);
       if (reqId !== reqIdRef.current) return; // superseded by a newer request
       // Group by date
       const map: Record<string, TodayAppointment[]> = {};

@@ -1,7 +1,7 @@
 import { Activity, ArrowUpRight, BookOpen, CalendarDays, ChevronRight, CircleDollarSign, ClipboardPlus, FileText, Kanban, ListChecks, Loader2, MapPinned, ShoppingBag, Sparkles, TrendingUp, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDayData } from '../lib/api';
+import { getCalendarSummary } from '../lib/api';
 import type { TodayAppointment } from '../types/staff';
 
 type HomeTool = {
@@ -79,7 +79,7 @@ export default function HomePage() {
   const loadSessionDoor = useCallback(async () => {
     try {
       setSessionError(false);
-      const appointments = await getDayData(pacificDate());
+      const appointments = await getCalendarSummary(pacificDate());
       const now = Date.now();
       const scheduled = appointments
         .filter((appointment) => appointment.appointmentStatus?.toLowerCase() !== 'cancelled')
