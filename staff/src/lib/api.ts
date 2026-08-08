@@ -58,6 +58,26 @@ export async function getDayData(date?: string, endDate?: string, includeCancell
   return fetchApi(`/staff-data${qs ? `?${qs}` : ''}`);
 }
 
+export type OpsSystemSummary = {
+  id: string;
+  label: string;
+  state: string;
+  status: string;
+  group?: string;
+  note?: string | null;
+};
+
+export type OpsSystemsBoard = {
+  overall: 'green' | 'red' | 'unknown';
+  attentionCount: number;
+  generatedAt: string;
+  systems: OpsSystemSummary[];
+};
+
+export async function getOpsSystemsBoard(): Promise<OpsSystemsBoard> {
+  return fetchApi('/ops/systems');
+}
+
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
