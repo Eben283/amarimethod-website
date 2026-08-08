@@ -25,11 +25,8 @@
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<link rel="stylesheet" href="/css/site-v6.css?v=15">
 <style>
   /* ---------- Journal-article-page-specific styles ---------- */
 
@@ -48,7 +45,7 @@
 
   .art-share{display:flex;justify-content:center;gap:12px;align-items:center;margin-top:26px}
   .art-share span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-right:4px}
-  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--ink)}
+  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:normal;font-size:13px;color:var(--ink)}
 
   .art-featured{padding:52px 0 0}
   .art-featured .ph{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:16/9;background:var(--tan) center/cover no-repeat;border-radius:2px;overflow:hidden}
@@ -62,7 +59,7 @@
   .art-prose p:first-child{margin-top:0}
   .art-prose h2{font-size:clamp(1.4rem,2.6vw,2.05rem);font-weight:500;margin-top:52px;margin-bottom:4px;color:var(--ink)}
   .art-prose .lead-item{margin-top:30px}
-  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:italic;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
+  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:normal;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
 
   .art-inline{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px 0;padding:26px;background:var(--cream-2);border-radius:2px}
   .art-inline .lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body);grid-column:1/-1;margin-bottom:2px}
@@ -73,12 +70,12 @@
   .art-inline h4{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-top:6px;line-height:1.25;color:var(--ink)}
 
   .art-pq{position:relative;margin:clamp(52px,7vw,84px) 0;padding-left:clamp(44px,6vw,80px)}
-  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
-  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:normal;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:normal;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
   .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
 
-  .art-closer{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
+  .art-closer{font-family:var(--serif);font-style:normal;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
   .art-closer a{border-bottom:1px solid var(--ink);font-style:normal}
 
   .art-bio{display:flex;gap:20px;align-items:flex-start;margin-top:56px;padding-top:36px;border-top:1px solid var(--line)}
@@ -155,6 +152,31 @@
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
 </script>
+
+<script type="application/ld+json" data-amari-blog-schema>
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "@id": "https://www.amarimethod.com/blog-jaw-align-tmj-relief#article",
+  "mainEntityOfPage": "https://www.amarimethod.com/blog-jaw-align-tmj-relief",
+  "headline": "Jaw Align: A Simple Protocol that Resolves TMJ Disorder",
+  "description": "TMJ pain comes from jaw muscle imbalances, not the joint itself. The Jaw Align protocol corrects the pattern that",
+  "author": {
+    "@type": "Person",
+    "name": "Garrett Hewstan"
+  },
+  "publisher": {
+    "@id": "https://www.amarimethod.com/#business"
+  },
+  "isPartOf": {
+    "@type": "Blog",
+    "@id": "https://www.amarimethod.com/blog#journal",
+    "name": "Field Notes",
+    "url": "https://www.amarimethod.com/blog"
+  },
+  "inLanguage": "en-US"
+}
+</script>
 </head>
 <body>
 
@@ -167,7 +189,7 @@
       <span>Journal</span><span class="sep">/</span><span>Conditions</span>
     </div>
     <div class="art-header reveal">
-      <h1>A simple protocol that resolves <em>TMJ disorder.</em></h1>
+      <h1>A simple protocol that resolves TMJ disorder.</h1>
       <div class="art-meta">
         <span>Garrett Hewstan</span>
         <span class="dot"></span>
@@ -187,7 +209,7 @@
 <!-- FEATURED IMAGE -->
 <section class="art-featured">
   <div class="ph reveal">
-    <img src="/images/v6/real/jaw-align.jpg" alt="" onerror="this.remove()">
+    <img src="/images/photos/amari-method-guided-jaw-position-athletic-client.png" alt="" onerror="this.remove()">
   </div>
 </section>
 
@@ -214,12 +236,12 @@
         <div class="art-inline">
           <span class="lbl">You may also like</span>
           <a href="/blog-elbow-reset-tennis-elbow">
-            <div class="thumb"><img src="/images/v6/real/elbow-reset.jpg" alt="" onerror="this.remove()"></div>
+            <div class="thumb"><img loading="lazy" decoding="async" src="/images/photos/amari-method-guided-forearm-position-athletic-client.png" alt="" onerror="this.remove()"></div>
             <span class="cat">Conditions</span>
             <h4>Why tennis elbow keeps coming back</h4>
           </a>
           <a href="/blog-sciatica-relief">
-            <div class="thumb"><img src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
+            <div class="thumb"><img loading="lazy" decoding="async" src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
             <span class="cat">Conditions</span>
             <h4>What actually works for sciatica</h4>
           </a>
@@ -231,12 +253,12 @@
         <p>The principle is balance. Both sides equal. Both sides participating. The jaw stops being held in tension by one side and stops being abandoned by the other. It tracks the way it was designed to.</p>
 
         <div class="art-pq">
-          <blockquote>Some practice members tell me they didn't realize how much energy their jaw was taking until it stopped taking it.</blockquote>
+          <blockquote>Some clients tell me they didn't realize how much energy their jaw was taking until it stopped taking it.</blockquote>
           <cite>Garrett</cite>
         </div>
 
         <h2>What people experience</h2>
-        <p>Most practice members feel something shift during their first session. Not always a complete release, though sometimes that, but enough that they can tell something underneath has changed.</p>
+        <p>Most clients feel something shift during their first session. Not always a complete release, though sometimes that, but enough that they can tell something underneath has changed.</p>
         <p>The clicking quiets first. The morning headaches go from constant to occasional. The ear fullness fades. People notice they're not clenching as hard at night, and their face feels lighter. A few sessions in, the jaw stops being a thing they think about during the day.</p>
 
         <h2>Why this one needs to be taught</h2>
@@ -250,7 +272,7 @@
           <div class="by">
             <b>Garrett Hewstan</b>
             <span>Founder, Amari Method</span>
-            <p>Garrett founded the Amari Method to resolve chronic pain by finding where the body's gone out of balance and correcting it. He sees practice members in San Francisco and offers virtual sessions nationwide.</p>
+            <p>Garrett founded the Amari Method to resolve chronic pain by finding where the body's gone out of balance and correcting it. He sees clients in San Francisco and offers virtual sessions nationwide.</p>
           </div>
         </div>
       </div>
@@ -290,7 +312,7 @@
 <section class="art-faq">
   <div class="wrap">
     <div class="sec-head reveal">
-      <h2>Common <em>questions.</em></h2>
+      <h2>Common questions.</h2>
     </div>
     <div class="art-faq-list reveal">
       <details>
@@ -303,7 +325,7 @@
       </details>
       <details>
         <summary><h3>Can Jaw Align replace my splint or bite guard?</h3><span class="plus">+</span></summary>
-        <div class="ans">The splint protects your teeth from clenching. Jaw Align changes why you're clenching. Many practice members find they no longer need their splint once the pattern shifts, but the two aren't in conflict. You can wear the splint while you change the underlying mechanics. Talk to your dentist before stopping anything they prescribed.</div>
+        <div class="ans">The splint protects your teeth from clenching. Jaw Align changes why you're clenching. Many clients find they no longer need their splint once the pattern shifts, but the two aren't in conflict. You can wear the splint while you change the underlying mechanics. Talk to your dentist before stopping anything they prescribed.</div>
       </details>
       <details>
         <summary><h3>Why does this work when stretching doesn't?</h3><span class="plus">+</span></summary>
@@ -311,7 +333,7 @@
       </details>
       <details>
         <summary><h3>Will it help with teeth grinding?</h3><span class="plus">+</span></summary>
-        <div class="ans">Often, yes. Bruxism is the jaw bracing in its sleep, the same pattern that makes the jaw click and ache during the day, just without your awareness of it. When the bracing pattern relaxes, the grinding tends to relax with it. Many practice members report a noticeable drop in grinding after consistent practice, and a few report it stopping entirely.</div>
+        <div class="ans">Often, yes. Bruxism is the jaw bracing in its sleep, the same pattern that makes the jaw click and ache during the day, just without your awareness of it. When the bracing pattern relaxes, the grinding tends to relax with it. Many clients report a noticeable drop in grinding after consistent practice, and a few report it stopping entirely.</div>
       </details>
     </div>
   </div>
@@ -326,12 +348,12 @@
     </div>
     <div class="art-rel-grid">
       <a class="art-rel-card reveal" href="/blog-power-posture-shoulder-blades">
-        <div class="ph" style="background:#D8BB86"><img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()"></div>
+        <div class="ph" style="background:#D8BB86"><img src="/images/photos/amari-method-power-posture-athletic-client.png" alt="" onerror="this.remove()"></div>
         <span class="cat">At-Home Practice</span>
         <h3>Power Posture: correcting forward head posture</h3>
       </a>
       <a class="art-rel-card reveal" href="/blog-hand-balancer-carpal-tunnel" style="transition-delay:.06s">
-        <div class="ph" style="background:#AFC1A9"><img src="/images/v6/real/hand-balancer.jpg" alt="" onerror="this.remove()"></div>
+        <div class="ph" style="background:#AFC1A9"><img src="/images/photos/amari-method-guided-hand-position-athletic-client.png" alt="" onerror="this.remove()"></div>
         <span class="cat">At-Home Practice</span>
         <h3>Hand Balancer: relief for carpal tunnel</h3>
       </a>
@@ -348,17 +370,17 @@
 <section class="appt" id="appt">
   <div class="wrap">
     <span class="eyebrow">The guarantee</span>
-    <h2>Start by listening to your <em>whole body.</em></h2>
-    <p>Start with an Amari Assessment. Garrett will meet you in person, move with you, and explain what a fuller practice could look like.</p>
+    <h2>Most clients feel a difference in their first session.</h2>
+    <p>Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
     <div class="btn-row">
-      <a href="/booking" class="btn">Book a $29 Assessment</a>
-      <a href="/quiz/" class="btn btn-outline">Take the free quiz</a>
+      <a href="/assessment-booking" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
     </div>
-    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$29</b> &middot; 50-minute in-person Assessment &middot; San Francisco</p>
+    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$225</b> &middot; First session &middot; San Francisco + virtual</p>
   </div>
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=27" data-nav="journal"></script>
+<script src="/js/site-v6.js?v=15" data-nav="journal"></script>
 </body>
 </html>

@@ -276,3 +276,42 @@
   justify-content:center;
 }
 .sa-verify-actions .sa-btn{width:auto;min-width:180px}
+
+/* Client entry — same exact, workmanlike system as the public site. */
+.sa-screen{
+  --sa-cream:#F4F3EE;
+  --sa-cream-2:#E5E7E0;
+  --sa-paper:#FFFFFF;
+  --sa-ink:#171A18;
+  --sa-body:#525854;
+  --sa-line:#C8CBC3;
+  --sa-sans:"ABC Diatype",ui-sans-serif,system-ui,sans-serif;
+  background:var(--sa-cream);
+  padding:40px 24px;
+}
+.sa-screen em{font-style:normal}
+.sa-context{display:none}
+.sa-main{max-width:438px;text-align:left}
+.sa-wordmark{width:min(230px,68vw);line-height:0;margin-bottom:42px;padding:0}
+.sa-wordmark img{display:block;width:100%;height:auto}
+.sa-eyebrow{font-size:12px;font-weight:500;letter-spacing:.14em;margin-bottom:20px}
+.sa-title{font-family:var(--sa-sans);font-size:clamp(2.5rem,5vw,3.5rem);font-weight:500;letter-spacing:-.055em;line-height:.96}
+.sa-lead{margin:20px 0 0;font-size:16px;line-height:1.55}
+.sa-form{margin-top:38px;gap:14px}
+.sa-field label{font-size:12px;font-weight:500;letter-spacing:.12em}
+.sa-field input{border-radius:0;padding:16px}
+.sa-btn{border-radius:0;padding:18px 22px;font-size:13px;font-weight:500;letter-spacing:.08em}
+.sa-btn:hover:not(:disabled){background:var(--sa-body)}
+.sa-btn-ghost{border-radius:0;font-weight:500;letter-spacing:.08em}
+.sa-sent{text-align:left;margin-top:38px}
+.sa-actions{justify-content:flex-start}
+.sa-footer{text-align:left}
+@media (min-width:760px){
+  .sa-screen{display:grid;grid-template-columns:minmax(280px,5fr) minmax(480px,7fr);align-items:stretch;justify-content:stretch;padding:0}
+  .sa-context{display:flex;min-height:100dvh;padding:clamp(32px,5vw,80px);background:#5B7376;border-right:1px solid #445B5E;color:#F4F3EE;flex-direction:column;justify-content:space-between}
+  .sa-context-mark{display:block;line-height:0}
+  .sa-context-mark img{display:block;width:min(250px,82%);height:auto;filter:brightness(0) invert(1)}
+  .sa-context-label{display:block;max-width:14ch;font-size:12px;font-weight:500;letter-spacing:.14em;line-height:1.35;text-transform:uppercase}
+  .sa-main{width:min(438px,calc(100% - 96px));margin:auto;padding:64px 0}
+  .sa-wordmark{display:none}
+}

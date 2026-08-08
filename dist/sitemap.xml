@@ -25,8 +25,8 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.amarimethod.com/booking</loc>
-    <lastmod>2026-07-14</lastmod>
+    <loc>https://www.amarimethod.com/assessment-booking</loc>
+    <lastmod>2026-08-07</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
@@ -47,12 +47,6 @@
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://www.amarimethod.com/first-visit</loc>
-    <lastmod>2026-07-14</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.amarimethod.com/stories</loc>

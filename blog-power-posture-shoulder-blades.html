@@ -25,11 +25,8 @@
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Cormorant Garamond = Orpheus Pro stand-in (high-contrast elegant serif). General Sans = Sofia Pro stand-in. -->
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
-<link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<link rel="stylesheet" href="/css/site-v6.css?v=15">
 <style>
   /* ---------- Journal-article-page-specific styles ---------- */
 
@@ -48,7 +45,7 @@
 
   .art-share{display:flex;justify-content:center;gap:12px;align-items:center;margin-top:26px}
   .art-share span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-right:4px}
-  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--ink)}
+  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:normal;font-size:13px;color:var(--ink)}
 
   .art-featured{padding:52px 0 0}
   .art-featured .ph{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:16/9;background:var(--tan) center/cover no-repeat;border-radius:2px;overflow:hidden}
@@ -62,7 +59,7 @@
   .art-prose p:first-child{margin-top:0}
   .art-prose h2{font-size:clamp(1.4rem,2.6vw,2.05rem);font-weight:500;margin-top:52px;margin-bottom:4px;color:var(--ink)}
   .art-prose .lead-item{margin-top:30px}
-  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:italic;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
+  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:normal;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
 
   .art-inline{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px 0;padding:26px;background:var(--cream-2);border-radius:2px}
   .art-inline .lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body);grid-column:1/-1;margin-bottom:2px}
@@ -73,12 +70,12 @@
   .art-inline h4{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-top:6px;line-height:1.25;color:var(--ink)}
 
   .art-pq{position:relative;margin:clamp(52px,7vw,84px) 0;padding-left:clamp(44px,6vw,80px)}
-  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
-  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:normal;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:normal;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
   .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
 
-  .art-closer{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
+  .art-closer{font-family:var(--serif);font-style:normal;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
   .art-closer a{border-bottom:1px solid var(--ink);font-style:normal}
 
   .art-bio{display:flex;gap:20px;align-items:flex-start;margin-top:56px;padding-top:36px;border-top:1px solid var(--line)}
@@ -155,6 +152,31 @@
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
     })(window, document, "clarity", "script", "vuvx43xu8h");
 </script>
+
+<script type="application/ld+json" data-amari-blog-schema>
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "@id": "https://www.amarimethod.com/blog-power-posture-shoulder-blades#article",
+  "mainEntityOfPage": "https://www.amarimethod.com/blog-power-posture-shoulder-blades",
+  "headline": "Power Posture: Undo the Damage From Sitting All Day",
+  "description": "The Power Posture protocol corrects the forward-leaning posture that comes from sitting all day. Learn why your back muscles are overworking and how to fix it.",
+  "author": {
+    "@type": "Person",
+    "name": "Garrett Hewstan"
+  },
+  "publisher": {
+    "@id": "https://www.amarimethod.com/#business"
+  },
+  "isPartOf": {
+    "@type": "Blog",
+    "@id": "https://www.amarimethod.com/blog#journal",
+    "name": "Field Notes",
+    "url": "https://www.amarimethod.com/blog"
+  },
+  "inLanguage": "en-US"
+}
+</script>
 </head>
 <body>
 
@@ -167,7 +189,7 @@
       <span>Journal</span><span class="sep">/</span><span>Protocol</span>
     </div>
     <div class="art-header reveal">
-      <h1>Power Posture: undo the damage from <em>sitting all day.</em></h1>
+      <h1>Power Posture: undo the damage from sitting all day.</h1>
       <div class="art-meta">
         <span>Garrett Hewstan</span>
         <span class="dot"></span>
@@ -187,7 +209,7 @@
 <!-- FEATURED IMAGE -->
 <section class="art-featured">
   <div class="ph reveal" style="background:var(--sage)">
-    <img src="/images/v6/real/power-posture.jpg" alt="" onerror="this.remove()">
+    <img src="/images/photos/amari-method-power-posture-athletic-client.png" alt="" onerror="this.remove()">
   </div>
 </section>
 
@@ -215,12 +237,12 @@
         <div class="art-inline">
           <span class="lbl">You may also like</span>
           <a href="/neck-pain-san-francisco">
-            <div class="thumb"><img src="/images/v6/real/foam-roller-v2.jpg" alt="" onerror="this.remove()"></div>
+            <div class="thumb"><img loading="lazy" decoding="async" src="/images/v6/real/foam-roller-v2.jpg" alt="" onerror="this.remove()"></div>
             <span class="cat">Pain</span>
             <h4>Neck pain is almost always a shoulder-blade problem</h4>
           </a>
           <a href="/blog-back-pain-from-sitting">
-            <div class="thumb"><img src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
+            <div class="thumb"><img loading="lazy" decoding="async" src="/images/v6/real/back-pain-from-sitting.webp" alt="" onerror="this.remove()"></div>
             <span class="cat">Conditions</span>
             <h4>Why your back hurts when you sit</h4>
           </a>
@@ -251,14 +273,14 @@
         <p>Power Posture is the opposite. You're doing it yourself. You're building the strength and the muscle memory that keeps you in alignment without anyone else's help. That's what makes the results last, because you own the protocol. It's yours for life.</p>
         <p>The protocol evolves with you too. As your body changes, the way you do Power Posture changes. It becomes more subtle, more nuanced. It's a world unto itself.</p>
 
-        <h2>What practice members experience</h2>
+        <h2>What clients experience</h2>
         <p>The first time, most people notice their upper back feels more open and their breathing feels deeper. Your head might feel lighter, because your neck muscles aren't straining to hold it forward anymore.</p>
         <p>After a couple weeks of daily practice, the neck tension starts dropping. Your shoulders feel less rounded. You'll catch yourself in forward posture during the day and naturally correct it without thinking about it.</p>
         <p>After a month, people tell me forward posture actually feels uncomfortable. That's when you know your body has retrained itself. The new baseline is aligned.</p>
 
         <h2>Do it anywhere, anytime</h2>
         <p>Unlike some of the other Amari Method protocols that need rings or a specific setup, Power Posture needs nothing. Do it at your desk, in line at the store, watching TV, waiting for a meeting. That's what makes it one of the most practical protocols in the whole system.</p>
-        <p>It only takes a minute or two. Some practice members do it a few times throughout their workday as a reset. The key is consistency. Each time, your body gets a little easier to bring back into alignment.</p>
+        <p>It only takes a minute or two. Some clients do it a few times throughout their workday as a reset. The key is consistency. Each time, your body gets a little easier to bring back into alignment.</p>
 
         <p class="art-closer">If sitting all day has your shoulders rounding forward no matter what you try, we can help. <a href="/how-it-works">See how the Amari Method finds the pattern behind it.</a></p>
 
@@ -307,7 +329,7 @@
 <section class="art-faq">
   <div class="wrap">
     <div class="sec-head reveal">
-      <h2>Common <em>questions.</em></h2>
+      <h2>Common questions.</h2>
     </div>
     <div class="art-faq-list reveal">
       <details>
@@ -316,7 +338,7 @@
       </details>
       <details>
         <summary><h3>How often should I do it?</h3><span class="plus">+</span></summary>
-        <div class="ans">It takes a minute or two, and some practice members do it a few times through the workday as a reset. Consistency matters more than duration. Each time you do it, your body gets a little easier to bring back into alignment.</div>
+        <div class="ans">It takes a minute or two, and some clients do it a few times through the workday as a reset. Consistency matters more than duration. Each time you do it, your body gets a little easier to bring back into alignment.</div>
       </details>
       <details>
         <summary><h3>Do I need any equipment?</h3><span class="plus">+</span></summary>
@@ -361,17 +383,17 @@
 <section class="appt" id="appt">
   <div class="wrap">
     <span class="eyebrow">The guarantee</span>
-    <h2>Start by listening to your <em>whole body.</em></h2>
-    <p>Start with an Amari Assessment. Garrett will meet you in person, move with you, and explain what a fuller practice could look like.</p>
+    <h2>Most clients feel a difference in their first session.</h2>
+    <p>Book a session with Garrett. If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.</p>
     <div class="btn-row">
-      <a href="/booking" class="btn">Book a $29 Assessment</a>
-      <a href="/quiz/" class="btn btn-outline">Take the free quiz</a>
+      <a href="/assessment-booking" class="btn">Book your first session</a>
+      <a href="/quiz/" class="btn btn-outline">Take the free assessment</a>
     </div>
-    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$29</b> &middot; 50-minute in-person Assessment &middot; San Francisco</p>
+    <p class="price-line" style="margin-top:26px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body)"><b style="color:var(--ink);font-weight:600">$225</b> &middot; First session &middot; San Francisco + virtual</p>
   </div>
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=27" data-nav="journal"></script>
+<script src="/js/site-v6.js?v=15" data-nav="journal"></script>
 </body>
 </html>

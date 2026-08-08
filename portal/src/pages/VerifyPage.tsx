@@ -57,16 +57,20 @@ export default function VerifyPage() {
 
   return (
     <div className="sa-screen">
+      <aside className="sa-context" aria-label="Amari Method client portal">
+        <a href="/" className="sa-context-mark"><img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method" /></a>
+        <span className="sa-context-label">Client<br />portal</span>
+      </aside>
       <main className="sa-main">
         <a href="/" className="sa-wordmark">
-          AMARI
+          <img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method" />
         </a>
 
         {status === 'verifying' && (
           <>
             <span className="sa-verify-spinner" aria-hidden="true" />
             <h1 className="sa-title" style={{ marginTop: 28 }}>
-              Signing you <em>in.</em>
+              Signing you in.
             </h1>
             <p className="sa-lead">One moment.</p>
           </>
@@ -76,7 +80,7 @@ export default function VerifyPage() {
           <>
             <span className="sa-eyebrow">You&apos;re in</span>
             <h1 className="sa-title">
-              Taking you to your <em>portal.</em>
+              Taking you to your portal.
             </h1>
             <p className="sa-lead">Hang tight — almost there.</p>
           </>
@@ -86,7 +90,7 @@ export default function VerifyPage() {
           <>
             <span className="sa-eyebrow">Link unavailable</span>
             <h1 className="sa-title">
-              We couldn&apos;t <em>sign you in.</em>
+              We couldn&apos;t sign you in.
             </h1>
             <p className="sa-lead">{errorMessage}</p>
             <div className="sa-verify-actions">
