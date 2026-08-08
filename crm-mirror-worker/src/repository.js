@@ -74,19 +74,6 @@ export function paymentAccessState(purchases, importedCurrentState) {
   };
 }
 
-// The Client Desk is a client workspace, not an operations-message inbox.
-// Keep this narrow: only known machine-status markers are excluded. We do not
-// infer that a conversation is internal from a person's name, email, or
-// generic words such as "automation", which could hide a legitimate client.
-function operationalMessageSql(event = "event") {
-  const text = `LOWER(COALESCE(${event}.subject, '') || char(10) || COALESCE(${event}.body_clean, ''))`;
-  return `(
-    UPPER(TRIM(COALESCE(${event}.body_clean, ''))) LIKE 'OPS-%'
-    OR ${text} LIKE '%local codex exit%'
-    OR ${text} LIKE '%github branch-creation%'
-  )`;
-}
-
 export async function beginSyncRun(db, provider, cursorBefore, now) {
   const runId = id();
   await db.prepare(
@@ -930,16 +917,12 @@ export async function clientDeskContacts(db, { query = null, limit = 50, scope =
   return result.results || [];
 }
 
-// The daily staff inbox: one row per person/thread, with only the information
-// needed to choose who needs attention. Full content remains in the protected
-// selected-contact timeline below.
+// Complete staff communication index: one row for every mirrored contact,
+// ordered by the latest observed communication. System and automated events
+// remain visible; the Desk is an operating view, not a filtered client queue.
 export async function communicationsInbox(db, { query = null, limit = 50, actor = "Staff" } = {}) {
   const values = [];
-  const filters = [
-    "UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'",
-    `(EXISTS (SELECT 1 FROM appointments appointment WHERE appointment.contact_id = contact.id)
-      OR EXISTS (SELECT 1 FROM purchases purchase WHERE purchase.contact_id = contact.id))`,
-  ];
+  const filters = [];
   if (query) {
     const pattern = likePattern(query);
     filters.push(`(lower(contact.display_name) LIKE ? ESCAPE '\\'
@@ -947,42 +930,33 @@ export async function communicationsInbox(db, { query = null, limit = 50, actor 
       OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\')`);
     values.push(pattern, pattern, `%${String(query).replace(/[\\%_]/g, "\\$&")}%`);
   }
-  const where = `WHERE ${filters.join(" AND ")}`;
+  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
   const result = await db.prepare(
-    `WITH matching_threads AS (
+    `WITH latest_threads AS (
        SELECT thread.id AS thread_id, thread.contact_id, thread.channel, thread.last_event_at,
               thread.last_preview, thread.last_direction, thread.unread_inbound_count,
-              contact.display_name, contact.email_normalized, contact.phone_e164,
               ROW_NUMBER() OVER (
                 PARTITION BY thread.contact_id
                 ORDER BY datetime(thread.last_event_at) DESC, thread.id DESC
               ) AS recency_rank
        FROM communication_threads thread
-       JOIN contacts contact ON contact.id = thread.contact_id
-       ${where}
      )
-     SELECT MAX(CASE WHEN matching.recency_rank = 1 THEN matching.thread_id END) AS thread_id,
-            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.channel END) AS channel,
-            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_event_at END) AS last_event_at,
-            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_preview END) AS last_preview,
-            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_direction END) AS last_direction,
-            SUM(CASE
-              WHEN matching.unread_inbound_count > 0
-               AND (seen.seen_at IS NULL OR datetime(matching.last_event_at) > datetime(seen.seen_at))
-              THEN 1 ELSE 0
-            END) AS unread_inbound_count,
-            matching.contact_id, MAX(matching.display_name) AS display_name,
-            MAX(matching.email_normalized) AS email_normalized, MAX(matching.phone_e164) AS phone_e164
-       FROM matching_threads matching
+     SELECT thread.thread_id, thread.channel, thread.last_event_at, thread.last_preview,
+            thread.last_direction,
+            CASE WHEN thread.unread_inbound_count > 0
+                    AND (seen.seen_at IS NULL OR datetime(thread.last_event_at) > datetime(seen.seen_at))
+                 THEN 1 ELSE 0 END AS unread_inbound_count,
+            contact.id AS contact_id, contact.display_name, contact.email_normalized, contact.phone_e164
+       FROM contacts contact
+       LEFT JOIN latest_threads thread
+         ON thread.contact_id = contact.id AND thread.recency_rank = 1
        LEFT JOIN client_desk_seen seen
-         ON seen.contact_id = matching.contact_id AND seen.staff_actor = ?
-       GROUP BY matching.contact_id
-       ORDER BY CASE WHEN SUM(CASE
-                    WHEN matching.unread_inbound_count > 0
-                     AND (seen.seen_at IS NULL OR datetime(matching.last_event_at) > datetime(seen.seen_at))
-                    THEN 1 ELSE 0
-                  END) > 0 THEN 0 ELSE 1 END,
-                datetime(MAX(matching.last_event_at)) DESC, lower(MAX(matching.display_name)), matching.contact_id
+         ON seen.contact_id = contact.id AND seen.staff_actor = ?
+       ${where}
+       ORDER BY CASE WHEN thread.last_event_at IS NULL THEN 1 ELSE 0 END,
+                datetime(thread.last_event_at) DESC,
+                datetime(contact.created_at) DESC,
+                lower(contact.display_name), contact.id
        LIMIT ?`,
   ).bind(...values, actor, limit).all();
   return result.results || [];
@@ -1103,7 +1077,7 @@ export async function contactProfile(db, contactId, limit, now) {
               COALESCE(event.subject, event.body_clean) AS subject_or_preview
        FROM communication_events event
        LEFT JOIN communication_threads thread ON thread.id = event.thread_id
-       WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
+       WHERE event.contact_id = ?
        ORDER BY datetime(event.occurred_at) DESC, event.id DESC
        LIMIT ?`,
     ).bind(contactId, limit),
@@ -1160,7 +1134,7 @@ export async function contactProfile(db, contactId, limit, now) {
               event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
               NULL AS amount_cents, NULL AS currency
        FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
-       WHERE event.contact_id = ? AND NOT ${operationalMessageSql("event")}
+       WHERE event.contact_id = ?
        ORDER BY datetime(event.occurred_at) DESC, event.id DESC LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
