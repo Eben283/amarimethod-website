@@ -237,12 +237,19 @@ export default {
       const valid = dashboardAccessRecord(await env.PORTAL_KV.get(accessKey));
       if (!valid) return html("<p>Dashboard access link expired. Generate a new one from the operator session.</p>");
       await env.PORTAL_KV.delete(accessKey);
-      const embed = url.searchParams.get("embed") === "1" ? "?embed=1" : "";
+      const destinationParams = new URLSearchParams();
+      const embed = url.searchParams.get("embed") === "1";
+      if (embed) destinationParams.set("embed", "1");
+      const parentOrigin = url.searchParams.get("parent_origin");
+      if (embed && parentOrigin === "https://www.amarimethod.com") {
+        destinationParams.set("parent_origin", parentOrigin);
+      }
+      const destinationQuery = destinationParams.size ? `?${destinationParams}` : "";
       const destination = valid.view === "client-desk" ? "/client-desk" : "/";
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `${destination}${embed}`,
+          Location: `${destination}${destinationQuery}`,
           "Set-Cookie": await dashboardSessionCookie(env, valid.actor || "Staff"),
           "Cache-Control": "no-store",
           "Referrer-Policy": "no-referrer",
