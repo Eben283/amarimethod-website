@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   getOwedStatus,
+  getContactDetail,
   getPosSale,
   getStripeSavedCards,
   recordPosCash,
@@ -163,6 +164,8 @@ export default function PosPage() {
   const searchTimer = useRef<ReturnType<typeof setTimeout>>();
   const customerTimer = useRef<ReturnType<typeof setTimeout>>();
   const hydratedSale = useRef<string | null>(null);
+  const hydratedContact = useRef<string | null>(null);
+  const explicitContactSession = useRef(false);
 
   const total = useMemo(() => calculateTotal(cart), [cart]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
@@ -174,9 +177,52 @@ export default function PosPage() {
     panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete" || panel === "charge-confirm";
 
   useEffect(() => {
+    const contactId = searchParams.get("contact");
+    if (!contactId || hydratedContact.current === contactId) return;
+    const action = searchParams.get("action");
+    let cancelled = false;
+    hydratedContact.current = contactId;
+    explicitContactSession.current = true;
+    setNotice("Opening practice member…");
+    void getContactDetail(contactId)
+      .then((contact) => {
+        if (cancelled) return;
+        const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ") || contact.email || "Practice member";
+        setClient({
+          id: contact.id,
+          name,
+          phone: contact.phone || null,
+          email: contact.email || null,
+          isFoundersCircle: !!contact.isFoundersCircle,
+        });
+        setNotice("");
+        if (action === "charge") {
+          setCustomLabel("");
+          setCustomReason("Staff charge");
+          setCustomDollars("");
+          setCustomQty("1");
+          setPanel("custom-sale");
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) setNotice(error instanceof Error ? error.message : "Could not open this practice member in POS.");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        const next = new URLSearchParams(searchParams);
+        next.delete("contact");
+        next.delete("action");
+        setSearchParams(next, { replace: true });
+      });
+    return () => { cancelled = true; };
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
     const fromQuery = searchParams.get("sale");
     const checkoutState = searchParams.get("checkout");
-    const id = fromQuery || localStorage.getItem(draftStorageKey);
+    const id = fromQuery || (explicitContactSession.current || searchParams.get("contact")
+      ? null
+      : localStorage.getItem(draftStorageKey));
     if (!id || hydratedSale.current === id) return;
     hydratedSale.current = id;
     void getPosSale(id)
