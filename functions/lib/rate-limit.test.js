@@ -108,10 +108,15 @@ describe('checkPinAttempts (PIN brute-force guard)', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('fails OPEN (allows) but flags degraded when KV is missing', async () => {
+  it('fails CLOSED when KV is missing so a short PIN cannot be brute-forced', async () => {
     const r = await checkPinAttempts(null, pinArgs());
-    expect(r.ok).toBe(true);
-    expect(r.degraded).toBe(true);
+    expect(r).toMatchObject({ ok: false, status: 503 });
+  });
+
+  it('fails CLOSED when KV throws', async () => {
+    const kv = { async get() { throw new Error('kv down'); } };
+    const r = await checkPinAttempts(kv, pinArgs());
+    expect(r).toMatchObject({ ok: false, status: 503 });
   });
 });
 
