@@ -131,7 +131,7 @@ export default function MoneyMoments() {
                   {expanded && (
                     <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-xs text-amari-charcoal">
                       {m.coaching.map((b, j) => <li key={j}>{b}</li>)}
-                      <li className="list-none pt-1 text-[11px] italic text-amari-text-muted">
+                      <li className="list-none pt-1 text-[11px]  text-amari-text-muted">
                         Wording is technique, not Garrett&apos;s verified voice — say it his way.
                       </li>
                     </ol>

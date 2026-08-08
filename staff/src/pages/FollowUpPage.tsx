@@ -991,7 +991,7 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             <>
               <p className="mt-1 text-sm text-amari-charcoal">{displayWhy}</p>
               {item.kind === 'prospect' && item.hint && (
-                <p className="mt-0.5 text-[11px] italic text-amari-text-muted">{item.hint}</p>
+                <p className="mt-0.5 text-[11px]  text-amari-text-muted">{item.hint}</p>
               )}
               {!expanded && item.kind === 'prospect' && item.p.callCoachLine && (
                 <p className="mt-0.5 line-clamp-1 text-[11px] text-amari-text-muted">
@@ -1675,7 +1675,7 @@ function EditableField({ contactId, field, label, value, multiline }: {
   }
   return (
     <div className="group flex items-start gap-1.5">
-      <span className={val ? 'text-amari-charcoal' : 'italic text-amari-text-muted'}>{val || `No ${label} yet`}</span>
+      <span className={val ? 'text-amari-charcoal' : ' text-amari-text-muted'}>{val || `No ${label} yet`}</span>
       <button type="button" onClick={() => { setDraft(val); setEditing(true); }}
         className="mt-0.5 shrink-0 text-amari-text-muted opacity-60 hover:opacity-100" aria-label={`Edit ${label}`}>
         <Pencil className="h-3 w-3" />

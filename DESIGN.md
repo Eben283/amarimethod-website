@@ -49,7 +49,7 @@ Study signup / field tools still use site-v6 tokens and (except `field-signup`) 
 | Role | Spec |
 |------|------|
 | Display / H1–H4 | `--serif`, weight 400–500, tight line-height (~1.12–1.14) |
-| Emphasis in headlines | `<em>` italic inside the serif (common pattern) |
+| Headline treatment | Keep each headline in one consistent face; do not italicize a singled-out word or phrase. |
 | Body | `--sans`, ~1.65 line-height, color `--body`, typically `max-width: 60ch` |
 | Eyebrow / label | `--sans`, 11px, weight 600, uppercase, letter-spacing ~`.2em` |
 | Button / CTA label | `--sans`, 12px, weight 600, uppercase, letter-spacing ~`.16em` |

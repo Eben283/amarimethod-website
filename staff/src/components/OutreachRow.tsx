@@ -57,7 +57,7 @@ export default function OutreachRow({ card, onTap }: Props) {
           {card.recommendation.headline}
         </p>
         {card.lastOutbound && (
-          <p className="text-[11px] text-amari-text-muted mt-0.5 line-clamp-1 italic">
+          <p className="text-[11px] text-amari-text-muted mt-0.5 line-clamp-1 ">
             "{(card.lastOutbound.body ?? '').slice(0, 100)}{(card.lastOutbound.body ?? '').length > 100 ? '…' : ''}"
           </p>
         )}

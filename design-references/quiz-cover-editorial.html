@@ -35,7 +35,7 @@
   - Both Begin Quiz links (cover + foot, per Eben's call — foot link
     just bounces back to top)
 
-  TYPOGRAPHY: Bona Nova (display, italic accent on key words) + Inter
+  TYPOGRAPHY: Bona Nova (display,  accent on key words) + Inter
   (sans body) + JetBrains Mono (instrument metadata).
   COLORS: --paper #F7F2E8, --ink #1F1D1A, --accent #C56B4E (warm clay).
 
@@ -101,7 +101,7 @@
   img{display:block;max-width:100%}
   h1,h2,h3,h4{font-family:var(--display);font-weight:400;letter-spacing:-0.02em;line-height:1.02;color:var(--ink);text-wrap:balance}
   p{text-wrap:pretty}
-  em{font-style:italic;color:var(--accent)}
+  em{font-style:normal;color:var(--accent)}
   .mono{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
 
   /* Document frame — the whole page lives inside an instrument */
@@ -109,7 +109,7 @@
   .tick{display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute)}
   .tick::before,.tick::after{content:"";flex:1;height:1px;background:var(--line)}
   .tick > span{display:inline-flex;align-items:center;gap:8px}
-  .tick > span::before{content:"§";color:var(--accent);font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:0;font-weight:400}
+  .tick > span::before{content:"§";color:var(--accent);font-family:var(--display);font-style:normal;font-size:14px;letter-spacing:0;font-weight:400}
 
   /* ===== TOP BAR (instrument header) ===== */
   .doc-bar{border-bottom:1px solid var(--line);background:var(--paper)}
@@ -134,9 +134,9 @@
   .cover-title .form-id{font-family:var(--mono);font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);text-wrap:balance}
   .cover-title .form-id span{color:var(--mute)}
   .cover-title h1{font-family:var(--display);font-weight:300;font-size:clamp(44px,6.4vw,108px);letter-spacing:-0.035em;line-height:0.96;max-width:18ch;margin:0 auto}
-  .cover-title h1 em{font-style:italic;color:var(--accent);font-weight:300}
-  .cover-title .lede{font-family:var(--display);font-style:italic;font-size:clamp(18px,2vw,24px);max-width:48ch;margin:0 auto;color:var(--ink-2);line-height:1.45;font-weight:400}
-  .cover-rule{display:flex;justify-content:center;align-items:center;gap:14px;font-family:var(--display);font-style:italic;color:var(--accent);font-size:18px;letter-spacing:.4em}
+  .cover-title h1 em{font-style:normal;color:var(--accent);font-weight:300}
+  .cover-title .lede{font-family:var(--display);font-style:normal;font-size:clamp(18px,2vw,24px);max-width:48ch;margin:0 auto;color:var(--ink-2);line-height:1.45;font-weight:400}
+  .cover-rule{display:flex;justify-content:center;align-items:center;gap:14px;font-family:var(--display);font-style:normal;color:var(--accent);font-size:18px;letter-spacing:.4em}
   .cover-rule::before,.cover-rule::after{content:"";width:60px;height:1px;background:var(--line-2)}
 
   /* Cover entry: where Begin lives. Made to look like an instrument plate. */
@@ -146,23 +146,23 @@
   .entry .meta-l b,.entry .meta-r b{color:var(--ink);font-weight:500;letter-spacing:.16em}
   .begin{display:inline-flex;align-items:center;justify-content:center;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;padding:22px 40px;border-radius:0;border:none;cursor:pointer;gap:18px;transition:background .2s,gap .2s}
   .begin:hover{background:var(--accent);gap:24px}
-  .begin .arrow{font-family:var(--display);font-style:italic;font-size:18px;letter-spacing:0;line-height:0}
+  .begin .arrow{font-family:var(--display);font-style:normal;font-size:18px;letter-spacing:0;line-height:0}
 
   /* ===== INSTRUMENT NOTES (margin-style) ===== */
   .notes{padding-top:64px;padding-bottom:48px;display:grid;grid-template-columns:1fr 2.4fr;gap:64px;border-bottom:1px solid var(--line)}
   .notes .label{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
-  .notes .label-name{font-family:var(--display);font-style:italic;font-size:24px;font-weight:400;color:var(--ink);line-height:1.15;max-width:14ch}
+  .notes .label-name{font-family:var(--display);font-style:normal;font-size:24px;font-weight:400;color:var(--ink);line-height:1.15;max-width:14ch}
   .notes .body{display:flex;flex-direction:column;gap:24px}
   .notes .body p{font-family:var(--display);font-size:21px;line-height:1.55;color:var(--ink);max-width:54ch;font-weight:400}
-  .notes .body p em{font-style:italic;color:var(--accent)}
+  .notes .body p em{font-style:normal;color:var(--accent)}
   .notes .body p.foot{font-family:var(--sans);font-size:13px;color:var(--mute);line-height:1.6;border-top:1px solid var(--line);padding-top:18px;margin-top:8px;max-width:54ch}
 
   /* ===== SECTION TITLES (instrument-style) ===== */
   .section-head{padding-top:80px;padding-bottom:32px}
   .section-head .num{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--accent);white-space:nowrap}
-  .section-head .num::before{content:"§ ";font-family:var(--display);font-style:italic;font-size:16px;color:var(--accent);letter-spacing:0;font-weight:400;margin-right:4px}
+  .section-head .num::before{content:"§ ";font-family:var(--display);font-style:normal;font-size:16px;color:var(--accent);letter-spacing:0;font-weight:400;margin-right:4px}
   .section-head h2{font-family:var(--display);font-size:clamp(28px,3.4vw,42px);font-weight:300;letter-spacing:-0.02em;line-height:1.1;margin-top:14px;max-width:24ch}
-  .section-head h2 em{font-style:italic;color:var(--accent)}
+  .section-head h2 em{font-style:normal;color:var(--accent)}
 
   /* ===== §01 SAMPLE REPORT ===== */
   .specimen{padding-bottom:64px;border-bottom:1px solid var(--line)}
@@ -181,18 +181,18 @@
   .report-head{padding:24px 32px;border-bottom:1px solid var(--ink-2);display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;background:var(--paper-2)}
   .report-head .doc-id{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink)}
   .report-head .doc-id b{color:var(--accent);font-weight:500}
-  .report-head .doc-title{font-family:var(--display);font-size:18px;font-style:italic;font-weight:400;color:var(--ink);text-align:center}
+  .report-head .doc-title{font-family:var(--display);font-size:18px;font-style:normal;font-weight:400;color:var(--ink);text-align:center}
   .report-head .stamp{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);padding:5px 10px}
   .report-body{display:grid;grid-template-columns:1.05fr 1fr;gap:0}
   .report-left{padding:36px 32px;border-right:1px solid var(--ink-2);display:flex;flex-direction:column;gap:36px;min-height:380px}
   .field{display:flex;flex-direction:column;gap:6px;border-bottom:1px dotted var(--line-2);padding-bottom:18px}
   .field:last-child{border-bottom:0;padding-bottom:0}
   .field .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--mute)}
-  .pattern-name{font-family:var(--display);font-size:38px;font-weight:300;font-style:italic;letter-spacing:-0.02em;color:var(--ink);line-height:1.05}
+  .pattern-name{font-family:var(--display);font-size:38px;font-weight:300;font-style:normal;letter-spacing:-0.02em;color:var(--ink);line-height:1.05}
   .pattern-name em{color:var(--accent)}
   .pattern-desc{font-size:13px;color:var(--ink-2);line-height:1.6;margin-top:8px;max-width:42ch;font-family:var(--sans)}
   .finding{font-family:var(--display);font-size:18px;line-height:1.5;color:var(--ink);max-width:36ch;font-weight:400}
-  .finding em{font-style:italic;color:var(--accent)}
+  .finding em{font-style:normal;color:var(--accent)}
   .report-right{padding:32px;display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,var(--paper) 0,var(--paper) 12px,var(--paper-2) 12px,var(--paper-2) 13px);position:relative;min-height:380px}
   .radar-wrap{width:100%;max-width:340px;aspect-ratio:1;position:relative;background:var(--paper);padding:18px;border:1px dotted var(--line-2)}
   .radar-svg{width:100%;height:auto;display:block}
@@ -207,7 +207,7 @@
   /* ===== INSTRUMENT FOOT ===== */
   .doc-foot{padding:48px 0 64px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:end;font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--mute);margin-top:48px}
   .doc-foot .col b{color:var(--ink);font-weight:500;letter-spacing:.18em;display:block;margin-bottom:6px}
-  .doc-foot .center{text-align:center;font-family:var(--display);font-style:italic;font-size:16px;letter-spacing:0;color:var(--ink-2);text-transform:none}
+  .doc-foot .center{text-align:center;font-family:var(--display);font-style:normal;font-size:16px;letter-spacing:0;color:var(--ink-2);text-transform:none}
   .doc-foot .right{text-align:right}
   .doc-foot a{color:var(--ink-2)}
   .doc-foot a:hover{color:var(--accent)}
@@ -216,7 +216,7 @@
   .foot-entry{padding:24px 0 0;display:flex;justify-content:center}
   .foot-link{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink);padding:8px 0;border-bottom:1px solid var(--line-2);transition:color .2s,border-color .2s}
   .foot-link:hover{color:var(--accent);border-color:var(--accent)}
-  .foot-link .arrow{font-family:var(--display);font-style:italic;font-size:14px;letter-spacing:0;margin-left:6px}
+  .foot-link .arrow{font-family:var(--display);font-style:normal;font-size:14px;letter-spacing:0;margin-left:6px}
 
   /* ===== RESPONSIVE ===== */
   @media(max-width:880px){
@@ -263,7 +263,7 @@
 
   <div class="cover-title">
     <span class="form-id">Pain Pattern Quiz <span>·</span> Self-administered <span>·</span> ~3 min</span>
-    <h1>An instrument for reading <em>why pain keeps coming back.</em></h1>
+    <h1>An instrument for reading why pain keeps coming back.</h1>
     <p class="lede">A short clinical instrument. You answer twelve questions. It returns a balance reading across six dimensions and a recommended next step.</p>
     <div class="cover-rule">· · ·</div>
   </div>
@@ -286,11 +286,11 @@
 <section class="notes doc">
   <div>
     <div class="label">Examiner's Note</div>
-    <div class="label-name">On the use of <em>this instrument.</em></div>
+    <div class="label-name">On the use of this instrument.</div>
   </div>
   <div class="body">
-    <p>Most people manage symptoms for years without addressing the real pattern. This is not because they aren't trying. It is because pain has a <em>shape,</em> and most approaches measure only one axis of it.</p>
-    <p>The instrument below was developed across twenty-five years of clinical practice. It will not diagnose you. It will not replace a clinician. It <em>will</em> tell you, with reasonable confidence, where your body is most out of balance — and what that means for what to do next.</p>
+    <p>Most people manage symptoms for years without addressing the real pattern. This is not because they aren't trying. It is because pain has a shape, and most approaches measure only one axis of it.</p>
+    <p>The instrument below was developed across twenty-five years of clinical practice. It will not diagnose you. It will not replace a clinician. It will tell you, with reasonable confidence, where your body is most out of balance — and what that means for what to do next.</p>
     <p class="foot">Self-administered · Not a medical diagnosis · For orientation toward the right approach. Designed by Dr. Garrett Hewstan, drawing on 25 years of clinical practice.</p>
   </div>
 </section>
@@ -299,7 +299,7 @@
 <section class="specimen doc">
   <div class="section-head">
     <span class="num">01 · Specimen output</span>
-    <h2>What the report <em>looks like</em> when it returns to you.</h2>
+    <h2>What the report looks like when it returns to you.</h2>
   </div>
 
   <div class="specimen-cap">
@@ -319,12 +319,12 @@
         <div class="report-left">
           <div class="field">
             <span class="lbl">Primary reading</span>
-            <span class="pattern-name">Out of <em>balance</em></span>
+            <span class="pattern-name">Out of balance</span>
             <p class="pattern-desc">Adaptations are carrying more than their share. Something else has stopped doing its job, and the body has built a chain around the original site to keep moving.</p>
           </div>
           <div class="field">
             <span class="lbl">Recovery reading</span>
-            <p class="finding">Recovery potential reads <em>high</em> — the system can rebalance with the right input.</p>
+            <p class="finding">Recovery potential reads high — the system can rebalance with the right input.</p>
           </div>
         </div>
         <div class="report-right">
@@ -381,7 +381,7 @@
 <section class="scope doc">
   <div class="section-head">
     <span class="num">02 · Scope of use</span>
-    <h2>What this instrument is <em>and isn't.</em></h2>
+    <h2>What this instrument is and isn't.</h2>
   </div>
   <div class="scope-grid">
     <div class="scope-col">

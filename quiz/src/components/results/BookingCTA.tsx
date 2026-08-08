@@ -53,7 +53,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-4">
             You're not broken.<br />
-            <em className="italic" style={{ color: '#C56B4E' }}>You're out of balance.</em>
+            You're out of balance.
           </h2>
           <p className="text-lg font-sans text-amari-text-light max-w-xl mx-auto mb-5">
             Most people manage symptoms for years. The Amari Method finds where your body is out of balance and teaches you how to correct it yourself.
@@ -157,7 +157,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             <div className="flex gap-1 mb-4 justify-center">
               {[...Array(5)].map((_, i) => <StarIcon key={i} />)}
             </div>
-            <p className="text-lg text-amari-charcoal italic mb-4 text-center font-sans leading-relaxed">
+            <p className="text-lg text-amari-charcoal  mb-4 text-center font-sans leading-relaxed">
               "{testimonial.quote}"
             </p>
             <p className="text-sm text-amari-text-light text-center font-medium font-sans">

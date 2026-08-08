@@ -52,7 +52,7 @@
     .book-header { text-align: center; margin-bottom: 44px; background: transparent; }
     .book-kicker { font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--body); margin: 0 0 14px; }
     .book-headline { font-family: var(--serif); font-weight: 400; font-size: clamp(36px, 5vw, 56px); line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 18px; }
-    .book-headline em { font-style: italic; }
+    .book-headline em { font-style:normal; }
     .book-sub { font-family: var(--sans); font-size: 16px; line-height: 1.55; color: var(--body); margin: 0 auto 18px; max-width: 50ch; }
     .book-meta { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; align-items: center; font-family: var(--sans); font-size: 13px; color: var(--body); }
     .book-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.4; }
@@ -60,7 +60,7 @@
     /* ---- Progress strip ---- */
     .book-progress { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 36px; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--body); }
     .book-progress-step { display: inline-flex; align-items: center; gap: 8px; }
-    .book-progress-num { font-family: var(--serif); font-style: italic; font-size: 16px; font-weight: 400; color: var(--body); letter-spacing: 0; text-transform: none; }
+    .book-progress-num { font-family: var(--serif); font-style:normal; font-size: 16px; font-weight: 400; color: var(--body); letter-spacing: 0; text-transform: none; }
     .book-progress-step.is-active .book-progress-num,
     .book-progress-step.is-active .book-progress-label { color: var(--ink); }
     .book-progress-step.is-done .book-progress-num,
@@ -156,7 +156,7 @@
 
       <section class="book-header">
         <p class="book-kicker" id="bookKicker">Initial session · San Francisco</p>
-        <h1 class="book-headline" id="bookHeadline">Book your <em>first session.</em></h1>
+        <h1 class="book-headline" id="bookHeadline">Book your first session.</h1>
         <p class="book-sub" id="bookSub">60 minutes with Garrett. Full assessment, your first guided protocol, and a take-home practice.</p>
         <div class="book-meta">
           <span id="bookPrice">$225</span>
@@ -343,7 +343,7 @@
         hideFormat: true,
         agreementVersion: 'agreed-pma-v2026-06-16',
         kicker: 'Amari Assessment · San Francisco',
-        headline: 'Explore what your <em>body is asking for.</em>',
+        headline: 'Explore what your body is asking for.',
         sub: 'A 50-minute, in-person Amari Assessment with Garrett. Explore what you are noticing in your body, experience the work, and decide whether an Amari practice is the right next step.',
         meta: '50 minutes · In person',
         summaryLabel: 'Amari Assessment · In Person',
@@ -357,7 +357,7 @@
         formatPair: 'initial',
         agreementVersion: 'missed-appointment-v2026-06-16',
         kicker: 'Initial session · San Francisco',
-        headline: 'Book your <em>first session.</em>',
+        headline: 'Book your first session.',
         sub: '60 minutes with Garrett. Full assessment, your first guided protocol, and a take-home practice.',
         meta: 'Pay over time with Affirm',
         summaryLabel: 'Initial Session · In Person',
@@ -366,7 +366,7 @@
         initial_virtual: {
           calendarId: 'ySmht5hx4uZGEpgZrlCw', sessionType: 'initial_virtual', price: 225,
           requiresPolicy: true, formatPair: 'initial', agreementVersion: 'missed-appointment-v2026-06-16',
-          kicker: 'Initial session · Virtual', headline: 'Book your <em>first session.</em>',
+          kicker: 'Initial session · Virtual', headline: 'Book your first session.',
           sub: '60 minutes with Garrett over video. Full assessment, your first guided protocol, and a take-home practice.',
           meta: 'Virtual · from anywhere', summaryLabel: 'Initial Session · Virtual',
           title: 'Book Your First Session · Virtual | Amari Method'
@@ -374,7 +374,7 @@
         discovery_call: {
           calendarId: 'USgPsktqRcuomdUgpShL', sessionType: 'discovery_call', price: 0,
           requiresPolicy: false, formatPair: 'discovery', agreementVersion: 'free-discovery-v2026-08-04',
-          kicker: 'Free discovery call · Phone', headline: 'Find out if Amari is <em>the right next step.</em>',
+          kicker: 'Free discovery call · Phone', headline: 'Find out if Amari is the right next step.',
           sub: 'A free 15-minute call with Garrett to hear what you are dealing with and decide whether an Amari practice makes sense.',
           meta: '15 minutes · Phone', summaryLabel: 'Free Discovery Call · Phone',
           title: 'Book a Free Discovery Call | Amari Method'
@@ -382,7 +382,7 @@
         discovery_virtual: {
           calendarId: 'ZEIGFHBi17SpZ3Ezi5DR', sessionType: 'discovery_virtual', price: 0,
           requiresPolicy: false, formatPair: 'discovery', agreementVersion: 'free-discovery-v2026-08-04',
-          kicker: 'Free discovery call · Virtual', headline: 'Find out if Amari is <em>the right next step.</em>',
+          kicker: 'Free discovery call · Virtual', headline: 'Find out if Amari is the right next step.',
           sub: 'A free 15-minute video call with Garrett to hear what you are dealing with and decide whether an Amari practice makes sense.',
           meta: '15 minutes · Video', summaryLabel: 'Free Discovery Call · Virtual',
           title: 'Book a Virtual Discovery Call | Amari Method'
@@ -390,7 +390,7 @@
         ambassador_discovery: {
           calendarId: 'aVE54Qf4lrbYTB0zFqXy', sessionType: 'ambassador_discovery', price: 0,
           requiresPolicy: false, hideFormat: true, agreementVersion: 'partnership-discovery-v2026-08-04',
-          kicker: 'Partnership · Discovery call', headline: 'Explore an Amari <em>partnership.</em>',
+          kicker: 'Partnership · Discovery call', headline: 'Explore an Amari partnership.',
           sub: 'A free 15-minute call with Garrett to talk through the practice, who it helps, and whether a partnership makes sense.',
           meta: '15 minutes · Free', summaryLabel: 'Partnership Discovery Call',
           title: 'Book a Partnership Discovery Call | Amari Method'
@@ -398,7 +398,7 @@
         partner_initial_in_person: {
           calendarId: 'lfsnaiGiLNL2z12pLKDP', sessionType: 'partner_initial_in_person', price: 0,
           requiresPolicy: true, formatPair: 'partner', agreementVersion: 'agreed-pma-v2026-04-17',
-          kicker: 'Partner session · San Francisco', headline: 'Experience the work <em>for yourself.</em>',
+          kicker: 'Partner session · San Francisco', headline: 'Experience the work for yourself.',
           sub: 'A complimentary 60-minute session with Garrett before you decide whether you would like to partner with Amari.',
           meta: '60 minutes · In person', summaryLabel: 'Partner Initial Session · In Person',
           title: 'Book Your Partner Session | Amari Method'
@@ -406,7 +406,7 @@
         partner_initial_virtual: {
           calendarId: 'P7T6M1w8wtuRfwAqzOVw', sessionType: 'partner_initial_virtual', price: 0,
           requiresPolicy: true, formatPair: 'partner', agreementVersion: 'agreed-pma-v2026-04-17',
-          kicker: 'Partner session · Virtual', headline: 'Experience the work <em>for yourself.</em>',
+          kicker: 'Partner session · Virtual', headline: 'Experience the work for yourself.',
           sub: 'A complimentary 60-minute virtual session with Garrett before you decide whether you would like to partner with Amari.',
           meta: '60 minutes · Virtual', summaryLabel: 'Partner Initial Session · Virtual',
           title: 'Book Your Virtual Partner Session | Amari Method'

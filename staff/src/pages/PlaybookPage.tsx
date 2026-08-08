@@ -73,7 +73,7 @@ const sectionComponents: Components = {
   ),
   hr: () => <hr className="my-4 border-amari-border/40" />,
   strong: ({ children }) => <strong className="font-semibold text-amari-charcoal">{children}</strong>,
-  em: ({ children }) => <em className="italic">{children}</em>,
+  em: ({ children }) => <>{children}</>,
 };
 
 const introComponents: Components = {

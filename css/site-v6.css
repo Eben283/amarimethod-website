@@ -35,6 +35,8 @@ body{font-family:var(--sans);background:var(--cream);color:var(--ink);line-heigh
 h1,h2,h3,h4{font-family:var(--sans);font-weight:500;line-height:1.02;letter-spacing:-.035em}
 p{color:var(--body);max-width:60ch}
 a{color:inherit;text-decoration:none}
+/* Keep emphasis in the wording and hierarchy, not in a singled-out styled word. */
+em{font-style:normal}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
 
 /* Small, factual labels; display type is reserved for headings. */

@@ -167,7 +167,7 @@ export default function SignaturePad({ onChange, className = '' }: Props) {
           onPointerCancel={onPointerUp}
         />
         {!hasSignature && (
-          <p className="absolute inset-0 flex items-center justify-center text-amari-text-muted text-sm pointer-events-none italic">
+          <p className="absolute inset-0 flex items-center justify-center text-amari-text-muted text-sm pointer-events-none ">
             Sign here with your finger
           </p>
         )}

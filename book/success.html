@@ -31,7 +31,7 @@
     .confirm-shell { max-width: 560px; margin: 0 auto; padding: 96px 24px; text-align: center; }
     .confirm-icon { width: 72px; height: 72px; margin: 0 auto 28px; border-radius: 50%; background: var(--peach); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 36px; font-weight: 600; }
     .confirm-shell h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.4vw, 48px); line-height: 1.1; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 18px; }
-    .confirm-shell h1 em { font-style: italic; }
+    .confirm-shell h1 em { font-style:normal; }
     .confirm-shell p { font-size: 17px; line-height: 1.55; color: var(--body); max-width: 44ch; margin: 0 auto 18px; }
     .confirm-actions { display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 36px; }
     .btn-primary-pill { display: inline-flex; align-items: center; gap: 12px; padding: 16px 32px; min-height: 50px; background: var(--ink); color: #fff; border-radius: 2px; text-decoration: none; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
@@ -62,7 +62,7 @@
   <main>
     <div class="confirm-shell">
       <div class="confirm-icon" aria-hidden="true">✓</div>
-      <h1 id="confirmTitle">You're <em>booked.</em></h1>
+      <h1 id="confirmTitle">You're booked.</h1>
       <p id="confirmBody">Payment received and your session is on the calendar. A confirmation email is on its way.</p>
 
       <!-- Booking recap — populated by JS if URL params are present -->
@@ -206,7 +206,7 @@
       // a purchase-flavored confirmation instead of "You're booked."
       if (!item.hasSlot && item.purchaseLabel) {
         document.getElementById('confirmTitle').innerHTML =
-          'You\'re <em>in.</em>';
+          'You\'re in.';
         document.getElementById('confirmBody').textContent =
           item.purchaseBody;
       }

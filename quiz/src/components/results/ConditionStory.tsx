@@ -42,7 +42,7 @@ const ConditionStory = ({ content }: Props) => {
             <div key={card.num} className="bg-white border border-amari-border rounded-xl p-6">
               <div
                 className="font-serif text-3xl mb-3"
-                style={{ color: '#C56B4E', fontStyle: 'italic', fontWeight: 300 }}
+                style={{ color: '#C56B4E', fontStyle: 'normal', fontWeight: 300 }}
               >
                 {card.num}
               </div>
@@ -69,7 +69,7 @@ const ConditionStory = ({ content }: Props) => {
               <h2 className="text-3xl md:text-4xl font-serif text-amari-charcoal leading-tight mb-3">
                 {content.protocolIntro.name}
               </h2>
-              <p className="text-base md:text-lg font-serif italic text-amari-text-light leading-relaxed">
+              <p className="text-base md:text-lg font-serif  text-amari-text-light leading-relaxed">
                 {content.protocolIntro.framingLine}
               </p>
             </div>
@@ -118,7 +118,7 @@ const ConditionStory = ({ content }: Props) => {
             >
               <div
                 className="font-serif text-4xl"
-                style={{ color: '#C56B4E', fontStyle: 'italic', fontWeight: 300, lineHeight: 1 }}
+                style={{ color: '#C56B4E', fontStyle: 'normal', fontWeight: 300, lineHeight: 1 }}
               >
                 {step.num}
               </div>

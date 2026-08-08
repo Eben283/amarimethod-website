@@ -200,7 +200,7 @@ function stripMarkdown(text) {
   return text
     .replace(/#{1,6}\s+/g, "")       // headings
     .replace(/\*\*([^*]+)\*\*/g, "$1") // bold
-    .replace(/\*([^*]+)\*/g, "$1")     // italic
+    .replace(/\*([^*]+)\*/g, "$1")     // Strip emphasis markup.
     .replace(/`([^`]+)`/g, "$1")       // inline code
     .replace(/```[\s\S]*?```/g, "")    // code blocks
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links

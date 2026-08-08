@@ -86,7 +86,7 @@
     letter-spacing: 0;
   }
 
-  h1 em, h2 em, h3 em { font-style: italic; }
+  h1 em, h2 em, h3 em { font-style:normal; }
 }
 
 /* ---- solid ink button (mockup .btn) ---- */
@@ -239,7 +239,7 @@
   color: var(--ink);
   line-height: 1.14;
 }
-.page-cover h1 em { font-style: italic; }
+.page-cover h1 em { font-style:normal; }
 .page-cover .lede {
   margin-top: 26px;
   font-size: 1.18rem;

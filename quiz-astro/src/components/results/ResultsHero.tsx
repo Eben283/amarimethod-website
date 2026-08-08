@@ -24,11 +24,11 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
 
       <h1 className="hero-headline">
         You're not broken.<br />
-        You're <em>out of balance.</em>
+        You're out of balance.
       </h1>
 
       <p className="hero-sub">
-        Your readings show a body that <em>can rebalance</em>. It just hasn't been given the right input to start.
+        Your readings show a body that can rebalance. It just hasn't been given the right input to start.
       </p>
 
       <div className="hero-meta">
@@ -39,7 +39,7 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
         <div className="cell">
           <span className="lbl">Recovery potential</span>
           <span className="val">
-            <em>{recoveryWord}</em> · {scores.recoveryPotential}%
+            {recoveryWord} · {scores.recoveryPotential}%
           </span>
         </div>
       </div>

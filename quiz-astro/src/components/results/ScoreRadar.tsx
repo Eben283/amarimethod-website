@@ -69,7 +69,7 @@ const styles: Record<string, React.CSSProperties> = {
   legendVal: {
     fontFamily: "'Bona Nova', Georgia, serif",
     fontSize: 16,
-    fontStyle: 'italic',
+    fontStyle: 'normal',
     color: PALETTE.ink,
     fontWeight: 400,
   },
@@ -103,7 +103,7 @@ const ScoreRadar = ({ scores }: ScoreRadarProps) => {
     <div style={styles.wrap}>
       <div className="section-head" style={{ paddingTop: 0 }}>
         <span className="eyebrow">Pattern profile</span>
-        <h2>Plotted on <em>six dimensions.</em></h2>
+        <h2>Plotted on six dimensions.</h2>
         <p className="lede">How your readings distribute across the axes the instrument measures.</p>
       </div>
 

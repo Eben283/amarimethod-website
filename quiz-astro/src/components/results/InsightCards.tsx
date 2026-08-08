@@ -48,7 +48,7 @@ const InsightCards = ({ insights }: InsightCardsProps) => {
     <div style={styles.wrap}>
       <div className="section-head" style={{ paddingTop: 0 }}>
         <span className="eyebrow">Personalised insights</span>
-        <h2>What we read in <em>your answers.</em></h2>
+        <h2>What we read in your answers.</h2>
         <p className="lede">Patterns specific to the way you answered.</p>
       </div>
 

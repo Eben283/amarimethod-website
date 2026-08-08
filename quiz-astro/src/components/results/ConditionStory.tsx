@@ -17,7 +17,7 @@ type Props = {
 };
 
 /**
- * Splits a heading and wraps the final emphasis phrase in <em>.
+ * Splits a heading into an introductory phrase and its conclusion.
  * Tries known suffixes first ("keeps hurting", "keeps coming back",
  * "comes from", "actually comes from"), falls back to the last two words.
  */
@@ -34,37 +34,37 @@ function renderItalicTail(heading: string): React.ReactNode {
       const tail = heading.slice(heading.length - suffix.length);
       return (
         <>
-          {head}<em>{tail}.</em>
+          {head}{tail}.
         </>
       );
     }
   }
   const parts = heading.split(' ');
-  if (parts.length < 3) return <em>{heading}.</em>;
+  if (parts.length < 3) return <>{heading}.</>;
   const head = parts.slice(0, -2).join(' ') + ' ';
   const tail = parts.slice(-2).join(' ');
   return (
     <>
-      {head}<em>{tail}.</em>
+      {head}{tail}.
     </>
   );
 }
 
 /**
- * Renders a protocol name with the noun phrase italicized.
- * "The Spinal Wave"   → The <em>Spinal Wave.</em>
- * "Power Posture"     → <em>Power Posture.</em>
- * "The Hand Balancer" → The <em>Hand Balancer.</em>
+ * Renders a protocol name consistently, whether or not it begins with “The”.
+ * "The Spinal Wave"   → The Spinal Wave.
+ * "Power Posture"     → Power Posture.
+ * "The Hand Balancer" → The Hand Balancer.
  */
 function renderProtocolName(name: string): React.ReactNode {
   if (name.toLowerCase().startsWith('the ')) {
     return (
       <>
-        The <em>{name.slice(4)}.</em>
+        The {name.slice(4)}.
       </>
     );
   }
-  return <em>{name}.</em>;
+  return <>{name}.</>;
 }
 
 const ConditionStory = ({ content }: Props) => {
