@@ -77,9 +77,16 @@ describe("CRM mirror dashboard access handoff", () => {
       method: "POST", headers: { Authorization: "Bearer test-secret" },
     }), env);
     const embedBody = await mintedEmbed.json();
-    const embedHandoff = await worker.fetch(new Request(`${embedBody.url}?embed=1`), env);
+    const embedHandoff = await worker.fetch(new Request(`${embedBody.url}?embed=1&parent_origin=${encodeURIComponent("https://www.amarimethod.com")}`), env);
     expect(embedHandoff.status).toBe(302);
-    expect(embedHandoff.headers.get("Location")).toBe("/?embed=1");
+    expect(embedHandoff.headers.get("Location")).toBe("/?embed=1&parent_origin=https%3A%2F%2Fwww.amarimethod.com");
+
+    const mintedUntrustedEmbed = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const untrustedEmbedBody = await mintedUntrustedEmbed.json();
+    const untrustedEmbedHandoff = await worker.fetch(new Request(`${untrustedEmbedBody.url}?embed=1&parent_origin=${encodeURIComponent("https://example.com")}`), env);
+    expect(untrustedEmbedHandoff.headers.get("Location")).toBe("/?embed=1");
 
     const deskMinted = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
       method: "POST", headers: { Authorization: "Bearer test-secret" },

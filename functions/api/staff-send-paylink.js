@@ -12,7 +12,17 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // main site. Confirmed via existing usage in portal/src/components/QuickActions.tsx.
 const BASE_URL = "https://link.amarimethod.com";
 
-const PRODUCTS = {
+export const PAY_LINK_PRODUCTS = {
+  "6-week-practice": {
+    name: "6-Week Amari Practice",
+    price: "$3,000",
+    path: "/payment-link/6a6833c27b99151a54040da5",
+  },
+  "12-week-practice": {
+    name: "12-Week Amari Practice",
+    price: "$5,400",
+    path: "/payment-link/6a66ce547b99151a540409b0",
+  },
   "initial-in-person": {
     name: "Initial Session (in-person)",
     price: "$225",
@@ -66,7 +76,7 @@ const PRODUCTS = {
 };
 
 
-function buildMessage(product) {
+export function buildMessage(product) {
   return `Here's your payment link for the ${product.name} (${product.price}):\n\n${BASE_URL}${product.path}`;
 }
 
@@ -104,11 +114,11 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
     }
 
-    if (!productKey || !PRODUCTS[productKey]) {
+    if (!productKey || !PAY_LINK_PRODUCTS[productKey]) {
       return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400, headers });
     }
 
-    const product = PRODUCTS[productKey];
+    const product = PAY_LINK_PRODUCTS[productKey];
 
     const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
     if (!contactRes.ok) {

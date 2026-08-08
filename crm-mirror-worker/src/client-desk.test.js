@@ -277,7 +277,12 @@ describe("Client Desk message rendering", () => {
     const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
     const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
     const rendered = helpers.profileMarkup({
-      contact: { display_name: "Test client", ghl_contact_id: "ghl contact/1" },
+      contact: {
+        display_name: "Test client",
+        ghl_contact_id: "ghl contact/1",
+        email_normalized: "test@example.com",
+        phone_e164: "+14155550123",
+      },
       purchases: [
         { amount_cents: 2900, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-07-29T20:00:00.000Z" },
         { amount_cents: 5000, amount_refunded_cents: 0, currency: "usd", provider_status: "failed", purchased_at: "2026-07-28T20:00:00.000Z" },
@@ -298,7 +303,11 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain("contact=ghl%20contact%2F1&amp;action=charge");
     expect(rendered).toContain('target="_top"');
     expect(rendered).toContain('data-staff-handoff');
+    expect(rendered).toContain('data-contact-name="Test client"');
+    expect(rendered).toContain('data-contact-email="test@example.com"');
+    expect(rendered).toContain('data-contact-phone="+14155550123"');
     expect(clientDeskHtml()).toContain("window.parent.postMessage({ type: 'amari:staff-navigate'");
+    expect(clientDeskHtml()).toContain('path: destination.pathname + destination.search, client');
     expect(clientDeskHtml()).toContain('bindRecordNavigation();');
   });
 

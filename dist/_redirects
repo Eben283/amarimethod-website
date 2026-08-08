@@ -50,10 +50,12 @@
 # Assessment-first booking path. Public acquisition routes land on the one
 # paid Assessment calendar; existing clients continue to book follow-ups in
 # the portal.
-/book-initial-in-person /assessment-booking.html?type=initial_in_person 302
-/book/initial-in-person /assessment-booking.html?type=initial_in_person 302
-/book-initial-virtual /assessment-booking.html?type=initial_virtual 302
-/book/initial-virtual /assessment-booking.html?type=initial_virtual 302
+/book-initial-in-person /assessment-booking 301
+/book/initial-in-person /assessment-booking 301
+/book-initial-virtual /assessment-booking 301
+/book/initial-virtual /assessment-booking 301
+/book-initial-in-person.html /assessment-booking 301
+/book-initial-virtual.html /assessment-booking 301
 /book-discovery-call /assessment-booking.html?type=discovery_call 302
 /book/discovery-call /assessment-booking.html?type=discovery_call 302
 /book/discovery-virtual /assessment-booking.html?type=discovery_virtual 302
@@ -63,6 +65,9 @@
 /first-visit /booking 301
 /in-person-sessions /booking 301
 /virtual-sessions /booking 301
+/first-visit.html /assessment-booking 301
+/in-person-sessions.html /assessment-booking 301
+/virtual-sessions.html /assessment-booking 301
 # Follow-ups are pre-purchased via 4/8-session packages, so legacy
 # /book-follow-up URLs land at the portal where series clients book their
 # pre-paid sessions via the in-portal BookingModal (no separate $190 path).

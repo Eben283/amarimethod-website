@@ -221,6 +221,8 @@ export async function sendToolkit(contactId: string): Promise<{ success: boolean
 }
 
 export type PayLinkProduct =
+  | '6-week-practice'
+  | '12-week-practice'
   | 'initial-in-person'
   | 'initial-virtual'
   | '4-session-series'

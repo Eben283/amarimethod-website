@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   getOwedStatus,
   getContactDetail,
@@ -128,6 +128,7 @@ function cashSuggestions(totalCents: number) {
 
 export default function PosPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [panel, setPanel] = useState<Panel>(null);
   const [category, setCategory] = useState<CatalogGroup>("Founders Circle");
@@ -180,10 +181,23 @@ export default function PosPage() {
     const contactId = searchParams.get("contact");
     if (!contactId || hydratedContact.current === contactId) return;
     const action = searchParams.get("action");
+    const deskClient = (location.state as { deskClient?: PosClient } | null)?.deskClient;
     let cancelled = false;
     hydratedContact.current = contactId;
     explicitContactSession.current = true;
-    setNotice("Opening practice member…");
+    if (deskClient?.id === contactId) {
+      setClient(deskClient);
+      setNotice("");
+      if (action === "charge") {
+        setCustomLabel("");
+        setCustomReason("Staff charge");
+        setCustomDollars("");
+        setCustomQty("1");
+        setPanel("custom-sale");
+      }
+    } else {
+      setNotice("Opening practice member…");
+    }
     void getContactDetail(contactId)
       .then((contact) => {
         if (cancelled) return;
@@ -205,7 +219,9 @@ export default function PosPage() {
         }
       })
       .catch((error) => {
-        if (!cancelled) setNotice(error instanceof Error ? error.message : "Could not open this practice member in POS.");
+        if (!cancelled && deskClient?.id !== contactId) {
+          setNotice(error instanceof Error ? error.message : "Could not open this practice member in POS.");
+        }
       })
       .finally(() => {
         if (cancelled) return;
@@ -215,7 +231,7 @@ export default function PosPage() {
         setSearchParams(next, { replace: true });
       });
     return () => { cancelled = true; };
-  }, [searchParams, setSearchParams]);
+  }, [location.state, searchParams, setSearchParams]);
 
   useEffect(() => {
     const fromQuery = searchParams.get("sale");

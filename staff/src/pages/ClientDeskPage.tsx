@@ -29,11 +29,22 @@ export default function ClientDeskPage() {
     if (!src) return;
     const deskOrigin = new URL(src).origin;
     const receiveDeskNavigation = (event: MessageEvent) => {
-      if (event.source !== frameRef.current?.contentWindow || event.origin !== deskOrigin) return;
+      if (event.origin !== deskOrigin) return;
       if (event.data?.type !== 'amari:staff-navigate' || typeof event.data.path !== 'string') return;
       const destination = new URL(event.data.path, window.location.origin);
       if (destination.origin !== window.location.origin || destination.pathname !== '/staff/pos') return;
-      navigate(`/pos${destination.search}`);
+      const client = event.data.client;
+      const contactId = destination.searchParams.get('contact');
+      const deskClient = client && typeof client === 'object' && typeof client.id === 'string' && client.id === contactId
+        ? {
+            id: client.id,
+            name: typeof client.name === 'string' && client.name ? client.name : 'Practice member',
+            email: typeof client.email === 'string' ? client.email : null,
+            phone: typeof client.phone === 'string' ? client.phone : null,
+            isFoundersCircle: false,
+          }
+        : null;
+      navigate(`/pos${destination.search}`, { state: deskClient ? { deskClient } : null });
     };
     window.addEventListener('message', receiveDeskNavigation);
     return () => window.removeEventListener('message', receiveDeskNavigation);

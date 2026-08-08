@@ -5,7 +5,8 @@ import {
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { buildGoogleReviewRequest } from '../lib/review-request';
 import type { ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import Checklist from '../components/Checklist';
@@ -92,6 +93,10 @@ export default function ClientDetailPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [toolkitOpen, setToolkitOpen] = useState(false);
   const [showMorePayLinks, setShowMorePayLinks] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewStatus, setReviewStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [reviewError, setReviewError] = useState('');
   const [progress, setProgress] = useState<ClientModuleData>(defaultData());
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,7 +196,39 @@ export default function ClientDetailPage() {
     }
   }
 
-  function renderPayRow(product: PayLinkProduct, label: string, price: string) {
+  function toggleReviewComposer() {
+    if (!client || reviewStatus === 'sent') return;
+    if (!reviewOpen && !reviewMessage) setReviewMessage(buildGoogleReviewRequest(client.firstName));
+    setReviewOpen(!reviewOpen);
+    setReviewStatus('idle');
+    setReviewError('');
+  }
+
+  async function handleSendReviewRequest() {
+    if (!client || reviewStatus === 'sending') return;
+    const message = reviewMessage.trim();
+    if (!message) {
+      setReviewStatus('error');
+      setReviewError('Add a message before sending.');
+      return;
+    }
+    setReviewStatus('sending');
+    setReviewError('');
+    try {
+      const result = await sendFollowupText(client.id, message);
+      setReviewStatus('sent');
+      if (result.deduped) setReviewError('This exact message was already sent a moment ago.');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setReviewStatus('error');
+      setReviewError(err instanceof Error ? err.message : 'Could not send the review request.');
+    }
+  }
+
+  function renderPayRow(product: PayLinkProduct, label: string, price: string, legacy = false) {
     const status = payLinkStatus[product] || 'idle';
     const isSending = status === 'sending';
     const isSent = status === 'sent';
@@ -206,7 +243,10 @@ export default function ClientDetailPage() {
         <span className="ic">
           {isSending ? <Loader2 size={15} className="sa-spin" /> : isSent ? <Check size={15} /> : <Send size={15} />}
         </span>
-        <span className="nm">{isSent ? `${label} sent` : isError ? `${label} — retry` : `Send ${label}`}</span>
+        <span className="nm">
+          {isSent ? `${label} sent` : isError ? `${label} — retry` : `Send ${label}`}
+          {legacy && <span className="sa-legacy-badge">Legacy</span>}
+        </span>
         <span className="pr">{price}</span>
       </button>
     );
@@ -233,6 +273,15 @@ export default function ClientDetailPage() {
 
   useEffect(() => {
     loadClient();
+  }, [id]);
+
+  // A route change can reuse this component. Never carry an unsent review
+  // message or sent state from one practice member into another's session.
+  useEffect(() => {
+    setReviewOpen(false);
+    setReviewMessage('');
+    setReviewStatus('idle');
+    setReviewError('');
   }, [id]);
 
   // Lazy-load Stripe-grounded owed status (separate, non-blocking — a Stripe
@@ -310,6 +359,13 @@ export default function ClientDetailPage() {
     (a) => new Date(a.startTime).getTime() >= now && a.status !== 'cancelled',
   );
   const showPaymentBanner = !(hasActiveSeries || !hasUpcomingAppt);
+  // This action is deliberately available only from a particular appointment,
+  // not a general client lookup. Garrett makes the positive-session judgment
+  // and still has to review/edit and explicitly send the text.
+  const sessionAppointment = appointmentId
+    ? client.appointments.find((appointment) => appointment.id === appointmentId)
+    : undefined;
+  const canRequestReview = Boolean(sessionAppointment && client.phone);
 
   // A client has agreed to the practice-member agreement via EITHER flow:
   //   - in-app staff check-in  → tag policies-signed-practice-member-v2026-04-17
@@ -377,6 +433,51 @@ export default function ClientDetailPage() {
           <div className="sa-card"><Checklist appointmentId={appointmentId} client={client} /></div>
         )}
 
+        {canRequestReview && (
+          <div>
+            <button
+              className={`sa-paytrigger${reviewOpen ? ' open' : ''}${reviewStatus === 'sent' ? ' is-sent' : ''}`}
+              onClick={toggleReviewComposer}
+              disabled={reviewStatus === 'sending' || reviewStatus === 'sent'}
+            >
+              <span className="ic">
+                {reviewStatus === 'sending' ? <Loader2 size={17} className="sa-spin" /> : reviewStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}
+              </span>
+              <span className="tx">
+                <b>{reviewStatus === 'sent' ? 'Google review request sent' : 'Ask for a Google review'}</b>
+                <span>{reviewStatus === 'sent' ? 'Logged in the client’s GHL conversation' : 'Review, edit, then send a text to this client'}</span>
+              </span>
+              {reviewStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
+            </button>
+            <div className={`sa-collapse${reviewOpen && reviewStatus !== 'sent' ? ' open' : ''}`}>
+              <div className="sa-collapse-in sa-review-compose">
+                <label htmlFor="google-review-message">SMS to {client.firstName || fullName}</label>
+                <textarea
+                  id="google-review-message"
+                  value={reviewMessage}
+                  onChange={(event) => setReviewMessage(event.target.value)}
+                  maxLength={720}
+                  rows={5}
+                  aria-describedby="google-review-message-help"
+                />
+                <div id="google-review-message-help" className="sa-review-compose-meta">
+                  <span>Editable before sending</span>
+                  <span>{reviewMessage.length}/720</span>
+                </div>
+                {reviewError && <div className={reviewStatus === 'sent' ? 'sa-review-note' : 'sa-errbar'}>{reviewError}</div>}
+                <button
+                  className={`sa-pay-row${reviewStatus === 'error' ? ' is-error' : ''}`}
+                  onClick={handleSendReviewRequest}
+                  disabled={reviewStatus === 'sending' || !reviewMessage.trim()}
+                >
+                  <span className="ic">{reviewStatus === 'sending' ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
+                  <span className="nm">{reviewStatus === 'sending' ? 'Sending…' : reviewStatus === 'error' ? 'Try sending again' : 'Send Google review request'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Study capture — intake + before/after pain for tagged participants */}
         {study && <StudyCapturePanel contactId={client.id} study={study} />}
 
@@ -427,22 +528,25 @@ export default function ClientDetailPage() {
           <div>
             <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
               <span className="ic"><Send size={17} /></span>
-              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
+              <span className="tx"><b>Send pay link</b><span>Current Practice options, plus legacy links when needed</span></span>
               <span className="cv"><ChevronRight size={18} /></span>
             </button>
             <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
               <div className="sa-collapse-in">
-                {renderPayRow('8-session-series', '8-Pack', '$1,295')}
-                {renderPayRow('4-session-series', '4-Pack', '$720')}
-                {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
+                {renderPayRow('6-week-practice', '6-Week Practice', '$3,000')}
+                {renderPayRow('12-week-practice', '12-Week Practice', '$5,400')}
+                <p className="sa-legacy-note">Legacy options are kept for existing founding-member support.</p>
+                {renderPayRow('8-session-series', '8-Pack', '$1,295', true)}
+                {renderPayRow('4-session-series', '4-Pack', '$720', true)}
+                {renderPayRow('initial-in-person', 'Initial — In Person', '$225', true)}
                 {showMorePayLinks && (
                   <>
-                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225')}
-                    {renderPayRow('follow-up', 'Follow-up', '$190')}
-                    {renderPayRow('living-practice', 'Living Practice', '$347')}
-                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495')}
-                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070')}
-                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575')}
+                    {renderPayRow('initial-virtual', 'Initial — Virtual', '$225', true)}
+                    {renderPayRow('follow-up', 'Follow-up', '$190', true)}
+                    {renderPayRow('living-practice', 'Living Practice', '$347', true)}
+                    {renderPayRow('upgrade-initial-to-4', 'Upgrade Initial → 4', '$495', true)}
+                    {renderPayRow('upgrade-initial-to-8', 'Upgrade Initial → 8', '$1,070', true)}
+                    {renderPayRow('upgrade-4-to-8', 'Upgrade 4 → 8', '$575', true)}
                   </>
                 )}
                 <button className="sa-more" onClick={() => setShowMorePayLinks((v) => !v)}>{showMorePayLinks ? '– Fewer products' : '+ More products'}</button>
