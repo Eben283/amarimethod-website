@@ -18,7 +18,6 @@ import {
   Sparkles,
   TrendingUp,
   TriangleAlert,
-  UsersRound,
   Wallet,
   Workflow,
 } from 'lucide-react';
@@ -207,7 +206,7 @@ export default function HomePage() {
 
           <div className="home-incident-path">
             <Workflow aria-hidden="true" />
-            <span><strong>Someone received the wrong automated email?</strong><small>{state.automation.loading ? 'Checking whether automation evidence is available…' : state.automation.error ? 'Automation evidence could not load here. Check the chronology, then use GHL to trace the send.' : state.automation.data?.configured ? 'Compare their chronology with Automation Watch. Staff can investigate, but cannot stop a workflow here.' : 'Automation evidence is not connected here yet. Check the chronology, then use GHL to trace the send.'}</small></span>
+            <span><strong>Someone received the wrong automated email?</strong><small>{state.automation.loading ? 'Checking whether automation evidence is available…' : state.automation.error ? 'Automation evidence could not load here. Check Communication and treat the missing workflow record as an internal mirror gap.' : state.automation.data?.configured ? 'Compare Communication with Automation Watch. Staff can investigate, but cannot stop a workflow here.' : 'Automation evidence is not connected here yet. Check Communication and treat the workflow record as an internal mirror gap.'}</small></span>
             <div><button type="button" onClick={() => navigate('/client-desk')}>Find the email</button><button type="button" onClick={() => navigate('/operations?tab=automation')}>Trace automation</button></div>
           </div>
         </div>
@@ -254,7 +253,7 @@ export default function HomePage() {
         <header className="home-panel-head"><div><p>More tools</p><span>Use these when the work calls for them</span></div></header>
         <div className="home-tools__grid">
           {[
-            { label: 'Practice members', detail: 'All records and chronology', Icon: UsersRound, to: '/client-desk' },
+            { label: 'Communication', detail: 'Complete message chronology', Icon: MessageCircleMore, to: '/client-desk' },
             { label: 'Staff POS', detail: 'Create a draft checkout', Icon: ShoppingBag, to: '/pos' },
             { label: 'Funnel', detail: 'Lead flow and pace', Icon: TrendingUp, to: '/funnel' },
             { label: 'Pipeline', detail: 'Current care flow', Icon: Kanban, to: '/pipeline' },

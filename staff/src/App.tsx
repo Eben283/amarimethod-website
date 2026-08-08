@@ -1,26 +1,36 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import SessionBridgePage from './pages/SessionBridgePage';
-import TodayPage from './pages/TodayPage';
 import HomePage from './pages/HomePage';
-import ClientsPage from './pages/ClientsPage';
-import ClientDetailPage from './pages/ClientDetailPage';
-import BalancesPage from './pages/BalancesPage';
-import PlaybookPage from './pages/PlaybookPage';
-import FollowUpPage from './pages/FollowUpPage';
-import FunnelPage from './pages/FunnelPage';
-import PipelinePage from './pages/PipelinePage';
-import CheckInPage from './pages/CheckInPage';
-import CosPage from './pages/CosPage';
-import FieldStudiesPage from './pages/FieldStudiesPage';
-import CommunityPage from './pages/CommunityPage';
-import RevenuePage from './pages/RevenuePage';
-import PosPage from './pages/PosPage';
-import OperationsPage from './pages/OperationsPage';
-import ClientDeskPage from './pages/ClientDeskPage';
 import StaffShell from './components/StaffShell';
 import { Loader2 } from 'lucide-react';
+
+const TodayPage = lazy(() => import('./pages/TodayPage'));
+const ClientsPage = lazy(() => import('./pages/ClientsPage'));
+const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
+const BalancesPage = lazy(() => import('./pages/BalancesPage'));
+const PlaybookPage = lazy(() => import('./pages/PlaybookPage'));
+const FollowUpPage = lazy(() => import('./pages/FollowUpPage'));
+const FunnelPage = lazy(() => import('./pages/FunnelPage'));
+const PipelinePage = lazy(() => import('./pages/PipelinePage'));
+const CheckInPage = lazy(() => import('./pages/CheckInPage'));
+const CosPage = lazy(() => import('./pages/CosPage'));
+const FieldStudiesPage = lazy(() => import('./pages/FieldStudiesPage'));
+const CommunityPage = lazy(() => import('./pages/CommunityPage'));
+const RevenuePage = lazy(() => import('./pages/RevenuePage'));
+const PosPage = lazy(() => import('./pages/PosPage'));
+const OperationsPage = lazy(() => import('./pages/OperationsPage'));
+const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
+
+function SurfaceLoader() {
+  return (
+    <div className="min-h-[45vh] flex items-center justify-center" role="status" aria-label="Opening workspace">
+      <Loader2 className="w-7 h-7 text-amari-charcoal animate-spin" aria-hidden="true" />
+    </div>
+  );
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -59,7 +69,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 }
 
 function Layout({ children, fullBleed = false }: { children: React.ReactNode; fullBleed?: boolean }) {
-  return <div className={fullBleed ? '' : 'min-h-screen'}>{children}</div>;
+  return <div className={fullBleed ? '' : 'min-h-screen'}><Suspense fallback={<SurfaceLoader />}>{children}</Suspense></div>;
 }
 
 function ProtectedStaffLayout() {
@@ -103,7 +113,7 @@ function AppRoutes() {
         path="/check-in/:id"
         element={
           <ProtectedRoute>
-            <CheckInPage />
+            <Suspense fallback={<SurfaceLoader />}><CheckInPage /></Suspense>
           </ProtectedRoute>
         }
       />

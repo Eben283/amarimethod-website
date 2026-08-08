@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, ExternalLink, CheckCircle2, Send,
+  ArrowLeft, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
   CalendarDays, CircleDollarSign, Dumbbell,
   NotebookPen, Workflow,
@@ -639,7 +639,7 @@ export default function ClientDetailPage() {
           )}
 
           <div className="sa-evidence-actions">
-            <button type="button" onClick={() => navigate('/client-desk')}><ExternalLink size={15} />Open Communication viewer</button>
+            <button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}><MessageSquareText size={15} />Open this person in Communication</button>
             <button type="button" onClick={() => navigate('/operations?tab=automation')}><Workflow size={15} />Open Automation Watch</button>
           </div>
         </section>

@@ -92,8 +92,8 @@ describe("CRM mirror dashboard access handoff", () => {
       method: "POST", headers: { Authorization: "Bearer test-secret" },
     }), env);
     const deskBody = await deskMinted.json();
-    const deskHandoff = await worker.fetch(new Request(deskBody.url), env);
-    expect(deskHandoff.headers.get("Location")).toBe("/client-desk");
+    const deskHandoff = await worker.fetch(new Request(`${deskBody.url}?contact=person_123`), env);
+    expect(deskHandoff.headers.get("Location")).toBe("/client-desk?contact=person_123");
     const desk = await worker.fetch(new Request("https://crm.test/client-desk", {
       headers: { Cookie: deskHandoff.headers.get("Set-Cookie") },
     }), env);

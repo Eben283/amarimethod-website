@@ -32,7 +32,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
 </main><script>
 (() => {
   const list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread');
-  let selected = null, current = [], timer, inboxRequest = 0, detailRequest = 0, detailController = null;
+  const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
+  let requestedContactOpened = false, selected = null, current = [], timer, inboxRequest = 0, detailRequest = 0, detailController = null;
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const initials = (name) => String(name || 'Client').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   const activityAge = (value) => { if (!value) return '—'; const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000)); if (minutes < 1) return 'Just now'; if (minutes < 60) return minutes + ' minute' + (minutes === 1 ? '' : 's') + ' ago'; const hours = Math.floor(minutes / 60); if (hours < 24) return hours + ' hour' + (hours === 1 ? '' : 's') + ' ago'; const days = Math.floor(hours / 24); return days < 7 ? days + ' day' + (days === 1 ? '' : 's') + ' ago' : new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
@@ -226,6 +227,13 @@ const CLIENT_DESK_HTML = `<!doctype html>
       current = data.threads || [];
       if (selected && !current.some((row) => row.contact_id === selected)) selected = null;
       renderThreads();
+      if (!requestedContactOpened && requestedExternalContact) {
+        const requested = current.find((row) => row.external_contact_id === requestedExternalContact || row.contact_id === requestedExternalContact);
+        if (requested) {
+          requestedContactOpened = true;
+          await openClient(requested.contact_id);
+        }
+      }
     } catch (error) {
       if (requestId !== inboxRequest) return;
       current = [];
