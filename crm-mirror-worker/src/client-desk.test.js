@@ -269,6 +269,32 @@ describe("Client Desk message rendering", () => {
     }
   });
 
+  it("opens a complete payment ledger and an exact-member Staff POS charge flow", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { display_name: "Test client", ghl_contact_id: "ghl contact/1" },
+      purchases: [
+        { amount_cents: 300000, amount_refunded_cents: 10000, currency: "usd", provider_status: "succeeded", purchased_at: "2026-08-04T20:00:00.000Z" },
+        { amount_cents: 2900, amount_refunded_cents: 0, currency: "usd", provider_status: "succeeded", purchased_at: "2026-07-29T20:00:00.000Z" },
+        { amount_cents: 5000, amount_refunded_cents: 0, currency: "usd", provider_status: "failed", purchased_at: "2026-07-28T20:00:00.000Z" },
+      ],
+    });
+
+    expect(rendered).toContain('class="payment-ledger"');
+    for (const heading of ["Date", "Amount", "Status"]) expect(rendered).toContain(`>${heading}<`);
+    expect(rendered).toContain("$2,929.00");
+    expect(rendered).toContain("−$100.00 refunded");
+    expect(rendered).toContain('data-payment-actions');
+    expect(rendered).toContain("Charge now");
+    expect(rendered).toContain("contact=ghl%20contact%2F1&amp;action=charge");
+    expect(rendered).toContain('target="_top"');
+  });
+
   it("keeps unread markers in the inbox and out of every timeline message", () => {
     const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
     const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
