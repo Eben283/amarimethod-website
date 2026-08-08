@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 function jsonResponse(body) {
-  return {
-    ok: true,
-    status: 200,
-    json: async () => body,
-  };
+  return { ok: true, status: 200, json: async () => body };
 }
 
 describe("staff-data calendar loading", () => {
