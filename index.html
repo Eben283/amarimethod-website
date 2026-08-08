@@ -25,7 +25,8 @@
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="/images/photos/hero-home-cedar-woman.jpg" fetchpriority="high">
+<link rel="preload" as="font" href="/fonts/ABCDiatype-Regular.woff" type="font/woff" crossorigin>
+<link rel="preload" as="image" href="/images/photos/optimized/hero-home-cedar-woman-768.webp" imagesrcset="/images/photos/optimized/hero-home-cedar-woman-768.webp 768w, /images/photos/optimized/hero-home-cedar-woman-1448.webp 1448w" imagesizes="100vw" fetchpriority="high">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
 <link rel="stylesheet" href="/css/site-v6.css?v=15">
 <style>
@@ -132,10 +133,11 @@
 <body>
 
 <!-- Header is injected by amari-mockup.js -->
+<div id="site-shell" class="site-shell"></div>
 
 <!-- HERO -->
-<section class="hero">
-  <div class="hero-bg" style="background-image:url('/images/photos/hero-home-cedar-woman.jpg')"></div>
+<section class="hero home-hero">
+  <div class="hero-bg"></div>
   <div class="hero-inner">
     <h1>Most people forgot their body could feel like this.</h1>
     <p>Amari teaches you to bring your body back into balance yourself, so you don&rsquo;t stay dependent on someone else to fix you.</p>
@@ -149,22 +151,22 @@
     <h2 class="kicker reveal">This Just In</h2>
     <div class="cards4">
       <a class="jcard reveal" href="/blog-suspension-squat-hanging-exercises">
-        <div class="jph" style="background:var(--tan)"><img src="/images/photos/amari-method-suspension-squat-athletic-client.png" alt="" onerror="this.remove()"></div>
+        <div class="jph" style="background:var(--tan)"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-suspension-squat-athletic-client-768.webp" srcset="/images/photos/optimized/amari-method-suspension-squat-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-suspension-squat-athletic-client.webp 960w" sizes="(max-width: 640px) calc(100vw - 44px), 25vw" width="960" height="720" alt="" onerror="this.remove()"></div>
         <div class="cat">Protocol</div>
         <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
       </a>
       <a class="jcard reveal" href="/blog-power-posture-shoulder-blades" style="transition-delay:.06s">
-        <div class="jph" style="background:var(--peach)"><img src="/images/photos/amari-method-power-posture-athletic-client.png" alt="" onerror="this.remove()"></div>
+        <div class="jph" style="background:var(--peach)"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-power-posture-athletic-client-768.webp" srcset="/images/photos/optimized/amari-method-power-posture-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-power-posture-athletic-client.webp 960w" sizes="(max-width: 640px) calc(100vw - 44px), 25vw" width="960" height="720" alt="" onerror="this.remove()"></div>
         <div class="cat">Protocol</div>
         <h3>Power Posture: undo the damage from sitting all day</h3>
       </a>
       <a class="jcard reveal" href="/blog-elbow-reset-tennis-elbow" style="transition-delay:.12s">
-        <div class="jph" style="background:#B98E63"><img src="/images/photos/amari-method-guided-forearm-position-athletic-client.png" alt="" onerror="this.remove()"></div>
+        <div class="jph" style="background:#B98E63"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-guided-forearm-position-athletic-client-768.webp" srcset="/images/photos/optimized/amari-method-guided-forearm-position-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-guided-forearm-position-athletic-client.webp 960w" sizes="(max-width: 640px) calc(100vw - 44px), 25vw" width="960" height="720" alt="" onerror="this.remove()"></div>
         <div class="cat">Protocol</div>
         <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
       </a>
       <a class="jcard reveal" href="/blog-hand-balancer-carpal-tunnel" style="transition-delay:.18s">
-        <div class="jph" style="background:var(--peach)"><img src="/images/photos/amari-method-guided-hand-position-athletic-client.png" alt="" onerror="this.remove()"></div>
+        <div class="jph" style="background:var(--peach)"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-768.webp" srcset="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-guided-hand-position-athletic-client.webp 960w" sizes="(max-width: 640px) calc(100vw - 44px), 25vw" width="960" height="720" alt="" onerror="this.remove()"></div>
         <div class="cat">Protocol</div>
         <h3>The hand balancer: for carpal tunnel and wrist pain</h3>
       </a>
@@ -179,7 +181,7 @@
     <h2>Come back into balance.</h2>
     <a href="/how-it-works" class="btn">Our Method</a>
   </div>
-  <div class="band-fig"><img src="/images/photos/black-woman38-window-seat.jpg" alt="An Amari client, seated by a window after practice"></div>
+  <div class="band-fig"><img loading="lazy" decoding="async" src="/images/photos/optimized/black-woman38-window-seat-768.webp" width="768" height="574" alt="An Amari client, seated by a window after practice"></div>
 </section>
 
 <!-- SIGNATURE: about the client, not our method -->
@@ -189,12 +191,12 @@
     <h2 class="reveal" style="margin-bottom:18px">Something is working too hard because something else isn't working enough.</h2>
     <p class="reveal" style="max-width:56ch;margin:0 auto 44px;text-align:center;color:var(--body)">Most people come in after trying everything else. A back that takes an hour to loosen in the morning. A neck that won't turn without pain running down an arm. Hips too tight to sit through a movie. A jaw clenched shut by lunchtime. Wherever it shows up, the imbalance driving it can be found and worked with directly.</p>
     <div class="tiles">
-      <a class="tile reveal" href="/lower-back-pain-san-francisco" style="background:#B98E63"><img src="/images/photos/condition-base/lower-back-refined.jpg" alt="" onerror="this.remove()"><span>Back &amp; Spine</span></a>
-      <a class="tile reveal" href="/sciatica-san-francisco" style="transition-delay:.05s;background:#B07A5C"><img src="/images/photos/sciatica-man-wht50.jpg" alt="" onerror="this.remove()"><span>Sciatica</span></a>
-      <a class="tile reveal" href="/neck-pain-san-francisco" style="transition-delay:.1s;background:#C98F71"><img src="/images/photos/neck-man-asn47.jpg" alt="" onerror="this.remove()"><span>Neck</span></a>
-      <a class="tile reveal" href="/shoulder-pain-san-francisco" style="transition-delay:.15s;background:#C4A08A"><img src="/images/photos/amari-method-shoulder-athletic-client.jpeg" alt="" onerror="this.remove()"><span>Shoulders</span></a>
-      <a class="tile reveal" href="/hip-pain-san-francisco" style="transition-delay:.2s;background:#8E9F82"><img src="/images/photos/amari-method-sf-hillside-athletic-lifestyle.png" alt="" onerror="this.remove()"><span>Hips &amp; Knees</span></a>
-      <a class="tile reveal" href="/tmj-san-francisco" style="transition-delay:.25s;background:#A88F73"><img src="/images/photos/amari-method-guided-jaw-position-athletic-client.png" alt="" onerror="this.remove()"><span>Jaw &amp; Tension</span></a>
+      <a class="tile reveal" href="/lower-back-pain-san-francisco" style="background:#B98E63"><img loading="lazy" decoding="async" src="/images/photos/condition-base/lower-back-refined.jpg" alt="" onerror="this.remove()"><span>Back &amp; Spine</span></a>
+      <a class="tile reveal" href="/sciatica-san-francisco" style="transition-delay:.05s;background:#B07A5C"><img loading="lazy" decoding="async" src="/images/photos/sciatica-man-wht50.jpg" alt="" onerror="this.remove()"><span>Sciatica</span></a>
+      <a class="tile reveal" href="/neck-pain-san-francisco" style="transition-delay:.1s;background:#C98F71"><img loading="lazy" decoding="async" src="/images/photos/neck-man-asn47.jpg" alt="" onerror="this.remove()"><span>Neck</span></a>
+      <a class="tile reveal" href="/shoulder-pain-san-francisco" style="transition-delay:.15s;background:#C4A08A"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-shoulder-athletic-client.webp" width="960" height="720" alt="" onerror="this.remove()"><span>Shoulders</span></a>
+      <a class="tile reveal" href="/hip-pain-san-francisco" style="transition-delay:.2s;background:#8E9F82"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-sf-hillside-athletic-lifestyle.webp" width="960" height="720" alt="" onerror="this.remove()"><span>Hips &amp; Knees</span></a>
+      <a class="tile reveal" href="/tmj-san-francisco" style="transition-delay:.25s;background:#A88F73"><img loading="lazy" decoding="async" src="/images/photos/optimized/amari-method-guided-jaw-position-athletic-client.webp" width="960" height="720" alt="" onerror="this.remove()"><span>Jaw &amp; Tension</span></a>
     </div>
   </div>
 </section>
@@ -203,7 +205,7 @@
 <section class="shop" id="sessions">
   <div class="wrap">
     <div class="shop-panel reveal">
-      <img class="prod" src="/images/photos/living-practice-woman-asn35.jpg" alt="">
+      <img class="prod" loading="lazy" decoding="async" src="/images/photos/living-practice-woman-asn35.jpg" alt="">
       <div class="shop-copy">
         <span class="eyebrow">Take It Home</span>
         <h2>The Living Practice</h2>
@@ -293,7 +295,7 @@
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=15"></script>
+<script src="/js/site-v6.js?v=15" defer></script>
 
 <!-- JSON-LD: LocalBusiness + WebSite schema (no aggregateRating). -->
 

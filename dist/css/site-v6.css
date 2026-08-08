@@ -27,9 +27,9 @@
   --maxw:1360px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Regular.otf") format("opentype");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Medium.otf") format("opentype");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Bold.otf") format("opentype");font-weight:600 700;font-style:normal;font-display:swap}
+@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Bold.woff") format("woff");font-weight:600 700;font-style:normal;font-display:swap}
 html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--cream);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overflow-x:hidden}
 h1,h2,h3,h4{font-family:var(--sans);font-weight:500;line-height:1.02;letter-spacing:-.035em}
@@ -53,6 +53,7 @@ a{color:inherit;text-decoration:none}
 
 /* ---------- Header (wordmark-led, single-row) ---------- */
 header.site{position:sticky;top:0;left:0;right:0;z-index:40;background:var(--chalk);color:var(--carbon);border-bottom:1px solid rgba(23,26,24,.12);transition:box-shadow .35s var(--ease)}
+.site-shell{min-height:92px}
 header.site.scrolled{box-shadow:0 4px 18px rgba(23,26,24,.05)}
 .hdr-row{max-width:var(--maxw);min-height:92px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center}
 .brand-slot{display:inline-flex;align-items:center;justify-content:flex-start;line-height:1;color:var(--carbon)}
@@ -72,6 +73,7 @@ header.site nav a:hover::after,header.site nav a.current::after{transform:scaleX
 /* ---------- Hero (image provides context; type carries the composition) ---------- */
 .hero{position:relative;min-height:72vh;display:flex;align-items:flex-end;justify-content:flex-start;text-align:left;isolation:isolate;overflow:hidden;padding:150px 0 76px}
 .hero-bg{position:absolute;inset:0;z-index:-2;background:#2b2723 center/cover no-repeat}
+.home-hero .hero-bg{background-image:url('/images/photos/optimized/hero-home-cedar-woman-1448.webp')}
 .hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(23,26,24,.78) 0%,rgba(23,26,24,.56) 44%,rgba(23,26,24,.12) 100%)}
 .hero-inner{width:min(100%,var(--maxw));max-width:none;margin:0 auto;padding:0 40px;color:#fff}
 .hero .eyebrow{display:block;margin-bottom:18px}
@@ -165,6 +167,10 @@ html.js-reveal .reveal:not(.in){opacity:0;transform:translateY(16px);filter:blur
   .hero{min-height:660px;padding:126px 0 58px}
   .hero-inner{padding-left:22px;padding-right:22px}
   .hero-stats{gap:40px}
+  .site-shell{min-height:92px}
+}
+@media (max-width:640px){
+  .home-hero .hero-bg{background-image:url('/images/photos/optimized/hero-home-cedar-woman-768.webp')}
 }
 
 /* ============================================================

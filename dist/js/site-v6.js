@@ -257,7 +257,11 @@
 
   function init() {
     if (!noShell) {
-      document.body.insertAdjacentHTML('afterbegin', headerHTML());
+      // Pages that reserve header space in their initial HTML avoid a visible
+      // layout shift when the shared shell is hydrated after parsing.
+      var shellSlot = document.getElementById('site-shell');
+      if (shellSlot) shellSlot.innerHTML = headerHTML();
+      else document.body.insertAdjacentHTML('afterbegin', headerHTML());
       document.body.insertAdjacentHTML('beforeend', footerHTML());
     }
 
