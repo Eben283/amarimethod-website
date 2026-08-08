@@ -298,6 +298,17 @@ export async function recordGhlWebhookEvent(db, webhook, now) {
   return Number(result.meta?.changes || 0) > 0;
 }
 
+// Reading a client record is a staff-owned acknowledgement. It never changes
+// GHL's conversation state: the mirror uses it only to keep the Desk's
+// attention marker meaningful across refreshes and source re-syncs.
+export async function markClientDeskSeen(db, contactId, actor, now) {
+  await db.prepare(
+    `INSERT INTO client_desk_seen (contact_id, staff_actor, seen_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(contact_id, staff_actor) DO UPDATE SET seen_at = excluded.seen_at`,
+  ).bind(contactId, actor, now).run();
+}
+
 // Notes and tasks are first-class client records. They are intentionally kept
 // separate from the append-only webhook journal so staff can read a current
 // workspace without treating delivery metadata as the record itself.
@@ -922,10 +933,12 @@ export async function clientDeskContacts(db, { query = null, limit = 50, scope =
 // The daily staff inbox: one row per person/thread, with only the information
 // needed to choose who needs attention. Full content remains in the protected
 // selected-contact timeline below.
-export async function communicationsInbox(db, { query = null, limit = 50 } = {}) {
+export async function communicationsInbox(db, { query = null, limit = 50, actor = "Staff" } = {}) {
   const values = [];
   const filters = [
     "UPPER(TRIM(COALESCE(thread.last_preview, ''))) NOT LIKE 'OPS-%'",
+    `(EXISTS (SELECT 1 FROM appointments appointment WHERE appointment.contact_id = contact.id)
+      OR EXISTS (SELECT 1 FROM purchases purchase WHERE purchase.contact_id = contact.id))`,
   ];
   if (query) {
     const pattern = likePattern(query);
@@ -936,17 +949,42 @@ export async function communicationsInbox(db, { query = null, limit = 50 } = {})
   }
   const where = `WHERE ${filters.join(" AND ")}`;
   const result = await db.prepare(
-    `SELECT thread.id AS thread_id, thread.channel, thread.last_event_at,
-            thread.last_preview, thread.last_direction, thread.unread_inbound_count,
-            contact.id AS contact_id, contact.display_name, contact.email_normalized,
-            contact.phone_e164
+    `WITH matching_threads AS (
+       SELECT thread.id AS thread_id, thread.contact_id, thread.channel, thread.last_event_at,
+              thread.last_preview, thread.last_direction, thread.unread_inbound_count,
+              contact.display_name, contact.email_normalized, contact.phone_e164,
+              ROW_NUMBER() OVER (
+                PARTITION BY thread.contact_id
+                ORDER BY datetime(thread.last_event_at) DESC, thread.id DESC
+              ) AS recency_rank
        FROM communication_threads thread
        JOIN contacts contact ON contact.id = thread.contact_id
        ${where}
-       ORDER BY CASE WHEN thread.unread_inbound_count > 0 THEN 0 ELSE 1 END,
-                datetime(thread.last_event_at) DESC, lower(contact.display_name), thread.id
+     )
+     SELECT MAX(CASE WHEN matching.recency_rank = 1 THEN matching.thread_id END) AS thread_id,
+            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.channel END) AS channel,
+            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_event_at END) AS last_event_at,
+            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_preview END) AS last_preview,
+            MAX(CASE WHEN matching.recency_rank = 1 THEN matching.last_direction END) AS last_direction,
+            SUM(CASE
+              WHEN matching.unread_inbound_count > 0
+               AND (seen.seen_at IS NULL OR datetime(matching.last_event_at) > datetime(seen.seen_at))
+              THEN 1 ELSE 0
+            END) AS unread_inbound_count,
+            matching.contact_id, MAX(matching.display_name) AS display_name,
+            MAX(matching.email_normalized) AS email_normalized, MAX(matching.phone_e164) AS phone_e164
+       FROM matching_threads matching
+       LEFT JOIN client_desk_seen seen
+         ON seen.contact_id = matching.contact_id AND seen.staff_actor = ?
+       GROUP BY matching.contact_id
+       ORDER BY CASE WHEN SUM(CASE
+                    WHEN matching.unread_inbound_count > 0
+                     AND (seen.seen_at IS NULL OR datetime(matching.last_event_at) > datetime(seen.seen_at))
+                    THEN 1 ELSE 0
+                  END) > 0 THEN 0 ELSE 1 END,
+                datetime(MAX(matching.last_event_at)) DESC, lower(MAX(matching.display_name)), matching.contact_id
        LIMIT ?`,
-  ).bind(...values, limit).all();
+  ).bind(...values, actor, limit).all();
   return result.results || [];
 }
 
@@ -1108,8 +1146,13 @@ export async function contactProfile(db, contactId, limit, now) {
     ).bind(contactId, limit),
     db.prepare(
       `SELECT channel, state, source, effective_at
-       FROM consents WHERE contact_id = ? AND state <> 'unknown'
-       ORDER BY channel, datetime(effective_at) DESC`,
+       FROM (
+         SELECT channel, state, source, effective_at,
+                ROW_NUMBER() OVER (PARTITION BY channel ORDER BY datetime(effective_at) DESC, id DESC) AS recency_rank
+         FROM consents WHERE contact_id = ? AND state <> 'unknown'
+       )
+       WHERE recency_rank = 1
+       ORDER BY channel`,
     ).bind(contactId),
     db.prepare(
       `SELECT 'message' AS activity_type, event.occurred_at, event.direction,

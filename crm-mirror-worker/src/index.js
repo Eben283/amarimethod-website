@@ -2,7 +2,7 @@ import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-
 import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
-import { deliveryReadiness, evaluateDeliveryEligibility, recordDeliveredAttempt } from "./owned-sender.js";
+import { deliveryReadiness } from "./owned-sender.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -23,7 +23,7 @@ import {
   reconciliationStatus,
   recordRealtimeGhlMessage,
   recordGhlWebhookEvent,
-  recordOwnedOutboundEmail,
+  markClientDeskSeen,
   searchContacts,
   upsertGhlAppointment,
   upsertGhlContact,
@@ -34,15 +34,10 @@ import {
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
-import { listGmailSenders, sendGmailEmail } from "./gmail.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
-const DEFAULT_SENDER_BY_STAFF_ACTOR = Object.freeze({
-  eben: "eben@amarimethod.com",
-  garrett: "garrett@amarimethod.com",
-});
 const GHL_ED25519_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=\n-----END PUBLIC KEY-----";
 const DASHBOARD_ACCESS_WORDS = Object.freeze([
   "aloe", "amber", "apricot", "arc", "ash", "bay", "birch", "bloom", "brook", "cedar", "clay", "cove", "dawn", "dune", "elm", "fern",
@@ -69,6 +64,14 @@ async function validGhlSignature(rawBody, signature) {
   } catch { return false; }
 }
 
+async function webhookFallbackId(payload, data, rawBody) {
+  const sourceId = data.messageId || data.emailMessageId || data.id;
+  const occurredAt = data.dateAdded || payload.timestamp;
+  if (sourceId && occurredAt) return `${payload.type}:${sourceId}:${occurredAt}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawBody));
+  return `${payload.type || "unknown"}:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
 async function processGhlWebhook(request, env) {
   const rawBody = await request.text();
   if (rawBody.length > 262144 || !await validGhlSignature(rawBody, request.headers.get("X-GHL-Signature"))) return json(401, { error: "invalid webhook signature" });
@@ -77,32 +80,34 @@ async function processGhlWebhook(request, env) {
   if (payload.locationId !== env.GHL_LOCATION_ID) return json(202, { accepted: false });
   const data = payload.data && typeof payload.data === "object" ? payload.data : payload;
   const now = new Date().toISOString();
-  const webhookId = String(payload.webhookId || `${payload.type}:${data.messageId || data.emailMessageId || data.id || now}`);
+  const webhookId = String(payload.webhookId || await webhookFallbackId(payload, data, rawBody));
   const message = (payload.type === "InboundMessage" || payload.type === "OutboundMessage")
     ? normalizeGhlMessage(data, data.conversationId, data.contactId) : null;
-  const observed = await recordGhlWebhookEvent(env.CRM_DB, {
-    id: webhookId, type: String(payload.type || "unknown"), contactExternalId: data.contactId || null,
-    conversationExternalId: data.conversationId || null, occurredAt: data.dateAdded || payload.timestamp || null,
-    processingState: message ? "projected" : "observed",
-  }, now);
-  if (!observed) return json(200, { accepted: true, duplicate: true });
+  const finish = async (status, body, projected) => {
+    const recorded = await recordGhlWebhookEvent(env.CRM_DB, {
+      id: webhookId, type: String(payload.type || "unknown"), contactExternalId: data.contactId || null,
+      conversationExternalId: data.conversationId || null, occurredAt: data.dateAdded || payload.timestamp || null,
+      processingState: projected ? "projected" : "observed",
+    }, now);
+    return json(status, { accepted: true, ...body, duplicate: !recorded });
+  };
   if (["ContactCreate", "ContactUpdate", "ContactDndUpdate", "ContactTagUpdate"].includes(payload.type) && data.contactId) {
     const contact = normalizeGhlContact(await fetchGhlContact(env, data.contactId));
     if (contact) await upsertGhlContact(env.CRM_DB, contact, now);
-    return json(200, { accepted: true, projected: Boolean(contact) });
+    return finish(200, { projected: Boolean(contact) }, Boolean(contact));
   }
   if (["AppointmentCreate", "AppointmentUpdate"].includes(payload.type) && data.contactId) {
     const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
     const appointment = normalizeGhlAppointment(data, data.contactId);
     if (contactId && appointment) await upsertGhlAppointment(env.CRM_DB, appointment, contactId, now);
-    return json(200, { accepted: true, projected: Boolean(contactId && appointment) });
+    return finish(200, { projected: Boolean(contactId && appointment) }, Boolean(contactId && appointment));
   }
   if (["NoteCreate", "NoteUpdate", "NoteDelete"].includes(payload.type) && data.contactId) {
     const note = normalizeGhlNote(data);
     if (payload.type === "NoteDelete") {
       const noteId = String(data.id || data.noteId || "");
       if (noteId) await deleteClientNote(env.CRM_DB, noteId);
-      return json(200, { accepted: true, projected: Boolean(noteId) });
+      return finish(200, { projected: Boolean(noteId) }, Boolean(noteId));
     }
     const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
     if (contactId && note) {
@@ -111,24 +116,24 @@ async function processGhlWebhook(request, env) {
         await recordConsentObservation(env.CRM_DB, observation, contactId, now);
       }
     }
-    return json(200, { accepted: true, projected: Boolean(contactId && note) });
+    return finish(200, { projected: Boolean(contactId && note) }, Boolean(contactId && note));
   }
   if (["TaskCreate", "TaskComplete", "TaskDelete"].includes(payload.type) && data.contactId) {
     const task = normalizeGhlTask(data);
     if (payload.type === "TaskDelete") {
       const taskId = String(data.id || data.taskId || "");
       if (taskId) await deleteClientTask(env.CRM_DB, taskId);
-      return json(200, { accepted: true, projected: Boolean(taskId) });
+      return finish(200, { projected: Boolean(taskId) }, Boolean(taskId));
     }
     const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
     if (contactId && task) await upsertClientTask(env.CRM_DB, task, contactId, now);
-    return json(200, { accepted: true, projected: Boolean(contactId && task) });
+    return finish(200, { projected: Boolean(contactId && task) }, Boolean(contactId && task));
   }
-  if (!message) return json(202, { accepted: true, projected: false });
+  if (!message) return finish(202, { projected: false }, false);
   const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
-  if (!contactId) return json(202, { accepted: true, projected: false });
+  if (!contactId) return finish(202, { projected: false }, false);
   const recorded = await recordRealtimeGhlMessage(env.CRM_DB, message, contactId, now);
-  return json(200, { accepted: true, projected: true, duplicate: recorded.duplicate });
+  return finish(200, { projected: true, messageDuplicate: recorded.duplicate }, true);
 }
 
 function html(body) {
@@ -137,6 +142,7 @@ function html(body) {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "frame-ancestors https://www.amarimethod.com https://*.amarimethod-website.pages.dev",
     },
   });
 }
@@ -216,24 +222,6 @@ async function actionPayload(request, maximum = 4096) {
   } catch {
     throw new Error("invalid JSON");
   }
-}
-
-function emailPayload(payload) {
-  const subject = String(payload?.subject || "").replace(/[\r\n]+/g, " ").trim();
-  const body = String(payload?.body || "").trim();
-  const from = String(payload?.from || "").replace(/[\r\n]+/g, " ").trim().toLowerCase();
-  if (!subject || subject.length > 160 || !body || body.length > 20_000) throw new Error("subject and message are required");
-  if (from && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from) || from.length > 320)) throw new Error("invalid sender");
-  return { subject, body, from };
-}
-
-export function preferredGmailSender(actor, senders) {
-  const available = Array.isArray(senders) ? senders : [];
-  const preferred = DEFAULT_SENDER_BY_STAFF_ACTOR[String(actor || "").trim().toLowerCase()];
-  return available.find((sender) => sender.address === preferred)?.address
-    || available.find((sender) => sender.isDefault)?.address
-    || available[0]?.address
-    || null;
 }
 
 export default {
@@ -345,30 +333,20 @@ export default {
         );
         return json(200, { success: true, result });
       }
-      const emailSend = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)\/email$/);
-      if (request.method === "POST" && emailSend) {
+      const clientDeskSeen = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)\/seen$/);
+      if (request.method === "POST" && clientDeskSeen) {
         const actor = await dashboardSessionActor(request, env);
         if (!actor) return json(401, { error: "staff session required" });
         if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid request origin" });
-        const { subject, body, from } = emailPayload(await actionPayload(request, 25_000));
-        const contactId = decodeURIComponent(emailSend[1]);
+        const contactId = decodeURIComponent(clientDeskSeen[1]);
         const profile = await contactProfile(env.CRM_DB, contactId, 1, new Date().toISOString());
         if (!profile?.contact) return json(404, { error: "contact not found" });
-        const dnd = (profile.fields || []).find((field) => field.attribute_key === "system.dnd")?.attribute_value;
-        const eligibility = evaluateDeliveryEligibility({ contact: profile.contact, consents: profile.consents, channel: "email", dnd });
-        if (!eligibility.policyEligible) return json(422, { error: "email blocked by contact policy" });
-        const now = new Date().toISOString();
-        const senders = await listGmailSenders(env);
-        const sender = from || preferredGmailSender(actor, senders);
-        if (!sender || !senders.some((identity) => identity.address === sender)) return json(422, { error: "no Google-authorized sender is available" });
-        const result = await sendGmailEmail(env, { to: profile.contact.email_normalized, subject, text: body, from: sender, senders });
-        await recordDeliveredAttempt(env.CRM_DB, { contactId, actor, channel: "email", contact: profile.contact, consents: profile.consents, dnd, content: `From: ${sender}\n${subject}\n${body}` }, now);
-        await recordOwnedOutboundEmail(env.CRM_DB, { contactId, providerEventId: result.id, subject, body, actor }, now);
-        return json(200, { success: true, channel: "email", from: sender });
+        await markClientDeskSeen(env.CRM_DB, contactId, actor, new Date().toISOString());
+        return json(200, { success: true });
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/operations", "/contacts", "/client-desk/contacts", "/client-desk/email-senders", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -383,16 +361,6 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/sender/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness(env) });
-      }
-      if (request.method === "GET" && url.pathname === "/client-desk/email-senders") {
-        const actor = await dashboardSessionActor(request, env);
-        if (!actor) return json(401, { error: "staff session required" });
-        try {
-          const senders = await listGmailSenders(env);
-          return json(200, { senders, defaultAddress: preferredGmailSender(actor, senders) });
-        } catch {
-          return json(503, { error: "Google Workspace sender identities are unavailable" });
-        }
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
@@ -424,10 +392,11 @@ export default {
       if (request.method === "GET" && url.pathname === "/communications/inbox") {
         const query = parseContactSearch(url.searchParams.get("query"));
         const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const actor = await dashboardSessionActor(request, env) || "Staff";
         return json(200, {
           success: true,
           worker: "amari-crm-mirror",
-          threads: await communicationsInbox(env.CRM_DB, { query, limit }),
+          threads: await communicationsInbox(env.CRM_DB, { query, limit, actor }),
         });
       }
       if (request.method === "GET" && url.pathname === "/consent-review") {

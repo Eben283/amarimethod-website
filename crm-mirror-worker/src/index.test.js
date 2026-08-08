@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest, preferredGmailSender } from "./index.js";
+import worker, { parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
@@ -38,16 +38,6 @@ describe("CRM mirror request validation", () => {
     expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
   });
 
-  it("defaults the sender by signed staff identity only when Google authorized it", () => {
-    const senders = [
-      { address: "eben@amarimethod.com", isDefault: false },
-      { address: "garrett@amarimethod.com", isDefault: true },
-    ];
-    expect(preferredGmailSender("Eben", senders)).toBe("eben@amarimethod.com");
-    expect(preferredGmailSender("Garrett", senders)).toBe("garrett@amarimethod.com");
-    expect(preferredGmailSender("Unknown", senders)).toBe("garrett@amarimethod.com");
-    expect(preferredGmailSender("Eben", [{ address: "garrett@amarimethod.com", isDefault: true }])).toBe("garrett@amarimethod.com");
-  });
 });
 
 describe("CRM mirror dashboard access handoff", () => {
@@ -105,6 +95,23 @@ describe("CRM mirror dashboard access handoff", () => {
     }), env);
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ mode: "staff_email", deliveryEnabled: false });
+  });
+
+  it("does not expose the former Client Desk email-send route to a staff browser session", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret" };
+    const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const response = await worker.fetch(new Request("https://crm.test/client-desk/contacts/contact-1/email", {
+      method: "POST",
+      headers: {
+        Cookie: session.headers.get("Set-Cookie"),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ subject: "Private test", body: "Must not send" }),
+    }), env);
+    expect(response.status).toBe(401);
   });
 
   it("serves aggregate CRM readiness only behind the existing auth boundary", async () => {
