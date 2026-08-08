@@ -29,7 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=12">
+<link rel="stylesheet" href="/css/site-v6.css?v=footer-1">
 <style>
   /* ---------- Journal-article-page-specific styles ---------- */
 
@@ -48,7 +48,7 @@
 
   .art-share{display:flex;justify-content:center;gap:12px;align-items:center;margin-top:26px}
   .art-share span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-right:4px}
-  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:13px;color:var(--ink)}
+  .art-share a{width:28px;height:28px;border:1px solid var(--line);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:normal;font-size:13px;color:var(--ink)}
 
   .art-featured{padding:52px 0 0}
   .art-featured .ph{width:calc(100% - 80px);max-width:calc(var(--maxw) - 80px);margin:0 auto;aspect-ratio:16/9;background:var(--tan) center/cover no-repeat;border-radius:2px;overflow:hidden}
@@ -62,7 +62,7 @@
   .art-prose p:first-child{margin-top:0}
   .art-prose h2{font-size:clamp(1.4rem,2.6vw,2.05rem);font-weight:500;margin-top:52px;margin-bottom:4px;color:var(--ink)}
   .art-prose .lead-item{margin-top:30px}
-  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:italic;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
+  .art-prose .lead-item b{display:block;font-family:var(--serif);font-style:normal;font-size:1.18rem;color:var(--ink);margin-bottom:6px;font-weight:500}
 
   .art-inline{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:46px 0;padding:26px;background:var(--cream-2);border-radius:2px}
   .art-inline .lbl{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--body);grid-column:1/-1;margin-bottom:2px}
@@ -73,12 +73,12 @@
   .art-inline h4{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-top:6px;line-height:1.25;color:var(--ink)}
 
   .art-pq{position:relative;margin:clamp(52px,7vw,84px) 0;padding-left:clamp(44px,6vw,80px)}
-  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
-  .art-pq blockquote{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
+  .art-pq::before{content:"\201C";position:absolute;left:-.04em;top:-.3em;font-family:var(--serif);font-style:normal;font-weight:500;font-size:clamp(4.5rem,10vw,7.5rem);line-height:1;color:var(--peach);opacity:.45;pointer-events:none}
+  .art-pq blockquote{font-family:var(--serif);font-style:normal;font-weight:400;font-size:clamp(1.6rem,2.9vw,2.3rem);line-height:1.34;letter-spacing:-.01em;color:var(--ink);max-width:26ch;margin:0}
   .art-pq cite{display:flex;align-items:center;gap:14px;margin-top:24px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .art-pq cite::before{content:"";width:34px;height:1px;background:var(--ink);flex:none}
 
-  .art-closer{font-family:var(--serif);font-style:italic;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
+  .art-closer{font-family:var(--serif);font-style:normal;font-size:1.15rem;line-height:1.5;color:var(--ink);margin-top:52px;max-width:60ch}
   .art-closer a{border-bottom:1px solid var(--ink);font-style:normal}
 
   .art-bio{display:flex;gap:20px;align-items:flex-start;margin-top:56px;padding-top:36px;border-top:1px solid var(--line)}
@@ -167,7 +167,7 @@
       <span>Journal</span><span class="sep">/</span><span>Mechanics</span>
     </div>
     <div class="art-header reveal">
-      <h1>Why the psoas keeps <em>tightening back.</em></h1>
+      <h1>Why the psoas keeps tightening back.</h1>
       <div class="art-meta">
         <span>Garrett Hewstan</span>
         <span class="dot"></span>
@@ -291,7 +291,7 @@
 <section class="art-faq">
   <div class="wrap">
     <div class="sec-head reveal">
-      <h2>Common <em>questions.</em></h2>
+      <h2>Common questions.</h2>
     </div>
     <div class="art-faq-list reveal">
       <details>
@@ -345,7 +345,7 @@
 <section class="appt" id="appt">
   <div class="wrap">
     <span class="eyebrow">The guarantee</span>
-    <h2>Start by listening to your <em>whole body.</em></h2>
+    <h2>Start by listening to your whole body.</h2>
     <p>Start with an Amari Assessment. Garrett will meet you in person, move with you, and explain what a fuller practice could look like.</p>
     <div class="btn-row">
       <a href="/booking" class="btn">Book a $29 Assessment</a>
@@ -356,6 +356,6 @@
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=27" data-nav="journal"></script>
+<script src="/js/site-v6.js?v=footer-1" data-nav="journal"></script>
 </body>
 </html>

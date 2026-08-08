@@ -104,40 +104,39 @@
 
   function footerHTML() {
     return '' +
-      '<footer>\n' +
-      '  <div class="wrap">\n' +
-      '    <div class="foot-grid">\n' +
-      '      <div class="foot-col">\n' +
-      '        <h3>What Amari Is</h3>\n' +
-      '        <p>The Amari Method helps you end the cycle of needing someone else to fix you. You learn how to work with your own body, so the change belongs to you.</p>\n' +
-      '        <div class="links"><a href="/how-it-works">Our Method</a><a href="/about">About Garrett</a></div>\n' +
-      '      </div>\n' +
-      '      <div class="foot-col">\n' +
-      '        <h3>Newsletter</h3>\n' +
-      '        <form class="news" id="newsform">\n' +
-      '          <input type="email" name="email" required placeholder="Email address" aria-label="Email address">\n' +
-      '          <button type="submit">Submit</button>\n' +
-      '        </form>\n' +
-      '        <p class="news-msg" aria-live="polite"></p>\n' +
-      '      </div>\n' +
-      '      <div class="foot-col foot-locs">\n' +
-      '        <h3>Amari</h3>\n' +
+      '<footer class="site-footer">\n' +
+      '  <section class="footer-directory" aria-label="Amari site directory">\n' +
+      '    <div class="wrap">\n' +
+      '      <img class="footer-directory-mark" src="/images/identity/amari-method-wordmark.svg" alt="Amari Method">\n' +
+      '      <nav aria-label="Footer navigation">\n' +
+      '        <a href="/how-it-works">Our Method</a>\n' +
+      '        <a href="/first-visit">First Visit</a>\n' +
+      '        <a href="/blog">Journal</a>\n' +
+      '        <a href="/faq">FAQ</a>\n' +
       '        <a href="/contact">Contact</a>\n' +
-      '        <a href="/assessment-booking">Book Assessment</a>\n' +
-      '        <a href="' + CALL_URL + '">Free 15-minute call</a>\n' +
-      '        <a href="/portal/">Client portal</a>\n' +
-      '        <a href="/partners">Partners</a>\n' +
-      '      </div>\n' +
+      '        <a href="/portal/">Client Portal</a>\n' +
+      '      </nav>\n' +
       '    </div>\n' +
-      '    <div class="foot-bottom">\n' +
-      '      <span>Amari © 2026</span>\n' +
-      '      <div class="foot-nav">\n' +
-      '        <a href="/faq">FAQ</a><a href="/partners">Partners</a><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a>\n' +
-      '      </div>\n' +
-      '      <span>San Francisco, CA</span>\n' +
+      '  </section>\n' +
+      '  <div class="footer-cta-slot"></div>\n' +
+      '  <section class="footer-utility" aria-label="Legal information">\n' +
+      '    <div class="wrap">\n' +
+      '      <nav aria-label="Legal navigation"><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a></nav>\n' +
+      '      <span>Amari © 2026 · San Francisco, CA</span>\n' +
       '    </div>\n' +
-      '  </div>\n' +
+      '  </section>\n' +
       '</footer>';
+  }
+
+  function fallbackAppointmentCTA() {
+    return '' +
+      '<section class="appt">\n' +
+      '  <div class="wrap">\n' +
+      '    <h2>Come feel what they\'re talking about</h2>\n' +
+      '    <p>In-person in San Francisco, with virtual follow-ups worldwide.</p>\n' +
+      '    <a href="' + BOOK_URL + '" class="btn">Book Assessment</a>\n' +
+      '  </div>\n' +
+      '</section>';
   }
 
   function searchHTML() {
@@ -259,6 +258,13 @@
     if (!noShell) {
       document.body.insertAdjacentHTML('afterbegin', headerHTML());
       document.body.insertAdjacentHTML('beforeend', footerHTML());
+      var siteFooter = document.querySelector('footer.site-footer');
+      var ctaSlot = siteFooter && siteFooter.querySelector('.footer-cta-slot');
+      var pageCTA = document.querySelector('.appt');
+      if (ctaSlot) {
+        if (pageCTA) ctaSlot.replaceWith(pageCTA);
+        else ctaSlot.insertAdjacentHTML('afterend', fallbackAppointmentCTA());
+      }
     }
 
     // Reveal-on-scroll. Fail open: content is visible by default (CSS), and we only
