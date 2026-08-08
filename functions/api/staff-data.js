@@ -38,6 +38,11 @@ export async function onRequestGet(context) {
     // MoneyMoments needs today's CANCELLED sessions (to surface a reschedule+pitch
     // recovery moment). The main Today schedule omits this param → cancelled stay hidden.
     const includeCancelled = url.searchParams.get('includeCancelled') === '1';
+    // Week/home calendar surfaces only render appointment identity and time.
+    // They must not wait for the full contact ledger fan-out (contact,
+    // lifetime appointments, orders, invoices, order hydration, and payment
+    // records) that the detailed day cards require.
+    const summaryOnly = url.searchParams.get('summary') === '1';
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -75,19 +80,29 @@ export async function onRequestGet(context) {
     const allCalendars = calendarsData.calendars || [];
 
     const eventMap = new Map();
-    for (const cal of allCalendars) {
-      const params = new URLSearchParams({
-        locationId: GHL_LOCATION_ID,
-        calendarId: cal.id,
-        startTime: String(startTime),
-        endTime: String(endTime),
-      });
-      const calResponse = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
-      if (calResponse.ok) {
-        const calData = await calResponse.json();
-        for (const e of (calData.events || [])) {
-          if (!eventMap.has(e.id)) {
-            eventMap.set(e.id, { ...e, calendarName: cal.name });
+    // GHL requires calendarId for this endpoint. Query bounded groups in
+    // parallel: serial requests made load time grow by one network round trip
+    // per calendar, while unbounded fan-out risks the connection-cap failure
+    // class documented below for contact enrichment.
+    const CALENDAR_FETCH_CHUNK = 6;
+    for (let i = 0; i < allCalendars.length; i += CALENDAR_FETCH_CHUNK) {
+      const chunk = allCalendars.slice(i, i + CALENDAR_FETCH_CHUNK);
+      const results = await Promise.all(chunk.map(async (cal) => {
+        const params = new URLSearchParams({
+          locationId: GHL_LOCATION_ID,
+          calendarId: cal.id,
+          startTime: String(startTime),
+          endTime: String(endTime),
+        });
+        const response = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
+        if (!response.ok) return { calendar: cal, events: [] };
+        const data = await response.json();
+        return { calendar: cal, events: data.events || [] };
+      }));
+      for (const result of results) {
+        for (const event of result.events) {
+          if (!eventMap.has(event.id)) {
+            eventMap.set(event.id, { ...event, calendarName: result.calendar.name });
           }
         }
       }
@@ -101,6 +116,29 @@ export async function onRequestGet(context) {
 
     // Sort chronologically
     todayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+    if (summaryOnly) {
+      const summaries = todayEvents.map((event) => ({
+        id: event.id,
+        contactId: event.contactId || "",
+        contactName: event.title || "Unknown",
+        startTime: event.startTime || event.start_time,
+        endTime: event.endTime || event.end_time,
+        title: event.title || event.calendarName || "Session",
+        calendarName: event.calendarName || "",
+        appointmentStatus: (event.appointmentStatus || event.status || "").toLowerCase(),
+        meetingLocation: event.meetingLocation || null,
+        sessionsRemaining: 0,
+        sessionsCompleted: 0,
+        seriesType: "none",
+        tags: [],
+        sessionPrepaid: false,
+        paymentStatus: "unknown",
+        paymentMethod: null,
+        paymentNote: null,
+      }));
+      return new Response(JSON.stringify(summaries), { status: 200, headers });
+    }
 
     // Fetch custom field definitions
     const fieldDefsResponse = await ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`);

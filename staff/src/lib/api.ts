@@ -58,6 +58,12 @@ export async function getDayData(date?: string, endDate?: string, includeCancell
   return fetchApi(`/staff-data${qs ? `?${qs}` : ''}`);
 }
 
+export async function getCalendarSummary(date: string, endDate?: string): Promise<import('../types/staff').TodayAppointment[]> {
+  const params = new URLSearchParams({ date, summary: '1' });
+  if (endDate) params.set('endDate', endDate);
+  return fetchApi(`/staff-data?${params}`);
+}
+
 export type OpsSystemSummary = {
   id: string;
   label: string;
