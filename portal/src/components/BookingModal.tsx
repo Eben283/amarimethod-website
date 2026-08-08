@@ -232,10 +232,10 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
             </span>
             <h2 className="cp-modal-title">
               {rescheduleFor
-                ? <>Pick a <em>new time.</em></>
+                ? <>Pick a new time.</>
                 : needsPayment
-                  ? <>Pick a time, then <em>pay $190.</em></>
-                  : <>Find a time <em>that works.</em></>}
+                  ? <>Pick a time, then pay $190.</>
+                  : <>Find a time that works.</>}
             </h2>
           </div>
           <button type="button" className="cp-modal-close" aria-label="Close" onClick={requestClose} disabled={step === 'loading'}>✕</button>
@@ -247,7 +247,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
           {step === 'success' && (
             <div data-testid="booking-success-screen" className="cp-bm-success">
               <div className="cp-bm-glyph">✦</div>
-              <h3 className="cp-bm-success-h">You're <em>booked.</em></h3>
+              <h3 className="cp-bm-success-h">You're booked.</h3>
               <p className="cp-bm-success-p">{bookedTitle}</p>
               <p className="cp-bm-success-meta">
                 {selectedSlot && formatDateDisplay(selectedSlot.date)} at {selectedSlot && formatTime(selectedSlot.hour, selectedSlot.minute)}
@@ -267,7 +267,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
           {step === 'error' && (
             <div data-testid="booking-error-screen" className="cp-bm-error">
               <span className="cp-mono cp-accent">Something went wrong</span>
-              <h3 className="cp-bm-error-h">We couldn't <em>book that time.</em></h3>
+              <h3 className="cp-bm-error-h">We couldn't book that time.</h3>
               <p className="cp-bm-error-p">{errorMsg}</p>
             </div>
           )}
@@ -289,7 +289,7 @@ export default function BookingModal({ onClose, rescheduleFor, payPerSession = f
               </h3>
               <div className="cp-bm-confirm-meta">
                 <div><span className="cp-mono">Date</span><b>{formatDateDisplay(selectedSlot.date)}</b></div>
-                <div><span className="cp-mono">Time</span><b><em>{formatTime(selectedSlot.hour, selectedSlot.minute)}</em></b></div>
+                <div><span className="cp-mono">Time</span><b>{formatTime(selectedSlot.hour, selectedSlot.minute)}</b></div>
                 <div><span className="cp-mono">Timezone</span><b>{timezone.replace(/_/g, ' ')}</b></div>
                 {needsPayment && (
                   <div><span className="cp-mono">Total</span><b>$190</b></div>

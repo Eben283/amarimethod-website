@@ -123,7 +123,7 @@ export const QUIZ_QUESTIONS: QDef[] = [
 
 function AnswerSummary({ answer }: { answer: string | string[] | null | undefined }) {
   if (!answer || (Array.isArray(answer) && answer.length === 0)) {
-    return <span className="text-xs text-gray-400 italic font-sans">—</span>;
+    return <span className="text-xs text-gray-400 font-sans">—</span>;
   }
   if (Array.isArray(answer)) {
     const shown = answer.slice(0, 2);

@@ -15,7 +15,7 @@ export default function DashboardPage() {
         <PortalNav firstName={firstName} hasLivingPractice={false} />
         <section className="cp-greet">
           <div className="cp-greet-l">
-            <h1 className="cp-hello">Hey, <em>{firstName}.</em></h1>
+            <h1 className="cp-hello">Hey, {firstName}.</h1>
             <p className="cp-greet-sub">Loading your portal…</p>
           </div>
         </section>
@@ -34,13 +34,13 @@ export default function DashboardPage() {
         <PortalNav firstName={firstName} hasLivingPractice={false} />
         <section className="cp-greet">
           <div className="cp-greet-l">
-            <h1 className="cp-hello">Hey, <em>{firstName}.</em></h1>
+            <h1 className="cp-hello">Hey, {firstName}.</h1>
             <p className="cp-greet-sub">Welcome back.</p>
           </div>
         </section>
         <section className="cp-error">
           <span className="cp-mono cp-accent">Connection lost</span>
-          <h2 className="cp-error-h">We <em>can't reach</em> your portal right now.</h2>
+          <h2 className="cp-error-h">We can't reach your portal right now.</h2>
           <p className="cp-error-p">{error}</p>
           <div className="cp-error-actions">
             <button type="button" className="cp-btn cp-btn-primary" onClick={refetch}>

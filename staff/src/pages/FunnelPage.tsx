@@ -696,7 +696,7 @@ export default function FunnelPage() {
                   </button>
                   {/* conversion to the next stage */}
                   {next && (
-                    <p className="fn-story pointer-events-none absolute z-[16] whitespace-nowrap text-right italic" style={{ right: '7%', top: `${next.y - 8}%`, width: '60%', fontSize: '12px', color: COL.inkSoft, textShadow: '0 0 10px rgba(236,231,219,1), 0 0 6px rgba(236,231,219,1), 0 1px 3px rgba(236,231,219,1)' }}>
+                    <p className="fn-story pointer-events-none absolute z-[16] whitespace-nowrap text-right " style={{ right: '7%', top: `${next.y - 8}%`, width: '60%', fontSize: '12px', color: COL.inkSoft, textShadow: '0 0 10px rgba(236,231,219,1), 0 0 6px rgba(236,231,219,1), 0 1px 3px rgba(236,231,219,1)' }}>
                       {drops[i].v === '—' ? drops[i].none : <><b style={{ color: COL.ink, fontWeight: 600 }}>{drops[i].v}</b> {drops[i].word}</>}
                     </p>
                   )}

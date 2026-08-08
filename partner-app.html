@@ -181,7 +181,7 @@
     .earnings-paid {
       font-family: var(--pa-display);
       font-size: 15px;
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-ok);
       margin-top: 6px;
     }
@@ -307,7 +307,7 @@
       font-family: var(--pa-display);
       font-size: 16px;
       font-weight: 400;
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-accent-soft);
       white-space: nowrap;
       padding: 6px 12px;
@@ -507,7 +507,7 @@
     .inline-success .check,
     .success-glyph {
       font-family: var(--pa-display);
-      font-style: italic;
+      font-style:normal;
       font-size: 56px;
       line-height: 1;
       color: var(--pa-accent);
@@ -632,7 +632,7 @@
     }
     .pitch-card-glyph {
       font-family: var(--pa-display);
-      font-style: italic;
+      font-style:normal;
       font-size: 22px;
       color: var(--pa-accent);
       line-height: 1;
@@ -704,7 +704,7 @@
       text-wrap: pretty;
     }
     .pitch-quote em {
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-accent);
       font-weight: 500;
     }
@@ -772,7 +772,7 @@
     }
     .objection-list li strong {
       font-family: var(--pa-display);
-      font-style: italic;
+      font-style:normal;
       font-size: 14px;
       color: var(--pa-accent);
       font-weight: 500;
@@ -793,7 +793,7 @@
       text-wrap: pretty;
     }
     .objection-list li em {
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-accent);
       font-weight: 500;
     }
@@ -824,7 +824,7 @@
       color: var(--pa-ink);
     }
     .trust-item-num em {
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-accent);
       font-weight: 400;
     }
@@ -867,7 +867,7 @@
       line-height: 1.35;
     }
     .spec-list .spec-v em {
-      font-style: italic;
+      font-style:normal;
       color: var(--pa-accent);
       font-weight: 500;
     }
@@ -1458,7 +1458,7 @@
     <img class="app-header-wordmark" src="/images/identity/amari-method-wordmark.svg" alt="Amari Method">
   </div>
 
-  <h1 class="app-greeting" id="greeting">Hey, <em style="font-style:italic;color:var(--pa-accent);">there</em>.</h1>
+  <h1 class="app-greeting" id="greeting">Hey, there.</h1>
   <p class="app-subtext">Your partner toolkit.</p>
 
   <!-- 1. EARNINGS HERO -->
@@ -1475,7 +1475,7 @@
       </div>
     </div>
     <p class="earnings-nudge" id="earnings-nudge">
-      Your first referral earns <em style="font-style:italic;color:var(--pa-accent);">$50 cash</em> &mdash; just a name and a phone number.
+      Your first referral earns $50 cash &mdash; just a name and a phone number.
     </p>
   </section>
 
@@ -2202,7 +2202,7 @@
 
         lastFormType = type;
         var clientName = payload.clientFirstName;
-        var nameHtml = '<em style="font-style:italic;color:var(--pa-accent);">' + clientName + '</em>';
+        var nameHtml = '' + clientName + '';
 
         var glyphEl = document.getElementById('success-glyph');
         var headingEl = document.getElementById('success-heading');

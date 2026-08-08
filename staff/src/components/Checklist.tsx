@@ -90,7 +90,7 @@ export default function Checklist({ appointmentId, client }: Props) {
                   {item.text}
                 </p>
                 {item.hint && !isChecked && (
-                  <p className="text-xs text-amari-text-muted mt-0.5 italic">{item.hint}</p>
+                  <p className="text-xs text-amari-text-muted mt-0.5 ">{item.hint}</p>
                 )}
               </div>
             </button>

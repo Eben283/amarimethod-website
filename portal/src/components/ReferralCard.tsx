@@ -64,8 +64,8 @@ export default function ReferralCard({ contactId, referralCount, rewardCode }: R
           <span className="cp-mono">{hasReachedMilestone ? 'Reward ready' : 'Refer & earn'}</span>
           <h3 className="cp-ref-title">
             {hasReachedMilestone && rewardCode
-              ? <>Your <em>free session</em> is ready.</>
-              : <>Give a session, <em>get a session.</em></>}
+              ? <>Your free session is ready.</>
+              : <>Give a session, get a session.</>}
           </h3>
         </div>
         <div className="cp-ref-summary-r">

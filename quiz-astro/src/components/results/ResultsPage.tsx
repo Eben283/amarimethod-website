@@ -43,7 +43,7 @@ const EDITORIAL_STYLES = `
   line-height:1.14;color:var(--ink);text-wrap:balance;margin:0;
 }
 [data-results] p{text-wrap:pretty;margin:0;color:var(--body)}
-[data-results] em{font-style:italic;color:inherit}
+[data-results] em{font-style:normal;color:inherit}
 
 [data-results] .doc{max-width:840px;margin:0 auto;padding:0 32px}
 [data-results] .doc-narrow{max-width:840px;margin:0 auto;padding:0 32px}
@@ -104,7 +104,7 @@ const EDITORIAL_STYLES = `
   margin-top:22px;font-family:var(--sans);font-style:normal;
   font-size:1.15rem;max-width:50ch;line-height:1.55;font-weight:400;color:var(--body);
 }
-[data-results] .hero-sub em{font-style:italic;color:var(--ink)}
+[data-results] .hero-sub em{font-style:normal;color:var(--ink)}
 [data-results] .hero-meta{
   margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
   background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;
@@ -120,7 +120,7 @@ const EDITORIAL_STYLES = `
   display:block;margin-top:9px;font-family:var(--display);font-size:1.55rem;
   font-style:normal;font-weight:500;color:var(--ink);
 }
-[data-results] .hero-meta .val em{font-style:italic;color:var(--ink)}
+[data-results] .hero-meta .val em{font-style:normal;color:var(--ink)}
 
 /* ── SECTION HEAD ────────────────────────────────────────────────── */
 [data-results] .section-head,[data-results] .sect{
@@ -160,7 +160,7 @@ const EDITORIAL_STYLES = `
 /* ── PROTOCOL VIDEO BLOCK ────────────────────────────────────────── */
 [data-results] .video-block{padding:26px 0 8px}
 [data-results] .video-block .pull{
-  font-family:var(--display);font-style:italic;font-size:1.15rem;
+  font-family:var(--display);font-style:normal;font-size:1.15rem;
   color:var(--body);max-width:46ch;margin:0 0 20px;text-align:left;line-height:1.4;font-weight:400;
 }
 [data-results] .protocol{
@@ -239,7 +239,7 @@ const EDITORIAL_STYLES = `
 [data-results] .examiner-avatar{
   width:48px;height:48px;border-radius:50%;background:var(--ink);
   display:flex;align-items:center;justify-content:center;
-  font-family:var(--display);color:#fff;font-size:22px;font-style:italic;font-weight:500;
+  font-family:var(--display);color:#fff;font-size:22px;font-style:normal;font-weight:500;
 }
 [data-results] .examiner-id .who{
   font-family:var(--display);font-size:1.2rem;line-height:1.25;color:var(--ink);font-weight:500;
@@ -254,7 +254,7 @@ const EDITORIAL_STYLES = `
   font-family:var(--display);font-size:1.35rem;line-height:1.4;color:var(--ink);
   font-style:normal;font-weight:400;max-width:40ch;
 }
-[data-results] .examiner-body p em{font-style:italic;color:var(--ink)}
+[data-results] .examiner-body p em{font-style:normal;color:var(--ink)}
 [data-results] .examiner-body .signoff{
   font-family:var(--sans);font-style:normal;font-size:12px;font-weight:600;
   letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-top:4px;
@@ -399,14 +399,14 @@ const EDITORIAL_STYLES = `
 [data-results] .appendix summary:hover{border-color:var(--ink);background:#f6f1e6}
 [data-results] .appendix summary::-webkit-details-marker{display:none}
 [data-results] .appendix summary .label{
-  font-family:var(--display);font-style:italic;font-size:20px;
+  font-family:var(--display);font-style:normal;font-size:20px;
   letter-spacing:-0.01em;color:var(--ink);text-transform:none;
 }
 [data-results] .appendix summary .label::before{
-  content:"§ ";font-style:italic;color:var(--accent);
+  content:"§ ";font-style:normal;color:var(--accent);
 }
 [data-results] .appendix summary .toggle{
-  font-family:var(--display);font-style:italic;font-size:24px;color:var(--accent);
+  font-family:var(--display);font-style:normal;font-size:24px;color:var(--accent);
   width:32px;height:32px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--accent);border-radius:50%;line-height:1;
   transition:transform .18s ease;
@@ -427,7 +427,7 @@ const EDITORIAL_STYLES = `
   display:block;margin-bottom:6px;
 }
 [data-results] .doc-foot .center{
-  text-align:center;font-family:var(--display);font-style:italic;
+  text-align:center;font-family:var(--display);font-style:normal;
   font-size:16px;letter-spacing:0;color:var(--ink-2);text-transform:none;
 }
 [data-results] .doc-foot .right{text-align:right}
@@ -567,13 +567,13 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           </div>
           <div className="examiner-body">
             <p>
-              What stood out in your answers: <em>{patternSignature.toLowerCase()}</em>. That means your body has built a chain around the original site. But the chain is <em>identifiable</em>, and your system hasn't built deep compensations yet.
+              What stood out in your answers: {patternSignature.toLowerCase()}. That means your body has built a chain around the original site. But the chain is identifiable, and your system hasn't built deep compensations yet.
             </p>
             <p>
-              What I'd do next is simple: <em>book one session.</em> Not a package. Not a commitment. One. We find the specific imbalance creating your pattern and I show you the protocol that addresses it.
+              What I'd do next is simple: book one session. Not a package. Not a commitment. One. We find the specific imbalance creating your pattern and I show you the protocol that addresses it.
             </p>
             <p>
-              If session one doesn't help, we don't keep going. <em>That's the whole offer.</em>
+              If session one doesn't help, we don't keep going. That's the whole offer.
             </p>
             <p className="signoff">— Garrett</p>
           </div>
@@ -617,7 +617,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
               <div>
                 <div className="section-head" style={{ paddingTop: 0 }}>
                   <span className="eyebrow">The balance equation</span>
-                  <h2>Pain emerges when some parts <em>overwork</em> because other parts aren't working enough.</h2>
+                  <h2>Pain emerges when some parts overwork because other parts aren't working enough.</h2>
                 </div>
                 <div className="cred-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: 32 }}>
                   <div className="cred-cell">

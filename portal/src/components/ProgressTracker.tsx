@@ -254,8 +254,8 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
             <span className="cp-mono">Welcome</span>
             <h2 className="cp-journey-title">
               {upcomingAppointments.length > 0
-                ? <>Your first session is on <em>the books.</em></>
-                : <>Book your <em>first session</em> to begin.</>}
+                ? <>Your first session is on the books.</>
+                : <>Book your first session to begin.</>}
             </h2>
             {!upcomingAppointments.length && onBookSession && (
               <div className="cp-dash-cta">
@@ -271,7 +271,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           <div className="cp-dash-hero">
             <span className="cp-mono">Your journey</span>
             <h2 className="cp-journey-title">
-              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
+              {lifetimeCount} session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
               {sinceLabel && <span className="cp-journey-since"> · since {sinceLabel}</span>}
             </h2>
             {onBookSession && (
@@ -290,7 +290,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
               <div>
                 <span className="cp-mono">Your {packLabel}</span>
                 <h2 className="cp-journey-title">
-                  <em>{client.sessionsRemaining}</em> session{client.sessionsRemaining === 1 ? '' : 's'} left
+                  {client.sessionsRemaining} session{client.sessionsRemaining === 1 ? '' : 's'} left
                 </h2>
               </div>
               <div className="cp-journey-pct">
@@ -321,12 +321,12 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
             {dashboardState === 'last-left' && (
               <p className="cp-journey-next cp-journey-soft-reup">
-                Last session in your {packLabel}. <em>Want to talk about what comes next?</em>
+                Last session in your {packLabel}. Want to talk about what comes next?
               </p>
             )}
             {dashboardState === 'mid-package' && lifetimeCount > 0 && (
               <p className="cp-journey-next">
-                <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
+                {lifetimeCount} session{lifetimeCount === 1 ? '' : 's'} with the Amari Method
                 {sinceLabel && <> · since {sinceLabel}</>}
               </p>
             )}
@@ -337,7 +337,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           <div className="cp-dash-hero cp-dash-hero-reup">
             <span className="cp-mono">Your {packLabel} is complete</span>
             <h2 className="cp-journey-title">
-              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
+              {lifetimeCount} session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
             </h2>
             <p className="cp-journey-next">Contact Amari when you want to talk about what comes next.</p>
             <div className="cp-dash-cta cp-dash-cta-stack">
@@ -352,7 +352,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
           <div className="cp-dash-hero cp-dash-hero-warn">
             <span className="cp-mono">Your sessions</span>
             <h2 className="cp-journey-title">
-              <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
+              {lifetimeCount} session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
             </h2>
             <p className="cp-journey-next">
               Your remaining session count is being reviewed. Drop us a note and we'll confirm.{' '}
@@ -406,7 +406,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
                 {/* Action stack */}
                 {isConfirming ? (
                   <div className="cp-next-actions" style={{ minWidth: 240 }}>
-                    <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--cp-ink-2)', lineHeight: 1.45, marginBottom: 4 }}>
+                    <p style={{ fontFamily: 'var(--cp-display)', fontStyle: 'normal', fontSize: 14, color: 'var(--cp-ink-2)', lineHeight: 1.45, marginBottom: 4 }}>
                       {confirmMode === 'reschedule'
                         ? 'Your slot will be released so you can pick a new one.'
                         : "You'll lose this slot. Cancellations within 24 hours count as used."}

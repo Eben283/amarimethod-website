@@ -30,7 +30,7 @@
 .sa-screen *::before,
 .sa-screen *::after{box-sizing:border-box}
 .sa-screen a{color:inherit;text-decoration:none}
-.sa-screen em{font-style:italic}
+.sa-screen em{font-style:normal}
 
 .sa-main{
   width:100%;

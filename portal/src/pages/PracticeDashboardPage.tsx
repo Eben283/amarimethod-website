@@ -30,10 +30,10 @@ function meetingFormat(appointment: Appointment): string {
 function practiceCopy(seriesType: string) {
   if (seriesType === '6-week') {
     return {
-      title: <>The 6-Week <em>Amari Practice</em></>,
+      title: <>The 6-Week Amari Practice</>,
       subtitle: '12 in-person visits, with Living Practice included.',
-      shapeHeading: <>Six weeks, held with <em>room to notice.</em></>,
-      completeHeading: <>Your six-week practice is <em>complete.</em></>,
+      shapeHeading: <>Six weeks, held with room to notice.</>,
+      completeHeading: <>Your six-week practice is complete.</>,
       showHorizon: true,
       horizon: [
         { span: 'Weeks 1–2', strong: 'Begin', p: 'Make room to notice what is here.' },
@@ -44,10 +44,10 @@ function practiceCopy(seriesType: string) {
   }
   if (seriesType === '12-week') {
     return {
-      title: <>The 12-Week <em>Amari Practice</em></>,
+      title: <>The 12-Week Amari Practice</>,
       subtitle: '24 in-person visits, with Living Practice included.',
-      shapeHeading: <>Twelve weeks, held with <em>room to notice.</em></>,
-      completeHeading: <>Your twelve-week practice is <em>complete.</em></>,
+      shapeHeading: <>Twelve weeks, held with room to notice.</>,
+      completeHeading: <>Your twelve-week practice is complete.</>,
       showHorizon: true,
       horizon: [
         { span: 'Weeks 1–4', strong: 'Begin', p: 'Make room to notice what is here.' },
@@ -57,10 +57,10 @@ function practiceCopy(seriesType: string) {
     };
   }
   return {
-    title: <>Your <em>Amari</em> visits</>,
+    title: <>Your Amari visits</>,
     subtitle: 'Book and manage sessions here. Contact Amari when you want to talk about what comes next.',
-    shapeHeading: <>A calm place to <em>continue.</em></>,
-    completeHeading: <>No prepaid visits <em>remaining.</em></>,
+    shapeHeading: <>A calm place to continue.</>,
+    completeHeading: <>No prepaid visits remaining.</>,
     showHorizon: false,
     horizon: [],
   };
@@ -133,7 +133,7 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
               </>
             ) : (
               <>
-                <h2 id="next-session-heading">Choose your next <em>visit.</em></h2>
+                <h2 id="next-session-heading">Choose your next visit.</h2>
                 <p>A consistent rhythm gives you more chances to notice what is changing.</p>
               </>
             )}
@@ -188,7 +188,7 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
           {client.hasLivingPractice && (
             <article className="cp-practice-living">
               <span className="cp-mono">Between visits</span>
-              <h2>Living <em>Practice</em></h2>
+              <h2>Living Practice</h2>
               <p>A quiet library to return to when useful.</p>
               <Link to="/practice" className="cp-btn cp-btn-ghost">Open Living Practice <span className="cp-arrow">→</span></Link>
             </article>
