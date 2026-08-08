@@ -446,15 +446,28 @@ export const DASHBOARD_HTML = `<!doctype html>
     el("updated").textContent = "updated " + fmt(data.generatedAt);
   }
 
+  function requestData(key) {
+    var options = key ? { headers: { Authorization: "Bearer " + key } } : {};
+    return fetch("/dashboard-data?hours=" + hours, options)
+      .then(function (r) {
+        if (r.status === 401 && key) {
+          localStorage.removeItem(LS);
+          return requestData("");
+        }
+        if (r.status === 401) {
+          gate.hidden = false; app.hidden = true;
+          return null;
+        }
+        return r.json();
+      });
+  }
+
   function load() {
     var key = localStorage.getItem(LS);
-    if (!key) { gate.hidden = false; app.hidden = true; return; }
+    // A Staff handoff sets a signed HttpOnly session cookie. Prefer that
+    // session when no manual dashboard key is stored in this browser.
     gate.hidden = true; app.hidden = false;
-    fetch("/dashboard-data?hours=" + hours, { headers: { Authorization: "Bearer " + key } })
-      .then(function (r) {
-        if (r.status === 401) { localStorage.removeItem(LS); load(); return null; }
-        return r.json();
-      })
+    requestData(key)
       .then(function (data) { if (data && !data.error) render(data); })
       .catch(function () { document.getElementById("updated").textContent = "offline \\u2014 retrying"; });
   }
