@@ -1047,8 +1047,15 @@ export async function consentReviewQueue(db, limit) {
 export async function contactProfile(db, contactId, limit, now) {
   const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
     db.prepare(
-      `SELECT id, display_name, email_normalized, phone_e164, referral_source_label, created_at
-       FROM contacts WHERE id = ?`,
+      `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
+              contact.referral_source_label, contact.created_at,
+              source.external_id AS ghl_contact_id
+       FROM contacts contact
+       LEFT JOIN external_records source
+         ON source.contact_id = contact.id
+        AND source.provider = 'ghl'
+        AND source.object_type = 'contact'
+       WHERE contact.id = ?`,
     ).bind(contactId),
     db.prepare(
       "SELECT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",

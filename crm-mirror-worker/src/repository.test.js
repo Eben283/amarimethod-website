@@ -266,7 +266,7 @@ describe("CRM mirror client profiles", () => {
     const profileDb = {
       prepare: (sql) => { profileQueries.push(sql); return { bind: () => ({}) }; },
       batch: async () => [
-        { results: [{ id: "contact_1", display_name: "Eben" }] },
+        { results: [{ id: "contact_1", display_name: "Eben", ghl_contact_id: "ghl_contact_1" }] },
         { results: [{ tag: "client" }] },
         { results: [{ role: "client" }] },
         { results: [{ attribute_key: "series", attribute_value: "8-session" }] },
@@ -289,7 +289,7 @@ describe("CRM mirror client profiles", () => {
       ],
     };
     await expect(contactProfile(profileDb, "contact_1", 25, "2026-07-26T00:00:00.000Z")).resolves.toMatchObject({
-      contact: { id: "contact_1", display_name: "Eben" },
+      contact: { id: "contact_1", display_name: "Eben", ghl_contact_id: "ghl_contact_1" },
       invoices: [{ invoice_number: "AMARI-001", provider_status: "open", amount_due_cents: 34700 }],
       tags: ["client"],
       roles: ["client"],
@@ -303,6 +303,7 @@ describe("CRM mirror client profiles", () => {
       consents: [{ channel: "sms", state: "granted" }],
       activityTimeline: [{ activity_type: "message", body: "Can we reschedule?" }],
     });
+    expect(profileQueries[0]).toContain("source.external_id AS ghl_contact_id");
     expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).toContain("NOT (\n    UPPER(TRIM(COALESCE(event.body_clean, ''))) LIKE 'OPS-%'");
   });
 
