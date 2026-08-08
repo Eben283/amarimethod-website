@@ -255,6 +255,14 @@
 .sa-collapse{overflow:hidden; max-height:0; transition:max-height .28s ease;}
 .sa-collapse.open{max-height:720px;}
 .sa-collapse-in{padding-top:10px; display:flex; flex-direction:column; gap:8px;}
+.sa-paytrigger.is-sent{border-color:var(--good); background:var(--good-tint);}
+.sa-paytrigger.is-sent .ic{background:rgba(44,132,102,.16); color:var(--good);}
+.sa-review-compose{gap:10px;}
+.sa-review-compose label{font-size:13px; font-weight:600; color:var(--ink2);}
+.sa-review-compose textarea{width:100%; min-height:120px; resize:vertical; border:1px solid var(--line2); border-radius:10px; background:var(--surface); color:var(--ink); font:inherit; font-size:14px; line-height:1.45; padding:11px 12px;}
+.sa-review-compose textarea:focus{outline:2px solid var(--accent-tint); border-color:var(--accent);}
+.sa-review-compose-meta{display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:12px;}
+.sa-review-note{background:var(--good-tint); border:1px solid var(--good); border-radius:10px; color:var(--good); font-size:13px; padding:9px 14px;}
 
 /* ===== staff-app integration additions (states the live page needs) ===== */
 /* spinner */
