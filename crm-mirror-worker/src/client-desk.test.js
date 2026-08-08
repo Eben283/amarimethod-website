@@ -159,4 +159,47 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain('rel="noopener noreferrer"');
     expect(rendered).toContain('referrerpolicy="no-referrer"');
   });
+
+  it("filters a selected client's loaded timeline locally by record type", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { filterTimeline }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const timeline = [
+      { activity_type: "message", channel: "email" },
+      { activity_type: "appointment" },
+      { activity_type: "payment" },
+      { activity_type: "invoice" },
+      { activity_type: "note" },
+      { activity_type: "task" },
+    ];
+
+    expect(helpers.filterTimeline(timeline, "all")).toEqual(timeline);
+    expect(helpers.filterTimeline(timeline, "messages")).toEqual([timeline[0]]);
+    expect(helpers.filterTimeline(timeline, "appointments")).toEqual([timeline[1]]);
+    expect(helpers.filterTimeline(timeline, "payments")).toEqual([timeline[2]]);
+    expect(helpers.filterTimeline(timeline, "invoices")).toEqual([timeline[3]]);
+    expect(helpers.filterTimeline(timeline, "notes")).toEqual([timeline[4]]);
+    expect(helpers.filterTimeline(timeline, "tasks")).toEqual([timeline[5]]);
+  });
+
+  it("marks a record's data boundaries and unknowns without treating them as client status", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { display_name: "Test client" },
+      activityTimeline: [{ occurred_at: "2026-08-08T14:00:00.000Z" }],
+      appointments: [{ status: "confirmed", starts_at: "2026-08-10T14:00:00.000Z" }],
+    });
+
+    for (const label of ["Record status", "Last mirrored activity", "Next appointment", "GHL mirror", "Stripe mirror", "Not mirrored"]) expect(rendered).toContain(label);
+    expect(rendered).toContain("Consent status not mirrored");
+    expect(rendered).not.toContain("No opt-out recorded");
+  });
 });

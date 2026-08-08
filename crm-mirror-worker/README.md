@@ -1,6 +1,6 @@
 # Amari CRM mirror worker
 
-This Worker is the read-only import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads GHL and Stripe into its own D1 database; it has no provider write path and no email/SMS sender. Its only writes are inserts/updates to its own D1 database.
+This Worker is the read-only GHL and Stripe import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads those providers into its own D1 database and never writes back to either. Separately, the authenticated Staff Client Desk can send an individual email through an already-authorized Google Workspace identity after a same-origin staff action, opt-out/DND check, and immutable audit record. It has no SMS sender.
 
 ## What it mirrors
 
@@ -21,7 +21,7 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 
 Dashboard: open from Staff → Back office → CRM Mirror (Eben-only). That path calls `POST /api/staff-crm-mirror-access`, which mints a one-time `/dashboard-access/:code` handoff server-side. Direct worker URL visits without a session show a locked shell and never accept a pasted bearer secret in the browser. Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
 
-Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, and `GHL_CLIENT_SECRET`. `PORTAL_KV` is the shared read-only GHL token cache.
+Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, `GHL_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET`. `PORTAL_KV` holds the shared GHL token cache and the Google Workspace authorization state; the Staff browser never receives those credentials.
 
 If this Worker is recreated, create a new dedicated D1 database and replace the binding ID before deploying. Never reuse the live automation database.
 
