@@ -29,7 +29,7 @@ export default function ClientDeskPage() {
     if (!src) return;
     const deskOrigin = new URL(src).origin;
     const receiveDeskNavigation = (event: MessageEvent) => {
-      if (event.source !== frameRef.current?.contentWindow || event.origin !== deskOrigin) return;
+      if (event.origin !== deskOrigin) return;
       if (event.data?.type !== 'amari:staff-navigate' || typeof event.data.path !== 'string') return;
       const destination = new URL(event.data.path, window.location.origin);
       if (destination.origin !== window.location.origin || destination.pathname !== '/staff/pos') return;
