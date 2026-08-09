@@ -23,6 +23,7 @@ const RevenuePage = lazy(() => import('./pages/RevenuePage'));
 const PosPage = lazy(() => import('./pages/PosPage'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage'));
 const MediaPage = lazy(() => import('./pages/MediaPage'));
+const DesignSystemPage = lazy(() => import('./pages/DesignSystemPage'));
 const OperationsPage = lazy(() => import('./pages/OperationsPage'));
 const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
 const CommunicationPreferencesPage = lazy(() => import('./pages/CommunicationPreferencesPage'));
@@ -110,6 +111,7 @@ function AppRoutes() {
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />
         <Route path="media" element={<Layout><MediaPage /></Layout>} />
+        <Route path="design-system" element={<Layout><DesignSystemPage /></Layout>} />
         <Route path="settings/communication" element={<Layout><CommunicationPreferencesPage /></Layout>} />
         {/* Retired route names keep their existing destinations. */}
         <Route path="triage" element={<Navigate to="/" replace />} />

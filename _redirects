@@ -31,6 +31,7 @@
 /staff/products /staff/ 200
 /staff/products/* /staff/ 200
 /staff/media /staff/ 200
+/staff/design-system /staff/ 200
 /staff/settings/communication /staff/ 200
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200

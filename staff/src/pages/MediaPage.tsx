@@ -9,6 +9,7 @@ import {
   FolderPlus,
   Grid2X2,
   Image as ImageIcon,
+  Images,
   List,
   Loader2,
   MoreHorizontal,
@@ -24,6 +25,7 @@ import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, use
 import { useSearchParams } from 'react-router-dom';
 import {
   getStaffMedia,
+  importStaffSiteMedia,
   updateStaffMedia,
   uploadStaffMedia,
   type StaffMediaAsset,
@@ -159,6 +161,7 @@ export default function MediaPage() {
   const [uploadReady, setUploadReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [folderDialog, setFolderDialog] = useState(false);
   const [error, setError] = useState('');
@@ -223,6 +226,34 @@ export default function MediaPage() {
     if (uploadReady && !uploading) void uploadFiles(event.dataTransfer.files);
   }
 
+  async function importPublicSiteAssets() {
+    setImporting(true);
+    setError('');
+    setNotice('Importing current public site assets…');
+    let offset = 0;
+    let total = 0;
+    let imported = 0;
+    let skipped = 0;
+    let failed = 0;
+    try {
+      do {
+        const result = await importStaffSiteMedia(offset);
+        total = result.total;
+        imported += result.imported.length;
+        skipped += result.skipped.length;
+        failed += result.failed.length;
+        offset = result.nextOffset;
+      } while (offset < total);
+      await load();
+      setNotice(`Site asset import complete: ${imported} added, ${skipped} already here${failed ? `, ${failed} need attention` : ''}.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Site assets could not be imported.');
+      setNotice('');
+    } finally {
+      setImporting(false);
+    }
+  }
+
   function openAsset(asset: StaffMediaAsset) {
     setSearchParams({ asset: asset.id });
   }
@@ -233,7 +264,8 @@ export default function MediaPage() {
         <div><span>Owned asset library</span><h1>Media</h1><p>Shared images, videos, and PDFs for the Amari team.</p></div>
         <div className="staff-media-head__actions">
           <button type="button" onClick={() => setFolderDialog(true)}><FolderPlus /> New folder</button>
-          <button type="button" className="is-primary" disabled={!uploadReady || uploading} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
+          <button type="button" disabled={!uploadReady || uploading || importing} onClick={() => void importPublicSiteAssets()}>{importing ? <Loader2 className="is-spinning" /> : <Images />} {importing ? 'Importing…' : 'Import site assets'}</button>
+          <button type="button" className="is-primary" disabled={!uploadReady || uploading || importing} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
           <input ref={fileInput} className="sr-only" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/quicktime,video/webm,application/pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void uploadFiles(event.target.files); }} />
         </div>
       </header>

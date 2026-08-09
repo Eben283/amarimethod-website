@@ -7,6 +7,7 @@ export const STAFF_MEDIA_TYPES = Object.freeze({
   "image/webp": "image",
   "image/gif": "image",
   "image/avif": "image",
+  "image/svg+xml": "image",
   "video/mp4": "video",
   "video/quicktime": "video",
   "video/webm": "video",
@@ -27,12 +28,12 @@ export function normalizeMediaName(value) {
   return cleanText(value).toLocaleLowerCase("en-US");
 }
 
-export function validateMediaUpload({ name, mimeType, sizeBytes }) {
+export function validateMediaUpload({ name, mimeType, sizeBytes }, { allowSvg = false } = {}) {
   const displayName = cleanText(name);
   const type = cleanText(mimeType, 100).toLowerCase();
   const size = Number(sizeBytes);
   if (displayName.length < 1) throw failure("A file name is required");
-  if (!STAFF_MEDIA_TYPES[type]) {
+  if (!STAFF_MEDIA_TYPES[type] || (type === "image/svg+xml" && !allowSvg)) {
     throw failure("Use a JPG, PNG, WebP, GIF, AVIF, MP4, MOV, WebM, or PDF file");
   }
   if (!Number.isSafeInteger(size) || size < 1) throw failure("The file is empty or its size could not be verified");
@@ -48,7 +49,7 @@ export function validateMediaUpload({ name, mimeType, sizeBytes }) {
 
 export function mediaObjectKey(assetId, mimeType) {
   const extension = {
-    "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif",
+    "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "image/avif": "avif", "image/svg+xml": "svg",
     "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm", "application/pdf": "pdf",
   }[mimeType];
   if (!/^[a-f0-9-]{32,40}$/i.test(assetId) || !extension) throw failure("Could not create a safe media key", 500);
@@ -138,9 +139,9 @@ export async function createMediaFolder(db, input, { actor, now, id } = {}) {
   return mapFolder({ id: folderId, parent_id: parentId, name, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor });
 }
 
-export async function registerMediaAsset(db, input, { actor, now, id } = {}) {
+export async function registerMediaAsset(db, input, { actor, now, id, allowSvg = false } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
-  const upload = validateMediaUpload(input);
+  const upload = validateMediaUpload(input, { allowSvg });
   const folderId = cleanText(input?.folderId, 80) || null;
   await requireFolder(db, folderId);
   const assetId = id || crypto.randomUUID();

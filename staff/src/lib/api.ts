@@ -671,6 +671,18 @@ export async function updateStaffMedia(input: Record<string, unknown>): Promise<
   return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify(input) });
 }
 
+export interface StaffSiteMediaImport {
+  imported: string[];
+  skipped: string[];
+  failed: Array<{ name: string; error: string }>;
+  total: number;
+  nextOffset: number;
+}
+
+export async function importStaffSiteMedia(offset = 0): Promise<StaffSiteMediaImport> {
+  return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify({ action: 'import_site_assets', offset }) });
+}
+
 export async function uploadStaffMedia(file: File, folderId: string | null): Promise<{ asset: StaffMediaAsset }> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 180_000);

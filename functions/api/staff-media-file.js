@@ -41,6 +41,7 @@ async function serve(context, headOnly = false) {
     if (!object) return new Response("File not found", { status: 404, headers });
     const responseHeaders = new Headers(headers);
     responseHeaders.set("Content-Type", record.public.mimeType);
+    if (record.public.mimeType === "image/svg+xml") responseHeaders.set("Content-Security-Policy", "sandbox");
     responseHeaders.set("Accept-Ranges", "bytes");
     responseHeaders.set("Content-Disposition", contentDisposition(record.public.name, url.searchParams.get("download") === "1"));
     if (object.etag) responseHeaders.set("ETag", object.etag);
