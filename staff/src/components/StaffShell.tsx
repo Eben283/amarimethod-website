@@ -13,6 +13,7 @@ import {
   MapPinned,
   Menu,
   MessageSquareText,
+  Images,
   Package,
   Search,
   ShoppingBag,
@@ -67,6 +68,7 @@ const PRIMARY_ITEMS: RailItem[] = [
 const SPECIALIST_ITEMS: RailItem[] = [
   { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
   { label: 'Products', detail: 'Offers and sale items', to: '/products', Icon: Package },
+  { label: 'Media library', detail: 'Shared files and images', to: '/media', Icon: Images },
   { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
   { label: 'Funnel', detail: 'Lead flow and pace', to: '/funnel', Icon: TrendingUp },
   { label: 'Community', detail: 'Field relationships', to: '/community', Icon: MapPinned },
