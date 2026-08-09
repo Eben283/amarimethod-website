@@ -200,6 +200,22 @@ export interface AutomationOwnedStep {
   [key: string]: unknown;
 }
 
+export interface AutomationMessagePreviewNotice {
+  stepIndex: number;
+  audience: 'client' | 'internal';
+  channel: 'email' | 'sms';
+  from?: string;
+  subject?: string;
+  preheader?: string;
+  body: string;
+}
+
+export interface AutomationMessagePreview {
+  status: 'source_verified_read_only';
+  label: string;
+  notices: AutomationMessagePreviewNotice[];
+}
+
 export interface AutomationOwnedDefinition {
   id: string;
   engine: 'reminder' | 'nurture';
@@ -210,6 +226,7 @@ export interface AutomationOwnedDefinition {
   trigger: Record<string, unknown>;
   exits: Array<Record<string, unknown>>;
   steps: AutomationOwnedStep[];
+  messagePreview?: AutomationMessagePreview;
   source: { kind: 'owned_code'; path: string };
 }
 

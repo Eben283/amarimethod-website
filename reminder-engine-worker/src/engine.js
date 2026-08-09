@@ -8,7 +8,7 @@ import { FLOWS, flowsForCalendar } from "./config.js";
 import { enroll } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
-import { saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, enrollmentId } from "./store.js";
+import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
@@ -35,7 +35,20 @@ export async function handleEvent(env, event, nowMs) {
             detail: { calendarId: event.calendarId, steps: enrollment.steps.length, mode: flow.mode },
           });
         }
-        actions.push({ engine: "reminder", action: created ? "enroll" : "enroll-noop", detail: { flowKey: flow.flowKey } });
+        if (!created) {
+          const retimed = await retimeEnrollment(db, event, flow, nowMs);
+          if (retimed.rescheduled) {
+            await appendEvent(db, {
+              ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+              definitionVersion: flow.definitionVersion,
+              appointmentId: event.appointmentId, action: "rescheduled", outcome: "rescheduled",
+              detail: { previousStartAt: retimed.previousStartAt, startAt: event.startAt },
+            });
+          }
+          actions.push({ engine: "reminder", action: retimed.rescheduled ? "reschedule" : "enroll-noop", detail: { flowKey: flow.flowKey } });
+        } else {
+          actions.push({ engine: "reminder", action: "enroll", detail: { flowKey: flow.flowKey } });
+        }
       }
     }
 

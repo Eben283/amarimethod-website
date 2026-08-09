@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, flowsForCalendar } from "./config.js";
+import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, flowsForCalendar } from "./config.js";
 
 // Config snapshot tests per the cluster brief: each flow's step count, offsets, and enroll
 // filters pinned against the twin specs, and the shadow default pinned for every flow.
 
 describe("registry", () => {
-  it("exposes the three configured flows, all in shadow mode", () => {
-    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call"]);
+  it("exposes the four configured flows, all in shadow mode", () => {
+    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call", "partner-initial-in-person"]);
     for (const f of FLOWS) expect(f.mode).toBe("shadow");
   });
 
@@ -16,6 +16,7 @@ describe("registry", () => {
     for (const cal of ["USgPsktqRcuomdUgpShL", "aVE54Qf4lrbYTB0zFqXy", "ZEIGFHBi17SpZ3Ezi5DR"]) {
       expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(["discovery-call"]);
     }
+    expect(flowsForCalendar("lfsnaiGiLNL2z12pLKDP").map((f) => f.flowKey)).toEqual(["partner-initial-in-person"]);
     expect(flowsForCalendar("not-a-calendar")).toEqual([]);
   });
 });
@@ -42,6 +43,21 @@ describe("flow shapes vs the twin specs", () => {
     // timed steps never back-fire on short-notice bookings
     for (const s of DISCOVERY_CALL.steps.filter((x) => x.at !== "enroll")) {
       expect(s.skipIfPast).toBe(true);
+    }
+  });
+
+  it("partner in-person: exactly mirrors the six message actions and is shadow-only", () => {
+    expect(PARTNER_INITIAL_IN_PERSON.name).toBe("In-Person Partner Session: Confirmation & Reminder Flow");
+    expect(PARTNER_INITIAL_IN_PERSON.calendarIds).toEqual(["lfsnaiGiLNL2z12pLKDP"]);
+    expect(PARTNER_INITIAL_IN_PERSON.enrollOn.statuses).toEqual(["confirmed"]);
+    expect(PARTNER_INITIAL_IN_PERSON.cancelOn).toEqual(["cancelled"]);
+    expect(PARTNER_INITIAL_IN_PERSON.mode).toBe("shadow");
+    expect(PARTNER_INITIAL_IN_PERSON.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
+      "enroll:internal_email", "enroll:email", "start-1440m:email",
+      "start-60m:email", "start-60m:sms", "start-60m:internal_sms",
+    ]);
+    for (const step of PARTNER_INITIAL_IN_PERSON.steps.filter((step) => step.at !== "enroll")) {
+      expect(step.skipIfPast).toBe(true);
     }
   });
 });

@@ -290,7 +290,7 @@ const RAW_FAMILIES = [
     kind: "operational",
     purpose: "Confirm partner sessions, retain partner eligibility context, and cancel pending reminders safely.",
     implementationUnits: ["reminder-confirmation", "pipeline-helper"],
-    definitionIds: [],
+    definitionIds: ["reminder:partner-initial-in-person"],
     sourceRecords: [
       p("In-Person Partner Session: Confirmation & Reminder Flow"),
       p("Virtual - Partner Session: Confirmation & Reminder Flow"),
@@ -368,10 +368,16 @@ function familyEvidence(family, ownedDefinitions) {
       label: "No provider-neutral owned definition is registered for this family yet.",
     });
   }
-  if (ownedDefinitions.some((definition) => definition.steps.some((step) => step.template))) {
+  if (ownedDefinitions.some((definition) => definition.steps.some((step) => step.template) && !definition.messagePreview)) {
     gaps.push({
       code: "owned_template_bodies_not_loaded",
       label: "Owned definitions expose exact template keys, timing, type, and branches; rendered template bodies are not present in the owned engine config yet.",
+    });
+  }
+  if (ownedDefinitions.some((definition) => definition.messagePreview)) {
+    gaps.push({
+      code: "owned_delivery_templates_not_loaded",
+      label: "Source-verified read-only copy is shown for this definition, but no active owned delivery template or sender adapter is loaded.",
     });
   }
   if (family.kind === "evidence_only") {

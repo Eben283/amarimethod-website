@@ -39,6 +39,17 @@ function fakeD1() {
         for (const s of steps) if (s.enrollment_id === id && s.status === "pending") { s.status = "cancelled"; c++; }
         return { meta: { changes: c } };
       }
+      if (/UPDATE reminder_steps\s+SET due_at = \?, status = \?/.test(sql)) {
+        const [dueAt, status, id, stepIndex] = a; let c = 0;
+        for (const s of steps) {
+          if (s.enrollment_id === id && s.step_index === stepIndex && s.status === "pending") {
+            s.due_at = dueAt;
+            s.status = status;
+            c++;
+          }
+        }
+        return { meta: { changes: c } };
+      }
       if (/UPDATE reminder_steps SET status = \? WHERE enrollment_id = \? AND step_index = \?/.test(sql)) {
         const [status, id, idx] = a; let c = 0;
         for (const s of steps) if (s.enrollment_id === id && s.step_index === idx) { s.status = status; c++; }
@@ -48,9 +59,14 @@ function fakeD1() {
         const [id] = a; const e = enrollments.get(id); if (e) e.status = "cancelled";
         return { meta: { changes: e ? 1 : 0 } };
       }
+      if (/UPDATE reminder_enrollments SET start_at = \?, start_ms = \?/.test(sql)) {
+        const [startAt, startMs, id] = a; const e = enrollments.get(id);
+        if (e && e.status === "active") { e.start_at = startAt; e.start_ms = startMs; }
+        return { meta: { changes: e ? 1 : 0 } };
+      }
       return { meta: { changes: 0 } };
     },
-    async all() {
+      async all() {
       const a = this._args;
       if (/FROM reminder_steps s\s+JOIN reminder_enrollments e/.test(sql)) {
         const [nowMs, limit] = a;
@@ -67,6 +83,14 @@ function fakeD1() {
         return { results: rows };
       }
       return { results: [] };
+    },
+    async first() {
+      const [id] = this._args;
+      if (/SELECT start_at, status FROM reminder_enrollments/.test(sql)) {
+        const record = enrollments.get(id);
+        return record ? { start_at: record.start_at, status: record.status } : null;
+      }
+      return null;
     },
   });
   return { prepare, _enrollments: enrollments, _steps: steps, _events: events };
@@ -99,6 +123,33 @@ describe("handleEvent — enroll", () => {
     expect(env.REMINDER_DB._steps).toHaveLength(7);
   });
 
+  it("retimes pending reminders when the same appointment is rescheduled", async () => {
+    await handleEvent(env, event(), NOW);
+    const movedStart = "2026-07-22T15:00:00-07:00";
+    const { actions } = await handleEvent(env, event({ startAt: movedStart }), NOW);
+
+    expect(actions).toContainEqual(expect.objectContaining({
+      engine: "reminder",
+      action: "reschedule",
+      detail: { flowKey: "initial-in-person" },
+    }));
+    expect(env.REMINDER_DB._enrollments.get("initial-in-person:appt_1").start_at).toBe(movedStart);
+    expect(env.REMINDER_DB._steps.find((step) => step.step_index === 2).due_at)
+      .toBe(Date.parse(movedStart) - 1440 * 60_000);
+    expect(env.REMINDER_DB._steps).toHaveLength(7); // the original run is retimed, never duplicated
+  });
+
+  it("never reopens a shadowed confirmation when the appointment is rescheduled", async () => {
+    await handleEvent(env, event(), NOW);
+    await runSweep(env, NOW); // the two immediate confirmation steps are now immutable would-send evidence
+
+    await handleEvent(env, event({ startAt: "2026-07-22T15:00:00-07:00" }), NOW);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.status === "would_send")).toHaveLength(2);
+    expect(env.REMINDER_DB._steps.find((step) => step.step_index === 0).due_at).toBe(NOW);
+    expect(env.REMINDER_DB._steps.find((step) => step.step_index === 1).due_at).toBe(NOW);
+  });
+
   it("ignores an event on an unconfigured calendar", async () => {
     const { actions } = await handleEvent(env, event({ calendarId: "not-a-flow-calendar" }), NOW);
     expect(actions).toHaveLength(0);
@@ -112,6 +163,31 @@ describe("handleEvent — cancel", () => {
     const { actions } = await handleEvent(env, event({ type: "cancelled" }), NOW);
     expect(actions).toContainEqual(expect.objectContaining({ action: "cancel" }));
     expect(await loadDueSteps(env.REMINDER_DB, START)).toHaveLength(0); // nothing left to fire
+  });
+});
+
+describe("partner in-person reminder slice", () => {
+  it("shadows the documented confirmation sequence and suppresses it on cancellation", async () => {
+    const partner = event({
+      calendarId: "lfsnaiGiLNL2z12pLKDP",
+      appointmentId: "partner-appt-1",
+      contactId: "partner-contact-1",
+    });
+    const { actions } = await handleEvent(env, partner, NOW);
+    expect(actions).toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: "partner-initial-in-person" } });
+    expect(env.REMINDER_DB._steps).toHaveLength(6);
+
+    const counts = await runSweep(env, NOW);
+    expect(counts.would_send).toBe(2);
+    expect(sendConversationMessage).not.toHaveBeenCalled();
+
+    await handleEvent(env, event({
+      calendarId: "lfsnaiGiLNL2z12pLKDP",
+      appointmentId: "partner-appt-1",
+      contactId: "partner-contact-1",
+      type: "cancelled",
+    }), NOW);
+    expect(await loadDueSteps(env.REMINDER_DB, START + 2 * 24 * 60 * 60_000)).toHaveLength(0);
   });
 });
 

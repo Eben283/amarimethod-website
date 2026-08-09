@@ -34,8 +34,23 @@ function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
+// Registry-only read model. It makes the live source copy inspectable during shadow proof, but
+// is never imported by the reminder engine or a delivery adapter.
+const PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
+  status: "source_verified_read_only",
+  label: "Source-verified read-only copy. This shadow definition does not send messages.",
+  notices: Object.freeze([
+    Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.first_name}} booked a {{calendar.name}}", body: "Hi {{user.first_name}},\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nStudio: 662 8th Ave, San Francisco, CA 94118" }),
+    Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your partner session is confirmed", preheader: "See you soon. Here are your session details.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is confirmed:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nA few reminders:\n• 60-minute session\n• Wear comfortable clothes\n• Allow time for parking\n\nReschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nAdd to Google Calendar {{appointment.add_to_google_calendar}} · Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nThe Amari Method Team" }),
+    Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "See you tomorrow, {{contact.first_name}}", preheader: "Quick reminder about your session tomorrow.", body: "Hi {{contact.first_name}},\n\nJust a heads up about your upcoming session with Garrett:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nIf something came up:\nReschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nThe Amari Method Team" }),
+    Object.freeze({ stepIndex: 3, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your session is in 1 hour", preheader: "See you soon.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}.\n\n662 8th Ave, San Francisco, CA 94118\n\nThe Amari Method Team" }),
+    Object.freeze({ stepIndex: 4, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, just a friendly reminder that your appointment with Garrett is in one hour." }),
+    Object.freeze({ stepIndex: 5, audience: "internal", channel: "sms", body: "{{contact.name}}'s {{calendar.name}} appointment at {{appointment.only_start_time}} {{appointment.timezone}}. These were the specific issues this person wanted to address (if applicable): {{contact.additional_information}}" }),
+  ]),
+});
+
 function reminderDefinition(flow) {
-  return {
+  const definition = {
     id: `reminder:${flow.flowKey}`,
     engine: "reminder",
     key: flow.flowKey,
@@ -50,6 +65,10 @@ function reminderDefinition(flow) {
       path: "reminder-engine-worker/src/config.js",
     },
   };
+  if (flow.flowKey === "partner-initial-in-person") {
+    definition.messagePreview = clone(PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW);
+  }
+  return definition;
 }
 
 function nurtureDefinition(sequence) {

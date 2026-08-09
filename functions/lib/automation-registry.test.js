@@ -8,14 +8,15 @@ import {
 } from "./automation-registry.js";
 
 describe("owned automation registry", () => {
-  it("publishes the six owned definitions with explicit versions and source evidence", () => {
+  it("publishes the seven owned definitions with explicit versions and source evidence", () => {
     const definitions = automationDefinitions();
     expect(REGISTRY_VERSION).toBe(1);
-    expect(definitions).toHaveLength(6);
+    expect(definitions).toHaveLength(7);
     expect(definitions.map((definition) => definition.id)).toEqual([
       "reminder:initial-in-person",
       "reminder:initial-virtual",
       "reminder:discovery-call",
+      "reminder:partner-initial-in-person",
       "nurture:flow-1-quiz",
       "nurture:flow-2-post-discovery",
       "nurture:flow-3-post-initial",
@@ -27,6 +28,33 @@ describe("owned automation registry", () => {
       expect(definition.source.kind).toBe("owned_code");
       expect(definition.steps[0].stepIndex).toBe(0);
     }
+  });
+
+  it("exposes source-verified partner message copy as a read-only shadow preview", () => {
+    const definition = findAutomationDefinition("reminder", "partner-initial-in-person");
+
+    expect(definition).toEqual(expect.objectContaining({
+      name: "In-Person Partner Session: Confirmation & Reminder Flow",
+      mode: "shadow",
+      messagePreview: expect.objectContaining({
+        status: "source_verified_read_only",
+        notices: expect.arrayContaining([
+          expect.objectContaining({
+            stepIndex: 1,
+            channel: "email",
+            audience: "client",
+            subject: "Your partner session is confirmed",
+          }),
+          expect.objectContaining({
+            stepIndex: 3,
+            channel: "email",
+            audience: "client",
+            subject: "Your session is in 1 hour",
+          }),
+        ]),
+      }),
+    }));
+    expect(definition.messagePreview.notices).toHaveLength(6);
   });
 
   it("returns detached read models so API consumers cannot mutate engine config", () => {

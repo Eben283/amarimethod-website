@@ -21,7 +21,7 @@ describe("provider-neutral automation families", () => {
       draftSourceRecords: 18,
       operationalFamilies: 24,
       evidenceOnlyGroups: 1,
-      ownedDefinitions: 6,
+      ownedDefinitions: 7,
     }));
 
     const records = families.flatMap((family) => family.sourceRecords);
@@ -73,6 +73,23 @@ describe("provider-neutral automation families", () => {
     expect(familyForDefinition("reminder", "discovery-call")).toEqual(expect.objectContaining({ key: "discovery-call-lifecycle" }));
     expect(familyForDefinition("nurture", "flow-3-post-initial")).toEqual(expect.objectContaining({ key: "post-session-nurture" }));
     expect(familyForDefinition("purchase", "missing")).toBeNull();
+  });
+
+  it("registers the first partner cutover slice with its shadow-only source copy", () => {
+    const family = automationFamily("partner-session-lifecycle");
+    expect(family).toEqual(expect.objectContaining({
+      counts: expect.objectContaining({ ownedDefinitions: 1 }),
+      ownedDefinitions: [expect.objectContaining({
+        id: "reminder:partner-initial-in-person",
+        mode: "shadow",
+        trigger: expect.objectContaining({
+          calendarIds: ["lfsnaiGiLNL2z12pLKDP"],
+          statuses: ["confirmed"],
+        }),
+        messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+      })],
+    }));
+    expect(family.evidence.gaps.map((gap) => gap.code)).toContain("owned_delivery_templates_not_loaded");
   });
 
   it("labels a source-only family honestly", () => {

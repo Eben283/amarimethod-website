@@ -314,6 +314,23 @@ function FamilyDetail({
                 </div>
               ))}
             </div>
+            {definition.messagePreview && (
+              <section className="automation-message-preview">
+                <header>
+                  <div><h4>Read-only message copy</h4><p>{definition.messagePreview.label}</p></div>
+                  <span>{definition.messagePreview.notices.length}</span>
+                </header>
+                {definition.messagePreview.notices.map((notice) => (
+                  <article key={`${notice.stepIndex}-${notice.channel}-${notice.audience}`}>
+                    <h5>Step {notice.stepIndex + 1} · {humanize(notice.audience)} {notice.channel}</h5>
+                    {notice.from && <p><b>From</b>{notice.from}</p>}
+                    {notice.subject && <p><b>Subject</b>{notice.subject}</p>}
+                    {notice.preheader && <p><b>Preheader</b>{notice.preheader}</p>}
+                    <pre>{notice.body}</pre>
+                  </article>
+                ))}
+              </section>
+            )}
           </article>
         )) : <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
       </section>

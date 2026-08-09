@@ -84,12 +84,33 @@ export const DISCOVERY_CALL = Object.freeze({
   ]),
 });
 
+// In-Person Partner Session: Confirmation & Reminder Flow — a deliberately narrow first
+// cutover slice. It stays shadow-only until its D1 run evidence matches the existing GHL
+// workflow. GHL remains the calendar source and SMS transport during that proof period.
+export const PARTNER_INITIAL_IN_PERSON = Object.freeze({
+  name: "In-Person Partner Session: Confirmation & Reminder Flow",
+  definitionVersion: 1,
+  flowKey: "partner-initial-in-person",
+  calendarIds: Object.freeze(["lfsnaiGiLNL2z12pLKDP"]), // In Person Session for Partners
+  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: null }),
+  cancelOn: Object.freeze(["cancelled"]),
+  mode: "shadow",
+  steps: Object.freeze([
+    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
+    { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
+    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
+    { at: "start-60m", type: "email", template: "starting-soon", skipIfPast: true },
+    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
+    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
+  ]),
+});
+
 // Registry the engine iterates to find the flow(s) a calendar enrolls into.
 // NOT yet configured (deliberately): follow-up confirmation (drives the `gate` feature — port
 // LAST per the brief, and its Entrainment-calendar overlap with the draft entrainment flows
-// must be resolved first), partner session flows, post-session review request (needs the
+// must be resolved first), virtual partner session flows, post-session review request (needs the
 // wait_for_link_click extension).
-export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL]);
+export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON]);
 
 export function flowsForCalendar(calendarId) {
   return FLOWS.filter((f) => f.calendarIds.includes(calendarId));

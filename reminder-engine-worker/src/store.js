@@ -2,6 +2,8 @@
 // append-only automation_events log all live in D1; the due-queue is a query, not a KV structure
 // (per DASHBOARD-PLAN). All functions take the D1 binding; none send or compute — pure persistence.
 
+import { resolveDueAt } from "./enroll.js";
+
 function changesOf(res) {
   return (res && res.meta && res.meta.changes) || 0;
 }
@@ -43,6 +45,44 @@ export async function saveEnrollment(db, enrollment) {
       .run();
   }
   return { created: true, enrollmentId: id };
+}
+
+/**
+ * Move the still-pending timer steps for an existing active appointment. Sent, shadowed, skipped,
+ * failed, and cancelled steps are immutable evidence and deliberately stay untouched: a reschedule
+ * must never send a second confirmation. Returns false for a duplicate event or non-active record.
+ */
+export async function retimeEnrollment(db, event, flow, nowMs) {
+  const id = enrollmentId(flow.flowKey, event.appointmentId);
+  const existing = await db
+    .prepare(`SELECT start_at, status FROM reminder_enrollments WHERE enrollment_id = ?`)
+    .bind(id)
+    .first();
+  if (!existing || existing.status !== "active" || existing.start_at === event.startAt) {
+    return { rescheduled: false };
+  }
+
+  const startMs = Date.parse(event.startAt);
+  if (!Number.isFinite(startMs)) return { rescheduled: false };
+
+  for (let stepIndex = 0; stepIndex < flow.steps.length; stepIndex += 1) {
+    const definition = flow.steps[stepIndex];
+    const dueAt = resolveDueAt(definition.at, startMs, nowMs);
+    const status = definition.skipIfPast === true && dueAt < nowMs ? "skipped" : "pending";
+    await db
+      .prepare(
+        `UPDATE reminder_steps
+         SET due_at = ?, status = ?
+         WHERE enrollment_id = ? AND step_index = ? AND status = 'pending'`,
+      )
+      .bind(dueAt, status, id, stepIndex)
+      .run();
+  }
+  await db
+    .prepare(`UPDATE reminder_enrollments SET start_at = ?, start_ms = ? WHERE enrollment_id = ? AND status = 'active'`)
+    .bind(event.startAt, startMs, id)
+    .run();
+  return { rescheduled: true, previousStartAt: existing.start_at };
 }
 
 /**

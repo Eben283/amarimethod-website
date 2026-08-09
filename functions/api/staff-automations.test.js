@@ -58,7 +58,7 @@ describe("staff-automations — views", () => {
     const body = await res.json();
     expect(body.configured).toBe(false);
     expect(body.registryVersion).toBe(1);
-    expect(body.definitions).toHaveLength(6);
+    expect(body.definitions).toHaveLength(7);
     expect(body.definitions[0]).toEqual(expect.objectContaining({
       id: "reminder:initial-in-person",
       definitionVersion: 1,
@@ -76,7 +76,7 @@ describe("staff-automations — views", () => {
       sourceRecords: 82,
       publishedSourceRecords: 64,
       draftSourceRecords: 18,
-      ownedDefinitions: 6,
+      ownedDefinitions: 7,
     }));
     expect(body.families).toHaveLength(25);
     expect(body.evidence.gaps.map((gap) => gap.code)).toContain("external_canvas_history_not_imported");
@@ -96,6 +96,25 @@ describe("staff-automations — views", () => {
     }));
     expect(body.enrollments).toEqual([]);
     expect(body.events).toEqual([]);
+  });
+
+  it("partner family view presents the shadow definition and read-only message copy", async () => {
+    const res = await onRequestGet(makeContext("view=family&key=partner-session-lifecycle", {}));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.family).toEqual(expect.objectContaining({
+      counts: expect.objectContaining({ ownedDefinitions: 1 }),
+      ownedDefinitions: [expect.objectContaining({
+        id: "reminder:partner-initial-in-person",
+        mode: "shadow",
+        messagePreview: expect.objectContaining({
+          status: "source_verified_read_only",
+          notices: expect.arrayContaining([
+            expect.objectContaining({ subject: "Your partner session is confirmed" }),
+          ]),
+        }),
+      })],
+    }));
   });
 
   it("family view reads global execution evidence through the CRM worker when Pages has no D1 binding", async () => {
