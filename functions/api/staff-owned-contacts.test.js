@@ -44,7 +44,7 @@ describe("Staff owned contact search", () => {
 
   it("fails closed without the Worker credential", async () => {
     const response = await onRequestGet(context("Eben", {}));
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(422);
     expect(global.fetch).not.toHaveBeenCalled();
   });
 

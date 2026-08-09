@@ -728,7 +728,7 @@ export interface OwnedFollowup {
   updatedAt: string;
 }
 
-export async function getOwnedFollowups(): Promise<{ success: boolean; followups: OwnedFollowup[] }> {
+export async function getOwnedFollowups(): Promise<{ success: boolean; followups: OwnedFollowup[]; truncated?: boolean }> {
   return fetchApi('/staff-followups');
 }
 

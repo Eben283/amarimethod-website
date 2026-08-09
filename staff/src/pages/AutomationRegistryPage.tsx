@@ -308,6 +308,10 @@ function FamilyDetail({ detail }: { detail: AutomationFamilyResponse }) {
         <span className={`automation-store-state ${detail.configured ? 'is-connected' : ''}`}><CircleDot size={13} />{detail.configured ? 'Execution store connected' : 'Execution store not connected'}</span>
       </div>
 
+      {(detail.coverage?.enrollmentsTruncated || detail.coverage?.eventsTruncated) && (
+        <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> Older {detail.coverage.enrollmentsTruncated ? 'enrollments' : ''}{detail.coverage.enrollmentsTruncated && detail.coverage.eventsTruncated ? ' and ' : ''}{detail.coverage.eventsTruncated ? 'run events' : ''} exist beyond this page and are not included in the counts below.</span></div>
+      )}
+
       {family.kind === 'evidence_only' && <div className="automation-evidence-banner"><Archive size={17} /><span><strong>Not an operating family.</strong> These test records are retained only so the 82-record inventory remains exact.</span></div>}
 
       <div className="automation-implementation-strip">
@@ -372,6 +376,7 @@ function PersonEvidence({ person, evidence }: { person: AutomationPerson; eviden
         <a href={`/staff/client-desk?contact=${encodeURIComponent(person.ownedId)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
       </header>
       {evidence.configured === false && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span>The owned execution store is not connected. Absence here is not proof that no automation ran.</span></div>}
+      {evidence.coverage?.eventsTruncated && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> This shows the newest {evidence.coverage.eventLimit} run events; older events are not included below.</span></div>}
       <div className="automation-person-columns">
         <section>
           <h3><Workflow size={16} /> Enrollments <b>{enrollments.length}</b></h3>

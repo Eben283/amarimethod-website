@@ -422,10 +422,12 @@ export default {
       if (request.method === "GET" && url.pathname === "/owned-followups") {
         const state = url.searchParams.get("state") || "open";
         const limit = parseQueueLimit(url.searchParams.get("limit"));
+        const page = await listOwnedFollowups(env.CRM_DB, { state, limit: Math.min(limit + 1, 100) });
         return json(200, {
           success: true,
           worker: "amari-crm-mirror",
-          followups: await listOwnedFollowups(env.CRM_DB, { state, limit }),
+          followups: page.slice(0, limit),
+          truncated: page.length > limit,
         });
       }
       if (request.method === "POST" && url.pathname === "/owned-followups") {

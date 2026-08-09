@@ -124,7 +124,7 @@ describe("staff communication preferences writes", () => {
     badFallback.escalation = { enabled: true, afterMinutes: 30, fallbackChannel: "push", fallbackStaff: "Eben" };
     expect((await onRequestPut(context({ method: "PUT", body: badFallback }))).status).toBe(400);
 
-    expect((await onRequestPut(context({ method: "PUT", body: defaults, kv: null }))).status).toBe(503);
+    expect((await onRequestPut(context({ method: "PUT", body: defaults, kv: null }))).status).toBe(422);
   });
 
   it("reads a saved record from only the authenticated user's key", async () => {

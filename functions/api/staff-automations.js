@@ -101,7 +101,7 @@ export async function onRequestGet(context) {
       }
       const execution = db
         ? await automationFamilyExecutionView(db, family)
-        : { enrollments: [], events: [] };
+        : { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
       return new Response(JSON.stringify({
         success: true,
         configured: !!db,
@@ -127,7 +127,7 @@ export async function onRequestGet(context) {
       }
       const execution = db
         ? await automationExecutionView(db, { engine, key })
-        : { enrollments: [], events: [] };
+        : { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
       return new Response(JSON.stringify({
         success: true,
         configured: !!db,
@@ -153,6 +153,7 @@ export async function onRequestGet(context) {
           upgradeOffer: null,
           confirmations: [],
           lpOnboarding: null,
+          coverage: { eventLimit: 200, eventsTruncated: false },
           evidence,
         }), { status: 200, headers });
       }

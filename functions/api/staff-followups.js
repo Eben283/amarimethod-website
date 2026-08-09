@@ -27,7 +27,7 @@ async function proxy(context, method) {
   const { error, payload } = await requireStaffAuth(context, headers);
   if (error) return error;
   const secret = context.env.WORKER_AUTH_SECRET;
-  if (!secret) return new Response(JSON.stringify({ error: "Owned follow-ups are not configured" }), { status: 503, headers });
+  if (!secret) return new Response(JSON.stringify({ error: "Owned follow-ups are not configured" }), { status: 422, headers });
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS);
@@ -51,7 +51,7 @@ async function proxy(context, method) {
   } catch (error) {
     const message = error?.name === "AbortError" ? "Owned follow-ups timed out" : "Owned follow-ups are unavailable";
     console.error("[staff-followups] proxy failed:", error instanceof Error ? error.message : String(error));
-    return new Response(JSON.stringify({ error: message }), { status: 502, headers });
+    return new Response(JSON.stringify({ error: message }), { status: 422, headers });
   } finally {
     clearTimeout(timer);
   }

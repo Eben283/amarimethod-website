@@ -24,7 +24,7 @@ export async function onRequestGet(context) {
   const { error } = await requireStaffAuth(context, responseHeaders);
   if (error) return error;
   if (!context.env.WORKER_AUTH_SECRET) {
-    return new Response(JSON.stringify({ error: "Owned contact search is not configured" }), { status: 503, headers: responseHeaders });
+    return new Response(JSON.stringify({ error: "Owned contact search is not configured" }), { status: 422, headers: responseHeaders });
   }
 
   const query = (new URL(context.request.url).searchParams.get("query") || "").trim();
@@ -39,7 +39,7 @@ export async function onRequestGet(context) {
     });
     const body = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
-      return new Response(JSON.stringify({ error: "Owned contact search is unavailable" }), { status: 503, headers: responseHeaders });
+      return new Response(JSON.stringify({ error: "Owned contact search is unavailable" }), { status: 422, headers: responseHeaders });
     }
     const contacts = Array.isArray(body.contacts) ? body.contacts : [];
     return new Response(JSON.stringify(contacts.map((contact) => ({
@@ -53,7 +53,7 @@ export async function onRequestGet(context) {
     const errorMessage = cause instanceof Error && cause.name === "AbortError"
       ? "Owned contact search timed out"
       : "Owned contact search is unavailable";
-    return new Response(JSON.stringify({ error: errorMessage }), { status: 503, headers: responseHeaders });
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 422, headers: responseHeaders });
   } finally {
     clearTimeout(timer);
   }

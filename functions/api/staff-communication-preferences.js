@@ -73,7 +73,7 @@ export async function onRequestPut(context) {
   const headers = responseHeaders(context.request.headers.get("Origin"));
   const auth = await authenticate(context, headers);
   if (auth.error) return auth.error;
-  if (!context.env.PORTAL_KV) return json({ error: "Communication preference storage is not configured" }, 503, headers);
+  if (!context.env.PORTAL_KV) return json({ error: "Communication preference storage is not configured" }, 422, headers);
 
   const { body, error: bodyError } = await parseJsonBody(context.request, headers);
   if (bodyError) return bodyError;

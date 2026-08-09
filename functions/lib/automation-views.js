@@ -173,7 +173,7 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
     rows(db, `SELECT * FROM upgrade_offer_timers WHERE contact_id = ?`, contactId),
     rows(db, `SELECT * FROM purchase_confirmations WHERE contact_id = ?`, contactId),
     rows(db, `SELECT * FROM lp_onboarding_sends WHERE contact_id = ?`, contactId),
-    rows(db, `SELECT * FROM automation_events WHERE contact_id = ? ORDER BY ts DESC LIMIT ?`, contactId, eventLimit),
+    rows(db, `SELECT * FROM automation_events WHERE contact_id = ? ORDER BY ts DESC LIMIT ?`, contactId, eventLimit + 1),
   ]);
 
   const enrollments = [
@@ -187,7 +187,8 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
     upgradeOffer: timers[0] || null,
     confirmations,
     lpOnboarding: lpSends[0] || null,
-    events: events.map(normalizeEvent),
+    events: events.slice(0, eventLimit).map(normalizeEvent),
+    coverage: { eventLimit, eventsTruncated: events.length > eventLimit },
   };
 }
 
@@ -201,31 +202,45 @@ export async function automationExecutionView(db, { engine, key, enrollmentLimit
 
   if (engine === "reminder") {
     [enrollmentRows, stepRows] = await Promise.all([
-      rows(db, `SELECT * FROM reminder_enrollments WHERE flow_key = ? ORDER BY enrolled_at DESC LIMIT ?`, key, enrollmentLimit),
+      rows(db, `SELECT * FROM reminder_enrollments WHERE flow_key = ? ORDER BY enrolled_at DESC LIMIT ?`, key, enrollmentLimit + 1),
       rows(db, `SELECT s.* FROM reminder_steps s
         JOIN reminder_enrollments e ON e.enrollment_id = s.enrollment_id
-        WHERE e.flow_key = ?`, key),
+        WHERE e.flow_key = ? AND e.enrollment_id IN (
+          SELECT enrollment_id FROM reminder_enrollments
+          WHERE flow_key = ? ORDER BY enrolled_at DESC LIMIT ?
+        )`, key, key, enrollmentLimit),
     ]);
   } else {
     [enrollmentRows, stepRows] = await Promise.all([
-      rows(db, `SELECT * FROM nurture_enrollments WHERE sequence_id = ? ORDER BY entered_at DESC LIMIT ?`, key, enrollmentLimit),
+      rows(db, `SELECT * FROM nurture_enrollments WHERE sequence_id = ? ORDER BY entered_at DESC LIMIT ?`, key, enrollmentLimit + 1),
       rows(db, `SELECT s.* FROM nurture_steps s
         JOIN nurture_enrollments e ON e.enrollment_id = s.enrollment_id
-        WHERE e.sequence_id = ?`, key),
+        WHERE e.sequence_id = ? AND e.enrollment_id IN (
+          SELECT enrollment_id FROM nurture_enrollments
+          WHERE sequence_id = ? ORDER BY entered_at DESC LIMIT ?
+        )`, key, key, enrollmentLimit),
     ]);
   }
 
   const events = await rows(
     db,
     `SELECT * FROM automation_events WHERE engine = ? AND flow_key = ? ORDER BY ts DESC LIMIT ?`,
-    engine, key, eventLimit,
+    engine, key, eventLimit + 1,
   );
+
+  const boundedEnrollments = enrollmentRows.slice(0, enrollmentLimit);
 
   return {
     enrollments: engine === "reminder"
-      ? enrollmentRows.map((row) => reminderEnrollment(row, stepRows))
-      : enrollmentRows.map((row) => nurtureEnrollment(row, stepRows)),
-    events: events.map(normalizeEvent),
+      ? boundedEnrollments.map((row) => reminderEnrollment(row, stepRows))
+      : boundedEnrollments.map((row) => nurtureEnrollment(row, stepRows)),
+    events: events.slice(0, eventLimit).map(normalizeEvent),
+    coverage: {
+      enrollmentLimit,
+      eventLimit,
+      enrollmentsTruncated: enrollmentRows.length > enrollmentLimit,
+      eventsTruncated: events.length > eventLimit,
+    },
   };
 }
 
@@ -236,7 +251,7 @@ export async function automationExecutionView(db, { engine, key, enrollmentLimit
  */
 export async function automationFamilyExecutionView(db, family) {
   const definitions = Array.isArray(family?.ownedDefinitions) ? family.ownedDefinitions : [];
-  if (!definitions.length) return { enrollments: [], events: [] };
+  if (!definitions.length) return { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
   const views = await Promise.all(definitions.map((definition) => automationExecutionView(db, {
     engine: definition.engine,
     key: definition.key,
@@ -247,7 +262,14 @@ export async function automationFamilyExecutionView(db, family) {
   const events = views
     .flatMap((view) => view.events)
     .sort((a, b) => Date.parse(b.occurredAt || 0) - Date.parse(a.occurredAt || 0));
-  return { enrollments, events };
+  return {
+    enrollments,
+    events,
+    coverage: {
+      enrollmentsTruncated: views.some((view) => view.coverage.enrollmentsTruncated),
+      eventsTruncated: views.some((view) => view.coverage.eventsTruncated),
+    },
+  };
 }
 
 /**

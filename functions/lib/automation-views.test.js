@@ -200,6 +200,7 @@ describe("automationFamilyExecutionView — one lifecycle family across owned de
     expect(await automationFamilyExecutionView(db, automationFamily("study-program"))).toEqual({
       enrollments: [],
       events: [],
+      coverage: { enrollmentsTruncated: false, eventsTruncated: false },
     });
   });
 });
@@ -225,6 +226,26 @@ describe("automationExecutionView — one registry definition's owned history", 
     expect(view.enrollments).toHaveLength(1);
     expect(view.enrollments[0].definitionId).toBe("nurture:flow-1-quiz");
     expect(view.events.map((event) => event.action)).toEqual(["enrolled"]);
+  });
+
+  it("labels bounded history instead of presenting truncated counts as complete", async () => {
+    const data = seed();
+    data.reminderEnrollments.push({
+      ...data.reminderEnrollments[0],
+      enrollment_id: "initial-in-person:appt_2",
+      appointment_id: "appt_2",
+      enrolled_at: NOW - DAY,
+    });
+    data.events.push({ ...data.events[1], id: 4, ts: NOW - 1, appointment_id: "appt_2" });
+    const view = await automationExecutionView(fakeD1(data), {
+      engine: "reminder",
+      key: "initial-in-person",
+      enrollmentLimit: 1,
+      eventLimit: 1,
+    });
+    expect(view.enrollments).toHaveLength(1);
+    expect(view.events).toHaveLength(1);
+    expect(view.coverage).toMatchObject({ enrollmentsTruncated: true, eventsTruncated: true });
   });
 });
 

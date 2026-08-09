@@ -114,6 +114,7 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
       success: true,
+      truncated: false,
       followups: [{ id: "followup_1", contactId: "contact_1", providerContactId: "ghl_1", contactName: "Surrina", dueOn: "2026-08-09" }],
     });
   });

@@ -24,7 +24,7 @@ export async function onRequestGet(context) {
   const { error } = await requireStaffAuth(context, headers);
   if (error) return error;
   const secret = context.env.WORKER_AUTH_SECRET;
-  if (!secret) return new Response(JSON.stringify({ error: "Appointment shadow is not configured." }), { status: 503, headers });
+  if (!secret) return new Response(JSON.stringify({ error: "Appointment shadow is not configured." }), { status: 422, headers });
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -35,14 +35,14 @@ export async function onRequestGet(context) {
     });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response.status }), { status: 503, headers });
+      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response.status }), { status: 422, headers });
     }
     return new Response(JSON.stringify(body), { status: 200, headers });
   } catch (cause) {
     const message = cause instanceof Error && cause.name === "AbortError"
       ? "Appointment shadow timed out."
       : "Appointment shadow could not be reached.";
-    return new Response(JSON.stringify({ error: message }), { status: 503, headers });
+    return new Response(JSON.stringify({ error: message }), { status: 422, headers });
   } finally {
     clearTimeout(timer);
   }

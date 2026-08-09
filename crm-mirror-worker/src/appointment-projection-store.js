@@ -4,7 +4,9 @@ import {
   reconcileAppointmentProjection,
 } from "./appointment-projection.js";
 
-const READ_LIMIT = 5000;
+// Keep Calendar's readiness request light. This is a bounded reconciliation
+// signal, not the appointment-history detail endpoint.
+const READ_LIMIT = 1000;
 
 function canonicalAppointment(appointment) {
   return JSON.stringify({
@@ -137,7 +139,16 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
       generatedAt,
       liveScheduleFallback: true,
       coverage: { observationsRead: events.length, totalObservations, truncated },
-      reconciliation,
+      reconciliation: {
+        shadowOnly: true,
+        summary: reconciliation.summary,
+        issues: reconciliation.issues.slice(0, 100),
+        issueCoverage: {
+          returned: Math.min(reconciliation.issues.length, 100),
+          total: reconciliation.issues.length,
+          truncated: reconciliation.issues.length > 100,
+        },
+      },
       bufferPolicy,
     };
   } catch (error) {

@@ -173,6 +173,7 @@ export interface ContactAutomationEvidence {
   contactId?: string;
   enrollments?: ContactAutomationEnrollment[];
   events?: ContactAutomationEvent[];
+  coverage?: { eventLimit: number; eventsTruncated: boolean };
   evidence?: { gaps?: AutomationEvidenceGap[] };
 }
 
@@ -261,6 +262,7 @@ export interface AutomationFamilyResponse {
   family: AutomationFamily;
   enrollments: ContactAutomationEnrollment[];
   events: ContactAutomationEvent[];
+  coverage: { enrollmentsTruncated: boolean; eventsTruncated: boolean };
   evidence: { gaps: AutomationEvidenceGap[] };
 }
 

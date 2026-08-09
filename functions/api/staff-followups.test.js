@@ -58,7 +58,7 @@ describe("Staff owned follow-ups proxy", () => {
 
   it("fails closed when the worker credential is not configured", async () => {
     const response = await onRequestGet(context("GET", null, {}));
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(422);
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });

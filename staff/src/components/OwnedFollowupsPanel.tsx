@@ -33,6 +33,7 @@ function dueLabel(dueOn: string) {
 
 export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [items, setItems] = useState<OwnedFollowup[]>([]);
+  const [truncated, setTruncated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -60,6 +61,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
     try {
       const response = await getOwnedFollowups();
       setItems(response.followups || []);
+      setTruncated(Boolean(response.truncated));
     } catch (failure) {
       if (failure instanceof ApiError && failure.status === 401) {
         onUnauthorized();
@@ -235,6 +237,13 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-xs text-red-700">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {truncated && (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>Showing the first 50 open follow-ups. Complete older items or use the person workspace until paged history is available.</span>
         </div>
       )}
 

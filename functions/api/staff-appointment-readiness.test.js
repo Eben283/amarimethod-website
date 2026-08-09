@@ -43,7 +43,7 @@ describe("staff appointment readiness", () => {
   it("returns an honest unavailable state without affecting the separate schedule endpoint", async () => {
     requireStaffAuth.mockResolvedValue({ payload: { role: "staff" } });
     const response = await onRequestGet(context({}));
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({ error: "Appointment shadow is not configured." });
   });
 });
