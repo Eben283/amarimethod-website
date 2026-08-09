@@ -173,6 +173,32 @@ describe("staff-automations — views", () => {
     vi.unstubAllGlobals();
   });
 
+  it("contact view resolves a legacy provider route id to the owned person before reading evidence", async () => {
+    const queries = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => { queries.push({ sql, values }); return { results: [] }; } }) }),
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      contacts: [{ id: "owned_person_1", provider_contact_id: "legacy_ghl_1" }],
+    }), { status: 200 })));
+
+    const res = await onRequestGet(makeContext(
+      "view=contact&contactId=legacy_ghl_1",
+      { AUTOMATION_DB: db, WORKER_AUTH_SECRET: "worker-secret" },
+    ));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({
+      contactId: "owned_person_1",
+      providerContactId: "legacy_ghl_1",
+      automationContactIds: ["owned_person_1", "legacy_ghl_1"],
+    }));
+    expect(queries.some((query) => query.values.includes("owned_person_1"))).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("query=legacy_ghl_1"), expect.any(Object));
+    vi.unstubAllGlobals();
+  });
+
   it("contact view supports an owned-only person without inventing former-provider history", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
       contacts: [{ id: "owned_person_2", provider_contact_id: null }],

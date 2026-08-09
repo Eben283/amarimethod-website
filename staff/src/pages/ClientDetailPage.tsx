@@ -602,6 +602,7 @@ export default function ClientDetailPage() {
                 <div className="sa-evidence-title"><Workflow size={15} /><b>Enrollments</b><span>{automationEnrollments.length}</span></div>
                 {automationEnrollments.length ? automationEnrollments.map((enrollment) => {
                   const familyKey = enrollment.family?.key;
+                  const ownedPersonId = automationEvidence?.contactId;
                   const row = (
                     <>
                       <p><b>{enrollment.family?.name || (enrollment.engine === 'reminder' ? 'Reminder engine' : enrollment.engine === 'nurture' ? 'Nurture engine' : humanizeEvidence(enrollment.engine))}</b><em className={enrollment.status === 'active' ? 'is-active' : undefined}>{enrollment.status}</em></p>
@@ -618,8 +619,8 @@ export default function ClientDetailPage() {
                       {familyKey && <span className="sa-workflow-open">Inspect workflow <ArrowUpRight size={12} /></span>}
                     </>
                   );
-                  return familyKey ? (
-                    <Link key={enrollment.enrollmentId} className="sa-enrollment-row is-inspectable" to={automationDrilldownPath(familyKey, client.id)}>{row}</Link>
+                  return familyKey && ownedPersonId ? (
+                    <Link key={enrollment.enrollmentId} className="sa-enrollment-row is-inspectable" to={automationDrilldownPath(familyKey, ownedPersonId)}>{row}</Link>
                   ) : (
                     <article key={enrollment.enrollmentId} className="sa-enrollment-row">{row}</article>
                   );
@@ -631,6 +632,7 @@ export default function ClientDetailPage() {
                 {automationEvents.length ? automationEvents.map((event, index) => {
                   const isFailure = ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase());
                   const familyKey = event.family?.key;
+                  const ownedPersonId = automationEvidence?.contactId;
                   const row = (
                     <>
                       <time dateTime={new Date(event.ts).toISOString()}>{fmtDateTime(event.ts)}</time>
@@ -640,8 +642,8 @@ export default function ClientDetailPage() {
                     </>
                   );
                   const key = `${event.ts}-${event.messageRef || index}`;
-                  return familyKey ? (
-                    <Link key={key} className={`sa-automation-row is-inspectable${isFailure ? ' is-failure' : ''}`} to={automationDrilldownPath(familyKey, client.id)}>{row}</Link>
+                  return familyKey && ownedPersonId ? (
+                    <Link key={key} className={`sa-automation-row is-inspectable${isFailure ? ' is-failure' : ''}`} to={automationDrilldownPath(familyKey, ownedPersonId)}>{row}</Link>
                   ) : (
                     <article key={key} className={`sa-automation-row${isFailure ? ' is-failure' : ''}`}>{row}</article>
                   );
