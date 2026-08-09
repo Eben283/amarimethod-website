@@ -7,7 +7,11 @@ import { policyForCalendarId, SLOT_POLICIES } from "./booking-slot-policy.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
-const EVENT_LOOKUP_CONCURRENCY = 3;
+// All Amari booking calendars are assigned to Garrett. GHL's event endpoint
+// accepts that practitioner as its scope, so one query returns the schedule
+// across those calendars. Querying every calendar independently made the
+// public 60-day availability endpoint wait on 17 × date-window requests.
+const GHL_GARRETT_USER_ID = "P5b0oSTaVYfULDjZ6YyG";
 const INACTIVE_STATUSES = new Set(["cancelled", "canceled", "no_show", "noshow"]);
 
 export const APP_BUFFER_CALENDAR_IDS = Object.freeze(
@@ -143,8 +147,8 @@ export function applyGarrettSchedulePreference(slots, events) {
   return preferred.sort((a, b) => String(a?.datetime || a?.startTime || "").localeCompare(String(b?.datetime || b?.startTime || "")));
 }
 
-function eventUrl(calendarId, startTime, endTime) {
-  return `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calendarId}&startTime=${startTime}&endTime=${endTime}`;
+function practitionerEventUrl(startTime, endTime) {
+  return `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&userId=${GHL_GARRETT_USER_ID}&startTime=${startTime}&endTime=${endTime}`;
 }
 
 /** Load only time/status/calendar metadata needed to enforce buffers. */
@@ -154,37 +158,16 @@ export async function fetchAppBufferEvents(context, startTime, endTime) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
     throw new Error("Invalid buffer event range");
   }
-  // Keep each request inside the same 30-day envelope used by GHL's
-  // availability endpoint. This avoids a long public availability query
-  // failing solely because the selected window spans more than a month.
-  const windows = [];
-  for (let cursor = start; cursor < end; cursor += 30 * 86400_000) {
-    windows.push([cursor, Math.min(cursor + 30 * 86400_000, end)]);
-  }
-  const requests = APP_BUFFER_CALENDAR_IDS.flatMap((calendarId) =>
-    windows.map(([windowStart, windowEnd]) => ({ calendarId, windowStart, windowEnd })),
-  );
-  const responses = [];
-  // GHL applies location-wide rate limits. A public two-month lookup can fan
-  // out across every Amari calendar, so run bounded batches instead of sending
-  // the entire cross-calendar sweep at once. Any failed request still rejects
-  // the lookup and keeps availability fail-closed.
-  for (let i = 0; i < requests.length; i += EVENT_LOOKUP_CONCURRENCY) {
-    const batch = requests.slice(i, i + EVENT_LOOKUP_CONCURRENCY);
-    const batchResponses = await Promise.all(
-      batch.map(async ({ calendarId, windowStart, windowEnd }) => {
-        const response = await ghlFetch(context, eventUrl(calendarId, windowStart, windowEnd));
-        if (!response.ok) throw new Error(`Buffer event lookup failed (${response.status})`);
-        const data = await response.json();
-        return data.events || data.appointments || [];
-      }),
-    );
-    responses.push(...batchResponses);
-  }
+  const response = await ghlFetch(context, practitionerEventUrl(start, end));
+  if (!response.ok) throw new Error(`Buffer event lookup failed (${response.status})`);
+  const data = await response.json();
+  const events = data.events || data.appointments || [];
+  const appCalendarIds = new Set(APP_BUFFER_CALENDAR_IDS);
   const seen = new Set();
-  return responses.flat().filter((event) => {
+  return events.filter((event) => {
     const id = String(event?.id || "");
-    if (!id || seen.has(id)) return false;
+    const calendarId = String(event?.calendarId || event?.calendar_id || "");
+    if (!id || !appCalendarIds.has(calendarId) || seen.has(id)) return false;
     seen.add(id);
     return true;
   });
