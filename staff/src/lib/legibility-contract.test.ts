@@ -1,0 +1,76 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+function css(path: string) {
+  return readFileSync(join(sourceRoot, path), 'utf8');
+}
+
+function token(source: string, name: string) {
+  const value = source.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`))?.[1];
+  if (!value) throw new Error(`Missing Staff legibility token --${name}`);
+  return value;
+}
+
+function relativeLuminance(hex: string) {
+  const channels = hex.slice(1).match(/.{2}/g)!.map((part) => {
+    const value = Number.parseInt(part, 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrast(foreground: string, background: string) {
+  const first = relativeLuminance(foreground);
+  const second = relativeLuminance(background);
+  return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+describe('Staff legibility contract', () => {
+  const globalCss = css('index.css');
+
+  it('keeps every working text role at WCAG AA contrast', () => {
+    const paper = token(globalCss, 'staff-paper');
+    const sheet = token(globalCss, 'staff-sheet');
+    const ink = token(globalCss, 'staff-ink');
+    const body = token(globalCss, 'staff-body');
+    const muted = token(globalCss, 'staff-muted');
+    const active = token(globalCss, 'staff-active');
+
+    expect(contrast(ink, paper)).toBeGreaterThanOrEqual(7);
+    expect(contrast(body, paper)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(muted, paper)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(body, sheet)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast('#FFFFFF', active)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('uses the shared visual roles in the shell and member workspace', () => {
+    const shell = css('styles/staff-shell.css');
+    const member = css('styles/session-a.css');
+
+    for (const required of ['var(--staff-paper)', 'var(--staff-ink)', 'var(--staff-line)', 'var(--staff-active)']) {
+      expect(shell).toContain(required);
+      expect(member).toContain(required);
+    }
+  });
+
+  it('does not render core navigation or member-record text below 12px', () => {
+    for (const path of ['styles/staff-shell.css', 'styles/session-a.css']) {
+      const undersized = [...css(path).matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)]
+        .map((match) => Number(match[1]))
+        .filter((size) => size < 12);
+      expect(undersized, `${path} contains undersized text`).toEqual([]);
+    }
+  });
+
+  it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {
+    const record = css('pages/ClientDetailPage.tsx');
+    expect(record).toContain('failedAutomationEvents.slice(0, 3)');
+    expect(record).toContain('Open the automation for its definition and complete run evidence.');
+    expect(record).toContain('automationDrilldownPath(familyKey, ownedPersonId)');
+    expect(record).not.toContain('Recent events and outcomes');
+  });
+});

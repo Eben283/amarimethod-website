@@ -8,7 +8,6 @@ import {
   ClipboardPlus,
   FileText,
   Kanban,
-  ListChecks,
   Loader2,
   MapPinned,
   MessageCircleMore,
@@ -262,13 +261,11 @@ export default function HomePage() {
       </section>
 
       <details className="home-specialist">
-        <summary><ClipboardPlus aria-hidden="true" /><span><strong>Specialist tools &amp; references</strong><small>Field Studies lives here; it is not part of the daily CRM.</small></span><ChevronRight aria-hidden="true" /></summary>
+        <summary><BookOpen aria-hidden="true" /><span><strong>Reference links</strong><small>Occasional staff material that does not belong in the daily navigation.</small></span><ChevronRight aria-hidden="true" /></summary>
         <div>
-          <button type="button" onClick={() => navigate('/field-studies')}><ListChecks aria-hidden="true" /><span><strong>Field Studies</strong><small>Study-session records</small></span></button>
           <a href="/field-signup" target="_blank" rel="noreferrer"><ClipboardPlus aria-hidden="true" /><span><strong>Study session links</strong><small>Public signup directory</small></span></a>
           <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer"><CalendarDays aria-hidden="true" /><span><strong>Booking rules</strong><small>Durations, buffers, and starts</small></span></a>
           <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /><span><strong>Sales scripts</strong><small>Staff PDF reference</small></span></a>
-          <a href="/staff/resources/amari-practice-positioning-v2.html" target="_blank" rel="noreferrer"><BookOpen aria-hidden="true" /><span><strong>Practice Positioning V2</strong><small>Internal reference</small></span></a>
           <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/current-amari-positioning.md" target="_blank" rel="noreferrer"><BookOpen aria-hidden="true" /><span><strong>Current Amari Positioning</strong><small>Canonical source</small></span></a>
         </div>
       </details>

@@ -1,0 +1,125 @@
+/* The public Staff legibility layer.
+   Domain pages keep their information architecture; this file owns the
+   ecosystem-wide reading contract while those pages migrate to ledger rows. */
+
+.staff-shell__content {
+  background: var(--staff-paper);
+  color: var(--staff-body);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 16px;
+}
+
+.staff-shell__content :where(button, input, select, textarea) {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+}
+
+.staff-shell__content :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--staff-active);
+  outline-offset: 2px;
+}
+
+.staff-shell__content :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--staff-sheet);
+  color: var(--staff-body);
+  font-variant-numeric: tabular-nums;
+}
+
+.staff-shell__content :where(th) {
+  border-block: 2px solid var(--staff-ink);
+  color: var(--staff-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.staff-shell__content :where(td) {
+  border-bottom: 1px solid var(--staff-line);
+  font-size: 14px;
+}
+
+.staff-shell__content :where(th, td) { padding: 12px 14px; }
+
+.staff-shell__content :where(.staff-card) {
+  border-color: var(--staff-line);
+  border-radius: var(--staff-radius-control);
+  background: var(--staff-sheet);
+  box-shadow: none;
+}
+
+.staff-shell__content :where(.staff-calendar-page, .staff-products-page, .staff-media-page, .community-page) {
+  color: var(--staff-body);
+}
+
+.staff-shell__content :where(.staff-calendar-page, .staff-products-page, .staff-media-page, .community-page) :where(h1) {
+  color: var(--staff-ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 650;
+  letter-spacing: -.035em;
+  line-height: 1;
+}
+
+.staff-shell__content :where(.staff-media-page, .staff-products-page, .community-page) :where(small) {
+  color: var(--staff-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Media is an index and detail drawer, not a gallery app with a separate skin. */
+.staff-shell .staff-media-head { border-color: var(--staff-line); }
+.staff-shell .staff-media-head > div:first-child > span,
+.staff-shell .staff-media-folders > span,
+.staff-shell .media-folder-dialog header span,
+.staff-shell .media-drawer header span,
+.staff-shell .media-file-fallback span,
+.staff-shell .media-drawer dt {
+  color: var(--staff-muted);
+  font: 700 12px/1.35 'IBM Plex Mono', ui-monospace, monospace;
+  letter-spacing: .06em;
+}
+
+.staff-shell :where(.media-folder-dialog h2, .media-drawer h2, .media-drawer__identity h3, .staff-media-empty strong) {
+  color: var(--staff-ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-weight: 650;
+}
+
+.staff-shell :where(.staff-media-trust, .staff-media-notice, .staff-media-error, .staff-media-breadcrumb button, .staff-media-toolbar select, .staff-media-empty p, .media-folder-dialog label, .media-folder-dialog > p, .media-folder-dialog footer button, .media-drawer__identity button, .media-drawer__identity p, .media-drawer dd, .media-drawer__actions button, .media-drawer__actions a, .media-drawer__notice, .media-drawer__error) {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.staff-shell :where(.staff-media-head__actions button, .staff-media-error button, .staff-media-empty button, .staff-media-toolbar label, .staff-media-toolbar select, .staff-media-view button, .staff-media-folder-grid button, .staff-media-file__preview, .media-folder-dialog, .media-folder-dialog input, .media-drawer__identity input, .media-drawer select, .media-drawer__actions button, .media-drawer__actions a) {
+  border-color: var(--staff-line);
+  border-radius: var(--staff-radius-control);
+  background: var(--staff-sheet);
+}
+
+.staff-shell .staff-media-head__actions button.is-primary {
+  border-color: var(--staff-active);
+  background: var(--staff-active);
+}
+
+.staff-shell :where(.staff-media-folders button.is-active, .staff-media-view button.is-active) {
+  background: var(--staff-active-soft);
+  color: var(--staff-active);
+}
+
+.staff-shell :where(.media-file-fallback, .media-file-fallback--video, .media-file-fallback--document) {
+  background: var(--staff-active-soft);
+}
+
+@media (max-width: 900px) {
+  .staff-shell__content { font-size: 16px; }
+  .staff-shell__content :where(th, td) { padding: 11px 12px; }
+}
+
+@media (forced-colors: active) {
+  .staff-shell__content :where(button, a, input, select, textarea):focus-visible {
+    outline-color: Highlight;
+  }
+}

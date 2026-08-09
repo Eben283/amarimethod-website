@@ -28,6 +28,59 @@ const CLIENT_DESK_HTML = `<!doctype html>
   @media (max-width: 720px) { main { width: min(100% - 20px, 580px); padding-top: 20px; } .page-head { display: block; } .page-note { margin-top: 10px; text-align: left; } .count { display: none; } .workspace { height: auto; grid-template-columns: 1fr; border-radius: 14px; } .inbox, .conversation { border-right: 0; border-bottom: 1px solid #e4eceb; } .conversation { min-height: 560px; } .record-scroll { display: block; } .timeline { padding: 15px; } .conversation-empty { min-height: 210px; } .payment-row { grid-template-columns: minmax(70px, 1fr) minmax(70px, .85fr) minmax(68px, .9fr); } }
   /* Channel is text in the thread; the blue dot belongs only to unread inbox rows. */
   .message .channel-mark { display: none; }
+  /* Staff legibility contract. The Desk is hosted by the mirror Worker, so it
+     carries the same tokens explicitly instead of inheriting the React shell. */
+  :root { --desk-paper:#f4f3ee; --desk-sheet:#fffefa; --desk-ink:#12333b; --desk-body:#303c3d; --desk-muted:#526a70; --desk-line:#aebdb9; --desk-line-soft:#d7deda; --desk-active:#0d6268; --desk-active-soft:#d8e9e7; --desk-attention:#7a5100; --desk-attention-soft:#f4e2b4; --desk-danger:#91382f; font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; color:var(--desk-body); background:var(--desk-paper); }
+  body { background:var(--desk-paper); color:var(--desk-body); font-size:16px; }
+  main { width:min(1520px,calc(100% - 32px)); padding-top:26px; }
+  h1,.pane-title { color:var(--desk-ink); font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; font-weight:650; }
+  .eyebrow,.record-status h3,.record-section h3,.status-label,.identity-label,.record-section-count,.composer label,.payment-row.heading { color:var(--desk-muted); font-size:12px; letter-spacing:.07em; }
+  .page-note,.count,.thread-preview,.thread-meta,.thread-exact-time,.client-address,.send-state,.record-subtitle,.status-value,.identity-value,.tag,.compact-card,.field-row,.empty-small,.source-note,.record-tab,.payment-actions-toggle,.payment-action,.payment-action span,.payment-summary,.payment-row,.workflow-row span,.workflow-run,.workflow-evidence-note,.show-all,.composer-status,.message-workflow-link { font-size:12px; line-height:1.45; }
+  .searchbar,.workspace { border-color:var(--desk-line); border-radius:6px; background:var(--desk-sheet); box-shadow:none; }
+  .workspace { grid-template-columns:minmax(270px,.72fr) minmax(430px,1.35fr) minmax(310px,.9fr); }
+  .inbox,.conversation,.record,.pane-head,.client-head,.timeline-toolbar,.record-head,.record-status,.record-section,.field-row,.payment-row,.workflow-run { border-color:var(--desk-line-soft); }
+  .inbox,.timeline-toolbar,.record { background:var(--desk-sheet); }
+  .thread-row { min-height:74px; border-color:var(--desk-line-soft); }
+  .thread-row:hover { background:#ecefea; }
+  .thread-row[aria-current="true"] { background:var(--desk-active-soft); }
+  .thread-row[aria-current="true"]::before { width:4px; background:var(--desk-active); }
+  .thread-name,.client-name,.record-name,.event-card b,.compact-card b,.workflow-row strong { color:var(--desk-ink); }
+  .thread-meta,.thread-exact-time,.send-state,.record-subtitle,.source-note { color:var(--desk-muted); font-variant-numeric:tabular-nums; }
+  .timeline-filter,.record-tab,.show-all,.payment-actions-toggle { min-height:38px; border-color:var(--desk-line); border-radius:6px; background:var(--desk-sheet); color:var(--desk-body); }
+  .timeline-filter[aria-pressed="true"],.record-tab[aria-pressed="true"] { border-color:var(--desk-active); background:var(--desk-active); color:#fff; box-shadow:none; }
+  .timeline { gap:14px; }
+  .message { border-color:var(--desk-line); border-radius:10px 10px 10px 3px; background:#ecefea; color:var(--desk-body); }
+  .message.outbound { border:1px solid #9dbab8; border-radius:10px 10px 3px 10px; background:var(--desk-active-soft); color:#173d43; }
+  .message-body { font-size:14px; line-height:1.55; }
+  .message-time { color:var(--desk-muted); font-variant-numeric:tabular-nums; }
+  .event-card { border:0; border-left:4px solid var(--desk-line); border-radius:0; background:transparent; color:var(--desk-body); }
+  .record-status { gap:0; padding:0 18px 14px; background:var(--desk-sheet); }
+  .record-status h3 { padding:14px 0 9px; }
+  .status-card { min-height:72px; border:0; border-top:1px solid var(--desk-line); border-radius:0; background:transparent; box-shadow:none; }
+  .status-card:hover { border-color:var(--desk-active); background:var(--desk-active-soft); box-shadow:inset 4px 0 var(--desk-active); transform:none; }
+  .status-value { color:var(--desk-body); }
+  .record-tabs { border-color:var(--desk-line); border-radius:6px; background:#ecefea; }
+  .tag { border-radius:6px; background:var(--desk-active-soft); color:var(--desk-active); }
+  .compact-card { border-left-width:4px; background:#ecefea; color:var(--desk-muted); }
+  .payment-ledger,.payment-actions-menu,.workflow-row { border-color:var(--desk-line); border-radius:6px; background:var(--desk-sheet); }
+  .workflow-row { border-left:4px solid var(--desk-active); }
+  .payment-summary { border-color:#c59d4f; border-radius:6px; background:var(--desk-attention-soft); color:var(--desk-attention); }
+  .payment-state { border-radius:4px; }
+  .thread-row:focus-visible,.show-all:focus-visible,.timeline-filter:focus-visible,.status-card:focus-visible,.record-tab:focus-visible,.payment-actions-toggle:focus-visible,.payment-action:focus-visible,.workflow-row:focus-visible,.composer :focus-visible { outline:3px solid var(--desk-active); outline-offset:2px; }
+  @media (max-width:1080px) {
+    .workspace { height:auto; max-height:none; overflow:visible; grid-template-columns:minmax(245px,.72fr) minmax(380px,1.28fr); }
+    .inbox,.conversation { height:min(66vh,640px); }
+    .record { max-height:min(70vh,720px); grid-column:1 / -1; border-top:1px solid var(--desk-line-soft); }
+    .record-scroll { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 22px; max-height:none; }
+  }
+  @media (max-width:720px) {
+    main { width:min(100% - 20px,580px); padding-top:20px; }
+    .workspace { grid-template-columns:1fr; }
+    .inbox,.conversation { height:auto; border-right:0; border-bottom:1px solid var(--desk-line-soft); }
+    .conversation { min-height:560px; }
+    .record { grid-column:auto; }
+    .record-scroll { display:block; }
+  }
 </style></head><body><main>
 <div class="eyebrow">Amari Method · staff</div><div class="page-head"><h1>Communication</h1><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></div>
 <label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label>

@@ -6,6 +6,7 @@ import SessionBridgePage from './pages/SessionBridgePage';
 import HomePage from './pages/HomePage';
 import StaffShell from './components/StaffShell';
 import { Loader2 } from 'lucide-react';
+import './styles/staff-legibility.css';
 
 const TodayPage = lazy(() => import('./pages/TodayPage'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage'));

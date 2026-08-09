@@ -137,3 +137,15 @@
   .staff-product-sheet > header { padding-top: max(18px, env(safe-area-inset-top)); }
 }
 @media (prefers-reduced-motion: reduce) { .staff-products-loading svg, .staff-product-sheet footer svg { animation: none; } }
+
+/* Products is a money ledger, not a storefront. */
+.staff-products-page{color:var(--staff-body)}
+.staff-products-head{border-color:var(--staff-line)}
+.staff-products-head span,.staff-product-sheet header span,.staff-product-boundary>span,.staff-product-row__policy,.staff-product-effect>span,.staff-product-group>header>span,.staff-product-group--legacy summary>span:last-child,.staff-product-coverage>header span,.staff-product-coverage__totals span,.staff-product-coverage__ledger>summary>span:last-child,.staff-product-definition__identity>span,.staff-product-definition__price small{color:var(--staff-muted);font:700 12px/1.35 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.06em}
+.staff-products-head h1,.staff-product-group h2,.staff-product-group summary strong,.staff-product-row__identity h3,.staff-product-coverage h2,.staff-product-definition__identity h3,.staff-product-sheet h2{font-family:'IBM Plex Sans',system-ui,sans-serif;font-weight:650;color:var(--staff-ink)}
+.staff-product-row__identity p,.staff-product-effect small,.staff-product-row__actions>span,.staff-product-row__warning,.staff-product-coverage>header p,.staff-product-definition__identity p,.staff-product-definition__price>span,.staff-product-empty p,.staff-products-owner-note,.staff-product-sheet label small,.staff-product-boundary p,.staff-product-sheet__error{font-size:12px;line-height:1.45}
+.staff-products-head__actions button,.staff-product-row__actions button,.staff-products-error button,.staff-product-sheet input:not([type=checkbox]),.staff-product-sheet textarea,.staff-product-sheet select,.staff-product-sheet footer button{border-color:var(--staff-line);border-radius:6px;background:var(--staff-sheet)}
+.staff-products-head__actions button.is-primary,.staff-product-sheet footer button[type=submit]{border-color:var(--staff-active);background:var(--staff-active)}
+.staff-product-effect{border-left:4px solid var(--staff-active);background:var(--staff-active-soft)}
+.staff-product-definition__behavior span{border-radius:6px;font-size:12px}
+.staff-product-coverage__ledger,.staff-product-coverage__totals{border-color:var(--staff-line);background:var(--staff-sheet)}

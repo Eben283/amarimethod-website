@@ -87,6 +87,18 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("flex: 0 0 auto");
   });
 
+  it("uses the Staff legibility system without weakening unread-thread meaning", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("--desk-paper:#f4f3ee");
+    expect(html).toContain("--desk-ink:#12333b");
+    expect(html).toContain("font-size:16px");
+    expect(html).toContain('.thread-row[aria-current="true"] { background:var(--desk-active-soft);');
+    expect(html).toContain(".blue-dot.unread { background: #2d78f5;");
+    expect(html).not.toContain(".timeline-item .blue-dot");
+    expect(html).toContain("@media (max-width:720px) {");
+    expect(html).toContain(".workspace { grid-template-columns:1fr; }");
+  });
+
   it("keeps consent auditing out of the Client Desk interface", () => {
     const html = clientDeskHtml();
     expect(html).not.toContain("Contactability review");
