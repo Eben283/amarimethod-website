@@ -295,9 +295,10 @@
 }
 
 .practice-rail__link.is-active {
-  border-color: rgba(186, 216, 212, .2);
-  background: rgba(229, 241, 239, .12);
-  color: #fff;
+  border-color: #e5cf9f;
+  background: #f4e7ca;
+  color: #173239;
+  box-shadow: 0 5px 16px rgba(5, 24, 28, .18), inset 0 1px 0 rgba(255, 255, 255, .55);
 }
 
 .practice-rail__marker {
@@ -332,7 +333,7 @@
 
 .practice-rail__copy strong { font-size: 11px; font-weight: 600; line-height: 1.15; }
 .practice-rail__copy small { color: #849fa1; font-size: 8.5px; line-height: 1.2; }
-.practice-rail__link.is-active small { color: #abc1c1; }
+.practice-rail__link.is-active small { color: #52706e; }
 
 .practice-rail__badge {
   display: inline-grid;
