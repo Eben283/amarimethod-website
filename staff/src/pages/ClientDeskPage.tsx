@@ -2,6 +2,7 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getCrmMirrorAccessUrl } from '../lib/api';
+import { deskNavigationRoute } from '../lib/desk-navigation';
 
 export default function ClientDeskPage() {
   const navigate = useNavigate();
@@ -37,9 +38,10 @@ export default function ClientDeskPage() {
       if (event.origin !== deskOrigin) return;
       if (event.data?.type !== 'amari:staff-navigate' || typeof event.data.path !== 'string') return;
       const destination = new URL(event.data.path, window.location.origin);
-      if (destination.origin !== window.location.origin || !['/staff/pos', '/staff/automations'].includes(destination.pathname)) return;
+      const route = deskNavigationRoute(event.data.path, window.location.origin);
+      if (!route) return;
       if (destination.pathname === '/staff/automations') {
-        navigate(destination.pathname + destination.search);
+        navigate(route);
         return;
       }
       const client = event.data.client;
@@ -53,7 +55,7 @@ export default function ClientDeskPage() {
             isFoundersCircle: false,
           }
         : null;
-      navigate(`/pos${destination.search}`, { state: deskClient ? { deskClient } : null });
+      navigate(route, { state: deskClient ? { deskClient } : null });
     };
     window.addEventListener('message', receiveDeskNavigation);
     return () => window.removeEventListener('message', receiveDeskNavigation);
