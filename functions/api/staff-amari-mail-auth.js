@@ -28,10 +28,21 @@ export async function onRequestGet(context) {
   const headers = { ...corsHeaders(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers);
   if (error) return error;
+  let mailbox;
   try {
-    return json(await amariMailGrantReadiness(context.env, payload?.user), 200, headers);
+    mailbox = resolveAmariMailbox(payload?.user);
   } catch {
     return json({ error: "Staff mailbox is not authorized" }, 403, headers);
+  }
+  try {
+    return json(await amariMailGrantReadiness(context.env, mailbox.actor), 200, headers);
+  } catch {
+    return json({
+      error: "Amari mail readiness is unavailable",
+      actor: mailbox.actor,
+      mailbox: mailbox.sender,
+      deliveryEnabled: false,
+    }, 500, headers);
   }
 }
 
@@ -41,12 +52,13 @@ export async function onRequestPost(context) {
   if (!ALLOWED_ORIGINS.has(origin)) return json({ error: "Untrusted origin" }, 403, headers);
   const { error, payload } = await requireStaffAuth(context, headers);
   if (error) return error;
+  let mailbox;
   try {
-    resolveAmariMailbox(payload?.user);
+    mailbox = resolveAmariMailbox(payload?.user);
   } catch {
     return json({ error: "Staff mailbox is not authorized" }, 403, headers);
   }
-  if (!amariMailOAuthConfigured(context.env)) return json({ error: "Amari mail authorization is not configured" }, 503, headers);
+  if (!amariMailOAuthConfigured(context.env)) return json({ error: "Amari mail authorization is not configured" }, 500, headers);
 
   const state = await createAmariMailOAuthState(context.env, payload.user);
   const authorizationUrl = new URL(AUTH_URL);
@@ -59,5 +71,10 @@ export async function onRequestPost(context) {
     prompt: "consent",
     state,
   }).toString();
-  return json({ authorizationUrl: authorizationUrl.toString(), deliveryEnabled: false }, 200, headers);
+  return json({
+    actor: mailbox.actor,
+    mailbox: mailbox.sender,
+    authorizationUrl: authorizationUrl.toString(),
+    deliveryEnabled: false,
+  }, 200, headers);
 }

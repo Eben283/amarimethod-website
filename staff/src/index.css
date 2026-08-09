@@ -275,6 +275,44 @@
   .ops-overview__attention button i { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: #d64545; flex: 0 0 auto; }
   .ops-overview__attention button span, .ops-overview__workspaces button span { display: grid; gap: 2px; }
   .ops-overview__attention button strong, .ops-overview__workspaces button strong { font-size: 14px; }
+  .ops-mailbox {
+    display: grid; gap: 16px; padding: 18px; border: 1px solid #c9d4e0; border-radius: 16px;
+    background: rgba(247, 250, 252, .9); box-shadow: 0 10px 28px rgba(28, 49, 72, .055);
+  }
+  .ops-mailbox__topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .ops-mailbox__title { display: flex; align-items: center; gap: 11px; min-width: 0; }
+  .ops-mailbox__icon { display: grid; width: 36px; height: 36px; flex: 0 0 auto; place-items: center; border-radius: 11px; background: #e7f4f5; color: #0b7f86; }
+  .ops-mailbox__icon svg { width: 18px; height: 18px; stroke-width: 1.8; }
+  .ops-mailbox__title p { margin: 0 0 5px; color: #4a5d73; font: 700 9px/1 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; }
+  .ops-mailbox__title h2 { margin: 0; color: #122033; font: 600 15px/1.2 ui-sans-serif, system-ui, sans-serif; }
+  .ops-mailbox__status { display: inline-flex; align-items: center; gap: 5px; min-height: 25px; padding: 0 8px; border: 1px solid #d6dee7; border-radius: 999px; background: #f0f3f7; color: #4a5d73; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .ops-mailbox__status svg { width: 12px; height: 12px; }
+  .ops-mailbox__status.is-verified { border-color: #b9d9ce; background: #e8f5f0; color: #176c54; }
+  .ops-mailbox__identity { display: grid; gap: 4px; padding: 13px 14px; border-left: 3px solid #0b7f86; background: #edf5f6; }
+  .ops-mailbox__identity span { color: #4a5d73; font: 700 9px/1 'DM Mono', monospace; letter-spacing: .11em; text-transform: uppercase; }
+  .ops-mailbox__identity strong { color: #122033; font-size: 15px; overflow-wrap: anywhere; }
+  .ops-mailbox__identity small { color: #5f7185; font-size: 11px; line-height: 1.4; }
+  .ops-mailbox__route { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0; list-style: none; }
+  .ops-mailbox__route li { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) 13px; align-items: center; gap: 7px; min-width: 0; }
+  .ops-mailbox__route li:last-child { grid-template-columns: 18px minmax(0, 1fr); }
+  .ops-mailbox__route-marker { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid #aab8c6; border-radius: 50%; background: #f7fafc; }
+  .ops-mailbox__route-marker svg { width: 11px; height: 11px; stroke-width: 2.5; }
+  .ops-mailbox__route li.is-ready .ops-mailbox__route-marker { border-color: #0b7f86; background: #0b7f86; color: white; }
+  .ops-mailbox__route li.is-off .ops-mailbox__route-marker { border-color: #d5bfa3; background: #f5eee4; }
+  .ops-mailbox__route li > span:nth-child(2) { display: grid; gap: 2px; min-width: 0; }
+  .ops-mailbox__route small { color: #4a5d73; font-size: 9px; line-height: 1.15; }
+  .ops-mailbox__route strong { color: #293b50; font-size: 10px; line-height: 1.2; overflow-wrap: anywhere; }
+  .ops-mailbox__route li.is-off strong { color: #846744; }
+  .ops-mailbox__route-arrow { width: 13px; height: 13px; color: #aab8c6; }
+  .ops-mailbox__foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 2px; }
+  .ops-mailbox__foot p { max-width: 48ch; margin: 0; color: #596d81; font-size: 11px; line-height: 1.45; }
+  .ops-mailbox__foot button { display: inline-flex; min-height: 38px; flex: 0 0 auto; align-items: center; justify-content: center; gap: 7px; padding: 0 12px; border: 1px solid #0b7f86; border-radius: 10px; background: #0b7f86; color: white; font: 700 11px/1 ui-sans-serif, system-ui, sans-serif; cursor: pointer; }
+  .ops-mailbox__foot button:hover { background: #086b71; }
+  .ops-mailbox__foot button:focus-visible { outline: 3px solid #122033; outline-offset: 3px; }
+  .ops-mailbox__foot button:disabled { cursor: wait; opacity: .72; }
+  .ops-mailbox__foot button svg { width: 14px; height: 14px; }
+  .ops-mailbox__notice { margin: -4px 0 0; padding: 10px 11px; border-left: 3px solid #c59855; background: #fbf4e8; color: #765d37; font-size: 11px; line-height: 1.4; }
+  .ops-mailbox__notice--error { border-left-color: #d64545; background: #fff4f2; color: #8a3b32; }
   .ops-overview__workspaces { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .ops-overview__workspaces button { display: flex; gap: 10px; min-height: 78px; padding: 14px; border: 1px solid #c9d4e0; background: #f7fafc; transition: border-color .15s ease, background .15s ease; }
   .ops-overview__workspaces button:hover, .ops-overview__workspaces button:focus-visible { border-color: #0b7f86; background: #eef8f8; outline: none; }
@@ -283,6 +321,12 @@
     .ops-hub__tabs { grid-template-columns: 1fr; }
     .ops-hub__frame iframe { height: calc(100vh - 320px); min-height: 420px; }
     .ops-overview__workspaces { grid-template-columns: 1fr; }
+    .ops-mailbox__topline, .ops-mailbox__foot { align-items: stretch; flex-direction: column; }
+    .ops-mailbox__status { width: fit-content; }
+    .ops-mailbox__route { grid-template-columns: 1fr; gap: 9px; }
+    .ops-mailbox__route li, .ops-mailbox__route li:last-child { grid-template-columns: 18px minmax(0, 1fr); }
+    .ops-mailbox__route-arrow { display: none; }
+    .ops-mailbox__foot button { width: 100%; }
   }
 
   .staff-resources { margin-top: 22px; padding: 3px 3px 0; }.staff-resources header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 3px 9px; }.staff-resources header p { margin: 0; color: #71858a; font: 700 10px/1 'DM Mono', monospace; letter-spacing: .12em; text-transform: uppercase; }.staff-resources header span { color: #8b9b9e; font-size: 10px; }.staff-resources > a { display: grid; grid-template-columns: 30px 1fr 16px; align-items: center; gap: 10px; min-height: 56px; padding: 9px 10px; border: 1px solid #dce4e5; border-radius: 12px; background: white; color: #536a70; text-decoration: none; }.staff-resources > a + a { margin-top: 8px; }.staff-resources > a:focus-visible { outline: 3px solid #19343d; outline-offset: 2px; }.staff-resources__icon { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 9px; background: #f1ece4; color: #927442; }.staff-resources__icon svg, .staff-resources > a > svg { width: 16px; height: 16px; }.staff-resources > a > svg { color: #9aa8aa; }.staff-resources__copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }.staff-resources__copy strong { color: #526a71; font-size: 12px; line-height: 1.2; }.staff-resources__copy small { color: #82959a; font-size: 10px; }
