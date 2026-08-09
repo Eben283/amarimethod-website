@@ -251,9 +251,12 @@ const CLIENT_DESK_HTML = `<!doctype html>
     }
     if (kind !== 'sms' && kind !== 'email') return '<article class="event-card"><span class="event-icon">' + channelMark(kind) + '</span><div><b>' + esc(event.event_kind || 'Client event') + '</b><br>' + esc(cleanMessage(event.subject || event.body_clean || 'Recorded event')) + '<br><span>' + esc(dateTime(event.occurred_at)) + '</span></div></article>';
     const outgoing = event.direction === 'outbound';
-    const speaker = outgoing ? 'Sent' : event.direction === 'inbound' ? 'Client' : 'Unclassified message';
+    const notSent = String(event.delivery_status || '').startsWith('not_sent_');
+    const speaker = notSent ? 'Not sent' : outgoing ? 'Sent' : event.direction === 'inbound' ? 'Client' : 'Unclassified message';
+    const deliveryLabel = event.delivery_status === 'not_sent_policy_blocked' ? 'Policy blocked' : event.delivery_status === 'not_sent_delivery_unavailable' ? 'Delivery unavailable' : event.delivery_status;
+    const messageReference = event.message_ref ? ' · ' + esc(event.message_ref) : '';
     const content = event.body || event.body_clean || event.subject || 'No message content mirrored.';
-    return '<article class="message ' + (outgoing ? 'outbound' : '') + '"><div class="message-meta"><span class="channel-mark">' + channelMark(kind) + '</span>' + speaker + ' · ' + esc(kind) + '</div><div class="message-body">' + (kind === 'email' ? emailBody(content) : esc(cleanMessage(content))) + '</div><div class="message-time">' + esc(dateTime(event.occurred_at)) + (event.delivery_status ? ' · ' + esc(event.delivery_status) : '') + '</div></article>';
+    return '<article class="message ' + (outgoing ? 'outbound' : '') + '"><div class="message-meta"><span class="channel-mark">' + channelMark(kind) + '</span>' + speaker + ' · ' + esc(kind) + '</div><div class="message-body">' + (kind === 'email' ? emailBody(content) : esc(cleanMessage(content))) + '</div><div class="message-time">' + esc(dateTime(event.occurred_at)) + (deliveryLabel ? ' · ' + esc(deliveryLabel) : '') + messageReference + '</div></article>';
   }
 
   async function openClient(contactId) {

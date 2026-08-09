@@ -52,6 +52,30 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
   });
 
+  it("renders owned outbox commands as not sent with their Communication message reference", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.timelineItem({
+      activity_type: "message",
+      channel: "email",
+      direction: "outbound",
+      delivery_status: "not_sent_delivery_unavailable",
+      message_ref: "msg_1234567890abcdef12345678",
+      subject: "Checking in",
+      body: "Saved for a future owned sender.",
+      occurred_at: "2026-08-08T18:00:00.000Z",
+    });
+
+    expect(rendered).toContain("Not sent · email");
+    expect(rendered).toContain("Delivery unavailable");
+    expect(rendered).toContain("msg_1234567890abcdef12345678");
+    expect(rendered).not.toContain("Sent · email");
+  });
+
   it("keeps the composer anchored below a separately scrollable timeline", () => {
     const html = clientDeskHtml();
     expect(html).toContain(".timeline-scroll { min-height: 0; flex: 1; overflow: auto; }");
