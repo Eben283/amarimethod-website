@@ -1,10 +1,15 @@
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GMAIL_SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
 const GMAIL_SEND_AS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs";
-const USER = "eben";
+const TOKEN_NAMESPACE = "amari-mail";
 const REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const AMARI_MAIL_IDENTITIES = Object.freeze({
+  Eben: Object.freeze({ actor: "Eben", from: "eben@amarimethod.com", replyTo: "eben@amarimethod.com" }),
+  Garrett: Object.freeze({ actor: "Garrett", from: "garrett@amarimethod.com", replyTo: "garrett@amarimethod.com" }),
+});
+const AMARI_MAIL_ADDRESSES = new Set(Object.values(AMARI_MAIL_IDENTITIES).map((identity) => identity.from));
 
-function key(name) { return `google:${USER}:${name}`; }
+function key(name) { return `${TOKEN_NAMESPACE}:${name}`; }
 
 function base64url(value) {
   const bytes = new TextEncoder().encode(value);
@@ -25,8 +30,14 @@ function cleanEmail(value, name) {
   return email;
 }
 
+export function resolveAmariMailIdentity(actor) {
+  const identity = AMARI_MAIL_IDENTITIES[String(actor || "").trim()];
+  if (!identity) throw new Error("staff actor does not have an Amari mail identity");
+  return { ...identity };
+}
+
 export async function getGoogleWorkspaceToken(env) {
-  if (!env.PORTAL_KV || !env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) throw new Error("Google Workspace is not configured");
+  if (!env.PORTAL_KV || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET) throw new Error("Amari mail is not configured");
   const [access, expiryRaw] = await Promise.all([env.PORTAL_KV.get(key("access_token")), env.PORTAL_KV.get(key("token_expiry"))]);
   const expiry = Number(expiryRaw || 0);
   if (access && expiry > Date.now() + REFRESH_BUFFER_MS) return access;
@@ -34,7 +45,7 @@ export async function getGoogleWorkspaceToken(env) {
   if (!refresh) throw new Error("Google Workspace is not authorized");
   const response = await fetch(TOKEN_URL, {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", client_id: env.GOOGLE_OAUTH_CLIENT_ID, client_secret: env.GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: refresh }).toString(),
+    body: new URLSearchParams({ grant_type: "refresh_token", client_id: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID, client_secret: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: refresh }).toString(),
   });
   if (!response.ok) throw new Error("Google Workspace token refresh failed");
   const payload = await response.json();
@@ -48,7 +59,7 @@ export async function getGoogleWorkspaceToken(env) {
 }
 
 export function gmailConfigured(env) {
-  return Boolean(env?.PORTAL_KV && env?.GOOGLE_OAUTH_CLIENT_ID && env?.GOOGLE_OAUTH_CLIENT_SECRET);
+  return Boolean(env?.PORTAL_KV && env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID && env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET);
 }
 
 // Gmail, not the Staff UI, is the authority for usable From identities. This
@@ -59,7 +70,9 @@ export async function listGmailSenders(env) {
   if (!response.ok) throw new Error(`Gmail sender identities unavailable (${response.status})`);
   const payload = await response.json();
   return (payload.sendAs || [])
-    .filter((identity) => identity?.sendAsEmail && (identity.isPrimary || String(identity.verificationStatus || "").toLowerCase() === "accepted"))
+    .filter((identity) => identity?.sendAsEmail
+      && AMARI_MAIL_ADDRESSES.has(String(identity.sendAsEmail).trim().toLowerCase())
+      && (identity.isPrimary || String(identity.verificationStatus || "").toLowerCase() === "accepted"))
     .map((identity) => ({
       address: cleanEmail(identity.sendAsEmail, "sender"),
       name: String(identity.displayName || "").replace(/[\r\n]+/g, " ").trim(),
@@ -68,16 +81,22 @@ export async function listGmailSenders(env) {
     }));
 }
 
-export async function sendGmailEmail(env, { to, subject, text, from, senders }) {
+export async function sendGmailEmail(env, message) {
+  if (Object.hasOwn(message || {}, "from") || Object.hasOwn(message || {}, "replyTo")) {
+    throw new Error("sender identity is server-owned");
+  }
+  const { to, subject, text, actor } = message || {};
+  const identity = resolveAmariMailIdentity(actor);
   const recipient = cleanEmail(to, "recipient");
-  const sender = cleanEmail(from, "sender");
-  const allowedSenders = Array.isArray(senders) ? senders : await listGmailSenders(env);
+  const sender = identity.from;
+  const allowedSenders = await listGmailSenders(env);
   if (!allowedSenders.some((identity) => identity.address === sender)) throw new Error("sender is not authorized by Google Workspace");
   const safeSubject = cleanHeader(subject, "subject", 160);
   const body = String(text || "").trim();
   if (!body || body.length > 20_000) throw new Error("invalid email body");
   const raw = [
     `From: ${sender}`,
+    `Reply-To: ${identity.replyTo}`,
     `To: ${recipient}`,
     `Subject: ${safeSubject}`,
     "MIME-Version: 1.0",

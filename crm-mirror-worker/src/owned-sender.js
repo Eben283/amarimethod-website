@@ -6,6 +6,8 @@
 // timeline event. Every command is either policy-blocked or delivery-unavailable;
 // it never falls back to GHL and never trusts browser-supplied provider evidence.
 
+import { gmailConfigured } from "./gmail.js";
+
 export const OWNED_DELIVERY_MODE = "non_delivering_outbox";
 
 export const DELIVERY_PROVIDERS = Object.freeze({
@@ -62,7 +64,7 @@ function normalizeCommand(input) {
 }
 
 export function deliveryReadiness(env = {}) {
-  const gmailConfigurationDetected = Boolean(env.PORTAL_KV && env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET);
+  const gmailConfigurationDetected = gmailConfigured(env);
   return {
     mode: OWNED_DELIVERY_MODE,
     outboxAvailable: false,
@@ -76,7 +78,11 @@ export function deliveryReadiness(env = {}) {
         deliveryEnabled: false,
         state: "unavailable",
         blockers: [
-          "staff sender identity is not mapped",
+          "the existing personal Google OAuth project is unusable for Amari mail",
+          "an Amari-owned Google OAuth grant is not verified",
+          "exact Amari send-as identities are not verified",
+          "DKIM and DMARC are not verified",
+          "inbound Gmail reply sync is not implemented",
           "delivery command dispatcher is not activated",
           "provider outcomes are not ingested into Communication",
         ],

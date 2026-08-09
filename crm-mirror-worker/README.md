@@ -21,7 +21,7 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 
 Dashboard: open from Staff → Back office → CRM Mirror (Eben-only). That path calls `POST /api/staff-crm-mirror-access`, which mints a one-time `/dashboard-access/:code` handoff server-side. Direct worker URL visits without a session show a locked shell and never accept a pasted bearer secret in the browser. Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
 
-Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, `GHL_CLIENT_SECRET`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET`. `PORTAL_KV` holds the shared GHL token cache and the Google Workspace authorization state; the Staff browser never receives those credentials.
+Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, `GHL_CLIENT_SECRET`, `AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID`, and `AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET`. Mail authorization is purpose-bound to `amari-mail:*` keys in `PORTAL_KV`; it must never reuse the `google:eben:*` Calendar grant or the general `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` credentials. The Staff browser never receives these credentials. Owned delivery remains disabled until the readiness blockers are cleared and independently verified.
 
 If this Worker is recreated, create a new dedicated D1 database and replace the binding ID before deploying. Never reuse the live automation database.
 

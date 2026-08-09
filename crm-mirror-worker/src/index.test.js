@@ -266,7 +266,7 @@ describe("CRM mirror dashboard access handoff", () => {
   });
 
   it("reports the owned outbox as available without claiming either channel can deliver", async () => {
-    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: outboxDb(), PORTAL_KV: {}, GOOGLE_OAUTH_CLIENT_ID: "id", GOOGLE_OAUTH_CLIENT_SECRET: "secret" };
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: outboxDb(), PORTAL_KV: {}, AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "id", AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret" };
     const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
       method: "POST", headers: { Authorization: "Bearer test-secret" },
     }), env);
@@ -280,7 +280,19 @@ describe("CRM mirror dashboard access handoff", () => {
       deliveryEnabled: false,
       fallbackProvider: null,
       channels: [
-        expect.objectContaining({ channel: "email", configurationDetected: true, deliveryEnabled: false }),
+        expect.objectContaining({
+          channel: "email",
+          configurationDetected: true,
+          deliveryEnabled: false,
+          blockers: expect.arrayContaining([
+            "the existing personal Google OAuth project is unusable for Amari mail",
+            "an Amari-owned Google OAuth grant is not verified",
+            "exact Amari send-as identities are not verified",
+            "DKIM and DMARC are not verified",
+            "inbound Gmail reply sync is not implemented",
+            "provider outcomes are not ingested into Communication",
+          ]),
+        }),
         expect.objectContaining({ channel: "sms", configurationDetected: false, deliveryEnabled: false }),
       ],
     });
