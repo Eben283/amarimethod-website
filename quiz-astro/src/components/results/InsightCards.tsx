@@ -20,7 +20,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid #E0D7C2',
   },
   num: {
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    fontFamily: 'var(--sans)',
     fontSize: 11,
     letterSpacing: '0.24em',
     color: '#C56B4E',
@@ -28,7 +28,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   body: { display: 'flex', flexDirection: 'column', gap: 8 },
   title: {
-    fontFamily: "'Bona Nova', Georgia, serif",
+    fontFamily: 'var(--sans)',
     fontSize: 22,
     fontWeight: 300,
     letterSpacing: '-0.02em',
@@ -36,7 +36,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#1F1D1A',
   },
   desc: {
-    fontFamily: "'Inter', system-ui, sans-serif",
+    fontFamily: 'var(--sans)',
     fontSize: 15,
     lineHeight: 1.6,
     color: '#3A3733',

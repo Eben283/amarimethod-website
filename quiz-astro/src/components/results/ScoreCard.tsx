@@ -9,8 +9,8 @@ type ScoreCardProps = {
 };
 
 // Editorial palette — no green/blue/purple status colors. Score severity is
-// communicated via the word label (Minimal / Mild / Moderate / Significant)
-// in mute mono, not via a chromatic system.
+// communicated via the word label (Minimal / Mild / Moderate / Significant),
+// not via a chromatic system.
 const PALETTE = {
   ink: '#1F1D1A',
   ink2: '#3A3733',
@@ -33,7 +33,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
   },
   title: {
-    fontFamily: "'Bona Nova', Georgia, serif",
+    fontFamily: 'var(--sans)',
     fontSize: 20,
     fontWeight: 300,
     letterSpacing: '-0.02em',
@@ -41,14 +41,14 @@ const styles: Record<string, React.CSSProperties> = {
     color: PALETTE.ink,
   },
   titleCompact: {
-    fontFamily: "'Bona Nova', Georgia, serif",
+    fontFamily: 'var(--sans)',
     fontSize: 16,
     fontWeight: 300,
     letterSpacing: '-0.015em',
     color: PALETTE.ink,
   },
   subtitle: {
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    fontFamily: 'var(--sans)',
     fontSize: 10,
     letterSpacing: '0.22em',
     textTransform: 'uppercase',
@@ -56,7 +56,7 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 4,
   },
   scoreNum: {
-    fontFamily: "'Bona Nova', Georgia, serif",
+    fontFamily: 'var(--sans)',
     fontSize: 36,
     fontWeight: 300,
     fontStyle: 'normal',
@@ -64,7 +64,7 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1,
   },
   scoreNumCompact: {
-    fontFamily: "'Bona Nova', Georgia, serif",
+    fontFamily: 'var(--sans)',
     fontSize: 24,
     fontWeight: 300,
     fontStyle: 'normal',
@@ -84,14 +84,14 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'width 700ms ease-out',
   },
   category: {
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
+    fontFamily: 'var(--sans)',
     fontSize: 10,
     letterSpacing: '0.24em',
     textTransform: 'uppercase',
     color: PALETTE.accent,
   },
   desc: {
-    fontFamily: "'Inter', system-ui, sans-serif",
+    fontFamily: 'var(--sans)',
     fontSize: 14,
     lineHeight: 1.55,
     color: PALETTE.ink2,
