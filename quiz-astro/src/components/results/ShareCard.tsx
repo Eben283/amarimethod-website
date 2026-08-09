@@ -1,9 +1,8 @@
 import React from 'react';
-import { PatternSignature, ScoreCategories } from '@/types/quiz';
+import { PatternSignature } from '@/types/quiz';
 
 type ShareCardProps = {
   patternSignature: PatternSignature;
-  scores: ScoreCategories;
 };
 
 const patternAccents: Record<PatternSignature, { bg: string; text: string }> = {
@@ -14,49 +13,11 @@ const patternAccents: Record<PatternSignature, { bg: string; text: string }> = {
   'Compensatory Movement': { bg: '#ccfbf1', text: '#134e4a' },
 };
 
-// SVG ring — no CSS animation so html2canvas captures the final state immediately
-const StaticRecoveryRing = ({ score }: { score: number }) => {
-  const r = 54;
-  const cx = 70;
-  const cy = 70;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - score / 100);
-  const ringColor =
-    score >= 75 ? '#4ade80'
-    : score >= 60 ? '#EBA584'
-    : '#f97316';
-
-  return (
-    <svg width="160" height="160" viewBox="0 0 140 140">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#374151" strokeWidth="11" />
-      <circle
-        cx={cx} cy={cy} r={r}
-        fill="none"
-        stroke={ringColor}
-        strokeWidth="11"
-        strokeLinecap="round"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        transform={`rotate(-90 ${cx} ${cy})`}
-      />
-      <text x={cx} y={cy - 6} textAnchor="middle" dominantBaseline="middle"
-        fontSize="22" fontWeight="700" fill="#f9fafb" fontFamily="serif">
-        {score}%
-      </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle"
-        fontSize="9" fill="#9ca3af" fontFamily="sans-serif" letterSpacing="0.5">
-        RECOVERY
-      </text>
-    </svg>
-  );
-};
-
 // All styles are inline so html2canvas renders them reliably without needing to
 // resolve external stylesheets or Tailwind classes.
 const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
-  ({ patternSignature, scores }, ref) => {
+  ({ patternSignature }, ref) => {
     const accent = patternAccents[patternSignature];
-    const recovery = scores.recoveryPotential;
 
     return (
       <div
@@ -69,7 +30,7 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
           flexDirection: 'column',
           justifyContent: 'space-between',
           padding: '64px 80px',
-          fontFamily: 'Georgia, serif',
+          fontFamily: 'ABC Diatype, Arial, sans-serif',
           boxSizing: 'border-box',
           position: 'relative',
           overflow: 'hidden',
@@ -87,14 +48,14 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
           pointerEvents: 'none',
         }} />
 
-        {/* Main row: text left, ring right */}
+        {/* Main row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flex: 1 }}>
 
           {/* Left column */}
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingRight: '60px' }}>
             {/* Brand label */}
             <p style={{
-              fontFamily: 'system-ui, -apple-system, sans-serif',
+              fontFamily: 'ABC Diatype, Arial, sans-serif',
               fontSize: '13px',
               fontWeight: '600',
               letterSpacing: '0.18em',
@@ -107,14 +68,14 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
 
             {/* Headline */}
             <h1 style={{
-              fontFamily: 'Georgia, serif',
+              fontFamily: 'ABC Diatype, Arial, sans-serif',
               fontSize: '54px',
               fontWeight: '700',
               color: '#f9fafb',
               lineHeight: '1.1',
               margin: '0 0 36px 0',
             }}>
-              Pain Pattern<br />Report
+              Amari<br />Assessment
             </h1>
 
             {/* Pattern badge */}
@@ -124,7 +85,7 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
               borderRadius: '100px',
               background: accent.bg,
               color: accent.text,
-              fontFamily: 'system-ui, -apple-system, sans-serif',
+              fontFamily: 'ABC Diatype, Arial, sans-serif',
               fontSize: '20px',
               fontWeight: '600',
               alignSelf: 'flex-start',
@@ -133,7 +94,7 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
             </span>
           </div>
 
-          {/* Right column: recovery ring */}
+          {/* Right column */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -142,15 +103,16 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
             gap: '10px',
             paddingTop: '20px',
           }}>
-            <StaticRecoveryRing score={recovery} />
             <p style={{
-              fontFamily: 'system-ui, -apple-system, sans-serif',
-              fontSize: '13px',
-              color: '#9ca3af',
+              fontFamily: 'ABC Diatype, Arial, sans-serif',
+              fontSize: '25px',
+              color: '#f9fafb',
               margin: 0,
-              letterSpacing: '0.05em',
+              lineHeight: '1.25',
+              maxWidth: '240px',
+              textAlign: 'right',
             }}>
-              Recovery Potential
+              A starting point for what changes in person.
             </p>
           </div>
         </div>
@@ -165,15 +127,15 @@ const ShareCard = React.forwardRef<HTMLDivElement, ShareCardProps>(
           marginTop: '32px',
         }}>
           <p style={{
-            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontFamily: 'ABC Diatype, Arial, sans-serif',
             fontSize: '14px',
             color: '#4b5563',
             margin: 0,
           }}>
-            Find your pattern at
+            Explore Amari at
           </p>
           <p style={{
-            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontFamily: 'ABC Diatype, Arial, sans-serif',
             fontSize: '16px',
             fontWeight: '600',
             color: '#9ca3af',

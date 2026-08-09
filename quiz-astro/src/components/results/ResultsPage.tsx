@@ -28,7 +28,6 @@ const EDITORIAL_STYLES = `
   --accent:#526D73; --rust:#526D73; --forest:#171A18; --gold:#526D73; --teal:#526D73;
   --display:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
   --sans:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
-  --mono:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
   --ease:cubic-bezier(0.32,0.72,0,1);
   background:var(--cream); color:var(--ink); font-family:var(--sans);
   -webkit-font-smoothing:antialiased; font-size:16px; line-height:1.65;
@@ -47,7 +46,7 @@ const EDITORIAL_STYLES = `
 [data-results] .doc{max-width:840px;margin:0 auto;padding:0 32px}
 [data-results] .doc-narrow{max-width:840px;margin:0 auto;padding:0 32px}
 
-[data-results] .mono{
+[data-results] .detail{
   font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;
   text-transform:uppercase;color:var(--body);
 }
@@ -365,7 +364,7 @@ const EDITORIAL_STYLES = `
   align-items:center;padding:22px 24px;
   border:1px solid var(--line);border-radius:14px;
   background:var(--paper);
-  font-family:var(--mono);font-size:11px;letter-spacing:.24em;
+  font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--ink-2);gap:16px;flex-wrap:wrap;
   transition:border-color .18s ease, background-color .18s ease;
 }
@@ -387,12 +386,22 @@ const EDITORIAL_STYLES = `
 [data-results] details[open] .appendix summary .toggle,
 [data-results] .appendix details[open] summary .toggle{transform:rotate(45deg)}
 [data-results] .appendix-body{padding-top:32px;display:flex;flex-direction:column;gap:48px}
+[data-results] .response-profile-list{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 32px;
+  border-top:1px solid var(--line);padding-top:22px;
+}
+[data-results] .response-profile-row{display:grid;gap:9px}
+[data-results] .response-profile-row > span{
+  font-family:var(--sans);font-size:13px;font-weight:500;line-height:1.25;color:var(--ink);
+}
+[data-results] .response-profile-track{height:3px;background:var(--cream-2);overflow:hidden}
+[data-results] .response-profile-fill{height:100%;background:var(--accent);transition:width .7s var(--ease)}
 
 /* ── DOC FOOT ────────────────────────────────────────────────────── */
 [data-results] .doc-foot{
   padding:48px 32px;border-top:1px solid var(--line);
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;align-items:end;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;
+  font-family:var(--sans);font-size:10.5px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--mute);max-width:1100px;margin:0 auto;
 }
 [data-results] .doc-foot .col b{
@@ -412,7 +421,7 @@ const EDITORIAL_STYLES = `
 }
 [data-results] .share-btn{
   display:inline-flex;align-items:center;gap:12px;
-  font-family:var(--mono);font-size:11px;letter-spacing:.24em;
+  font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--ink-2);
   background:transparent;border:1px solid var(--line-2);padding:12px 22px;
   cursor:pointer;border-radius:0;transition:color .2s,border-color .2s;
@@ -420,7 +429,7 @@ const EDITORIAL_STYLES = `
 [data-results] .share-btn:hover:not(:disabled){color:var(--accent);border-color:var(--accent)}
 [data-results] .share-btn:disabled{opacity:.55;cursor:not-allowed}
 [data-results] .share-strip .fine{
-  font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+  font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--mute);margin-top:10px;
 }
 
@@ -433,6 +442,7 @@ const EDITORIAL_STYLES = `
   [data-results] .hero-finding{padding:32px 0 8px}
   [data-results] .hero-meta{grid-template-columns:1fr}
   [data-results] .why-cards,[data-results] .cred-grid{grid-template-columns:1fr}
+  [data-results] .response-profile-list{grid-template-columns:1fr}
   [data-results] .chain-step,[data-results] .chain-cell{grid-template-columns:1fr;gap:8px}
   [data-results] .offer-body{grid-template-columns:1fr}
   [data-results] .offer-pane + .offer-pane{border-left:none;border-top:1px solid var(--line)}
@@ -476,7 +486,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
 
       {/* Off-screen share card — captured by html2canvas on share click */}
       <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-        <ShareCard ref={shareCardRef} patternSignature={patternSignature} scores={scores} />
+        <ShareCard ref={shareCardRef} patternSignature={patternSignature} />
       </div>
 
       {/* 1 — Doc bar */}
@@ -557,7 +567,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           <details>
             <summary>
               <span className="label">Appendix · See your full readout</span>
-              <span className="mono">Six dimensions / Balance equation</span>
+              <span className="detail">Response overview / Balance equation</span>
               <span className="toggle" aria-hidden="true">+</span>
             </summary>
             <div className="appendix-body">
