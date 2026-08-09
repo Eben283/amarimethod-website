@@ -2,10 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Zap, ChevronRight, Plus, X, Loader2 } from 'lucide-react';
 import { getSharpen, mutateSharpen, trackSharpenSeen, ApiError, type SharpenCard, type SharpenCategory, type SharpenKind } from '../lib/api';
 
-// "Sharpen" — a shuffle-through card DECK on the Schedule/Today tab (not its own
-// tab, not a full-screen reel). One card faces up; Next to flick through
-// the deck — like riffling index cards. The "scroll this instead of Instagram"
-// thing, sitting in the normal page scroll. Content is curated + grown from real
+// "Sharpen" — a shuffle-through card deck inside the Training workspace.
+// One card faces up; Next flicks through the deck like riffling index cards.
+// Content is curated + grown from real
 // calls (see staff-sharpen.js); never generic sales-bro filler.
 
 const CHIP: Record<SharpenCategory, { label: string; cls: string }> = {
@@ -160,7 +159,7 @@ export default function SharpenDeck() {
           <div className="flex flex-wrap gap-1">
             {CATS.map((c) => (
               <button key={c} type="button" onClick={() => setDraft((d) => ({ ...d, category: c }))}
-                className={`rounded-full px-2 py-0.5 text-[11px] ${draft.category === c ? CHIP[c].cls : 'bg-amari-light-sand/60 text-amari-text-muted'}`}>
+                className={`rounded-full px-2 py-0.5 text-xs ${draft.category === c ? CHIP[c].cls : 'bg-amari-light-sand/60 text-amari-text-muted'}`}>
                 {CHIP[c].label}
               </button>
             ))}
@@ -183,18 +182,18 @@ export default function SharpenDeck() {
         <>
           {/* the card — each gets its own abstract background */}
           <div className="group relative rounded-2xl border border-amari-border p-4 shadow-sm" style={{ background: bgForKind(card) }}>
-            <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${CHIP[card.category].cls}`}>{CHIP[card.category].label}</span>
-            {card.title && <h3 className="text-base font-semibold leading-snug text-amari-charcoal">{card.title}</h3>}
-            {card.body && <p className="mt-2 text-sm leading-relaxed text-amari-text-muted">{card.body}</p>}
+            <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${CHIP[card.category].cls}`}>{CHIP[card.category].label}</span>
+            {card.title && <h3 className="text-lg font-semibold leading-snug text-amari-charcoal">{card.title}</h3>}
+            {card.body && <p className="mt-2 text-base leading-relaxed text-amari-text-muted">{card.body}</p>}
             <button type="button" onClick={() => run({ action: 'delete', id: card.id })} disabled={busy}
-              className="absolute right-3 top-3 text-amari-text-muted opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100" aria-label="Delete card">
+              className="absolute right-3 top-3 text-amari-text-muted opacity-0 transition-opacity hover:text-red-500 focus:opacity-100 group-hover:opacity-100" aria-label="Delete card">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {/* deck controls */}
           <div className="mt-2 flex items-center justify-between">
-            <span className="text-[11px] text-amari-text-muted">{pos + 1} / {deck.length}</span>
+            <span className="text-xs text-amari-text-muted">{pos + 1} / {deck.length}</span>
             <button type="button" onClick={next} disabled={deck.length < 2}
               className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-3 py-1.5 text-xs font-medium text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-40">
               Next <ChevronRight className="h-3.5 w-3.5" />

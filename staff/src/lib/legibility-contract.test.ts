@@ -73,4 +73,21 @@ describe('Staff legibility contract', () => {
     expect(record).toContain('automationDrilldownPath(familyKey, ownedPersonId)');
     expect(record).not.toContain('Recent events and outcomes');
   });
+
+  it('keeps staff development in one Training workspace instead of the Calendar', () => {
+    const app = css('App.tsx');
+    const shell = css('components/StaffShell.tsx');
+    const calendar = css('pages/TodayPage.tsx');
+    const training = css('pages/TrainingPage.tsx');
+
+    expect(app).toContain('path="training"');
+    expect(app).toContain('to="/training?section=sharpen"');
+    expect(app).toContain('to="/training?section=playbooks"');
+    expect(shell).toContain("label: 'Training'");
+    expect(calendar).not.toContain('SharpenDeck');
+    expect(training).toContain('<SharpenDeck />');
+    expect(training).toContain('<PlaybookPage embedded activeTab={playbook} onTabChange={choosePlaybook} />');
+    expect(training).toContain('Playbooks & scripts');
+    expect(training).toContain('Reference');
+  });
 });

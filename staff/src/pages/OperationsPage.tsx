@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardPlus, Database, History, Kanban, Loader2, Mail, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarDays, Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardPlus, Database, GraduationCap, History, Kanban, Loader2, Mail, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -60,7 +60,7 @@ const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
       { label: 'CRM mirror', detail: 'Imported GHL and Stripe record', Icon: Database, tab: 'crm' },
       { label: 'Automation watch', detail: 'Cutover delivery checks, not daily work', Icon: Workflow, tab: 'automation' },
       { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
-      { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
+      { label: 'Training', detail: 'Sharpen, scripts, and playbooks', Icon: GraduationCap, to: '/training' },
     ],
   },
 ];

@@ -9,7 +9,6 @@ import AppointmentCard from '../components/AppointmentCard';
 import SessionDocSheet from '../components/SessionDocSheet';
 import PayLinkSheet from '../components/PayLinkSheet';
 import MoneyMoments from '../components/MoneyMoments';
-import SharpenDeck from '../components/SharpenDeck';
 import CalendarRegistry from '../components/CalendarRegistry';
 
 type ViewMode = 'day' | 'week' | 'month';
@@ -194,9 +193,6 @@ export default function TodayPage() {
       {/* Today's sell moments — 8-pack opportunities hiding in today's schedule
           (renewals at last session + first-timers to pitch). */}
       <MoneyMoments />
-
-      {/* Sharpen — shuffle-through call-craft card deck (downtime / instead-of-scrolling). */}
-      <SharpenDeck />
 
       {/* View toggle */}
       <div className="flex items-center justify-between mb-4">

@@ -12,7 +12,7 @@ const TodayPage = lazy(() => import('./pages/TodayPage'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage'));
 const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage'));
 const BalancesPage = lazy(() => import('./pages/BalancesPage'));
-const PlaybookPage = lazy(() => import('./pages/PlaybookPage'));
+const TrainingPage = lazy(() => import('./pages/TrainingPage'));
 const FollowUpPage = lazy(() => import('./pages/FollowUpPage'));
 const FunnelPage = lazy(() => import('./pages/FunnelPage'));
 const PipelinePage = lazy(() => import('./pages/PipelinePage'));
@@ -99,7 +99,7 @@ function AppRoutes() {
         <Route path="client-desk" element={<Layout><ClientDeskPage /></Layout>} />
         <Route path="balances" element={<Layout><BalancesPage /></Layout>} />
         <Route path="revenue" element={<Layout><RevenuePage /></Layout>} />
-        <Route path="playbook" element={<Layout><PlaybookPage /></Layout>} />
+        <Route path="training" element={<Layout><TrainingPage /></Layout>} />
         <Route path="outreach" element={<Layout><FollowUpPage /></Layout>} />
         <Route path="funnel" element={<Layout><FunnelPage /></Layout>} />
         <Route path="pipeline" element={<Layout><PipelinePage /></Layout>} />
@@ -119,7 +119,8 @@ function AppRoutes() {
         {/* Retired route names keep their existing destinations. */}
         <Route path="triage" element={<Navigate to="/" replace />} />
         <Route path="messages" element={<Navigate to="/client-desk" replace />} />
-        <Route path="sharpen" element={<Navigate to="/" replace />} />
+        <Route path="sharpen" element={<Navigate to="/training?section=sharpen" replace />} />
+        <Route path="playbook" element={<Navigate to="/training?section=playbooks" replace />} />
         <Route path="follow-up" element={<Navigate to="/outreach" replace />} />
         <Route path="partners" element={<Navigate to="/outreach" replace />} />
       </Route>
