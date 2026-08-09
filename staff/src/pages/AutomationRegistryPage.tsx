@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   Archive,
@@ -83,6 +83,8 @@ function structured(value: unknown) {
 }
 
 export default function AutomationRegistryPage() {
+  const { familyKey: routeFamilyKey = '' } = useParams();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [registry, setRegistry] = useState<AutomationFamiliesResponse | null>(null);
   const [registryError, setRegistryError] = useState('');
@@ -95,8 +97,9 @@ export default function AutomationRegistryPage() {
   const [personError, setPersonError] = useState('');
   const [personLoading, setPersonLoading] = useState(false);
 
-  const selectedFamilyKey = params.get('family') || '';
+  const selectedFamilyKey = routeFamilyKey || params.get('family') || '';
   const selectedContactId = params.get('contact') || '';
+  const isFocusedInspector = Boolean(routeFamilyKey);
 
   useEffect(() => {
     let cancelled = false;
@@ -163,20 +166,31 @@ export default function AutomationRegistryPage() {
   const archiveGroup = registry?.families.find((family) => family.kind === 'evidence_only') || null;
 
   function selectFamily(key: string) {
-    const next = new URLSearchParams(params);
-    next.set('family', key);
-    setParams(next);
+    const next = new URLSearchParams();
+    if (selectedContactId) next.set('contact', selectedContactId);
+    const queryString = next.toString();
+    navigate(`/automations/${encodeURIComponent(key)}${queryString ? `?${queryString}` : ''}`);
   }
 
   return (
-    <main className="automation-registry-page">
-      <header className="automation-registry-hero">
+    <main className={`automation-registry-page${isFocusedInspector ? ' is-focused' : ''}`}>
+      <header className={`automation-registry-hero${isFocusedInspector ? ' is-focused' : ''}`}>
         <div>
           <span className="automation-registry-kicker"><Workflow size={14} /> Internal automation registry</span>
-          <h1>One operational map, not 82 canvases.</h1>
-          <p>Browse lifecycle families, inspect the definitions Amari actually owns, and keep the complete former-CRM record inventory visible as evidence—not as imported history.</p>
+          {isFocusedInspector ? (
+            <>
+              <Link className="automation-back-link" to="/automations">← All workflows</Link>
+              <h1>Inspect this workflow.</h1>
+              <p>Everything Amari can verify about the trigger, waits, steps, exits, source records, and this person’s run evidence is together on one internal page.</p>
+            </>
+          ) : (
+            <>
+              <h1>One operational map, not 82 canvases.</h1>
+              <p>Browse lifecycle families, inspect the definitions Amari actually owns, and keep the complete former-CRM record inventory visible as evidence—not as imported history.</p>
+            </>
+          )}
         </div>
-        {registry?.summary && (
+        {registry?.summary && !isFocusedInspector && (
           <div className="automation-registry-stats" aria-label="Automation inventory summary">
             <span><strong>{registry.summary.operationalFamilies}</strong><small>operating families</small></span>
             <span><strong>{registry.summary.ownedDefinitions}</strong><small>owned definitions</small></span>
@@ -190,8 +204,8 @@ export default function AutomationRegistryPage() {
       {!registry && !registryError && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading the registry…</div>}
 
       {registry && (
-        <div className="automation-registry-workspace">
-          <aside className="automation-family-browser" aria-label="Automation families">
+        <div className={`automation-registry-workspace${isFocusedInspector ? ' is-focused' : ''}`}>
+          {!isFocusedInspector && <aside className="automation-family-browser" aria-label="Automation families">
             <div className="automation-family-tools">
               <label><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a family" /></label>
               <div className="automation-lifecycle-filters">
@@ -216,7 +230,7 @@ export default function AutomationRegistryPage() {
                 <ChevronRight size={16} />
               </button>
             )}
-          </aside>
+          </aside>}
 
           <section className="automation-family-detail" aria-live="polite">
             {familyLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Opening family…</div>}
@@ -227,6 +241,7 @@ export default function AutomationRegistryPage() {
                 personEvidence={personEvidence}
                 personLoading={personLoading}
                 personError={personError}
+                focused={isFocusedInspector}
               />
             )}
           </section>
@@ -242,12 +257,14 @@ function FamilyDetail({
   personEvidence,
   personLoading,
   personError,
+  focused,
 }: {
   detail: AutomationFamilyResponse;
   person: AutomationPerson | null;
   personEvidence: ContactAutomationEvidence | null;
   personLoading: boolean;
   personError: string;
+  focused: boolean;
 }) {
   const family = detail.family;
   return (
@@ -261,9 +278,14 @@ function FamilyDetail({
         <span className={`automation-store-state ${detail.configured ? 'is-connected' : ''}`}><CircleDot size={13} />{detail.configured ? 'Execution store connected' : 'Execution store not connected'}</span>
       </div>
 
-      {personLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading this person’s workflow evidence…</div>}
-      {personError && <p className="automation-registry-error"><AlertTriangle size={16} />{personError}</p>}
-      {!personLoading && person && personEvidence && <PersonEvidence person={person} evidence={personEvidence} family={family} />}
+      {focused && (
+        <nav className="automation-inspector-nav" aria-label="Workflow inspector sections">
+          <a href="#workflow-definition">How it works</a>
+          {person && <a href="#person-run-evidence">This person’s evidence</a>}
+          <a href="#source-record-evidence">Source records</a>
+          <a href="#workflow-evidence-limits">Evidence limits</a>
+        </nav>
+      )}
 
       {(detail.coverage?.enrollmentsTruncated || detail.coverage?.eventsTruncated) && (
         <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> Older {detail.coverage.enrollmentsTruncated ? 'enrollments' : ''}{detail.coverage.enrollmentsTruncated && detail.coverage.eventsTruncated ? ' and ' : ''}{detail.coverage.eventsTruncated ? 'run events' : ''} exist beyond this page and are not included in the counts below.</span></div>
@@ -275,7 +297,7 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
-      <section className="automation-detail-section">
+      <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Owned definitions</h3><p>Exact trigger, step timing, type, branch structure, and template key from code.</p></div><b>{family.ownedDefinitions.length}</b></div>
         {family.ownedDefinitions.length ? family.ownedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
@@ -296,6 +318,12 @@ function FamilyDetail({
         )) : <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
       </section>
 
+      <div id="person-run-evidence">
+        {personLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading this person’s workflow evidence…</div>}
+        {personError && <p className="automation-registry-error"><AlertTriangle size={16} />{personError}</p>}
+        {!personLoading && person && personEvidence && <PersonEvidence person={person} evidence={personEvidence} family={family} />}
+      </div>
+
       <section className="automation-detail-section">
         <div className="automation-section-heading"><Database size={17} /><div><h3>Owned execution evidence</h3><p>Only enrollments and events recorded by owned engines.</p></div><b>{detail.enrollments.length + detail.events.length}</b></div>
         {!detail.configured ? <p className="automation-registry-empty">The execution store is not connected in this environment. No inference about runs can be made.</p> : (
@@ -308,14 +336,14 @@ function FamilyDetail({
         )}
       </section>
 
-      <section className="automation-detail-section">
+      <section className="automation-detail-section" id="source-record-evidence">
         <div className="automation-section-heading"><Workflow size={17} /><div><h3>Source record evidence</h3><p>Exact names and dated publication status; canvas history is not imported.</p></div><b>{family.sourceRecords.length}</b></div>
         <div className="automation-source-list">
           {family.sourceRecords.map((record) => <div key={record.name}><span className={record.status}>{record.status}</span><strong>{record.name}</strong></div>)}
         </div>
       </section>
 
-      <section className="automation-detail-section">
+      <section className="automation-detail-section" id="workflow-evidence-limits">
         <div className="automation-section-heading"><AlertTriangle size={17} /><div><h3>Evidence limits</h3><p>These labels prevent false certainty during cutover.</p></div></div>
         <ul className="automation-gap-list">{detail.evidence.gaps.map((gap) => <li key={gap.code}><strong>{humanize(gap.code)}</strong><span>{gap.label}</span></li>)}</ul>
       </section>
@@ -345,7 +373,7 @@ function PersonEvidence({ person, evidence, family }: { person: AutomationPerson
           <h3><Workflow size={16} /> Enrollments <b>{enrollments.length}</b></h3>
           {enrollments.length ? enrollments.map((enrollment) => (
             <article key={enrollment.enrollmentId}>
-              <div><strong>{enrollment.family?.name || enrollment.key || humanize(enrollment.engine)}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div>
+              <div><a className="automation-enrollment-definition-link" href="#workflow-definition">{enrollment.family?.name || enrollment.key || humanize(enrollment.engine)}<small>Inspect definition</small><ChevronRight size={14} /></a><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div>
               <dl>
                 <div><dt>Entered</dt><dd>{exactTime(enrollment.enteredAt)}</dd></div>
                 <div><dt>Enrollment</dt><dd><code>{enrollment.enrollmentId}</code></dd></div>

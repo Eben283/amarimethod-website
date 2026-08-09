@@ -103,7 +103,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     return '<button class="status-card" type="button" data-record-target="' + esc(target) + '" aria-controls="' + esc(controls) + '"><span class="status-label">' + esc(label) + '</span><span class="status-value">' + esc(value) + '</span><span class="status-arrow" aria-hidden="true">→</span></button>';
   }
   function workflowHref(familyKey, contactId) {
-    return 'https://www.amarimethod.com/staff/automations?family=' + encodeURIComponent(familyKey) + '&contact=' + encodeURIComponent(contactId);
+    return 'https://www.amarimethod.com/staff/automations/' + encodeURIComponent(familyKey) + '?contact=' + encodeURIComponent(contactId);
   }
   function workflowSummary(evidence) {
     if (!evidence?.configured) return 'Execution evidence unavailable';
