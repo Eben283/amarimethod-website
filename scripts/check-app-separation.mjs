@@ -16,7 +16,7 @@ if (!redirects.includes("/parking/* /parking/index.html 200")) {
   throw new Error("Parking needs its own SPA fallback.");
 }
 
-for (const route of ["/staff/automations", "/staff/settings/communication"]) {
+for (const route of ["/staff/automations", "/staff/automations/*", "/staff/settings/communication"]) {
   if (!redirects.includes(`${route} /staff/ 200`)) {
     throw new Error(`${route} must resolve through the Staff SPA entrypoint`);
   }

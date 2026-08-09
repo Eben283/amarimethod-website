@@ -27,6 +27,7 @@
 /staff/field-studies /staff/ 200
 /staff/operations /staff/ 200
 /staff/automations /staff/ 200
+/staff/automations/* /staff/ 200
 /staff/revenue /staff/ 200
 /staff/products /staff/ 200
 /staff/products/* /staff/ 200
