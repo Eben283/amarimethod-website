@@ -9,8 +9,7 @@ describe("staff-data calendar loading", () => {
     vi.resetModules();
   });
 
-  it("loads calendar summaries in parallel without contact-ledger enrichment", async () => {
-    let releaseFirstCalendar;
+  it("loads calendar summaries with one practitioner schedule query and no ledger enrichment", async () => {
     let eventCalls = 0;
     const ghlFetch = vi.fn(async (_context, url) => {
       const value = String(url);
@@ -24,22 +23,17 @@ describe("staff-data calendar loading", () => {
       }
       if (value.includes("/calendars/events?")) {
         eventCalls += 1;
-        if (value.includes("calendarId=cal-1")) {
-          return new Promise((resolve) => {
-            releaseFirstCalendar = () => resolve(jsonResponse({
-              events: [{
-                id: "appt-1",
-                contactId: "contact-1",
-                title: "Surrina",
-                startTime: "2026-08-08T11:00:00-07:00",
-                endTime: "2026-08-08T12:00:00-07:00",
-                appointmentStatus: "confirmed",
-              }],
-            }));
-          });
-        }
-        releaseFirstCalendar?.();
-        return jsonResponse({ events: [] });
+        return jsonResponse({
+          events: [{
+            id: "appt-1",
+            calendarId: "cal-1",
+            contactId: "contact-1",
+            title: "Surrina",
+            startTime: "2026-08-08T11:00:00-07:00",
+            endTime: "2026-08-08T12:00:00-07:00",
+            appointmentStatus: "confirmed",
+          }],
+        });
       }
       throw new Error(`summary request should not fetch ${value}`);
     });
@@ -59,13 +53,13 @@ describe("staff-data calendar loading", () => {
       request: new Request("https://www.amarimethod.com/api/staff-data?date=2026-08-03&endDate=2026-08-09&summary=1"),
       env: {},
     });
-    const response = await Promise.race([
-      request,
-      new Promise((_, reject) => setTimeout(() => reject(new Error("calendar requests were serialized")), 100)),
-    ]);
+    const response = await request;
 
     expect(response.status).toBe(200);
-    expect(eventCalls).toBe(2);
+    expect(eventCalls).toBe(1);
+    expect(ghlFetch.mock.calls.some(([, url]) =>
+      String(url).includes("userId=P5b0oSTaVYfULDjZ6YyG"),
+    )).toBe(true);
     expect(await response.json()).toEqual([
       expect.objectContaining({
         id: "appt-1",
