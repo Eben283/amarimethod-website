@@ -151,6 +151,17 @@ describe("Gmail provider evidence", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  it("does not promote provider outcome history metadata to an inbox checkpoint", async () => {
+    const { raw, db, now } = fixture();
+    seedProviderSubmission(raw);
+
+    await recordGmailEvidence(db, providerEvidence({ historyId: "900719925474099312345" }), now);
+
+    expect(raw.prepare("SELECT history_id FROM gmail_provider_events").get().history_id)
+      .toBe("900719925474099312345");
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(0);
+  });
+
   it("deduplicates identical provider evidence and rejects conflicting reuse", async () => {
     const { raw, db, now } = fixture();
     seedProviderSubmission(raw);
@@ -203,7 +214,7 @@ describe("Gmail provider evidence", () => {
     expect(raw.prepare("SELECT COUNT(*) AS count FROM communication_events WHERE provider = 'gmail'").get().count).toBe(0);
   });
 
-  it("attributes an inbound reply by RFC headers and preserves Gmail/RFC identifiers and the history cursor", async () => {
+  it("attributes an inbound reply without promoting its history ID to an authoritative checkpoint", async () => {
     const { raw, db, now } = fixture();
     const batch = vi.spyOn(db, "batch");
     vi.stubGlobal("fetch", vi.fn(() => { throw new Error("network must stay disconnected"); }));
@@ -236,9 +247,10 @@ describe("Gmail provider evidence", () => {
       .toEqual({ provider_thread_id: "eben@amarimethod.com:gmail-thread-1", unread_inbound_count: 1 });
     expect(raw.prepare("SELECT direction, provider_event_id FROM communication_events WHERE provider = 'gmail' AND direction = 'inbound'").get())
       .toEqual({ direction: "inbound", provider_event_id: "eben@amarimethod.com:gmail-inbound-1" });
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(0);
     expect(fetch).not.toHaveBeenCalled();
     expect(batch).toHaveBeenCalledTimes(2);
-    expect(batch.mock.calls[1][0]).toHaveLength(4);
+    expect(batch.mock.calls[1][0]).toHaveLength(3);
   });
 
   it("attributes an early reply from immutable submission proof before outcome ingestion", async () => {

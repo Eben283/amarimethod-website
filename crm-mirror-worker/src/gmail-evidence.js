@@ -205,8 +205,6 @@ async function providerOutcome(db, identity, input, now) {
       summary: { submissionRef: normalized.submissionRef, outcome: normalized.outcome }, now,
     }));
   }
-  const history = await historyStatement(db, identity, identity.grantOwner, normalized.historyId, normalized.occurredAt);
-  if (history) statements.push(history);
   try {
     await db.batch(statements);
   } catch (error) {
@@ -342,8 +340,6 @@ async function inboundMessage(db, identity, input, now) {
       summary: { fromAddress: evidence.fromAddress, gmailThreadId: evidence.gmailThreadId, inReplyTo: evidence.inReplyTo }, now,
     }));
   }
-  const history = await historyStatement(db, identity, evidence.mailboxAddress, evidence.historyId, evidence.receivedAt);
-  if (history) statements.push(history);
   try {
     await db.batch(statements);
   } catch (error) {
