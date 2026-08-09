@@ -20,7 +20,7 @@ function env(overrides = {}) {
   };
 }
 
-describe("POST /api/staff-amari-mail-auth", () => {
+describe("Staff Amari mail authorization", () => {
   it("gives authenticated Eben a signed one-time Amari mail consent URL with reply-read scope", async () => {
     const environment = env();
     const token = await staffToken();
@@ -33,7 +33,13 @@ describe("POST /api/staff-amari-mail-auth", () => {
     });
 
     expect(response.status).toBe(200);
-    const authorizationUrl = new URL((await response.json()).authorizationUrl);
+    const payload = await response.json();
+    expect(payload).toMatchObject({
+      actor: "Eben",
+      mailbox: "eben@amarimethod.com",
+      deliveryEnabled: false,
+    });
+    const authorizationUrl = new URL(payload.authorizationUrl);
     expect(authorizationUrl.origin).toBe("https://accounts.google.com");
     expect(authorizationUrl.searchParams.get("client_id")).toBe("amari-mail-client");
     expect(authorizationUrl.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/staff-amari-mail-callback");
@@ -95,7 +101,153 @@ describe("POST /api/staff-amari-mail-auth", () => {
 
   it("exposes actor-specific grant readiness while delivery and reply sync remain off", async () => {
     const environment = env();
-    environment.PORTAL_KV.get.mockImplementation(async (key) => key === "amari-mail:eben:grant_status" ? JSON.stringify({
+    environment.PORTAL_KV.get.mockImplementation(async (key) => {
+      if (key === "amari-mail:eben:refresh_token") return "private-refresh-token";
+      return key === "amari-mail:eben:grant_status" ? JSON.stringify({
+        actor: "Eben",
+        profileEmail: "eben@amarimethod.com",
+        verifiedSendAs: ["eben@amarimethod.com"],
+        scopes: [
+          "https://www.googleapis.com/auth/gmail.send",
+          "https://www.googleapis.com/auth/gmail.settings.basic",
+          "https://www.googleapis.com/auth/gmail.readonly",
+        ],
+      }) : null;
+    });
+    const response = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+        headers: { Authorization: `Bearer ${await staffToken("Eben")}` },
+      }),
+      env: environment,
+    });
+
+    expect(response.status).toBe(200);
+    const readiness = await response.json();
+    expect(readiness).toMatchObject({
+      actor: "Eben",
+      mailbox: "eben@amarimethod.com",
+      oauthConfigured: true,
+      configurationStatus: "configured",
+      connectionStatus: "verified",
+      grantPresent: true,
+      grantConnected: true,
+      grantVerified: true,
+      profileReady: true,
+      scopesReady: true,
+      sendAsReady: true,
+      credentialReady: true,
+      deliveryEnabled: false,
+      replySyncEnabled: false,
+      fallbackProvider: null,
+      blockers: expect.arrayContaining([
+        "Gmail delivery is disabled; no delivery dispatcher is active",
+        "Inbound Gmail watch and ingestion are not active",
+        "Gmail provider outcomes are not connected to the Communication surface",
+      ]),
+    });
+    expect(JSON.stringify(readiness)).not.toContain("private-refresh-token");
+    expect(environment.PORTAL_KV.get).toHaveBeenCalledWith("amari-mail:eben:grant_status");
+    expect(environment.PORTAL_KV.get).toHaveBeenCalledWith("amari-mail:eben:refresh_token");
+    expect(environment.PORTAL_KV.get).not.toHaveBeenCalledWith("amari-mail:garrett:grant_status");
+  });
+
+  it("distinguishes an absent grant from an invalid grant without exposing credential material", async () => {
+    const environment = env();
+    const request = new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+      headers: { Authorization: `Bearer ${await staffToken("Garrett")}` },
+    });
+
+    const absent = await onRequestGet({ request, env: environment });
+    await expect(absent.json()).resolves.toMatchObject({
+      actor: "Garrett",
+      mailbox: "garrett@amarimethod.com",
+      configurationStatus: "configured",
+      connectionStatus: "absent",
+      grantPresent: false,
+      grantConnected: false,
+      grantVerified: false,
+      credentialReady: false,
+      blockers: expect.arrayContaining(["No verified Amari Gmail grant is connected for Garrett"]),
+    });
+    expect(environment.PORTAL_KV.get).not.toHaveBeenCalledWith("amari-mail:garrett:refresh_token");
+
+    environment.PORTAL_KV.get.mockImplementation(async (key) => {
+      if (key === "amari-mail:garrett:refresh_token") return "must-not-leak";
+      if (key === "amari-mail:garrett:grant_status") return JSON.stringify({
+        actor: "Eben",
+        profileEmail: "eben@amarimethod.com",
+        verifiedSendAs: ["eben@amarimethod.com"],
+        scopes: ["https://www.googleapis.com/auth/gmail.send"],
+      });
+      return null;
+    });
+    const invalid = await onRequestGet({
+      request: new Request(request.url, { headers: request.headers }),
+      env: environment,
+    });
+    const invalidPayload = await invalid.json();
+    expect(invalidPayload).toMatchObject({
+      actor: "Garrett",
+      mailbox: "garrett@amarimethod.com",
+      connectionStatus: "invalid",
+      grantPresent: true,
+      grantConnected: false,
+      grantVerified: false,
+      profileReady: false,
+      scopesReady: false,
+      sendAsReady: false,
+      credentialReady: true,
+      blockers: expect.arrayContaining([
+        "The stored grant does not belong to Garrett",
+        "The connected Google profile does not match garrett@amarimethod.com",
+        "The connected grant is missing required Gmail scopes",
+        "Gmail has not verified garrett@amarimethod.com as an approved SendAs identity",
+      ]),
+    });
+    expect(JSON.stringify(invalidPayload)).not.toContain("must-not-leak");
+  });
+
+  it("reports Amari mail as unconfigured without reading grant or credential keys", async () => {
+    const environment = env({ AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: undefined });
+    const response = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+        headers: { Authorization: `Bearer ${await staffToken("Eben")}` },
+      }),
+      env: environment,
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      actor: "Eben",
+      mailbox: "eben@amarimethod.com",
+      oauthConfigured: false,
+      configurationStatus: "unconfigured",
+      connectionStatus: "unconfigured",
+      grantPresent: false,
+      grantConnected: false,
+      grantVerified: false,
+      blockers: expect.arrayContaining(["Amari-owned Google OAuth configuration is not available"]),
+    });
+    expect(environment.PORTAL_KV.get).not.toHaveBeenCalled();
+  });
+
+  it("rejects readiness for a signed Staff identity without an exact Amari mailbox", async () => {
+    const environment = env();
+    const response = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+        headers: { Authorization: `Bearer ${await staffToken("Staff")}` },
+      }),
+      env: environment,
+    });
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "Staff mailbox is not authorized" });
+    expect(environment.PORTAL_KV.get).not.toHaveBeenCalled();
+  });
+
+  it("marks a verified grant invalid when its refresh credential is absent", async () => {
+    const environment = env();
+    environment.PORTAL_KV.get.mockImplementation(async (key) => key.endsWith(":grant_status") ? JSON.stringify({
       actor: "Eben",
       profileEmail: "eben@amarimethod.com",
       verifiedSendAs: ["eben@amarimethod.com"],
@@ -112,23 +264,35 @@ describe("POST /api/staff-amari-mail-auth", () => {
       env: environment,
     });
 
-    expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
+      connectionStatus: "invalid",
+      grantPresent: true,
+      grantConnected: false,
+      grantVerified: false,
+      profileReady: true,
+      scopesReady: true,
+      sendAsReady: true,
+      credentialReady: false,
+      blockers: expect.arrayContaining(["The verified Amari Gmail grant has no refresh credential"]),
+    });
+  });
+
+  it("reports readiness storage failures as unavailable rather than unauthorized", async () => {
+    const environment = env();
+    environment.PORTAL_KV.get.mockRejectedValue(new Error("KV unavailable"));
+    const response = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+        headers: { Authorization: `Bearer ${await staffToken("Eben")}` },
+      }),
+      env: environment,
+    });
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Amari mail readiness is unavailable",
       actor: "Eben",
       mailbox: "eben@amarimethod.com",
-      oauthConfigured: true,
-      grantVerified: true,
       deliveryEnabled: false,
-      replySyncEnabled: false,
-      fallbackProvider: null,
-      blockers: expect.arrayContaining([
-        "DKIM and DMARC are not verified",
-        "inbound Gmail reply sync is not implemented",
-        "delivery command dispatcher is not activated",
-        "provider outcomes are not ingested into Communication",
-      ]),
     });
-    expect(environment.PORTAL_KV.get).toHaveBeenCalledWith("amari-mail:eben:grant_status");
-    expect(environment.PORTAL_KV.get).not.toHaveBeenCalledWith("amari-mail:garrett:grant_status");
   });
 });
