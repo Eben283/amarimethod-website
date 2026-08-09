@@ -214,6 +214,28 @@ describe("Gmail provider evidence", () => {
     }]);
   });
 
+  it("keeps distinct body and metadata review reasons for the same Gmail message and history record", async () => {
+    const { raw, db, now } = fixture();
+    const context = { mailboxActor: "Eben", grantOwner: "eben@amarimethod.com" };
+    const common = {
+      mailboxAddress: "eben@amarimethod.com",
+      providerMessageId: "adjusted-message-1",
+      historyId: "900719925474099312345",
+      observedAt: now,
+    };
+
+    await ingestGmailEvidence(db, context, {
+      ...common, kind: "gmail_body_truncated", reason: "body_truncated",
+    }, now);
+    await ingestGmailEvidence(db, context, {
+      ...common, kind: "gmail_metadata_truncated", reason: "metadata_truncated",
+    }, now);
+
+    expect(raw.prepare(
+      "SELECT reason FROM gmail_sync_gap_reviews ORDER BY reason",
+    ).all().map((row) => row.reason)).toEqual(["body_truncated", "metadata_truncated"]);
+  });
+
   it("deduplicates identical provider evidence and rejects conflicting reuse", async () => {
     const { raw, db, now } = fixture();
     seedProviderSubmission(raw);

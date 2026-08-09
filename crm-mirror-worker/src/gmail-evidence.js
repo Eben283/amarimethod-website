@@ -28,6 +28,8 @@ const SYNC_GAP_FIELDS = new Set([
 const SYNC_GAP_REASONS = new Map([
   ["gmail_message_missing", "provider_message_missing"],
   ["gmail_body_truncated", "body_truncated"],
+  ["gmail_metadata_truncated", "metadata_truncated"],
+  ["gmail_metadata_unusable", "metadata_unusable"],
 ]);
 
 export class GmailEvidenceError extends Error {
@@ -386,9 +388,9 @@ async function syncGap(db, identity, input, now) {
   const observedAt = timestamp(input.observedAt || now, "observedAt");
   const existing = await db.prepare(
     `SELECT id FROM gmail_sync_gap_reviews
-      WHERE grant_owner = ? AND provider_message_id = ? AND history_id = ?`,
-  ).bind(identity.grantOwner, providerMessageId, cursor).first();
-  const id = await deterministicId("ghg", `${identity.grantOwner}\n${providerMessageId}\n${cursor}`);
+      WHERE grant_owner = ? AND provider_message_id = ? AND history_id = ? AND reason = ?`,
+  ).bind(identity.grantOwner, providerMessageId, cursor, reason).first();
+  const id = await deterministicId("ghg", `${identity.grantOwner}\n${providerMessageId}\n${cursor}\n${reason}`);
   await db.prepare(
     `INSERT OR IGNORE INTO gmail_sync_gap_reviews
      (id, mailbox_actor, grant_owner, mailbox_address, provider_message_id, history_id, reason, observed_at, created_at)

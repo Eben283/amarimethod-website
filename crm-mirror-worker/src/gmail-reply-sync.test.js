@@ -372,7 +372,7 @@ describe("Gmail reply synchronization", () => {
         headers: [
           { name: "fRoM", value: "\"Surrina, Client\" <surrina@example.test>" },
           { name: "TO", value: "\"Forrest, Eben\" <eben@amarimethod.com>, Other <other@example.test>" },
-          { name: "cC", value: "Garrett <garrett@amarimethod.com>" },
+          { name: "cC", value: "Garrett <garrett@amarimethod.com>, Eben again <eben@amarimethod.com>" },
           { name: "SUBJECT", value: "Re: Checking in" },
           { name: "message-ID", value: "<mime@example.test>" },
           { name: "IN-reply-TO", value: "<outbound-1@amarimethod.com>" },
@@ -404,6 +404,7 @@ describe("Gmail reply synchronization", () => {
       body_clean: body,
       received_at: "2026-08-08T18:05:00.000Z",
     });
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_sync_gap_reviews").get().count).toBe(0);
   });
 
   it("uses a bounded clean Gmail snippet when no inline text body exists and ignores attachments", async () => {
@@ -458,21 +459,74 @@ describe("Gmail reply synchronization", () => {
     ]);
   });
 
-  it("requires trustworthy Gmail time metadata and leaves the record uncheckpointed when it is absent", async () => {
+  it("bounds oversized valid metadata, normalizes a long-display sender, reviews the loss, and advances", async () => {
     const { raw, db, now } = fixture();
     await checkpoint(db, "100", now);
-    const missingTime = gmailMessage({ internalDate: undefined });
+    const message = gmailMessage();
+    const recipients = ["Eben <eben@amarimethod.com>", ...Array.from(
+      { length: 105 }, (_, index) => `Person ${index} <person-${index}@example.test>`,
+    )];
+    const refs = [
+      `<${"x".repeat(1200)}@example.test>`,
+      ...Array.from({ length: 105 }, (_, index) => `<reference-${index}@example.test>`),
+    ];
+    message.payload.headers = [
+      { name: "From", value: `\"${"Long display ".repeat(100)}\" <surrina@example.test>` },
+      { name: "To", value: recipients.join(", ") },
+      { name: "Cc", value: "Extra <extra@example.test>" },
+      { name: "Subject", value: "s".repeat(700) },
+      { name: "Message-ID", value: `<${"m".repeat(1100)}@example.test>` },
+      { name: "In-Reply-To", value: `<${"i".repeat(1100)}@example.test>` },
+      { name: "References", value: refs.join(" ") },
+    ];
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({
+        history: [{ id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] }],
+        historyId: "150",
+      }),
+      getMessage: vi.fn().mockResolvedValue(message),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toMatchObject({
+      status: "succeeded",
+      cursor: "150",
+      counts: { historyRecords: 1, messages: 1, accepted: 1, reviewed: 1, skipped: 0 },
+    });
+    const stored = raw.prepare(
+      `SELECT from_address, length(subject_clean) AS subject_length, to_addresses_json,
+              references_json, rfc_message_id, in_reply_to FROM gmail_inbound_messages`,
+    ).get();
+    expect(stored.from_address).toBe("surrina@example.test");
+    expect(stored.subject_length).toBe(500);
+    expect(JSON.parse(stored.to_addresses_json)).toHaveLength(100);
+    expect(JSON.parse(stored.references_json)).toHaveLength(100);
+    expect(JSON.parse(stored.references_json).every((reference) => reference.length <= 998)).toBe(true);
+    expect(stored.rfc_message_id).toBeNull();
+    expect(stored.in_reply_to).toBeNull();
+    expect(raw.prepare("SELECT reason FROM gmail_sync_gap_reviews").all().map((row) => row.reason))
+      .toContain("metadata_truncated");
+  });
+
+  it("durably skips unusable sender metadata and advances instead of poisoning the cursor", async () => {
+    const { raw, db, now } = fixture();
+    await checkpoint(db, "100", now);
+    const unusable = gmailMessage();
+    unusable.payload.headers = unusable.payload.headers.map((header) =>
+      header.name.toLowerCase() === "from" ? { ...header, value: "not a usable sender" } : header);
 
     await expect(syncGmailReplies({ db, provider: provider({
-      getMessage: vi.fn().mockResolvedValue(missingTime),
+      listHistoryPage: vi.fn().mockResolvedValue({
+        history: [{ id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] }],
+        historyId: "150",
+      }),
+      getMessage: vi.fn().mockResolvedValue(unusable),
     }), now })).resolves.toMatchObject({
-      status: "recovery_required",
-      cursor: "100",
-      counts: { historyRecords: 0, messages: 1 },
-      error: { code: "missing_received_at", messageId: "inbound-1", historyId: "101" },
+      status: "succeeded",
+      cursor: "150",
+      counts: { historyRecords: 1, messages: 1, accepted: 0, reviewed: 1, skipped: 1 },
     });
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_inbound_messages").get().count).toBe(0);
-    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(1);
+    expect(raw.prepare("SELECT reason FROM gmail_sync_gap_reviews").get().reason).toBe("metadata_unusable");
   });
 
   it("returns recovery before fetching or checkpointing an oversized history record", async () => {

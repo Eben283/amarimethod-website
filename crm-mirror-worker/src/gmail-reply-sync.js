@@ -13,6 +13,9 @@ const MAILBOXES = new Map([
 const MAX_MESSAGES_PER_HISTORY_RECORD = 500;
 const MAX_BODY_CHARS = 50000;
 const MAX_BODY_DECODE_BYTES = (MAX_BODY_CHARS * 4) + 4;
+const BAD_METADATA_TEXT = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g;
+const PROVIDER_IDENTIFIER = /^[A-Za-z0-9@._:+<>\/-]{1,512}$/;
+const EMAIL_ADDRESS = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
 function mailboxContext(provider) {
   const actor = String(provider?.mailboxContext?.mailboxActor || "").trim();
@@ -49,11 +52,12 @@ function headerMap(message) {
 }
 
 function address(value) {
-  return String(value || "").match(/<([^<>]+)>/)?.[1]?.trim().toLowerCase()
-    || String(value || "").trim().toLowerCase();
+  const raw = String(value || "");
+  const candidate = (raw.match(/<([^<>]+)>/)?.[1] || raw).trim().toLowerCase();
+  return candidate.length <= 320 && EMAIL_ADDRESS.test(candidate) ? candidate : null;
 }
 
-function addresses(value) {
+function addressEntries(value) {
   const entries = [];
   let current = "";
   let quoted = false;
@@ -71,7 +75,17 @@ function addresses(value) {
     } else current += character;
   }
   if (current.trim()) entries.push(current);
-  return entries.map(address).filter(Boolean);
+  return entries;
+}
+
+function recipientMetadata(values) {
+  const entries = values.flatMap(addressEntries);
+  const valid = entries.map(address).filter(Boolean);
+  const unique = [...new Set(valid)];
+  return {
+    addresses: unique.slice(0, 100),
+    adjusted: valid.length !== entries.length || unique.length > 100,
+  };
 }
 
 function decodeBody(payload) {
@@ -95,13 +109,36 @@ function decodeBody(payload) {
   return null;
 }
 
-function references(value) {
-  return String(value || "").match(/<[^<>]+>/g) || [];
+function normalizedReferences(value) {
+  const matches = String(value || "").match(/<[^<>]+>/g) || [];
+  const bounded = matches.filter((reference) => reference.length <= 998);
+  return {
+    values: bounded.slice(0, 100),
+    adjusted: bounded.length !== matches.length || bounded.length > 100,
+  };
+}
+
+function boundedHeader(value) {
+  if (value == null || value === "") return { value: null, adjusted: false };
+  const unfolded = String(value).replace(/\r?\n[ \t]*/g, " ").trim();
+  const clean = unfolded.replace(BAD_METADATA_TEXT, "");
+  if (!clean) return { value: null, adjusted: true };
+  if (clean.length > 998) return { value: null, adjusted: true };
+  return { value: clean, adjusted: clean !== unfolded };
+}
+
+function boundedSubject(value) {
+  if (value == null || value === "") return { value: null, adjusted: false };
+  const clean = String(value).replace(BAD_METADATA_TEXT, "").trim();
+  return {
+    value: clean ? clean.slice(0, 500) : null,
+    adjusted: clean.length > 500 || clean !== String(value).trim(),
+  };
 }
 
 function snippetBody(value) {
   const clean = String(value || "")
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E\u2066-\u2069]/g, "")
+    .replace(BAD_METADATA_TEXT, "")
     .replace(/\s+/g, " ")
     .trim();
   return clean ? clean.slice(0, 4000) : null;
@@ -118,32 +155,37 @@ function receivedAt(message, headers) {
 function normalizeMessage(message, historyId, owner) {
   const providerMessageId = String(message?.id || "").trim();
   const gmailThreadId = String(message?.threadId || "").trim();
-  if (!providerMessageId || !gmailThreadId) {
-    throw Object.assign(new Error("Gmail message is missing its message or thread ID"), { code: "invalid_gmail_message" });
+  if (!PROVIDER_IDENTIFIER.test(providerMessageId) || !PROVIDER_IDENTIFIER.test(gmailThreadId)) {
+    throw Object.assign(new Error("Gmail message is missing usable message or thread metadata"), { code: "metadata_unusable" });
   }
   const headers = headerMap(message);
-  const toAddresses = [...new Set([
-    ...addresses(headers.get("to")),
-    ...addresses(headers.get("cc")),
-  ])];
+  const fromAddress = address(headers.get("from"));
+  if (!fromAddress) throw Object.assign(new Error("Gmail message is missing a usable sender"), { code: "metadata_unusable" });
+  const recipients = recipientMetadata([headers.get("to"), headers.get("cc")]);
+  const refs = normalizedReferences(headers.get("references"));
+  const rfcMessageId = boundedHeader(headers.get("message-id"));
+  const inReplyTo = boundedHeader(headers.get("in-reply-to"));
+  const subject = boundedSubject(headers.get("subject"));
   const decoded = decodeBody(message.payload);
   return {
     evidence: {
       kind: "inbound_message",
       providerMessageId,
       gmailThreadId,
-      rfcMessageId: headers.get("message-id") || null,
-      inReplyTo: headers.get("in-reply-to") || null,
-      references: references(headers.get("references")),
+      rfcMessageId: rfcMessageId.value,
+      inReplyTo: inReplyTo.value,
+      references: refs.values,
       mailboxAddress: owner,
-      fromAddress: headers.get("from"),
-      toAddresses,
-      subject: headers.get("subject") || null,
+      fromAddress,
+      toAddresses: recipients.addresses,
+      subject: subject.value,
       body: decoded?.body ?? snippetBody(message.snippet),
       historyId,
       receivedAt: receivedAt(message, headers),
     },
     bodyTruncated: Boolean(decoded?.truncated),
+    metadataTruncated: recipients.adjusted || refs.adjusted || rfcMessageId.adjusted
+      || inReplyTo.adjusted || subject.adjusted,
   };
 }
 
@@ -285,7 +327,38 @@ export async function syncGmailReplies({ db, provider, maxHistoryRecords = 50, m
           counts.reviewed += 1;
           if (review.deduped) counts.deduped += 1;
         }
+        if (normalized.metadataTruncated) {
+          const review = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, {
+            kind: "gmail_metadata_truncated",
+            mailboxAddress: owner,
+            providerMessageId: id,
+            historyId: record.id,
+            reason: "metadata_truncated",
+            observedAt: now,
+          }, now);
+          counts.reviewed += 1;
+          if (review.deduped) counts.deduped += 1;
+        }
       } catch (error) {
+        if (error?.code === "metadata_unusable" || error?.code === "missing_received_at") {
+          let result;
+          try {
+            result = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, {
+              kind: "gmail_metadata_unusable",
+              mailboxAddress: owner,
+              providerMessageId: id,
+              historyId: record.id,
+              reason: "metadata_unusable",
+              observedAt: now,
+            }, now);
+          } catch (reviewError) {
+            return recovery(actor, owner, cursor, counts, reviewError, { messageId: id, historyId: record.id });
+          }
+          counts.reviewed += 1;
+          counts.skipped += 1;
+          if (result.deduped) counts.deduped += 1;
+          continue;
+        }
         if (error?.code === "gmail_message_missing") {
           let result;
           try {
