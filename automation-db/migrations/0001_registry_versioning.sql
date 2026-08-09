@@ -3,10 +3,10 @@
 -- Fresh databases should use the engine schema.sql files instead.
 
 ALTER TABLE reminder_enrollments
-  ADD COLUMN definition_version INTEGER NOT NULL DEFAULT 1;
+  ADD COLUMN definition_version INTEGER;
 
 ALTER TABLE nurture_enrollments
-  ADD COLUMN definition_version INTEGER NOT NULL DEFAULT 1;
+  ADD COLUMN definition_version INTEGER;
 
 ALTER TABLE automation_events
   ADD COLUMN definition_version INTEGER;
