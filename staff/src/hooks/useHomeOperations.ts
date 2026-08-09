@@ -85,7 +85,7 @@ export function useHomeOperations() {
 
     void getOutreachCards()
       .then((data) => update('followUps', { data, loading: false, error: null }))
-      .catch((error) => update('followUps', { data: null, loading: false, error: message(error, 'Follow-ups could not be loaded.') }));
+      .catch((error) => update('followUps', { data: null, loading: false, error: message(error, 'Outreach could not be loaded.') }));
 
     void getStaffRevenue(6)
       .then((data) => update('revenue', { data, loading: false, error: null }))

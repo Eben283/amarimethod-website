@@ -39,7 +39,7 @@ const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
     items: [
       { label: 'Calendar', detail: 'Schedule, services, and booking rules', Icon: CalendarDays, to: '/calendar' },
       { label: 'Practice members', detail: 'Relationship history', Icon: MessageSquare, to: '/client-desk' },
-      { label: 'Follow-up', detail: 'Replies and next moves', Icon: UsersRound, to: '/follow-up' },
+      { label: 'Outreach', detail: 'Proactive calls, messages and future contact', Icon: UsersRound, to: '/outreach' },
       { label: 'Balances', detail: 'Session entitlements', Icon: Wallet, to: '/balances' },
       { label: 'Care pipeline', detail: 'Current client flow', Icon: Kanban, to: '/pipeline' },
     ],

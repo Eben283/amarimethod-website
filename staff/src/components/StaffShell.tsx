@@ -62,7 +62,7 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Calendar', detail: 'Day, week, month and services', to: '/calendar', Icon: CalendarDays, matches: (path) => path === '/calendar' || path === '/today' },
   { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
-  { label: 'Follow-up', detail: 'Replies and next moves', to: '/follow-up', Icon: ListChecks },
+  { label: 'Outreach', detail: 'Proactive calls, messages and future contact', to: '/outreach', Icon: ListChecks, matches: (path) => path === '/outreach' || path === '/follow-up' },
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
   { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards },
   { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
