@@ -872,13 +872,14 @@ export async function searchContacts(db, query, limit) {
      FROM contacts contact
      LEFT JOIN external_records external
        ON external.contact_id = contact.id AND external.provider = 'ghl' AND external.object_type = 'contact'
-     WHERE lower(contact.display_name) LIKE ? ESCAPE '\\'
+     WHERE contact.id = ?
+        OR lower(contact.display_name) LIKE ? ESCAPE '\\'
         OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
         OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'
         OR lower(COALESCE(external.external_id, '')) LIKE ? ESCAPE '\\'
      ORDER BY contact.display_name, contact.id
      LIMIT ?`,
-  ).bind(likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, likePattern(query), limit).all();
+  ).bind(String(query), likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, likePattern(query), limit).all();
   return result.results || [];
 }
 

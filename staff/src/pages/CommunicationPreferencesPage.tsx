@@ -60,7 +60,6 @@ function CategoryCard({
   value: CommunicationCategoryPreference;
   onChange: (next: CommunicationCategoryPreference) => void;
 }) {
-  const hasLiveChannel = Object.values(route.channels).includes('live');
   return (
     <article className="comm-route-card">
       <div className="comm-route-card__head">
@@ -69,11 +68,10 @@ function CategoryCard({
           <h2>{route.label}</h2>
           <p>{route.description}</p>
         </div>
-        <label className={`comm-switch${!hasLiveChannel ? ' is-disabled' : ''}`}>
+        <label className="comm-switch">
           <input
             type="checkbox"
             checked={value.enabled}
-            disabled={!hasLiveChannel}
             onChange={(event) => onChange({ ...value, enabled: event.target.checked })}
           />
           <span aria-hidden="true"><i /></span>
@@ -82,7 +80,7 @@ function CategoryCard({
       </div>
 
       <div className="comm-route-card__route">
-        <span><i aria-hidden="true" /> Live now</span>
+        <span><i aria-hidden="true" /> Live now · read only</span>
         <strong>{route.currentRoute}</strong>
         <small>{route.currentCadence === 'digest' ? 'Scheduled summary' : 'Sent when a new incident opens'}</small>
       </div>
@@ -92,13 +90,12 @@ function CategoryCard({
           {(Object.keys(CHANNEL_COPY) as CommunicationChannel[]).map((channel) => {
             const { Icon, label } = CHANNEL_COPY[channel];
             const status = route.channels[channel];
-            const available = status === 'live';
             return (
               <label key={channel} className={`comm-channel comm-channel--${status}`}>
                 <input
                   type="checkbox"
                   checked={value.channels[channel]}
-                  disabled={!available || !value.enabled}
+                  disabled={!value.enabled}
                   onChange={(event) => onChange({
                     ...value,
                     channels: { ...value.channels, [channel]: event.target.checked },
@@ -106,7 +103,7 @@ function CategoryCard({
                 />
                 <Icon aria-hidden="true" />
                 <span><b>{label}</b><small>{status === 'live' ? 'Live route' : status === 'surface_only' ? 'View only — no alert delivery' : 'Not wired for this event'}</small></span>
-                {available && value.channels[channel] ? <Check aria-hidden="true" /> : null}
+                {value.channels[channel] ? <Check aria-hidden="true" /> : null}
               </label>
             );
           })}
@@ -116,7 +113,7 @@ function CategoryCard({
           <span>Timing preference</span>
           <select
             value={value.cadence}
-            disabled={!hasLiveChannel || !value.enabled}
+            disabled={!value.enabled}
             onChange={(event) => onChange({ ...value, cadence: event.target.value as 'immediate' | 'digest' })}
           >
             <option value="immediate">Immediate</option>

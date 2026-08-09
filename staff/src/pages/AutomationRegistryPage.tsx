@@ -53,7 +53,6 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
 
 type AutomationPerson = {
   id: string;
-  ownedId: string;
   name: string;
   email: string;
   phone: string;
@@ -142,11 +141,10 @@ export default function AutomationRegistryPage() {
     Promise.all([searchOwnedContacts(selectedContactId), getContactAutomationEvidence(selectedContactId)])
       .then(([people, evidence]) => {
         if (cancelled) return;
-        const person = people.find((candidate) => candidate.providerContactId === selectedContactId);
+        const person = people.find((candidate) => candidate.id === selectedContactId);
         if (!person) throw new Error('That automation contact is not in the owned CRM mirror.');
         setSelectedPerson({
-          id: selectedContactId,
-          ownedId: person.id,
+          id: person.id,
           name: person.name || person.email || person.phone || 'Unnamed person',
           email: person.email,
           phone: person.phone,
@@ -187,19 +185,15 @@ export default function AutomationRegistryPage() {
   }
 
   async function selectPerson(person: OwnedContactSearchItem) {
-    if (!person.providerContactId) {
-      setPersonError('That owned person has no automation execution crosswalk yet.');
-      return;
-    }
-    setSelectedPerson({ ...person, id: person.providerContactId, ownedId: person.id });
+    setSelectedPerson({ ...person, id: person.id });
     setPersonResults([]);
     setPersonLoading(true);
     setPersonError('');
     const next = new URLSearchParams(params);
-    next.set('contact', person.providerContactId);
+    next.set('contact', person.id);
     setParams(next);
     try {
-      setPersonEvidence(await getContactAutomationEvidence(person.providerContactId));
+      setPersonEvidence(await getContactAutomationEvidence(person.id));
     } catch (error) {
       setPersonError(error instanceof Error ? error.message : 'Could not load automation evidence.');
     } finally {
@@ -373,10 +367,11 @@ function PersonEvidence({ person, evidence }: { person: AutomationPerson; eviden
     <div className="automation-person-evidence">
       <header>
         <div><strong>{person.name || 'Unnamed person'}</strong><span>{person.email || person.phone || person.id}</span></div>
-        <a href={`/staff/client-desk?contact=${encodeURIComponent(person.ownedId)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
+        <a href={`/staff/client-desk?contact=${encodeURIComponent(person.id)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
       </header>
       {evidence.configured === false && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span>The owned execution store is not connected. Absence here is not proof that no automation ran.</span></div>}
       {evidence.coverage?.eventsTruncated && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> This shows the newest {evidence.coverage.eventLimit} run events; older events are not included below.</span></div>}
+      <EvidenceGaps gaps={evidence.evidence?.gaps} />
       <div className="automation-person-columns">
         <section>
           <h3><Workflow size={16} /> Enrollments <b>{enrollments.length}</b></h3>
@@ -390,6 +385,7 @@ function PersonEvidence({ person, evidence }: { person: AutomationPerson; eviden
                 <div><dt>Next</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step recorded'}</dd></div>
                 <div><dt>Due</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div>
               </dl>
+              <EvidenceGaps gaps={enrollment.evidence?.gaps} compact />
             </article>
           )) : <p className="automation-registry-empty">No owned enrollment is recorded. Treat this as a mirror gap unless other evidence confirms none exists.</p>}
         </section>
@@ -397,18 +393,30 @@ function PersonEvidence({ person, evidence }: { person: AutomationPerson; eviden
           <h3><Clock3 size={16} /> Run events <b>{events.length}</b></h3>
           {events.length ? events.map((event, index) => {
             const failed = ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase());
+            const eventGaps = event.evidence?.gaps || [];
+            const unverified = eventGaps.length > 0 || (event.outcome || '').toLowerCase() === 'would_send';
             return (
-              <article className={failed ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}>
-                <div><strong>{event.family?.name || event.flowKey || humanize(event.engine)}</strong>{failed ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}</div>
+              <article className={failed ? 'is-failure' : unverified ? 'is-unverified' : ''} key={`${event.ts}-${event.messageRef || index}`}>
+                <div><strong>{event.family?.name || event.flowKey || humanize(event.engine)}</strong>{failed ? <AlertTriangle size={14} /> : unverified ? <CircleDot size={14} /> : <CheckCircle2 size={14} />}</div>
                 <time>{exactTime(event.ts)}</time>
                 <p>{humanize(event.action)} · {humanize(event.channel)} · <b>{humanize(event.outcome)}</b></p>
                 <small>{event.stepIndex != null ? `Step ${event.stepIndex + 1}` : 'Step not recorded'}{event.appointmentId ? ` · appointment ${event.appointmentId}` : ''}</small>
                 {event.messageRef ? <a href={`/staff/client-desk?contact=${encodeURIComponent(person.id)}`}><MessageSquareText size={13} /> Message reference <code>{event.messageRef}</code> <ArrowUpRight size={12} /></a> : <span className="automation-message-gap">No message reference recorded</span>}
+                <EvidenceGaps gaps={eventGaps} compact />
               </article>
             );
           }) : <p className="automation-registry-empty">No owned run event is recorded. This does not import former CRM execution history.</p>}
         </section>
       </div>
     </div>
+  );
+}
+
+function EvidenceGaps({ gaps, compact = false }: { gaps?: Array<{ code: string; label: string }>; compact?: boolean }) {
+  if (!gaps?.length) return null;
+  return (
+    <ul className={`automation-person-gaps${compact ? ' is-compact' : ''}`}>
+      {gaps.map((gap) => <li key={gap.code}><AlertTriangle size={compact ? 11 : 13} /><span><strong>{humanize(gap.code)}</strong>{gap.label}</span></li>)}
+    </ul>
   );
 }

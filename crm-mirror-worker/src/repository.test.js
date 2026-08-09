@@ -295,7 +295,9 @@ describe("CRM mirror client profiles", () => {
     };
     await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben", provider_contact_id: "ghl_1" }]);
     expect(searchCalls[0].sql).toContain("external.external_id AS provider_contact_id");
-    expect(searchCalls[0].values).toHaveLength(5);
+    expect(searchCalls[0].sql).toContain("WHERE contact.id = ?");
+    expect(searchCalls[0].values).toHaveLength(6);
+    expect(searchCalls[0].values[0]).toBe("Eben");
     await expect(searchContacts(searchDb, null, 25)).resolves.toEqual([]);
 
     const profileDb = {

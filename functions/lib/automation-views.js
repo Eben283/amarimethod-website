@@ -193,6 +193,47 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
 }
 
 /**
+ * Person evidence is addressed by Amari's owned contact ID. During migration, older
+ * engine rows may still carry the former provider ID, so the read layer joins both
+ * identities without making the browser or URL depend on that provider crosswalk.
+ */
+export async function contactAutomationIdentityView(
+  db,
+  { ownedContactId, providerContactId = null, eventLimit = 200 },
+) {
+  const contactIds = [...new Set([ownedContactId, providerContactId].filter(Boolean))];
+  const views = await Promise.all(contactIds.map((contactId) => contactAutomationView(db, contactId, eventLimit)));
+  const unique = (items, keyFor) => [...new Map(items.map((item) => [keyFor(item), item])).values()];
+  const enrollments = unique(
+    views.flatMap((view) => view.enrollments),
+    (item) => `${item.engine}:${item.enrollmentId}`,
+  ).sort((left, right) => Number(right.enteredAt || 0) - Number(left.enteredAt || 0));
+  const combinedEvents = unique(
+    views.flatMap((view) => view.events),
+    (item) => item.id || `${item.engine}:${item.flowKey}:${item.ts}:${item.messageRef || ""}:${item.action || ""}`,
+  ).sort((left, right) => Number(right.ts || 0) - Number(left.ts || 0));
+  const confirmations = unique(
+    views.flatMap((view) => view.confirmations || []),
+    (item) => item.id || JSON.stringify(item),
+  );
+
+  return {
+    contactId: ownedContactId,
+    providerContactId,
+    automationContactIds: contactIds,
+    enrollments,
+    upgradeOffer: views.find((view) => view.upgradeOffer)?.upgradeOffer || null,
+    confirmations,
+    lpOnboarding: views.find((view) => view.lpOnboarding)?.lpOnboarding || null,
+    events: combinedEvents.slice(0, eventLimit),
+    coverage: {
+      eventLimit,
+      eventsTruncated: combinedEvents.length > eventLimit || views.some((view) => view.coverage?.eventsTruncated),
+    },
+  };
+}
+
+/**
  * One registered automation with its owned D1 enrollments and append-only execution history.
  * The caller validates that the definition exists; this query never synthesizes external history.
  */

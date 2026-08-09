@@ -165,6 +165,7 @@ export interface ContactAutomationEnrollment {
     dueAt: number;
     type: string | null;
   } | null;
+  evidence?: { source?: string; gaps?: AutomationEvidenceGap[] };
 }
 
 export interface ContactAutomationEvidence {
