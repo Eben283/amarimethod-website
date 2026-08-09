@@ -536,6 +536,16 @@
   outline: none;
   border-color: var(--ink);
 }
+.form-requirements {
+  margin: 24px 0 -12px;
+  color: var(--body);
+  font-size: 12px;
+}
+.form-requirements span,
+.required-mark,
+.field-error { color: var(--rust); }
+.field input[aria-invalid="true"] { border-color: var(--rust); }
+.field-error { margin: 0; font-size: 12px; line-height: 1.35; }
 .contact .go {
   margin-top: 28px;
   display: flex;

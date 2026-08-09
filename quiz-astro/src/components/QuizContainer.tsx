@@ -195,7 +195,6 @@ const QuizContainer = () => {
               onSubmit={goToNextStep}
               onBack={goToPrevStep}
               isSubmitting={isSubmitting}
-              validationError={validationError}
             />
           ) : (
             <QuizStack
