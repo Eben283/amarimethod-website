@@ -1,0 +1,21 @@
+.automation-health-pilot{max-width:1500px;margin:0 auto 18px;padding:20px 22px 0;border:1px solid #b8d1ca;border-radius:18px;background:linear-gradient(125deg,#f7fbf9 0%,#eef6f2 58%,#f7f8ee 100%);box-shadow:0 12px 30px rgba(31,77,70,.06)}
+.automation-health-pilot>header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:16px}
+.automation-health-pilot header span{display:flex;align-items:center;gap:6px;color:#417367;font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.automation-health-pilot h2{margin:6px 0 5px;color:#173f3a;font:400 clamp(25px,2.7vw,35px)/1 "Bona Nova",Georgia,serif;letter-spacing:-.035em}
+.automation-health-pilot header p{max-width:720px;margin:0;color:#58726e;font-size:11px;line-height:1.5}
+.automation-health-pilot button{display:inline-flex;align-items:center;gap:5px;flex:0 0 auto;border:1px solid #82a99e;border-radius:999px;background:#fff;color:#245e55;padding:9px 12px;font-size:10px;font-weight:800;cursor:pointer}
+.automation-health-pilot button:hover{background:#dceee7}
+.automation-health-pilot-grid{display:grid;grid-template-columns:1.05fr 1fr 1fr;border-top:1px solid #c9ded8}
+.automation-health-pilot-grid article{min-height:132px;padding:16px 18px;border-right:1px solid #c9ded8}
+.automation-health-pilot-grid article:last-child{border-right:0}
+.automation-health-pilot-grid article>span{display:block;margin-bottom:10px;color:#728885;font-size:9px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+.automation-health-pilot-grid article>strong{display:block;color:#234d48;font-size:13px;line-height:1.22}
+.automation-health-pilot-grid article>p{margin:7px 0 0;color:#607876;font-size:10px;line-height:1.48}
+.automation-health-pilot-grid .is-current{background:rgba(255,250,231,.62);box-shadow:inset 4px 0 #d3a649}
+.automation-health-pilot-grid .is-current>strong{color:#6a501e}
+.automation-health-pilot-grid .is-owned{background:rgba(255,255,255,.45)}
+.automation-health-pilot-grid .is-gap{background:rgba(255,244,239,.6);box-shadow:inset 0 0 0 1px rgba(215,162,138,.22)}
+.automation-health-pilot-grid .is-gap>strong{color:#8a5143}
+.automation-health-pilot footer{margin:0 -22px;padding:12px 22px;border-top:1px solid #c9ded8;color:#516b68;font-size:10px;line-height:1.45}
+.automation-health-pilot footer b{color:#285b53}
+@media(max-width:760px){.automation-health-pilot{padding:17px 16px 0}.automation-health-pilot>header{align-items:flex-start;flex-direction:column}.automation-health-pilot-grid{grid-template-columns:1fr}.automation-health-pilot-grid article{min-height:0;border-right:0;border-bottom:1px solid #c9ded8}.automation-health-pilot footer{margin-inline:-16px;padding-inline:16px}}

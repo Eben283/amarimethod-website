@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
+  Activity,
   Archive,
   ArrowUpRight,
   BookOpenCheck,
@@ -31,6 +32,7 @@ import type {
 } from '../types/staff';
 import './AutomationRegistryPage.css';
 import './AutomationCutoverTree.css';
+import './AutomationHealthPilot.css';
 
 const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -203,6 +205,8 @@ export default function AutomationRegistryPage() {
         )}
       </header>
 
+      {registry && !isFocusedInspector && <AutomationHealthPilot families={registry.families} onOpen={selectFamily} />}
+
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
       {!registry && !registryError && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading the registry…</div>}
 
@@ -251,6 +255,46 @@ export default function AutomationRegistryPage() {
         </div>
       )}
     </main>
+  );
+}
+
+function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamily[]; onOpen: (key: string) => void }) {
+  const pilots = families.filter((family) => family.cutoverTree);
+  if (!pilots.length) return null;
+  const family = pilots[0];
+  const nodes = family.cutoverTree!.nodes;
+  const live = nodes.filter((node) => node.state === 'verified_ghl');
+  const shadows = nodes.filter((node) => node.state === 'owned_shadow');
+  const gaps = nodes.filter((node) => node.state === 'gap');
+  return (
+    <section className="automation-health-pilot" aria-label="Automation health pilot">
+      <header>
+        <div>
+          <span><Activity size={14} /> Automation health · first path</span>
+          <h2>Can we see what is actually covered?</h2>
+          <p>This is the first health card, for the Assessment booking path. It shows the owner and proof before any customer-facing cutover is switched on.</p>
+        </div>
+        <button type="button" onClick={() => onOpen(family.key)}>Open evidence tree <ChevronRight size={15} /></button>
+      </header>
+      <div className="automation-health-pilot-grid">
+        <article className="is-current">
+          <span>Current state</span>
+          <strong>Needs verification</strong>
+          <p>GHL owns the live reminder path. The owned version is a shadow only; it cannot send yet.</p>
+        </article>
+        <article className="is-owned">
+          <span>Known owners</span>
+          <strong>{live.length} live GHL · {shadows.length} owned shadow</strong>
+          <p>{live.map((node) => node.label).join(' · ')}</p>
+        </article>
+        <article className="is-gap">
+          <span>Needs attention</span>
+          <strong>{gaps.length ? gaps.map((node) => node.label).join(' · ') : 'No known gap'}</strong>
+          <p>{gaps[0]?.detail || 'No gap is recorded for this path.'}</p>
+        </article>
+      </div>
+      <footer><b>What turns this green:</b> one safely observed booking, cancellation, and no-show/rebooking path with recorded evidence.</footer>
+    </section>
   );
 }
 
