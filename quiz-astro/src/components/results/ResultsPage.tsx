@@ -386,16 +386,15 @@ const EDITORIAL_STYLES = `
 [data-results] details[open] .appendix summary .toggle,
 [data-results] .appendix details[open] summary .toggle{transform:rotate(45deg)}
 [data-results] .appendix-body{padding-top:32px;display:flex;flex-direction:column;gap:48px}
-[data-results] .response-profile-list{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 32px;
-  border-top:1px solid var(--line);padding-top:22px;
-}
-[data-results] .response-profile-row{display:grid;gap:9px}
-[data-results] .response-profile-row > span{
-  font-family:var(--sans);font-size:13px;font-weight:500;line-height:1.25;color:var(--ink);
-}
-[data-results] .response-profile-track{height:3px;background:var(--cream-2);overflow:hidden}
-[data-results] .response-profile-fill{height:100%;background:var(--accent);transition:width .7s var(--ease)}
+[data-results] .response-map-grid{display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:56px;align-items:center}
+[data-results] .response-map{padding:20px;background:var(--paper);border:1px solid var(--line)}
+[data-results] .response-map svg{display:block;width:100%;height:auto;overflow:visible}
+[data-results] .response-map-gridline,[data-results] .response-map-axis{fill:none;stroke:var(--line-strong);stroke-width:1}
+[data-results] .response-map-shape{fill:var(--accent);fill-opacity:.14;stroke:var(--accent);stroke-width:2}
+[data-results] .response-map-point{fill:var(--accent);stroke:var(--paper);stroke-width:2}
+[data-results] .response-map-key{display:grid;gap:14px}
+[data-results] .response-map-key-row{display:flex;align-items:center;gap:10px;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--ink)}
+[data-results] .response-map-key-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:0 0 auto}
 
 /* ── DOC FOOT ────────────────────────────────────────────────────── */
 [data-results] .doc-foot{
@@ -442,7 +441,7 @@ const EDITORIAL_STYLES = `
   [data-results] .hero-finding{padding:32px 0 8px}
   [data-results] .hero-meta{grid-template-columns:1fr}
   [data-results] .why-cards,[data-results] .cred-grid{grid-template-columns:1fr}
-  [data-results] .response-profile-list{grid-template-columns:1fr}
+  [data-results] .response-map-grid{grid-template-columns:1fr;gap:28px}
   [data-results] .chain-step,[data-results] .chain-cell{grid-template-columns:1fr;gap:8px}
   [data-results] .offer-body{grid-template-columns:1fr}
   [data-results] .offer-pane + .offer-pane{border-left:none;border-top:1px solid var(--line)}
