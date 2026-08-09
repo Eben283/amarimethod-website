@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -20,7 +20,6 @@ import {
   getAutomationFamily,
   getContactAutomationEvidence,
   searchOwnedContacts,
-  type OwnedContactSearchItem,
 } from '../lib/api';
 import type {
   AutomationFamiliesResponse,
@@ -90,9 +89,6 @@ export default function AutomationRegistryPage() {
   const [familyLoading, setFamilyLoading] = useState(false);
   const [lifecycle, setLifecycle] = useState<AutomationFamily['lifecycle'] | 'all'>('all');
   const [query, setQuery] = useState('');
-  const [personQuery, setPersonQuery] = useState('');
-  const [personResults, setPersonResults] = useState<OwnedContactSearchItem[]>([]);
-  const [personSearching, setPersonSearching] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<AutomationPerson | null>(null);
   const [personEvidence, setPersonEvidence] = useState<ContactAutomationEvidence | null>(null);
   const [personError, setPersonError] = useState('');
@@ -170,37 +166,6 @@ export default function AutomationRegistryPage() {
     setParams(next);
   }
 
-  async function submitPersonSearch(event: FormEvent) {
-    event.preventDefault();
-    if (personQuery.trim().length < 2) return;
-    setPersonSearching(true);
-    setPersonError('');
-    try {
-      setPersonResults(await searchOwnedContacts(personQuery.trim()));
-    } catch (error) {
-      setPersonError(error instanceof Error ? error.message : 'Could not search people.');
-    } finally {
-      setPersonSearching(false);
-    }
-  }
-
-  async function selectPerson(person: OwnedContactSearchItem) {
-    setSelectedPerson({ ...person, id: person.id });
-    setPersonResults([]);
-    setPersonLoading(true);
-    setPersonError('');
-    const next = new URLSearchParams(params);
-    next.set('contact', person.id);
-    setParams(next);
-    try {
-      setPersonEvidence(await getContactAutomationEvidence(person.id));
-    } catch (error) {
-      setPersonError(error instanceof Error ? error.message : 'Could not load automation evidence.');
-    } finally {
-      setPersonLoading(false);
-    }
-  }
-
   return (
     <main className="automation-registry-page">
       <header className="automation-registry-hero">
@@ -253,43 +218,35 @@ export default function AutomationRegistryPage() {
 
           <section className="automation-family-detail" aria-live="polite">
             {familyLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Opening family…</div>}
-            {!familyLoading && familyDetail && <FamilyDetail detail={familyDetail} />}
+            {!familyLoading && familyDetail && (
+              <FamilyDetail
+                detail={familyDetail}
+                person={selectedPerson}
+                personEvidence={personEvidence}
+                personLoading={personLoading}
+                personError={personError}
+              />
+            )}
           </section>
         </div>
-      )}
-
-      {registry && (
-        <section className="automation-person-inspector" aria-labelledby="person-automation-title">
-          <div className="automation-person-head">
-            <div>
-              <span className="automation-registry-kicker"><Database size={14} /> Person evidence</span>
-              <h2 id="person-automation-title">What is this person enrolled in—and what actually ran?</h2>
-              <p>This joins only owned D1 enrollments and append-only run events. Message content stays in Communication; this view carries the exact message reference and timestamp needed to investigate it.</p>
-            </div>
-            <form onSubmit={submitPersonSearch}>
-              <Search size={16} />
-              <input value={personQuery} onChange={(event) => setPersonQuery(event.target.value)} placeholder="Name, email, or phone" />
-              <button disabled={personSearching || personQuery.trim().length < 2}>{personSearching ? 'Searching…' : 'Find person'}</button>
-              {!!personResults.length && (
-                <div className="automation-person-results">
-                  {personResults.slice(0, 8).map((person) => (
-                    <button type="button" key={person.id} onClick={() => void selectPerson(person)}><strong>{person.name || 'Unnamed person'}</strong><small>{person.email || person.phone || person.id}</small></button>
-                  ))}
-                </div>
-              )}
-            </form>
-          </div>
-          {personError && <p className="automation-registry-error"><AlertTriangle size={16} />{personError}</p>}
-          {personLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading person evidence…</div>}
-          {!personLoading && selectedPerson && personEvidence && <PersonEvidence person={selectedPerson} evidence={personEvidence} />}
-          {!personLoading && !selectedPerson && <p className="automation-registry-empty">Search for a person to inspect their owned enrollment and run evidence.</p>}
-        </section>
       )}
     </main>
   );
 }
 
-function FamilyDetail({ detail }: { detail: AutomationFamilyResponse }) {
+function FamilyDetail({
+  detail,
+  person,
+  personEvidence,
+  personLoading,
+  personError,
+}: {
+  detail: AutomationFamilyResponse;
+  person: AutomationPerson | null;
+  personEvidence: ContactAutomationEvidence | null;
+  personLoading: boolean;
+  personError: string;
+}) {
   const family = detail.family;
   return (
     <>
@@ -301,6 +258,10 @@ function FamilyDetail({ detail }: { detail: AutomationFamilyResponse }) {
         </div>
         <span className={`automation-store-state ${detail.configured ? 'is-connected' : ''}`}><CircleDot size={13} />{detail.configured ? 'Execution store connected' : 'Execution store not connected'}</span>
       </div>
+
+      {personLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading this person’s workflow evidence…</div>}
+      {personError && <p className="automation-registry-error"><AlertTriangle size={16} />{personError}</p>}
+      {!personLoading && person && personEvidence && <PersonEvidence person={person} evidence={personEvidence} family={family} />}
 
       {(detail.coverage?.enrollmentsTruncated || detail.coverage?.eventsTruncated) && (
         <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> Older {detail.coverage.enrollmentsTruncated ? 'enrollments' : ''}{detail.coverage.enrollmentsTruncated && detail.coverage.eventsTruncated ? ' and ' : ''}{detail.coverage.eventsTruncated ? 'run events' : ''} exist beyond this page and are not included in the counts below.</span></div>
@@ -360,14 +321,19 @@ function FamilyDetail({ detail }: { detail: AutomationFamilyResponse }) {
   );
 }
 
-function PersonEvidence({ person, evidence }: { person: AutomationPerson; evidence: ContactAutomationEvidence }) {
-  const enrollments = evidence.enrollments || [];
-  const events = evidence.events || [];
+function PersonEvidence({ person, evidence, family }: { person: AutomationPerson; evidence: ContactAutomationEvidence; family: AutomationFamily }) {
+  const ownedKeys = new Set(family.ownedDefinitions.map((definition) => `${definition.engine}:${definition.key}`));
+  const enrollments = (evidence.enrollments || []).filter((enrollment) => (
+    enrollment.family?.key === family.key || ownedKeys.has(`${enrollment.engine}:${enrollment.key}`)
+  ));
+  const events = (evidence.events || []).filter((event) => (
+    event.family?.key === family.key || ownedKeys.has(`${event.engine}:${event.flowKey}`)
+  ));
   return (
     <div className="automation-person-evidence">
       <header>
-        <div><strong>{person.name || 'Unnamed person'}</strong><span>{person.email || person.phone || person.id}</span></div>
-        <a href={`/staff/client-desk?contact=${encodeURIComponent(person.id)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
+        <div><strong>{person.name || 'Unnamed person'} · {family.name}</strong><span>This person’s enrollment and run evidence for the workflow you opened</span></div>
+        <a href={`/staff/client/${encodeURIComponent(person.id)}#workflows`}><ArrowUpRight size={14} /> Back to person record</a>
       </header>
       {evidence.configured === false && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span>The owned execution store is not connected. Absence here is not proof that no automation ran.</span></div>}
       {evidence.coverage?.eventsTruncated && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> This shows the newest {evidence.coverage.eventLimit} run events; older events are not included below.</span></div>}

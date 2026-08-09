@@ -1,13 +1,14 @@
 import { useState, useEffect, useRef, type CSSProperties } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  ArrowLeft, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
+  ArrowLeft, ArrowUpRight, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
   CalendarDays, CircleDollarSign, Dumbbell,
   NotebookPen, Workflow,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
+import { automationDrilldownPath } from '../lib/automation-navigation';
 import { buildGoogleReviewRequest } from '../lib/review-request';
 import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
@@ -599,33 +600,50 @@ export default function ClientDetailPage() {
             <div className="sa-workflow-grid">
               <div className="sa-evidence-block">
                 <div className="sa-evidence-title"><Workflow size={15} /><b>Enrollments</b><span>{automationEnrollments.length}</span></div>
-                {automationEnrollments.length ? automationEnrollments.map((enrollment) => (
-                  <article key={enrollment.enrollmentId} className="sa-enrollment-row">
-                    <p><b>{enrollment.engine === 'reminder' ? 'Reminder engine' : enrollment.engine === 'nurture' ? 'Nurture engine' : humanizeEvidence(enrollment.engine)}</b><em className={enrollment.status === 'active' ? 'is-active' : undefined}>{enrollment.status}</em></p>
-                    <dl>
-                      <div><dt>Key</dt><dd>{enrollment.key || 'Not mirrored'}</dd></div>
-                      <div><dt>Enrollment</dt><dd>{enrollment.enrollmentId || 'Not mirrored'}</dd></div>
-                      <div><dt>Entered</dt><dd>{enrollment.enteredAt ? fmtDateTime(enrollment.enteredAt) : 'Not mirrored'}</dd></div>
-                      <div><dt>Starts</dt><dd>{enrollment.startAt ? fmtDateTime(enrollment.startAt) : 'Not recorded for this engine'}</dd></div>
-                      <div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not attached'}</dd></div>
-                      <div><dt>Next type</dt><dd>{enrollment.nextStep?.type ? humanizeEvidence(enrollment.nextStep.type) : 'Not mirrored'}</dd></div>
-                      <div><dt>Next template</dt><dd>{enrollment.nextStep?.template || 'Not mirrored'}</dd></div>
-                      <div><dt>Due</dt><dd>{enrollment.nextStep?.dueAt ? fmtDateTime(enrollment.nextStep.dueAt) : 'No pending step mirrored'}</dd></div>
-                    </dl>
-                  </article>
-                )) : <p className="sa-evidence-empty">No owned enrollment is mirrored. This can mean there is no enrollment or that its source has not reached the mirror yet.</p>}
+                {automationEnrollments.length ? automationEnrollments.map((enrollment) => {
+                  const familyKey = enrollment.family?.key;
+                  const row = (
+                    <>
+                      <p><b>{enrollment.family?.name || (enrollment.engine === 'reminder' ? 'Reminder engine' : enrollment.engine === 'nurture' ? 'Nurture engine' : humanizeEvidence(enrollment.engine))}</b><em className={enrollment.status === 'active' ? 'is-active' : undefined}>{enrollment.status}</em></p>
+                      <dl>
+                        <div><dt>Key</dt><dd>{enrollment.key || 'Not mirrored'}</dd></div>
+                        <div><dt>Enrollment</dt><dd>{enrollment.enrollmentId || 'Not mirrored'}</dd></div>
+                        <div><dt>Entered</dt><dd>{enrollment.enteredAt ? fmtDateTime(enrollment.enteredAt) : 'Not mirrored'}</dd></div>
+                        <div><dt>Starts</dt><dd>{enrollment.startAt ? fmtDateTime(enrollment.startAt) : 'Not recorded for this engine'}</dd></div>
+                        <div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not attached'}</dd></div>
+                        <div><dt>Next type</dt><dd>{enrollment.nextStep?.type ? humanizeEvidence(enrollment.nextStep.type) : 'Not mirrored'}</dd></div>
+                        <div><dt>Next template</dt><dd>{enrollment.nextStep?.template || 'Not mirrored'}</dd></div>
+                        <div><dt>Due</dt><dd>{enrollment.nextStep?.dueAt ? fmtDateTime(enrollment.nextStep.dueAt) : 'No pending step mirrored'}</dd></div>
+                      </dl>
+                      {familyKey && <span className="sa-workflow-open">Inspect workflow <ArrowUpRight size={12} /></span>}
+                    </>
+                  );
+                  return familyKey ? (
+                    <Link key={enrollment.enrollmentId} className="sa-enrollment-row is-inspectable" to={automationDrilldownPath(familyKey, client.id)}>{row}</Link>
+                  ) : (
+                    <article key={enrollment.enrollmentId} className="sa-enrollment-row">{row}</article>
+                  );
+                }) : <p className="sa-evidence-empty">No owned enrollment is mirrored. This can mean there is no enrollment or that its source has not reached the mirror yet.</p>}
               </div>
 
               <div className="sa-evidence-block">
                 <div className="sa-evidence-title"><Workflow size={15} /><b>Recent events and outcomes</b><span>{automationEvents.length}</span></div>
                 {automationEvents.length ? automationEvents.map((event, index) => {
                   const isFailure = ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase());
-                  return (
-                    <article key={`${event.ts}-${event.messageRef || index}`} className={`sa-automation-row${isFailure ? ' is-failure' : ''}`}>
+                  const familyKey = event.family?.key;
+                  const row = (
+                    <>
                       <time dateTime={new Date(event.ts).toISOString()}>{fmtDateTime(event.ts)}</time>
-                      <p><b>{event.engine === 'reminder' ? 'Reminder engine' : event.engine === 'nurture' ? 'Nurture engine' : 'Automation engine'}</b>{event.action ? ` · ${humanizeEvidence(event.action)}` : ''}{event.channel ? ` · ${humanizeEvidence(event.channel)}` : ''}</p>
+                      <p><b>{event.family?.name || (event.engine === 'reminder' ? 'Reminder engine' : event.engine === 'nurture' ? 'Nurture engine' : 'Automation engine')}</b>{event.action ? ` · ${humanizeEvidence(event.action)}` : ''}{event.channel ? ` · ${humanizeEvidence(event.channel)}` : ''}</p>
                       <span>{event.outcome ? humanizeEvidence(event.outcome) : 'Outcome not recorded'}{event.flowKey ? ` · key ${event.flowKey}` : ''}{event.stepIndex != null ? ` · step ${event.stepIndex}` : ''}{event.appointmentId ? ` · appointment ${event.appointmentId}` : ''}{event.messageRef ? ` · message ${event.messageRef}` : ''}</span>
-                    </article>
+                      {familyKey && <span className="sa-workflow-open">Inspect workflow <ArrowUpRight size={12} /></span>}
+                    </>
+                  );
+                  const key = `${event.ts}-${event.messageRef || index}`;
+                  return familyKey ? (
+                    <Link key={key} className={`sa-automation-row is-inspectable${isFailure ? ' is-failure' : ''}`} to={automationDrilldownPath(familyKey, client.id)}>{row}</Link>
+                  ) : (
+                    <article key={key} className={`sa-automation-row${isFailure ? ' is-failure' : ''}`}>{row}</article>
                   );
                 }) : <p className="sa-evidence-empty">No owned event is mirrored for this person. Treat this as an evidence gap, not proof that nothing ran.</p>}
               </div>
