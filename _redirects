@@ -65,7 +65,6 @@
 /book/partnership-discovery /assessment-booking.html?type=ambassador_discovery 302
 /book/partner-session /assessment-booking.html?type=partner_initial_in_person 302
 /book/partner-session-virtual /assessment-booking.html?type=partner_initial_virtual 302
-/first-visit /booking 301
 /in-person-sessions /booking 301
 /virtual-sessions /booking 301
 /first-visit.html /assessment-booking 301
