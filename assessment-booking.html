@@ -412,6 +412,7 @@
       const CHECKOUT_API = '/api/book/create-checkout';
       const AGREEMENT_VERSION = BOOKING.agreementVersion;
       const LOOKAHEAD_DAYS = 60;
+      const INITIAL_LOOKAHEAD_DAYS = 7;
 
       // ---------- state ----------
       const state = {
@@ -585,6 +586,49 @@
       }
 
       // ---------- slot loading ----------
+      function slotsUrl(startDate, endDate) {
+        return SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
+          + '&startDate=' + startDate + '&endDate=' + endDate
+          + '&timezone=' + encodeURIComponent(state.timezone);
+      }
+
+      async function requestSlots(startDate, endDate) {
+        const res = await fetch(slotsUrl(startDate, endDate), {
+          method: 'GET', headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
+        const data = await res.json();
+        return Array.isArray(data.slots) ? data.slots : [];
+      }
+
+      function mergeSlots(slots) {
+        const byDay = state.slotsByDay;
+        slots.forEach(function (slot) {
+          const day = byDay[slot.date] || (byDay[slot.date] = []);
+          if (!day.some(function (existing) { return existing.datetime === slot.datetime; })) day.push(slot);
+        });
+        Object.keys(byDay).forEach(function (date) {
+          byDay[date].sort(function (a, b) { return a.datetime.localeCompare(b.datetime); });
+        });
+        state.availableDates = new Set(Object.keys(byDay));
+      }
+
+      async function loadAdditionalSlots(startDate, endDate) {
+        try {
+          mergeSlots(await requestSlots(startDate, endDate));
+          renderCalendar();
+          // A quiet background extension may be the first range with an
+          // opening (for example, a page opened over a holiday weekend).
+          if (!state.selectedDate && state.availableDates.size) {
+            selectDate(Array.from(state.availableDates).sort()[0], false);
+          }
+        } catch (err) {
+          // The near-term choices remain usable; do not replace them with an
+          // error merely because the distant calendar horizon is delayed.
+          console.warn('[book] later availability could not load', err && err.message);
+        }
+      }
+
       async function loadSlots() {
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
@@ -595,44 +639,40 @@
 
         const today = new Date();
         const startDate = ymd(today);
-        const end = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
-        const endDate = ymd(end);
+        const initialEnd = new Date(today.getTime() + INITIAL_LOOKAHEAD_DAYS * 86400000);
+        const finalEnd = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
+        const initialEndDate = ymd(initialEnd);
+        const finalEndDate = ymd(finalEnd);
 
-        // The availability API calls GHL for a two-month range. It can take several
-        // seconds, so draw the calendar immediately and make that wait visible in
-        // the time area rather than leaving the booking surface blank.
+        // Load near-term choices first. The full two-month provider query can
+        // vary by seconds; someone ready to book should not wait for distant
+        // dates before seeing a real time they can choose.
         state.slotsLoading = true;
+        state.slotsByDay = {};
+        state.availableDates = new Set();
+        state.selectedDate = null;
         state.viewLeftMonth = ym(today);
         els.calFrame.hidden = false;
         els.calFrame.setAttribute('aria-busy', 'true');
         renderCalendar();
         renderLoadingSlots();
 
-        const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
-          + '&startDate=' + startDate + '&endDate=' + endDate
-          + '&timezone=' + encodeURIComponent(state.timezone);
-
         try {
-          const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-          if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
-          const data = await res.json();
-          const slots = Array.isArray(data.slots) ? data.slots : [];
-
-          const byDay = {};
-          slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
-          state.slotsByDay = byDay;
-          state.availableDates = new Set(Object.keys(byDay));
+          mergeSlots(await requestSlots(startDate, initialEndDate));
           state.slotsLoading = false;
 
           els.slotLoading.hidden = true;
           els.calFrame.setAttribute('aria-busy', 'false');
           if (state.availableDates.size === 0) {
-            els.timeSlotsContainer.hidden = true;
-            els.slotEmpty.hidden = false;
-            return;
+            // Keep the loading state visible while the broader horizon checks.
+            // A person should not see a false "no times" conclusion because
+            // the first seven days happen to be full.
+            void loadAdditionalSlots(ymd(new Date(initialEnd.getTime() + 86400000)), finalEndDate);
+          } else {
+            renderCalendar();
+            selectDate(Array.from(state.availableDates).sort()[0], false);
+            void loadAdditionalSlots(ymd(new Date(initialEnd.getTime() + 86400000)), finalEndDate);
           }
-          renderCalendar();
-          els.timeSlotsContainer.hidden = true;
         } catch (err) {
           state.slotsLoading = false;
           els.slotLoading.hidden = true;
@@ -696,7 +736,7 @@
         }
       }
 
-      function selectDate(dayStr) {
+      function selectDate(dayStr, shouldScroll) {
         state.selectedDate = dayStr;
         // Clear previously selected slot since date changed
         state.selectedSlot = null;
@@ -704,10 +744,10 @@
         // Re-render calendars to update is-selected highlight
         renderCalendar();
         // Render time slots for this date
-        renderTimeSlots(dayStr);
+        renderTimeSlots(dayStr, shouldScroll !== false);
       }
 
-      function renderTimeSlots(dayStr) {
+      function renderTimeSlots(dayStr, shouldScroll) {
         els.timeSlotsContainer.hidden = false;
         els.timeSlotsLabel.textContent = formatDateLong(dayStr);
         els.timeSlots.innerHTML = '';
@@ -727,7 +767,9 @@
         els.step1ContinueBtn.disabled = true;
         els.step1ContinueLabel.textContent = 'Pick a time to continue';
         // Smooth scroll the time slots into view
-        els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (shouldScroll !== false) {
+          els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
       }
 
       function renderLoadingSlots() {
