@@ -103,6 +103,7 @@ Last updated: 2026-08-08.
 | Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms | Specialist study records, not a primary CRM surface. |
 | Calendar / day-of | `TodayPage`, `CalendarRegistry`, `GarrettDay`, `AppointmentCard` | Staff schedule and owned service-definition visibility. |
 | Client detail CRM | `ClientDetailPage`, notes, message history | In-session person workspace. |
+| Person workflow inspection | `crm-mirror-worker/src/client-desk.js`, `person-automation-inspection.js`, `family-automation-inspection.js`, `staff/src/pages/AutomationRegistryPage.tsx`, `functions/api/staff-automations.js` | Communication shows Amari-owned enrollments and run evidence on the person record. Exact family and message-reference evidence links into the internal workflow definition; it never infers attribution from timing and never links to GHL. CRM Mirror owns the `AUTOMATION_DB` read binding and provides Worker-authenticated fallback reads when Pages lacks that binding. |
 | Owned dated follow-ups | `staff/src/components/OwnedFollowupsPanel.tsx`, `functions/api/staff-followups.js`, `crm-mirror-worker/src/owned-followups.js` | Staff-authored reminders in CRM D1; create/complete/reopen never sends, books, charges, refunds, or writes to GHL. |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn | Staff session documentation and client handoff. |
 

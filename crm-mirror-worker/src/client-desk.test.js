@@ -265,6 +265,63 @@ describe("Client Desk message rendering", () => {
     expect(dndOn).toContain(">On<");
   });
 
+  it("opens a person's exact owned workflows without asking Staff to find them again", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { id: "owned_person_1", display_name: "Eben Forrest" },
+      automationEvidence: {
+        configured: true,
+        contactId: "owned_person_1",
+        enrollments: [{
+          engine: "reminder", key: "initial-in-person", enrollmentId: "enrollment_1", status: "active",
+          family: { key: "initial-session-lifecycle", name: "Initial session lifecycle" },
+          nextStep: { type: "sms", template: "initial_reminder", dueAt: Date.parse("2026-08-10T17:00:00.000Z") },
+        }],
+        events: [{
+          ts: Date.parse("2026-08-09T16:30:00.000Z"), action: "would_send", outcome: "shadow", channel: "sms",
+          messageRef: "message_1", family: { key: "initial-session-lifecycle", name: "Initial session lifecycle" },
+        }],
+      },
+    });
+
+    expect(rendered).toContain("Workflows");
+    expect(rendered).toContain("1 active · next");
+    expect(rendered).toContain('id="record-workflows"');
+    expect(rendered).toContain("Initial session lifecycle");
+    expect(rendered).toContain("Inspect workflow");
+    expect(rendered).toContain("/staff/automations?family=initial-session-lifecycle&amp;contact=owned_person_1");
+    expect(rendered).toContain('data-staff-handoff');
+  });
+
+  it("links a mirrored message only when an exact owned run reference attributes it", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+
+    const attributed = helpers.timelineItem({
+      activity_type: "message", channel: "sms", direction: "outbound", body: "Your session is tomorrow.",
+      occurred_at: "2026-08-09T16:30:00.000Z", message_ref: "message_1",
+      automation_family: { key: "initial-session-lifecycle", name: "Initial session lifecycle" },
+      automation_contact_id: "owned_person_1",
+    });
+    expect(attributed).toContain("View workflow");
+    expect(attributed).toContain("/staff/automations?family=initial-session-lifecycle&amp;contact=owned_person_1");
+
+    const unattributed = helpers.timelineItem({
+      activity_type: "message", channel: "sms", direction: "outbound", body: "Manual note.",
+      occurred_at: "2026-08-09T16:30:00.000Z", message_ref: "message_without_run",
+    });
+    expect(unattributed).not.toContain("View workflow");
+  });
+
   it("opens complete upcoming and past appointment views from the record launcher", () => {
     const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
     const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };

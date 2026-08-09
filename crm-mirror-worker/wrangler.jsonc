@@ -10,6 +10,11 @@
       "database_name": "amari-crm-mirror",
       "database_id": "91a5a51d-0319-4c6d-9a6b-36bee3805e62",
       "migrations_dir": "migrations"
+    },
+    {
+      "binding": "AUTOMATION_DB",
+      "database_name": "amari-automation",
+      "database_id": "089d810a-9d2d-43a4-8f1d-dc3620835557"
     }
   ],
   "kv_namespaces": [

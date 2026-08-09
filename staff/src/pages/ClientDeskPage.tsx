@@ -37,7 +37,11 @@ export default function ClientDeskPage() {
       if (event.origin !== deskOrigin) return;
       if (event.data?.type !== 'amari:staff-navigate' || typeof event.data.path !== 'string') return;
       const destination = new URL(event.data.path, window.location.origin);
-      if (destination.origin !== window.location.origin || destination.pathname !== '/staff/pos') return;
+      if (destination.origin !== window.location.origin || !['/staff/pos', '/staff/automations'].includes(destination.pathname)) return;
+      if (destination.pathname === '/staff/automations') {
+        navigate(destination.pathname + destination.search);
+        return;
+      }
       const client = event.data.client;
       const contactId = destination.searchParams.get('contact');
       const deskClient = client && typeof client === 'object' && typeof client.id === 'string' && client.id === contactId

@@ -37,6 +37,9 @@ import {
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
+import { personAutomationInspection } from "./person-automation-inspection.js";
+import { familyAutomationInspection } from "./family-automation-inspection.js";
+import { automationFamily } from "../../functions/lib/automation-families.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -404,7 +407,9 @@ export default {
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
+      const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -413,6 +418,31 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "amari-crm-mirror", authActive: workerAuthActive(env), ...(await mirrorStatus(env.CRM_DB, new Date().toISOString())) });
+      }
+      if (request.method === "GET" && automationPersonDetail) {
+        const reference = decodeURIComponent(automationPersonDetail[1]);
+        const candidates = await searchContacts(env.CRM_DB, reference, 10);
+        const contact = candidates.find((candidate) => String(candidate.id || "") === reference
+          || String(candidate.provider_contact_id || "") === reference);
+        if (!contact) return json(404, { error: "contact not found" });
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await personAutomationInspection(env.AUTOMATION_DB, {
+            id: contact.id,
+            ghl_contact_id: contact.provider_contact_id || null,
+          })),
+        });
+      }
+      if (request.method === "GET" && automationFamilyDetail) {
+        const family = automationFamily(decodeURIComponent(automationFamilyDetail[1]));
+        if (!family) return json(404, { error: "automation family not found" });
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          familyKey: family.key,
+          ...(await familyAutomationInspection(env.AUTOMATION_DB, family)),
+        });
       }
       if (request.method === "GET" && url.pathname === "/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await mirrorReadiness(env.CRM_DB, new Date().toISOString())) });
@@ -528,7 +558,9 @@ export default {
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseClientDeskLimit(url.searchParams.get("limit"));
         const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
-        return profile ? json(200, { success: true, worker: "amari-crm-mirror", ...profile }) : json(404, { error: "contact not found" });
+        if (!profile) return json(404, { error: "contact not found" });
+        const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
+        return json(200, { success: true, worker: "amari-crm-mirror", ...profile, automationEvidence });
       }
       if (request.method === "GET" && contactDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
