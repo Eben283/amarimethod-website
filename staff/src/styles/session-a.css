@@ -245,6 +245,9 @@
 .sa-evidence-title span{margin-left:auto; min-width:24px; padding:2px 7px; border-radius:999px; background:var(--tint); text-align:center; font-family:var(--mono); font-size:11px;}
 .sa-enrollment-row,.sa-automation-row{padding:10px 0; border-top:1px solid var(--line);}
 .sa-enrollment-row:first-of-type,.sa-automation-row:first-of-type{border-top:0; padding-top:2px;}
+.sa-enrollment-row.is-inspectable,.sa-automation-row.is-inspectable{display:block;margin-inline:-8px;padding-inline:8px;border-radius:8px;color:inherit;text-decoration:none;transition:background-color .16s ease,box-shadow .16s ease;}
+.sa-enrollment-row.is-inspectable:hover,.sa-automation-row.is-inspectable:hover{background:var(--tint);box-shadow:inset 3px 0 var(--accent);}
+.sa-enrollment-row.is-inspectable:focus-visible,.sa-automation-row.is-inspectable:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .sa-automation-row time{display:block; color:var(--faint); font-size:11px; font-family:var(--mono);}
 .sa-enrollment-row p,.sa-automation-row p{margin-top:3px; color:var(--ink2); font-size:13px; line-height:1.4;}
 .sa-enrollment-row span,.sa-automation-row span{display:block; margin-top:2px; color:var(--muted); font-size:11px; overflow-wrap:anywhere;}
@@ -257,6 +260,7 @@
 .sa-enrollment-row dd{margin-top:1px; color:var(--ink2); font-size:11px; overflow-wrap:anywhere;}
 .sa-automation-row.is-failure{margin-inline:-8px; padding-inline:8px; border-radius:8px; background:#fff5f5;}
 .sa-automation-row.is-failure span{color:#9a3030; font-weight:600;}
+.sa-enrollment-row .sa-workflow-open,.sa-automation-row .sa-workflow-open{display:inline-flex;align-items:center;gap:4px;margin-top:8px;color:var(--accent-ink);font-size:10px;font-weight:700;}
 .sa-evidence-empty{display:flex; align-items:center; gap:7px; color:var(--muted); font-size:13px; line-height:1.45;}
 .sa-evidence-actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
 .sa-evidence-actions button,.sa-evidence-actions a{display:inline-flex; align-items:center; gap:7px; padding:9px 12px; border:1px solid var(--line2); border-radius:9px; background:#fff; color:var(--ink2); font-size:13px; font-weight:600;}
