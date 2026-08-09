@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHomeOperations } from '../hooks/useHomeOperations';
 import { memberWorkspacePath } from '../lib/member-workspace';
+import { isHomeOutreachCandidate } from '../lib/outreach-scope';
 import type { OutreachCard, TodayAppointment } from '../types/staff';
 import './HomePage.css';
 
@@ -102,8 +103,8 @@ export default function HomePage() {
   const next = schedule.find((appointment) => scheduleStatus(appointment, now) === 'upcoming');
   const sessionDoor = current || next || null;
   const replies = (state.conversations.data || []).slice(0, 4);
-  const followUps = useMemo(() => [...(state.followUps.data?.cards || [])]
-    .filter((card) => (card.recommendation?.priority || 0) > 0)
+  const outreach = useMemo(() => [...(state.followUps.data?.cards || [])]
+    .filter(isHomeOutreachCandidate)
     .sort((a, b) => (b.recommendation?.priority || 0) - (a.recommendation?.priority || 0))
     .slice(0, 3), [state.followUps.data]);
   const sickSystems = (state.systems.data?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
@@ -207,15 +208,15 @@ export default function HomePage() {
 
         <div className="home-replies">
           <header className="home-panel-head">
-            <div><p>Follow-ups</p><span>{state.followUps.data?.generatedAt ? `Snapshot ${relativeTime(state.followUps.data.generatedAt)}` : 'Latest outreach snapshot'}</span></div>
-            <button type="button" onClick={() => navigate('/follow-up')}>Open queue <ChevronRight aria-hidden="true" /></button>
+            <div><p>Outreach</p><span>{state.followUps.data?.generatedAt ? `Snapshot ${relativeTime(state.followUps.data.generatedAt)}` : 'Proactive contact only'}</span></div>
+            <button type="button" onClick={() => navigate('/outreach')}>Open outreach <ChevronRight aria-hidden="true" /></button>
           </header>
           <StateMessage loading={state.followUps.loading} error={state.followUps.error}>
-            {followUps.length ? followUps.map((card: OutreachCard) => (
+            {outreach.length ? outreach.map((card: OutreachCard) => (
               <button type="button" key={card.contactId} className="home-followup" onClick={() => navigate(`/client/${card.contactId}`)}>
                 <span><strong>{card.name}</strong><small>{card.recommendation.headline}</small></span><ChevronRight aria-hidden="true" />
               </button>
-            )) : <div className="home-empty">No due follow-ups in the latest snapshot. <button type="button" onClick={() => navigate('/follow-up')}>Review the full queue</button></div>}
+            )) : <div className="home-empty">No proactive outreach is due. Incoming messages stay in Communication. <button type="button" onClick={() => navigate('/outreach')}>Review outreach</button></div>}
           </StateMessage>
         </div>
 

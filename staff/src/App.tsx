@@ -100,7 +100,7 @@ function AppRoutes() {
         <Route path="balances" element={<Layout><BalancesPage /></Layout>} />
         <Route path="revenue" element={<Layout><RevenuePage /></Layout>} />
         <Route path="playbook" element={<Layout><PlaybookPage /></Layout>} />
-        <Route path="follow-up" element={<Layout><FollowUpPage /></Layout>} />
+        <Route path="outreach" element={<Layout><FollowUpPage /></Layout>} />
         <Route path="funnel" element={<Layout><FunnelPage /></Layout>} />
         <Route path="pipeline" element={<Layout><PipelinePage /></Layout>} />
         <Route path="client/:id" element={<Layout fullBleed><ClientDetailPage surface="record" /></Layout>} />
@@ -120,8 +120,8 @@ function AppRoutes() {
         <Route path="triage" element={<Navigate to="/" replace />} />
         <Route path="messages" element={<Navigate to="/client-desk" replace />} />
         <Route path="sharpen" element={<Navigate to="/" replace />} />
-        <Route path="outreach" element={<Navigate to="/follow-up" replace />} />
-        <Route path="partners" element={<Navigate to="/follow-up" replace />} />
+        <Route path="follow-up" element={<Navigate to="/outreach" replace />} />
+        <Route path="partners" element={<Navigate to="/outreach" replace />} />
       </Route>
       <Route
         path="/check-in/:id"

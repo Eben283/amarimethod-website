@@ -66,7 +66,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       if (failure instanceof ApiError && failure.status === 401) {
         onUnauthorized();
       } else {
-        const detail = failure instanceof Error ? failure.message : 'Dated follow-ups could not be loaded.';
+        const detail = failure instanceof Error ? failure.message : 'Scheduled outreach could not be loaded.';
         setError(`${detail} The outreach list below is still available.`);
       }
     } finally {
@@ -119,7 +119,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       } else if (failure instanceof ApiError && failure.status === 404) {
         setError('That person is not in the CRM mirror yet. Open Operations → CRM Mirror, refresh it, then try again.');
       } else {
-        handleError(failure, 'Follow-up could not be saved.');
+        handleError(failure, 'Outreach reminder could not be saved.');
       }
     } finally {
       setSaving(false);
@@ -134,7 +134,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       setItems((current) => current.filter((candidate) => candidate.id !== item.id));
       setJustCompleted(item);
     } catch (failure) {
-      handleError(failure, 'Follow-up could not be completed.');
+      handleError(failure, 'Outreach reminder could not be completed.');
     } finally {
       setBusyId(null);
     }
@@ -149,7 +149,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       setItems((current) => [...current, response.followup].sort((a, b) => a.dueOn.localeCompare(b.dueOn)));
       setJustCompleted(null);
     } catch (failure) {
-      handleError(failure, 'Follow-up could not be reopened.');
+      handleError(failure, 'Outreach reminder could not be reopened.');
     } finally {
       setBusyId(null);
     }
@@ -160,9 +160,9 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 id="owned-followups-title" className="flex items-center gap-2 text-sm font-semibold text-amari-charcoal">
-            <CalendarClock className="h-4 w-4 text-amari-accent-warm" /> Dated follow-ups
+            <CalendarClock className="h-4 w-4 text-amari-accent-warm" /> Scheduled outreach
           </h2>
-          <p className="mt-0.5 text-[11px] text-amari-text-muted">Your reminder only. Saving or completing one does not contact the person.</p>
+          <p className="mt-0.5 text-[11px] text-amari-text-muted">A private reminder to initiate contact later. It never sends a message.</p>
         </div>
         <button
           type="button"
@@ -214,7 +214,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
             <input
               value={title}
               onChange={(event) => setTitle(event.target.value.slice(0, 280))}
-              placeholder="What needs to happen?"
+              placeholder="Why should we reach out?"
               maxLength={280}
               className="rounded-lg border border-amari-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
             />
@@ -227,7 +227,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
           </div>
           <div className="flex justify-end">
             <button type="button" onClick={() => void save()} disabled={saving} className="inline-flex items-center gap-1 rounded-lg bg-amari-charcoal px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
-              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save follow-up
+              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} Save outreach reminder
             </button>
           </div>
         </div>
@@ -243,7 +243,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
       {truncated && (
         <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <span>Showing the first 50 open follow-ups. Complete older items or use the person workspace until paged history is available.</span>
+          <span>Showing the first 50 open outreach reminders. Complete older items or use the person workspace until paged history is available.</span>
         </div>
       )}
 
@@ -258,9 +258,9 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
 
       <div className="mt-3 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-4 text-xs text-amari-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading dated follow-ups…</div>
+          <div className="flex items-center justify-center gap-2 py-4 text-xs text-amari-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Loading scheduled outreach…</div>
         ) : items.length === 0 && !error ? (
-          <p className="rounded-lg bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-text-muted">No dated follow-ups are open. Add one when somebody needs a specific future check-in.</p>
+          <p className="rounded-lg bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-text-muted">No outreach reminders are open. Add one only when we intend to initiate contact on a future date.</p>
         ) : (
           items.map((item) => {
             const due = dueLabel(item.dueOn);

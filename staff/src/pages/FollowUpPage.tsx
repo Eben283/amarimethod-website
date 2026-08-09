@@ -11,23 +11,20 @@ import OwnedFollowupsPanel from '../components/OwnedFollowupsPanel';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
-  getOutreachCoach, verifyDecisionMaker, dismissReply, ApiError,
+  getOutreachCoach, verifyDecisionMaker, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
 import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupCopy';
 import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
+import { withoutNeedsReply } from '../lib/outreach-scope';
 
-// ── FOLLOW-UP / COMMUNICATION SURFACE ─────────────────────────────────────────
-// The single place for "who do I need to communicate with, and what's the next
-// move" — prospects AND clients. Replaces Outreach + Messages. A ranked worklist,
-// not a database to filter; full detail one tap away. See the spec:
-// ops/drafts/followup-comms-surface-spec.md (in the amari-method-docs repo).
-//
-// Ranking (top → bottom): unanswered inbound replies → hot momentum → timed
-// follow-ups due → scheduled returns → end-of-rope decision. Everything else is
-// Waiting (cooling off, counted) or Set Aside (parked, reversible).
+// ── OUTREACH SURFACE ──────────────────────────────────────────────────────────
+// Proactive contact only: partner prospects, scheduled future touches, and
+// deliberate re-engagement. Communication owns every inbound message and reply.
+// This page reads the needs-reply index only to exclude those people from
+// proactive outreach; it never renders an inbox row.
 //
 // This page records outcomes and opens the selected person's internal
 // Communication chronology. Sending is not available from Staff yet.
@@ -310,9 +307,6 @@ export default function FollowUpPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
   const [noteDraft, setNoteDraft] = useState('');
-  // { [contactId]: lastMessageDate } — persisted in KV; seeded from prospectsRes on load.
-  // A dismissal only hides the card when lastMessageDate still matches.
-  const [dismissedReplies, setDismissedReplies] = useState<Record<string, string | null>>({});
   // Session-only "I just handled this person" — a send or an outcome action drops
   // them from Act Now immediately, so you don't see ghosts of people you've worked
   // until the cadence snapshot catches up (≤3h). Cleared on reload.
@@ -335,7 +329,7 @@ export default function FollowUpPage() {
           .then((result) => ({ result, error: null as string | null }))
           .catch((err) => ({
             result: { conversations: [] as ConversationSummary[] },
-            error: err instanceof Error ? err.message : 'Replies could not be loaded',
+            error: err instanceof Error ? err.message : 'Communication reply state could not be loaded',
           })),
       ]);
       setProspects(prospectsRes.prospects);
@@ -347,23 +341,19 @@ export default function FollowUpPage() {
         activityRefreshStatus: prospectsRes.activityRefreshStatus ?? null,
         coachDataAt: prospectsRes.coachDataAt ?? null,
       });
+      // Communication owns these rows. Outreach keeps only the contact IDs so a
+      // person waiting for our reply cannot also appear as proactive outreach.
       setConversations(convoRes.result.conversations || []);
       setConversationError(convoRes.error);
-      if (prospectsRes.dismissedReplies) setDismissedReplies(prospectsRes.dismissedReplies);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
-      setError(err instanceof Error ? err.message : 'Failed to load follow-ups');
+      setError(err instanceof Error ? err.message : 'Failed to load outreach');
     } finally {
       setLoading(false);
     }
   }, [logout]);
 
   useEffect(() => { load(); }, [load]);
-
-  const prospectMap = useMemo(
-    () => new Map(prospects.map((p) => [p.contactId, p])),
-    [prospects],
-  );
 
   // Prefer the SERVER-computed Act-Now decision (engine-merge 2026-06-14) so the
   // UI and the coach pipeline share ONE due-decision. Falls back to the local
@@ -373,37 +363,10 @@ export default function FollowUpPage() {
     [prospects],
   );
 
-  // 1) Unanswered replies — always top. (Messages folded in.)
-  const replyItems = useMemo<ReplyItem[]>(() => {
-    return conversations
-      .filter((c) => {
-        if (!c.needsReply || isCloser(c.lastMessagePreview) || handledIds.has(c.contactId)) return false;
-        // Dismissed only suppresses when the stored lastMessageDate still matches —
-        // a new inbound message un-dismisses automatically.
-        if (c.contactId in dismissedReplies && dismissedReplies[c.contactId] === c.lastMessageDate) return false;
-        // Honor a PERSISTED disposition. A reply from someone you've already set
-        // aside (not-a-fit / snoozed / future-potential) or who's already booked
-        // shouldn't keep topping Act Now on a courtesy line ("Im good.").
-        // Reuse the app's OWN decision (derived.kind, which already folds in every
-        // aside/booked case) instead of a partial stage list — the old
-        // dropped/not-interested-only check missed snoozed, so a deferred contact
-        // kept resurfacing (the Steve Grubbs bug, 2026-06-17).
-        const pp = prospectMap.get(c.contactId);
-        const ppKind = (pp?.derived as Derived | undefined)?.kind;
-        // ...UNLESS they sent a real question — a set-aside contact who re-engages
-        // with a genuine ask must still surface (the only reply surface now; the
-        // Messages tab is gone, so suppressing it = silent permanent loss).
-        if (pp && (ppKind === 'aside' || ppKind === 'converted') && !QUESTION_RE.test(c.lastMessagePreview || '')) return false;
-        return true;
-      })
-      .sort((a, b) => new Date(b.lastMessageDate ?? 0).getTime() - new Date(a.lastMessageDate ?? 0).getTime())
-      .map((conv) => ({
-        kind: 'reply' as const,
-        conv,
-        // A non-prospect who messaged is treated as a client; partners are clients too.
-        isClient: prospectMap.get(conv.contactId)?.isActivePartner ?? !prospectMap.has(conv.contactId),
-      }));
-  }, [conversations, prospectMap, dismissedReplies, handledIds]);
+  const needsReplyIds = useMemo(
+    () => new Set(conversations.filter((conversation) => conversation.needsReply).map((conversation) => conversation.contactId)),
+    [conversations],
+  );
 
   // Today's weekday drives the call/text weighting + the date bar. 0=Sun … 6=Sat.
   const todayDow = useMemo(() => new Date().getDay(), []);
@@ -412,12 +375,14 @@ export default function FollowUpPage() {
     [],
   );
 
-  // 2) Prospects needing a touch — minus anyone already surfaced as a reply.
-  //    Ranked by urgency PLUS today's day-of-week weight, so calls/texts that
-  //    don't suit the day sink and the day-appropriate work floats up. Replies
-  //    (above) stay pinned on top regardless.
+  // Prospects needing a proactive touch. Anyone waiting for our reply is
+  // removed completely and handled in Communication instead.
+  // Ranked by urgency PLUS today's day-of-week weight, so calls/texts that
+  // don't suit the day sink and the day-appropriate work floats up.
   const prospectActNow = useMemo<ProspectItem[]>(() => {
-    const replyIds = new Set(replyItems.map((r) => r.conv.contactId));
+    // If Communication cannot tell us who is waiting for a reply, fail closed:
+    // do not create a second, potentially contradictory contact queue.
+    if (conversationError) return [];
     // Engagement bonus: a contact who actually replied/talked (warmth 2) edges out a
     // same-urgency one we only one-way-touched (warmth 1), and a never-touched new
     // lead (warmth 0) sits a touch lower. Small on purpose — it breaks near-ties, it
@@ -425,15 +390,18 @@ export default function FollowUpPage() {
     const warmthBonus = (w?: number) => (w === 2 ? 10 : w === 0 ? -5 : 0);
     // "Discovery" = a business/venue we have no named person to reach ("call the front
     // desk and ask who handles partnerships"). Eben deprioritized these hard (2026-06-21):
-    // a known-person follow-up always beats a cold no-contact venue. Sink them far below
+    // a known-person outreach task always beats a cold no-contact venue. Sink them far below
     // the act-now cap so they don't crowd out real prospects. They stay in the data
     // (reachable via search), just off the daily worklist.
     const DISCOVERY_PENALTY = 1000;
     const score = (d: Derived, weight: number) =>
       d.urgency + weight + warmthBonus(d.warmth) -
       (d.action === 'discovery' ? DISCOVERY_PENALTY : 0);
-    return derived
-      .filter((r) => r.d.kind === 'act' && !replyIds.has(r.p.contactId) && !handledIds.has(r.p.contactId))
+    return withoutNeedsReply(
+      derived.filter((r) => r.d.kind === 'act' && !handledIds.has(r.p.contactId)),
+      needsReplyIds,
+      (row) => row.p.contactId,
+    )
       .map((r) => {
         const weight = dayWeight(r.d.action, r.p, todayDow);
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
@@ -443,22 +411,22 @@ export default function FollowUpPage() {
         return d !== 0 ? d : a.p.contactId.localeCompare(b.p.contactId);
       })
       // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
-      // options without the full backlog (hundreds) becoming a wall. Replies are
-      // pinned above this and never capped. The rest stays in the data, not the screen.
+      // options without the full backlog (hundreds) becoming a wall. The rest
+      // stays in the data, not the screen.
       .slice(0, ACT_NOW_CAP);
-  }, [derived, replyItems, todayDow, handledIds]);
+  }, [conversationError, derived, needsReplyIds, todayDow, handledIds]);
 
-  const actItems = useMemo<ActItem[]>(() => [...replyItems, ...prospectActNow], [replyItems, prospectActNow]);
+  const actItems = useMemo<ProspectItem[]>(() => [...prospectActNow], [prospectActNow]);
   const setAside = useMemo(() => derived.filter((r) => r.d.kind === 'aside'), [derived]);
 
   const counts = useMemo(() => ({
-    replies: replyItems.length,
+    inCommunication: needsReplyIds.size,
     act: prospectActNow.length,
     waiting: derived.filter((r) => r.d.kind === 'waiting').length,
     aside: setAside.length,
     converted: derived.filter((r) => r.d.kind === 'converted').length,
     total: derived.length,
-  }), [replyItems, prospectActNow, derived, setAside]);
+  }), [needsReplyIds, prospectActNow, derived, setAside]);
 
   // Search across ALL prospects (any bucket), like the Outreach search.
   const searchItems = useMemo<ProspectItem[]>(() => {
@@ -514,11 +482,6 @@ export default function FollowUpPage() {
     }
   }, [logout, markHandled]);
 
-  const onDismissReply = useCallback((contactId: string, lastMessageDate: string | null) => {
-    setDismissedReplies((s) => ({ ...s, [contactId]: lastMessageDate }));
-    dismissReply(contactId, lastMessageDate); // persist to KV; fire-and-forget
-  }, []);
-
   const onSaveNote = useCallback(async (contactId: string) => {
     const text = noteDraft.trim();
     if (!text) return;
@@ -539,9 +502,9 @@ export default function FollowUpPage() {
     <div className="mx-auto max-w-2xl px-4 py-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-amari-charcoal">Follow-Up</h1>
+          <h1 className="text-xl font-semibold text-amari-charcoal">Outreach</h1>
           <p className="text-xs text-amari-text-muted">
-            {loading ? 'Loading follow-ups…' : `${counts.replies} to reply · ${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} in the funnel`}
+            {loading ? 'Loading outreach…' : `${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} relationships tracked`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -558,6 +521,13 @@ export default function FollowUpPage() {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
+      </div>
+
+      <div className="mb-4 flex items-start justify-between gap-3 border-l-4 border-amari-accent-warm bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-charcoal">
+        <p><strong>Proactive contact only.</strong> Incoming messages and anything waiting for a reply stay in Communication.</p>
+        <Link to="/client-desk" className="shrink-0 font-semibold underline underline-offset-2">
+          Open Communication{counts.inCommunication ? ` (${counts.inCommunication})` : ''}
+        </Link>
       </div>
 
       {/* Per-source freshness — the 4 KV sources feeding this page refresh on
@@ -596,7 +566,7 @@ export default function FollowUpPage() {
 
       {conversationError && (
         <div className="mb-3 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
-          Replies could not be loaded. The outreach list is still available, but do not treat “0 to reply” as reliable. Refresh to try again.
+          Communication reply state could not be checked. Review Communication before starting outreach so a person waiting for our reply is not contacted twice.
         </div>
       )}
 
@@ -635,7 +605,18 @@ export default function FollowUpPage() {
         ) : (
           <div className="space-y-2">
             {searchItems.map((item) =>
-              item.d.kind === 'aside' || item.d.kind === 'converted' ? (
+              needsReplyIds.has(item.p.contactId) ? (
+                <div key={`s-${item.p.contactId}`} className="flex items-center justify-between rounded-xl border border-amari-border bg-white p-3">
+                  <div className="min-w-0">
+                    <span className="truncate font-medium text-amari-charcoal">{displayName(item.p.fullName) || 'Unknown'}</span>
+                    <p className="text-[11px] text-amari-text-muted">Waiting for our reply · handled in Communication</p>
+                  </div>
+                  <Link to={communicationUrl(item.p.contactId)}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
+                    <MessageSquare className="h-3.5 w-3.5" /> Open Communication
+                  </Link>
+                </div>
+              ) : item.d.kind === 'aside' || item.d.kind === 'converted' ? (
                 <div key={`s-${item.p.contactId}`} className="flex items-center justify-between rounded-xl border border-amari-border bg-white p-3">
                   <div className="min-w-0">
                     <span className="truncate font-medium text-amari-charcoal">{displayName(item.p.fullName) || 'Unknown'}</span>
@@ -660,7 +641,7 @@ export default function FollowUpPage() {
                   onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
                   onNoteChange={setNoteDraft}
                   onSaveNote={() => onSaveNote(item.p.contactId)}
-                  onDismiss={() => onDismissReply(item.p.contactId, null)}
+                  onDismiss={() => undefined}
                   onHandled={() => markHandled(item.p.contactId)}
                 />
               )
@@ -670,7 +651,7 @@ export default function FollowUpPage() {
       ) : (
         <>
           <div className="mb-2 flex gap-1 rounded-xl bg-amari-light-sand p-1">
-            <Tab active={view === 'act'} onClick={() => setView('act')} label={`Act Now (${counts.replies + counts.act})`} icon={Clock} />
+            <Tab active={view === 'act'} onClick={() => setView('act')} label={`Reach Out (${counts.act})`} icon={Clock} />
             <Tab active={view === 'aside'} onClick={() => setView('aside')} label={`Set Aside (${counts.aside})`} icon={MoonStar} />
           </div>
 
@@ -682,12 +663,12 @@ export default function FollowUpPage() {
             <div className="mb-3 rounded-lg border border-amari-border bg-amari-light-sand/50 p-3 text-xs text-amari-charcoal">
               <p className="mb-1 font-medium">How this list is ordered:</p>
               <ol className="list-decimal space-y-0.5 pl-4 text-amari-text-muted">
-                <li>Replies waiting — someone wrote, unanswered</li>
                 <li>Hot — just called (→ text) or just talked (→ next step)</li>
-                <li>Follow-ups due — voicemail ~3d, link sent ~3d, quiet ~3d</li>
+                <li>Scheduled outreach due — voicemail ~3d, link sent ~3d, quiet ~3d</li>
                 <li>New leads — not contacted yet</li>
                 <li>Out of cadence — decide: keep trying or set aside</li>
               </ol>
+              <p className="mt-1 text-amari-text-muted">People waiting for our reply are excluded and remain in Communication.</p>
               <p className="mt-1 text-amari-text-muted">Hidden until due: cooling-off (just touched) and snoozed.</p>
               <p className="mt-1 text-amari-text-muted">Today's weekday nudges calls/texts up or down by who's reachable (see the date bar) — nothing is blocked, just reordered.</p>
             </div>
@@ -697,11 +678,11 @@ export default function FollowUpPage() {
             <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-amari-charcoal" /></div>
           ) : view === 'act' ? (
             actItems.length === 0 ? (
-              <Empty icon={CheckCircle2} title="Nothing needs you right now" sub="No unanswered messages, no follow-ups due. Nice." />
+              <Empty icon={CheckCircle2} title="No proactive outreach is due" sub="Incoming messages and replies remain in Communication." />
             ) : (
               <div className="space-y-2">
                 {actItems.map((item) => {
-                  const contactId = item.kind === 'reply' ? item.conv.contactId : item.p.contactId;
+                  const contactId = item.p.contactId;
                   return (
                     <ActRow
                       key={`${item.kind}-${contactId}`}
@@ -714,7 +695,7 @@ export default function FollowUpPage() {
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
                       onNoteChange={setNoteDraft}
                       onSaveNote={() => onSaveNote(contactId)}
-                      onDismiss={() => onDismissReply(contactId, item.kind === 'reply' ? (item.conv.lastMessageDate ?? null) : null)}
+                      onDismiss={() => undefined}
                       onHandled={() => markHandled(contactId)}
                     />
                   );
