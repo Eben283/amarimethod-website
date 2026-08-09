@@ -1,13 +1,11 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { ScoreCategories, PatternSignature, QuizInsight } from '@/types/quiz';
 import ResultsHero from './ResultsHero';
 import ScoreCard from './ScoreCard';
 import ScoreRadar from './ScoreRadar';
 import InsightCards from './InsightCards';
 import BookingCTA from './BookingCTA';
-import ShareCard from './ShareCard';
 import ConditionStory from './ConditionStory';
-import { useShareResults } from '@/hooks/useShareResults';
 import { useQuiz } from '@/contexts/QuizContext';
 import { getConditionContent } from '@/lib/conditionContent';
 
@@ -415,23 +413,6 @@ const EDITORIAL_STYLES = `
 [data-results] .doc-foot a:hover{color:var(--accent)}
 
 /* ── SHARE STRIP ─────────────────────────────────────────────────── */
-[data-results] .share-strip{
-  text-align:center;padding:24px 32px;border-bottom:1px solid var(--line);
-}
-[data-results] .share-btn{
-  display:inline-flex;align-items:center;gap:12px;
-  font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-2);
-  background:transparent;border:1px solid var(--line-2);padding:12px 22px;
-  cursor:pointer;border-radius:0;transition:color .2s,border-color .2s;
-}
-[data-results] .share-btn:hover:not(:disabled){color:var(--accent);border-color:var(--accent)}
-[data-results] .share-btn:disabled{opacity:.55;cursor:not-allowed}
-[data-results] .share-strip .fine{
-  font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--mute);margin-top:10px;
-}
-
 /* ── MOBILE ──────────────────────────────────────────────────────── */
 @media(max-width:720px){
   [data-results] .doc,[data-results] .doc-narrow{padding:0 20px}
@@ -459,8 +440,6 @@ const EDITORIAL_STYLES = `
 `;
 
 const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsPageProps) => {
-  const shareCardRef = useRef<HTMLDivElement>(null);
-  const { share, state: shareState } = useShareResults(shareCardRef);
   const { answers } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
   const conditionContent = getConditionContent(painLocation);
@@ -472,21 +451,9 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
     return `${base}${separator}pain=${encodeURIComponent(normalized)}`;
   }
 
-  const shareButtonLabel =
-    shareState === 'capturing' ? 'Creating image…'
-    : shareState === 'sharing'  ? 'Opening share sheet…'
-    : shareState === 'downloaded' ? 'Image saved'
-    : shareState === 'error'    ? 'Something went wrong'
-    : 'Share your result';
-
   return (
     <div data-results>
       <style dangerouslySetInnerHTML={{ __html: EDITORIAL_STYLES }} />
-
-      {/* Off-screen share card — captured by html2canvas on share click */}
-      <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
-        <ShareCard ref={shareCardRef} patternSignature={patternSignature} />
-      </div>
 
       {/* 1 — Doc bar */}
       <div className="doc-bar">
@@ -506,25 +473,6 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
           firstName={firstName}
           patternSignature={patternSignature}
         />
-
-      {/* Share strip */}
-      <div className="share-strip">
-        <button
-          onClick={share}
-          disabled={shareState === 'capturing' || shareState === 'sharing'}
-          className="share-btn"
-        >
-          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-          <span>{shareButtonLabel}</span>
-        </button>
-        <p className="fine">Save or share your reading</p>
-      </div>
 
       {/* 3, 4, 5 — Condition story (why-3-up + protocol video + chain) */}
       {conditionContent ? <ConditionStory content={conditionContent} /> : null}
