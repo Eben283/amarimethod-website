@@ -303,6 +303,33 @@
   color: #fff;
 }
 
+/* Availability arrives from the live calendar after the date grid is ready.
+   Give the wait a stable shape instead of presenting an empty booking page. */
+.cal-day.is-loading {
+  color: transparent;
+  background: linear-gradient(90deg, #eceae4 25%, #f5f3ed 45%, #eceae4 65%);
+  background-size: 220% 100%;
+  animation: amari-slot-shimmer 1.3s ease-in-out infinite;
+}
+
+.slot-skeleton {
+  display: block;
+  min-height: 48px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #eceae4 25%, #f5f3ed 45%, #eceae4 65%);
+  background-size: 220% 100%;
+  animation: amari-slot-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes amari-slot-shimmer {
+  to { background-position: -220% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cal-day.is-loading,
+  .slot-skeleton { animation: none; }
+}
+
 .am-slots-empty,
 .am-slots-loading,
 .slot-loading,

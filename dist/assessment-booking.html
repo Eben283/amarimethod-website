@@ -203,11 +203,11 @@
       <!-- ============ STEP 1: two-month calendar + time slots ============ -->
       <div class="step-section is-active" id="step1Section">
 
-        <div class="slot-loading" id="slotLoading">Loading available times…</div>
+        <div class="slot-loading" id="slotLoading" role="status">Checking live availability…</div>
         <div class="slot-error" id="slotError" hidden></div>
         <div class="slot-empty" id="slotEmpty" hidden>No openings in the next 2 months. Email <a href="mailto:eben@amarimethod.com">eben@amarimethod.com</a> to find a time.</div>
 
-        <div class="cal-frame" id="calFrame" hidden>
+        <div class="cal-frame" id="calFrame" aria-busy="true">
           <div class="cal-months">
             <div class="cal-month" id="calMonthLeft">
               <div class="cal-month-header is-left">
@@ -233,8 +233,8 @@
             </div>
           </div>
 
-          <div class="time-slots" id="timeSlotsContainer" hidden>
-            <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p>
+          <div class="time-slots" id="timeSlotsContainer" aria-live="polite">
+            <p class="time-slots-label">Available times <strong id="timeSlotsLabel">are loading</strong> · all in <span id="userTimezone">your local time</span></p>
             <div class="time-slots-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div>
           </div>
         </div>
@@ -425,6 +425,7 @@
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Los_Angeles',
         submitting: false,
         checkoutKey: null,
+        slotsLoading: true,
       };
 
       // ---------- DOM refs ----------
@@ -588,8 +589,6 @@
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
         els.slotEmpty.hidden = true;
-        els.calFrame.hidden = true;
-        els.timeSlotsContainer.hidden = true;
         els.orderSummaryStep1.hidden = true;
         els.orderSummaryStep2.hidden = true;
         els.userTimezone.textContent = state.timezone;
@@ -598,6 +597,16 @@
         const startDate = ymd(today);
         const end = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
         const endDate = ymd(end);
+
+        // The availability API calls GHL for a two-month range. It can take several
+        // seconds, so draw the calendar immediately and make that wait visible in
+        // the time area rather than leaving the booking surface blank.
+        state.slotsLoading = true;
+        state.viewLeftMonth = ym(today);
+        els.calFrame.hidden = false;
+        els.calFrame.setAttribute('aria-busy', 'true');
+        renderCalendar();
+        renderLoadingSlots();
 
         const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
           + '&startDate=' + startDate + '&endDate=' + endDate
@@ -613,18 +622,22 @@
           slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
           state.slotsByDay = byDay;
           state.availableDates = new Set(Object.keys(byDay));
+          state.slotsLoading = false;
 
           els.slotLoading.hidden = true;
+          els.calFrame.setAttribute('aria-busy', 'false');
           if (state.availableDates.size === 0) {
+            els.timeSlotsContainer.hidden = true;
             els.slotEmpty.hidden = false;
             return;
           }
-          els.calFrame.hidden = false;
-          // Show the current month + next month by default
-          state.viewLeftMonth = ym(today);
           renderCalendar();
+          els.timeSlotsContainer.hidden = true;
         } catch (err) {
+          state.slotsLoading = false;
           els.slotLoading.hidden = true;
+          els.calFrame.setAttribute('aria-busy', 'false');
+          els.timeSlotsContainer.hidden = true;
           els.slotError.hidden = false;
           els.slotError.textContent = "Couldn't load times. Try refreshing, or email eben@amarimethod.com.";
         }
@@ -669,8 +682,9 @@
           const isPast = isPastDate(dayStr);
           const isAvail = state.availableDates.has(dayStr);
 
-          if (isPast || !isAvail) {
+          if (isPast || state.slotsLoading || !isAvail) {
             btn.classList.add('is-unavailable');
+            if (state.slotsLoading && !isPast) btn.classList.add('is-loading');
             btn.disabled = true;
           } else {
             btn.addEventListener('click', function () { selectDate(dayStr); });
@@ -714,6 +728,18 @@
         els.step1ContinueLabel.textContent = 'Pick a time to continue';
         // Smooth scroll the time slots into view
         els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      function renderLoadingSlots() {
+        els.timeSlotsContainer.hidden = false;
+        els.timeSlotsLabel.textContent = 'are loading';
+        els.timeSlots.innerHTML = '';
+        for (let i = 0; i < 6; i++) {
+          const placeholder = document.createElement('span');
+          placeholder.className = 'slot-skeleton';
+          placeholder.setAttribute('aria-hidden', 'true');
+          els.timeSlots.appendChild(placeholder);
+        }
       }
 
       function selectSlot(slot, btn) {
