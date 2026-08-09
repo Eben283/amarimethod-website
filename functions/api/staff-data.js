@@ -11,6 +11,10 @@ import { parsePacificWallClock } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+// All current Amari booking calendars are assigned to Garrett. Querying the
+// practitioner once returns the operational schedule across those calendars;
+// the calendar list below remains the allowlist and source for display names.
+const GHL_GARRETT_USER_ID = "P5b0oSTaVYfULDjZ6YyG";
 
 
 export async function onRequestOptions(context) {
@@ -70,7 +74,8 @@ export async function onRequestGet(context) {
     const startTime = rangeStart.start;
     const endTime = rangeEnd.end;
 
-    // Fetch all calendars, then query each one for today's events (GHL requires calendarId per request)
+    // Fetch the calendar definitions once for the Staff display-name mapping
+    // and to retain the existing location-calendar allowlist.
     const calendarsRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/?locationId=${GHL_LOCATION_ID}`);
     if (!calendarsRes.ok) {
       console.error(`[staff-data] Calendars list error: ${calendarsRes.status}`);
@@ -79,33 +84,26 @@ export async function onRequestGet(context) {
     const calendarsData = await calendarsRes.json();
     const allCalendars = calendarsData.calendars || [];
 
+    const calendarNames = new Map(allCalendars.map((calendar) => [calendar.id, calendar.name]));
+    const eventParams = new URLSearchParams({
+      locationId: GHL_LOCATION_ID,
+      userId: GHL_GARRETT_USER_ID,
+      startTime: String(startTime),
+      endTime: String(endTime),
+    });
+    const eventsRes = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${eventParams}`);
+    if (!eventsRes.ok) {
+      console.error(`[staff-data] Practitioner schedule error: ${eventsRes.status}`);
+      return new Response(JSON.stringify({ error: "Failed to load calendar appointments" }), { status: 422, headers });
+    }
+    const eventsData = await eventsRes.json();
     const eventMap = new Map();
-    // GHL requires calendarId for this endpoint. Query bounded groups in
-    // parallel: serial requests made load time grow by one network round trip
-    // per calendar, while unbounded fan-out risks the connection-cap failure
-    // class documented below for contact enrichment.
-    const CALENDAR_FETCH_CHUNK = 6;
-    for (let i = 0; i < allCalendars.length; i += CALENDAR_FETCH_CHUNK) {
-      const chunk = allCalendars.slice(i, i + CALENDAR_FETCH_CHUNK);
-      const results = await Promise.all(chunk.map(async (cal) => {
-        const params = new URLSearchParams({
-          locationId: GHL_LOCATION_ID,
-          calendarId: cal.id,
-          startTime: String(startTime),
-          endTime: String(endTime),
-        });
-        const response = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
-        if (!response.ok) return { calendar: cal, events: [] };
-        const data = await response.json();
-        return { calendar: cal, events: data.events || [] };
-      }));
-      for (const result of results) {
-        for (const event of result.events) {
-          if (!eventMap.has(event.id)) {
-            eventMap.set(event.id, { ...event, calendarName: result.calendar.name });
-          }
-        }
-      }
+    for (const event of eventsData.events || []) {
+      const calendarId = event.calendarId || event.calendar_id;
+      // Keep the same scope as the former one-request-per-location-calendar
+      // implementation; unknown provider calendars cannot leak into Staff.
+      if (!calendarId || !calendarNames.has(calendarId) || eventMap.has(event.id)) continue;
+      eventMap.set(event.id, { ...event, calendarName: calendarNames.get(calendarId) || "" });
     }
     const events = Array.from(eventMap.values());
 
