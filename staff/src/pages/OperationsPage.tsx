@@ -1,4 +1,4 @@
-import { Activity, BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardPlus, Database, Kanban, Loader2, Mail, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
+import { Activity, AlertTriangle, BookOpen, CalendarDays, Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardPlus, Database, History, Kanban, Loader2, Mail, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -6,9 +6,12 @@ import {
   getCrmMirrorAccessUrl,
   getOpsSystemsBoard,
   getStaffAmariMailReadiness,
+  getStaffGmailReplyReadiness,
   startStaffAmariMailAuthorization,
+  type GmailReplySyncGapReason,
   type OpsSystemsBoard,
   type StaffAmariMailReadiness,
+  type StaffGmailReplyReadiness,
 } from '../lib/api';
 
 type OpsTab = 'overview' | 'systems' | 'crm' | 'automation';
@@ -190,6 +193,89 @@ function MailboxReadiness({ callbackState }: { callbackState: string | null }) {
   );
 }
 
+const GAP_LABELS: Record<GmailReplySyncGapReason, string> = {
+  provider_message_missing: 'Message disappeared before it could be mirrored',
+  body_truncated: 'Message body was shortened for safe storage',
+  metadata_truncated: 'Message metadata was bounded for safe storage',
+  metadata_unusable: 'Message metadata could not be trusted',
+};
+
+function evidenceTime(value: string | null | undefined) {
+  if (!value) return 'Time unavailable';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Time unavailable';
+  return parsed.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function ReplySyncReview() {
+  const [readiness, setReadiness] = useState<StaffGmailReplyReadiness | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getStaffGmailReplyReadiness()
+      .then((result) => { if (!cancelled) setReadiness(result); })
+      .catch((reason) => {
+        if (!cancelled) setError(reason instanceof Error ? reason.message : 'Reply evidence could not be read');
+      })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const reviewCount = readiness?.syncGaps.length || 0;
+  const status = loading ? 'Reading evidence' : error ? 'Status unavailable' : reviewCount ? `${reviewCount} review marker${reviewCount === 1 ? '' : 's'}` : readiness?.state === 'quiet' ? 'No markers in view' : 'No checkpoint';
+
+  return (
+    <section className="ops-reply-evidence" aria-labelledby="ops-reply-evidence-title">
+      <header>
+        <span className="ops-reply-evidence__icon" aria-hidden="true"><History /></span>
+        <div>
+          <p>Local Gmail evidence</p>
+          <h2 id="ops-reply-evidence-title">Reply mirror review</h2>
+        </div>
+        <span className={`ops-reply-evidence__status${reviewCount ? ' is-review' : ''}`} role="status">{status}</span>
+      </header>
+
+      <ol className="ops-reply-evidence__rail" aria-label="Reply evidence path">
+        <li className={readiness?.checkpoint ? 'is-known' : ''}>
+          <i aria-hidden="true" />
+          <span><small>Checkpoint</small><strong>{loading ? 'Checking' : readiness?.checkpoint?.historyId || 'Not established'}</strong><em>{readiness?.checkpoint ? evidenceTime(readiness.checkpoint.observedAt) : 'No local high-water mark'}</em></span>
+        </li>
+        <li className={reviewCount ? 'is-review' : ''}>
+          <i aria-hidden="true" />
+          <span><small>Review evidence</small><strong>{loading ? 'Checking' : error ? 'Unknown' : reviewCount ? `${reviewCount} marker${reviewCount === 1 ? '' : 's'}` : 'No markers in this read'}</strong><em>Latest bounded local evidence</em></span>
+        </li>
+        <li className="is-off">
+          <i aria-hidden="true" />
+          <span><small>Reply sync</small><strong>Off</strong><em>No Gmail polling is running</em></span>
+        </li>
+      </ol>
+
+      {readiness?.syncGaps.length ? (
+        <div className="ops-reply-evidence__reviews">
+          <p>Recent review markers</p>
+          <ul>
+            {readiness.syncGaps.map((gap) => (
+              <li key={`${gap.messageId}:${gap.historyId}:${gap.reason}`}>
+                <AlertTriangle aria-hidden="true" />
+                <span>
+                  <strong>{GAP_LABELS[gap.reason] || gap.reason}</strong>
+                  <small>{evidenceTime(gap.observedAt)} · Message {gap.messageId} · History {gap.historyId}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {error ? <p className="ops-reply-evidence__notice is-error" role="alert">Reply evidence could not be read. Do not treat this as clear. {error}</p> : null}
+      {!loading && !error && readiness?.state === 'no_baseline' ? <p className="ops-reply-evidence__notice">No reply checkpoint exists yet. This is expected while reply sync remains dormant.</p> : null}
+      <footer>This surface reads Amari’s local evidence only. It does not contact Gmail, start reply sync, or send email.</footer>
+    </section>
+  );
+}
+
 export default function OperationsPage() {
   const [params, setParams] = useSearchParams();
   const [mailCallbackState] = useState<'connected' | 'failed' | null>(() => {
@@ -318,6 +404,7 @@ export default function OperationsPage() {
             <div className="ops-overview__attention"><p>Needs attention</p>{attention.slice(0, 4).map((system) => <button key={system.id} type="button" onClick={() => selectTab('systems')}><i aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || system.state}</small></span></button>)}</div>
           ) : null}
           <MailboxReadiness callbackState={mailCallbackState} />
+          <ReplySyncReview />
           <div className="ops-overview__workspace-groups">
             {WORKSPACE_GROUPS.map((group) => (
               <section key={group.label} className="ops-overview__workspace-group" aria-label={group.label}>
