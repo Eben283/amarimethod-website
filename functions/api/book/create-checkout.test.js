@@ -17,6 +17,7 @@ import {
   slotDateOnly,
   looksLikeDuplicateContactError,
   findContactIdByEmail,
+  validateBody,
   ALLOWED_BOOKINGS,
 } from './create-checkout.js';
 import { ghlFetch } from '../../lib/ghl.js';
@@ -47,6 +48,35 @@ describe('public paid booking catalog', () => {
     });
     expect(ALLOWED_BOOKINGS.initial_in_person).toBeUndefined();
     expect(ALLOWED_BOOKINGS.initial_virtual).toBeUndefined();
+  });
+});
+
+describe('Assessment participant agreement', () => {
+  const assessmentCheckout = {
+    ...payload,
+    calendarId: 'EM6vB2mq7EAdGCbUb3j1',
+    timezone: 'America/Los_Angeles',
+    agreePolicies: true,
+    participantAgreementVersion: 'participant-agreement-v2026-08-09',
+    idempotencyKey: 'assessment-agreement-test-key',
+  };
+
+  it('rejects an Assessment checkout that bypasses the required participant agreement', () => {
+    expect(validateBody({ ...assessmentCheckout, agreeParticipantAgreement: false }))
+      .toMatch(/participant agreement/i);
+  });
+
+  it('rejects an Assessment checkout that presents an outdated agreement version', () => {
+    expect(validateBody({
+      ...assessmentCheckout,
+      agreeParticipantAgreement: true,
+      participantAgreementVersion: 'participant-agreement-v2026-01-01',
+    })).toMatch(/current participant agreement/i);
+  });
+
+  it('accepts an Assessment checkout with the required participant agreement', () => {
+    expect(validateBody({ ...assessmentCheckout, agreeParticipantAgreement: true }))
+      .toBeNull();
   });
 });
 

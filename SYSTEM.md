@@ -75,6 +75,7 @@ Last updated: 2026-08-08.
 | Stripe card-on-file | Native | `functions/api/staff-stripe-cards.js`, `functions/lib/stripe-api.js`, POS charge flow | Prefer proven GHL-linked customer with reusable `pm_` |
 | PayLinkSheet | Amari UI | `staff/src/components/PayLinkSheet.tsx` | Sends payment links; keep UI |
 | Native create-checkout | Native API | `functions/api/book/create-checkout.js` | Public paid path (may still redirect to GHL payment link) |
+| Assessment participant agreement | Native static agreement + clickwrap | `participant-agreement.html`, `assessment-booking.html`, `functions/api/book/create-checkout.js`, `db/booking-participant-agreement-migration.sql` | Assessment only; versioned acceptance is stored in the durable paid-booking intent and reflected in the existing pre-checkout audit note. No new GHL tag or custom field. |
 | POS webhook / fulfill | Native | `functions/api/stripe-pos-webhook.js`, `functions/lib/staff-pos-fulfill.js` | |
 
 ### Session ledger & balances

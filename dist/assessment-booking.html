@@ -299,6 +299,11 @@
               <span>I have read and agree to the <a href="/client-info">Missed Appointment Policy</a>.</span>
             </label>
 
+            <label class="checkbox-row" id="participantAgreementRow" data-error-for="agreeParticipantAgreement">
+              <input type="checkbox" id="agreeParticipantAgreement" name="agreeParticipantAgreement">
+              <span>I have read and agree to the <a href="/participant-agreement" target="_blank" rel="noopener">Amari Method, LLC Participant Agreement, Informed Consent, Assumption of Risk, and Release</a>.</span>
+            </label>
+
             <label class="checkbox-row" data-error-for="agreeCommunications">
               <input type="checkbox" id="agreeCommunications" name="agreeCommunications">
               <span><span class="opt-tag">Optional:</span>Send me appointment reminders, follow-ups, and occasional wellness tips. I can unsubscribe at any time.</span>
@@ -345,8 +350,10 @@
         sessionType: 'amari_assessment',
         price: 29,
         requiresPolicy: true,
+        requiresParticipantAgreement: true,
         hideFormat: true,
         agreementVersion: 'agreed-pma-v2026-06-16',
+        participantAgreementVersion: 'participant-agreement-v2026-08-09',
         kicker: 'Amari Assessment · San Francisco',
         headline: 'Start with a $29 Assessment.',
         sub: 'A 50-minute, private, in-person session. Move, breathe, and experience hands-on guided movement directly—then decide whether a longer Amari practice is right for you.',
@@ -413,6 +420,7 @@
       const SLOTS_API = '/api/book/public-slots';
       const CHECKOUT_API = '/api/book/create-checkout';
       const AGREEMENT_VERSION = BOOKING.agreementVersion;
+      const PARTICIPANT_AGREEMENT_VERSION = BOOKING.participantAgreementVersion || null;
       const LOOKAHEAD_DAYS = 60;
       const INITIAL_LOOKAHEAD_DAYS = 7;
 
@@ -482,6 +490,8 @@
         document.title = BOOKING.title;
         $('policyRow').hidden = !BOOKING.requiresPolicy;
         $('agreePolicies').required = !!BOOKING.requiresPolicy;
+        $('participantAgreementRow').hidden = !BOOKING.requiresParticipantAgreement;
+        $('agreeParticipantAgreement').required = !!BOOKING.requiresParticipantAgreement;
         const pair = FORMAT_PAIRS[BOOKING.formatPair];
         if (BOOKING.hideFormat || !pair) {
           $('formatToggle').hidden = true;
@@ -569,7 +579,7 @@
         if (wrapper) wrapper.classList.toggle('is-invalid', !!msg);
       }
       function clearAllFieldErrors() {
-        ['firstName', 'lastName', 'email', 'phone', 'agreePolicies'].forEach(function (n) { setFieldError(n, ''); });
+        ['firstName', 'lastName', 'email', 'phone', 'agreePolicies', 'agreeParticipantAgreement'].forEach(function (n) { setFieldError(n, ''); });
       }
       function isValidEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
       function isValidPhone(s) { return s.replace(/\D/g, '').length >= 10; }
@@ -834,6 +844,7 @@
           phone: f.phone.value.trim(),
           agreeCommunications: f.agreeCommunications.checked,
           agreePolicies: f.agreePolicies.checked,
+          agreeParticipantAgreement: f.agreeParticipantAgreement.checked,
         };
       }
       function validateForm(data) {
@@ -846,6 +857,7 @@
         if (!data.phone) { setFieldError('phone', 'Required'); ok = false; }
         else if (!isValidPhone(data.phone)) { setFieldError('phone', 'Enter at least 10 digits'); ok = false; }
         if (BOOKING.requiresPolicy && !data.agreePolicies) { setFieldError('agreePolicies', 'Required'); ok = false; }
+        if (BOOKING.requiresParticipantAgreement && !data.agreeParticipantAgreement) { setFieldError('agreeParticipantAgreement', 'Required'); ok = false; }
         return ok;
       }
 
@@ -874,7 +886,9 @@
           phone: data.phone,
           agreeCommunications: data.agreeCommunications,
           agreePolicies: data.agreePolicies,
+          agreeParticipantAgreement: data.agreeParticipantAgreement,
           agreementVersion: AGREEMENT_VERSION,
+          participantAgreementVersion: PARTICIPANT_AGREEMENT_VERSION,
           calendarId: CALENDAR_ID,
           sessionType: SESSION_TYPE,
           sessionPrice: SESSION_PRICE,

@@ -22,6 +22,12 @@ function normalize(row) {
     status: row.status,
     orderId: row.order_id || null,
     appointmentId: row.appointment_id || null,
+    participantAgreementVersion: row.participant_agreement_version || null,
+    participantAgreementAcceptedAt: row.participant_agreement_accepted_at === null || row.participant_agreement_accepted_at === undefined
+      ? null
+      : Number(row.participant_agreement_accepted_at),
+    participantAgreementIp: row.participant_agreement_ip || null,
+    participantAgreementUserAgent: row.participant_agreement_user_agent || null,
     createdAt: Number(row.created_at),
     expiresAt: Number(row.expires_at),
   };
@@ -32,7 +38,8 @@ function sameIntent(row, input) {
     row.product_id === input.productId &&
     row.calendar_id === input.calendarId &&
     row.start_time === input.startTime &&
-    row.timezone === input.timezone;
+    row.timezone === input.timezone &&
+    (row.participant_agreement_version || null) === (input.participantAgreementVersion || null);
 }
 
 export async function createPaidBookingIntent(db, input, options = {}) {
@@ -40,13 +47,18 @@ export async function createPaidBookingIntent(db, input, options = {}) {
   if (!input?.intentId || !input?.contactId || !input?.productId || !input?.calendarId || !input?.startTime || !input?.timezone) {
     throw new TypeError("complete paid-booking intent required");
   }
+  if (input.participantAgreementVersion && !Number.isSafeInteger(input.participantAgreementAcceptedAt)) {
+    throw new TypeError("participant agreement acceptance timestamp required");
+  }
   const now = Number(options.now ?? Date.now());
   const expiresAt = now + Number(options.ttlMs ?? 24 * 60 * 60 * 1000);
   const inserted = await db.prepare(
     `INSERT INTO paid_booking_intents
       (intent_id, contact_id, product_id, calendar_id, start_time, timezone,
-       status, order_id, appointment_id, created_at, expires_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, NULL, ?, ?, ?)
+       status, order_id, appointment_id, participant_agreement_version,
+       participant_agreement_accepted_at, participant_agreement_ip,
+       participant_agreement_user_agent, created_at, expires_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'pending', NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(intent_id) DO NOTHING`,
   ).bind(
     input.intentId,
@@ -55,6 +67,10 @@ export async function createPaidBookingIntent(db, input, options = {}) {
     input.calendarId,
     input.startTime,
     input.timezone,
+    input.participantAgreementVersion || null,
+    input.participantAgreementAcceptedAt || null,
+    input.participantAgreementIp || null,
+    input.participantAgreementUserAgent || null,
     now,
     expiresAt,
     now,

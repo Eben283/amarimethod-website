@@ -11,9 +11,9 @@ function fakeDb() {
         bind(...values) { args = values; return this; },
         async run() {
           if (sql.startsWith("INSERT INTO paid_booking_intents")) {
-            const [intentId, contactId, productId, calendarId, startTime, timezone, createdAt, expiresAt, updatedAt] = args;
+            const [intentId, contactId, productId, calendarId, startTime, timezone, participantAgreementVersion, participantAgreementAcceptedAt, participantAgreementIp, participantAgreementUserAgent, createdAt, expiresAt, updatedAt] = args;
             if (rows.has(intentId)) return { meta: { changes: 0 } };
-            rows.set(intentId, { intent_id: intentId, contact_id: contactId, product_id: productId, calendar_id: calendarId, start_time: startTime, timezone, status: "pending", order_id: null, appointment_id: null, created_at: createdAt, expires_at: expiresAt, updated_at: updatedAt });
+            rows.set(intentId, { intent_id: intentId, contact_id: contactId, product_id: productId, calendar_id: calendarId, start_time: startTime, timezone, status: "pending", order_id: null, appointment_id: null, participant_agreement_version: participantAgreementVersion, participant_agreement_accepted_at: participantAgreementAcceptedAt, participant_agreement_ip: participantAgreementIp, participant_agreement_user_agent: participantAgreementUserAgent, created_at: createdAt, expires_at: expiresAt, updated_at: updatedAt });
             return { meta: { changes: 1 } };
           }
           if (sql.includes("SET status = 'bound'")) {
@@ -57,6 +57,28 @@ describe("paid booking intents", () => {
     expect((await createPaidBookingIntent(db, intent, { now: 100 })).state).toBe("created");
     expect((await createPaidBookingIntent(db, intent, { now: 101 })).state).toBe("existing");
     expect((await createPaidBookingIntent(db, { ...intent, startTime: "2026-08-20T11:00:00-07:00" }, { now: 102 })).state).toBe("conflict");
+  });
+
+  it("persists Assessment clickwrap evidence with the checkout intent", async () => {
+    const db = fakeDb();
+    const agreementIntent = {
+      ...intent,
+      participantAgreementVersion: "participant-agreement-v2026-08-09",
+      participantAgreementAcceptedAt: 123,
+      participantAgreementIp: "203.0.113.7",
+      participantAgreementUserAgent: "test browser",
+    };
+    const result = await createPaidBookingIntent(db, agreementIntent, { now: 124 });
+    expect(result.intent).toMatchObject({
+      participantAgreementVersion: "participant-agreement-v2026-08-09",
+      participantAgreementAcceptedAt: 123,
+      participantAgreementIp: "203.0.113.7",
+      participantAgreementUserAgent: "test browser",
+    });
+    expect(db.rows.get(intent.intentId)).toMatchObject({
+      participant_agreement_version: "participant-agreement-v2026-08-09",
+      participant_agreement_accepted_at: 123,
+    });
   });
 
   it("binds an order only when exactly one compatible intent exists", async () => {

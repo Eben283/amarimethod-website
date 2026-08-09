@@ -50,6 +50,8 @@ export const ALLOWED_BOOKINGS = {
     title: "Amari Assessment — In Person",
     durationMinutes: 50,
     pmaTag: "agreed-pma-v2026-06-16",
+    requiresParticipantAgreement: true,
+    participantAgreementVersion: "participant-agreement-v2026-08-09",
     sessionTag: null,
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a66cf107b99151a540409b3",
@@ -252,7 +254,7 @@ export async function onRequestOptions({ request }) {
   });
 }
 
-function validateBody(b) {
+export function validateBody(b) {
   if (!b || typeof b !== "object") return "Invalid body";
   const required = [
     "firstName",
@@ -279,6 +281,14 @@ function validateBody(b) {
   // agreeCommunications is always optional.
   if ((!booking.isFreeBooking || booking.requiresPolicy) && !b.agreePolicies) {
     return "Missed Appointment Policy must be agreed to";
+  }
+  if (booking.requiresParticipantAgreement) {
+    if (b.agreeParticipantAgreement !== true) {
+      return "Participant Agreement must be agreed to";
+    }
+    if (b.participantAgreementVersion !== booking.participantAgreementVersion) {
+      return "Current Participant Agreement must be agreed to";
+    }
   }
   if (!booking.isFreeBooking && (
     typeof b.idempotencyKey !== "string" ||
@@ -419,6 +429,11 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
       : [
           `Missed Appointment Policy: yes (clickwrap)`,
         ]),
+    ...(booking.requiresParticipantAgreement
+      ? [
+          `Participant Agreement: yes (clickwrap; version ${payload.participantAgreementVersion})`,
+        ]
+      : []),
     `IP: ${ip || "unknown"}`,
     `User agent: ${(ua || "").slice(0, 200)}`,
     `Captured at: ${new Date().toISOString()}`,
@@ -554,6 +569,9 @@ export async function onRequestPost(context) {
   // source of truth for newly issued paid checkouts.
   if (!booking.isFreeBooking) {
     try {
+      const participantAgreementAcceptedAt = booking.requiresParticipantAgreement
+        ? Date.now()
+        : null;
       const intent = await createPaidBookingIntent(env.ATTEND_DB, {
         intentId: body.idempotencyKey,
         contactId,
@@ -561,6 +579,12 @@ export async function onRequestPost(context) {
         calendarId: booking.calendarId,
         startTime: body.startTime,
         timezone: body.timezone,
+        participantAgreementVersion: booking.requiresParticipantAgreement
+          ? body.participantAgreementVersion
+          : null,
+        participantAgreementAcceptedAt,
+        participantAgreementIp: booking.requiresParticipantAgreement ? ip : null,
+        participantAgreementUserAgent: booking.requiresParticipantAgreement ? userAgent.slice(0, 200) : null,
       });
       if (intent.state === "conflict") {
         return json({ error: "This checkout key was already used for a different booking." }, 409, origin);
