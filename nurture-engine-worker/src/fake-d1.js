@@ -12,9 +12,9 @@ export function fakeD1() {
     async run() {
       const a = this._args;
       if (/INSERT INTO nurture_enrollments/.test(sql)) {
-        const [id, sequence_id, contact_id, entered_at, status, guard_unchecked] = a;
+        const [id, sequence_id, definition_version, contact_id, entered_at, status, guard_unchecked] = a;
         if (enrollments.has(id)) return { meta: { changes: 0 } };
-        enrollments.set(id, { enrollment_id: id, sequence_id, contact_id, entered_at, status, guard_unchecked });
+        enrollments.set(id, { enrollment_id: id, sequence_id, definition_version, contact_id, entered_at, status, guard_unchecked });
         return { meta: { changes: 1 } };
       }
       if (/INSERT INTO nurture_steps/.test(sql)) {
@@ -23,8 +23,8 @@ export function fakeD1() {
         return { meta: { changes: 1 } };
       }
       if (/INSERT INTO automation_events/.test(sql)) {
-        const [ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
-        events.push({ ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
+        const [ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
+        events.push({ ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
         return { meta: { changes: 1 } };
       }
       if (/UPDATE nurture_steps SET status = 'exited' WHERE enrollment_id = \? AND status = 'pending'/.test(sql)) {
@@ -57,7 +57,7 @@ export function fakeD1() {
           .map(({ s, e }) => ({
             enrollment_id: s.enrollment_id, step_index: s.step_index, after: s.after, kind: s.kind,
             template: s.template, due_at: s.due_at, step_status: s.status,
-            sequence_id: e.sequence_id, contact_id: e.contact_id, entered_at: e.entered_at,
+            sequence_id: e.sequence_id, definition_version: e.definition_version, contact_id: e.contact_id, entered_at: e.entered_at,
           }));
         return { results: rows };
       }

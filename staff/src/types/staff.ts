@@ -144,7 +144,9 @@ export interface ContactAutomationEvent {
   outcome: string | null;
   channel: string | null;
   messageRef: string | null;
+  family?: { key: string; name: string } | null;
   detail: Record<string, unknown> | null;
+  evidence?: { source?: string; gaps?: AutomationEvidenceGap[] };
 }
 
 export interface ContactAutomationEnrollment {
@@ -156,12 +158,14 @@ export interface ContactAutomationEnrollment {
   enteredAt: number | null;
   status: string;
   guardUnchecked?: boolean;
+  family?: { key: string; name: string } | null;
   nextStep: {
     stepIndex: number;
     template: string | null;
     dueAt: number;
     type: string | null;
   } | null;
+  evidence?: { source?: string; gaps?: AutomationEvidenceGap[] };
 }
 
 export interface ContactAutomationEvidence {
@@ -170,6 +174,97 @@ export interface ContactAutomationEvidence {
   contactId?: string;
   enrollments?: ContactAutomationEnrollment[];
   events?: ContactAutomationEvent[];
+  coverage?: { eventLimit: number; eventsTruncated: boolean };
+  evidence?: { gaps?: AutomationEvidenceGap[] };
+}
+
+export interface AutomationEvidenceGap {
+  code: string;
+  label: string;
+}
+
+export interface AutomationSourceRecord {
+  name: string;
+  status: 'published' | 'draft';
+  sourceSystem: 'external_workflow_inventory';
+  evidenceKind: 'documented_record_metadata';
+}
+
+export interface AutomationOwnedStep {
+  stepIndex: number;
+  at?: string;
+  after?: string;
+  type?: string;
+  kind?: string;
+  template?: string | null;
+  [key: string]: unknown;
+}
+
+export interface AutomationOwnedDefinition {
+  id: string;
+  engine: 'reminder' | 'nurture';
+  key: string;
+  name: string;
+  definitionVersion: number;
+  mode: string;
+  trigger: Record<string, unknown>;
+  exits: Array<Record<string, unknown>>;
+  steps: AutomationOwnedStep[];
+  source: { kind: 'owned_code'; path: string };
+}
+
+export interface AutomationFamily {
+  key: string;
+  name: string;
+  lifecycle: 'platform' | 'acquisition' | 'sessions' | 'commerce' | 'partners' | 'studies' | 'archive';
+  kind: 'operational' | 'evidence_only';
+  purpose: string;
+  implementationUnits: string[];
+  ownedDefinitionIds: string[];
+  ownedDefinitions: AutomationOwnedDefinition[];
+  sourceRecords: AutomationSourceRecord[];
+  counts: {
+    ownedDefinitions: number;
+    sourceRecords: number;
+    publishedSourceRecords: number;
+    draftSourceRecords: number;
+  };
+  evidence: {
+    definitionSource: string;
+    executionHistoryImported: boolean;
+    gaps: AutomationEvidenceGap[];
+  };
+}
+
+export interface AutomationInventorySummary {
+  asOf: string;
+  sourcePath: string;
+  sourceRecords: number;
+  publishedSourceRecords: number;
+  draftSourceRecords: number;
+  operationalFamilies: number;
+  evidenceOnlyGroups: number;
+  ownedDefinitions: number;
+}
+
+export interface AutomationFamiliesResponse {
+  success: boolean;
+  configured: boolean;
+  registryVersion: number;
+  summary: AutomationInventorySummary;
+  families: AutomationFamily[];
+  evidence: { gaps: AutomationEvidenceGap[] };
+}
+
+export interface AutomationFamilyResponse {
+  success: boolean;
+  configured: boolean;
+  registryVersion: number;
+  family: AutomationFamily;
+  enrollments: ContactAutomationEnrollment[];
+  events: ContactAutomationEvent[];
+  coverage: { enrollmentsTruncated: boolean; eventsTruncated: boolean };
+  evidence: { gaps: AutomationEvidenceGap[] };
 }
 
 export interface QuizResults {

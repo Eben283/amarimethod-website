@@ -1,3 +1,5 @@
+import { recordAppointmentObservation } from "./appointment-projection-store.js";
+
 function id() {
   return crypto.randomUUID();
 }
@@ -445,7 +447,7 @@ async function refreshEmailReconciliationCandidate(db, purchaseId, billingEmail,
   return true;
 }
 
-export async function upsertGhlAppointment(db, appointment, contactId, now) {
+export async function upsertGhlAppointment(db, appointment, contactId, now, projectionEvidence = {}) {
   const service = appointment.calendarId
     ? await db.prepare("SELECT id FROM services WHERE provider_calendar_id = ?").bind(appointment.calendarId).first()
     : null;
@@ -482,6 +484,18 @@ export async function upsertGhlAppointment(db, appointment, contactId, now) {
      ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
        contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
   ).bind(id(), appointment.externalId, contactId, appointmentId, now).run();
+  // Projection storage is intentionally downstream of the existing current
+  // mirror. A missing/new migration must never break provider-backed schedule
+  // reads or the established appointment import.
+  try {
+    await recordAppointmentObservation(db, appointment, projectionEvidence, now);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "appointment_projection_unavailable",
+      providerAppointmentId: appointment.externalId,
+      message: error instanceof Error ? error.message : String(error),
+    }));
+  }
   return appointmentId;
 }
 
@@ -853,14 +867,19 @@ function likePattern(value) {
 export async function searchContacts(db, query, limit) {
   if (!query) return [];
   const result = await db.prepare(
-    `SELECT id, display_name, email_normalized, phone_e164
-     FROM contacts
-     WHERE lower(display_name) LIKE ? ESCAPE '\\'
-        OR lower(COALESCE(email_normalized, '')) LIKE ? ESCAPE '\\'
-        OR COALESCE(phone_e164, '') LIKE ? ESCAPE '\\'
-     ORDER BY display_name, id
+    `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
+            external.external_id AS provider_contact_id
+     FROM contacts contact
+     LEFT JOIN external_records external
+       ON external.contact_id = contact.id AND external.provider = 'ghl' AND external.object_type = 'contact'
+     WHERE contact.id = ?
+        OR lower(contact.display_name) LIKE ? ESCAPE '\\'
+        OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
+        OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'
+        OR lower(COALESCE(external.external_id, '')) LIKE ? ESCAPE '\\'
+     ORDER BY contact.display_name, contact.id
      LIMIT ?`,
-  ).bind(likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, limit).all();
+  ).bind(String(query), likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, likePattern(query), limit).all();
   return result.results || [];
 }
 
@@ -1094,7 +1113,7 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
-      `SELECT event.id, event.event_kind, event.direction, event.delivery_status,
+      `SELECT event.id, event.provider_event_id AS message_ref, event.event_kind, event.direction, event.delivery_status,
               event.subject, event.body_clean, event.occurred_at, event.sender_label,
               event.read_at, thread.channel AS thread_channel
        FROM communication_events event
@@ -1153,7 +1172,7 @@ export async function contactProfile(db, contactId, limit, now) {
        ORDER BY channel`,
     ).bind(contactId),
     db.prepare(
-      `SELECT 'message' AS activity_type, event.occurred_at, event.direction,
+      `SELECT 'message' AS activity_type, event.provider_event_id AS message_ref, event.occurred_at, event.direction,
               COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
               event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
               NULL AS amount_cents, NULL AS currency

@@ -8,6 +8,7 @@
 CREATE TABLE IF NOT EXISTS nurture_enrollments (
   enrollment_id   TEXT PRIMARY KEY,
   sequence_id     TEXT NOT NULL,
+  definition_version INTEGER NOT NULL DEFAULT 1,
   contact_id      TEXT NOT NULL,
   entered_at      INTEGER NOT NULL,
   status          TEXT NOT NULL DEFAULT 'active',  -- active | exited | done
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS automation_events (
   ts             INTEGER NOT NULL,
   engine         TEXT,
   flow_key       TEXT,
+  definition_version INTEGER,
   contact_id     TEXT,
   appointment_id TEXT,
   step_index     INTEGER,
@@ -47,3 +49,18 @@ CREATE TABLE IF NOT EXISTS automation_events (
 );
 CREATE INDEX IF NOT EXISTS idx_evt_contact ON automation_events (contact_id, ts);
 CREATE INDEX IF NOT EXISTS idx_evt_flow ON automation_events (flow_key, ts);
+CREATE INDEX IF NOT EXISTS idx_evt_engine_flow ON automation_events (engine, flow_key, ts);
+
+-- Execution evidence is immutable. Corrections are represented by a new event, never by
+-- rewriting or deleting the original evidence row.
+CREATE TRIGGER IF NOT EXISTS automation_events_no_update
+BEFORE UPDATE ON automation_events
+BEGIN
+  SELECT RAISE(ABORT, 'automation_events is append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS automation_events_no_delete
+BEFORE DELETE ON automation_events
+BEGIN
+  SELECT RAISE(ABORT, 'automation_events is append-only');
+END;

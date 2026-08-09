@@ -1,6 +1,40 @@
 import { describe, expect, it } from "vitest";
 import worker, { parseClientDeskLimit, parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
+function outboxDb() {
+  const attempts = [];
+  return {
+    attempts,
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            sql,
+            values,
+            async first() {
+              if (sql.includes("FROM contacts contact")) return {
+                id: "contact-1", display_name: "Surrina", email_normalized: "surrina@example.test", phone_e164: "+14155550100",
+                dnd_state: "off", email_consent_state: "unknown", sms_consent_state: "unknown",
+              };
+              if (sql.includes("FROM outbound_delivery_attempts")) return attempts.find((row) => row.actor === values[0] && row.idempotency_key === values[1]) || null;
+              return null;
+            },
+          };
+        },
+      };
+    },
+    async batch(statements) {
+      return statements.map((statement) => {
+        if (!statement.sql.includes("INSERT OR IGNORE INTO outbound_delivery_attempts")) return { meta: { changes: 1 } };
+        const [id, contact_id, actor, channel, provider, consent_state, policy_state, content_sha256, created_at, idempotency_key, message_ref, subject_clean, body_clean, dnd_state, destination_masked, delivery_state] = statement.values;
+        const existing = attempts.find((row) => row.actor === actor && row.idempotency_key === idempotency_key);
+        if (!existing) attempts.push({ id, contact_id, actor, channel, provider, consent_state, policy_state, content_sha256, created_at, idempotency_key, message_ref, subject_clean, body_clean, dnd_state, destination_masked, delivery_state });
+        return { meta: { changes: existing ? 0 : 1 } };
+      });
+    },
+  };
+}
+
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
     expect(parseSyncRequest({})).toEqual({ sources: ["ghl", "stripe", "stripe-invoices"], limit: 25, pages: 8 });
@@ -48,6 +82,43 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps owned dated follow-ups behind worker auth and returns only the owned record contract", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare: () => ({
+          bind: () => ({
+            all: async () => ({ results: [{
+              id: "followup_1",
+              title: "Call tomorrow",
+              due_on: "2026-08-09",
+              completed_at: null,
+              created_by: "Eben",
+              completed_by: null,
+              created_at: "2026-08-08T20:00:00.000Z",
+              updated_at: "2026-08-08T20:00:00.000Z",
+              contact_id: "contact_1",
+              display_name: "Surrina",
+              contact_external_id: "ghl_1",
+            }] }),
+          }),
+        }),
+      },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/owned-followups"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/owned-followups", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      truncated: false,
+      followups: [{ id: "followup_1", contactId: "contact_1", providerContactId: "ghl_1", contactName: "Surrina", dueOn: "2026-08-09" }],
+    });
+  });
+
   it("exchanges an opaque one-time link for an HttpOnly dashboard session without exposing the bearer secret", async () => {
     const values = new Map();
     const env = {
@@ -112,7 +183,7 @@ describe("CRM mirror dashboard access handoff", () => {
       headers: { Cookie: session.headers.get("Set-Cookie") },
     }), env);
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({ mode: "staff_email", deliveryEnabled: false });
+    await expect(response.json()).resolves.toMatchObject({ mode: "non_delivering_outbox", deliveryEnabled: false });
   });
 
   it("does not expose the former Client Desk email-send route to a staff browser session", async () => {
@@ -130,6 +201,89 @@ describe("CRM mirror dashboard access handoff", () => {
       body: JSON.stringify({ subject: "Private test", body: "Must not send" }),
     }), env);
     expect(response.status).toBe(401);
+  });
+
+  it("rejects browser-supplied provider evidence on the non-delivering outbox command route", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
+    const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const response = await worker.fetch(new Request("https://crm.test/communications/outbox", {
+      method: "POST",
+      headers: {
+        Cookie: session.headers.get("Set-Cookie"),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contactId: "contact-1",
+        channel: "email",
+        idempotencyKey: "desk:contact-1:email:provider-smuggle",
+        subject: "Checking in",
+        body: "This is only a command.",
+        providerMessageId: "browser-forged-id",
+        deliveryStatus: "delivered",
+      }),
+    }), env);
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({ error: "unsupported_fields" });
+  });
+
+  it("derives the actor from the signed Staff session and returns a durable non-send", async () => {
+    const db = outboxDb();
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: db };
+    const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const response = await worker.fetch(new Request("https://crm.test/communications/outbox", {
+      method: "POST",
+      headers: {
+        Cookie: session.headers.get("Set-Cookie"),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contactId: "contact-1",
+        channel: "email",
+        idempotencyKey: "desk:contact-1:email:owned-command",
+        subject: "Checking in",
+        body: "This records a non-delivering command.",
+      }),
+    }), env);
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      command: {
+        actor: "Staff",
+        contactId: "contact-1",
+        deliveryState: "not_sent_delivery_unavailable",
+        deliveryEnabled: false,
+      },
+    });
+    expect(db.attempts[0]).toMatchObject({ actor: "Staff", destination_masked: "su***@example.test", provider: "unassigned" });
+  });
+
+  it("reports the owned outbox as available without claiming either channel can deliver", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: outboxDb(), PORTAL_KV: {}, GOOGLE_OAUTH_CLIENT_ID: "id", GOOGLE_OAUTH_CLIENT_SECRET: "secret" };
+    const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const response = await worker.fetch(new Request("https://crm.test/communications/outbox/readiness", {
+      headers: { Cookie: session.headers.get("Set-Cookie") },
+    }), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      outboxAvailable: true,
+      deliveryEnabled: false,
+      fallbackProvider: null,
+      channels: [
+        expect.objectContaining({ channel: "email", configurationDetected: true, deliveryEnabled: false }),
+        expect.objectContaining({ channel: "sms", configurationDetected: false, deliveryEnabled: false }),
+      ],
+    });
   });
 
   it("serves aggregate CRM readiness only behind the existing auth boundary", async () => {
@@ -164,6 +318,28 @@ describe("CRM mirror dashboard access handoff", () => {
       completeness: { ghl: { state: "complete" }, stripe: { state: "complete" } },
       recovery: { result: "ready" },
       currentSyncOverall: "healthy",
+    });
+  });
+
+  it("serves appointment shadow readiness behind auth and fails open to the live schedule", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: { prepare: () => { throw new Error("no such table: appointment_projection_events"); } },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/appointments/readiness"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/appointments/readiness", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      configured: false,
+      shadowOnly: true,
+      state: "unavailable",
+      liveScheduleFallback: true,
+      bufferPolicy: { state: "conflict", runtimeAppOwnedMinutes: 20, olderDocumentedMinutes: 10 },
     });
   });
 });

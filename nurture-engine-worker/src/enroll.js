@@ -62,6 +62,7 @@ export function enroll(event, sequence, contact, nowMs) {
   if (!allowed) return null;
   return {
     sequenceId: sequence.sequenceId,
+    definitionVersion: sequence.definitionVersion,
     contactId: event.contactId,
     enteredAt: nowMs,
     status: "active",
@@ -81,6 +82,7 @@ export function importEnrollment(sequence, { contactId, enteredAt }, nowMs) {
   );
   return {
     sequenceId: sequence.sequenceId,
+    definitionVersion: sequence.definitionVersion,
     contactId,
     enteredAt,
     status: "active",

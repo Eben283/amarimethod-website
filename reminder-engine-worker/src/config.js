@@ -18,6 +18,8 @@
 //                skipIfPast: true  → if the computed time is already past at enroll, skip (don't backfire)
 
 export const INITIAL_IN_PERSON = Object.freeze({
+  name: "Initial Session — In Person",
+  definitionVersion: 1,
   flowKey: "initial-in-person",
   calendarIds: Object.freeze(["G7OAnnJuFbMF6nQSlZVQ"]), // Initial Session In-Person
   enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
@@ -38,6 +40,8 @@ export const INITIAL_IN_PERSON = Object.freeze({
 // flow (twin: initial-virtual-session-welcome-reminder-email-flow.yaml, 95%, copy captured
 // 2026-06-17 de-slopped; templates resolve at the active-mode brick).
 export const INITIAL_VIRTUAL = Object.freeze({
+  name: "Initial Session — Virtual",
+  definitionVersion: 1,
   flowKey: "initial-virtual",
   calendarIds: Object.freeze(["ySmht5hx4uZGEpgZrlCw"]), // Initial Session - Virtual
   enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
@@ -57,6 +61,8 @@ export const INITIAL_VIRTUAL = Object.freeze({
 // flow.yaml, published, 3 calendars). GHL trigger is `confirmed` only — with auto-confirm that
 // IS the booking moment (2026-07-12 calibration), so booked|confirmed both enroll.
 export const DISCOVERY_CALL = Object.freeze({
+  name: "Discovery Call — Confirmation & Reminder",
+  definitionVersion: 1,
   flowKey: "discovery-call",
   calendarIds: Object.freeze([
     "USgPsktqRcuomdUgpShL", // Your Free Discovery Call

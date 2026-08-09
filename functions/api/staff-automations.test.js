@@ -38,10 +38,91 @@ describe("staff-automations — auth gate", () => {
 describe("staff-automations — views", () => {
   beforeEach(() => requireStaffAuth.mockResolvedValue(allow()));
 
-  it("no AUTOMATION_DB binding → 200 configured:false (honest empty state, not an error)", async () => {
+  it("no AUTOMATION_DB binding → 200 configured:false with explicit execution gaps", async () => {
     const res = await onRequestGet(makeContext("view=contact&contactId=abc", {}));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, configured: false });
+    const body = await res.json();
+    expect(body).toEqual(expect.objectContaining({
+      success: true,
+      configured: false,
+      contactId: "abc",
+      enrollments: [],
+      events: [],
+    }));
+    expect(body.evidence.gaps.map((gap) => gap.code)).toContain("execution_store_unavailable");
+  });
+
+  it("registry view is available without D1 and exposes versioned owned definitions", async () => {
+    const res = await onRequestGet(makeContext("view=registry", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.configured).toBe(false);
+    expect(body.registryVersion).toBe(1);
+    expect(body.definitions).toHaveLength(6);
+    expect(body.definitions[0]).toEqual(expect.objectContaining({
+      id: "reminder:initial-in-person",
+      definitionVersion: 1,
+      source: { kind: "owned_code", path: "reminder-engine-worker/src/config.js" },
+    }));
+  });
+
+  it("families view exposes the condensed lifecycle registry and preserves the 82-record evidence count", async () => {
+    const res = await onRequestGet(makeContext("view=families", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.summary).toEqual(expect.objectContaining({
+      operationalFamilies: 24,
+      evidenceOnlyGroups: 1,
+      sourceRecords: 82,
+      publishedSourceRecords: 64,
+      draftSourceRecords: 18,
+      ownedDefinitions: 6,
+    }));
+    expect(body.families).toHaveLength(25);
+    expect(body.evidence.gaps.map((gap) => gap.code)).toContain("external_canvas_history_not_imported");
+  });
+
+  it("family view joins exact definitions and owned execution evidence without requiring D1", async () => {
+    const res = await onRequestGet(makeContext("view=family&key=initial-session-reminders", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.configured).toBe(false);
+    expect(body.family).toEqual(expect.objectContaining({
+      key: "initial-session-reminders",
+      ownedDefinitions: expect.arrayContaining([
+        expect.objectContaining({ id: "reminder:initial-in-person" }),
+        expect.objectContaining({ id: "reminder:initial-virtual" }),
+      ]),
+    }));
+    expect(body.enrollments).toEqual([]);
+    expect(body.events).toEqual([]);
+  });
+
+  it("family view validates keys and returns 404 for a missing family", async () => {
+    expect((await onRequestGet(makeContext("view=family&key=<script>", {}))).status).toBe(400);
+    expect((await onRequestGet(makeContext("view=family&key=missing", {}))).status).toBe(404);
+  });
+
+  it("automation view joins one definition to owned execution evidence", async () => {
+    const res = await onRequestGet(makeContext(
+      "view=automation&engine=reminder&key=initial-in-person",
+      { AUTOMATION_DB: emptyDb },
+    ));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual(expect.objectContaining({
+      success: true,
+      configured: true,
+      definition: expect.objectContaining({ id: "reminder:initial-in-person" }),
+      enrollments: [],
+      events: [],
+    }));
+    expect(body.evidence.executionSource).toBe("owned_d1_append_only_log");
+  });
+
+  it("automation view validates engine/key and returns 404 for an unregistered definition", async () => {
+    expect((await onRequestGet(makeContext("view=automation&engine=bad&key=x", {}))).status).toBe(400);
+    expect((await onRequestGet(makeContext("view=automation&engine=reminder&key=missing", {}))).status).toBe(404);
   });
 
   it("contact view: validates contactId (400 on junk, no query)", async () => {
@@ -61,6 +142,50 @@ describe("staff-automations — views", () => {
       success: true, configured: true, contactId: "cont1",
       enrollments: [], events: [], upgradeOffer: null,
     }));
+  });
+
+  it("contact view stays keyed by the owned person and joins the server-derived provider crosswalk", async () => {
+    const queries = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => { queries.push({ sql, values }); return { results: [] }; } }) }),
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      contacts: [{ id: "owned_person_1", provider_contact_id: "legacy_ghl_1" }],
+    }), { status: 200 })));
+
+    const res = await onRequestGet(makeContext(
+      "view=contact&contactId=owned_person_1",
+      { AUTOMATION_DB: db, WORKER_AUTH_SECRET: "worker-secret" },
+    ));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual(expect.objectContaining({
+      contactId: "owned_person_1",
+      providerContactId: "legacy_ghl_1",
+      automationContactIds: ["owned_person_1", "legacy_ghl_1"],
+    }));
+    expect(queries.some((query) => query.values.includes("owned_person_1"))).toBe(true);
+    expect(queries.some((query) => query.values.includes("legacy_ghl_1"))).toBe(true);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("query=owned_person_1"), expect.objectContaining({
+      headers: { Authorization: "Bearer worker-secret" },
+    }));
+    vi.unstubAllGlobals();
+  });
+
+  it("contact view supports an owned-only person without inventing former-provider history", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      contacts: [{ id: "owned_person_2", provider_contact_id: null }],
+    }), { status: 200 })));
+    const res = await onRequestGet(makeContext(
+      "view=contact&contactId=owned_person_2",
+      { AUTOMATION_DB: emptyDb, WORKER_AUTH_SECRET: "worker-secret" },
+    ));
+    const body = await res.json();
+    expect(body.contactId).toBe("owned_person_2");
+    expect(body.automationContactIds).toEqual(["owned_person_2"]);
+    expect(body.evidence.gaps.map((gap) => gap.code)).toContain("provider_identity_not_applicable");
+    vi.unstubAllGlobals();
   });
 
   it("activity view: serves the today/yesterday feed with a 48h default window", async () => {

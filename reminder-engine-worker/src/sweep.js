@@ -27,6 +27,7 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
     ts: nowMs,
     engine: "reminder",
     flowKey: flow.flowKey,
+    definitionVersion: enrollment.definitionVersion ?? flow.definitionVersion,
     contactId: enrollment.contactId,
     appointmentId: enrollment.appointmentId,
     stepIndex: step.stepIndex,

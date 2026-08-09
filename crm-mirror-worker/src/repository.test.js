@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("CRM mirror appointment projection isolation", () => {
+  it("keeps the established appointment mirror write when shadow storage is unavailable", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => {
+        if (sql.includes("appointment_projection_events")) throw new Error("no such table: appointment_projection_events");
+        return {
+          bind: (...values) => ({
+            first: async () => sql.includes("SELECT id FROM appointments") ? { id: "owned-appointment-1" } : null,
+            run: async () => { writes.push({ sql, values }); return { success: true }; },
+          }),
+        };
+      },
+    };
+    await expect(upsertGhlAppointment(db, {
+      externalId: "ghl-appointment-1", contactExternalId: "ghl-contact-1", calendarId: "calendar-1",
+      providerStatusRaw: "confirmed", status: "confirmed", startsAt: "2026-08-10T17:00:00.000Z",
+      endsAt: "2026-08-10T17:50:00.000Z", timezone: "America/Los_Angeles",
+    }, "owned-contact-1", "2026-08-08T17:00:00.000Z")).resolves.toBe("owned-appointment-1");
+    expect(writes.some((write) => write.sql.includes("UPDATE appointments"))).toBe(true);
+    expect(writes.some((write) => write.sql.includes("INSERT INTO external_records"))).toBe(true);
+  });
+});
 
 describe("Client Desk consent review", () => {
   it("returns a read-only unknown-evidence queue without deriving a grant", async () => {
@@ -262,10 +286,18 @@ describe("CRM mirror client profiles", () => {
 
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {
     const profileQueries = [];
+    const searchCalls = [];
     const searchDb = {
-      prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ id: "contact_1", display_name: "Eben" }] }) }) }),
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => {
+        searchCalls.push({ sql, values });
+        return { results: [{ id: "contact_1", display_name: "Eben", provider_contact_id: "ghl_1" }] };
+      } }) }),
     };
-    await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben" }]);
+    await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben", provider_contact_id: "ghl_1" }]);
+    expect(searchCalls[0].sql).toContain("external.external_id AS provider_contact_id");
+    expect(searchCalls[0].sql).toContain("WHERE contact.id = ?");
+    expect(searchCalls[0].values).toHaveLength(6);
+    expect(searchCalls[0].values[0]).toBe("Eben");
     await expect(searchContacts(searchDb, null, 25)).resolves.toEqual([]);
 
     const profileDb = {

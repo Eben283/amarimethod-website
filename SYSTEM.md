@@ -97,12 +97,13 @@ Last updated: 2026-08-08.
 
 ### Staff ops surfaces (owned — don't replace with GHL screens)
 
-| Name | Paths |
-|------|-------|
-| Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms |
-| Calendar / day-of | `TodayPage`, `CalendarRegistry`, `GarrettDay`, `AppointmentCard` |
-| Client detail CRM | `ClientDetailPage`, notes, message history |
-| Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
+| Name | Paths | Notes |
+|------|-------|-------|
+| Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms | Specialist study records, not a primary CRM surface. |
+| Calendar / day-of | `TodayPage`, `CalendarRegistry`, `GarrettDay`, `AppointmentCard` | Staff schedule and owned service-definition visibility. |
+| Client detail CRM | `ClientDetailPage`, notes, message history | In-session person workspace. |
+| Owned dated follow-ups | `staff/src/components/OwnedFollowupsPanel.tsx`, `functions/api/staff-followups.js`, `crm-mirror-worker/src/owned-followups.js` | Staff-authored reminders in CRM D1; create/complete/reopen never sends, books, charges, refunds, or writes to GHL. |
+| Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn | Staff session documentation and client handoff. |
 
 ### Messaging exit smoke tests
 

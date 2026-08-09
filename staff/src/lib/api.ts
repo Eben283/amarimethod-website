@@ -49,6 +49,70 @@ export async function staffLogin(pin: string): Promise<{ authenticated: boolean;
   });
 }
 
+export type CommunicationChannel = 'in_app' | 'email' | 'sms';
+export type CommunicationCadence = 'immediate' | 'digest';
+export type CommunicationChannelStatus = 'live' | 'surface_only' | 'not_wired';
+
+export interface CommunicationCategoryPreference {
+  enabled: boolean;
+  cadence: CommunicationCadence;
+  channels: Record<CommunicationChannel, boolean>;
+}
+
+export interface TeamCommunicationPreferences {
+  version: number;
+  timezone: string;
+  quietHours: { enabled: boolean; start: string; end: string };
+  categories: Record<string, CommunicationCategoryPreference>;
+  escalation: {
+    enabled: boolean;
+    afterMinutes: number;
+    fallbackChannel: 'sms' | 'email' | null;
+    fallbackStaff: string | null;
+  };
+}
+
+export interface CommunicationCurrentRoute {
+  id: string;
+  label: string;
+  description: string;
+  currentOwner: string;
+  currentCadence: CommunicationCadence;
+  currentRoute: string;
+  channels: Record<CommunicationChannel, CommunicationChannelStatus>;
+}
+
+export interface ExternalCommunicationRoute {
+  id: string;
+  label: string;
+  currentRoute: string;
+  controlStatus: 'external';
+}
+
+export interface TeamCommunicationPreferencesResponse {
+  success: true;
+  user: string;
+  preferences: TeamCommunicationPreferences;
+  saved: boolean;
+  storageAvailable: boolean;
+  updatedAt: string | null;
+  appliedToDelivery: false;
+  deliveryControlStatus: 'foundation_only';
+  currentRoutes: CommunicationCurrentRoute[];
+  externalRoutes: ExternalCommunicationRoute[];
+}
+
+export async function getTeamCommunicationPreferences(): Promise<TeamCommunicationPreferencesResponse> {
+  return fetchApi('/staff-communication-preferences');
+}
+
+export async function saveTeamCommunicationPreferences(preferences: TeamCommunicationPreferences): Promise<TeamCommunicationPreferencesResponse> {
+  return fetchApi('/staff-communication-preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
 export async function getDayData(date?: string, endDate?: string, includeCancelled?: boolean): Promise<import('../types/staff').TodayAppointment[]> {
   const params = new URLSearchParams();
   if (date) params.set('date', date);
@@ -108,6 +172,31 @@ export async function getStaffCalendars(): Promise<StaffCalendarRegistry> {
   return fetchApi('/staff-calendars');
 }
 
+export interface AppointmentProjectionReadiness {
+  configured: boolean;
+  shadowOnly: true;
+  state: 'ready' | 'attention' | 'unavailable';
+  generatedAt: string;
+  liveScheduleFallback: true;
+  reason?: string;
+  coverage?: { observationsRead: number; totalObservations: number; truncated: boolean };
+  reconciliation?: {
+    summary: { appointments: number; observations: number; conflicts: number; historyGaps: number };
+    issues: Array<{ code: string; providerAppointmentId?: string }>;
+  };
+  bufferPolicy: {
+    state: 'conflict';
+    runtimeAppOwnedMinutes: 20;
+    olderDocumentedMinutes: 10;
+    blocksWriteAuthority: true;
+    note: string;
+  };
+}
+
+export async function getAppointmentProjectionReadiness(): Promise<AppointmentProjectionReadiness> {
+  return fetchApi('/staff-appointment-readiness');
+}
+
 export type OpsSystemSummary = {
   id: string;
   label: string;
@@ -132,6 +221,18 @@ export async function searchContacts(query: string): Promise<import('../types/st
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
 
+export interface OwnedContactSearchItem {
+  id: string;
+  providerContactId: string | null;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export async function searchOwnedContacts(query: string): Promise<OwnedContactSearchItem[]> {
+  return fetchApi(`/staff-owned-contacts?query=${encodeURIComponent(query)}`);
+}
+
 export async function setFoundersCircle(
   contactId: string,
   action: 'add' | 'remove',
@@ -153,6 +254,16 @@ export async function getContactAutomationEvidence(
   contactId: string,
 ): Promise<import('../types/staff').ContactAutomationEvidence> {
   return fetchApi(`/staff-automations?view=contact&contactId=${encodeURIComponent(contactId)}`);
+}
+
+export async function getAutomationFamilies(): Promise<import('../types/staff').AutomationFamiliesResponse> {
+  return fetchApi('/staff-automations?view=families');
+}
+
+export async function getAutomationFamily(
+  key: string,
+): Promise<import('../types/staff').AutomationFamilyResponse> {
+  return fetchApi(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
 }
 
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
@@ -599,6 +710,47 @@ type TaskAction =
 
 export async function mutateTask(input: TaskAction): Promise<StaffDay> {
   return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
+}
+
+// Amari-owned, person-specific dated follow-ups. These persist in the owned CRM
+// database and never trigger a message, booking, payment, or GHL workflow.
+export interface OwnedFollowup {
+  id: string;
+  contactId: string;
+  providerContactId: string | null;
+  contactName: string;
+  title: string;
+  dueOn: string;
+  completedAt: string | null;
+  createdBy: string;
+  completedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getOwnedFollowups(): Promise<{ success: boolean; followups: OwnedFollowup[]; truncated?: boolean }> {
+  return fetchApi('/staff-followups');
+}
+
+export async function createOwnedFollowup(input: {
+  contactId: string;
+  title: string;
+  dueOn: string;
+}): Promise<{ success: boolean; followup: OwnedFollowup }> {
+  return fetchApi('/staff-followups', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'create', ...input }),
+  });
+}
+
+export async function setOwnedFollowupComplete(
+  id: string,
+  completed: boolean,
+): Promise<{ success: boolean; followup: OwnedFollowup }> {
+  return fetchApi('/staff-followups', {
+    method: 'POST',
+    body: JSON.stringify({ action: completed ? 'complete' : 'reopen', id }),
+  });
 }
 
 // One-tap post-call text (the "just left a voicemail" nudge). Sends the
