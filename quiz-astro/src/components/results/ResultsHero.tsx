@@ -23,12 +23,12 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
       </span>
 
       <h1 className="hero-headline">
-        You're not broken.<br />
-        You're out of balance.
+        Your body is working around something.<br />
+        It may not need to keep working that way.
       </h1>
 
       <p className="hero-sub">
-        Your readings show a body that can rebalance. It just hasn't been given the right input to start.
+        This is a starting read, not a diagnosis. The Assessment is where Garrett can see what is actually present and guide the work with you.
       </p>
 
       <div className="hero-meta">
@@ -37,7 +37,7 @@ const ResultsHero = ({ patternSignature, scores, recoveryWord }: ResultsHeroProp
           <span className="val">{patternSignature}</span>
         </div>
         <div className="cell">
-          <span className="lbl">Recovery potential</span>
+          <span className="lbl">Potential to change</span>
           <span className="val">
             {recoveryWord} · {scores.recoveryPotential}%
           </span>
