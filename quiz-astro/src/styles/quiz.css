@@ -2,25 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   Amari quiz — Jul 12 premium mockup tokens + chrome
-   ============================================================ */
+/* Current Amari visual system: quiet paper, carbon ink, exact guidance. */
 :root {
-  --cream: #F8F1E8;
-  --cream-2: #F1E7DA;
-  --paper: #FCF7F1;
-  --ink: #211D19;
-  --body: #5C554D;
-  --line: rgba(33, 29, 25, 0.14);
-  --line-strong: rgba(33, 29, 25, 0.32);
-  --rust: #A9481F;
-  --forest: #3E4A32;
-  --gold: #9C7A2E;
-  --teal: #2E5C58;
-  --serif: "Cormorant Garamond", Georgia, serif;
-  --sans: "General Sans", ui-sans-serif, system-ui, sans-serif;
+  --cream: #F7F6F1;
+  --cream-2: #ECEDE7;
+  --paper: #FBFBF8;
+  --ink: #171A18;
+  --body: #59615C;
+  --line: rgba(23, 26, 24, 0.14);
+  --line-strong: rgba(23, 26, 24, 0.32);
+  --rust: #526D73;
+  --forest: #171A18;
+  --gold: #526D73;
+  --teal: #526D73;
+  --serif: "ABC Diatype", "Helvetica Neue", Arial, sans-serif;
+  --sans: "ABC Diatype", "Helvetica Neue", Arial, sans-serif;
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
+
+@font-face { font-family: "ABC Diatype"; src: url("/fonts/ABCDiatype-Regular.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "ABC Diatype"; src: url("/fonts/ABCDiatype-Medium.otf") format("opentype"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "ABC Diatype"; src: url("/fonts/ABCDiatype-Bold.otf") format("opentype"); font-weight: 600 700; font-style: normal; font-display: swap; }
 
 @keyframes quiz-slide-up {
   from { opacity: 0; transform: translateY(14px); }
@@ -46,20 +48,20 @@
 
 @layer base {
   :root {
-    --background: 30 43% 94%;
-    --foreground: 30 12% 11%;
-    --card: 30 50% 97%;
-    --card-foreground: 30 12% 11%;
-    --popover: 30 43% 94%;
-    --popover-foreground: 30 12% 11%;
-    --primary: 30 12% 11%;
-    --primary-foreground: 30 43% 94%;
-    --secondary: 87 19% 24%;
-    --secondary-foreground: 30 43% 94%;
-    --muted: 30 33% 90%;
-    --muted-foreground: 30 8% 33%;
-    --accent: 18 68% 39%;
-    --accent-foreground: 30 43% 94%;
+    --background: 60 13% 95%;
+    --foreground: 140 6% 10%;
+    --card: 60 13% 98%;
+    --card-foreground: 140 6% 10%;
+    --popover: 60 13% 95%;
+    --popover-foreground: 140 6% 10%;
+    --primary: 140 6% 10%;
+    --primary-foreground: 60 13% 95%;
+    --secondary: 190 17% 38%;
+    --secondary-foreground: 60 13% 95%;
+    --muted: 100 8% 90%;
+    --muted-foreground: 140 5% 37%;
+    --accent: 190 17% 38%;
+    --accent-foreground: 60 13% 95%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 30 43% 94%;
     --border: 30 14% 80%;
@@ -167,12 +169,12 @@
   left: 0;
   right: 0;
   z-index: 30;
-  background: rgba(248, 241, 232, 0.9);
+  background: rgba(247, 246, 241, 0.94);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
 .topbar .row {
-  max-width: 920px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 16px 32px;
   display: flex;
@@ -181,11 +183,11 @@
   gap: 20px;
 }
 .wordmark {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-weight: 500;
-  font-size: 22px;
-  letter-spacing: 0.34em;
-  padding-left: 0.34em;
+  font-size: 23px;
+  letter-spacing: -0.06em;
+  padding-left: 0;
   color: var(--ink);
 }
 .topbar .meta {
@@ -225,51 +227,85 @@
   .screen { animation: none; }
 }
 
-/* ---- cover (used by index.astro) ---- */
-.page-cover .kicker {
+/* ---- cover: the quiz is an Amari intake, not a diagnostic report ---- */
+.quiz-cover {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 112px 32px 56px;
+}
+.quiz-cover-panel {
+  width: min(100%, 1120px);
+  min-height: min(650px, calc(100vh - 168px));
+  background: var(--ink);
+  color: #fff;
+  padding: clamp(34px, 7vw, 88px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.quiz-cover-panel::after {
+  content: "";
+  position: absolute;
+  width: min(48vw, 540px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255,255,255,.26);
+  border-radius: 50%;
+  right: -12%;
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 0 0 58px rgba(255,255,255,.04), 0 0 0 116px rgba(255,255,255,.025);
+}
+.quiz-cover-copy { position: relative; z-index: 1; max-width: 700px; }
+.quiz-cover .kicker {
   display: block;
-  margin-bottom: 26px;
-  color: var(--rust);
+  margin-bottom: 22px;
+  color: rgba(255,255,255,.72);
 }
-.page-cover h1 {
-  font-size: clamp(2.6rem, 6vw, 4.1rem);
+.quiz-cover h1 {
+  font-size: clamp(3rem, 7vw, 6.4rem);
   font-weight: 500;
-  max-width: 16ch;
-  font-family: var(--serif);
-  color: var(--ink);
-  line-height: 1.14;
+  max-width: 11ch;
+  color: #fff;
+  line-height: .98;
+  letter-spacing: -.065em;
 }
-.page-cover h1 em { font-style:normal; }
-.page-cover .lede {
-  margin-top: 26px;
-  font-size: 1.18rem;
+.quiz-cover .lede {
+  margin-top: 30px;
+  font-size: clamp(1rem, 1.6vw, 1.18rem);
   max-width: 48ch;
   line-height: 1.6;
-  color: var(--body);
+  color: rgba(255,255,255,.76);
 }
-.page-cover .go { margin-top: 40px; }
-.page-cover .facts {
-  margin-top: 44px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
+.quiz-cover .go { margin-top: 38px; }
+.quiz-cover .btn { background: #fff !important; color: var(--ink) !important; }
+.quiz-cover .btn:hover { background: #e7ebe7 !important; }
+.quiz-cover .facts {
+  position: relative;
+  z-index: 1;
+  margin-top: 60px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255,255,255,.24);
   display: flex;
   gap: clamp(28px, 6vw, 56px);
   flex-wrap: wrap;
 }
-.page-cover .facts .f b {
-  font-family: var(--serif);
-  font-size: 1.7rem;
+.quiz-cover .facts .f b {
+  font-family: var(--sans);
+  font-size: 1.35rem;
   font-weight: 500;
   display: block;
   line-height: 1;
-  color: var(--ink);
+  color: #fff;
 }
-.page-cover .facts .f span {
+.quiz-cover .facts .f span {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--body);
+  color: rgba(255,255,255,.65);
   display: block;
   margin-top: 9px;
 }
@@ -599,5 +635,10 @@ footer.qfoot a:hover {
 @media (max-width: 720px) {
   .topbar .row { padding: 14px 20px; }
   .stage { padding: 130px 20px 80px; }
+  .quiz-cover { padding: 94px 20px 24px; }
+  .quiz-cover-panel { min-height: calc(100vh - 118px); padding: 30px 26px; }
+  .quiz-cover-panel::after { width: 84vw; right: -45%; top: 58%; }
+  .quiz-cover h1 { font-size: clamp(3rem, 14vw, 4.8rem); max-width: 9ch; }
+  .quiz-cover .facts { gap: 22px; }
   .form { grid-template-columns: 1fr; }
 }

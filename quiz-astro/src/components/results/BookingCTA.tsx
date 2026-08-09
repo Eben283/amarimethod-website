@@ -9,11 +9,10 @@ type BookingCTAProps = {
 };
 
 const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
-  const { answers, audience, referralSource } = useQuiz();
+  const { answers, referralSource } = useQuiz();
   const painLocation = (answers[0]?.answer as string) || null;
   const conditionContent = getConditionContent(painLocation);
   const testimonial = conditionContent?.matchedTestimonial;
-  const remotePreferred = audience === 'remote';
   const referralName = referralSource
     ? referralSource.charAt(0).toUpperCase() + referralSource.slice(1)
     : null;
@@ -24,17 +23,17 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
       {/* ─── OFFER CARD ─── */}
       <article className="offer">
         <header className="offer-head">
-          <span>Initial Session · 60 min · In person or virtual</span>
+          <span>Amari Assessment · 50 minutes · San Francisco</span>
           <span className="pill">Recommended</span>
         </header>
 
         <div className="offer-body">
           {/* Left pane — price */}
           <div className="offer-pane">
-            <div className="offer-price-num">$225</div>
-            <div className="offer-price-lbl">One session · No package required</div>
+            <div className="offer-price-num">$29</div>
+            <div className="offer-price-lbl">Private, in-person Assessment</div>
             <p className="offer-price-meta">
-              Pay for one session. Your $225 carries forward if you continue.
+              Start with a direct experience of the work. There is no obligation to continue.
             </p>
           </div>
 
@@ -43,51 +42,26 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <div className="offer-included">
               <span className="eyebrow">What's included</span>
               <ul className="offer-list">
-                <li>Full assessment with Garrett</li>
-                <li>Your first guided protocol, where most clients feel a shift</li>
-                <li>Take-home practice you can do tonight</li>
-                <li>Satisfaction guarantee</li>
+                <li>A focused look at what you are noticing in your body</li>
+                <li>One-on-one, hands-on guided movement with Garrett</li>
+                <li>Space to experience the work before deciding on a longer practice</li>
               </ul>
             </div>
 
-            <div className="offer-path">
-              <span className="eyebrow">How the path works</span>
-              <div className="row">
-                <span className="lbl">Today:</span>
-                <span className="body">Book your first session ($225).</span>
-              </div>
-              <div className="row">
-                <span className="lbl">After session 1:</span>
-                <span className="body">Decide whether to continue.</span>
-              </div>
-              <div className="row">
-                <span className="lbl">Before session 2:</span>
-                <span className="body">If you continue, upgrade for the difference. Your $225 counts toward the 4-pack (+$495) or 8-pack (+$1,070).</span>
-              </div>
-            </div>
           </div>
         </div>
 
         <div className="offer-cta">
           {referralName ? <p className="referral-note">Referred by {referralName}</p> : null}
-          <div className={`booking-options${remotePreferred ? ' virtual-first' : ''}`}>
-            <a href={buildBookingUrl('/book/initial-in-person')} className="btn-ink">
-              <span>Book in person</span>
-              <span className="arrow">→</span>
-            </a>
-            <a href={buildBookingUrl('/book/initial-virtual')} className="btn-paper">
-              <span>Book virtual</span>
+          <div className="booking-options">
+            <a href={buildBookingUrl('/assessment-booking')} className="btn-ink">
+              <span>Book your $29 Assessment</span>
               <span className="arrow">→</span>
             </a>
           </div>
           <span className="fine">
-            {remotePreferred
-              ? 'Virtual from anywhere · In person available when you visit SF · HSA / FSA accepted'
-              : 'San Francisco in person or virtual from anywhere · HSA / FSA accepted'}
+            50 minutes · Private · In person in San Francisco
           </span>
-          <p className="guarantee">
-            <b>Satisfaction guaranteed.</b> If you don't experience noticeable relief, we keep working with you until you do, at no additional charge.
-          </p>
         </div>
       </article>
 

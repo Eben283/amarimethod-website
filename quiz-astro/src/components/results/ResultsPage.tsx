@@ -19,17 +19,16 @@ type ResultsPageProps = {
 };
 
 // ─── EDITORIAL DESIGN SYSTEM ─────────────────────────────────────────
-// Jul 12 premium mockup tokens (cream/ink/Cormorant). Scoped under
-// [data-results] so styles cannot bleed outside the React island.
+// Scoped to the result island so the current Amari system cannot bleed outside it.
 const EDITORIAL_STYLES = `
 [data-results] {
-  --cream:#F8F1E8; --cream-2:#F1E7DA; --paper:#FCF7F1; --paper-2:#F1E7DA;
-  --ink:#211D19; --ink-2:#5C554D; --body:#5C554D; --mute:#5C554D;
-  --line:rgba(33,29,25,.14); --line-2:rgba(33,29,25,.32); --line-strong:rgba(33,29,25,.32);
-  --accent:#A9481F; --rust:#A9481F; --forest:#3E4A32; --gold:#9C7A2E; --teal:#2E5C58;
-  --display:"Cormorant Garamond",Georgia,serif;
-  --sans:"General Sans",ui-sans-serif,system-ui,sans-serif;
-  --mono:"General Sans",ui-sans-serif,system-ui,sans-serif;
+  --cream:#F7F6F1; --cream-2:#ECEDE7; --paper:#FBFBF8; --paper-2:#ECEDE7;
+  --ink:#171A18; --ink-2:#59615C; --body:#59615C; --mute:#59615C;
+  --line:rgba(23,26,24,.14); --line-2:rgba(23,26,24,.32); --line-strong:rgba(23,26,24,.32);
+  --accent:#526D73; --rust:#526D73; --forest:#171A18; --gold:#526D73; --teal:#526D73;
+  --display:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
+  --sans:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
+  --mono:"ABC Diatype","Helvetica Neue",Arial,sans-serif;
   --ease:cubic-bezier(0.32,0.72,0,1);
   background:var(--cream); color:var(--ink); font-family:var(--sans);
   -webkit-font-smoothing:antialiased; font-size:16px; line-height:1.65;
@@ -325,7 +324,7 @@ const EDITORIAL_STYLES = `
 [data-results] .btn-ink:hover{background:#000;transform:translateY(-1px);gap:.7em;color:#fff}
 [data-results] .btn-ink .arrow{font-family:inherit;font-style:normal;font-size:inherit;letter-spacing:inherit;transition:transform .3s var(--ease)}
 [data-results] .btn-ink:hover .arrow{transform:translateX(4px)}
-[data-results] .booking-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px;margin:0 auto}
+[data-results] .booking-options{display:grid;grid-template-columns:1fr;gap:10px;max-width:560px;margin:0 auto}
 [data-results] .booking-options.virtual-first .btn-paper{order:-1;background:var(--ink);color:#fff;border-color:var(--ink)}
 [data-results] .booking-options.virtual-first .btn-ink{background:var(--paper);color:var(--ink);border:1px solid var(--ink)}
 [data-results] .btn-paper{
@@ -520,7 +519,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
             <span className="mark" aria-hidden="true" />
             <span>Amari Method</span>
           </a>
-          <div className="center">Your result · Returned from Form 01</div>
+          <div className="center">Your result · Pain pattern quiz</div>
           <div className="right">
             <a href="/quiz/take/">← Retake quiz</a>
           </div>
@@ -562,18 +561,15 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
         <div className="examiner-grid">
           <div className="examiner-id">
             <div className="examiner-avatar" aria-hidden="true">G</div>
-            <div className="role">§ From your examiner</div>
+            <div className="role">From Garrett</div>
             <div className="who"><b>Garrett Hewstan</b><br />Founder, Amari Method</div>
           </div>
           <div className="examiner-body">
             <p>
-              What stood out in your answers: {patternSignature.toLowerCase()}. That means your body has built a chain around the original site. But the chain is identifiable, and your system hasn't built deep compensations yet.
+              What stood out in your answers: {patternSignature.toLowerCase()}. Your body may be organizing around the issue in a way that keeps the same areas working too hard. That pattern is something we can explore directly in the room.
             </p>
             <p>
-              What I'd do next is simple: book one session. Not a package. Not a commitment. One. We find the specific imbalance creating your pattern and I show you the protocol that addresses it.
-            </p>
-            <p>
-              If session one doesn't help, we don't keep going. That's the whole offer.
+              The next step is simple: start with one $29 Assessment. You will move, breathe, and experience hands-on guided movement directly—then decide whether a longer Amari practice is right for you.
             </p>
             <p className="signoff">— Garrett</p>
           </div>
@@ -593,11 +589,11 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 9 — Aside links */}
       <div className="doc">
         <div className="aside-links">
-          <a href={buildBookingUrl('/book/discovery-call')}>
+          <a href={buildBookingUrl('/assessment-booking?type=discovery_call')}>
             Schedule free 15-min call ↗
           </a>
-          <a href="https://www.amarimethod.com/booking">
-            See full pricing &amp; packages ↗
+          <a href={buildBookingUrl('/assessment-booking')}>
+            Start with a $29 Assessment ↗
           </a>
         </div>
       </div>
@@ -672,7 +668,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 11 — Doc foot */}
       <footer className="doc-foot">
         <div className="col">
-          <b>Form 02 · v1.0</b>
+          <b>Pain pattern quiz</b>
           <span>Returned 2026</span>
         </div>
         <div className="col center">A reading, not a diagnosis · Issued by Amari Method</div>
