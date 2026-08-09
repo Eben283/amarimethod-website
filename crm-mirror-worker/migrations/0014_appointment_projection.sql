@@ -33,3 +33,15 @@ CREATE INDEX IF NOT EXISTS idx_appointment_projection_event
 
 CREATE INDEX IF NOT EXISTS idx_appointment_projection_observed
   ON appointment_projection_events(observed_at DESC);
+
+CREATE TRIGGER IF NOT EXISTS appointment_projection_events_reject_update
+BEFORE UPDATE ON appointment_projection_events
+BEGIN
+  SELECT RAISE(ABORT, 'appointment_projection_events is append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS appointment_projection_events_reject_delete
+BEFORE DELETE ON appointment_projection_events
+BEGIN
+  SELECT RAISE(ABORT, 'appointment_projection_events is append-only');
+END;
