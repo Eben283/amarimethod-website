@@ -44,23 +44,23 @@ describe("Gmail reply provider", () => {
   it("lists bounded message-added history with decimal IDs preserved as strings and no label filter", async () => {
     const fetchImpl = vi.fn(async () => response({
       history: [{
-        id: "9223372036854775700",
+        id: "18446744073709551600",
         messages: [{ id: "ignored-message", threadId: "ignored-thread" }],
         messagesAdded: [{ message: { id: "m-1", threadId: "t-1", labelIds: ["INBOX"] } }],
       }],
       nextPageToken: "next-page",
-      historyId: "9223372036854775807",
+      historyId: "18446744073709551615",
     }));
     const provider = createGmailReplyProvider(env("Eben"), "Eben", { fetchImpl });
 
     await expect(provider.listHistoryPage({
-      startHistoryId: "9223372036854775000",
+      startHistoryId: "18446744073709551000",
       pageToken: "page-one",
       maxResults: 900,
     })).resolves.toEqual({
-      history: [{ id: "9223372036854775700", messagesAdded: [{ message: { id: "m-1", threadId: "t-1" } }] }],
+      history: [{ id: "18446744073709551600", messagesAdded: [{ message: { id: "m-1", threadId: "t-1" } }] }],
       nextPageToken: "next-page",
-      historyId: "9223372036854775807",
+      historyId: "18446744073709551615",
     });
 
     expect(provider.mailboxContext).toEqual({ mailboxActor: "Eben", grantOwner: "eben@amarimethod.com" });
@@ -69,7 +69,7 @@ describe("Gmail reply provider", () => {
     const request = new URL(fetchImpl.mock.calls[0][0]);
     expect(request.origin).toBe("https://gmail.googleapis.com");
     expect(request.pathname).toBe("/gmail/v1/users/me/history");
-    expect(request.searchParams.get("startHistoryId")).toBe("9223372036854775000");
+    expect(request.searchParams.get("startHistoryId")).toBe("18446744073709551000");
     expect(request.searchParams.get("historyTypes")).toBe("messageAdded");
     expect(request.searchParams.get("maxResults")).toBe("500");
     expect(request.searchParams.get("pageToken")).toBe("page-one");
@@ -84,7 +84,7 @@ describe("Gmail reply provider", () => {
     const message = {
       id: "message_123",
       threadId: "thread_123",
-      historyId: "9007199254740993123",
+      historyId: "18446744073709551614",
       internalDate: "1786208400000",
       mailboxActor: "Eben",
       grantOwner: "eben@amarimethod.com",
@@ -251,11 +251,11 @@ describe("Gmail reply provider", () => {
     ["history", { history: "wrong", historyId: "123" }],
     ["history", { history: [{ id: "123", messagesAdded: [{ message: { id: true, threadId: "t-1" } }] }], historyId: "124" }],
     ["history", { history: [{ id: "123", messagesAdded: [{ message: { id: "m-1", threadId: 7 } }] }], historyId: "124" }],
-    ["history", { history: [], historyId: "9223372036854775808" }],
-    ["history", { history: [{ id: "9223372036854775808", messagesAdded: [] }], historyId: "124" }],
+    ["history", { history: [], historyId: "18446744073709551616" }],
+    ["history", { history: [{ id: "18446744073709551616", messagesAdded: [] }], historyId: "124" }],
     ["message", { id: "different", threadId: "t-1", historyId: "123", internalDate: "1786208400000", payload: {} }],
     ["message", { id: "m-1", threadId: "t-1", historyId: 123, internalDate: "1786208400000", payload: {} }],
-    ["message", { id: "m-1", threadId: "t-1", historyId: "9223372036854775808", internalDate: "1786208400000", payload: {} }],
+    ["message", { id: "m-1", threadId: "t-1", historyId: "18446744073709551616", internalDate: "1786208400000", payload: {} }],
     ["message", { id: "m-1", threadId: "t-1", historyId: "123", internalDate: "8640000000000001", payload: {} }],
   ])("rejects malformed %s payloads", async (kind, payload) => {
     const provider = createGmailReplyProvider(env(), "Eben", { fetchImpl: vi.fn(async () => response(payload)) });

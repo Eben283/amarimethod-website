@@ -16,7 +16,7 @@ const HISTORY_FIELDS = new Set(["startHistoryId", "pageToken", "maxResults"]);
 const PROVIDER_ID = /^[A-Za-z0-9_-]{1,256}$/;
 const DECIMAL_ID = /^\d{1,20}$/;
 const CONTROL = /[\u0000-\u001F\u007F-\u009F]/;
-const INT64_MAX = 9_223_372_036_854_775_807n;
+const UINT64_MAX = 18_446_744_073_709_551_615n;
 const MAX_DATE_EPOCH_MS = 8_640_000_000_000_000n;
 const RETRYABLE_403_REASONS = new Set([
   "dailyLimitExceeded",
@@ -46,8 +46,8 @@ function exactFields(input, allowed, label) {
 }
 
 function decimalId(value, label) {
-  if (typeof value !== "string" || !DECIMAL_ID.test(value) || BigInt(value) > INT64_MAX) {
-    throw invalid(`${label} must be an int64 decimal string`);
+  if (typeof value !== "string" || !DECIMAL_ID.test(value) || BigInt(value) > UINT64_MAX) {
+    throw invalid(`${label} must be a uint64 decimal string`);
   }
   return value;
 }
@@ -80,7 +80,7 @@ function objectPayload(payload, label) {
 }
 
 function providerDecimalId(value, label) {
-  if (typeof value !== "string" || !DECIMAL_ID.test(value) || BigInt(value) > INT64_MAX) {
+  if (typeof value !== "string" || !DECIMAL_ID.test(value) || BigInt(value) > UINT64_MAX) {
     throw malformed(`Gmail ${label} is invalid`);
   }
   return value;
