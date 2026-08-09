@@ -26,6 +26,7 @@ const MediaPage = lazy(() => import('./pages/MediaPage'));
 const OperationsPage = lazy(() => import('./pages/OperationsPage'));
 const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
 const CommunicationPreferencesPage = lazy(() => import('./pages/CommunicationPreferencesPage'));
+const AutomationRegistryPage = lazy(() => import('./pages/AutomationRegistryPage'));
 
 function SurfaceLoader() {
   return (
@@ -104,6 +105,7 @@ function AppRoutes() {
         <Route path="cos" element={<Layout fullBleed><CosPage /></Layout>} />
         <Route path="field-studies" element={<Layout fullBleed><FieldStudiesPage /></Layout>} />
         <Route path="operations" element={<Layout fullBleed><OperationsPage /></Layout>} />
+        <Route path="automations" element={<Layout fullBleed><AutomationRegistryPage /></Layout>} />
         <Route path="community" element={<Layout><CommunityPage /></Layout>} />
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />

@@ -244,6 +244,16 @@ export async function getContactAutomationEvidence(
   return fetchApi(`/staff-automations?view=contact&contactId=${encodeURIComponent(contactId)}`);
 }
 
+export async function getAutomationFamilies(): Promise<import('../types/staff').AutomationFamiliesResponse> {
+  return fetchApi('/staff-automations?view=families');
+}
+
+export async function getAutomationFamily(
+  key: string,
+): Promise<import('../types/staff').AutomationFamilyResponse> {
+  return fetchApi(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
+}
+
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
   return fetchApi('/staff-note', {
     method: 'POST',

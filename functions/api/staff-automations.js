@@ -17,6 +17,7 @@ import {
   failuresView,
   activityView,
   automationExecutionView,
+  automationFamilyExecutionView,
 } from "../lib/automation-views.js";
 import {
   REGISTRY_VERSION,
@@ -24,9 +25,16 @@ import {
   findAutomationDefinition,
   registryEvidence,
 } from "../lib/automation-registry.js";
+import {
+  automationFamilies,
+  automationFamily,
+  automationInventorySummary,
+  familyRegistryEvidence,
+} from "../lib/automation-families.js";
 
 const VALID_CONTACT_ID = /^[A-Za-z0-9]{1,50}$/;
 const VALID_AUTOMATION_KEY = /^[a-z0-9][a-z0-9-]{0,79}$/;
+const VALID_FAMILY_KEY = VALID_AUTOMATION_KEY;
 const VALID_ENGINES = new Set(["reminder", "nurture"]);
 const DEFAULT_FAILURE_WINDOW_HOURS = 168; // one week
 const DEFAULT_ACTIVITY_WINDOW_HOURS = 48; // today + yesterday
@@ -55,6 +63,7 @@ export async function onRequestGet(context) {
   const view = url.searchParams.get("view");
   const db = context.env.AUTOMATION_DB;
   const evidence = registryEvidence({ executionStoreConfigured: !!db });
+  const familyEvidence = familyRegistryEvidence();
 
   try {
     if (view === "registry") {
@@ -64,6 +73,45 @@ export async function onRequestGet(context) {
         registryVersion: REGISTRY_VERSION,
         definitions: automationDefinitions(),
         evidence,
+      }), { status: 200, headers });
+    }
+
+    if (view === "families") {
+      return new Response(JSON.stringify({
+        success: true,
+        configured: !!db,
+        registryVersion: REGISTRY_VERSION,
+        summary: automationInventorySummary(),
+        families: automationFamilies(),
+        evidence: {
+          ...evidence,
+          gaps: [...familyEvidence.gaps, ...evidence.gaps],
+        },
+      }), { status: 200, headers });
+    }
+
+    if (view === "family") {
+      const key = (url.searchParams.get("key") || "").trim();
+      if (!VALID_FAMILY_KEY.test(key)) {
+        return new Response(JSON.stringify({ error: "Invalid automation family key" }), { status: 400, headers });
+      }
+      const family = automationFamily(key);
+      if (!family) {
+        return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
+      }
+      const execution = db
+        ? await automationFamilyExecutionView(db, family)
+        : { enrollments: [], events: [] };
+      return new Response(JSON.stringify({
+        success: true,
+        configured: !!db,
+        registryVersion: REGISTRY_VERSION,
+        family,
+        ...execution,
+        evidence: {
+          ...evidence,
+          gaps: [...family.evidence.gaps, ...evidence.gaps],
+        },
       }), { status: 200, headers });
     }
 
@@ -124,7 +172,7 @@ export async function onRequestGet(context) {
       return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, failures, evidence }), { status: 200, headers });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown view (use registry, automation, activity, contact, or failures)" }), { status: 400, headers });
+    return new Response(JSON.stringify({ error: "Unknown view (use families, family, registry, automation, activity, contact, or failures)" }), { status: 400, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: `Query failed: ${String((err && err.message) || err)}` }), { status: 500, headers });
   }

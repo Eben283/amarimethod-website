@@ -66,6 +66,43 @@ describe("staff-automations — views", () => {
     }));
   });
 
+  it("families view exposes the condensed lifecycle registry and preserves the 82-record evidence count", async () => {
+    const res = await onRequestGet(makeContext("view=families", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.summary).toEqual(expect.objectContaining({
+      operationalFamilies: 24,
+      evidenceOnlyGroups: 1,
+      sourceRecords: 82,
+      publishedSourceRecords: 64,
+      draftSourceRecords: 18,
+      ownedDefinitions: 6,
+    }));
+    expect(body.families).toHaveLength(25);
+    expect(body.evidence.gaps.map((gap) => gap.code)).toContain("external_canvas_history_not_imported");
+  });
+
+  it("family view joins exact definitions and owned execution evidence without requiring D1", async () => {
+    const res = await onRequestGet(makeContext("view=family&key=initial-session-reminders", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.configured).toBe(false);
+    expect(body.family).toEqual(expect.objectContaining({
+      key: "initial-session-reminders",
+      ownedDefinitions: expect.arrayContaining([
+        expect.objectContaining({ id: "reminder:initial-in-person" }),
+        expect.objectContaining({ id: "reminder:initial-virtual" }),
+      ]),
+    }));
+    expect(body.enrollments).toEqual([]);
+    expect(body.events).toEqual([]);
+  });
+
+  it("family view validates keys and returns 404 for a missing family", async () => {
+    expect((await onRequestGet(makeContext("view=family&key=<script>", {}))).status).toBe(400);
+    expect((await onRequestGet(makeContext("view=family&key=missing", {}))).status).toBe(404);
+  });
+
   it("automation view joins one definition to owned execution evidence", async () => {
     const res = await onRequestGet(makeContext(
       "view=automation&engine=reminder&key=initial-in-person",

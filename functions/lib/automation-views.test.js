@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { contactAutomationView, failuresView, activityView, automationExecutionView } from "./automation-views.js";
+import { contactAutomationView, failuresView, activityView, automationExecutionView, automationFamilyExecutionView } from "./automation-views.js";
+import { automationFamily } from "./automation-families.js";
 
 const NOW = Date.parse("2026-07-12T10:00:00-07:00");
 const DAY = 86400000;
@@ -149,6 +150,7 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(reminder.enteredAtIso).toBe("2026-07-12T17:00:00.000Z");
     expect(reminder.nextStep.dueAtIso).toBe("2026-07-19T17:00:00.000Z");
     expect(reminder.definitionVersion).toBe(1);
+    expect(reminder.family).toEqual({ key: "initial-session-reminders", name: "Initial-session reminders" });
     expect(reminder.steps).toHaveLength(3);
 
     const nurture = v.enrollments.find((e) => e.engine === "nurture");
@@ -169,6 +171,7 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.events.map((e) => e.action)).toEqual(["would_send", "enrolled"]);
     expect(v.events[0].detail).toEqual({ template: "confirmation" });
     expect(v.events[0].occurredAt).toBe("2026-07-12T17:00:00.000Z");
+    expect(v.events[0].family).toEqual({ key: "initial-session-reminders", name: "Initial-session reminders" });
     expect(v.events[0].evidence.gaps.map((gap) => gap.code)).toContain("message_reference_missing");
   });
 
@@ -177,6 +180,27 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.enrollments).toHaveLength(0);
     expect(v.events).toHaveLength(0);
     expect(v.upgradeOffer).toBeNull();
+  });
+});
+
+describe("automationFamilyExecutionView — one lifecycle family across owned definitions", () => {
+  it("combines and labels execution evidence for every owned definition in the family", async () => {
+    const family = automationFamily("initial-session-reminders");
+    const view = await automationFamilyExecutionView(db, family);
+    expect(view.enrollments).toHaveLength(1);
+    expect(view.enrollments[0]).toEqual(expect.objectContaining({
+      key: "initial-in-person",
+      family: { key: "initial-session-reminders", name: "Initial-session reminders" },
+    }));
+    expect(view.events).toHaveLength(2);
+    expect(view.events.every((event) => event.family?.key === "initial-session-reminders")).toBe(true);
+  });
+
+  it("returns empty owned execution evidence for a source-only family", async () => {
+    expect(await automationFamilyExecutionView(db, automationFamily("study-program"))).toEqual({
+      enrollments: [],
+      events: [],
+    });
   });
 });
 

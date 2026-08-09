@@ -5,6 +5,12 @@
 // Scale note (from the plan): a few hundred rows total — plain per-table queries, no rollups.
 
 import { eventEvidence, findAutomationDefinition } from "./automation-registry.js";
+import { familyForDefinition } from "./automation-families.js";
+
+function familyReference(engine, key) {
+  const family = familyForDefinition(engine, key);
+  return family ? { key: family.key, name: family.name } : null;
+}
 
 function parseDetail(raw) {
   if (raw == null) return null;
@@ -26,6 +32,7 @@ function normalizeEvent(r) {
     outcome: r.outcome,
     channel: r.channel,
     messageRef: r.message_ref,
+    family: familyReference(r.engine, r.flow_key),
     detail: parseDetail(r.detail),
     evidence: eventEvidence(r),
   };
@@ -72,6 +79,7 @@ function reminderEnrollment(e, allSteps) {
     definitionId: definition?.id || null,
     definitionVersion: e.definition_version ?? null,
     currentDefinitionVersion: definition?.definitionVersion || null,
+    family: familyReference("reminder", e.flow_key),
     enrollmentId: e.enrollment_id,
     appointmentId: e.appointment_id,
     startAt: e.start_at,
@@ -97,6 +105,7 @@ function nurtureEnrollment(e, allSteps) {
     definitionId: definition?.id || null,
     definitionVersion: e.definition_version ?? null,
     currentDefinitionVersion: definition?.definitionVersion || null,
+    family: familyReference("nurture", e.sequence_id),
     enrollmentId: e.enrollment_id,
     enteredAt: e.entered_at,
     enteredAtIso: exactIso(e.entered_at),
@@ -218,6 +227,27 @@ export async function automationExecutionView(db, { engine, key, enrollmentLimit
       : enrollmentRows.map((row) => nurtureEnrollment(row, stepRows)),
     events: events.map(normalizeEvent),
   };
+}
+
+/**
+ * One operator-facing lifecycle family across every definition currently owned in code.
+ * Historical/provider source records remain family metadata; only owned definition keys are
+ * queried from D1, so this cannot imply that external execution history was imported.
+ */
+export async function automationFamilyExecutionView(db, family) {
+  const definitions = Array.isArray(family?.ownedDefinitions) ? family.ownedDefinitions : [];
+  if (!definitions.length) return { enrollments: [], events: [] };
+  const views = await Promise.all(definitions.map((definition) => automationExecutionView(db, {
+    engine: definition.engine,
+    key: definition.key,
+  })));
+  const enrollments = views
+    .flatMap((view) => view.enrollments)
+    .sort((a, b) => Date.parse(b.enteredAtIso || 0) - Date.parse(a.enteredAtIso || 0));
+  const events = views
+    .flatMap((view) => view.events)
+    .sort((a, b) => Date.parse(b.occurredAt || 0) - Date.parse(a.occurredAt || 0));
+  return { enrollments, events };
 }
 
 /**
