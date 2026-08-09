@@ -47,6 +47,9 @@ describe("Client Desk message rendering", () => {
     const html = clientDeskHtml();
     expect(html).toContain("This mirror does not send messages.");
     expect(html).toContain("Sending stays in the approved staff channel.");
+    expect(html).not.toContain("Email ready.");
+    expect(html).not.toContain("emailComposer(");
+    expect(html).not.toContain("bindEmailComposer(");
     expect(html).not.toContain('id="email-compose"');
     expect(html).not.toContain("/client-desk/email-senders");
     expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");

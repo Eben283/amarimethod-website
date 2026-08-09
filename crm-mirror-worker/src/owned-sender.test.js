@@ -150,16 +150,26 @@ describe("owned sender foundation", () => {
     expect(JSON.stringify(db.rows.outcomes)).toContain("do_not_disturb");
   });
 
-  it("keeps delivery unavailable even when Gmail configuration is detected", () => {
+  it("keeps delivery unavailable and names every Amari-owned mail activation blocker", () => {
     const decision = evaluateDeliveryEligibility({ contact, channel: "sms", consents: [{ channel: "sms", state: "granted" }] });
     expect(decision.policyEligible).toBe(true);
     expect(decision.deliveryAllowed).toBe(false);
     expect(deliveryReadiness()).toMatchObject({ mode: "non_delivering_outbox", deliveryEnabled: false, fallbackProvider: null });
-    expect(deliveryReadiness({ PORTAL_KV: {}, GOOGLE_OAUTH_CLIENT_ID: "id", GOOGLE_OAUTH_CLIENT_SECRET: "secret" })).toMatchObject({
+    expect(deliveryReadiness({ PORTAL_KV: {}, AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "id", AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret" })).toMatchObject({
       mode: "non_delivering_outbox",
       deliveryEnabled: false,
       channels: [expect.objectContaining({ channel: "email", configurationDetected: true, deliveryEnabled: false }), expect.anything()],
     });
+    expect(deliveryReadiness({ PORTAL_KV: {}, GOOGLE_OAUTH_CLIENT_ID: "personal-id", GOOGLE_OAUTH_CLIENT_SECRET: "personal-secret" }).channels[0])
+      .toMatchObject({ configurationDetected: false });
+    expect(deliveryReadiness().channels[0].blockers).toEqual(expect.arrayContaining([
+      "the existing personal Google OAuth project is unusable for Amari mail",
+      "an Amari-owned Google OAuth grant is not verified",
+      "exact Amari send-as identities are not verified",
+      "DKIM and DMARC are not verified",
+      "inbound Gmail reply sync is not implemented",
+      "provider outcomes are not ingested into Communication",
+    ]));
     expect(deliveryReadiness().channels).toEqual(expect.arrayContaining([
       expect.objectContaining({ channel: "email", providerCandidate: "google-workspace", state: "unavailable" }),
       expect.objectContaining({ channel: "sms", providerCandidate: null, state: "unavailable" }),
