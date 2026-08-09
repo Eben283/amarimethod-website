@@ -26,10 +26,12 @@
 /staff/check-in/* /staff/ 200
 /staff/field-studies /staff/ 200
 /staff/operations /staff/ 200
+/staff/automations /staff/ 200
 /staff/revenue /staff/ 200
 /staff/products /staff/ 200
 /staff/products/* /staff/ 200
 /staff/media /staff/ 200
+/staff/settings/communication /staff/ 200
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200
 /staff/cos /staff/ 200
@@ -66,10 +68,8 @@
 /book/partnership-discovery /assessment-booking.html?type=ambassador_discovery 302
 /book/partner-session /assessment-booking.html?type=partner_initial_in_person 302
 /book/partner-session-virtual /assessment-booking.html?type=partner_initial_virtual 302
-/first-visit /booking 301
 /in-person-sessions /booking 301
 /virtual-sessions /booking 301
-/first-visit.html /assessment-booking 301
 /in-person-sessions.html /assessment-booking 301
 /virtual-sessions.html /assessment-booking 301
 # Follow-ups are pre-purchased via 4/8-session packages, so legacy
