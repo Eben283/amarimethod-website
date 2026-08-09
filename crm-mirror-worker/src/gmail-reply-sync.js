@@ -53,7 +53,7 @@ function headerMap(message) {
 
 function address(value) {
   const raw = String(value || "");
-  const candidate = (raw.match(/<([^<>]+)>/)?.[1] || raw).trim().toLowerCase();
+  const candidate = (raw.match(/<([^<>]+)>\s*$/)?.[1] || raw).trim().toLowerCase();
   return candidate.length <= 320 && EMAIL_ADDRESS.test(candidate) ? candidate : null;
 }
 

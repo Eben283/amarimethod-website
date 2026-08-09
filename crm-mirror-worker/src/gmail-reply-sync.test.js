@@ -507,6 +507,36 @@ describe("Gmail reply synchronization", () => {
       .toContain("metadata_truncated");
   });
 
+  it("attributes a crafted display-name sender only by its terminal addr-spec", async () => {
+    const { raw, db, now } = fixture();
+    raw.prepare("INSERT INTO contacts (id, display_name, email_normalized, created_at, updated_at) VALUES (?, ?, ?, ?, ?)")
+      .run("contact-attacker", "Actual sender", "attacker@example.test", now, now);
+    await checkpoint(db, "100", now);
+    const message = gmailMessage({ threadId: "new-thread" });
+    message.payload.headers = message.payload.headers
+      .filter((header) => !["in-reply-to", "references"].includes(header.name.toLowerCase()))
+      .map((header) => header.name.toLowerCase() === "from"
+        ? { ...header, value: `\"Victim <surrina@example.test>\" <attacker@example.test>` }
+        : header);
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({
+        history: [{ id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] }],
+        historyId: "150",
+      }),
+      getMessage: vi.fn().mockResolvedValue(message),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toMatchObject({
+      status: "succeeded",
+      cursor: "150",
+      counts: { accepted: 1, reviewed: 0 },
+    });
+    expect(raw.prepare("SELECT from_address, contact_id FROM gmail_inbound_messages").get()).toEqual({
+      from_address: "attacker@example.test",
+      contact_id: "contact-attacker",
+    });
+  });
+
   it("durably skips unusable sender metadata and advances instead of poisoning the cursor", async () => {
     const { raw, db, now } = fixture();
     await checkpoint(db, "100", now);
