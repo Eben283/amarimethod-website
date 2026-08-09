@@ -391,6 +391,82 @@ export async function createStaffProduct(input: {
   return fetchApi('/staff-products', { method: 'POST', body: JSON.stringify(input) });
 }
 
+export type StaffMediaKind = 'image' | 'video' | 'document' | 'file';
+export interface StaffMediaFolder {
+  id: string;
+  parentId: string | null;
+  name: string;
+  status: 'active' | 'archived';
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface StaffMediaAsset {
+  id: string;
+  folderId: string | null;
+  name: string;
+  originalName: string;
+  mimeType: string;
+  kind: StaffMediaKind;
+  sizeBytes: number;
+  status: 'active' | 'archived';
+  version: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+  previewUrl: string;
+  downloadUrl: string;
+  internalUrl: string;
+}
+
+export interface StaffMediaResponse {
+  folders: StaffMediaFolder[];
+  assets: StaffMediaAsset[];
+  storage: 'owned-d1-r2';
+  uploadReady: boolean;
+}
+
+export async function getStaffMedia(includeArchived = false): Promise<StaffMediaResponse> {
+  return fetchApi(`/staff-media${includeArchived ? '?archived=1' : ''}`);
+}
+
+export async function updateStaffMedia(input: Record<string, unknown>): Promise<{ asset?: StaffMediaAsset; folder?: StaffMediaFolder }> {
+  return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify(input) });
+}
+
+export async function uploadStaffMedia(file: File, folderId: string | null): Promise<{ asset: StaffMediaAsset }> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 180_000);
+  try {
+    const response = await fetch('/api/staff-media-upload', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-Amari-File-Name': encodeURIComponent(file.name),
+        'X-Amari-File-Size': String(file.size),
+        ...(folderId ? { 'X-Amari-Folder-Id': encodeURIComponent(folderId) } : {}),
+      },
+      body: file,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({ error: 'Upload failed' }));
+      throw new ApiError(body.error || 'Upload failed', response.status);
+    }
+    return response.json();
+  } catch (cause) {
+    if (cause instanceof Error && cause.name === 'AbortError') throw new ApiError('Upload timed out. Try a smaller file.', 408);
+    throw cause;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export async function getPosSale(id: string): Promise<{ sale: PosSale }> {
   return fetchApi(`/staff-pos-sales?id=${encodeURIComponent(id)}`);
 }

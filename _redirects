@@ -28,6 +28,7 @@
 /staff/revenue /staff/ 200
 /staff/products /staff/ 200
 /staff/products/* /staff/ 200
+/staff/media /staff/ 200
 /staff/funnel /staff/ 200
 /staff/pipeline /staff/ 200
 /staff/cos /staff/ 200

@@ -22,6 +22,7 @@ const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const RevenuePage = lazy(() => import('./pages/RevenuePage'));
 const PosPage = lazy(() => import('./pages/PosPage'));
 const ProductsPage = lazy(() => import('./pages/ProductsPage'));
+const MediaPage = lazy(() => import('./pages/MediaPage'));
 const OperationsPage = lazy(() => import('./pages/OperationsPage'));
 const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
 
@@ -104,6 +105,7 @@ function AppRoutes() {
         <Route path="community" element={<Layout><CommunityPage /></Layout>} />
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />
+        <Route path="media" element={<Layout><MediaPage /></Layout>} />
         {/* Retired route names keep their existing destinations. */}
         <Route path="triage" element={<Navigate to="/" replace />} />
         <Route path="messages" element={<Navigate to="/client-desk" replace />} />

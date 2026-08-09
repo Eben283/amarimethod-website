@@ -69,6 +69,7 @@ Last updated: 2026-08-08.
 |------|------|-------|-------|
 | Staff POS | Native | `staff/src/pages/PosPage.tsx`, `PosPage.css` | Dark terminal; Stripe Checkout + card-on-file |
 | Staff Products | Native | `staff/src/pages/ProductsPage.tsx`, `functions/api/staff-products.js`, `functions/lib/staff-products.js`, `db/staff-commerce-schema.sql` | Staff-visible catalog; Eben may create owned reusable simple products. Custom versions are immutable D1 records and always have `fulfillment_policy='none'`. |
+| Staff Media Library | Native | `staff/src/pages/MediaPage.tsx`, `functions/api/staff-media*.js`, `functions/lib/staff-media.js`, `db/staff-media-schema.sql` | Staff-authenticated folders and asset metadata in `ATTEND_DB`; private file bytes in the `MEDIA_BUCKET` R2 binding. Approved image/video/PDF formats only; copied links remain Staff-authenticated; archive/restore preserves the stored object. |
 | Owned simple-product receipts | Native | `functions/lib/staff-pos-receipts.js`, `db/staff-commerce-schema.sql` | Exact-sale, immutable D1 receipt snapshot. Applies no sessions, access, booking, automation, Stripe product, or GHL product/invoice effect. Mixed fulfillment-policy carts fail closed. |
 | Stripe card-on-file | Native | `functions/api/staff-stripe-cards.js`, `functions/lib/stripe-api.js`, POS charge flow | Prefer proven GHL-linked customer with reusable `pm_` |
 | PayLinkSheet | Amari UI | `staff/src/components/PayLinkSheet.tsx` | Sends payment links; keep UI |
