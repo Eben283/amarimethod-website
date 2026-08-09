@@ -68,7 +68,6 @@
 /book/partner-session-virtual /assessment-booking.html?type=partner_initial_virtual 302
 /in-person-sessions /booking 301
 /virtual-sessions /booking 301
-/first-visit.html /assessment-booking 301
 /in-person-sessions.html /assessment-booking 301
 /virtual-sessions.html /assessment-booking 301
 # Follow-ups are pre-purchased via 4/8-session packages, so legacy
