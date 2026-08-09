@@ -64,6 +64,56 @@ const createInput = {
 };
 
 describe("owned Staff products", () => {
+  it("reports every code-known definition and makes unmapped definitions reference-only", async () => {
+    const result = await listStaffProducts(makeDb());
+    expect(result.coverage).toMatchObject({
+      source: "code-known-reference",
+      liveProviderVerified: false,
+      counts: {
+        knownDefinitions: 18,
+        staffCatalog: 11,
+        referenceOnly: 7,
+        customProducts: 0,
+      },
+    });
+    expect(result.coverage.definitions).toHaveLength(18);
+    expect(result.coverage.definitions
+      .filter((definition) => definition.staffSaleState === "reference-only")
+      .map((definition) => definition.name))
+      .toEqual([
+        "Upgrade: Initial → 8-Session",
+        "Upgrade: Initial → 4-Session",
+        "Initial Session — In Person",
+        "Initial Session — Virtual",
+        "Follow-up Session — In Person",
+        "Follow-up Session — Virtual",
+        "Pre Purchased session",
+      ]);
+    const referenceOnly = result.coverage.definitions
+      .filter((definition) => definition.staffSaleState === "reference-only");
+    expect(referenceOnly.every((definition) => definition.amountCents === null && definition.currency === null)).toBe(true);
+    expect(new Set(result.coverage.definitions.map((definition) => definition.name)).size).toBe(18);
+    expect(result.coverage.definitions.find((definition) => definition.name === "Initial Session — In Person")).toMatchObject({
+      purchaseBehavior: "credit",
+      sessions: 1,
+      salesPolicy: "reference",
+    });
+    expect(result.coverage.definitions.find((definition) => definition.name === "Follow-up Session — In Person")).toMatchObject({
+      purchaseBehavior: "draw-down",
+      sessions: 1,
+      salesPolicy: "reference",
+    });
+    expect(result.coverage.definitions.find((definition) => definition.name === "Amari Assessment")).toMatchObject({
+      purchaseBehavior: "no-credit",
+      staffSaleState: "needs-fulfillment",
+      amountCents: 2900,
+    });
+  });
+
+  it("does not claim a custom-product count when owned storage cannot be read", async () => {
+    expect((await listStaffProducts(null)).coverage.counts.customProducts).toBe(null);
+  });
+
   it("lists the server-owned sellable catalog with current and legacy policy labels", async () => {
     const result = await listStaffProducts(makeDb());
     expect(result.products.find((product) => product.key === "12-week-practice")).toMatchObject({

@@ -23,6 +23,27 @@ function publicProduct(product) {
   return visible;
 }
 
+function publicCoverage(coverage) {
+  return {
+    source: coverage.source,
+    liveProviderVerified: coverage.liveProviderVerified,
+    counts: { ...coverage.counts },
+    definitions: coverage.definitions.map((definition) => ({
+      name: definition.name,
+      classification: definition.classification,
+      sessions: definition.sessions,
+      livingPractice: definition.livingPractice,
+      packagePurchase: definition.packagePurchase,
+      purchaseBehavior: definition.purchaseBehavior,
+      staffSaleState: definition.staffSaleState,
+      amountCents: definition.amountCents,
+      currency: definition.currency,
+      salesPolicy: definition.salesPolicy,
+      fulfillmentSummary: definition.fulfillmentSummary,
+    })),
+  };
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, { status: 204, headers: responseHeaders(context, "GET, POST, OPTIONS") });
 }
@@ -35,6 +56,7 @@ export async function onRequestGet(context) {
   return json({
     ...result,
     products: result.products.map(publicProduct),
+    coverage: publicCoverage(result.coverage),
     canCreate: result.canCreate && payload?.user === "Eben",
   }, 200, headers);
 }

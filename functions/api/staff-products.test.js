@@ -68,6 +68,17 @@ describe("Staff Products API", () => {
       expect.objectContaining({ key: "12-week-practice", amountCents: 540000 }),
     ]));
     expect(body.products.every((product) => !("ghlProductId" in product))).toBe(true);
+    expect(body.coverage).toMatchObject({
+      source: "code-known-reference",
+      liveProviderVerified: false,
+      counts: { knownDefinitions: 18, staffCatalog: 11, referenceOnly: 7 },
+    });
+    expect(body.coverage.definitions.find((definition) => definition.name === "Initial Session — Virtual")).toMatchObject({
+      staffSaleState: "reference-only",
+      amountCents: null,
+      currency: null,
+    });
+    expect(JSON.stringify(body.coverage)).not.toMatch(/ghlProductId|providerId|priceId|\b[a-f0-9]{24}\b/i);
     expect((await (await onRequestGet(context("GET", "eben"))).json()).canCreate).toBe(true);
   });
 
