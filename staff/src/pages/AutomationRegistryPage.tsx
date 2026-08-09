@@ -10,6 +10,7 @@ import {
   CircleDot,
   Clock3,
   Database,
+  GitBranch,
   Loader2,
   MessageSquareText,
   Search,
@@ -25,9 +26,11 @@ import type {
   AutomationFamiliesResponse,
   AutomationFamily,
   AutomationFamilyResponse,
+  AutomationCutoverTree,
   ContactAutomationEvidence,
 } from '../types/staff';
 import './AutomationRegistryPage.css';
+import './AutomationCutoverTree.css';
 
 const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -297,6 +300,8 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
+      {family.cutoverTree && <CutoverTree tree={family.cutoverTree} />}
+
       <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Owned definitions</h3><p>Exact trigger, step timing, type, branch structure, and template key from code.</p></div><b>{family.ownedDefinitions.length}</b></div>
         {family.ownedDefinitions.length ? family.ownedDefinitions.map((definition) => (
@@ -385,6 +390,37 @@ function FamilyDetail({
         <ul className="automation-gap-list">{detail.evidence.gaps.map((gap) => <li key={gap.code}><strong>{humanize(gap.code)}</strong><span>{gap.label}</span></li>)}</ul>
       </section>
     </>
+  );
+}
+
+function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
+  const nodesByParent = new Map<string | null, typeof tree.nodes>();
+  for (const node of tree.nodes) {
+    const nodes = nodesByParent.get(node.parentId) || [];
+    nodes.push(node);
+    nodesByParent.set(node.parentId, nodes);
+  }
+  const stateLabel: Record<typeof tree.nodes[number]['state'], string> = {
+    verified_ghl: 'GHL live', owned_shadow: 'Owned shadow', proven_owned: 'Owned proven', gap: 'Gap',
+  };
+  const renderChildren = (parentId: string | null) => (nodesByParent.get(parentId) || []).map((node) => (
+    <li className={`automation-tree-node is-${node.state}`} key={node.id}>
+      <article>
+        <header><span>{stateLabel[node.state]}</span><strong>{node.label}</strong></header>
+        <p>{node.detail}</p>
+        <small><GitBranch size={12} />{node.evidence}</small>
+      </article>
+      {(nodesByParent.get(node.id) || []).length > 0 && <ul>{renderChildren(node.id)}</ul>}
+    </li>
+  ));
+  return (
+    <section className="automation-cutover-tree" aria-label={`${tree.title} evidence tree`}>
+      <header>
+        <div><span>Draft evidence tree</span><h3>{tree.title}</h3><p>{tree.summary}</p></div>
+        <i>Only backed connections appear</i>
+      </header>
+      <ul className="automation-tree-root">{renderChildren(null)}</ul>
+    </section>
   );
 }
 

@@ -267,6 +267,23 @@ export interface AutomationFamily {
     executionHistoryImported: boolean;
     gaps: AutomationEvidenceGap[];
   };
+  cutoverTree?: AutomationCutoverTree;
+}
+
+export interface AutomationCutoverTreeNode {
+  id: string;
+  parentId: string | null;
+  label: string;
+  state: 'verified_ghl' | 'owned_shadow' | 'proven_owned' | 'gap';
+  evidence: string;
+  detail: string;
+}
+
+export interface AutomationCutoverTree {
+  status: 'draft_evidence_map';
+  title: string;
+  summary: string;
+  nodes: AutomationCutoverTreeNode[];
 }
 
 export interface AutomationInventorySummary {

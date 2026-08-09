@@ -73,6 +73,16 @@ describe("provider-neutral automation families", () => {
     ]));
   });
 
+  it("keeps the first cutover tree source-backed and visibly preserves the Assessment no-show gap", () => {
+    const tree = automationFamily("initial-session-reminders").cutoverTree;
+    expect(tree).toEqual(expect.objectContaining({ status: "draft_evidence_map", title: "Assessment booking lifecycle" }));
+    expect(tree.nodes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow" }),
+      expect.objectContaining({ id: "noshow", state: "gap", evidence: "No Show Email SMS series trigger inventory" }),
+      expect.objectContaining({ id: "noshow-shadow", state: "owned_shadow", evidence: "assessment-no-show definition v1" }),
+    ]));
+  });
+
   it("maps an owned engine definition back to its operational family", () => {
     expect(familyForDefinition("reminder", "discovery-call")).toEqual(expect.objectContaining({ key: "discovery-call-lifecycle" }));
     expect(familyForDefinition("nurture", "flow-3-post-initial")).toEqual(expect.objectContaining({ key: "post-session-nurture" }));

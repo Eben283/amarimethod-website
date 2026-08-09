@@ -21,6 +21,24 @@ const record = (name, status) => Object.freeze({
 const p = (name) => record(name, "published");
 const d = (name) => record(name, "draft");
 
+// This is a deliberately small, typed first cutover map. It is source evidence for the Staff
+// projection below, not an executable workflow and not a claim that the owned nodes are live.
+const ASSESSMENT_CUTOVER_TREE = Object.freeze({
+  status: "draft_evidence_map",
+  title: "Assessment booking lifecycle",
+  summary: "Only source-backed nodes and connections are shown. A missing path stays visible as a gap.",
+  nodes: Object.freeze([
+    Object.freeze({ id: "assessment-event", parentId: null, label: "Assessment appointment changes", state: "verified_ghl", evidence: "Amari Assessment — In Person calendar", detail: "The current public $29 Assessment calendar is the shared event source." }),
+    Object.freeze({ id: "confirmed", parentId: "assessment-event", label: "Confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow", detail: "GHL sends the current confirmation and reminders." }),
+    Object.freeze({ id: "confirmed-shadow", parentId: "confirmed", label: "Owned reminder shadow", state: "owned_shadow", evidence: "initial-in-person definition v2", detail: "The same confirmed event is modeled locally, but owned delivery is off." }),
+    Object.freeze({ id: "cancelled", parentId: "assessment-event", label: "Cancelled", state: "verified_ghl", evidence: "remove from workflow in person booking", detail: "GHL removes the person from pending reminders." }),
+    Object.freeze({ id: "cancelled-shadow", parentId: "cancelled", label: "Owned cancellation shadow", state: "owned_shadow", evidence: "initial-in-person cancelOn: cancelled", detail: "Local shadow cancels pending owned reminder steps; it is not active delivery." }),
+    Object.freeze({ id: "noshow", parentId: "assessment-event", label: "No-show", state: "gap", evidence: "No Show Email SMS series trigger inventory", detail: "GHL has no Assessment no-show trigger. This is an observed gap, not an assumed path." }),
+    Object.freeze({ id: "noshow-shadow", parentId: "noshow", label: "Owned no-show recovery shadow", state: "owned_shadow", evidence: "assessment-no-show definition v1", detail: "Local code models the three existing recovery messages without sending them." }),
+    Object.freeze({ id: "rebooked-shadow", parentId: "noshow-shadow", label: "Confirmed rebooking exits recovery", state: "owned_shadow", evidence: "assessment-no-show exitOn: confirmed", detail: "A confirmed Assessment booking closes remaining owned recovery steps for that person." }),
+  ]),
+});
+
 const RAW_FAMILIES = [
   {
     key: "appointment-event-ingest",
@@ -160,6 +178,7 @@ const RAW_FAMILIES = [
     purpose: "Confirm and remind initial in-person and virtual appointments, with cancellation containment.",
     implementationUnits: ["reminder-confirmation", "pipeline-helper"],
     definitionIds: ["reminder:initial-in-person", "reminder:initial-virtual"],
+    cutoverTree: ASSESSMENT_CUTOVER_TREE,
     sourceRecords: [
       p("Initial in-person Session Welcome / reminder email flow"),
       p("Initial Session In-Person — Pipeline Update"),
@@ -409,6 +428,7 @@ const FAMILIES = Object.freeze(RAW_FAMILIES.map((raw) => {
     operatingState: raw.operatingState || "not_live",
     purpose: raw.purpose,
     implementationUnits: raw.implementationUnits,
+    ...(raw.cutoverTree ? { cutoverTree: raw.cutoverTree } : {}),
     ownedDefinitionIds: raw.definitionIds,
     ownedDefinitions,
     sourceRecords: raw.sourceRecords,
