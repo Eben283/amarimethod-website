@@ -30,7 +30,10 @@ export function isEligible(event, flow) {
   if (!event || event.recognized !== true) return false;
   if (!flow.calendarIds.includes(event.calendarId)) return false;
   if (!flow.enrollOn.statuses.includes(event.type)) return false;
-  const mb = flow.enrollOn.modifiedBy;
+  const overrides = flow.enrollOn.modifiedByByCalendar;
+  const mb = overrides && Object.hasOwn(overrides, event.calendarId)
+    ? overrides[event.calendarId]
+    : flow.enrollOn.modifiedBy;
   if (mb && !mb.includes(event.modifiedBy)) return false;
   return true;
 }

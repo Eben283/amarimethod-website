@@ -25,13 +25,17 @@ describe("registry", () => {
 
 describe("flow shapes vs the twin specs", () => {
   it("initial in-person/Assessment: six current live message actions, with no retired equipment email", () => {
-    expect(INITIAL_IN_PERSON.definitionVersion).toBe(2);
+    expect(INITIAL_IN_PERSON.definitionVersion).toBe(3);
     expect(INITIAL_IN_PERSON.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
       "enroll:internal_email", "enroll:email", "start-1440m:email",
       "start-60m:sms", "start-60m:email", "start-60m:internal_sms",
     ]);
     expect(INITIAL_IN_PERSON.steps.some((step) => step.template === "equipment-list")).toBe(false);
-    expect(INITIAL_IN_PERSON.enrollOn).toEqual({ statuses: ["confirmed"], modifiedBy: ["user", "customer"] });
+    expect(INITIAL_IN_PERSON.enrollOn).toEqual({
+      statuses: ["confirmed"],
+      modifiedBy: ["user", "customer"],
+      modifiedByByCalendar: { "EM6vB2mq7EAdGCbUb3j1": null },
+    });
   });
 
   it("initial-virtual: 6 steps — welcome, day-before, three one-hour touches", () => {

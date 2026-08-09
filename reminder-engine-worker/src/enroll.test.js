@@ -49,6 +49,11 @@ describe("isEligible", () => {
     expect(isEligible(evt({ modifiedBy: "customer" }), userOnly)).toBe(false);
     expect(isEligible(evt({ modifiedBy: "user" }), userOnly)).toBe(true);
   });
+
+  it("accepts the Assessment trigger without an actor but retains the legacy calendar actor gate", () => {
+    expect(isEligible(evt({ calendarId: "EM6vB2mq7EAdGCbUb3j1", modifiedBy: null }), INITIAL_IN_PERSON)).toBe(true);
+    expect(isEligible(evt({ calendarId: "G7OAnnJuFbMF6nQSlZVQ", modifiedBy: null }), INITIAL_IN_PERSON)).toBe(false);
+  });
   it("rejects an unrecognized event", () => {
     expect(isEligible(evt({ recognized: false }), INITIAL_IN_PERSON)).toBe(false);
   });

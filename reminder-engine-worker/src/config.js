@@ -20,13 +20,20 @@
 
 export const INITIAL_IN_PERSON = Object.freeze({
   name: "Initial / Assessment — In Person",
-  definitionVersion: 2,
+  definitionVersion: 3,
   flowKey: "initial-in-person",
   // One live GHL reminder workflow covers both its legacy Initial Session calendar and the
   // current Assessment calendar. This is the source-verified reminder scope, not a payment or
   // pipeline definition.
   calendarIds: Object.freeze(["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]),
-  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: Object.freeze(["user", "customer"]) }),
+  // The legacy Initial calendar's two triggers are actor-limited, while the Assessment trigger
+  // has no `modified_by` condition. Keep that distinction in code: a missing actor must be
+  // accepted only for the Assessment calendar, never broaden the legacy calendar.
+  enrollOn: Object.freeze({
+    statuses: Object.freeze(["confirmed"]),
+    modifiedBy: Object.freeze(["user", "customer"]),
+    modifiedByByCalendar: Object.freeze({ "EM6vB2mq7EAdGCbUb3j1": null }),
+  }),
   cancelOn: Object.freeze(["cancelled"]),
   mode: "shadow",
   steps: Object.freeze([
