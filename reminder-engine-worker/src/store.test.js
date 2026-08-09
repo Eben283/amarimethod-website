@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enrollmentId, saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment } from "./store.js";
+import { enrollmentId, saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact } from "./store.js";
 
 // Stateful fake of the D1 binding — models exactly the queries store.js issues, the way
 // attendance-claim.test.js models its INSERT. prepare().bind().run()/.all().
@@ -35,6 +35,15 @@ function fakeD1() {
           for (const s of steps) if (s.enrollment_id === id && s.status === "pending") { s.status = "cancelled"; changes++; }
           return { meta: { changes } };
         }
+        if (/UPDATE reminder_steps SET status = 'cancelled'\s+WHERE status = 'pending' AND enrollment_id IN/.test(sql)) {
+          const [flowKey, contactId] = a;
+          let changes = 0;
+          for (const s of steps) {
+            const e = enrollments.get(s.enrollment_id);
+            if (s.status === "pending" && e && e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { s.status = "cancelled"; changes++; }
+          }
+          return { meta: { changes } };
+        }
         if (/UPDATE reminder_steps SET status = \? WHERE enrollment_id = \? AND step_index = \?/.test(sql)) {
           const [status, id, step_index] = a;
           let changes = 0;
@@ -42,6 +51,14 @@ function fakeD1() {
           return { meta: { changes } };
         }
         if (/UPDATE reminder_enrollments SET status = 'cancelled'/.test(sql)) {
+          if (/flow_key = \? AND contact_id = \?/.test(sql)) {
+            const [flowKey, contactId] = a;
+            let changes = 0;
+            for (const e of enrollments.values()) {
+              if (e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { e.status = "cancelled"; changes++; }
+            }
+            return { meta: { changes } };
+          }
           const [id] = a;
           const e = enrollments.get(id);
           if (e) e.status = "cancelled";
@@ -151,6 +168,21 @@ describe("cancelEnrollment", () => {
     expect(db._steps.find((s) => s.step_index === 0).status).toBe("sent");
     expect(db._steps.find((s) => s.step_index === 1).status).toBe("cancelled");
     expect(db._enrollments.get("initial-in-person:a1").status).toBe("cancelled");
+  });
+});
+
+describe("exitEnrollmentsForContact", () => {
+  it("cancels only the matching active flow for the rebooked person", async () => {
+    await saveEnrollment(db, enrollment({ flowKey: "assessment-no-show", appointmentId: "missed", contactId: "c1" }));
+    await saveEnrollment(db, enrollment({ flowKey: "assessment-no-show", appointmentId: "other-person", contactId: "c2" }));
+    await saveEnrollment(db, enrollment({ flowKey: "initial-in-person", appointmentId: "other-flow", contactId: "c1" }));
+
+    const out = await exitEnrollmentsForContact(db, "assessment-no-show", "c1");
+
+    expect(out).toEqual({ cancelledSteps: 2, exitedEnrollments: 1 });
+    expect(db._enrollments.get("assessment-no-show:missed").status).toBe("cancelled");
+    expect(db._enrollments.get("assessment-no-show:other-person").status).toBe("active");
+    expect(db._enrollments.get("initial-in-person:other-flow").status).toBe("active");
   });
 });
 

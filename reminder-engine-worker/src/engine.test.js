@@ -39,6 +39,14 @@ function fakeD1() {
         for (const s of steps) if (s.enrollment_id === id && s.status === "pending") { s.status = "cancelled"; c++; }
         return { meta: { changes: c } };
       }
+      if (/UPDATE reminder_steps SET status = 'cancelled'\s+WHERE status = 'pending' AND enrollment_id IN/.test(sql)) {
+        const [flowKey, contactId] = a; let c = 0;
+        for (const s of steps) {
+          const e = enrollments.get(s.enrollment_id);
+          if (s.status === "pending" && e && e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { s.status = "cancelled"; c++; }
+        }
+        return { meta: { changes: c } };
+      }
       if (/UPDATE reminder_steps\s+SET due_at = \?, status = \?/.test(sql)) {
         const [dueAt, status, id, stepIndex] = a; let c = 0;
         for (const s of steps) {
@@ -56,6 +64,13 @@ function fakeD1() {
         return { meta: { changes: c } };
       }
       if (/UPDATE reminder_enrollments SET status = 'cancelled'/.test(sql)) {
+        if (/flow_key = \? AND contact_id = \?/.test(sql)) {
+          const [flowKey, contactId] = a; let c = 0;
+          for (const e of enrollments.values()) {
+            if (e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { e.status = "cancelled"; c++; }
+          }
+          return { meta: { changes: c } };
+        }
         const [id] = a; const e = enrollments.get(id); if (e) e.status = "cancelled";
         return { meta: { changes: e ? 1 : 0 } };
       }
@@ -163,6 +178,30 @@ describe("handleEvent — cancel", () => {
     const { actions } = await handleEvent(env, event({ type: "cancelled" }), NOW);
     expect(actions).toContainEqual(expect.objectContaining({ action: "cancel" }));
     expect(await loadDueSteps(env.REMINDER_DB, START)).toHaveLength(0); // nothing left to fire
+  });
+});
+
+describe("Assessment no-show recovery", () => {
+  it("shadows the recovery sequence and exits it when the person confirms a new Assessment booking", async () => {
+    const noShow = event({
+      type: "noshow", status: "no-show", calendarId: "EM6vB2mq7EAdGCbUb3j1",
+      appointmentId: "assessment-missed", contactId: "assessment-contact",
+    });
+    const { actions } = await handleEvent(env, noShow, NOW);
+    expect(actions).toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: "assessment-no-show" } });
+    expect(env.REMINDER_DB._steps.filter((step) => step.enrollment_id === "assessment-no-show:assessment-missed")).toHaveLength(3);
+    expect((await runSweep(env, NOW)).would_send).toBe(1);
+    expect(sendConversationMessage).not.toHaveBeenCalled();
+
+    const rebook = event({
+      calendarId: "EM6vB2mq7EAdGCbUb3j1", appointmentId: "assessment-rebooked",
+      contactId: "assessment-contact", type: "confirmed",
+    });
+    const out = await handleEvent(env, rebook, NOW + 60_000);
+    expect(out.actions).toContainEqual(expect.objectContaining({
+      engine: "reminder", action: "exit", detail: expect.objectContaining({ flowKey: "assessment-no-show", cancelledSteps: 2, exitedEnrollments: 1 }),
+    }));
+    expect(env.REMINDER_DB._enrollments.get("assessment-no-show:assessment-missed").status).toBe("cancelled");
   });
 });
 

@@ -8,7 +8,7 @@ import { FLOWS, flowsForCalendar } from "./config.js";
 import { enroll } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
-import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, enrollmentId } from "./store.js";
+import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
@@ -64,6 +64,19 @@ export async function handleEvent(env, event, nowMs) {
         });
       }
       actions.push({ engine: "reminder", action: "cancel", detail: { flowKey: flow.flowKey, cancelledSteps } });
+    }
+
+    if (flow.exitOn && flow.exitOn.includes(event.type) && event.contactId) {
+      const { cancelledSteps, exitedEnrollments } = await exitEnrollmentsForContact(db, flow.flowKey, event.contactId);
+      if (exitedEnrollments > 0) {
+        await appendEvent(db, {
+          ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+          definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
+          action: "exited", outcome: "exited",
+          detail: { reason: "confirmed_rebooking", cancelledSteps, exitedEnrollments },
+        });
+        actions.push({ engine: "reminder", action: "exit", detail: { flowKey: flow.flowKey, cancelledSteps, exitedEnrollments } });
+      }
     }
   }
 

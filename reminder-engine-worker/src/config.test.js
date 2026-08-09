@@ -1,18 +1,18 @@
 import { describe, it, expect } from "vitest";
-import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, flowsForCalendar } from "./config.js";
+import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, flowsForCalendar } from "./config.js";
 
 // Config snapshot tests per the cluster brief: each flow's step count, offsets, and enroll
 // filters pinned against the twin specs, and the shadow default pinned for every flow.
 
 describe("registry", () => {
-  it("exposes the four configured flows, all in shadow mode", () => {
-    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call", "partner-initial-in-person"]);
+  it("exposes the five configured flows, all in shadow mode", () => {
+    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call", "partner-initial-in-person", "assessment-no-show"]);
     for (const f of FLOWS) expect(f.mode).toBe("shadow");
   });
 
   it("routes calendars to their flows (discovery covers all THREE discovery calendars)", () => {
     for (const cal of ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]) {
-      expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(["initial-in-person"]);
+      expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(cal === "EM6vB2mq7EAdGCbUb3j1" ? ["initial-in-person", "assessment-no-show"] : ["initial-in-person"]);
     }
     expect(flowsForCalendar("ySmht5hx4uZGEpgZrlCw").map((f) => f.flowKey)).toEqual(["initial-virtual"]);
     for (const cal of ["USgPsktqRcuomdUgpShL", "aVE54Qf4lrbYTB0zFqXy", "ZEIGFHBi17SpZ3Ezi5DR"]) {
@@ -68,5 +68,15 @@ describe("flow shapes vs the twin specs", () => {
     for (const step of PARTNER_INITIAL_IN_PERSON.steps.filter((step) => step.at !== "enroll")) {
       expect(step.skipIfPast).toBe(true);
     }
+  });
+
+  it("Assessment no-show: shadow-only recovery with a confirmed-rebooking exit", () => {
+    expect(ASSESSMENT_NO_SHOW.calendarIds).toEqual(["EM6vB2mq7EAdGCbUb3j1"]);
+    expect(ASSESSMENT_NO_SHOW.enrollOn).toEqual({ statuses: ["noshow"], modifiedBy: null });
+    expect(ASSESSMENT_NO_SHOW.exitOn).toEqual(["confirmed"]);
+    expect(ASSESSMENT_NO_SHOW.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
+      "enroll:sms", "enroll+1440m:email", "enroll+2880m:email",
+    ]);
+    expect(ASSESSMENT_NO_SHOW.mode).toBe("shadow");
   });
 });

@@ -21,6 +21,7 @@ const evt = (over = {}) => ({
 describe("resolveDueAt", () => {
   it("resolves enroll to now, and start±Nm relative to start", () => {
     expect(resolveDueAt("enroll", START, NOW_2D_BEFORE)).toBe(NOW_2D_BEFORE);
+    expect(resolveDueAt("enroll+1440m", START, NOW_2D_BEFORE)).toBe(NOW_2D_BEFORE + 1440 * MIN);
     expect(resolveDueAt("start-1440m", START, NOW_2D_BEFORE)).toBe(START - 1440 * MIN);
     expect(resolveDueAt("start-60m", START, NOW_2D_BEFORE)).toBe(START - 60 * MIN);
     expect(resolveDueAt("start+5m", START, NOW_2D_BEFORE)).toBe(START + 5 * MIN);

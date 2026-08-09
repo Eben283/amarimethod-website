@@ -163,3 +163,26 @@ export async function cancelEnrollment(db, id) {
     .run();
   return { cancelledSteps: changesOf(upd) };
 }
+
+/**
+ * Close every active enrollment of one flow for a contact. This is intentionally contact-scoped:
+ * a rebooking may have a new appointment id, while a no-show follow-up belongs to the person.
+ * It preserves completed step evidence and only cancels still-pending work.
+ */
+export async function exitEnrollmentsForContact(db, flowKey, contactId) {
+  const stepUpdate = await db
+    .prepare(
+      `UPDATE reminder_steps SET status = 'cancelled'
+       WHERE status = 'pending' AND enrollment_id IN (
+         SELECT enrollment_id FROM reminder_enrollments
+         WHERE flow_key = ? AND contact_id = ? AND status = 'active'
+       )`,
+    )
+    .bind(flowKey, contactId)
+    .run();
+  const enrollmentUpdate = await db
+    .prepare(`UPDATE reminder_enrollments SET status = 'cancelled' WHERE flow_key = ? AND contact_id = ? AND status = 'active'`)
+    .bind(flowKey, contactId)
+    .run();
+  return { cancelledSteps: changesOf(stepUpdate), exitedEnrollments: changesOf(enrollmentUpdate) };
+}

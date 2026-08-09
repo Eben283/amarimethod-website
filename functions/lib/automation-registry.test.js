@@ -8,15 +8,16 @@ import {
 } from "./automation-registry.js";
 
 describe("owned automation registry", () => {
-  it("publishes the seven owned definitions with explicit versions and source evidence", () => {
+  it("publishes the eight owned definitions with explicit versions and source evidence", () => {
     const definitions = automationDefinitions();
     expect(REGISTRY_VERSION).toBe(1);
-    expect(definitions).toHaveLength(7);
+    expect(definitions).toHaveLength(8);
     expect(definitions.map((definition) => definition.id)).toEqual([
       "reminder:initial-in-person",
       "reminder:initial-virtual",
       "reminder:discovery-call",
       "reminder:partner-initial-in-person",
+      "reminder:assessment-no-show",
       "nurture:flow-1-quiz",
       "nurture:flow-2-post-discovery",
       "nurture:flow-3-post-initial",
@@ -78,7 +79,7 @@ describe("owned automation registry", () => {
       cutoverReadiness: expect.objectContaining({
         status: "not_eligible",
         requirements: expect.arrayContaining([
-          expect.objectContaining({ code: "assessment_no_show_exit_scope_unresolved", status: "blocked" }),
+          expect.objectContaining({ code: "assessment_no_show_recovery_shadow_pending", status: "review" }),
         ]),
       }),
     }));
@@ -90,6 +91,19 @@ describe("owned automation registry", () => {
       messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
       cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
     }));
+  });
+
+  it("models Assessment no-show recovery as a distinct shadow definition with a rebooking exit", () => {
+    const noShow = findAutomationDefinition("reminder", "assessment-no-show");
+    expect(noShow).toEqual(expect.objectContaining({
+      name: "No Show Email SMS series — Assessment",
+      mode: "shadow",
+      trigger: { calendarIds: ["EM6vB2mq7EAdGCbUb3j1"], statuses: ["noshow"], modifiedBy: null },
+      exits: [expect.objectContaining({ kind: "rebooking", statuses: ["confirmed"], scope: "contact" })],
+      messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
+    }));
+    expect(noShow.steps.map((step) => step.at)).toEqual(["enroll", "enroll+1440m", "enroll+2880m"]);
   });
 
   it("returns detached read models so API consumers cannot mutate engine config", () => {

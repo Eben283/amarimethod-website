@@ -58,7 +58,7 @@ describe("staff-automations — views", () => {
     const body = await res.json();
     expect(body.configured).toBe(false);
     expect(body.registryVersion).toBe(1);
-    expect(body.definitions).toHaveLength(7);
+    expect(body.definitions).toHaveLength(8);
     expect(body.definitions[0]).toEqual(expect.objectContaining({
       id: "reminder:initial-in-person",
       definitionVersion: 2,
@@ -78,7 +78,7 @@ describe("staff-automations — views", () => {
       sourceRecords: 82,
       publishedSourceRecords: 64,
       draftSourceRecords: 18,
-      ownedDefinitions: 7,
+      ownedDefinitions: 8,
     }));
     expect(body.families).toHaveLength(25);
     expect(body.evidence.gaps.map((gap) => gap.code)).toContain("external_canvas_history_not_imported");

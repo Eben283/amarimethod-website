@@ -13,6 +13,7 @@
 //                so a new flow always runs beside GHL until deliberately switched on
 //   steps        ordered; `at` is relative to appointment start:
 //                  "enroll"        → send immediately on enrollment
+//                  "enroll+<n>m"   → n minutes after the triggering event
 //                  "start-<n>m"    → n minutes before appointment start
 //                  "start+<n>m"    → n minutes after appointment start
 //                skipIfPast: true  → if the computed time is already past at enroll, skip (don't backfire)
@@ -107,12 +108,33 @@ export const PARTNER_INITIAL_IN_PERSON = Object.freeze({
   ]),
 });
 
+// No Show Email SMS series — Assessment-only owned replacement. The live GHL no-show workflow
+// currently omits the public Assessment calendar, so this has no native behavior to shadow yet.
+// It remains deliberately non-delivering while the complete Assessment lifecycle is proved.
+export const ASSESSMENT_NO_SHOW = Object.freeze({
+  name: "No Show Email SMS series — Assessment",
+  definitionVersion: 1,
+  flowKey: "assessment-no-show",
+  calendarIds: Object.freeze(["EM6vB2mq7EAdGCbUb3j1"]),
+  enrollOn: Object.freeze({ statuses: Object.freeze(["noshow"]), modifiedBy: null }),
+  // A confirmed Assessment booking, whether it is a rescheduled original appointment or a new
+  // booking, closes every active Assessment no-show enrollment for that contact.
+  exitOn: Object.freeze(["confirmed"]),
+  cancelOn: Object.freeze([]),
+  mode: "shadow",
+  steps: Object.freeze([
+    { at: "enroll", type: "sms", template: "reschedule", skipIfPast: false },
+    { at: "enroll+1440m", type: "email", template: "one-day-follow-up", skipIfPast: false },
+    { at: "enroll+2880m", type: "email", template: "two-day-follow-up", skipIfPast: false },
+  ]),
+});
+
 // Registry the engine iterates to find the flow(s) a calendar enrolls into.
 // NOT yet configured (deliberately): follow-up confirmation (drives the `gate` feature — port
 // LAST per the brief, and its Entrainment-calendar overlap with the draft entrainment flows
 // must be resolved first), virtual partner session flows, post-session review request (needs the
 // wait_for_link_click extension).
-export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON]);
+export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW]);
 
 export function flowsForCalendar(calendarId) {
   return FLOWS.filter((f) => f.calendarIds.includes(calendarId));

@@ -21,7 +21,7 @@ describe("provider-neutral automation families", () => {
       draftSourceRecords: 18,
       operationalFamilies: 24,
       evidenceOnlyGroups: 1,
-      ownedDefinitions: 7,
+      ownedDefinitions: 8,
     }));
 
     const records = families.flatMap((family) => family.sourceRecords);
@@ -76,6 +76,7 @@ describe("provider-neutral automation families", () => {
   it("maps an owned engine definition back to its operational family", () => {
     expect(familyForDefinition("reminder", "discovery-call")).toEqual(expect.objectContaining({ key: "discovery-call-lifecycle" }));
     expect(familyForDefinition("nurture", "flow-3-post-initial")).toEqual(expect.objectContaining({ key: "post-session-nurture" }));
+    expect(familyForDefinition("reminder", "assessment-no-show")).toEqual(expect.objectContaining({ key: "no-show-recovery" }));
     expect(familyForDefinition("purchase", "missing")).toBeNull();
   });
 

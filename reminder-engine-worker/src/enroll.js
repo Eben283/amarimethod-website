@@ -2,18 +2,21 @@
 // an enrollment record with each step's absolute due-time resolved. No I/O, no Date.now()
 // (now is passed in), never mutates its inputs. This is the heart of the engine's correctness.
 
-const OFFSET_RE = /^start([+-])(\d+)m$/;
+const START_OFFSET_RE = /^start([+-])(\d+)m$/;
+const ENROLL_OFFSET_RE = /^enroll\+(\d+)m$/;
 
 /**
  * Resolve a step's `at` offset to an absolute epoch-ms due time.
- * @param {string} at - "enroll" | "start-<n>m" | "start+<n>m"
+ * @param {string} at - "enroll" | "enroll+<n>m" | "start-<n>m" | "start+<n>m"
  * @param {number} startMs - appointment start (epoch ms)
  * @param {number} nowMs - enrollment time (epoch ms)
  * @returns {number} epoch ms
  */
 export function resolveDueAt(at, startMs, nowMs) {
   if (at === "enroll") return nowMs;
-  const m = OFFSET_RE.exec(at);
+  const enrollOffset = ENROLL_OFFSET_RE.exec(at);
+  if (enrollOffset) return nowMs + Number(enrollOffset[1]) * 60000;
+  const m = START_OFFSET_RE.exec(at);
   if (!m) throw new Error(`unrecognized step offset: ${at}`);
   const minutes = Number(m[2]) * (m[1] === "-" ? -1 : 1);
   return startMs + minutes * 60000;

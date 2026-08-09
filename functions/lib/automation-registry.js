@@ -78,6 +78,16 @@ const INITIAL_VIRTUAL_MESSAGE_PREVIEW = Object.freeze({
   ]),
 });
 
+const ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW = Object.freeze({
+  status: "source_verified_read_only",
+  label: "Source-verified read-only copy from No Show Email SMS series. This shadow definition does not send messages.",
+  notices: Object.freeze([
+    Object.freeze({ stepIndex: 0, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, we missed you today. Would you like to reschedule your session? {{appointment.reschedule_link}}" }),
+    Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", body: "Hi {{contact.first_name}},\n\nLooks like we missed each other. Life happens. No judgment.\n\nQuick note on our policy: missed appointments are considered used sessions. We do review rescheduling requests case by case, and series participants receive one complimentary emergency reschedule per series. We ask for 24 hours notice for future changes.\n\nIf you'd like to reschedule:\n\nReschedule Your Session\n\nOr just reply here and I'll help find a time.\n\nGarrett" }),
+    Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", body: "Hi {{contact.first_name}},\n\nI know life gets busy. Scheduling is hard. But your body doesn't stop sending signals just because the calendar got in the way.\n\nIf something is still bothering you, it's worth looking into. Usually something is working too hard because something else isn't working enough. That pattern doesn't fix itself.\n\nWhenever you're ready:\n\nBook Your Session\n\nOr just reply here and I'll help find a time.\n\nGarrett" }),
+  ]),
+});
+
 // Read-only activation map for the first cutover slice. This is deliberately outside the
 // reminder-engine config: it records what still belongs to the provider rather than making the
 // scheduler imply it can perform those actions.
@@ -126,7 +136,7 @@ const INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
   requirements: Object.freeze([
     Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "The retired post-session equipment email is removed; confirmed-only user/customer triggers and the shared Assessment calendar are now represented in the shadow definition." }),
     Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove a native shadow run", detail: "Use a dedicated all-DND appointment to verify enrollment, due timing, reschedule, and cancellation without sending a message." }),
-    Object.freeze({ code: "assessment_no_show_exit_scope_unresolved", status: "blocked", label: "Resolve the no-show exit scope", detail: "The legacy Initial pipeline workflow owns the No Show Email SMS series exit. The Assessment trigger shares this reminder workflow but not that legacy pipeline workflow; do not assume equivalent behavior." }),
+    Object.freeze({ code: "assessment_no_show_recovery_shadow_pending", status: "review", label: "Prove Assessment no-show recovery in shadow", detail: "The owned Assessment no-show definition now models the existing three-touch series and confirmed-rebooking exit, but it has not yet run on a dedicated all-DND appointment." }),
     Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
     Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep the GHL reminder workflow live", detail: "Retirement needs separate approval after all gates close and owned delivery evidence agrees with the live path." }),
   ]),
@@ -145,6 +155,18 @@ const INITIAL_VIRTUAL_CUTOVER_READINESS = Object.freeze({
   ]),
 });
 
+const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Not eligible for active delivery",
+  summary: "The former gap is modeled in owned shadow code only. The current GHL no-show workflow does not cover Assessment, so this requires a dedicated safe proof before it can replace anything.",
+  requirements: Object.freeze([
+    Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "The three-message No Show Email SMS series and an Assessment-confirmed rebooking exit are represented in owned shadow code." }),
+    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove the no-show lifecycle safely", detail: "Use a dedicated all-DND Assessment appointment to verify no-show enrollment, one-day timing, and confirmed rebooking exit without sending a client message." }),
+    Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The three messages are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep GHL live until activation", detail: "Activation and retirement need separate approval after shadow evidence proves the whole lifecycle." }),
+  ]),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -154,7 +176,10 @@ function reminderDefinition(flow) {
     definitionVersion: flow.definitionVersion,
     mode: flow.mode,
     trigger: clone({ calendarIds: flow.calendarIds, ...flow.enrollOn }),
-    exits: clone(flow.cancelOn.map((status) => ({ kind: "appointment", statuses: [status] }))),
+    exits: clone([
+      ...flow.cancelOn.map((status) => ({ kind: "appointment", statuses: [status] })),
+      ...(flow.exitOn || []).map((status) => ({ kind: "rebooking", statuses: [status], scope: "contact" })),
+    ]),
     steps: flow.steps.map((step, stepIndex) => ({ stepIndex, ...clone(step) })),
     source: {
       kind: "owned_code",
@@ -172,6 +197,10 @@ function reminderDefinition(flow) {
   if (flow.flowKey === "initial-virtual") {
     definition.messagePreview = clone(INITIAL_VIRTUAL_MESSAGE_PREVIEW);
     definition.cutoverReadiness = clone(INITIAL_VIRTUAL_CUTOVER_READINESS);
+  }
+  if (flow.flowKey === "assessment-no-show") {
+    definition.messagePreview = clone(ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW);
+    definition.cutoverReadiness = clone(ASSESSMENT_NO_SHOW_CUTOVER_READINESS);
   }
   return definition;
 }
