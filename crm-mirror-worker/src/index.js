@@ -437,7 +437,7 @@ export default {
         try {
           if (payload.action === "create") {
             const followup = await createOwnedFollowup(env.CRM_DB, {
-              contactExternalId: payload.contactId,
+              contactId: payload.contactId,
               title: payload.title,
               dueOn: payload.dueOn,
               actor,

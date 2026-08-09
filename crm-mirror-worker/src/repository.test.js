@@ -286,10 +286,16 @@ describe("CRM mirror client profiles", () => {
 
   it("keeps contact search and a read-only profile separate from the session ledger", async () => {
     const profileQueries = [];
+    const searchCalls = [];
     const searchDb = {
-      prepare: () => ({ bind: () => ({ all: async () => ({ results: [{ id: "contact_1", display_name: "Eben" }] }) }) }),
+      prepare: (sql) => ({ bind: (...values) => ({ all: async () => {
+        searchCalls.push({ sql, values });
+        return { results: [{ id: "contact_1", display_name: "Eben", provider_contact_id: "ghl_1" }] };
+      } }) }),
     };
-    await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben" }]);
+    await expect(searchContacts(searchDb, "Eben", 25)).resolves.toEqual([{ id: "contact_1", display_name: "Eben", provider_contact_id: "ghl_1" }]);
+    expect(searchCalls[0].sql).toContain("external.external_id AS provider_contact_id");
+    expect(searchCalls[0].values).toHaveLength(5);
     await expect(searchContacts(searchDb, null, 25)).resolves.toEqual([]);
 
     const profileDb = {

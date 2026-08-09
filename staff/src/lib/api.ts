@@ -221,6 +221,18 @@ export async function searchContacts(query: string): Promise<import('../types/st
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
 
+export interface OwnedContactSearchItem {
+  id: string;
+  providerContactId: string | null;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export async function searchOwnedContacts(query: string): Promise<OwnedContactSearchItem[]> {
+  return fetchApi(`/staff-owned-contacts?query=${encodeURIComponent(query)}`);
+}
+
 export async function setFoundersCircle(
   contactId: string,
   action: 'add' | 'remove',
@@ -705,6 +717,7 @@ export async function mutateTask(input: TaskAction): Promise<StaffDay> {
 export interface OwnedFollowup {
   id: string;
   contactId: string;
+  providerContactId: string | null;
   contactName: string;
   title: string;
   dueOn: string;

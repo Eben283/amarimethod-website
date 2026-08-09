@@ -7,7 +7,7 @@ import {
 
 function fakeDb() {
   const contacts = new Map([
-    ["ghl_contact_1", { id: "contact_1", display_name: "Surrina", external_id: "ghl_contact_1" }],
+    ["contact_1", { id: "contact_1", display_name: "Surrina", external_id: "ghl_contact_1" }],
   ]);
   const followups = new Map();
 
@@ -18,7 +18,7 @@ function fakeDb() {
         bind(...values) {
           return {
             async first() {
-              if (sql.includes("FROM external_records external")) return contacts.get(values[0]) || null;
+              if (sql.includes("FROM contacts contact") && sql.includes("WHERE contact.id = ?")) return contacts.get(values[0]) || null;
               if (sql.includes("FROM owned_followups followup") && sql.includes("WHERE followup.id = ?")) {
                 const row = followups.get(values[0]);
                 return row ? { ...row, display_name: "Surrina", contact_external_id: "ghl_contact_1" } : null;
@@ -65,7 +65,7 @@ describe("owned dated follow-ups", () => {
   it("creates a dated follow-up for a mirrored contact and returns it after a reload", async () => {
     const db = fakeDb();
     const created = await createOwnedFollowup(db, {
-      contactExternalId: "ghl_contact_1",
+      contactId: "contact_1",
       title: "Call about the next session",
       dueOn: "2026-08-12",
       actor: "Eben",
@@ -73,7 +73,8 @@ describe("owned dated follow-ups", () => {
 
     expect(created).toMatchObject({
       id: "followup_1",
-      contactId: "ghl_contact_1",
+      contactId: "contact_1",
+      providerContactId: "ghl_contact_1",
       contactName: "Surrina",
       title: "Call about the next session",
       dueOn: "2026-08-12",
@@ -86,7 +87,7 @@ describe("owned dated follow-ups", () => {
   it("completes and reopens the same durable record with staff attribution", async () => {
     const db = fakeDb();
     await createOwnedFollowup(db, {
-      contactExternalId: "ghl_contact_1",
+      contactId: "contact_1",
       title: "Check in",
       dueOn: "2026-08-09",
       actor: "Eben",
@@ -101,7 +102,7 @@ describe("owned dated follow-ups", () => {
 
   it("rejects a contact that is not in the owned mirror", async () => {
     await expect(createOwnedFollowup(fakeDb(), {
-      contactExternalId: "missing",
+      contactId: "missing",
       title: "Call",
       dueOn: "2026-08-12",
       actor: "Eben",
@@ -110,7 +111,7 @@ describe("owned dated follow-ups", () => {
 
   it("rejects impossible calendar dates instead of silently normalizing them", async () => {
     await expect(createOwnedFollowup(fakeDb(), {
-      contactExternalId: "ghl_contact_1",
+      contactId: "contact_1",
       title: "Call",
       dueOn: "2026-02-31",
       actor: "Eben",

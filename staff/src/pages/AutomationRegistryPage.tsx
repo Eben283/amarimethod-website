@@ -19,15 +19,14 @@ import {
   getAutomationFamilies,
   getAutomationFamily,
   getContactAutomationEvidence,
-  getContactDetail,
-  searchContacts,
+  searchOwnedContacts,
+  type OwnedContactSearchItem,
 } from '../lib/api';
 import type {
   AutomationFamiliesResponse,
   AutomationFamily,
   AutomationFamilyResponse,
   ContactAutomationEvidence,
-  ContactListItem,
 } from '../types/staff';
 import './AutomationRegistryPage.css';
 
@@ -50,6 +49,14 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
   'standalone-owned-port': 'Small owned port',
   'study-resident': 'Study-resident path',
   'evidence-only': 'Evidence only',
+};
+
+type AutomationPerson = {
+  id: string;
+  ownedId: string;
+  name: string;
+  email: string;
+  phone: string;
 };
 
 function exactTime(value: unknown) {
@@ -85,9 +92,9 @@ export default function AutomationRegistryPage() {
   const [lifecycle, setLifecycle] = useState<AutomationFamily['lifecycle'] | 'all'>('all');
   const [query, setQuery] = useState('');
   const [personQuery, setPersonQuery] = useState('');
-  const [personResults, setPersonResults] = useState<ContactListItem[]>([]);
+  const [personResults, setPersonResults] = useState<OwnedContactSearchItem[]>([]);
   const [personSearching, setPersonSearching] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState<Pick<ContactListItem, 'id' | 'name' | 'email' | 'phone'> | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<AutomationPerson | null>(null);
   const [personEvidence, setPersonEvidence] = useState<ContactAutomationEvidence | null>(null);
   const [personError, setPersonError] = useState('');
   const [personLoading, setPersonLoading] = useState(false);
@@ -132,14 +139,17 @@ export default function AutomationRegistryPage() {
     let cancelled = false;
     setPersonLoading(true);
     setPersonError('');
-    Promise.all([getContactDetail(selectedContactId), getContactAutomationEvidence(selectedContactId)])
-      .then(([person, evidence]) => {
+    Promise.all([searchOwnedContacts(selectedContactId), getContactAutomationEvidence(selectedContactId)])
+      .then(([people, evidence]) => {
         if (cancelled) return;
+        const person = people.find((candidate) => candidate.providerContactId === selectedContactId);
+        if (!person) throw new Error('That automation contact is not in the owned CRM mirror.');
         setSelectedPerson({
-          id: person.id,
-          name: [person.firstName, person.lastName].filter(Boolean).join(' ') || person.email || person.phone || 'Unnamed person',
-          email: person.email || '',
-          phone: person.phone || '',
+          id: selectedContactId,
+          ownedId: person.id,
+          name: person.name || person.email || person.phone || 'Unnamed person',
+          email: person.email,
+          phone: person.phone,
         });
         setPersonEvidence(evidence);
       })
@@ -168,7 +178,7 @@ export default function AutomationRegistryPage() {
     setPersonSearching(true);
     setPersonError('');
     try {
-      setPersonResults(await searchContacts(personQuery.trim()));
+      setPersonResults(await searchOwnedContacts(personQuery.trim()));
     } catch (error) {
       setPersonError(error instanceof Error ? error.message : 'Could not search people.');
     } finally {
@@ -176,16 +186,20 @@ export default function AutomationRegistryPage() {
     }
   }
 
-  async function selectPerson(person: ContactListItem) {
-    setSelectedPerson(person);
+  async function selectPerson(person: OwnedContactSearchItem) {
+    if (!person.providerContactId) {
+      setPersonError('That owned person has no automation execution crosswalk yet.');
+      return;
+    }
+    setSelectedPerson({ ...person, id: person.providerContactId, ownedId: person.id });
     setPersonResults([]);
     setPersonLoading(true);
     setPersonError('');
     const next = new URLSearchParams(params);
-    next.set('contact', person.id);
+    next.set('contact', person.providerContactId);
     setParams(next);
     try {
-      setPersonEvidence(await getContactAutomationEvidence(person.id));
+      setPersonEvidence(await getContactAutomationEvidence(person.providerContactId));
     } catch (error) {
       setPersonError(error instanceof Error ? error.message : 'Could not load automation evidence.');
     } finally {
@@ -348,14 +362,14 @@ function FamilyDetail({ detail }: { detail: AutomationFamilyResponse }) {
   );
 }
 
-function PersonEvidence({ person, evidence }: { person: Pick<ContactListItem, 'id' | 'name' | 'email' | 'phone'>; evidence: ContactAutomationEvidence }) {
+function PersonEvidence({ person, evidence }: { person: AutomationPerson; evidence: ContactAutomationEvidence }) {
   const enrollments = evidence.enrollments || [];
   const events = evidence.events || [];
   return (
     <div className="automation-person-evidence">
       <header>
         <div><strong>{person.name || 'Unnamed person'}</strong><span>{person.email || person.phone || person.id}</span></div>
-        <a href={`/staff/client-desk?contact=${encodeURIComponent(person.id)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
+        <a href={`/staff/client-desk?contact=${encodeURIComponent(person.ownedId)}`}><MessageSquareText size={15} /> Open in Communication <ArrowUpRight size={14} /></a>
       </header>
       {evidence.configured === false && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span>The owned execution store is not connected. Absence here is not proof that no automation ran.</span></div>}
       <div className="automation-person-columns">

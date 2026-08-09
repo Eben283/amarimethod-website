@@ -867,14 +867,18 @@ function likePattern(value) {
 export async function searchContacts(db, query, limit) {
   if (!query) return [];
   const result = await db.prepare(
-    `SELECT id, display_name, email_normalized, phone_e164
-     FROM contacts
-     WHERE lower(display_name) LIKE ? ESCAPE '\\'
-        OR lower(COALESCE(email_normalized, '')) LIKE ? ESCAPE '\\'
-        OR COALESCE(phone_e164, '') LIKE ? ESCAPE '\\'
-     ORDER BY display_name, id
+    `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
+            external.external_id AS provider_contact_id
+     FROM contacts contact
+     LEFT JOIN external_records external
+       ON external.contact_id = contact.id AND external.provider = 'ghl' AND external.object_type = 'contact'
+     WHERE lower(contact.display_name) LIKE ? ESCAPE '\\'
+        OR lower(COALESCE(contact.email_normalized, '')) LIKE ? ESCAPE '\\'
+        OR COALESCE(contact.phone_e164, '') LIKE ? ESCAPE '\\'
+        OR lower(COALESCE(external.external_id, '')) LIKE ? ESCAPE '\\'
+     ORDER BY contact.display_name, contact.id
      LIMIT ?`,
-  ).bind(likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, limit).all();
+  ).bind(likePattern(query), likePattern(query), `%${String(query).replace(/[\\%_]/g, "\\$&")}%`, likePattern(query), limit).all();
   return result.results || [];
 }
 

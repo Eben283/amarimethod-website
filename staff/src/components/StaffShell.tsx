@@ -22,6 +22,7 @@ import {
   TrendingUp,
   UsersRound,
   WalletCards,
+  Workflow,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -73,6 +74,7 @@ const SPECIALIST_ITEMS: RailItem[] = [
   { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
   { label: 'Funnel', detail: 'Lead flow and pace', to: '/funnel', Icon: TrendingUp },
   { label: 'Community', detail: 'Field relationships', to: '/community', Icon: MapPinned },
+  { label: 'Automations', detail: 'What runs and why', to: '/automations', Icon: Workflow },
   { label: 'Playbooks', detail: 'Practice reference', to: '/playbook', Icon: BookOpen },
   { label: 'Ask Amari', detail: 'Chief of Staff', to: '/cos', Icon: Sparkles },
   { label: 'Field Studies', detail: 'Specialist study records', to: '/field-studies', Icon: ClipboardPlus },

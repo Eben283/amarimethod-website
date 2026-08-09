@@ -5,11 +5,11 @@ import {
   ApiError,
   createOwnedFollowup,
   getOwnedFollowups,
-  searchContacts,
+  searchOwnedContacts,
   setOwnedFollowupComplete,
   type OwnedFollowup,
+  type OwnedContactSearchItem,
 } from '../lib/api';
-import type { ContactListItem } from '../types/staff';
 
 function todayDate() {
   const now = new Date();
@@ -38,8 +38,8 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [matches, setMatches] = useState<ContactListItem[]>([]);
-  const [selected, setSelected] = useState<ContactListItem | null>(null);
+  const [matches, setMatches] = useState<OwnedContactSearchItem[]>([]);
+  const [selected, setSelected] = useState<OwnedContactSearchItem | null>(null);
   const [title, setTitle] = useState('');
   const [dueOn, setDueOn] = useState(todayDate());
   const [saving, setSaving] = useState(false);
@@ -83,7 +83,7 @@ export default function OwnedFollowupsPanel({ onUnauthorized }: { onUnauthorized
     setSearching(true);
     setError(null);
     try {
-      setMatches(await searchContacts(clean));
+      setMatches(await searchOwnedContacts(clean));
     } catch (failure) {
       handleError(failure, 'People search failed.');
     } finally {

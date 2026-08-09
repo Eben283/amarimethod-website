@@ -11,22 +11,23 @@ function validDateOnly(value) {
 }
 
 export function validateOwnedFollowupInput(input) {
-  const contactExternalId = String(input?.contactExternalId || "").trim();
+  const contactId = String(input?.contactId || "").trim();
   const title = String(input?.title || "").trim();
   const dueOn = String(input?.dueOn || "").trim();
   const actor = String(input?.actor || "").trim();
-  if (!CONTACT_ID.test(contactExternalId)) throw new Error("valid contactId required");
+  if (!CONTACT_ID.test(contactId)) throw new Error("valid contactId required");
   if (!title) throw new Error("follow-up text required");
   if (title.length > MAX_TITLE_LENGTH) throw new Error(`follow-up text must be ${MAX_TITLE_LENGTH} characters or fewer`);
   if (!validDateOnly(dueOn)) throw new Error("valid due date required");
   if (!STAFF_ACTOR.test(actor)) throw new Error("valid staff actor required");
-  return { contactExternalId, title, dueOn, actor };
+  return { contactId, title, dueOn, actor };
 }
 
 function publicFollowup(row) {
   return {
     id: row.id,
-    contactId: row.contact_external_id,
+    contactId: row.contact_id,
+    providerContactId: row.contact_external_id || null,
     contactName: row.display_name || "Unknown",
     title: row.title,
     dueOn: row.due_on,
@@ -42,10 +43,10 @@ async function followupById(db, id) {
   const row = await db.prepare(
     `SELECT followup.id, followup.title, followup.due_on, followup.completed_at,
             followup.created_by, followup.completed_by, followup.created_at, followup.updated_at,
-            contact.display_name, external.external_id AS contact_external_id
+            contact.id AS contact_id, contact.display_name, external.external_id AS contact_external_id
      FROM owned_followups followup
      JOIN contacts contact ON contact.id = followup.contact_id
-     JOIN external_records external
+     LEFT JOIN external_records external
        ON external.contact_id = contact.id AND external.provider = 'ghl' AND external.object_type = 'contact'
      WHERE followup.id = ?`,
   ).bind(id).first();
@@ -55,11 +56,10 @@ async function followupById(db, id) {
 export async function createOwnedFollowup(db, input, now = new Date().toISOString(), followupId = crypto.randomUUID()) {
   const value = validateOwnedFollowupInput(input);
   const contact = await db.prepare(
-    `SELECT contact.id, contact.display_name, external.external_id
-     FROM external_records external
-     JOIN contacts contact ON contact.id = external.contact_id
-     WHERE external.provider = 'ghl' AND external.object_type = 'contact' AND external.external_id = ?`,
-  ).bind(value.contactExternalId).first();
+    `SELECT contact.id, contact.display_name
+     FROM contacts contact
+     WHERE contact.id = ?`,
+  ).bind(value.contactId).first();
   if (!contact) throw new Error("contact is not mirrored");
 
   await db.prepare(
@@ -76,10 +76,10 @@ export async function listOwnedFollowups(db, { state = "open", limit = 50 } = {}
   const result = await db.prepare(
     `SELECT followup.id, followup.title, followup.due_on, followup.completed_at,
             followup.created_by, followup.completed_by, followup.created_at, followup.updated_at,
-            contact.display_name, external.external_id AS contact_external_id
+            contact.id AS contact_id, contact.display_name, external.external_id AS contact_external_id
      FROM owned_followups followup
      JOIN contacts contact ON contact.id = followup.contact_id
-     JOIN external_records external
+     LEFT JOIN external_records external
        ON external.contact_id = contact.id AND external.provider = 'ghl' AND external.object_type = 'contact'
      WHERE (? = 'all')
         OR (? = 'open' AND followup.completed_at IS NULL)

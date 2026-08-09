@@ -40,7 +40,7 @@ describe("Staff owned follow-ups proxy", () => {
   it("attributes a create to the authenticated staff member", async () => {
     global.fetch.mockResolvedValue(new Response(JSON.stringify({ success: true, followup: { id: "f_1" } }), { status: 201 }));
     const response = await onRequestPost(context("POST", {
-      action: "create", contactId: "ghl_1", title: "Call tomorrow", dueOn: "2026-08-09",
+      action: "create", contactId: "contact_1", title: "Call tomorrow", dueOn: "2026-08-09",
     }));
     expect(response.status).toBe(201);
     expect(global.fetch).toHaveBeenCalledWith(
