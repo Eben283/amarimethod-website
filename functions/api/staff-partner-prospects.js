@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: GET /api/staff-partner-prospects
 //
-// Returns partner prospects (golf / tennis / trainer) for the Partners tab.
+// Returns unconverted acquisition prospects for Staff Outreach.
 // Reads the 8 partner_* custom fields created 2026-05-23 (see
 // TECHNICAL-REFERENCE.txt § "GHL CUSTOM FIELDS (partner outreach)").
 //
@@ -13,6 +13,7 @@ import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { getPartnerSheetCache } from "../lib/partner-sheet.js";
 import { buildCard } from "../lib/build-card.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -73,7 +74,9 @@ const CATEGORY_TAGS = {
 };
 // `ambassador-prospect` added 2026-05-23 after migration missed Troy Weakley
 // (his only tag was ambassador-prospect, so he was excluded entirely).
-const BROAD_PARTNER_TAGS = ["partner-prospect", "affiliate-partner", "ambassador-prospect"];
+// `affiliate-partner` is deliberately absent: it is conversion evidence, not
+// an acquisition source. Converted people remain available through People.
+const BROAD_PARTNER_TAGS = ["partner-prospect", "ambassador-prospect"];
 const ALL_PARTNER_TAGS = [
   ...Object.values(CATEGORY_TAGS).flat(),
   ...BROAD_PARTNER_TAGS,
@@ -494,6 +497,29 @@ export function finalizePlay(p, warmFacilities = new Set()) {
   return d;
 }
 
+// Outreach is a new-client acquisition workspace. Converted partners and the
+// former generic-client cadence union belong in People/Communication instead,
+// even if stale source data still marks one of them actionable.
+export function isAcquisitionProspectRecord(prospect) {
+  if (!prospect || prospect.category === "client") return false;
+  if (prospect.hasClientEvidence) return false;
+  if (prospect.isActivePartner) return false;
+  if (prospect.partnerStage === "partner" || prospect.partnerStage === "session-booked") return false;
+  if (prospect.derived?.kind === "converted") return false;
+  return true;
+}
+
+export function hasClientEvidence(contact) {
+  const seriesType = String(getField(contact, GHL_FIELD_IDS.series_type) || "").trim().toLowerCase();
+  const sessionsCompleted = Number(getField(contact, GHL_FIELD_IDS.sessions_completed));
+  const sessionsRemaining = Number(getField(contact, GHL_FIELD_IDS.sessions_remaining));
+  return (
+    (seriesType !== "" && seriesType !== "none") ||
+    (Number.isFinite(sessionsCompleted) && sessionsCompleted > 0) ||
+    (Number.isFinite(sessionsRemaining) && sessionsRemaining > 0)
+  );
+}
+
 // Lookup Garrett's sheet row for a contact by phone or email match.
 function lookupSheetRow(contact, sheetCache) {
   const phoneNorm = normalizePhone(contact.phone);
@@ -548,6 +574,7 @@ function toProspect(contact, sheetCache) {
       getField(contact, FIELD_IDS.partner_last_real_activity) ||
       contact.lastActivity ||
       null,
+    hasClientEvidence: hasClientEvidence(contact),
     isActivePartner: tags.includes("affiliate-partner"),
     // New partner custom fields — null if not yet migrated.
     // Booked is driven off GHL's real signal: the "Partner Session Booked — Add
@@ -687,16 +714,14 @@ export async function onRequestGet(context) {
       console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
     }
 
-    // Phase 3: batch-read conv records for all prospects + non-partner cadence leads in
-    // one parallel round-trip, so the derive loop can overlay buildCard facts (why/channel/
-    // action/state/play) on every actionable card without sequential KV round-trips.
+    // Phase 3: batch-read conversation records for tagged acquisition prospects
+    // in one parallel round-trip, so the derive loop can overlay buildCard facts
+    // without sequential KV round-trips. Generic client cadence rows are not an
+    // Outreach source.
     let convMap = new Map();
     try {
       if (context.env.PORTAL_KV) {
-        const idsToFetch = new Set([
-          ...prospects.map((p) => p.contactId),
-          ...[...cadenceMap.keys()].filter((id) => !byId.has(id)),
-        ]);
+        const idsToFetch = new Set(prospects.map((p) => p.contactId));
         const entries = await Promise.all(
           [...idsToFetch].map(async (id) => [id, await context.env.PORTAL_KV.get(`conv:${id}`, "json")])
         );
@@ -771,61 +796,7 @@ export async function onRequestGet(context) {
       }
     }
 
-    // Follow-Up = EVERYONE who needs follow-up, not just partner-tagged (Eben 2026-06-15:
-    // "every person, every rabbit or oak tree that needs follow-up lives in followup").
-    // Union in the cadence engine's conversation-active contacts who AREN'T partner-tagged —
-    // i.e. client leads with an open thread (e.g. Wendy, who verbally agreed to $225, stalled
-    // on price, and was invisible because she has no partner tag). Their verdict comes straight
-    // from the cadence (conversation-cache-derived), since they have no partner signal fields.
-    // This also reconnects the cadence engine to the app (they had been two separate systems).
-    for (const [cid, c] of cadenceMap) {
-      if (!cid || byId.has(cid) || skipSet.has(cid)) continue;       // partner / explicitly set aside
-      if (c.hasBooking) continue;                                    // already booked → not a target
-      if (["drip-only", "set-aside", "skipped", "booked"].includes(c.state)) continue;
-      const lastIso = c.lastTouch ? new Date(c.lastTouch).toISOString() : null;
-      const base = cadenceVerdict(c);
-      const conv = convMap.get(cid);
-      let derived = base;
-      if (base.kind === "act" || base.kind === "waiting") {
-        const dossier = {
-          firstName: conv?.firstName || "",
-          lastName:  conv?.lastName  || "",
-          fullName:  c.name || conv?.name || "(no name)",
-          role:      conv?.role     || null,
-          business:  conv?.business || null,
-          lineType:  conv?.lineType || null,
-          rundown:   conv?.rundown  || null,
-          email:     conv?.email    || null,
-          // Full provenance signals, consistent with buildContactDossier — so a placeholder
-          // email / LinkedIn source / enrichment URL is caught here too (these rows carry
-          // phone:null so nothing leaks, but keep detection uniform).
-          source:      conv?.source      || null,
-          linkedinUrl: conv?.linkedinUrl || null,
-          thread:    conv ? (conv.touches || []).map(compactToThread) : [],
-        };
-        derived = overlayCard(base, buildCard(dossier));
-      }
-      prospects.push({
-        contactId: cid, firstName: "", lastName: "", fullName: c.name || "(no name)",
-        category: "client", tags: [],
-        phone: null, email: null, website: null, companyName: null,
-        address1: null, city: null, state: null, postalCode: null,
-        socialProfile: null, linkedinUrl: null, instagram: null, otherUrls: null, rundown: null,
-        lastActivityAt: lastIso, isActivePartner: false,
-        partnerStage: null, partnerSource: null,
-        partnerLastSignal: null, partnerLastSignalAt: lastIso, partnerFollowupAt: null,
-        partnerFacility: null, partnerFacilityType: null, partnerFacilityRole: null,
-        hasPtOnStaff: null, outreachVerified: false,
-        touchCount: Number(c.outCount) || 0,
-        sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
-        textDnd: false,
-        isLead: true,
-        derived,
-      });
-    }
-
-    // Attach phone line type (from the line-type sweep) to every prospect — partner
-    // and unioned lead alike — so the UI can suppress SMS to landline/toll-free numbers.
+    // Attach phone line type so the UI can suppress SMS to landline/toll-free numbers.
     for (const p of prospects) p.phoneType = lineTypeMap.get(p.contactId) || null;
 
     // Build a set of facility names where at least one linked person contact is trusted
@@ -845,6 +816,11 @@ export async function onRequestGet(context) {
     // (discovery for unverified facility contacts; call instead of text to switchboards).
     for (const p of prospects) p.derived = finalizePlay(p, warmFacilities);
 
+    // This is the final fail-closed acquisition gate. Active/converted partners
+    // remain available through their person records, never in Outreach search or
+    // counts. The same guard protects against stale cadence state.
+    const acquisitionProspects = prospects.filter(isAcquisitionProspectRecord);
+
     // Counts.
     // A contact counts as "verified / ready to call" if either:
     //   (a) Outreach Verified checkbox is true (manual confirm), OR
@@ -855,7 +831,7 @@ export async function onRequestGet(context) {
     const countsByStage = Object.fromEntries(ALL_STAGES.map((s) => [s, 0]));
     let verifiedCount = 0;
     let unverifiedCount = 0;
-    for (const p of prospects) {
+    for (const p of acquisitionProspects) {
       countsByCategory[p.category] = (countsByCategory[p.category] || 0) + 1;
       const stage = p.partnerStage || "no-outreach";
       countsByStage[stage] = (countsByStage[stage] || 0) + 1;
@@ -878,12 +854,12 @@ export async function onRequestGet(context) {
         // (booked/skip) overlay. The UI shows a loud banner if this goes stale, so
         // a silently-stalled pipeline becomes visible instead of plausible-looking.
         coachDataAt,
-        total: prospects.length,
+        total: acquisitionProspects.length,
         verifiedCount,
         unverifiedCount,
         countsByCategory,
         countsByStage,
-        prospects: prospects.map((p) => ({ ...p, callCoachLine: callCoachMap.get(p.contactId) || null })),
+        prospects: acquisitionProspects.map((p) => ({ ...p, callCoachLine: callCoachMap.get(p.contactId) || null })),
         dismissedReplies,
       }),
       { status: 200, headers },

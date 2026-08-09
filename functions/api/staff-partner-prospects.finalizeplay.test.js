@@ -1,6 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { finalizePlay, manualTouchIsFresherThanCadence, overlayCard } from './staff-partner-prospects.js';
+import { finalizePlay, hasClientEvidence, isAcquisitionProspectRecord, manualTouchIsFresherThanCadence, overlayCard } from './staff-partner-prospects.js';
 import { buildCard } from '../lib/build-card.js';
+import { FIELD_IDS as GHL_FIELD_IDS } from '../lib/ghl-fields.js';
+
+describe('hasClientEvidence — stale prospect tags cannot re-enroll clients', () => {
+  const contact = (id, value) => ({ customFields: [{ id, value }] });
+
+  it('treats any positive session history or real series as client evidence', () => {
+    expect(hasClientEvidence(contact(GHL_FIELD_IDS.sessions_completed, 1))).toBe(true);
+    expect(hasClientEvidence(contact(GHL_FIELD_IDS.sessions_remaining, '4'))).toBe(true);
+    expect(hasClientEvidence(contact(GHL_FIELD_IDS.series_type, 'Single'))).toBe(true);
+  });
+
+  it('does not manufacture client evidence from empty/default fields', () => {
+    expect(hasClientEvidence({ customFields: [] })).toBe(false);
+    expect(hasClientEvidence(contact(GHL_FIELD_IDS.sessions_completed, 0))).toBe(false);
+    expect(hasClientEvidence(contact(GHL_FIELD_IDS.series_type, 'None'))).toBe(false);
+  });
+});
+
+describe('isAcquisitionProspectRecord — Outreach never becomes member follow-up', () => {
+  it('keeps unconverted prospects and excludes clients or converted partners', () => {
+    expect(isAcquisitionProspectRecord({ category: 'trainer', isActivePartner: false, partnerStage: 'working', derived: { kind: 'act' } })).toBe(true);
+    expect(isAcquisitionProspectRecord({ category: 'trainer', isActivePartner: false, partnerStage: 'future-potential', derived: { kind: 'aside' } })).toBe(true);
+    expect(isAcquisitionProspectRecord({ category: 'client', isActivePartner: false, partnerStage: null, derived: { kind: 'act' } })).toBe(false);
+    expect(isAcquisitionProspectRecord({ category: 'trainer', hasClientEvidence: true, isActivePartner: false, partnerStage: null, derived: { kind: 'act' } })).toBe(false);
+    expect(isAcquisitionProspectRecord({ category: 'trainer', isActivePartner: true, partnerStage: 'partner', derived: { kind: 'converted' } })).toBe(false);
+    expect(isAcquisitionProspectRecord({ category: 'trainer', isActivePartner: false, partnerStage: 'session-booked', derived: { kind: 'converted' } })).toBe(false);
+    expect(isAcquisitionProspectRecord({ category: 'trainer', isActivePartner: false, partnerStage: null, derived: { kind: 'converted' } })).toBe(false);
+  });
+});
 
 describe('manualTouchIsFresherThanCadence — a just-marked touch beats the stale cadence', () => {
   const M = manualTouchIsFresherThanCadence;

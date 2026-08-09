@@ -1,19 +1,24 @@
-import type { OutreachCard } from '../types/staff';
+import type { PartnerProspect } from '../types/staff';
 
-const PROACTIVE_OUTREACH_STATUSES = new Set<OutreachCard['recommendation']['status']>([
-  'referral-never-booked',
-  'cancellation-not-followed-up',
-  'pre-session-text-owed',
-  'next-booking-owed',
-  'recently-contacted-silent',
-  'truly-cold',
-  'partner-no-referrals',
-  'engaged',
-]);
-
-export function isHomeOutreachCandidate(card: OutreachCard) {
-  return card.recommendation.priority > 0
-    && PROACTIVE_OUTREACH_STATUSES.has(card.recommendation.status);
+/**
+ * Staff Outreach is acquisition work, not a general relationship follow-up
+ * queue. Keep this guard at the UI seam even though the server also excludes
+ * converted people, so stale or older payloads cannot put clients back on Home.
+ */
+export function selectAcquisitionProspects(
+  prospects: PartnerProspect[],
+  limit = 3,
+  excludeContactIds: ReadonlySet<string> = new Set(),
+) {
+  return prospects
+    .filter((prospect) => prospect.derived?.kind === 'act')
+    .filter((prospect) => !prospect.hasClientEvidence)
+    .filter((prospect) => !prospect.isActivePartner)
+    .filter((prospect) => prospect.partnerStage !== 'partner' && prospect.partnerStage !== 'session-booked')
+    .filter((prospect) => String(prospect.category) !== 'client')
+    .filter((prospect) => !excludeContactIds.has(prospect.contactId))
+    .sort((a, b) => (b.derived?.urgency || 0) - (a.derived?.urgency || 0))
+    .slice(0, Math.max(0, limit));
 }
 
 export function withoutNeedsReply<T>(
