@@ -244,6 +244,30 @@ export async function startStaffAmariMailAuthorization(): Promise<{ authorizatio
   return fetchApi('/staff-amari-mail-auth', { method: 'POST' });
 }
 
+export type GmailReplySyncGapReason =
+  | 'provider_message_missing'
+  | 'body_truncated'
+  | 'metadata_truncated'
+  | 'metadata_unusable';
+
+export interface StaffGmailReplyReadiness {
+  actor: 'Eben' | 'Garrett';
+  mailbox: string;
+  state: 'no_baseline' | 'quiet' | 'review';
+  replySyncEnabled: false;
+  checkpoint: { historyId: string; observedAt: string } | null;
+  syncGaps: Array<{
+    messageId: string;
+    historyId: string;
+    reason: GmailReplySyncGapReason;
+    observedAt: string;
+  }>;
+}
+
+export async function getStaffGmailReplyReadiness(): Promise<StaffGmailReplyReadiness> {
+  return fetchApi('/staff-gmail-reply-readiness');
+}
+
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }

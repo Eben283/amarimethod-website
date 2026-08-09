@@ -82,6 +82,37 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps actor-scoped Gmail reply evidence behind Worker auth and never claims sync is on", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare(sql) {
+          return { bind: (...values) => ({
+            async all() {
+              if (sql.includes("FROM gmail_history_observations")) return { results: [{
+                mailbox_actor: values[0], grant_owner: values[1], mailbox_address: values[1],
+                history_id: "900719925474099399999", observed_at: "2026-08-09T16:00:00.000Z",
+              }] };
+              if (sql.includes("FROM gmail_sync_gap_reviews")) return { results: [] };
+              return { results: [] };
+            },
+          }) };
+        },
+      },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/gmail/reply-readiness?actor=Eben"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/gmail/reply-readiness?actor=Eben", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true, actor: "Eben", mailbox: "eben@amarimethod.com", state: "quiet",
+      replySyncEnabled: false, checkpoint: { historyId: "900719925474099399999" }, syncGaps: [],
+    });
+  });
+
   it("keeps owned dated follow-ups behind worker auth and returns only the owned record contract", async () => {
     const env = {
       WORKER_AUTH_SECRET: "test-secret",

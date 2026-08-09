@@ -3,6 +3,7 @@ import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
+import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import {
@@ -418,6 +419,21 @@ export default {
       }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await communicationReadiness(env.CRM_DB, env)) });
+      }
+      if (request.method === "GET" && url.pathname === "/gmail/reply-readiness") {
+        try {
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            ...(await gmailReplyReadiness(env.CRM_DB, {
+              actor: url.searchParams.get("actor"),
+              limit: url.searchParams.get("limit"),
+            })),
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof GmailReplyReadinessError) return json(400, { error: error.code });
+          throw error;
+        }
       }
       if (request.method === "GET" && url.pathname === "/owned-followups") {
         const state = url.searchParams.get("state") || "open";
