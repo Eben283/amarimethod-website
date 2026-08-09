@@ -13,6 +13,33 @@ const AMARI_MAIL_IDENTITIES = Object.freeze({
 });
 function key(actor, name) { return `amari-mail:${resolveAmariMailIdentity(actor).actor.toLowerCase()}:${name}`; }
 
+function tokenProviderError(message, status, retryable) {
+  const error = new Error(message);
+  error.status = status;
+  error.retryable = retryable;
+  return error;
+}
+
+async function tokenStoreGet(env, storageKey) {
+  try {
+    return await env.PORTAL_KV.get(storageKey);
+  } catch (error) {
+    const status = Number(error?.status);
+    throw tokenProviderError("Google Workspace token storage failed",
+      Number.isInteger(status) && status > 0 ? status : 503, true);
+  }
+}
+
+async function tokenStorePut(env, storageKey, value) {
+  try {
+    await env.PORTAL_KV.put(storageKey, value);
+  } catch (error) {
+    const status = Number(error?.status);
+    throw tokenProviderError("Google Workspace token storage failed",
+      Number.isInteger(status) && status > 0 ? status : 503, true);
+  }
+}
+
 function base64url(value) {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
@@ -40,7 +67,7 @@ export function resolveAmariMailIdentity(actor) {
 
 async function requireVerifiedGrant(env, actor) {
   const identity = resolveAmariMailIdentity(actor);
-  const raw = await env.PORTAL_KV.get(key(actor, "grant_status"));
+  const raw = await tokenStoreGet(env, key(actor, "grant_status"));
   let grant;
   try { grant = JSON.parse(raw); } catch { grant = null; }
   if (grant?.actor !== identity.actor
@@ -56,22 +83,48 @@ async function requireVerifiedGrant(env, actor) {
 export async function getGoogleWorkspaceToken(env, actor) {
   if (!env.PORTAL_KV || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET) throw new Error("Amari mail is not configured");
   await requireVerifiedGrant(env, actor);
-  const [access, expiryRaw] = await Promise.all([env.PORTAL_KV.get(key(actor, "access_token")), env.PORTAL_KV.get(key(actor, "token_expiry"))]);
+  const [access, expiryRaw] = await Promise.all([
+    tokenStoreGet(env, key(actor, "access_token")),
+    tokenStoreGet(env, key(actor, "token_expiry")),
+  ]);
   const expiry = Number(expiryRaw || 0);
   if (access && expiry > Date.now() + REFRESH_BUFFER_MS) return access;
-  const refresh = await env.PORTAL_KV.get(key(actor, "refresh_token"));
+  return forceRefreshGoogleWorkspaceToken(env, actor);
+}
+
+// A Gmail 401 can mean the cached access token was revoked early. This actor-
+// scoped seam bypasses that cache so callers can perform one bounded retry.
+export async function forceRefreshGoogleWorkspaceToken(env, actor) {
+  if (!env.PORTAL_KV || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID || !env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET) throw new Error("Amari mail is not configured");
+  await requireVerifiedGrant(env, actor);
+  const refresh = await tokenStoreGet(env, key(actor, "refresh_token"));
   if (!refresh) throw new Error("Google Workspace is not authorized");
-  const response = await fetch(TOKEN_URL, {
-    method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", client_id: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID, client_secret: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: refresh }).toString(),
-  });
-  if (!response.ok) throw new Error("Google Workspace token refresh failed");
-  const payload = await response.json();
-  if (!payload.access_token) throw new Error("Google Workspace token refresh failed");
+  let response;
+  try {
+    response = await fetch(TOKEN_URL, {
+      method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "refresh_token", client_id: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID, client_secret: env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET, refresh_token: refresh }).toString(),
+    });
+  } catch (error) {
+    if (error?.status || error?.retryable != null) throw error;
+    throw tokenProviderError("Google Workspace token refresh failed", 503, true);
+  }
+  if (!response.ok) {
+    throw tokenProviderError("Google Workspace token refresh failed", response.status,
+      response.status === 429 || response.status >= 500);
+  }
+  let payload;
+  try { payload = await response.json(); } catch { payload = null; }
+  if (!payload?.access_token) throw tokenProviderError("Google Workspace token refresh failed", 502, true);
+  const expiresIn = payload.expires_in == null ? 3600 : Number(payload.expires_in);
+  const expiry = Date.now() + expiresIn * 1000;
+  if (!Number.isInteger(expiresIn) || expiresIn <= 0 || !Number.isSafeInteger(expiry)) {
+    throw tokenProviderError("Google Workspace token refresh failed", 502, true);
+  }
   await Promise.all([
-    env.PORTAL_KV.put(key(actor, "access_token"), payload.access_token),
-    env.PORTAL_KV.put(key(actor, "token_expiry"), String(Date.now() + Number(payload.expires_in || 3600) * 1000)),
-    env.PORTAL_KV.put(key(actor, "refresh_token"), payload.refresh_token || refresh),
+    tokenStorePut(env, key(actor, "access_token"), payload.access_token),
+    tokenStorePut(env, key(actor, "token_expiry"), String(expiry)),
+    tokenStorePut(env, key(actor, "refresh_token"), payload.refresh_token || refresh),
   ]);
   return payload.access_token;
 }

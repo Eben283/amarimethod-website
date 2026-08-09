@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getGoogleWorkspaceToken, gmailConfigured, listGmailSenders, resolveAmariMailIdentity, sendGmailEmail } from "./gmail.js";
+import { forceRefreshGoogleWorkspaceToken, getGoogleWorkspaceToken, gmailConfigured, listGmailSenders, resolveAmariMailIdentity, sendGmailEmail } from "./gmail.js";
 
 function env(values = {}) {
   const store = new Map(Object.entries(values));
@@ -57,6 +57,62 @@ describe("Gmail provider", () => {
       "amari-mail:eben:refresh_token",
     ]));
     expect(e.PORTAL_KV.put.mock.calls.flat().join(" ")).not.toContain("google:eben");
+  });
+
+  it("can force one actor-scoped refresh without reusing a stale cached access token", async () => {
+    const e = env({
+      "amari-mail:eben:grant_status": grant("Eben"),
+      "amari-mail:eben:access_token": "stale-token",
+      "amari-mail:eben:token_expiry": String(Date.now() + 600_000),
+      "amari-mail:eben:refresh_token": "mail-refresh",
+      "amari-mail:garrett:refresh_token": "wrong-actor-refresh",
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      access_token: "fresh-mail-token", expires_in: 3600,
+    }), { status: 200 })));
+
+    await expect(forceRefreshGoogleWorkspaceToken(e, "Eben")).resolves.toBe("fresh-mail-token");
+    const requestBody = new URLSearchParams(fetch.mock.calls[0][1].body);
+    expect(requestBody.get("refresh_token")).toBe("mail-refresh");
+    expect(e.PORTAL_KV.get.mock.calls.flat()).not.toContain("amari-mail:garrett:refresh_token");
+  });
+
+  it("marks token storage read and write failures as retryable provider failures", async () => {
+    const readFailure = env({ "amari-mail:eben:grant_status": grant("Eben") });
+    readFailure.PORTAL_KV.get.mockRejectedValue(new Error("KV read unavailable"));
+    await expect(getGoogleWorkspaceToken(readFailure, "Eben")).rejects.toMatchObject({
+      status: 503,
+      retryable: true,
+    });
+
+    const writeFailure = env({
+      "amari-mail:eben:grant_status": grant("Eben"),
+      "amari-mail:eben:refresh_token": "mail-refresh",
+    });
+    writeFailure.PORTAL_KV.put.mockRejectedValue(new Error("KV write unavailable"));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      access_token: "fresh-mail-token", expires_in: 3600,
+    }), { status: 200 })));
+    await expect(forceRefreshGoogleWorkspaceToken(writeFailure, "Eben")).rejects.toMatchObject({
+      status: 503,
+      retryable: true,
+    });
+  });
+
+  it.each(["NaN", -1, 0])("rejects invalid OAuth expires_in before persisting it (%s)", async (expiresIn) => {
+    const e = env({
+      "amari-mail:eben:grant_status": grant("Eben"),
+      "amari-mail:eben:refresh_token": "mail-refresh",
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      access_token: "fresh-mail-token", expires_in: expiresIn,
+    }), { status: 200 })));
+
+    await expect(forceRefreshGoogleWorkspaceToken(e, "Eben")).rejects.toMatchObject({
+      status: 502,
+      retryable: true,
+    });
+    expect(e.PORTAL_KV.put).not.toHaveBeenCalled();
   });
 
   it("does not treat personal or Calendar OAuth credentials as mail configuration", async () => {
