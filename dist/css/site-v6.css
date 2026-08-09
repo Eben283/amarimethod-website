@@ -91,11 +91,13 @@ header.site nav a:hover::after,header.site nav a.current::after{transform:scaleX
   width:calc(100% - 80px);max-width:var(--maxw);margin:64px auto;border:1px solid var(--line);overflow:hidden}
 .band.tan{background:var(--tan)}
 .band.peach{background:var(--peach)}
+.band.sage{background:var(--sage)}
 .band-copy{padding:56px clamp(46px,6vw,90px)}
 .band-copy .eyebrow{margin-bottom:20px;display:block}
 .band-copy h2{font-size:clamp(2.3rem,4.3vw,3.6rem);font-weight:500;max-width:15ch;color:var(--ink)}
 .band-copy p{margin-top:22px;color:rgba(33,29,25,.75);max-width:40ch}
 .band-copy cite{display:block;margin-top:26px;font-style:normal;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(33,29,25,.7)}
+.band.sage .band-copy p,.band.sage .band-copy cite{color:var(--ink)}
 .band-copy .btn{margin-top:34px}
 .band-photo{align-self:stretch;background-size:cover;background-position:center;min-height:540px}
 .band.reverse .band-photo{order:-1}
