@@ -98,6 +98,33 @@ describe("staff-automations — views", () => {
     expect(body.events).toEqual([]);
   });
 
+  it("family view reads global execution evidence through the CRM worker when Pages has no D1 binding", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      success: true,
+      configured: true,
+      familyKey: "initial-session-reminders",
+      enrollments: [{ enrollmentId: "enrollment_1", status: "active" }],
+      events: [{ id: "event_1", outcome: "would_send" }],
+      coverage: { enrollmentsTruncated: false, eventsTruncated: false },
+      evidence: { source: "owned_automation_d1", gaps: [] },
+    }), { status: 200 })));
+
+    const res = await onRequestGet(makeContext(
+      "view=family&key=initial-session-reminders",
+      { WORKER_AUTH_SECRET: "worker-secret" },
+    ));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.configured).toBe(true);
+    expect(body.enrollments).toHaveLength(1);
+    expect(body.events).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/automations/families/initial-session-reminders"), expect.objectContaining({
+      headers: { Authorization: "Bearer worker-secret" },
+    }));
+    vi.unstubAllGlobals();
+  });
+
   it("family view validates keys and returns 404 for a missing family", async () => {
     expect((await onRequestGet(makeContext("view=family&key=<script>", {}))).status).toBe(400);
     expect((await onRequestGet(makeContext("view=family&key=missing", {}))).status).toBe(404);
@@ -211,6 +238,39 @@ describe("staff-automations — views", () => {
     expect(body.contactId).toBe("owned_person_2");
     expect(body.automationContactIds).toEqual(["owned_person_2"]);
     expect(body.evidence.gaps.map((gap) => gap.code)).toContain("provider_identity_not_applicable");
+    vi.unstubAllGlobals();
+  });
+
+  it("contact view reads person evidence through the owned CRM worker when Pages has no D1 binding", async () => {
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        contacts: [{ id: "owned_person_1", provider_contact_id: "legacy_ghl_1" }],
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        success: true,
+        configured: true,
+        contactId: "owned_person_1",
+        providerContactId: "legacy_ghl_1",
+        automationContactIds: ["owned_person_1", "legacy_ghl_1"],
+        enrollments: [{ enrollmentId: "enrollment_1", status: "active" }],
+        events: [],
+        coverage: { eventLimit: 200, eventsTruncated: false },
+        evidence: { source: "owned_automation_d1", gaps: [] },
+      }), { status: 200 })));
+
+    const res = await onRequestGet(makeContext(
+      "view=contact&contactId=owned_person_1",
+      { WORKER_AUTH_SECRET: "worker-secret" },
+    ));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.configured).toBe(true);
+    expect(body.contactId).toBe("owned_person_1");
+    expect(body.enrollments).toHaveLength(1);
+    expect(fetch).toHaveBeenNthCalledWith(2, expect.stringContaining("/automations/people/owned_person_1"), expect.objectContaining({
+      headers: { Authorization: "Bearer worker-secret" },
+    }));
     vi.unstubAllGlobals();
   });
 

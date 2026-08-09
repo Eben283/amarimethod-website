@@ -39,6 +39,8 @@ const VALID_ENGINES = new Set(["reminder", "nurture"]);
 const DEFAULT_FAILURE_WINDOW_HOURS = 168; // one week
 const DEFAULT_ACTIVITY_WINDOW_HOURS = 48; // today + yesterday
 const CRM_WORKER_CONTACTS_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
+const CRM_WORKER_AUTOMATIONS_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/automations/people";
+const CRM_WORKER_FAMILIES_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/automations/families";
 const CRM_WORKER_TIMEOUT_MS = 10_000;
 
 async function contactIdentityForReference(context, contactReference) {
@@ -63,6 +65,42 @@ async function contactIdentityForReference(context, contactReference) {
     };
   } catch {
     return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function workerPersonAutomationEvidence(context, ownedContactId) {
+  if (!context.env.WORKER_AUTH_SECRET) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CRM_WORKER_AUTOMATIONS_URL}/${encodeURIComponent(ownedContactId)}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function workerFamilyAutomationEvidence(context, familyKey) {
+  if (!context.env.WORKER_AUTH_SECRET) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${CRM_WORKER_FAMILIES_URL}/${encodeURIComponent(familyKey)}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
   } finally {
     clearTimeout(timer);
   }
@@ -144,18 +182,21 @@ export async function onRequestGet(context) {
       if (!family) {
         return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
       }
+      const workerExecution = !db ? await workerFamilyAutomationEvidence(context, family.key) : null;
       const execution = db
         ? await automationFamilyExecutionView(db, family)
-        : { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
+        : workerExecution || { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
+      const executionConfigured = Boolean(db || workerExecution?.configured);
+      const executionEvidence = registryEvidence({ executionStoreConfigured: executionConfigured });
       return new Response(JSON.stringify({
         success: true,
-        configured: !!db,
+        configured: executionConfigured,
         registryVersion: REGISTRY_VERSION,
         family,
         ...execution,
         evidence: {
-          ...evidence,
-          gaps: [...family.evidence.gaps, ...evidence.gaps],
+          ...executionEvidence,
+          gaps: [...family.evidence.gaps, ...executionEvidence.gaps, ...(workerExecution?.evidence?.gaps || [])],
         },
       }), { status: 200, headers });
     }
@@ -195,6 +236,22 @@ export async function onRequestGet(context) {
         gaps: [...evidence.gaps, ...contactIdentityGaps(identity.state)],
       };
       if (!db) {
+        const workerEvidence = await workerPersonAutomationEvidence(context, ownedContactId);
+        if (workerEvidence) {
+          const proxiedRegistryEvidence = registryEvidence({ executionStoreConfigured: Boolean(workerEvidence.configured) });
+          return new Response(JSON.stringify({
+            ...workerEvidence,
+            success: true,
+            evidence: {
+              ...proxiedRegistryEvidence,
+              gaps: [
+                ...proxiedRegistryEvidence.gaps,
+                ...contactIdentityGaps(identity.state),
+                ...(workerEvidence.evidence?.gaps || []),
+              ],
+            },
+          }), { status: 200, headers });
+        }
         return new Response(JSON.stringify({
           success: true,
           configured: false,

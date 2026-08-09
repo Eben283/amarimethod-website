@@ -82,6 +82,54 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps person and family automation evidence behind Worker authentication", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {}, AUTOMATION_DB: {} };
+
+    const personResponse = await worker.fetch(new Request("https://crm.test/automations/people/owned_person_1"), env);
+    const familyResponse = await worker.fetch(new Request("https://crm.test/automations/families/initial-session-reminders"), env);
+
+    expect(personResponse.status).toBe(401);
+    expect(familyResponse.status).toBe(401);
+  });
+
+  it("serves one person's owned automation evidence through the Worker-authenticated read seam", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare: () => ({ bind: () => ({ all: async () => ({ results: [{
+          id: "owned_person_1", provider_contact_id: "legacy_ghl_1", display_name: "Eben Forrest",
+        }] }) }) }),
+      },
+      AUTOMATION_DB: { prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }) },
+    };
+    const response = await worker.fetch(new Request("https://crm.test/automations/people/legacy_ghl_1", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      configured: true,
+      contactId: "owned_person_1",
+      providerContactId: "legacy_ghl_1",
+      automationContactIds: ["owned_person_1", "legacy_ghl_1"],
+      enrollments: [],
+      events: [],
+    });
+
+    const familyResponse = await worker.fetch(new Request("https://crm.test/automations/families/initial-session-reminders", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(familyResponse.status).toBe(200);
+    await expect(familyResponse.json()).resolves.toMatchObject({
+      success: true,
+      configured: true,
+      familyKey: "initial-session-reminders",
+      enrollments: [],
+      events: [],
+    });
+  });
+
   it("keeps actor-scoped Gmail reply evidence behind Worker auth and never claims sync is on", async () => {
     const env = {
       WORKER_AUTH_SECRET: "test-secret",
