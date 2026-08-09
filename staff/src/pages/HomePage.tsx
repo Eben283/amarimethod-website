@@ -25,8 +25,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHomeOperations } from '../hooks/useHomeOperations';
 import { memberWorkspacePath } from '../lib/member-workspace';
-import { isHomeOutreachCandidate } from '../lib/outreach-scope';
-import type { OutreachCard, TodayAppointment } from '../types/staff';
+import { selectAcquisitionProspects } from '../lib/outreach-scope';
+import type { TodayAppointment } from '../types/staff';
 import './HomePage.css';
 
 const OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -103,10 +103,14 @@ export default function HomePage() {
   const next = schedule.find((appointment) => scheduleStatus(appointment, now) === 'upcoming');
   const sessionDoor = current || next || null;
   const replies = (state.conversations.data || []).slice(0, 4);
-  const outreach = useMemo(() => [...(state.followUps.data?.cards || [])]
-    .filter(isHomeOutreachCandidate)
-    .sort((a, b) => (b.recommendation?.priority || 0) - (a.recommendation?.priority || 0))
-    .slice(0, 3), [state.followUps.data]);
+  const needsReplyIds = useMemo(
+    () => new Set((state.conversations.data || []).map((conversation) => conversation.contactId)),
+    [state.conversations.data],
+  );
+  const outreach = useMemo(
+    () => selectAcquisitionProspects(state.outreach.data?.prospects || [], 3, needsReplyIds),
+    [needsReplyIds, state.outreach.data],
+  );
   const sickSystems = (state.systems.data?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
   const refreshedLabel = state.refreshedAt
     ? new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' }).format(new Date(state.refreshedAt))
@@ -208,15 +212,15 @@ export default function HomePage() {
 
         <div className="home-replies">
           <header className="home-panel-head">
-            <div><p>Outreach</p><span>{state.followUps.data?.generatedAt ? `Snapshot ${relativeTime(state.followUps.data.generatedAt)}` : 'Proactive contact only'}</span></div>
+            <div><p>New-client outreach</p><span>{state.outreach.data?.generatedAt ? `Prospects updated ${relativeTime(state.outreach.data.generatedAt)}` : 'Prospects only'}</span></div>
             <button type="button" onClick={() => navigate('/outreach')}>Open outreach <ChevronRight aria-hidden="true" /></button>
           </header>
-          <StateMessage loading={state.followUps.loading} error={state.followUps.error}>
-            {outreach.length ? outreach.map((card: OutreachCard) => (
-              <button type="button" key={card.contactId} className="home-followup" onClick={() => navigate(`/client/${card.contactId}`)}>
-                <span><strong>{card.name}</strong><small>{card.recommendation.headline}</small></span><ChevronRight aria-hidden="true" />
+          <StateMessage loading={state.outreach.loading} error={state.outreach.error}>
+            {outreach.length ? outreach.map((prospect) => (
+              <button type="button" key={prospect.contactId} className="home-followup" onClick={() => navigate('/outreach')}>
+                <span><strong>{prospect.fullName}</strong><small>{prospect.derived?.why || 'Ready for a new-client outreach touch'}</small></span><ChevronRight aria-hidden="true" />
               </button>
-            )) : <div className="home-empty">No proactive outreach is due. Incoming messages stay in Communication. <button type="button" onClick={() => navigate('/outreach')}>Review outreach</button></div>}
+            )) : <div className="home-empty">No new-client prospects are due. Current and former clients stay in People. <button type="button" onClick={() => navigate('/outreach')}>Review outreach</button></div>}
           </StateMessage>
         </div>
 

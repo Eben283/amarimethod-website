@@ -7,7 +7,6 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import OwnedFollowupsPanel from '../components/OwnedFollowupsPanel';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
@@ -21,8 +20,9 @@ import type {
 import { withoutNeedsReply } from '../lib/outreach-scope';
 
 // ── OUTREACH SURFACE ──────────────────────────────────────────────────────────
-// Proactive contact only: partner prospects, scheduled future touches, and
-// deliberate re-engagement. Communication owns every inbound message and reply.
+// New-client acquisition only: prospective referral partners and other people
+// who have not converted. Communication owns every inbound message and reply;
+// current/former clients and their care live in People.
 // This page reads the needs-reply index only to exclude those people from
 // proactive outreach; it never renders an inbox row.
 //
@@ -504,7 +504,7 @@ export default function FollowUpPage() {
         <div>
           <h1 className="text-xl font-semibold text-amari-charcoal">Outreach</h1>
           <p className="text-xs text-amari-text-muted">
-            {loading ? 'Loading outreach…' : `${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} relationships tracked`}
+            {loading ? 'Loading prospects…' : `${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} prospects tracked`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -524,7 +524,7 @@ export default function FollowUpPage() {
       </div>
 
       <div className="mb-4 flex items-start justify-between gap-3 border-l-4 border-amari-accent-warm bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-charcoal">
-        <p><strong>Proactive contact only.</strong> Incoming messages and anything waiting for a reply stay in Communication.</p>
+        <p><strong>New-client acquisition only.</strong> Current and former clients stay in People; incoming messages stay in Communication.</p>
         <Link to="/client-desk" className="shrink-0 font-semibold underline underline-offset-2">
           Open Communication{counts.inCommunication ? ` (${counts.inCommunication})` : ''}
         </Link>
@@ -570,15 +570,13 @@ export default function FollowUpPage() {
         </div>
       )}
 
-      <OwnedFollowupsPanel onUnauthorized={logout} />
-
-      {/* search — find anyone across all buckets (same idea as Outreach) */}
+      {/* Search across prospect and set-aside acquisition records only. */}
       <div className="relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amari-text-muted" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search everyone…"
+          placeholder="Search prospects…"
           className="w-full rounded-xl border border-amari-border py-2 pl-9 pr-9 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
         />
         {query && (

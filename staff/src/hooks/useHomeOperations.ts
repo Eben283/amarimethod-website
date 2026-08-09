@@ -3,14 +3,14 @@ import {
   getCalendarSummary,
   getConversations,
   getOpsSystemsBoard,
-  getOutreachCards,
+  getPartnerProspects,
   getStaffRevenue,
   type OpsSystemsBoard,
   type StaffRevenueData,
 } from '../lib/api';
 import type {
   ConversationSummary,
-  OutreachSnapshotResponse,
+  PartnerProspectsResponse,
   TodayAppointment,
 } from '../types/staff';
 
@@ -23,7 +23,7 @@ type HomeResource<T> = {
 export type HomeOperationsState = {
   schedule: HomeResource<TodayAppointment[]>;
   conversations: HomeResource<ConversationSummary[]>;
-  followUps: HomeResource<OutreachSnapshotResponse>;
+  outreach: HomeResource<PartnerProspectsResponse>;
   revenue: HomeResource<StaffRevenueData>;
   systems: HomeResource<OpsSystemsBoard>;
   refreshedAt: number | null;
@@ -50,7 +50,7 @@ export function useHomeOperations() {
   const [state, setState] = useState<HomeOperationsState>({
     schedule: pending(),
     conversations: pending(),
-    followUps: pending(),
+    outreach: pending(),
     revenue: pending(),
     systems: pending(),
     refreshedAt: null,
@@ -70,7 +70,7 @@ export function useHomeOperations() {
       ...current,
       schedule: { ...current.schedule, loading: true, error: null },
       conversations: { ...current.conversations, loading: true, error: null },
-      followUps: { ...current.followUps, loading: true, error: null },
+      outreach: { ...current.outreach, loading: true, error: null },
       revenue: { ...current.revenue, loading: true, error: null },
       systems: { ...current.systems, loading: true, error: null },
     }));
@@ -83,9 +83,9 @@ export function useHomeOperations() {
       .then((result) => update('conversations', { data: result.conversations || [], loading: false, error: null }))
       .catch((error) => update('conversations', { data: null, loading: false, error: message(error, 'Replies could not be loaded.') }));
 
-    void getOutreachCards()
-      .then((data) => update('followUps', { data, loading: false, error: null }))
-      .catch((error) => update('followUps', { data: null, loading: false, error: message(error, 'Outreach could not be loaded.') }));
+    void getPartnerProspects()
+      .then((data) => update('outreach', { data, loading: false, error: null }))
+      .catch((error) => update('outreach', { data: null, loading: false, error: message(error, 'New-client outreach could not be loaded.') }));
 
     void getStaffRevenue(6)
       .then((data) => update('revenue', { data, loading: false, error: null }))

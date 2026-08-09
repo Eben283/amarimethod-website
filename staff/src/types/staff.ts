@@ -580,6 +580,9 @@ export interface PartnerProspect {
   rundown: string | null;
   /** ISO timestamp of last GHL activity event (message in or out, note, etc.), or null if never touched. */
   lastActivityAt: string | null;
+  /** Positive series/session evidence means this person is or was a client and
+   *  must stay in People rather than new-client Outreach. */
+  hasClientEvidence?: boolean;
   /** Active partner = already did the Partner Session (tag `affiliate-partner`). */
   isActivePartner: boolean;
   // New Partner custom fields (may all be null until migration runs):
