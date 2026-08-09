@@ -9,8 +9,8 @@ import ProcessingScreen from './ProcessingScreen';
 import AmariLogo from './AmariLogo';
 import QuizFooter from './QuizFooter';
 
-// ResultsPage is lazy-loaded so its dependency tree (html2canvas, ShareCard, etc.)
-// stays out of the initial welcome-screen bundle.
+// ResultsPage is lazy-loaded so its result-only dependencies stay out of the
+// initial question-flow bundle.
 const ResultsPage = React.lazy(() => import('./results/ResultsPage'));
 
 // A no-submit review state for internal visual approval. It is only enabled
