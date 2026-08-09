@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getCalendarSummary, getDayData, ApiError } from '../lib/api';
+import { memberWorkspacePath } from '../lib/member-workspace';
 import type { TodayAppointment } from '../types/staff';
 import AppointmentCard from '../components/AppointmentCard';
 import SessionDocSheet from '../components/SessionDocSheet';
@@ -268,7 +269,7 @@ export default function TodayPage() {
         <DayView
           appointments={dayAppointments}
           date={selectedDate}
-          onTapAppointment={(appt) => navigate(`/client/${appt.contactId}?appointment=${appt.id}`)}
+          onTapAppointment={(appt) => navigate(memberWorkspacePath(appt.contactId, 'session', appt.id))}
           onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
           onSellLink={(appt) => setSellContactId(appt.contactId)}
         />

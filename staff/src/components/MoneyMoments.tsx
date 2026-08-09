@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, Gift, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { getDayData } from '../lib/api';
+import { memberWorkspacePath } from '../lib/member-workspace';
 import type { TodayAppointment } from '../types/staff';
 
 // "Today's sell moments" — surfaces the 8-pack opportunities hiding in today's
@@ -108,7 +109,7 @@ export default function MoneyMoments() {
             <div key={id} className="rounded-lg border border-amari-border bg-white">
               <button
                 type="button"
-                onClick={() => navigate(`/client/${m.appt.contactId}?appointment=${m.appt.id}`)}
+                onClick={() => navigate(memberWorkspacePath(m.appt.contactId, 'session', m.appt.id))}
                 className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-amari-light-sand"
               >
                 {ICON[m.kind]}

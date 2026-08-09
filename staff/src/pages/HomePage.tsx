@@ -25,6 +25,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHomeOperations } from '../hooks/useHomeOperations';
+import { memberWorkspacePath } from '../lib/member-workspace';
 import type { OutreachCard, TodayAppointment } from '../types/staff';
 import './HomePage.css';
 
@@ -78,7 +79,7 @@ function scheduleStatus(appointment: TodayAppointment, now: number) {
 }
 
 function appointmentRoute(appointment: TodayAppointment) {
-  return `/client/${appointment.contactId}?appointment=${appointment.id}`;
+  return memberWorkspacePath(appointment.contactId, 'session', appointment.id);
 }
 
 function StateMessage({ loading, error, children }: { loading: boolean; error: string | null; children: React.ReactNode }) {
