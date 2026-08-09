@@ -3,12 +3,13 @@ import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft, ArrowUpRight, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
   ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
-  CalendarDays, CircleDollarSign, Dumbbell,
+  CalendarDays, CircleDollarSign, Dumbbell, BookOpenText, Focus,
   NotebookPen, Workflow,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import { automationDrilldownPath } from '../lib/automation-navigation';
+import { memberWorkspacePath, type MemberWorkspaceSurface } from '../lib/member-workspace';
 import { buildGoogleReviewRequest } from '../lib/review-request';
 import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
@@ -81,13 +82,14 @@ function splitNoteBody(body: string): { text: string; signature: string | null }
   return { text, signature };
 }
 
-export default function ClientDetailPage() {
+export default function ClientDetailPage({ surface = 'record' }: { surface?: MemberWorkspaceSurface }) {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');
   const debugMode = searchParams.get('debug') === '1';
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const isSession = surface === 'session';
 
   const [client, setClient] = useState<ContactDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -318,7 +320,12 @@ export default function ClientDetailPage() {
   // contact request. If the D1 evidence spine is unavailable, the rest of the
   // person workspace still renders and says exactly what is missing.
   useEffect(() => {
-    if (!id) return;
+    if (!id || isSession) {
+      setAutomationEvidence(null);
+      setAutomationEvidenceError('');
+      setAutomationEvidenceLoading(false);
+      return;
+    }
     let cancelled = false;
     setAutomationEvidence(null);
     setAutomationEvidenceError('');
@@ -335,7 +342,7 @@ export default function ClientDetailPage() {
       })
       .finally(() => { if (!cancelled) setAutomationEvidenceLoading(false); });
     return () => { cancelled = true; };
-  }, [id, logout]);
+  }, [id, isSession, logout]);
 
   // Refetch when the tab regains focus.
   useEffect(() => {
@@ -417,6 +424,9 @@ export default function ClientDetailPage() {
   const sessionAppointment = appointmentId
     ? client.appointments.find((appointment) => appointment.id === appointmentId)
     : undefined;
+  const currentVisit = sessionAppointment || nextAppointment || client.appointments
+    .filter((appointment) => appointment.status !== 'cancelled')
+    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())[0];
   const canRequestReview = Boolean(sessionAppointment && client.phone);
 
   // A client has agreed to the practice-member agreement via EITHER flow:
@@ -429,6 +439,15 @@ export default function ClientDetailPage() {
   const SIGNED_TAGS = ['policies-signed-practice-member-v2026-04-17', 'agreed-pma-v2026-04-17'];
   const alreadySigned = client.agreementSigned ?? SIGNED_TAGS.some((t) => client.tags.includes(t));
   const quiz = client.quizResults;
+  const visibleNotes = client.notes.filter((note) => !isSystemNote(note.body));
+  const currentVisitDate = currentVisit ? new Date(currentVisit.startTime) : null;
+  const currentVisitAttended = currentVisit ? currentVisit.status === 'showed' || currentVisit.status === 'completed' : false;
+  const currentVisitCanMark = Boolean(currentVisit && currentVisitDate
+    && currentVisitDate.getTime() <= Date.now() + 2 * 60 * 60 * 1000
+    && !currentVisitAttended && currentVisit.status !== 'cancelled');
+  const currentVisitIsGift = Boolean(currentVisit
+    && (/partner initial/i.test(currentVisit.calendarName || '') || /partner initial/i.test(currentVisit.title || '')));
+  const currentVisitChoosingPayment = Boolean(currentVisit && payingApptId === currentVisit.id);
 
   return (
     <div className="sa">
@@ -452,39 +471,87 @@ export default function ClientDetailPage() {
           <div>
             <div className="sa-id-name">{fullName}</div>
             <div className="sa-id-sub">
-              <span className="sa-chip"><User size={13} />{roleWord} · {visitLabel(client).toLowerCase()}</span>
+              <span className="sa-chip"><User size={13} />{roleWord}</span>
+              <span className="sa-surface-kicker">{isSession ? 'In session' : 'Member record'}</span>
             </div>
           </div>
         </div>
-        <div className="sa-context" aria-label="Practice member context">
-          <span><b>Email</b>{client.email || 'Not on file'}</span>
-          <span><b>Mobile</b>{client.phone || 'Not on file'}</span>
-          <span><b>Next appointment</b>{nextAppointment ? fmtDateTime(nextAppointment.startTime) : 'None scheduled'}</span>
-          <span><b>Sessions left</b>{client.sessionsRemaining}</span>
-          <span><b>Balance</b>{owed?.status === 'owed' ? `${owed.shortBy || 0} session${owed.shortBy === 1 ? '' : 's'} owed` : owed?.status === 'square' ? 'Paid up' : 'Verify if needed'}</span>
+        <nav className="sa-surface-switch" aria-label={`${fullName} workspace`}>
+          <Link
+            className={!isSession ? 'is-active' : undefined}
+            to={memberWorkspacePath(client.id, 'record', appointmentId)}
+            aria-current={!isSession ? 'page' : undefined}
+          >
+            <BookOpenText size={17} />
+            <span><b>Member record</b><small>History, workflows, money and admin</small></span>
+          </Link>
+          <Link
+            className={isSession ? 'is-active' : undefined}
+            to={memberWorkspacePath(client.id, 'session', appointmentId)}
+            aria-current={isSession ? 'page' : undefined}
+          >
+            <Focus size={17} />
+            <span><b>In session</b><small>Today’s visit, practice work and notes</small></span>
+          </Link>
+        </nav>
+        <div className={`sa-context${isSession ? ' is-session' : ''}`} aria-label={isSession ? 'Current session context' : 'Practice member context'}>
+          {isSession ? (
+            <>
+              <span><b>Visit</b>{currentVisit ? `${fmtDate(currentVisit.startTime)} · ${fmtTime(currentVisit.startTime)}` : 'No visit selected'}</span>
+              <span><b>Visit type</b>{currentVisit ? currentVisit.title : visitLabel(client)}</span>
+              <span><b>Sessions left</b>{client.sessionsRemaining}</span>
+            </>
+          ) : (
+            <>
+              <span><b>Email</b>{client.email || 'Not on file'}</span>
+              <span><b>Mobile</b>{client.phone || 'Not on file'}</span>
+              <span><b>Next appointment</b>{nextAppointment ? fmtDateTime(nextAppointment.startTime) : 'None scheduled'}</span>
+              <span><b>Sessions left</b>{client.sessionsRemaining}</span>
+              <span><b>Balance</b>{owed?.status === 'owed' ? `${owed.shortBy || 0} session${owed.shortBy === 1 ? '' : 's'} owed` : owed?.status === 'square' ? 'Paid up' : 'Verify if needed'}</span>
+            </>
+          )}
         </div>
-        <nav className="sa-workspace-nav" aria-label={`${fullName} session workspace`}>
-          <a href="#overview"><User size={15} />Overview</a>
-          <a href="#workflows"><Workflow size={15} />Workflows</a>
-          <a href="#sessions"><Dumbbell size={15} />Sessions</a>
-          <a href="#appointments"><CalendarDays size={15} />Appointments</a>
-          <a href="#money"><CircleDollarSign size={15} />Money</a>
-          <a href="#notes"><NotebookPen size={15} />Notes</a>
+        <nav className="sa-workspace-nav" aria-label={isSession ? `${fullName} in-session sections` : `${fullName} member record sections`}>
+          {isSession ? (
+            <>
+              <a href="#session-brief"><User size={15} />Brief</a>
+              <a href="#current-visit"><CalendarDays size={15} />Current visit</a>
+              <a href="#practice-work"><Dumbbell size={15} />Practice work</a>
+              <a href="#session-note"><NotebookPen size={15} />Session note</a>
+            </>
+          ) : (
+            <>
+              <a href="#record-overview"><User size={15} />Record</a>
+              <a href="#workflows"><Workflow size={15} />Workflows</a>
+              <a href="#money"><CircleDollarSign size={15} />Money</a>
+              <a href="#sessions"><Dumbbell size={15} />Sessions</a>
+              <a href="#appointments"><CalendarDays size={15} />Appointments</a>
+              <a href="#notes"><NotebookPen size={15} />Notes</a>
+            </>
+          )}
         </nav>
       </header>
 
       <main className="sa-body">
-        {/* ============ IN SESSION ============ */}
-        <div id="overview" className="sa-anchor" aria-hidden="true" />
-        <div className="sa-group"><span className="gm" /><span className="gt">Overview</span><span className="gs">What matters for this practice member now</span><span className="gl" /></div>
+        <div id={isSession ? 'session-brief' : 'record-overview'} className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">{isSession ? 'Session brief' : 'Member record'}</span><span className="gs">{isSession ? 'What matters in the room today' : 'Long-term relationship and administrative record'}</span><span className="gl" /></div>
 
-        <section className="sa-brief">
-          <span className="lbl">Person brief</span>
-          <p>{buildSessionBrief(client)}</p>
-        </section>
+        {isSession ? (
+          <section className="sa-brief sa-session-opening">
+            <span className="lbl">Arrive with context</span>
+            <p>{buildSessionBrief(client)}</p>
+          </section>
+        ) : (
+          <section className="sa-record-overview" aria-label="Member record overview">
+            <div><span className="lbl">Relationship</span><strong>{roleWord}</strong><small>Added {fmtDate(client.dateAdded)}</small></div>
+            <div><span className="lbl">Agreement</span><strong>{alreadySigned ? 'Signed' : 'Needs signature'}</strong><small>{alreadySigned ? 'Practice agreement is on file' : 'Open the signing handoff below'}</small></div>
+            <div><span className="lbl">Communication</span><strong>{client.messages.length} mirrored</strong><button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}>Open complete chronology <ArrowUpRight size={13} /></button></div>
+            <div><span className="lbl">Tags</span><strong>{client.tags.length}</strong><small>{client.tags.slice(0, 3).join(' · ') || 'No tags mirrored'}</small></div>
+          </section>
+        )}
 
         {/* policy agreement — one-time signature, only shown until signed */}
-        {!alreadySigned && (
+        {!isSession && !alreadySigned && (
           <button
             className="sa-qbtn is-accent"
             onClick={() => navigate(`/check-in/${client.id}`)}
@@ -497,55 +564,10 @@ export default function ClientDetailPage() {
           </button>
         )}
 
-        {canRequestReview && (
-          <div>
-            <button
-              className={`sa-paytrigger${reviewOpen ? ' open' : ''}${reviewStatus === 'sent' ? ' is-sent' : ''}`}
-              onClick={toggleReviewComposer}
-              disabled={reviewStatus === 'sending' || reviewStatus === 'sent'}
-            >
-              <span className="ic">
-                {reviewStatus === 'sending' ? <Loader2 size={17} className="sa-spin" /> : reviewStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}
-              </span>
-              <span className="tx">
-                <b>{reviewStatus === 'sent' ? 'Google review request sent' : 'Ask for a Google review'}</b>
-                <span>{reviewStatus === 'sent' ? 'Logged in the client’s communication history' : 'Review, edit, then send a text to this client'}</span>
-              </span>
-              {reviewStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
-            </button>
-            <div className={`sa-collapse${reviewOpen && reviewStatus !== 'sent' ? ' open' : ''}`}>
-              <div className="sa-collapse-in sa-review-compose">
-                <label htmlFor="google-review-message">SMS to {client.firstName || fullName}</label>
-                <textarea
-                  id="google-review-message"
-                  value={reviewMessage}
-                  onChange={(event) => setReviewMessage(event.target.value)}
-                  maxLength={720}
-                  rows={5}
-                  aria-describedby="google-review-message-help"
-                />
-                <div id="google-review-message-help" className="sa-review-compose-meta">
-                  <span>Editable before sending</span>
-                  <span>{reviewMessage.length}/720</span>
-                </div>
-                {reviewError && <div className={reviewStatus === 'sent' ? 'sa-review-note' : 'sa-errbar'}>{reviewError}</div>}
-                <button
-                  className={`sa-pay-row${reviewStatus === 'error' ? ' is-error' : ''}`}
-                  onClick={handleSendReviewRequest}
-                  disabled={reviewStatus === 'sending' || !reviewMessage.trim()}
-                >
-                  <span className="ic">{reviewStatus === 'sending' ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
-                  <span className="nm">{reviewStatus === 'sending' ? 'Sending…' : reviewStatus === 'error' ? 'Try sending again' : 'Send Google review request'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* partner toolkit — pinned near the top; mirrors the pay-link pattern:
             tap to reveal a confirm, then tap to actually send (it fires a real
             message to the client, so no single-press accidental sends). */}
-        {isPartner && <div>
+        {!isSession && isPartner && <div>
           <button
             className={`sa-paytrigger${toolkitOpen ? ' open' : ''}`}
             onClick={() => toolkitStatus === 'sent' ? undefined : setToolkitOpen((v) => !v)}
@@ -571,6 +593,7 @@ export default function ClientDetailPage() {
           </div>
         </div>}
 
+        {!isSession && <>
         {/* ============ READ-ONLY WORKFLOW INSIGHT ============ */}
         <div id="workflows" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group"><span className="gm" /><span className="gt">Workflows</span><span className="gs">What is active, next, and recently happened</span><span className="gl" /></div>
@@ -656,7 +679,9 @@ export default function ClientDetailPage() {
             <button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}><MessageSquareText size={15} />Open this person in Communication</button>
           </div>
         </section>
+        </>}
 
+        {!isSession && <>
         {/* ============ ADMIN & CHECKOUT ============ */}
         <div id="money" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group admin"><span className="gm" /><span className="gt">Money</span><span className="gs">Payment, products, and purchase record</span><span className="gl" /></div>
@@ -720,9 +745,11 @@ export default function ClientDetailPage() {
             </div>
           </section>
         )}
+        </>}
 
+        {!isSession && <>
         <div id="sessions" className="sa-anchor" aria-hidden="true" />
-        <div className="sa-group"><span className="gm" /><span className="gt">Sessions</span><span className="gs">Progress, practice work, and session context</span><span className="gl" /></div>
+        <div className="sa-group"><span className="gm" /><span className="gt">Sessions</span><span className="gs">Package history and remaining sessions</span><span className="gl" /></div>
 
         {/* session progress */}
         <section className="sa-card">
@@ -752,9 +779,57 @@ export default function ClientDetailPage() {
           {totalSessions > 0 && <div className="sa-prog-bar"><i style={{ width: progressPct + '%' }} /></div>}
           {isReturning && <p className="sa-prog-foot">{client.sessionsCompleted} lifetime sessions</p>}
         </section>
+        </>}
+
+        {isSession && <>
+        <div id="current-visit" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Current visit</span><span className="gs">The one appointment being worked now</span><span className="gl" /></div>
+        <section className="sa-current-visit">
+          {currentVisit ? (
+            <>
+              <div className="sa-current-visit-time"><span>{fmtDate(currentVisit.startTime)}</span><strong>{fmtTime(currentVisit.startTime)}</strong></div>
+              <div className="sa-current-visit-main"><span className="lbl">Visit</span><h2>{currentVisit.title}</h2><p>{currentVisit.calendarName || 'Calendar not mirrored'} · {humanizeEvidence(currentVisit.status || 'status not mirrored')}</p></div>
+              <div className="sa-current-visit-state">
+                <span className="lbl">Visit status</span>
+                {currentVisitAttended ? (
+                  <strong className="is-complete">Attended</strong>
+                ) : currentVisitCanMark ? (
+                  <button
+                    className="sa-mark-current"
+                    disabled={markingAttended === currentVisit.id}
+                    onClick={() => {
+                      if (client.sessionsRemaining > 0 && client.seriesType !== 'none') handleMarkAttended(currentVisit);
+                      else if (currentVisitIsGift) handleMarkAttended(currentVisit, { paymentStatus: 'comped', compNote: 'Partner gift' });
+                      else { setPayingApptId(currentVisit.id); setCompNoteDraft(''); }
+                    }}
+                  >{markingAttended === currentVisit.id ? 'Marking…' : 'Mark attended'}</button>
+                ) : <strong>{humanizeEvidence(currentVisit.status || 'Scheduled')}</strong>}
+                <small>{client.sessionsRemaining} session{client.sessionsRemaining === 1 ? '' : 's'} left</small>
+              </div>
+            </>
+          ) : (
+            <p className="sa-empty">No appointment is selected. Open this workspace from Calendar to anchor it to a visit.</p>
+          )}
+        </section>
+        {currentVisit && currentVisitChoosingPayment && (
+          <section className="sa-payment-choice" aria-label="Attendance payment choice">
+            <strong>How was this visit paid?</strong>
+            <div>
+              <button disabled={markingAttended === currentVisit.id} style={PAY_BTN} onClick={() => handleMarkAttended(currentVisit, { paymentStatus: 'paid', paymentMethod: 'stripe' })}>Paid (card)</button>
+              <button disabled={markingAttended === currentVisit.id} style={PAY_BTN} onClick={() => handleMarkAttended(currentVisit, { paymentStatus: 'paid', paymentMethod: 'cash' })}>Paid (cash)</button>
+              <button disabled={markingAttended === currentVisit.id} style={PAY_BTN} onClick={() => handleMarkAttended(currentVisit, { paymentStatus: 'pay-next-visit' })}>Owes — pay next visit</button>
+              <button disabled={markingAttended === currentVisit.id} style={PAY_BTN} onClick={() => handleMarkAttended(currentVisit, { paymentStatus: 'comped', compNote: compNoteDraft.trim() || 'Comp' })}>Comp / free</button>
+            </div>
+            <label>Comp reason (optional)<input value={compNoteDraft} onChange={(event) => setCompNoteDraft(event.target.value)} /></label>
+            <button type="button" className="sa-payment-cancel" onClick={() => { setPayingApptId(null); setCompNoteDraft(''); }}>Cancel</button>
+          </section>
+        )}
+
+        <div id="intake-context" className="sa-anchor" aria-hidden="true" />
+        <div className="sa-group"><span className="gm" /><span className="gt">Starting context</span><span className="gs">Intake evidence, not the whole record</span><span className="gl" /></div>
 
         {/* quiz results */}
-        {quiz && (
+        {quiz ? (
           <section className="sa-card">
             <div className="sa-card-h"><span className="t">Quiz results</span></div>
             <div className="sa-kv">
@@ -767,17 +842,11 @@ export default function ClientDetailPage() {
               {quiz.dailyImpact && <div className="row"><span className="k">Daily impact</span><span className="v">{quiz.dailyImpact}</span></div>}
             </div>
           </section>
-        )}
+        ) : <section className="sa-brief"><span className="lbl">Intake</span><p>No structured quiz answers are mirrored. Start with the person brief and let them describe what is present today.</p></section>}
 
         {/* Field Studies is deliberately a niche, tagged-person section—not a
             primary CRM destination or a generic person-workspace capability. */}
-        {study && (
-          <section className="sa-specialist">
-            <div className="sa-specialist-label">Specialist study record</div>
-            <StudyCapturePanel contactId={client.id} study={study} />
-          </section>
-        )}
-
+        <div id="practice-work" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group sa-subgroup"><span className="gm" /><span className="gt">Practice work</span><span className="gs">Modules and body map</span><span className="gl" /></div>
 
         {/* modules taught + body map — side by side on wider screens, stacked on narrow */}
@@ -822,6 +891,15 @@ export default function ClientDetailPage() {
           <BodyMapCanvas data={progress} onUpdate={handleProgressUpdate} />
         </div>
         </div>
+        </>}
+
+        {!isSession && <>
+        {study && (
+          <section className="sa-specialist">
+            <div className="sa-specialist-label">Specialist study record</div>
+            <StudyCapturePanel contactId={client.id} study={study} />
+          </section>
+        )}
 
         <div id="appointments" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group"><span className="gm" /><span className="gt">Appointments</span><span className="gs">Past and future visits in one record</span><span className="gl" /></div>
@@ -927,7 +1005,63 @@ export default function ClientDetailPage() {
             </div>
           )}
         </section>
+        </>}
 
+        {isSession && <>
+          <div id="session-note" className="sa-anchor" aria-hidden="true" />
+          <div className="sa-group"><span className="gm" /><span className="gt">Session note</span><span className="gs">Capture what changed before leaving the room</span><span className="gl" /></div>
+          <section className="sa-session-note">
+            <div className="sa-session-note-prompt">
+              <span className="lbl">Close the loop</span>
+              <h2>What did you find, change, and want to carry forward?</h2>
+              <p>A note saved here becomes part of the Member Record. The complete note history stays out of the live-session workspace.</p>
+              <button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add this session’s note</button>
+            </div>
+            <div className="sa-session-note-recent">
+              <span className="lbl">Most recent context</span>
+              {visibleNotes.slice(0, 2).length ? visibleNotes.slice(0, 2).map((note) => {
+                const parsed = splitNoteBody(note.body);
+                return <article key={note.id}><time>{fmtDate(note.dateAdded)}</time><p>{parsed.text || 'Signed record'}</p></article>;
+              }) : <p className="sa-empty">No prior human notes are mirrored.</p>}
+              <Link to={memberWorkspacePath(client.id, 'record') + '#notes'}>Open complete note history <ArrowUpRight size={13} /></Link>
+            </div>
+          </section>
+          {canRequestReview && (
+            <section className="sa-after-session">
+              <span className="lbl">After the session</span>
+              <div>
+                <button
+                  className={`sa-paytrigger${reviewOpen ? ' open' : ''}${reviewStatus === 'sent' ? ' is-sent' : ''}`}
+                  onClick={toggleReviewComposer}
+                  disabled={reviewStatus === 'sending' || reviewStatus === 'sent'}
+                >
+                  <span className="ic">
+                    {reviewStatus === 'sending' ? <Loader2 size={17} className="sa-spin" /> : reviewStatus === 'sent' ? <CheckCircle2 size={17} /> : <Send size={17} />}
+                  </span>
+                  <span className="tx">
+                    <b>{reviewStatus === 'sent' ? 'Google review request sent' : 'Ask for a Google review'}</b>
+                    <span>{reviewStatus === 'sent' ? 'Logged in the client’s communication history' : 'Review, edit, then explicitly send a text'}</span>
+                  </span>
+                  {reviewStatus !== 'sent' && <span className="cv"><ChevronRight size={18} /></span>}
+                </button>
+                <div className={`sa-collapse${reviewOpen && reviewStatus !== 'sent' ? ' open' : ''}`}>
+                  <div className="sa-collapse-in sa-review-compose">
+                    <label htmlFor="google-review-message">SMS to {client.firstName || fullName}</label>
+                    <textarea id="google-review-message" value={reviewMessage} onChange={(event) => setReviewMessage(event.target.value)} maxLength={720} rows={5} aria-describedby="google-review-message-help" />
+                    <div id="google-review-message-help" className="sa-review-compose-meta"><span>Editable before sending</span><span>{reviewMessage.length}/720</span></div>
+                    {reviewError && <div className={reviewStatus === 'sent' ? 'sa-review-note' : 'sa-errbar'}>{reviewError}</div>}
+                    <button className={`sa-pay-row${reviewStatus === 'error' ? ' is-error' : ''}`} onClick={handleSendReviewRequest} disabled={reviewStatus === 'sending' || !reviewMessage.trim()}>
+                      <span className="ic">{reviewStatus === 'sending' ? <Loader2 size={15} className="sa-spin" /> : <Send size={15} />}</span>
+                      <span className="nm">{reviewStatus === 'sending' ? 'Sending…' : reviewStatus === 'error' ? 'Try sending again' : 'Send Google review request'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </>}
+
+        {!isSession && <>
         <div id="notes" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group"><span className="gm" /><span className="gt">Notes</span><span className="gs">Human context and signed records</span><span className="gl" /></div>
 
@@ -956,6 +1090,7 @@ export default function ClientDetailPage() {
             );
           })()}
         </section>
+        </>}
 
         {/* debug */}
         {debugMode && (client as unknown as { _debug?: unknown })._debug != null && (
@@ -965,7 +1100,7 @@ export default function ClientDetailPage() {
           </div>
         )}
 
-        <footer className="sa-foot">amarimethod · staff session</footer>
+        <footer className="sa-foot">amarimethod · {isSession ? 'in session' : 'member record'}</footer>
       </main>
 
       {showAddNote && (
