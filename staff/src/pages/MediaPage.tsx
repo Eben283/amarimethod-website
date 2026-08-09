@@ -188,6 +188,37 @@ export default function MediaPage() {
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === searchParams.get('asset')) || null, [assets, searchParams]);
   const currentFolder = folders.find((folder) => folder.id === folderId) || null;
   const childFolders = folders.filter((folder) => folder.status === 'active' && (folder.parentId || null) === folderId);
+  const folderStats = useMemo(() => {
+    const activeFolders = folders.filter((folder) => folder.status === 'active');
+    const directAssets = new Map<string, number>();
+    for (const asset of assets) {
+      if (asset.status !== 'active' || !asset.folderId) continue;
+      directAssets.set(asset.folderId, (directAssets.get(asset.folderId) || 0) + 1);
+    }
+    const childIds = new Map<string, string[]>();
+    for (const folder of activeFolders) {
+      if (!folder.parentId) continue;
+      childIds.set(folder.parentId, [...(childIds.get(folder.parentId) || []), folder.id]);
+    }
+    const totals = new Map<string, { assetCount: number; childFolderCount: number }>();
+    const countFolder = (id: string): { assetCount: number; childFolderCount: number } => {
+      const cached = totals.get(id);
+      if (cached) return cached;
+      const children = childIds.get(id) || [];
+      const summary = children.reduce((result, childId) => {
+        const child = countFolder(childId);
+        return { assetCount: result.assetCount + child.assetCount, childFolderCount: result.childFolderCount + child.childFolderCount + 1 };
+      }, { assetCount: directAssets.get(id) || 0, childFolderCount: 0 });
+      totals.set(id, summary);
+      return summary;
+    };
+    activeFolders.forEach((folder) => countFolder(folder.id));
+    return totals;
+  }, [assets, folders]);
+  const folderSummary = (folder: StaffMediaFolder) => {
+    const summary = folderStats.get(folder.id) || { assetCount: 0, childFolderCount: 0 };
+    return summary.childFolderCount ? `${summary.childFolderCount} folder${summary.childFolderCount === 1 ? '' : 's'} · ${summary.assetCount} assets` : `${summary.assetCount} file${summary.assetCount === 1 ? '' : 's'}`;
+  };
   const visibleAssets = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return assets.filter((asset) => {
@@ -279,7 +310,7 @@ export default function MediaPage() {
           <span>Library</span>
           <button type="button" className={!folderId && !showArchived ? 'is-active' : ''} onClick={() => { setFolderId(null); setShowArchived(false); }}><ImageIcon /> All media <small>{assets.filter((asset) => asset.status === 'active').length}</small></button>
           {folders.filter((folder) => folder.status === 'active' && !folder.parentId).map((folder) => (
-            <button key={folder.id} type="button" className={folder.id === folderId && !showArchived ? 'is-active' : ''} onClick={() => { setFolderId(folder.id); setShowArchived(false); }}><Folder /> {folder.name}<small>{assets.filter((asset) => asset.status === 'active' && asset.folderId === folder.id).length}</small></button>
+            <button key={folder.id} type="button" className={folder.id === folderId && !showArchived ? 'is-active' : ''} onClick={() => { setFolderId(folder.id); setShowArchived(false); }}><Folder /> {folder.name}<small>{folderStats.get(folder.id)?.assetCount || 0}</small></button>
           ))}
           <button type="button" className={showArchived ? 'is-active' : ''} onClick={() => { setShowArchived(true); setFolderId(null); }}><Archive /> Archived <small>{assets.filter((asset) => asset.status === 'archived').length}</small></button>
         </aside>
@@ -292,7 +323,7 @@ export default function MediaPage() {
             <div className="staff-media-view"><button type="button" className={view === 'grid' ? 'is-active' : ''} onClick={() => setView('grid')} aria-label="Grid view"><Grid2X2 /></button><button type="button" className={view === 'list' ? 'is-active' : ''} onClick={() => setView('list')} aria-label="List view"><List /></button></div>
           </div>
 
-          {!showArchived && !query && childFolders.length ? <div className="staff-media-folder-grid">{childFolders.map((folder) => <button key={folder.id} type="button" onClick={() => setFolderId(folder.id)}><Folder /><span><strong>{folder.name}</strong><small>{assets.filter((asset) => asset.status === 'active' && asset.folderId === folder.id).length} files</small></span></button>)}</div> : null}
+          {!showArchived && !query && childFolders.length ? <div className="staff-media-folder-grid">{childFolders.map((folder) => <button key={folder.id} type="button" onClick={() => setFolderId(folder.id)}><Folder /><span><strong>{folder.name}</strong><small>{folderSummary(folder)}</small></span></button>)}</div> : null}
 
           <div className={`staff-media-dropzone${dragging ? ' is-dragging' : ''}`} onDragEnter={(event) => { event.preventDefault(); setDragging(true); }} onDragOver={(event) => event.preventDefault()} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragging(false); }} onDrop={dropped}>
             {loading ? <div className="staff-media-empty"><Loader2 className="is-spinning" /><strong>Opening the library…</strong></div> : visibleAssets.length ? (
