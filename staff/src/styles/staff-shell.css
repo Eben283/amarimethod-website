@@ -380,6 +380,20 @@
 .practice-rail__specialists .practice-rail__marker { display: none; }
 .practice-rail__specialists .practice-rail__copy small { display: none; }
 
+.practice-rail__settings {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(203, 222, 220, .13);
+}
+
+.practice-rail__settings .practice-rail__link {
+  grid-template-columns: 19px minmax(0, 1fr);
+  min-height: 42px;
+  padding-left: 16px;
+}
+
+.practice-rail__settings .practice-rail__marker { display: none; }
+
 .practice-rail__foot {
   display: flex;
   align-items: center;

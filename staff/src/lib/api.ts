@@ -49,6 +49,70 @@ export async function staffLogin(pin: string): Promise<{ authenticated: boolean;
   });
 }
 
+export type CommunicationChannel = 'in_app' | 'email' | 'sms';
+export type CommunicationCadence = 'immediate' | 'digest';
+export type CommunicationChannelStatus = 'live' | 'surface_only' | 'not_wired';
+
+export interface CommunicationCategoryPreference {
+  enabled: boolean;
+  cadence: CommunicationCadence;
+  channels: Record<CommunicationChannel, boolean>;
+}
+
+export interface TeamCommunicationPreferences {
+  version: number;
+  timezone: string;
+  quietHours: { enabled: boolean; start: string; end: string };
+  categories: Record<string, CommunicationCategoryPreference>;
+  escalation: {
+    enabled: boolean;
+    afterMinutes: number;
+    fallbackChannel: 'sms' | 'email' | null;
+    fallbackStaff: string | null;
+  };
+}
+
+export interface CommunicationCurrentRoute {
+  id: string;
+  label: string;
+  description: string;
+  currentOwner: string;
+  currentCadence: CommunicationCadence;
+  currentRoute: string;
+  channels: Record<CommunicationChannel, CommunicationChannelStatus>;
+}
+
+export interface ExternalCommunicationRoute {
+  id: string;
+  label: string;
+  currentRoute: string;
+  controlStatus: 'external';
+}
+
+export interface TeamCommunicationPreferencesResponse {
+  success: true;
+  user: string;
+  preferences: TeamCommunicationPreferences;
+  saved: boolean;
+  storageAvailable: boolean;
+  updatedAt: string | null;
+  appliedToDelivery: false;
+  deliveryControlStatus: 'foundation_only';
+  currentRoutes: CommunicationCurrentRoute[];
+  externalRoutes: ExternalCommunicationRoute[];
+}
+
+export async function getTeamCommunicationPreferences(): Promise<TeamCommunicationPreferencesResponse> {
+  return fetchApi('/staff-communication-preferences');
+}
+
+export async function saveTeamCommunicationPreferences(preferences: TeamCommunicationPreferences): Promise<TeamCommunicationPreferencesResponse> {
+  return fetchApi('/staff-communication-preferences', {
+    method: 'PUT',
+    body: JSON.stringify({ preferences }),
+  });
+}
+
 export async function getDayData(date?: string, endDate?: string, includeCancelled?: boolean): Promise<import('../types/staff').TodayAppointment[]> {
   const params = new URLSearchParams();
   if (date) params.set('date', date);

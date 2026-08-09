@@ -25,6 +25,7 @@ const ProductsPage = lazy(() => import('./pages/ProductsPage'));
 const MediaPage = lazy(() => import('./pages/MediaPage'));
 const OperationsPage = lazy(() => import('./pages/OperationsPage'));
 const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
+const CommunicationPreferencesPage = lazy(() => import('./pages/CommunicationPreferencesPage'));
 
 function SurfaceLoader() {
   return (
@@ -107,6 +108,7 @@ function AppRoutes() {
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />
         <Route path="media" element={<Layout><MediaPage /></Layout>} />
+        <Route path="settings/communication" element={<Layout><CommunicationPreferencesPage /></Layout>} />
         {/* Retired route names keep their existing destinations. */}
         <Route path="triage" element={<Navigate to="/" replace />} />
         <Route path="messages" element={<Navigate to="/client-desk" replace />} />

@@ -15,6 +15,7 @@ import {
   MessageSquareText,
   Images,
   Package,
+  BellRing,
   Search,
   ShoppingBag,
   Sparkles,
@@ -76,6 +77,13 @@ const SPECIALIST_ITEMS: RailItem[] = [
   { label: 'Ask Amari', detail: 'Chief of Staff', to: '/cos', Icon: Sparkles },
   { label: 'Field Studies', detail: 'Specialist study records', to: '/field-studies', Icon: ClipboardPlus },
 ];
+
+const SETTINGS_ITEM: RailItem = {
+  label: 'Notifications',
+  detail: 'Team communication preferences',
+  to: '/settings/communication',
+  Icon: BellRing,
+};
 
 function itemIsActive(item: RailItem, pathname: string) {
   if (item.matches) return item.matches(pathname);
@@ -261,6 +269,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
 
   const currentItem = useMemo(
     () => SPECIALIST_ITEMS.find((item) => itemIsCurrent(item, location.pathname))
+      || (itemIsActive(SETTINGS_ITEM, location.pathname) ? SETTINGS_ITEM : undefined)
       || PRIMARY_ITEMS.find((item) => itemIsActive(item, location.pathname)),
     [location.pathname],
   );
@@ -350,6 +359,10 @@ export default function StaffShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
         </div>
+
+        <nav className="practice-rail__settings" aria-label="Staff settings">
+          <RailLink item={SETTINGS_ITEM} count={null} onChoose={closeDrawer} />
+        </nav>
 
         <div className="practice-rail__foot">
           <span><i aria-hidden="true" /> Staff workspace</span>
