@@ -12,7 +12,8 @@ import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, 
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
-import { sendAssessmentTestEmail } from "./gmail-test-send.js";
+import { sendOwnedEmail } from "./gmail-test-send.js";
+import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from "./initial-in-person-cutover.js";
 
 /**
  * React to an appointment event: enroll into flows whose enrollOn matches, cancel flows whose
@@ -116,11 +117,16 @@ export async function runSweep(env, nowMs, limit = 100) {
     // fails loudly rather than sending a blank message. Shadow flows never reach this.
     renderMessage: async () => { throw new Error("active-mode templates not built yet"); },
     send: (msg) => sendConversationMessage({ env }, msg),
-    testDelivery: async (flow, step, enrollment) => {
+    controlledDelivery: async (flow, step, enrollment) => {
       const gate = assessmentTestEligibility(env, flow, step, enrollment);
       if (gate.eligible) {
         const message = await renderAssessmentConfirmation(env, enrollment);
-        return { handled: true, recipient: gate.recipient, result: await sendAssessmentTestEmail(env, { to: gate.recipient, ...message }) };
+        return { handled: true, kind: "test", recipient: gate.recipient, result: await sendOwnedEmail(env, { to: gate.recipient, ...message }) };
+      }
+      const fullCutover = initialInPersonCutoverEligibility(env, flow, step, enrollment);
+      if (fullCutover.eligible) {
+        const result = await deliverInitialInPersonStep(env, step, enrollment);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
       const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
       if (!cutover.eligible) return null;
@@ -128,7 +134,7 @@ export async function runSweep(env, nowMs, limit = 100) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(message.recipient)) {
         return { handled: true, recipient: null, result: { success: false, error: "Assessment contact email is unavailable" } };
       }
-      return { handled: true, recipient: message.recipient, result: await sendAssessmentTestEmail(env, { to: message.recipient, ...message }) };
+      return { handled: true, kind: "cutover", recipient: message.recipient, result: await sendOwnedEmail(env, { to: message.recipient, ...message }) };
     },
   };
 

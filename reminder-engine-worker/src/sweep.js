@@ -38,17 +38,28 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
   if (flow.mode !== "active") {
     // This is the only exception to the shadow guarantee: a separately configured, single-contact
     // Assessment confirmation proof. The dependency returns null unless every allowlist gate passes.
-    if (deps.testDelivery) {
+    if (deps.controlledDelivery) {
       try {
-        const delivered = await deps.testDelivery(flow, step, enrollment);
+        const delivered = await deps.controlledDelivery(flow, step, enrollment);
         if (delivered?.handled) {
           const ok = delivered.result?.success === true;
-          await deps.logEvent({ ...base, action: "test_send", outcome: ok ? "sent" : "failed", message_ref: delivered.result?.messageId || null, detail: { testOnly: true, recipient: delivered.recipient, ...(ok ? {} : { error: delivered.result?.error || "test delivery failed" }) } });
+          const isTest = delivered.kind === "test";
+          await deps.logEvent({
+            ...base,
+            action: isTest ? "test_send" : "send",
+            outcome: ok ? "sent" : "failed",
+            message_ref: delivered.result?.messageId || null,
+            detail: {
+              recipient: delivered.recipient,
+              ...(isTest ? { testOnly: true } : { cutover: true }),
+              ...(ok ? {} : { error: delivered.result?.error || "delivery failed" }),
+            },
+          });
           await deps.markStep(enrollment, step.stepIndex, ok ? "sent" : "failed");
           return { outcome: ok ? "sent" : "failed" };
         }
       } catch (err) {
-        await deps.logEvent({ ...base, action: "test_send", outcome: "failed", detail: { testOnly: true, error: String(err?.message || err) } });
+        await deps.logEvent({ ...base, action: "send", outcome: "failed", detail: { cutover: true, error: String(err?.message || err) } });
         await deps.markStep(enrollment, step.stepIndex, "failed");
         return { outcome: "failed" };
       }

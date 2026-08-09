@@ -41,11 +41,19 @@ describe("processStep — shadow mode (the beside-GHL safety guarantee)", () => 
   });
 
   it("can use only an explicit handled test-delivery dependency, and records it as test-only", async () => {
-    const d = deps({ testDelivery: vi.fn().mockResolvedValue({ handled: true, recipient: "test@amarimethod.com", result: { success: true, messageId: "gmail_1" } }) });
+    const d = deps({ controlledDelivery: vi.fn().mockResolvedValue({ handled: true, kind: "test", recipient: "test@amarimethod.com", result: { success: true, messageId: "gmail_1" } }) });
     const out = await processStep({ enrollment: enrollment(), step: step({ type: "email", template: "confirmation" }), flow: shadowFlow }, d, NOW);
     expect(out.outcome).toBe("sent");
     expect(d.send).not.toHaveBeenCalled();
     expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "test_send", outcome: "sent", message_ref: "gmail_1", detail: expect.objectContaining({ testOnly: true }) }));
+  });
+
+  it("records an enabled owned cutover as a normal send, never as test-only", async () => {
+    const d = deps({ controlledDelivery: vi.fn().mockResolvedValue({ handled: true, kind: "cutover", recipient: "client@amarimethod.com", result: { success: true, messageId: "gmail_2" } }) });
+    const out = await processStep({ enrollment: enrollment(), step: step({ type: "email", template: "confirmation" }), flow: shadowFlow }, d, NOW);
+    expect(out.outcome).toBe("sent");
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "send", detail: expect.objectContaining({ cutover: true, recipient: "client@amarimethod.com" }) }));
+    expect(d.logEvent).not.toHaveBeenCalledWith(expect.objectContaining({ detail: expect.objectContaining({ testOnly: true }) }));
   });
 
   it("defaults to shadow when mode is unset (a new flow never sends by accident)", async () => {
