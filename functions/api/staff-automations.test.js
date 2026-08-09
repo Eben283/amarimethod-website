@@ -38,10 +38,54 @@ describe("staff-automations — auth gate", () => {
 describe("staff-automations — views", () => {
   beforeEach(() => requireStaffAuth.mockResolvedValue(allow()));
 
-  it("no AUTOMATION_DB binding → 200 configured:false (honest empty state, not an error)", async () => {
+  it("no AUTOMATION_DB binding → 200 configured:false with explicit execution gaps", async () => {
     const res = await onRequestGet(makeContext("view=contact&contactId=abc", {}));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ success: true, configured: false });
+    const body = await res.json();
+    expect(body).toEqual(expect.objectContaining({
+      success: true,
+      configured: false,
+      contactId: "abc",
+      enrollments: [],
+      events: [],
+    }));
+    expect(body.evidence.gaps.map((gap) => gap.code)).toContain("execution_store_unavailable");
+  });
+
+  it("registry view is available without D1 and exposes versioned owned definitions", async () => {
+    const res = await onRequestGet(makeContext("view=registry", {}));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.configured).toBe(false);
+    expect(body.registryVersion).toBe(1);
+    expect(body.definitions).toHaveLength(6);
+    expect(body.definitions[0]).toEqual(expect.objectContaining({
+      id: "reminder:initial-in-person",
+      definitionVersion: 1,
+      source: { kind: "owned_code", path: "reminder-engine-worker/src/config.js" },
+    }));
+  });
+
+  it("automation view joins one definition to owned execution evidence", async () => {
+    const res = await onRequestGet(makeContext(
+      "view=automation&engine=reminder&key=initial-in-person",
+      { AUTOMATION_DB: emptyDb },
+    ));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual(expect.objectContaining({
+      success: true,
+      configured: true,
+      definition: expect.objectContaining({ id: "reminder:initial-in-person" }),
+      enrollments: [],
+      events: [],
+    }));
+    expect(body.evidence.executionSource).toBe("owned_d1_append_only_log");
+  });
+
+  it("automation view validates engine/key and returns 404 for an unregistered definition", async () => {
+    expect((await onRequestGet(makeContext("view=automation&engine=bad&key=x", {}))).status).toBe(400);
+    expect((await onRequestGet(makeContext("view=automation&engine=reminder&key=missing", {}))).status).toBe(404);
   });
 
   it("contact view: validates contactId (400 on junk, no query)", async () => {

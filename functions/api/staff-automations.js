@@ -4,15 +4,30 @@
 //   GET /api/staff-automations?view=activity[&sinceHours=48]   — today/yesterday feed, all contacts
 //   GET /api/staff-automations?view=contact&contactId=<id>
 //   GET /api/staff-automations?view=failures[&sinceHours=168]
+//   GET /api/staff-automations?view=registry
+//   GET /api/staff-automations?view=automation&engine=<reminder|nurture>&key=<key>
 //
 // Staff-JWT gated like every staff endpoint. Read-only: no writes, no GHL calls. Until the
 // shared D1 exists (AUTOMATION_DB binding), returns 200 { configured: false } so the future
 // staff tab can render an honest empty state instead of erroring.
 
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
-import { contactAutomationView, failuresView, activityView } from "../lib/automation-views.js";
+import {
+  contactAutomationView,
+  failuresView,
+  activityView,
+  automationExecutionView,
+} from "../lib/automation-views.js";
+import {
+  REGISTRY_VERSION,
+  automationDefinitions,
+  findAutomationDefinition,
+  registryEvidence,
+} from "../lib/automation-registry.js";
 
 const VALID_CONTACT_ID = /^[A-Za-z0-9]{1,50}$/;
+const VALID_AUTOMATION_KEY = /^[a-z0-9][a-z0-9-]{0,79}$/;
+const VALID_ENGINES = new Set(["reminder", "nurture"]);
 const DEFAULT_FAILURE_WINDOW_HOURS = 168; // one week
 const DEFAULT_ACTIVITY_WINDOW_HOURS = 48; // today + yesterday
 
@@ -36,37 +51,80 @@ export async function onRequestGet(context) {
   const { error } = await requireStaffAuth(context, headers);
   if (error) return error;
 
-  const db = context.env.AUTOMATION_DB;
-  if (!db) {
-    return new Response(JSON.stringify({ success: true, configured: false }), { status: 200, headers });
-  }
-
   const url = new URL(context.request.url);
   const view = url.searchParams.get("view");
+  const db = context.env.AUTOMATION_DB;
+  const evidence = registryEvidence({ executionStoreConfigured: !!db });
 
   try {
+    if (view === "registry") {
+      return new Response(JSON.stringify({
+        success: true,
+        configured: !!db,
+        registryVersion: REGISTRY_VERSION,
+        definitions: automationDefinitions(),
+        evidence,
+      }), { status: 200, headers });
+    }
+
+    if (view === "automation") {
+      const engine = (url.searchParams.get("engine") || "").trim();
+      const key = (url.searchParams.get("key") || "").trim();
+      if (!VALID_ENGINES.has(engine) || !VALID_AUTOMATION_KEY.test(key)) {
+        return new Response(JSON.stringify({ error: "Invalid automation engine or key" }), { status: 400, headers });
+      }
+      const definition = findAutomationDefinition(engine, key);
+      if (!definition) {
+        return new Response(JSON.stringify({ error: "Automation definition not found" }), { status: 404, headers });
+      }
+      const execution = db
+        ? await automationExecutionView(db, { engine, key })
+        : { enrollments: [], events: [] };
+      return new Response(JSON.stringify({
+        success: true,
+        configured: !!db,
+        registryVersion: REGISTRY_VERSION,
+        definition,
+        ...execution,
+        evidence,
+      }), { status: 200, headers });
+    }
+
     if (view === "contact") {
       const contactId = (url.searchParams.get("contactId") || "").trim();
       if (!VALID_CONTACT_ID.test(contactId)) {
         return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers });
       }
+      if (!db) {
+        return new Response(JSON.stringify({
+          success: true,
+          configured: false,
+          contactId,
+          enrollments: [],
+          events: [],
+          upgradeOffer: null,
+          confirmations: [],
+          lpOnboarding: null,
+          evidence,
+        }), { status: 200, headers });
+      }
       const data = await contactAutomationView(db, contactId);
-      return new Response(JSON.stringify({ success: true, configured: true, ...data }), { status: 200, headers });
+      return new Response(JSON.stringify({ success: true, configured: true, ...data, evidence }), { status: 200, headers });
     }
 
     if (view === "activity") {
       const sinceHours = windowHours(url, DEFAULT_ACTIVITY_WINDOW_HOURS);
-      const events = await activityView(db, { sinceMs: Date.now() - sinceHours * 3600000 });
-      return new Response(JSON.stringify({ success: true, configured: true, sinceHours, events }), { status: 200, headers });
+      const events = db ? await activityView(db, { sinceMs: Date.now() - sinceHours * 3600000 }) : [];
+      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, events, evidence }), { status: 200, headers });
     }
 
     if (view === "failures") {
       const sinceHours = windowHours(url, DEFAULT_FAILURE_WINDOW_HOURS);
-      const failures = await failuresView(db, { sinceMs: Date.now() - sinceHours * 3600000 });
-      return new Response(JSON.stringify({ success: true, configured: true, sinceHours, failures }), { status: 200, headers });
+      const failures = db ? await failuresView(db, { sinceMs: Date.now() - sinceHours * 3600000 }) : [];
+      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, failures, evidence }), { status: 200, headers });
     }
 
-    return new Response(JSON.stringify({ error: "Unknown view (use activity, contact, or failures)" }), { status: 400, headers });
+    return new Response(JSON.stringify({ error: "Unknown view (use registry, automation, activity, contact, or failures)" }), { status: 400, headers });
   } catch (err) {
     return new Response(JSON.stringify({ error: `Query failed: ${String((err && err.message) || err)}` }), { status: 500, headers });
   }

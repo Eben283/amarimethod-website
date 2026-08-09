@@ -14,9 +14,9 @@ function fakeD1() {
       async run() {
         const a = this._args;
         if (/INSERT INTO reminder_enrollments/.test(sql)) {
-          const [id, flow_key, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status] = a;
+          const [id, flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status] = a;
           if (enrollments.has(id)) return { meta: { changes: 0 } };
-          enrollments.set(id, { enrollment_id: id, flow_key, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status });
+          enrollments.set(id, { enrollment_id: id, flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status });
           return { meta: { changes: 1 } };
         }
         if (/INSERT INTO reminder_steps/.test(sql)) {
@@ -25,8 +25,8 @@ function fakeD1() {
           return { meta: { changes: 1 } };
         }
         if (/INSERT INTO automation_events/.test(sql)) {
-          const [ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
-          events.push({ ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
+          const [ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
+          events.push({ ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
           return { meta: { changes: 1 } };
         }
         if (/UPDATE reminder_steps SET status = 'cancelled' WHERE enrollment_id = \? AND status = 'pending'/.test(sql)) {
@@ -61,7 +61,7 @@ function fakeD1() {
             .slice(0, limit)
             .map(({ s, e }) => ({
               enrollment_id: s.enrollment_id, step_index: s.step_index, at: s.at, type: s.type, template: s.template, due_at: s.due_at, step_status: s.status,
-              flow_key: e.flow_key, appointment_id: e.appointment_id, contact_id: e.contact_id, calendar_id: e.calendar_id, start_at: e.start_at, start_ms: e.start_ms,
+              flow_key: e.flow_key, definition_version: e.definition_version, appointment_id: e.appointment_id, contact_id: e.contact_id, calendar_id: e.calendar_id, start_at: e.start_at, start_ms: e.start_ms,
             }));
           return { results: rows };
         }
@@ -75,6 +75,7 @@ function fakeD1() {
 const NOW = 1_000_000;
 const enrollment = (over = {}) => ({
   flowKey: "initial-in-person",
+  definitionVersion: 1,
   appointmentId: "a1",
   contactId: "c1",
   calendarId: "cal",
@@ -121,7 +122,7 @@ describe("loadDueSteps", () => {
     expect(due).toHaveLength(1);
     expect(due[0]).toMatchObject({
       enrollmentId: "initial-in-person:a1",
-      enrollment: { flowKey: "initial-in-person", contactId: "c1", appointmentId: "a1" },
+      enrollment: { flowKey: "initial-in-person", definitionVersion: 1, contactId: "c1", appointmentId: "a1" },
       step: { stepIndex: 0, type: "email", status: "pending" },
     });
   });
@@ -155,9 +156,10 @@ describe("cancelEnrollment", () => {
 
 describe("appendEvent", () => {
   it("writes an event row with detail JSON-stringified", async () => {
-    await appendEvent(db, { ts: NOW, engine: "reminder", flowKey: "initial-in-person", contactId: "c1", stepIndex: 0, action: "would_send", outcome: "would_send", channel: "email", detail: { template: "confirmation" } });
+    await appendEvent(db, { ts: NOW, engine: "reminder", flowKey: "initial-in-person", definitionVersion: 1, contactId: "c1", stepIndex: 0, action: "would_send", outcome: "would_send", channel: "email", detail: { template: "confirmation" } });
     expect(db._events).toHaveLength(1);
     expect(db._events[0]).toMatchObject({ outcome: "would_send", channel: "email" });
+    expect(db._events[0].definition_version).toBe(1);
     expect(JSON.parse(db._events[0].detail)).toEqual({ template: "confirmation" });
   });
 });

@@ -17,13 +17,13 @@ function fakeD1() {
       const a = this._args;
       if (/INSERT INTO reminder_enrollments/.test(sql)) {
         if (enrollments.has(a[0])) return { meta: { changes: 0 } };
-        enrollments.set(a[0], { enrollment_id: a[0], status: a[8] });
+        enrollments.set(a[0], { enrollment_id: a[0], status: a[9] });
         return { meta: { changes: 1 } };
       }
       if (/INSERT INTO reminder_steps/.test(sql)) { steps.push({ enrollment_id: a[0] }); return { meta: { changes: 1 } }; }
       if (/INSERT INTO automation_events/.test(sql)) {
-        const [ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
-        events.push({ ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
+        const [ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
+        events.push({ ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
         return { meta: { changes: 1 } };
       }
       return { meta: { changes: 0 } };

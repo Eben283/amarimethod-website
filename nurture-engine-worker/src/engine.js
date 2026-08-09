@@ -28,6 +28,7 @@ async function exitPass(db, event, nowMs, actions) {
     if (!closed) continue; // no active enrollment — a no-op, no ghost events
     await appendEvent(db, {
       ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+      definitionVersion: seq.definitionVersion,
       action: "exited", outcome: "exited", detail: { via: event.kind, exitedSteps },
     });
     actions.push({ engine: "nurture", action: "exit", detail: { sequenceId: seq.sequenceId, exitedSteps } });
@@ -41,17 +42,18 @@ async function applyOnEnterTags(db, seq, event, nowMs, deps, actions, syntheticT
     if (seq.mode === "active") {
       try {
         await deps.addContactTags(event.contactId, [tag]);
-        await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId, action: "tagged", outcome: "tagged", detail: { tag } });
+        await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, definitionVersion: seq.definitionVersion, contactId: event.contactId, action: "tagged", outcome: "tagged", detail: { tag } });
         actions.push({ engine: "nurture", action: "tag", detail: { sequenceId: seq.sequenceId, tag } });
       } catch (err) {
         await appendEvent(db, {
           ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+          definitionVersion: seq.definitionVersion,
           action: "tagged", outcome: "failed", detail: { tag, error: String((err && err.message) || err) },
         });
         actions.push({ engine: "nurture", action: "tag-failed", detail: { sequenceId: seq.sequenceId, tag } });
       }
     } else {
-      await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId, action: "would_tag", outcome: "would_tag", detail: { tag } });
+      await appendEvent(db, { ts: nowMs, flowKey: seq.sequenceId, definitionVersion: seq.definitionVersion, contactId: event.contactId, action: "would_tag", outcome: "would_tag", detail: { tag } });
       actions.push({ engine: "nurture", action: "would_tag", detail: { sequenceId: seq.sequenceId, tag } });
     }
     // Internal exit signal in BOTH modes — code-side exits never depend on the GHL tag write.
@@ -99,6 +101,7 @@ export async function handleEvent(env, raw, nowMs, deps = {}) {
     }
     await appendEvent(db, {
       ts: nowMs, flowKey: seq.sequenceId, contactId: event.contactId,
+      definitionVersion: seq.definitionVersion,
       action: "enrolled", outcome: "enrolled",
       detail: { via: event.kind, steps: enrollment.steps.length, mode: seq.mode, guardUnchecked: enrollment.guardUnchecked },
     });

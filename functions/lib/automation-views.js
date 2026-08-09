@@ -4,6 +4,8 @@
 //
 // Scale note (from the plan): a few hundred rows total — plain per-table queries, no rollups.
 
+import { eventEvidence, findAutomationDefinition } from "./automation-registry.js";
+
 function parseDetail(raw) {
   if (raw == null) return null;
   try { return JSON.parse(raw); } catch { return { raw }; }
@@ -11,9 +13,12 @@ function parseDetail(raw) {
 
 function normalizeEvent(r) {
   return {
+    id: r.id,
     ts: r.ts,
+    occurredAt: exactIso(r.ts),
     engine: r.engine,
     flowKey: r.flow_key,
+    definitionVersion: r.definition_version ?? null,
     contactId: r.contact_id,
     appointmentId: r.appointment_id,
     stepIndex: r.step_index,
@@ -22,14 +27,28 @@ function normalizeEvent(r) {
     channel: r.channel,
     messageRef: r.message_ref,
     detail: parseDetail(r.detail),
+    evidence: eventEvidence(r),
   };
+}
+
+function exactIso(value) {
+  if (value == null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Date.parse(value);
+  if (!Number.isFinite(parsed)) return null;
+  return new Date(parsed).toISOString();
 }
 
 function nextPendingStep(steps) {
   const pending = steps.filter((s) => s.status === "pending").sort((a, b) => a.due_at - b.due_at);
   if (!pending.length) return null;
   const s = pending[0];
-  return { stepIndex: s.step_index, template: s.template, dueAt: s.due_at, type: s.type ?? s.kind ?? null };
+  return {
+    stepIndex: s.step_index,
+    template: s.template,
+    dueAt: s.due_at,
+    dueAtIso: exactIso(s.due_at),
+    type: s.type ?? s.kind ?? null,
+  };
 }
 
 function normalizeStep(s) {
@@ -39,8 +58,85 @@ function normalizeStep(s) {
     type: s.type ?? s.kind ?? null,
     template: s.template,
     dueAt: s.due_at,
+    dueAtIso: exactIso(s.due_at),
     status: s.status,
   };
+}
+
+function reminderEnrollment(e, allSteps) {
+  const raw = allSteps.filter((s) => s.enrollment_id === e.enrollment_id);
+  const definition = findAutomationDefinition("reminder", e.flow_key);
+  return {
+    engine: "reminder",
+    key: e.flow_key,
+    definitionId: definition?.id || null,
+    definitionVersion: e.definition_version ?? null,
+    currentDefinitionVersion: definition?.definitionVersion || null,
+    enrollmentId: e.enrollment_id,
+    appointmentId: e.appointment_id,
+    startAt: e.start_at,
+    startAtIso: exactIso(e.start_ms ?? e.start_at),
+    enteredAt: e.enrolled_at,
+    enteredAtIso: exactIso(e.enrolled_at),
+    status: e.status,
+    steps: raw.map(normalizeStep),
+    nextStep: e.status === "active" ? nextPendingStep(raw) : null,
+    evidence: {
+      source: "owned_d1_enrollment",
+      gaps: enrollmentEvidenceGaps(e.definition_version, definition),
+    },
+  };
+}
+
+function nurtureEnrollment(e, allSteps) {
+  const raw = allSteps.filter((s) => s.enrollment_id === e.enrollment_id);
+  const definition = findAutomationDefinition("nurture", e.sequence_id);
+  return {
+    engine: "nurture",
+    key: e.sequence_id,
+    definitionId: definition?.id || null,
+    definitionVersion: e.definition_version ?? null,
+    currentDefinitionVersion: definition?.definitionVersion || null,
+    enrollmentId: e.enrollment_id,
+    enteredAt: e.entered_at,
+    enteredAtIso: exactIso(e.entered_at),
+    status: e.status,
+    guardUnchecked: !!e.guard_unchecked,
+    steps: raw.map(normalizeStep),
+    nextStep: e.status === "active" ? nextPendingStep(raw) : null,
+    evidence: {
+      source: "owned_d1_enrollment",
+      gaps: [
+        ...enrollmentEvidenceGaps(e.definition_version, definition),
+        ...(e.guard_unchecked ? [{
+          code: "entry_guard_unverified",
+          label: "The enrollment was recorded without verifying its entry guard.",
+        }] : []),
+      ],
+    },
+  };
+}
+
+function enrollmentEvidenceGaps(recordedVersion, currentDefinition) {
+  if (!currentDefinition) {
+    return [{
+      code: "definition_not_registered",
+      label: "This enrollment key has no matching owned definition in the current registry.",
+    }];
+  }
+  if (recordedVersion == null) {
+    return [{
+      code: "definition_version_not_recorded",
+      label: "This enrollment predates definition-version capture, so its exact definition revision is unknown.",
+    }];
+  }
+  if (recordedVersion !== currentDefinition.definitionVersion) {
+    return [{
+      code: "historical_definition_snapshot_not_loaded",
+      label: `This enrollment used definition version ${recordedVersion}; the read API currently exposes version ${currentDefinition.definitionVersion}.`,
+    }];
+  }
+  return [];
 }
 
 async function rows(db, sql, ...binds) {
@@ -72,33 +168,8 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
   ]);
 
   const enrollments = [
-    ...remEnr.map((e) => {
-      const steps = remSteps.filter((s) => s.enrollment_id === e.enrollment_id).map(normalizeStep);
-      return {
-        engine: "reminder",
-        key: e.flow_key,
-        enrollmentId: e.enrollment_id,
-        appointmentId: e.appointment_id,
-        startAt: e.start_at,
-        enteredAt: e.enrolled_at,
-        status: e.status,
-        steps,
-        nextStep: e.status === "active" ? nextPendingStep(remSteps.filter((s) => s.enrollment_id === e.enrollment_id)) : null,
-      };
-    }),
-    ...nurEnr.map((e) => {
-      const raw = nurSteps.filter((s) => s.enrollment_id === e.enrollment_id);
-      return {
-        engine: "nurture",
-        key: e.sequence_id,
-        enrollmentId: e.enrollment_id,
-        enteredAt: e.entered_at,
-        status: e.status,
-        guardUnchecked: !!e.guard_unchecked,
-        steps: raw.map(normalizeStep),
-        nextStep: e.status === "active" ? nextPendingStep(raw) : null,
-      };
-    }),
+    ...remEnr.map((e) => reminderEnrollment(e, remSteps)),
+    ...nurEnr.map((e) => nurtureEnrollment(e, nurSteps)),
   ];
 
   return {
@@ -107,6 +178,44 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
     upgradeOffer: timers[0] || null,
     confirmations,
     lpOnboarding: lpSends[0] || null,
+    events: events.map(normalizeEvent),
+  };
+}
+
+/**
+ * One registered automation with its owned D1 enrollments and append-only execution history.
+ * The caller validates that the definition exists; this query never synthesizes external history.
+ */
+export async function automationExecutionView(db, { engine, key, enrollmentLimit = 200, eventLimit = 500 }) {
+  let enrollmentRows;
+  let stepRows;
+
+  if (engine === "reminder") {
+    [enrollmentRows, stepRows] = await Promise.all([
+      rows(db, `SELECT * FROM reminder_enrollments WHERE flow_key = ? ORDER BY enrolled_at DESC LIMIT ?`, key, enrollmentLimit),
+      rows(db, `SELECT s.* FROM reminder_steps s
+        JOIN reminder_enrollments e ON e.enrollment_id = s.enrollment_id
+        WHERE e.flow_key = ?`, key),
+    ]);
+  } else {
+    [enrollmentRows, stepRows] = await Promise.all([
+      rows(db, `SELECT * FROM nurture_enrollments WHERE sequence_id = ? ORDER BY entered_at DESC LIMIT ?`, key, enrollmentLimit),
+      rows(db, `SELECT s.* FROM nurture_steps s
+        JOIN nurture_enrollments e ON e.enrollment_id = s.enrollment_id
+        WHERE e.sequence_id = ?`, key),
+    ]);
+  }
+
+  const events = await rows(
+    db,
+    `SELECT * FROM automation_events WHERE engine = ? AND flow_key = ? ORDER BY ts DESC LIMIT ?`,
+    engine, key, eventLimit,
+  );
+
+  return {
+    enrollments: engine === "reminder"
+      ? enrollmentRows.map((row) => reminderEnrollment(row, stepRows))
+      : enrollmentRows.map((row) => nurtureEnrollment(row, stepRows)),
     events: events.map(normalizeEvent),
   };
 }

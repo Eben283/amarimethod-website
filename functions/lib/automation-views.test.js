@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { contactAutomationView, failuresView, activityView } from "./automation-views.js";
+import { contactAutomationView, failuresView, activityView, automationExecutionView } from "./automation-views.js";
 
 const NOW = Date.parse("2026-07-12T10:00:00-07:00");
 const DAY = 86400000;
@@ -24,7 +24,7 @@ function fakeD1(seed = {}) {
       if (/FROM reminder_enrollments WHERE contact_id/.test(sql)) {
         return { results: t.reminder_enrollments.filter((r) => r.contact_id === a[0]) };
       }
-      if (/FROM reminder_steps s\s+JOIN reminder_enrollments e/.test(sql)) {
+      if (/FROM reminder_steps s\s+JOIN reminder_enrollments e/.test(sql) && /WHERE e.contact_id/.test(sql)) {
         return {
           results: t.reminder_steps
             .filter((s) => t.reminder_enrollments.some((e) => e.enrollment_id === s.enrollment_id && e.contact_id === a[0])),
@@ -33,7 +33,7 @@ function fakeD1(seed = {}) {
       if (/FROM nurture_enrollments WHERE contact_id/.test(sql)) {
         return { results: t.nurture_enrollments.filter((r) => r.contact_id === a[0]) };
       }
-      if (/FROM nurture_steps s\s+JOIN nurture_enrollments e/.test(sql)) {
+      if (/FROM nurture_steps s\s+JOIN nurture_enrollments e/.test(sql) && /WHERE e.contact_id/.test(sql)) {
         return {
           results: t.nurture_steps
             .filter((s) => t.nurture_enrollments.some((e) => e.enrollment_id === s.enrollment_id && e.contact_id === a[0])),
@@ -53,6 +53,33 @@ function fakeD1(seed = {}) {
         return {
           results: t.automation_events
             .filter((e) => e.contact_id === contactId)
+            .sort((x, y) => y.ts - x.ts)
+            .slice(0, limit),
+        };
+      }
+      if (/FROM reminder_enrollments WHERE flow_key/.test(sql)) {
+        const [key, limit] = a;
+        return { results: t.reminder_enrollments.filter((r) => r.flow_key === key).slice(0, limit) };
+      }
+      if (/FROM reminder_steps s\s+JOIN reminder_enrollments e/.test(sql) && /WHERE e.flow_key/.test(sql)) {
+        return {
+          results: t.reminder_steps.filter((s) => t.reminder_enrollments.some((e) => e.enrollment_id === s.enrollment_id && e.flow_key === a[0])),
+        };
+      }
+      if (/FROM nurture_enrollments WHERE sequence_id/.test(sql)) {
+        const [key, limit] = a;
+        return { results: t.nurture_enrollments.filter((r) => r.sequence_id === key).slice(0, limit) };
+      }
+      if (/FROM nurture_steps s\s+JOIN nurture_enrollments e/.test(sql) && /WHERE e.sequence_id/.test(sql)) {
+        return {
+          results: t.nurture_steps.filter((s) => t.nurture_enrollments.some((e) => e.enrollment_id === s.enrollment_id && e.sequence_id === a[0])),
+        };
+      }
+      if (/FROM automation_events WHERE engine/.test(sql)) {
+        const [engine, key, limit] = a;
+        return {
+          results: t.automation_events
+            .filter((e) => e.engine === engine && e.flow_key === key)
             .sort((x, y) => y.ts - x.ts)
             .slice(0, limit),
         };
@@ -83,7 +110,7 @@ function fakeD1(seed = {}) {
 
 const seed = () => ({
   reminderEnrollments: [
-    { enrollment_id: "initial-in-person:appt_1", flow_key: "initial-in-person", appointment_id: "appt_1", contact_id: "cont_1", calendar_id: "cal", start_at: "2026-07-20T15:00:00-07:00", start_ms: NOW + 8 * DAY, enrolled_at: NOW, status: "active" },
+    { enrollment_id: "initial-in-person:appt_1", flow_key: "initial-in-person", definition_version: 1, appointment_id: "appt_1", contact_id: "cont_1", calendar_id: "cal", start_at: "2026-07-20T15:00:00-07:00", start_ms: NOW + 8 * DAY, enrolled_at: NOW, status: "active" },
   ],
   reminderSteps: [
     { enrollment_id: "initial-in-person:appt_1", step_index: 0, at: "enroll", type: "email", template: "confirmation", due_at: NOW, status: "would_send" },
@@ -91,7 +118,7 @@ const seed = () => ({
     { enrollment_id: "initial-in-person:appt_1", step_index: 3, at: "start-60m", type: "sms", template: "one-hour-sms", due_at: NOW + 8 * DAY, status: "pending" },
   ],
   nurtureEnrollments: [
-    { enrollment_id: "flow-1-quiz:cont_1", sequence_id: "flow-1-quiz", contact_id: "cont_1", entered_at: NOW - DAY, status: "exited", guard_unchecked: 0 },
+    { enrollment_id: "flow-1-quiz:cont_1", sequence_id: "flow-1-quiz", definition_version: 1, contact_id: "cont_1", entered_at: NOW - DAY, status: "exited", guard_unchecked: 0 },
   ],
   nurtureSteps: [
     { enrollment_id: "flow-1-quiz:cont_1", step_index: 0, after: "0d", kind: "email", template: "f1-email-1-quiz-results", due_at: NOW - DAY, status: "would_send" },
@@ -101,9 +128,9 @@ const seed = () => ({
   confirmations: [{ ref: "inv:100", contact_id: "cont_1", series_type: "4-session", status: "would_send", ts: NOW }],
   lpSends: [],
   events: [
-    { id: 1, ts: NOW - DAY, engine: "nurture", flow_key: "flow-1-quiz", contact_id: "cont_1", appointment_id: null, step_index: null, action: "enrolled", outcome: "enrolled", channel: null, message_ref: null, detail: '{"via":"quiz.submitted"}' },
-    { id: 2, ts: NOW, engine: "reminder", flow_key: "initial-in-person", contact_id: "cont_1", appointment_id: "appt_1", step_index: 0, action: "would_send", outcome: "would_send", channel: "email", message_ref: null, detail: '{"template":"confirmation"}' },
-    { id: 3, ts: NOW - 2 * DAY, engine: "reminder", flow_key: "initial-in-person", contact_id: "cont_2", appointment_id: "appt_9", step_index: 1, action: "send", outcome: "failed", channel: "sms", message_ref: null, detail: '{"error":"rate limited"}' },
+    { id: 1, ts: NOW - DAY, engine: "nurture", flow_key: "flow-1-quiz", definition_version: 1, contact_id: "cont_1", appointment_id: null, step_index: null, action: "enrolled", outcome: "enrolled", channel: null, message_ref: null, detail: '{"via":"quiz.submitted"}' },
+    { id: 2, ts: NOW, engine: "reminder", flow_key: "initial-in-person", definition_version: 1, contact_id: "cont_1", appointment_id: "appt_1", step_index: 0, action: "would_send", outcome: "would_send", channel: "email", message_ref: null, detail: '{"template":"confirmation"}' },
+    { id: 3, ts: NOW - 2 * DAY, engine: "reminder", flow_key: "initial-in-person", definition_version: 1, contact_id: "cont_2", appointment_id: "appt_9", step_index: 1, action: "send", outcome: "failed", channel: "sms", message_ref: null, detail: '{"error":"rate limited"}' },
   ],
 });
 
@@ -119,6 +146,9 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(reminder.key).toBe("initial-in-person");
     expect(reminder.status).toBe("active");
     expect(reminder.nextStep).toEqual(expect.objectContaining({ stepIndex: 2, template: "day-before", dueAt: NOW + 7 * DAY }));
+    expect(reminder.enteredAtIso).toBe("2026-07-12T17:00:00.000Z");
+    expect(reminder.nextStep.dueAtIso).toBe("2026-07-19T17:00:00.000Z");
+    expect(reminder.definitionVersion).toBe(1);
     expect(reminder.steps).toHaveLength(3);
 
     const nurture = v.enrollments.find((e) => e.engine === "nurture");
@@ -138,6 +168,8 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     const v = await contactAutomationView(db, "cont_1");
     expect(v.events.map((e) => e.action)).toEqual(["would_send", "enrolled"]);
     expect(v.events[0].detail).toEqual({ template: "confirmation" });
+    expect(v.events[0].occurredAt).toBe("2026-07-12T17:00:00.000Z");
+    expect(v.events[0].evidence.gaps.map((gap) => gap.code)).toContain("message_reference_missing");
   });
 
   it("an unknown contact returns an empty view, not an error", async () => {
@@ -145,6 +177,30 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.enrollments).toHaveLength(0);
     expect(v.events).toHaveLength(0);
     expect(v.upgradeOffer).toBeNull();
+  });
+});
+
+describe("automationExecutionView — one registry definition's owned history", () => {
+  it("joins reminder enrollments, scheduled steps, and append-only events by engine and key", async () => {
+    const view = await automationExecutionView(db, { engine: "reminder", key: "initial-in-person" });
+    expect(view.enrollments).toHaveLength(1);
+    expect(view.enrollments[0]).toEqual(expect.objectContaining({
+      definitionId: "reminder:initial-in-person",
+      appointmentId: "appt_1",
+    }));
+    expect(view.events).toHaveLength(2);
+    expect(view.events[0]).toEqual(expect.objectContaining({
+      engine: "reminder",
+      flowKey: "initial-in-person",
+      occurredAt: "2026-07-12T17:00:00.000Z",
+    }));
+  });
+
+  it("joins nurture enrollments without mixing same-key events from another engine", async () => {
+    const view = await automationExecutionView(db, { engine: "nurture", key: "flow-1-quiz" });
+    expect(view.enrollments).toHaveLength(1);
+    expect(view.enrollments[0].definitionId).toBe("nurture:flow-1-quiz");
+    expect(view.events.map((event) => event.action)).toEqual(["enrolled"]);
   });
 });
 

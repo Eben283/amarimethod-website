@@ -30,6 +30,7 @@ export async function handleEvent(env, event, nowMs) {
         if (created) {
           await appendEvent(db, {
             ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+            definitionVersion: flow.definitionVersion,
             appointmentId: event.appointmentId, action: "enrolled", outcome: "enrolled",
             detail: { calendarId: event.calendarId, steps: enrollment.steps.length, mode: flow.mode },
           });
@@ -44,6 +45,7 @@ export async function handleEvent(env, event, nowMs) {
       if (cancelledSteps > 0) {
         await appendEvent(db, {
           ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+          definitionVersion: flow.definitionVersion,
           appointmentId: event.appointmentId, action: "cancelled", outcome: "cancelled",
           detail: { cancelledSteps },
         });

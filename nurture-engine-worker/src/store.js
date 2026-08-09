@@ -23,12 +23,12 @@ export async function saveEnrollment(db, enrollment) {
   const ins = await db
     .prepare(
       `INSERT INTO nurture_enrollments
-         (enrollment_id, sequence_id, contact_id, entered_at, status, guard_unchecked)
-       VALUES (?,?,?,?,?,?)
+         (enrollment_id, sequence_id, definition_version, contact_id, entered_at, status, guard_unchecked)
+       VALUES (?,?,?,?,?,?,?)
        ON CONFLICT(enrollment_id) DO NOTHING`,
     )
     .bind(
-      id, enrollment.sequenceId, enrollment.contactId, enrollment.enteredAt,
+      id, enrollment.sequenceId, enrollment.definitionVersion ?? 1, enrollment.contactId, enrollment.enteredAt,
       enrollment.status ?? "active", enrollment.guardUnchecked ? 1 : 0,
     )
     .run();
@@ -55,7 +55,7 @@ export async function loadDueSteps(db, nowMs, limit = 100) {
   const res = await db
     .prepare(
       `SELECT s.enrollment_id, s.step_index, s.after, s.kind, s.template, s.due_at, s.status AS step_status,
-              e.sequence_id, e.contact_id, e.entered_at
+              e.sequence_id, e.definition_version, e.contact_id, e.entered_at
        FROM nurture_steps s
        JOIN nurture_enrollments e ON e.enrollment_id = s.enrollment_id
        WHERE s.status = 'pending' AND s.due_at <= ? AND e.status = 'active'
@@ -69,6 +69,7 @@ export async function loadDueSteps(db, nowMs, limit = 100) {
     enrollmentId: r.enrollment_id,
     enrollment: {
       sequenceId: r.sequence_id,
+      definitionVersion: r.definition_version,
       contactId: r.contact_id,
       enteredAt: r.entered_at,
     },
@@ -112,11 +113,12 @@ export async function appendEvent(db, r) {
   await db
     .prepare(
       `INSERT INTO automation_events
-         (ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+         (ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .bind(
-      r.ts, r.engine ?? "nurture", r.flowKey ?? null, r.contactId ?? null, r.appointmentId ?? null,
+      r.ts, r.engine ?? "nurture", r.flowKey ?? null, r.definitionVersion ?? null,
+      r.contactId ?? null, r.appointmentId ?? null,
       r.stepIndex ?? null, r.action ?? null, r.outcome ?? null, r.channel ?? null,
       r.message_ref ?? null, r.detail != null ? JSON.stringify(r.detail) : null,
     )

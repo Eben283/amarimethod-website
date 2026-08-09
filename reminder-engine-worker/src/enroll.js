@@ -57,6 +57,7 @@ export function enroll(event, flow, nowMs) {
 
   return {
     flowKey: flow.flowKey,
+    definitionVersion: flow.definitionVersion,
     appointmentId: event.appointmentId,
     contactId: event.contactId,
     calendarId: event.calendarId,

@@ -53,6 +53,8 @@ const deepFreeze = (obj) => {
 // If/Else condition, exact 5-way Email 4 filter values, Email 4a-d/5/6 subjects, and the
 // +8d/+10d waits are label-derived (wait node specs not captured).
 export const FLOW_1_QUIZ = deepFreeze({
+  name: "Quiz to Pain Consultation email flow",
+  definitionVersion: 1,
   sequenceId: "flow-1-quiz",
   mode: "shadow",
   entry: {
@@ -109,6 +111,8 @@ export const FLOW_1_QUIZ = deepFreeze({
 // RESOLVE FIRST before active: confirm field vKZTVAG7601lgV8413du's key/name; live
 // initial_session_price custom value; Email 2 subject decision (port live copy verbatim).
 export const FLOW_2_POST_DISCOVERY = deepFreeze({
+  name: "Pain Consutation to first booking email flow",
+  definitionVersion: 1,
   sequenceId: "flow-2-post-discovery",
   mode: "shadow",
   entry: {
@@ -135,6 +139,8 @@ export const FLOW_2_POST_DISCOVERY = deepFreeze({
 // RESOLVE FIRST before active: live values of the 3 price custom values; import the 1 in-flight
 // contact with cursor at cutover (importEnrollment in enroll.js).
 export const FLOW_3_POST_INITIAL = deepFreeze({
+  name: "First session to follow up session email flow",
+  definitionVersion: 1,
   sequenceId: "flow-3-post-initial",
   mode: "shadow",
   entry: {

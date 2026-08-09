@@ -20,12 +20,12 @@ export async function saveEnrollment(db, enrollment) {
   const ins = await db
     .prepare(
       `INSERT INTO reminder_enrollments
-         (enrollment_id, flow_key, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status)
-       VALUES (?,?,?,?,?,?,?,?,?)
+         (enrollment_id, flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status)
+       VALUES (?,?,?,?,?,?,?,?,?,?)
        ON CONFLICT(enrollment_id) DO NOTHING`,
     )
     .bind(
-      id, enrollment.flowKey, enrollment.appointmentId, enrollment.contactId,
+      id, enrollment.flowKey, enrollment.definitionVersion ?? 1, enrollment.appointmentId, enrollment.contactId,
       enrollment.calendarId ?? null, enrollment.startAt ?? null, enrollment.startMs ?? null,
       enrollment.enrolledAt, enrollment.status ?? "active",
     )
@@ -53,7 +53,7 @@ export async function loadDueSteps(db, nowMs, limit = 100) {
   const res = await db
     .prepare(
       `SELECT s.enrollment_id, s.step_index, s.at, s.type, s.template, s.due_at, s.status AS step_status,
-              e.flow_key, e.appointment_id, e.contact_id, e.calendar_id, e.start_at, e.start_ms
+              e.flow_key, e.definition_version, e.appointment_id, e.contact_id, e.calendar_id, e.start_at, e.start_ms
        FROM reminder_steps s
        JOIN reminder_enrollments e ON e.enrollment_id = s.enrollment_id
        WHERE s.status = 'pending' AND s.due_at <= ? AND e.status = 'active'
@@ -67,6 +67,7 @@ export async function loadDueSteps(db, nowMs, limit = 100) {
     enrollmentId: r.enrollment_id,
     enrollment: {
       flowKey: r.flow_key,
+      definitionVersion: r.definition_version,
       appointmentId: r.appointment_id,
       contactId: r.contact_id,
       calendarId: r.calendar_id,
@@ -95,11 +96,12 @@ export async function appendEvent(db, r) {
   await db
     .prepare(
       `INSERT INTO automation_events
-         (ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+         (ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .bind(
-      r.ts, r.engine ?? "reminder", r.flowKey ?? null, r.contactId ?? null, r.appointmentId ?? null,
+      r.ts, r.engine ?? "reminder", r.flowKey ?? null, r.definitionVersion ?? null,
+      r.contactId ?? null, r.appointmentId ?? null,
       r.stepIndex ?? null, r.action ?? null, r.outcome ?? null, r.channel ?? null,
       r.message_ref ?? null, r.detail != null ? JSON.stringify(r.detail) : null,
     )

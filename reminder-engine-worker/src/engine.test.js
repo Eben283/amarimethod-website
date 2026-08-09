@@ -19,9 +19,9 @@ function fakeD1() {
     async run() {
       const a = this._args;
       if (/INSERT INTO reminder_enrollments/.test(sql)) {
-        const [id, flow_key, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status] = a;
+        const [id, flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status] = a;
         if (enrollments.has(id)) return { meta: { changes: 0 } };
-        enrollments.set(id, { enrollment_id: id, flow_key, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status });
+        enrollments.set(id, { enrollment_id: id, flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, start_ms, enrolled_at, status });
         return { meta: { changes: 1 } };
       }
       if (/INSERT INTO reminder_steps/.test(sql)) {
@@ -30,8 +30,8 @@ function fakeD1() {
         return { meta: { changes: 1 } };
       }
       if (/INSERT INTO automation_events/.test(sql)) {
-        const [ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
-        events.push({ ts, engine, flow_key, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
+        const [ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
+        events.push({ ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
         return { meta: { changes: 1 } };
       }
       if (/UPDATE reminder_steps SET status = 'cancelled' WHERE enrollment_id = \? AND status = 'pending'/.test(sql)) {
@@ -62,7 +62,7 @@ function fakeD1() {
           .slice(0, limit)
           .map(({ s, e }) => ({
             enrollment_id: s.enrollment_id, step_index: s.step_index, at: s.at, type: s.type, template: s.template, due_at: s.due_at, step_status: s.status,
-            flow_key: e.flow_key, appointment_id: e.appointment_id, contact_id: e.contact_id, calendar_id: e.calendar_id, start_at: e.start_at, start_ms: e.start_ms,
+            flow_key: e.flow_key, definition_version: e.definition_version, appointment_id: e.appointment_id, contact_id: e.contact_id, calendar_id: e.calendar_id, start_at: e.start_at, start_ms: e.start_ms,
           }));
         return { results: rows };
       }

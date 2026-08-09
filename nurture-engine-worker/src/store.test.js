@@ -47,6 +47,7 @@ describe("loadDueSteps", () => {
     expect(due[0].step.stepIndex).toBe(0);
     expect(due[1].step.stepIndex).toBe(1);
     expect(due[0].enrollment.sequenceId).toBe("flow-1-quiz");
+    expect(due[0].enrollment.definitionVersion).toBe(1);
   });
 
   it("marked steps leave the due-queue", async () => {
@@ -90,9 +91,10 @@ describe("loadActiveEnrollments", () => {
 
 describe("appendEvent", () => {
   it("appends to automation_events with engine defaulting to nurture and JSON detail", async () => {
-    await appendEvent(db, { ts: NOW, flowKey: "flow-1-quiz", contactId: "cont_1", action: "enrolled", outcome: "enrolled", detail: { mode: "shadow" } });
+    await appendEvent(db, { ts: NOW, flowKey: "flow-1-quiz", definitionVersion: 1, contactId: "cont_1", action: "enrolled", outcome: "enrolled", detail: { mode: "shadow" } });
     expect(db._events).toHaveLength(1);
     expect(db._events[0].engine).toBe("nurture");
+    expect(db._events[0].definition_version).toBe(1);
     expect(JSON.parse(db._events[0].detail)).toEqual({ mode: "shadow" });
   });
 });

@@ -56,6 +56,7 @@ export async function processStep({ enrollment, step, sequence }, deps, nowMs) {
     ts: nowMs,
     engine: "nurture",
     flowKey: sequence.sequenceId,
+    definitionVersion: enrollment.definitionVersion ?? sequence.definitionVersion,
     contactId: enrollment.contactId,
     stepIndex: step.stepIndex,
     channel: "email", // every nurture step is an email
