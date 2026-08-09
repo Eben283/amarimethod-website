@@ -314,6 +314,26 @@ function FamilyDetail({
                 </div>
               ))}
             </div>
+            {definition.cutoverReadiness && (
+              <section className="automation-cutover-readiness">
+                <header>
+                  <div>
+                    <h4>Cutover readiness</h4>
+                    <p>{definition.cutoverReadiness.summary}</p>
+                  </div>
+                  <span className={`is-${definition.cutoverReadiness.status}`}>{definition.cutoverReadiness.label}</span>
+                </header>
+                <ol>
+                  {definition.cutoverReadiness.requirements.map((requirement) => (
+                    <li className={`is-${requirement.status}`} key={requirement.code}>
+                      {requirement.status === 'proven' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                      <div><strong>{requirement.label}</strong><p>{requirement.detail}</p></div>
+                      <em>{requirement.status === 'review' ? 'Needs review' : requirement.status}</em>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
             {definition.messagePreview && (
               <section className="automation-message-preview">
                 <header>

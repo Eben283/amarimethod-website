@@ -216,6 +216,20 @@ export interface AutomationMessagePreview {
   notices: AutomationMessagePreviewNotice[];
 }
 
+export interface AutomationCutoverRequirement {
+  code: string;
+  status: 'proven' | 'blocked' | 'review';
+  label: string;
+  detail: string;
+}
+
+export interface AutomationCutoverReadiness {
+  status: 'not_eligible';
+  label: string;
+  summary: string;
+  requirements: AutomationCutoverRequirement[];
+}
+
 export interface AutomationOwnedDefinition {
   id: string;
   engine: 'reminder' | 'nurture';
@@ -227,6 +241,7 @@ export interface AutomationOwnedDefinition {
   exits: Array<Record<string, unknown>>;
   steps: AutomationOwnedStep[];
   messagePreview?: AutomationMessagePreview;
+  cutoverReadiness?: AutomationCutoverReadiness;
   source: { kind: 'owned_code'; path: string };
 }
 

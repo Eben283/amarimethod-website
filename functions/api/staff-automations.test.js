@@ -113,6 +113,12 @@ describe("staff-automations — views", () => {
             expect.objectContaining({ subject: "Your partner session is confirmed" }),
           ]),
         }),
+        cutoverReadiness: expect.objectContaining({
+          status: "not_eligible",
+          requirements: expect.arrayContaining([
+            expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+          ]),
+        }),
       })],
     }));
   });

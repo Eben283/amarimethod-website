@@ -53,6 +53,14 @@ describe("owned automation registry", () => {
           }),
         ]),
       }),
+      cutoverReadiness: expect.objectContaining({
+        status: "not_eligible",
+        requirements: expect.arrayContaining([
+          expect.objectContaining({ code: "native_lifecycle_shadow_proven", status: "proven" }),
+          expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+          expect.objectContaining({ code: "delivery_templates_and_adapter_not_owned", status: "blocked" }),
+        ]),
+      }),
     }));
     expect(definition.messagePreview.notices).toHaveLength(6);
   });

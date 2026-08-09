@@ -87,6 +87,12 @@ describe("provider-neutral automation families", () => {
           statuses: ["confirmed"],
         }),
         messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+        cutoverReadiness: expect.objectContaining({
+          status: "not_eligible",
+          requirements: expect.arrayContaining([
+            expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+          ]),
+        }),
       })],
     }));
     expect(family.evidence.gaps.map((gap) => gap.code)).toContain("owned_delivery_templates_not_loaded");

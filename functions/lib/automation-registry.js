@@ -49,6 +49,47 @@ const PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
   ]),
 });
 
+// Read-only activation map for the first cutover slice. This is deliberately outside the
+// reminder-engine config: it records what still belongs to the provider rather than making the
+// scheduler imply it can perform those actions.
+const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Not eligible for active delivery",
+  summary: "Shadow enrollment and cancellation are proven. GHL remains the sender until every blocked behavior below has an owned, verified replacement.",
+  requirements: Object.freeze([
+    Object.freeze({
+      code: "native_lifecycle_shadow_proven",
+      status: "proven",
+      label: "Native appointment lifecycle",
+      detail: "Confirmed enrollment, immediate would-send evidence, and cancellation of all four future reminders were proven beside the live flow on Aug. 9. No message was sent.",
+    }),
+    Object.freeze({
+      code: "no_show_series_exit_not_owned",
+      status: "blocked",
+      label: "Exit No Show Email SMS series on confirmation",
+      detail: "This is the first action in the live confirmation workflow. It is still owned by GHL and must be preserved and proven before activation.",
+    }),
+    Object.freeze({
+      code: "delivery_templates_and_adapter_not_owned",
+      status: "blocked",
+      label: "Deliver the exact messages from Amari",
+      detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active.",
+    }),
+    Object.freeze({
+      code: "quiet_period_evidence_pending",
+      status: "review",
+      label: "Check the quiet period",
+      detail: "Review the scoped appointment window for duplicate, late, or missing reminders before any owned message can become active.",
+    }),
+    Object.freeze({
+      code: "ghl_retirement_not_approved",
+      status: "blocked",
+      label: "Keep the GHL confirmation flow live",
+      detail: "Retirement needs separate approval after the blocked checks are closed and owned delivery evidence agrees with the live path.",
+    }),
+  ]),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -67,6 +108,7 @@ function reminderDefinition(flow) {
   };
   if (flow.flowKey === "partner-initial-in-person") {
     definition.messagePreview = clone(PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW);
+    definition.cutoverReadiness = clone(PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS);
   }
   return definition;
 }
