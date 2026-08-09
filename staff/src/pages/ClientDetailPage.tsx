@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowUpRight, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, House, User, Plus, Pencil,
+  ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus, Pencil,
   CalendarDays, CircleDollarSign, Dumbbell, BookOpenText, Focus,
   NotebookPen, Workflow,
 } from 'lucide-react';
@@ -25,7 +25,7 @@ import { isEditableStaffNote, isSystemNote } from '../../../shared/staff-note-po
 import '../styles/session-a.css';
 
 // Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
-const PAY_BTN: CSSProperties = { padding: '9px 14px', borderRadius: 9, border: '1px solid #cbd5e1', background: '#fff', fontSize: 13, fontWeight: 600, color: '#334155', cursor: 'pointer' };
+const PAY_BTN: CSSProperties = { padding: '10px 14px', borderRadius: 6, border: '1px solid var(--staff-line)', background: 'var(--staff-sheet)', fontSize: 13, fontWeight: 650, color: 'var(--staff-ink)', cursor: 'pointer' };
 
 // ── small display helpers ─────────────────────────────────────────────────
 function fmtDate(iso: string): string {
@@ -455,9 +455,6 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
       <header className="sa-head">
         <div className="sa-head-top">
           <div className="sa-head-nav">
-            <button className="sa-home" onClick={() => navigate('/')}>
-              <House size={16} /><span>Home</span>
-            </button>
             <button className="sa-back" onClick={() => navigate('/clients')}>
               <ArrowLeft size={18} /><span>All practice members</span>
             </button>
@@ -602,15 +599,15 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
           <div className="sa-workflow-head">
             <span className="ic"><Workflow size={19} /></span>
             <div>
-              <h2 id="workflow-insight-title">Read-only automation insight</h2>
-              <p>This is the owned reminder and nurture record for this person. Use Communication for exact message content; compare its timestamp and message reference with the events here before deciding what caused a send.</p>
+              <h2 id="workflow-insight-title">Automations for this person</h2>
+              <p>Open any enrollment to inspect what it does, what has run, and what is scheduled next. Exact message content stays in Communication.</p>
             </div>
           </div>
 
           <div className="sa-workflow-summary" aria-label="Automation summary">
             <span><b>{activeEnrollments.length}</b><small>Active enrollment{activeEnrollments.length === 1 ? '' : 's'}</small></span>
-            <span><b>{nextScheduledStep ? fmtDateTime(nextScheduledStep.dueAt) : 'None recorded'}</b><small>Next scheduled step</small></span>
-            <span className={failedAutomationEvents.length ? 'is-alert' : undefined}><b>{failedAutomationEvents.length}</b><small>Recent failed or bounced</small></span>
+            <span><b>{nextScheduledStep ? fmtDateTime(nextScheduledStep.dueAt) : 'None scheduled'}</b><small>Next action</small></span>
+            <span className={failedAutomationEvents.length ? 'is-alert' : undefined}><b>{failedAutomationEvents.length}</b><small>Needs review</small></span>
           </div>
 
           {automationEvidenceLoading ? (
@@ -620,9 +617,9 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
           ) : automationEvidence?.configured === false ? (
             <p className="sa-evidence-empty">Mirror gap: the owned-automation evidence database is not connected to this Staff environment. No conclusion about enrollment or sends can be made from this panel.</p>
           ) : (
-            <div className="sa-workflow-grid">
+            <div className="sa-workflow-grid sa-workflow-grid--enrollments">
               <div className="sa-evidence-block">
-                <div className="sa-evidence-title"><Workflow size={15} /><b>Enrollments</b><span>{automationEnrollments.length}</span></div>
+                <div className="sa-evidence-title"><Workflow size={15} /><b>Running and recorded automations</b><span>{automationEnrollments.length}</span></div>
                 {automationEnrollments.length ? automationEnrollments.map((enrollment) => {
                   const familyKey = enrollment.family?.key;
                   const ownedPersonId = automationEvidence?.contactId;
@@ -630,16 +627,12 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
                     <>
                       <p><b>{enrollment.family?.name || (enrollment.engine === 'reminder' ? 'Reminder engine' : enrollment.engine === 'nurture' ? 'Nurture engine' : humanizeEvidence(enrollment.engine))}</b><em className={enrollment.status === 'active' ? 'is-active' : undefined}>{enrollment.status}</em></p>
                       <dl>
-                        <div><dt>Key</dt><dd>{enrollment.key || 'Not mirrored'}</dd></div>
-                        <div><dt>Enrollment</dt><dd>{enrollment.enrollmentId || 'Not mirrored'}</dd></div>
                         <div><dt>Entered</dt><dd>{enrollment.enteredAt ? fmtDateTime(enrollment.enteredAt) : 'Not mirrored'}</dd></div>
-                        <div><dt>Starts</dt><dd>{enrollment.startAt ? fmtDateTime(enrollment.startAt) : 'Not recorded for this engine'}</dd></div>
                         <div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not attached'}</dd></div>
-                        <div><dt>Next type</dt><dd>{enrollment.nextStep?.type ? humanizeEvidence(enrollment.nextStep.type) : 'Not mirrored'}</dd></div>
-                        <div><dt>Next template</dt><dd>{enrollment.nextStep?.template || 'Not mirrored'}</dd></div>
-                        <div><dt>Due</dt><dd>{enrollment.nextStep?.dueAt ? fmtDateTime(enrollment.nextStep.dueAt) : 'No pending step mirrored'}</dd></div>
+                        <div><dt>Next</dt><dd>{enrollment.nextStep?.type ? humanizeEvidence(enrollment.nextStep.type) : 'No pending step recorded'}</dd></div>
+                        <div><dt>Due</dt><dd>{enrollment.nextStep?.dueAt ? fmtDateTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div>
                       </dl>
-                      {familyKey && <span className="sa-workflow-open">Inspect workflow <ArrowUpRight size={12} /></span>}
+                      {familyKey && <span className="sa-workflow-open">Open automation <ArrowUpRight size={12} /></span>}
                     </>
                   );
                   return familyKey && ownedPersonId ? (
@@ -650,28 +643,29 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
                 }) : <p className="sa-evidence-empty">No owned enrollment is mirrored. This can mean there is no enrollment or that its source has not reached the mirror yet.</p>}
               </div>
 
-              <div className="sa-evidence-block">
-                <div className="sa-evidence-title"><Workflow size={15} /><b>Recent events and outcomes</b><span>{automationEvents.length}</span></div>
-                {automationEvents.length ? automationEvents.map((event, index) => {
-                  const isFailure = ['failed', 'bounced', 'error'].includes((event.outcome || '').toLowerCase());
-                  const familyKey = event.family?.key;
-                  const ownedPersonId = automationEvidence?.contactId;
-                  const row = (
-                    <>
-                      <time dateTime={new Date(event.ts).toISOString()}>{fmtDateTime(event.ts)}</time>
-                      <p><b>{event.family?.name || (event.engine === 'reminder' ? 'Reminder engine' : event.engine === 'nurture' ? 'Nurture engine' : 'Automation engine')}</b>{event.action ? ` · ${humanizeEvidence(event.action)}` : ''}{event.channel ? ` · ${humanizeEvidence(event.channel)}` : ''}</p>
-                      <span>{event.outcome ? humanizeEvidence(event.outcome) : 'Outcome not recorded'}{event.flowKey ? ` · key ${event.flowKey}` : ''}{event.stepIndex != null ? ` · step ${event.stepIndex}` : ''}{event.appointmentId ? ` · appointment ${event.appointmentId}` : ''}{event.messageRef ? ` · message ${event.messageRef}` : ''}</span>
-                      {familyKey && <span className="sa-workflow-open">Inspect workflow <ArrowUpRight size={12} /></span>}
-                    </>
-                  );
-                  const key = `${event.ts}-${event.messageRef || index}`;
-                  return familyKey && ownedPersonId ? (
-                    <Link key={key} className={`sa-automation-row is-inspectable${isFailure ? ' is-failure' : ''}`} to={automationDrilldownPath(familyKey, ownedPersonId)}>{row}</Link>
-                  ) : (
-                    <article key={key} className={`sa-automation-row${isFailure ? ' is-failure' : ''}`}>{row}</article>
-                  );
-                }) : <p className="sa-evidence-empty">No owned event is mirrored for this person. Treat this as an evidence gap, not proof that nothing ran.</p>}
-              </div>
+              {failedAutomationEvents.length ? (
+                <div className="sa-automation-review" aria-label="Automation events that need review">
+                  <div className="sa-evidence-title"><Workflow size={15} /><b>Needs review</b><span>{failedAutomationEvents.length}</span></div>
+                  {failedAutomationEvents.slice(0, 3).map((event, index) => {
+                    const familyKey = event.family?.key;
+                    const ownedPersonId = automationEvidence?.contactId;
+                    const row = (
+                      <>
+                        <time dateTime={new Date(event.ts).toISOString()}>{fmtDateTime(event.ts)}</time>
+                        <p><b>{event.family?.name || event.flowKey || 'Automation event'}</b> · {humanizeEvidence(event.outcome || 'Review required')}</p>
+                        <span>{familyKey ? 'Open the automation for its definition and complete run evidence.' : 'This event is not mapped to an inspectable automation family yet; use Communication for the exact message record.'}</span>
+                        {familyKey && <span className="sa-workflow-open">Open automation <ArrowUpRight size={12} /></span>}
+                      </>
+                    );
+                    const key = `${event.ts}-${event.messageRef || index}`;
+                    return familyKey && ownedPersonId ? (
+                      <Link key={key} className="sa-automation-row is-inspectable is-failure" to={automationDrilldownPath(familyKey, ownedPersonId)}>{row}</Link>
+                    ) : (
+                      <article key={key} className="sa-automation-row is-failure">{row}</article>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           )}
 

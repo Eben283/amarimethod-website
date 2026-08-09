@@ -63,20 +63,27 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
   { label: 'Follow-up', detail: 'Replies and next moves', to: '/follow-up', Icon: ListChecks },
-  { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards, matches: (path) => path === '/balances' || path === '/revenue' || path === '/products' || path.startsWith('/products/') || path === '/pos' },
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
+  { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards },
+  { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
+  { label: 'Products', detail: 'Offers and sale items', to: '/products', Icon: Package, matches: (path) => path === '/products' || path.startsWith('/products/') },
+  { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
+  { label: 'Automations', detail: 'What runs and why', to: '/automations', Icon: Workflow },
   { label: 'Operations', detail: 'System health and cutover checks', to: '/operations', Icon: Activity, badge: 'operations' },
 ];
 
+const PRIMARY_GROUPS = [
+  { label: 'Today', items: PRIMARY_ITEMS.slice(0, 3) },
+  { label: 'People', items: PRIMARY_ITEMS.slice(3, 6) },
+  { label: 'Business', items: PRIMARY_ITEMS.slice(6, 10) },
+  { label: 'System', items: PRIMARY_ITEMS.slice(10) },
+];
+
 const SPECIALIST_ITEMS: RailItem[] = [
-  { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
-  { label: 'Products', detail: 'Offers and sale items', to: '/products', Icon: Package },
   { label: 'Media library', detail: 'Shared files and images', to: '/media', Icon: Images },
   { label: 'Design system', detail: 'Brand and collateral reference', to: '/design-system', Icon: Palette },
-  { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
   { label: 'Funnel', detail: 'Lead flow and pace', to: '/funnel', Icon: TrendingUp },
   { label: 'Community', detail: 'Field relationships', to: '/community', Icon: MapPinned },
-  { label: 'Automations', detail: 'What runs and why', to: '/automations', Icon: Workflow },
   { label: 'Playbooks', detail: 'Practice reference', to: '/playbook', Icon: BookOpen },
   { label: 'Ask Amari', detail: 'Chief of Staff', to: '/cos', Icon: Sparkles },
   { label: 'Field Studies', detail: 'Specialist study records', to: '/field-studies', Icon: ClipboardPlus },
@@ -248,10 +255,9 @@ function RailLink({ item, count, onChoose }: { item: RailItem; count: number | n
   const current = itemIsCurrent(item, pathname);
   const { Icon } = item;
   return (
-    <NavLink to={item.to} className={`practice-rail__link${active ? ' is-active' : ''}`} aria-current={current ? 'page' : undefined} onClick={onChoose}>
-      <span className="practice-rail__marker" aria-hidden="true" />
+    <NavLink to={item.to} className={`practice-rail__link${active ? ' is-active' : ''}`} aria-current={current ? 'page' : undefined} aria-label={`${item.label}: ${item.detail}`} title={item.detail} onClick={onChoose}>
       <Icon className="practice-rail__icon" aria-hidden="true" />
-      <span className="practice-rail__copy"><strong>{item.label}</strong><small>{item.detail}</small></span>
+      <span className="practice-rail__copy"><strong>{item.label}</strong></span>
       {item.badge ? <CountBadge kind={item.badge} count={count} /> : null}
     </NavLink>
   );
@@ -346,16 +352,19 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         <MemberSearch inputRef={searchRef} onChoose={closeDrawer} />
 
         <nav className="practice-rail__nav" aria-label="Primary Staff navigation">
-          <span className="practice-rail__section-label">Daily practice</span>
-          <div className="practice-rail__thread" aria-hidden="true" />
-          {PRIMARY_ITEMS.map((item) => (
-            <RailLink key={item.label} item={item} count={item.badge ? counts[item.badge] : null} onChoose={closeDrawer} />
+          {PRIMARY_GROUPS.map((group) => (
+            <div className="practice-rail__group" key={group.label}>
+              <span className="practice-rail__section-label">{group.label}</span>
+              {group.items.map((item) => (
+                <RailLink key={item.label} item={item} count={item.badge ? counts[item.badge] : null} onChoose={closeDrawer} />
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className={`practice-rail__specialists${specialistsOpen ? ' is-open' : ''}`}>
           <button type="button" className="practice-rail__specialist-toggle" onClick={() => setSpecialistsOpen((open) => !open)} aria-expanded={specialistsOpen}>
-            <span><strong>Specialist tools</strong><small>Open when the work calls for them</small></span>
+            <span><strong>All surfaces</strong></span>
             <ChevronDown aria-hidden="true" />
           </button>
           <nav aria-label="Specialist Staff tools">

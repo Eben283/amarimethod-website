@@ -1,12 +1,12 @@
 .staff-shell {
-  --practice-ink: #19343d;
-  --practice-ink-2: #284953;
-  --practice-paper: #f7faf9;
-  --practice-mist: #dce8e7;
-  --practice-line: rgba(188, 210, 209, .34);
-  --practice-lake: #78a3a2;
-  --practice-ochre: #d7a63f;
-  --practice-coral: #df8067;
+  --practice-ink: var(--staff-ink);
+  --practice-ink-2: var(--staff-body);
+  --practice-paper: var(--staff-paper);
+  --practice-mist: var(--staff-active-soft);
+  --practice-line: var(--staff-line);
+  --practice-lake: var(--staff-active);
+  --practice-ochre: var(--staff-attention);
+  --practice-coral: var(--staff-danger);
   min-height: 100dvh;
   background: var(--practice-paper);
 }
@@ -16,15 +16,13 @@
   inset: 0 auto 0 0;
   z-index: 80;
   display: flex;
-  width: 252px;
+  width: 240px;
   height: 100dvh;
   flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 19px 14px 14px;
-  background:
-    radial-gradient(circle at 31px 58px, rgba(137, 185, 181, .14), transparent 138px),
-    var(--practice-ink);
+  padding: 18px 12px 14px;
+  background: var(--staff-ink);
   color: #f6faf9;
   scrollbar-width: thin;
   scrollbar-color: rgba(215, 230, 228, .25) transparent;
@@ -62,7 +60,7 @@
   justify-content: center;
   gap: 3px;
   border: 1px solid rgba(226, 240, 238, .26);
-  border-radius: 50%;
+  border-radius: 6px;
   background: rgba(255, 255, 255, .055);
 }
 
@@ -83,7 +81,7 @@
 
 .practice-rail__brand strong {
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   letter-spacing: -.01em;
 }
@@ -91,12 +89,12 @@
 .practice-rail__brand small,
 .practice-rail__section-label,
 .practice-rail__foot span {
-  color: #91adaf;
+  color: #B8CBC8;
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: .13em;
-  line-height: 1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.25;
   text-transform: uppercase;
 }
 
@@ -116,7 +114,7 @@
 .practice-search {
   position: relative;
   z-index: 4;
-  margin: 17px 1px 14px;
+  margin: 18px 1px 20px;
 }
 
 .practice-search > label {
@@ -130,14 +128,14 @@
 
 .practice-search__field {
   display: grid;
-  min-height: 40px;
+  min-height: 46px;
   grid-template-columns: 18px minmax(0, 1fr) 16px;
   align-items: center;
   gap: 7px;
   padding: 0 10px;
   border: 1px solid rgba(215, 231, 229, .18);
-  border-radius: 11px;
-  background: rgba(242, 248, 247, .09);
+  border-radius: var(--staff-radius-control);
+  background: rgba(255, 255, 255, .08);
   transition: border-color 160ms ease, background 160ms ease;
 }
 
@@ -159,7 +157,7 @@
   outline: 0;
   background: transparent;
   color: #fff;
-  font-size: 11px;
+  font-size: 14px;
 }
 
 .practice-search__field input::placeholder { color: #91a9ab; }
@@ -173,8 +171,8 @@
   width: min(330px, calc(100vw - 28px));
   overflow: hidden;
   border: 1px solid #cbdad9;
-  border-radius: 13px;
-  background: #fbfdfc;
+  border-radius: var(--staff-radius-sheet);
+  background: var(--staff-sheet);
   box-shadow: 0 18px 45px rgba(10, 34, 39, .28);
   color: var(--practice-ink);
 }
@@ -183,7 +181,7 @@
   margin: 0;
   padding: 19px 15px;
   color: #6b7f82;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .practice-search__results button {
@@ -196,7 +194,7 @@
   padding: 7px 10px;
   border: 0;
   border-bottom: 1px solid #edf2f1;
-  background: #fbfdfc;
+  background: var(--staff-sheet);
   color: var(--practice-ink);
   text-align: left;
 }
@@ -212,7 +210,7 @@
   border-radius: 50%;
   background: #dceae7;
   color: #315c61;
-  font: 600 9px 'IBM Plex Mono', ui-monospace, monospace;
+  font: 700 12px 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 .practice-search__results button > span:last-child {
@@ -223,7 +221,7 @@
 
 .practice-search__results strong {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -232,7 +230,7 @@
 .practice-search__results small {
   overflow: hidden;
   color: #6c8183;
-  font-size: 9px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -241,41 +239,30 @@
   display: block;
   padding: 11px 13px;
   color: #276d72;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: none;
 }
 
 .practice-rail__nav {
-  position: relative;
   display: grid;
-  gap: 2px;
+  gap: 17px;
 }
 
-.practice-rail__section-label { padding: 7px 13px 9px 34px; }
-
-/* The quiet, continuous practice thread is the shell's orientation device:
-   each work area is a position on one practice day, not a separate mini-app. */
-.practice-rail__thread {
-  position: absolute;
-  top: 35px;
-  bottom: 22px;
-  left: 21px;
-  width: 1px;
-  background: var(--practice-line);
-}
+.practice-rail__group { display: grid; gap: 3px; }
+.practice-rail__section-label { padding: 0 10px 5px; }
 
 .practice-rail__link {
   position: relative;
   display: grid;
-  min-height: 45px;
-  grid-template-columns: 10px 19px minmax(0, 1fr) auto;
+  min-height: 44px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
   gap: 7px;
-  padding: 5px 8px;
+  padding: 7px 10px;
   border: 1px solid transparent;
-  border-radius: 10px;
-  color: #c3d3d2;
+  border-radius: var(--staff-radius-control);
+  color: #DFE9E6;
   text-decoration: none;
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
 }
@@ -295,33 +282,16 @@
 }
 
 .practice-rail__link.is-active {
-  border-color: #e5cf9f;
-  background: #f4e7ca;
-  color: #173239;
-  box-shadow: 0 5px 16px rgba(5, 24, 28, .18), inset 0 1px 0 rgba(255, 255, 255, .55);
-}
-
-.practice-rail__marker {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 7px;
-  height: 7px;
-  justify-self: center;
-  border: 2px solid var(--practice-ink);
-  border-radius: 50%;
-  background: #6f8e91;
-  box-shadow: 0 0 0 1px rgba(174, 205, 202, .46);
-}
-
-.practice-rail__link.is-active .practice-rail__marker {
-  background: var(--practice-ochre);
-  box-shadow: 0 0 0 3px rgba(215, 166, 63, .14);
+  border-color: var(--staff-sheet);
+  border-left: 4px solid #E3B859;
+  background: var(--staff-sheet);
+  color: var(--staff-ink);
+  box-shadow: none;
 }
 
 .practice-rail__icon {
-  width: 17px;
-  height: 17px;
+  width: 19px;
+  height: 19px;
   stroke-width: 1.75;
 }
 
@@ -331,27 +301,27 @@
   gap: 2px;
 }
 
-.practice-rail__copy strong { font-size: 11px; font-weight: 600; line-height: 1.15; }
-.practice-rail__copy small { color: #849fa1; font-size: 8.5px; line-height: 1.2; }
+.practice-rail__copy strong { font-size: 14px; font-weight: 650; line-height: 1.2; }
+.practice-rail__copy small { color: #AFC3C1; font-size: 12px; line-height: 1.3; }
 .practice-rail__link.is-active small { color: #52706e; }
 
 .practice-rail__badge {
   display: inline-grid;
-  min-width: 19px;
-  height: 19px;
+  min-width: 24px;
+  height: 24px;
   place-items: center;
   padding: 0 5px;
   border-radius: 999px;
   background: var(--practice-coral);
   color: #fff;
-  font: 700 8px 'IBM Plex Mono', ui-monospace, monospace;
+  font: 700 12px 'IBM Plex Mono', ui-monospace, monospace;
 }
 
 .practice-rail__badge--operations { background: var(--practice-ochre); color: #2f2c20; }
 
 .practice-rail__specialists {
-  margin-top: 13px;
-  padding-top: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
   border-top: 1px solid rgba(203, 222, 220, .13);
 }
 
@@ -363,7 +333,7 @@
   align-items: center;
   padding: 5px 11px 5px 13px;
   border: 0;
-  border-radius: 9px;
+  border-radius: var(--staff-radius-control);
   background: transparent;
   color: #c3d3d2;
   text-align: left;
@@ -371,13 +341,13 @@
 
 .practice-rail__specialist-toggle:hover { background: rgba(255, 255, 255, .05); }
 .practice-rail__specialist-toggle > span { display: grid; gap: 3px; }
-.practice-rail__specialist-toggle strong { font-size: 10px; font-weight: 600; }
-.practice-rail__specialist-toggle small { color: #789598; font-size: 8px; }
+.practice-rail__specialist-toggle strong { font-size: 13px; font-weight: 650; }
+.practice-rail__specialist-toggle small { color: #B1C5C2; font-size: 12px; }
 .practice-rail__specialist-toggle svg { width: 16px; height: 16px; transition: transform 160ms ease; }
 .practice-rail__specialists.is-open .practice-rail__specialist-toggle svg { transform: rotate(180deg); }
 .practice-rail__specialists nav { display: none; gap: 1px; margin-top: 4px; }
 .practice-rail__specialists.is-open nav { display: grid; }
-.practice-rail__specialists .practice-rail__link { grid-template-columns: 19px minmax(0, 1fr); padding-left: 16px; min-height: 40px; }
+.practice-rail__specialists .practice-rail__link { grid-template-columns: 19px minmax(0, 1fr); padding-left: 12px; min-height: 42px; }
 .practice-rail__specialists .practice-rail__marker { display: none; }
 .practice-rail__specialists .practice-rail__copy small { display: none; }
 
@@ -393,8 +363,6 @@
   padding-left: 16px;
 }
 
-.practice-rail__settings .practice-rail__marker { display: none; }
-
 .practice-rail__foot {
   display: flex;
   align-items: center;
@@ -406,11 +374,11 @@
 
 .practice-rail__foot span { display: inline-flex; align-items: center; gap: 7px; }
 .practice-rail__foot span i { width: 6px; height: 6px; border-radius: 50%; background: #79ad91; box-shadow: 0 0 0 3px rgba(121, 173, 145, .1); }
-.practice-rail__foot button { display: inline-flex; align-items: center; gap: 5px; min-height: 34px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; color: #91a9ab; font-size: 8px; font-weight: 600; }
+.practice-rail__foot button { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 0 7px; border: 0; border-radius: 6px; background: transparent; color: #C4D5D2; font-size: 12px; font-weight: 650; }
 .practice-rail__foot button:hover { background: rgba(255, 255, 255, .05); color: #fff; }
 .practice-rail__foot button svg { width: 13px; height: 13px; }
 
-.staff-shell__main { min-width: 0; min-height: 100dvh; margin-left: 252px; }
+.staff-shell__main { min-width: 0; min-height: 100dvh; margin-left: 240px; }
 .staff-shell__content { min-width: 0; min-height: 100dvh; }
 .staff-shell__mobile-head,
 .staff-shell__dock,
@@ -419,8 +387,8 @@
 @keyframes practice-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1100px) and (min-width: 901px) {
-  .practice-rail { width: 224px; }
-  .staff-shell__main { margin-left: 224px; }
+  .practice-rail { width: 220px; }
+  .staff-shell__main { margin-left: 220px; }
   .practice-rail__copy small { display: none; }
 }
 
@@ -435,10 +403,9 @@
     grid-template-columns: 44px 1fr 44px;
     align-items: center;
     padding: env(safe-area-inset-top, 0px) 8px 0;
-    border-bottom: 1px solid #dce6e5;
-    background: rgba(247, 250, 249, .94);
-    box-shadow: 0 1px 0 rgba(25, 52, 61, .03);
-    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--staff-line);
+    background: var(--staff-paper);
+    box-shadow: none;
   }
 
   .staff-shell__mobile-head button {
@@ -456,8 +423,8 @@
   .staff-shell__mobile-head button:last-child { justify-self: end; }
   .staff-shell__mobile-head svg { width: 20px; height: 20px; stroke-width: 1.8; }
   .staff-shell__mobile-head div { display: grid; justify-items: center; gap: 1px; min-width: 0; }
-  .staff-shell__mobile-head span { color: #728789; font: 500 8px 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
-  .staff-shell__mobile-head strong { overflow: hidden; max-width: 100%; color: var(--practice-ink); font-size: 12px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .staff-shell__mobile-head span { color: var(--staff-muted); font: 700 12px 'IBM Plex Mono', ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+  .staff-shell__mobile-head strong { overflow: hidden; max-width: 100%; color: var(--practice-ink); font-size: 14px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 
   .practice-rail {
     inset: 0 auto 0 0;
@@ -475,7 +442,7 @@
   .practice-search__field input { font-size: 13px; }
   .practice-rail__link { min-height: 50px; }
   .practice-rail__copy strong { font-size: 12px; }
-  .practice-rail__copy small { font-size: 9px; }
+  .practice-rail__copy small { font-size: 12px; }
 
   .staff-shell__scrim {
     position: fixed;
@@ -503,10 +470,9 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: start;
     padding: 6px 6px env(safe-area-inset-bottom, 0px);
-    border-top: 1px solid #d8e3e2;
-    background: rgba(249, 251, 250, .96);
-    box-shadow: 0 -8px 25px rgba(25, 52, 61, .07);
-    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--staff-line);
+    background: var(--staff-sheet);
+    box-shadow: 0 -4px 16px rgba(18, 51, 59, .08);
   }
 
   .staff-shell__dock a,
@@ -520,7 +486,7 @@
     border: 0;
     border-radius: 10px;
     background: transparent;
-    color: #74878a;
+    color: var(--staff-muted);
     text-decoration: none;
   }
 
@@ -538,8 +504,8 @@
   .staff-shell__dock a > span,
   .staff-shell__dock button > span { position: relative; display: grid; place-items: center; }
   .staff-shell__dock svg { width: 19px; height: 19px; stroke-width: 1.8; }
-  .staff-shell__dock small { overflow: hidden; max-width: 100%; font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-  .staff-shell__dock .practice-rail__badge { position: absolute; top: -7px; right: -12px; min-width: 16px; height: 16px; padding: 0 4px; font-size: 7px; }
+  .staff-shell__dock small { overflow: hidden; max-width: 100%; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+  .staff-shell__dock .practice-rail__badge { position: absolute; top: -8px; right: -15px; min-width: 20px; height: 20px; padding: 0 4px; font-size: 12px; }
 
   /* The old floating Home bubble would duplicate the persistent dock. */
   .staff-home-widget { display: none !important; }
