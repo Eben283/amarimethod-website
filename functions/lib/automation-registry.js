@@ -49,6 +49,35 @@ const PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
   ]),
 });
 
+// Registry-only source-copy for the next bounded reminder subset. These constants are never
+// imported by the engine or a sender; they let Staff compare the source copy with the shadow
+// definition before a delivery adapter exists.
+const INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
+  status: "source_verified_read_only",
+  label: "Source-verified read-only copy. This reconciled shadow definition does not send messages.",
+  notices: Object.freeze([
+    Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.first_name}} booked a {{calendar.name}}", body: "Hi, Big Dog,\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nStudio: 662 8th Ave, San Francisco, CA 94118" }),
+    Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "You're booked — here's what to expect", preheader: "Your session with Garrett is confirmed", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is confirmed:\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nWear something comfortable you can move in. That's all you need.\n\nAdd to Calendar: Add to Google Calendar {{appointment.add_to_google_calendar}} · Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nIf something came up: Reschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nWe look forward to seeing you.\nThe Amari Method Team" }),
+    Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", subject: "Your session on {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}", preheader: "Quick reminder about your session tomorrow", body: "Hi {{contact.first_name}},\n\nJust a heads up about your upcoming session:\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nAdd to Calendar: Add to Google Calendar {{appointment.add_to_google_calendar}} · Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nIf something came up: Reschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nLooking forward to it.\nGarrett" }),
+    Object.freeze({ stepIndex: 3, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, just a friendly reminder — your appointment with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}. 662 8th Ave, San Francisco, CA 94118" }),
+    Object.freeze({ stepIndex: 4, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", subject: "Your session at {{appointment.only_start_time}} {{appointment.timezone}}", body: "Hi {{contact.first_name}},\n\nYour Amari Method session is at {{appointment.only_start_time}} {{appointment.timezone}}.\n662 8th Ave, San Francisco, CA 94118\n\nSee you soon.\nGarrett" }),
+    Object.freeze({ stepIndex: 5, audience: "internal", channel: "sms", body: "{{contact.name}}'s {{calendar.name}} appointment at {{appointment.only_start_time}} {{appointment.timezone}}. These were the specific issues this person wanted to address (if applicable): {{contact.additional_information}}" }),
+  ]),
+});
+
+const INITIAL_VIRTUAL_MESSAGE_PREVIEW = Object.freeze({
+  status: "source_verified_read_only",
+  label: "Source-verified read-only copy. This reconciled shadow definition does not send messages.",
+  notices: Object.freeze([
+    Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.name}} booked a {{calendar.name}}", body: "Hi {{user.first_name}},\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nHow we'll connect: {{appointment.meeting_location}}" }),
+    Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "You're booked, here's what to expect", preheader: "Your first Amari Method session is confirmed.", body: "Hi {{contact.first_name}},\n\nYou're confirmed for your first Amari Method session with Garrett. Here's everything you need.\n\nSession Details — Date: {{appointment.only_start_date}}\nTime: {{appointment.only_start_time}} {{appointment.timezone}}\nDuration: 60 minutes\n\nJoining Your Session — We use Google Meet. Your link: {{appointment.meeting_location}}. Please test your camera and mic beforehand. Find a quiet space with at least 6' x 6' of room to move.\n\nEquipment — It's most helpful to have everything below ready for your first session. We may not use it all today, that depends on what we focus on, but you'll use these as your practice continues.\nYoga block, required. We'll use it in the first session. → https://amzn.to/4kDykic\nHigh-density foam roller → https://amzn.to/4rjKlfk\nPull-up bar → https://amzn.to/3ZzXYel\nGymnastic rings → https://amzn.to/4aB3MsS\n\nWhat to Wear — Wear something comfortable you can move in.\n\nReschedule {{appointment.reschedule_link}} | Cancel {{appointment.cancellation_link}}\nAdd to Google Calendar {{appointment.add_to_google_calendar}} | Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nThe Amari Method Team" }),
+    Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", subject: "See you tomorrow, {{contact.first_name}}", preheader: "Quick reminder about your session tomorrow", body: "Hi {{contact.first_name}},\n\nJust a heads up about your upcoming session:\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\nHow we'll connect: {{appointment.meeting_location}}\n\nAdd to Google Calendar {{appointment.add_to_google_calendar}} · Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nIf something came up: Reschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nLooking forward to it.\nGarrett" }),
+    Object.freeze({ stepIndex: 3, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", subject: "Your session is in 1 hour", preheader: "Your Google Meet link is below.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}.\nGoogle Meet: {{appointment.meeting_location}}\n\nA few things before we start:\n- Join 5 minutes early to test your connection.\n- Have your equipment ready: foam roller, yoga block, pull-up bar, gymnastic rings.\n- Find a quiet space with room to move (at least 6' x 6').\n- Wear comfortable clothes you can move in.\n\nIf you have trouble connecting, call us at (628) 877-7673.\n\nSee you soon.\nGarrett" }),
+    Object.freeze({ stepIndex: 4, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, just a friendly reminder. Your appointment with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}. Here is the link: {{appointment.meeting_location}}" }),
+    Object.freeze({ stepIndex: 5, audience: "internal", channel: "sms", body: "{{contact.name}}'s {{calendar.name}} appointment at {{appointment.only_start_time}} {{appointment.timezone}}. These were the specific issues this person wanted to address (if applicable): {{contact.additional_information}} Here is the meeting link: {{appointment.meeting_location}}" }),
+  ]),
+});
+
 // Read-only activation map for the first cutover slice. This is deliberately outside the
 // reminder-engine config: it records what still belongs to the provider rather than making the
 // scheduler imply it can perform those actions.
@@ -90,6 +119,32 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
   ]),
 });
 
+const INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Not eligible for active delivery",
+  summary: "The source contract is reconciled in code only. This definition has not yet run beside GHL on an all-DND test appointment.",
+  requirements: Object.freeze([
+    Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "The retired post-session equipment email is removed; confirmed-only user/customer triggers and the shared Assessment calendar are now represented in the shadow definition." }),
+    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove a native shadow run", detail: "Use a dedicated all-DND appointment to verify enrollment, due timing, reschedule, and cancellation without sending a message." }),
+    Object.freeze({ code: "assessment_no_show_exit_scope_unresolved", status: "blocked", label: "Resolve the no-show exit scope", detail: "The legacy Initial pipeline workflow owns the No Show Email SMS series exit. The Assessment trigger shares this reminder workflow but not that legacy pipeline workflow; do not assume equivalent behavior." }),
+    Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep the GHL reminder workflow live", detail: "Retirement needs separate approval after all gates close and owned delivery evidence agrees with the live path." }),
+  ]),
+});
+
+const INITIAL_VIRTUAL_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Not eligible for active delivery",
+  summary: "The source contract is reconciled in code only. This legacy virtual definition has not yet run beside GHL on an all-DND test appointment.",
+  requirements: Object.freeze([
+    Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "Confirmed-only user/customer triggers and all six live message actions are represented in the shadow definition." }),
+    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove a native shadow run", detail: "Use a dedicated all-DND appointment to verify enrollment, due timing, reschedule, and cancellation without sending a message." }),
+    Object.freeze({ code: "no_show_series_exit_not_owned", status: "blocked", label: "Preserve the No Show Email SMS series exit", detail: "The related legacy pipeline workflow currently owns this exit. It remains external behavior until an owned replacement is implemented and proven." }),
+    Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep the GHL reminder workflow live", detail: "Retirement needs separate approval after all gates close and owned delivery evidence agrees with the live path." }),
+  ]),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -109,6 +164,14 @@ function reminderDefinition(flow) {
   if (flow.flowKey === "partner-initial-in-person") {
     definition.messagePreview = clone(PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW);
     definition.cutoverReadiness = clone(PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS);
+  }
+  if (flow.flowKey === "initial-in-person") {
+    definition.messagePreview = clone(INITIAL_IN_PERSON_MESSAGE_PREVIEW);
+    definition.cutoverReadiness = clone(INITIAL_IN_PERSON_CUTOVER_READINESS);
+  }
+  if (flow.flowKey === "initial-virtual") {
+    definition.messagePreview = clone(INITIAL_VIRTUAL_MESSAGE_PREVIEW);
+    definition.cutoverReadiness = clone(INITIAL_VIRTUAL_CUTOVER_READINESS);
   }
   return definition;
 }

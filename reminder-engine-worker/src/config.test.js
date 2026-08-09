@@ -11,7 +11,9 @@ describe("registry", () => {
   });
 
   it("routes calendars to their flows (discovery covers all THREE discovery calendars)", () => {
-    expect(flowsForCalendar("G7OAnnJuFbMF6nQSlZVQ").map((f) => f.flowKey)).toEqual(["initial-in-person"]);
+    for (const cal of ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]) {
+      expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(["initial-in-person"]);
+    }
     expect(flowsForCalendar("ySmht5hx4uZGEpgZrlCw").map((f) => f.flowKey)).toEqual(["initial-virtual"]);
     for (const cal of ["USgPsktqRcuomdUgpShL", "aVE54Qf4lrbYTB0zFqXy", "ZEIGFHBi17SpZ3Ezi5DR"]) {
       expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(["discovery-call"]);
@@ -22,8 +24,14 @@ describe("registry", () => {
 });
 
 describe("flow shapes vs the twin specs", () => {
-  it("initial-in-person: 7 steps (twin steps 1-11 collapsed to sends)", () => {
-    expect(INITIAL_IN_PERSON.steps).toHaveLength(7);
+  it("initial in-person/Assessment: six current live message actions, with no retired equipment email", () => {
+    expect(INITIAL_IN_PERSON.definitionVersion).toBe(2);
+    expect(INITIAL_IN_PERSON.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
+      "enroll:internal_email", "enroll:email", "start-1440m:email",
+      "start-60m:sms", "start-60m:email", "start-60m:internal_sms",
+    ]);
+    expect(INITIAL_IN_PERSON.steps.some((step) => step.template === "equipment-list")).toBe(false);
+    expect(INITIAL_IN_PERSON.enrollOn).toEqual({ statuses: ["confirmed"], modifiedBy: ["user", "customer"] });
   });
 
   it("initial-virtual: 6 steps — welcome, day-before, three one-hour touches", () => {
@@ -31,7 +39,8 @@ describe("flow shapes vs the twin specs", () => {
       "enroll:internal_email", "enroll:email", "start-1440m:email",
       "start-60m:email", "start-60m:sms", "start-60m:internal_sms",
     ]);
-    expect(INITIAL_VIRTUAL.enrollOn.statuses).toEqual(["booked", "confirmed"]);
+    expect(INITIAL_VIRTUAL.definitionVersion).toBe(2);
+    expect(INITIAL_VIRTUAL.enrollOn).toEqual({ statuses: ["confirmed"], modifiedBy: ["user", "customer"] });
     expect(INITIAL_VIRTUAL.cancelOn).toEqual(["cancelled"]);
   });
 

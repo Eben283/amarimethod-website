@@ -22,7 +22,9 @@ describe("owned automation registry", () => {
       "nurture:flow-3-post-initial",
     ]);
     for (const definition of definitions) {
-      expect(definition.definitionVersion).toBe(1);
+      expect(definition.definitionVersion).toBe(
+        ["reminder:initial-in-person", "reminder:initial-virtual"].includes(definition.id) ? 2 : 1,
+      );
       expect(definition.name).toBeTruthy();
       expect(definition.mode).toBe("shadow");
       expect(definition.source.kind).toBe("owned_code");
@@ -63,6 +65,31 @@ describe("owned automation registry", () => {
       }),
     }));
     expect(definition.messagePreview.notices).toHaveLength(6);
+  });
+
+  it("reconciles the next initial-session subset without turning on delivery", () => {
+    const inPerson = findAutomationDefinition("reminder", "initial-in-person");
+    const virtual = findAutomationDefinition("reminder", "initial-virtual");
+
+    expect(inPerson).toEqual(expect.objectContaining({
+      definitionVersion: 2,
+      trigger: { calendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] },
+      messagePreview: expect.objectContaining({ status: "source_verified_read_only", notices: expect.any(Array) }),
+      cutoverReadiness: expect.objectContaining({
+        status: "not_eligible",
+        requirements: expect.arrayContaining([
+          expect.objectContaining({ code: "assessment_no_show_exit_scope_unresolved", status: "blocked" }),
+        ]),
+      }),
+    }));
+    expect(inPerson.steps).toHaveLength(6);
+    expect(inPerson.steps.some((step) => step.template === "equipment-list")).toBe(false);
+    expect(virtual).toEqual(expect.objectContaining({
+      definitionVersion: 2,
+      trigger: { calendarIds: ["ySmht5hx4uZGEpgZrlCw"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] },
+      messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
+    }));
   });
 
   it("returns detached read models so API consumers cannot mutate engine config", () => {

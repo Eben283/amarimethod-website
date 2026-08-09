@@ -56,16 +56,19 @@ describe("provider-neutral automation families", () => {
     ]);
     expect(family.ownedDefinitions[0]).toEqual(expect.objectContaining({
       trigger: expect.objectContaining({
-        calendarIds: ["G7OAnnJuFbMF6nQSlZVQ"],
-        statuses: ["booked", "confirmed"],
+        calendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"],
+        statuses: ["confirmed"],
+        modifiedBy: ["user", "customer"],
       }),
       steps: expect.arrayContaining([
         expect.objectContaining({ stepIndex: 1, at: "enroll", type: "email", template: "confirmation" }),
       ]),
+      messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
     }));
     expect(family.evidence.gaps.map((gap) => gap.code)).toEqual(expect.arrayContaining([
       "external_canvas_history_not_imported",
-      "owned_template_bodies_not_loaded",
+      "owned_delivery_templates_not_loaded",
     ]));
   });
 

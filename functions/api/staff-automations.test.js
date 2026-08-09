@@ -61,8 +61,10 @@ describe("staff-automations — views", () => {
     expect(body.definitions).toHaveLength(7);
     expect(body.definitions[0]).toEqual(expect.objectContaining({
       id: "reminder:initial-in-person",
-      definitionVersion: 1,
+      definitionVersion: 2,
       source: { kind: "owned_code", path: "reminder-engine-worker/src/config.js" },
+      messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
     }));
   });
 

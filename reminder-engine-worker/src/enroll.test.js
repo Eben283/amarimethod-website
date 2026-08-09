@@ -33,7 +33,8 @@ describe("resolveDueAt", () => {
 describe("isEligible", () => {
   it("accepts a configured-calendar event whose status is in enrollOn", () => {
     expect(isEligible(evt(), INITIAL_IN_PERSON)).toBe(true);
-    expect(isEligible(evt({ type: "booked" }), INITIAL_IN_PERSON)).toBe(true);
+    expect(isEligible(evt({ type: "booked" }), INITIAL_IN_PERSON)).toBe(false);
+    expect(isEligible(evt({ calendarId: "EM6vB2mq7EAdGCbUb3j1" }), INITIAL_IN_PERSON)).toBe(true);
   });
   it("rejects a different calendar", () => {
     expect(isEligible(evt({ calendarId: "other" }), INITIAL_IN_PERSON)).toBe(false);
@@ -53,7 +54,7 @@ describe("isEligible", () => {
 });
 
 describe("enroll", () => {
-  it("builds an active enrollment with all 7 steps and propagated ids", () => {
+  it("builds an active enrollment with the six current live message actions", () => {
     const e = enroll(evt(), INITIAL_IN_PERSON, NOW_2D_BEFORE);
     expect(e).toMatchObject({
       flowKey: "initial-in-person",
@@ -63,8 +64,8 @@ describe("enroll", () => {
       status: "active",
       enrolledAt: NOW_2D_BEFORE,
     });
-    expect(e.steps).toHaveLength(7);
-    expect(e.steps.map((s) => s.stepIndex)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    expect(e.steps).toHaveLength(6);
+    expect(e.steps.map((s) => s.stepIndex)).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   it("computes each step's dueAt from its offset", () => {
@@ -73,7 +74,6 @@ describe("enroll", () => {
     expect(e.steps[1].dueAt).toBe(NOW_2D_BEFORE); // enroll
     expect(e.steps[2].dueAt).toBe(START - 1440 * MIN); // day-before
     expect(e.steps[3].dueAt).toBe(START - 60 * MIN); // 1-hour sms
-    expect(e.steps[6].dueAt).toBe(START + 5 * MIN); // equipment list
   });
 
   it("marks nothing skipped when enrolled well before the appointment", () => {
@@ -92,8 +92,6 @@ describe("enroll", () => {
     expect(e.steps[3].status).toBe("skipped");
     expect(e.steps[4].status).toBe("skipped");
     expect(e.steps[5].status).toBe("skipped");
-    // start+5m is still in the future → pending
-    expect(e.steps[6].status).toBe("pending");
   });
 
   it("returns null for an ineligible event", () => {

@@ -18,11 +18,14 @@
 //                skipIfPast: true  → if the computed time is already past at enroll, skip (don't backfire)
 
 export const INITIAL_IN_PERSON = Object.freeze({
-  name: "Initial Session — In Person",
-  definitionVersion: 1,
+  name: "Initial / Assessment — In Person",
+  definitionVersion: 2,
   flowKey: "initial-in-person",
-  calendarIds: Object.freeze(["G7OAnnJuFbMF6nQSlZVQ"]), // Initial Session In-Person
-  enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
+  // One live GHL reminder workflow covers both its legacy Initial Session calendar and the
+  // current Assessment calendar. This is the source-verified reminder scope, not a payment or
+  // pipeline definition.
+  calendarIds: Object.freeze(["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]),
+  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: Object.freeze(["user", "customer"]) }),
   cancelOn: Object.freeze(["cancelled"]),
   mode: "shadow",
   steps: Object.freeze([
@@ -32,7 +35,6 @@ export const INITIAL_IN_PERSON = Object.freeze({
     { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
     { at: "start-60m", type: "email", template: "starting-soon", skipIfPast: true },
     { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
-    { at: "start+5m", type: "email", template: "equipment-list", skipIfPast: false },
   ]),
 });
 
@@ -41,10 +43,10 @@ export const INITIAL_IN_PERSON = Object.freeze({
 // 2026-06-17 de-slopped; templates resolve at the active-mode brick).
 export const INITIAL_VIRTUAL = Object.freeze({
   name: "Initial Session — Virtual",
-  definitionVersion: 1,
+  definitionVersion: 2,
   flowKey: "initial-virtual",
   calendarIds: Object.freeze(["ySmht5hx4uZGEpgZrlCw"]), // Initial Session - Virtual
-  enrollOn: Object.freeze({ statuses: Object.freeze(["booked", "confirmed"]), modifiedBy: null }),
+  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: Object.freeze(["user", "customer"]) }),
   cancelOn: Object.freeze(["cancelled"]),
   mode: "shadow",
   steps: Object.freeze([

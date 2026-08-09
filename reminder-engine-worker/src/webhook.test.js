@@ -152,8 +152,11 @@ describe("handleWebhook — the GHL appointment ingest on the worker (no Pages n
     const res = await handleWebhook(req(livePayload, SECRET), { ...env, PORTAL_KV: {} }, Date.now());
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.actions).toContainEqual(expect.objectContaining({ engine: "reminder", action: "enroll" }));
-    expect(env.REMINDER_DB._enrollments.size).toBe(1);
+    // The canonical appointment lookup has no actor field. The source workflows permit only
+    // user/customer confirmation events, so an actor-unknown fallback must not create shadow
+    // evidence that could never have entered the live workflow.
+    expect(body.actions).not.toContainEqual(expect.objectContaining({ engine: "reminder", action: "enroll" }));
+    expect(env.REMINDER_DB._enrollments.size).toBe(0);
     expect(env.REMINDER_DB._events.some((e) => e.action === "ingest_enriched")).toBe(true);
     // API call hit the appointment endpoint with the id from the payload
     const apiCall = fetchMock.mock.calls.find(([u]) => String(u).includes("leadconnectorhq"));

@@ -112,7 +112,7 @@ describe("handleEvent — enroll", () => {
     const { actions } = await handleEvent(env, event(), NOW);
     expect(actions).toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: "initial-in-person" } });
     expect(env.REMINDER_DB._enrollments.size).toBe(1);
-    expect(env.REMINDER_DB._steps).toHaveLength(7);
+    expect(env.REMINDER_DB._steps).toHaveLength(6);
     expect(env.REMINDER_DB._events.some((e) => e.action === "enrolled")).toBe(true);
   });
 
@@ -120,7 +120,7 @@ describe("handleEvent — enroll", () => {
     await handleEvent(env, event(), NOW);
     const { actions } = await handleEvent(env, event(), NOW);
     expect(actions).toContainEqual(expect.objectContaining({ action: "enroll-noop" }));
-    expect(env.REMINDER_DB._steps).toHaveLength(7);
+    expect(env.REMINDER_DB._steps).toHaveLength(6);
   });
 
   it("retimes pending reminders when the same appointment is rescheduled", async () => {
@@ -136,7 +136,7 @@ describe("handleEvent — enroll", () => {
     expect(env.REMINDER_DB._enrollments.get("initial-in-person:appt_1").start_at).toBe(movedStart);
     expect(env.REMINDER_DB._steps.find((step) => step.step_index === 2).due_at)
       .toBe(Date.parse(movedStart) - 1440 * 60_000);
-    expect(env.REMINDER_DB._steps).toHaveLength(7); // the original run is retimed, never duplicated
+    expect(env.REMINDER_DB._steps).toHaveLength(6); // the original run is retimed, never duplicated
   });
 
   it("never reopens a shadowed confirmation when the appointment is rescheduled", async () => {
