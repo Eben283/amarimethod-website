@@ -59,8 +59,13 @@ export async function onRequestGet(context) {
         const startMs = parsePacificWallClock(e.startTime || e.start_time || "");
         const status = (e.appointmentStatus || e.status || "").toLowerCase();
         const cur = byContact.get(cid) || { name: null, attended: 0, lastMs: 0 };
-        if (ATTENDED.has(status) && Number.isFinite(startMs) && startMs < now) cur.attended += 1;
-        if (Number.isFinite(startMs) && startMs > cur.lastMs) cur.lastMs = startMs;
+        // A roster's "last session" must be a completed, past visit. Future
+        // bookings and cancellations are not session history and would put a
+        // member in the wrong position in the default Staff list.
+        if (ATTENDED.has(status) && Number.isFinite(startMs) && startMs < now) {
+          cur.attended += 1;
+          if (startMs > cur.lastMs) cur.lastMs = startMs;
+        }
         if (!cur.name) cur.name = clientNameFromTitle(e.title);
         byContact.set(cid, cur);
       }
