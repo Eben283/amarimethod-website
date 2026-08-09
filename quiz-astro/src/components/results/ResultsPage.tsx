@@ -70,10 +70,9 @@ const EDITORIAL_STYLES = `
   padding:0;
 }
 [data-results] .doc-bar .brand{
-  font-family:var(--display);font-size:18px;font-weight:500;letter-spacing:.2em;
-  display:inline-flex;align-items:center;gap:10px;color:var(--ink);text-transform:uppercase;
+  display:inline-flex;align-items:center;width:228px;color:var(--ink);
 }
-[data-results] .doc-bar .brand .mark{display:none}
+[data-results] .doc-bar .brand img{display:block;width:100%;height:auto}
 [data-results] .doc-bar .center{
   font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;
   text-transform:uppercase;color:var(--body);text-align:center;
@@ -429,6 +428,7 @@ const EDITORIAL_STYLES = `
 @media(max-width:720px){
   [data-results] .doc,[data-results] .doc-narrow{padding:0 20px}
   [data-results] .doc-bar{padding:18px 20px}
+  [data-results] .doc-bar .brand{width:190px}
   [data-results] .doc-bar .center{display:none}
   [data-results] .hero-finding{padding:32px 0 8px}
   [data-results] .hero-meta{grid-template-columns:1fr}
@@ -483,8 +483,7 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       <div className="doc-bar">
         <div className="doc-bar-inner">
           <a className="brand" href="https://www.amarimethod.com/">
-            <span className="mark" aria-hidden="true" />
-            <span>Amari Method</span>
+            <img src="/images/identity/amari-method-wordmark.svg" alt="Amari Method" />
           </a>
           <div className="center">Your result · Pain pattern quiz</div>
           <div className="right">
