@@ -10,6 +10,7 @@ const MIGRATIONS = [
   "../migrations/0010_owned_sender_foundation.sql",
   "../migrations/0015_owned_communication_commands.sql",
   "../migrations/0016_gmail_provider_evidence.sql",
+  "../migrations/0017_gmail_sync_gap_evidence.sql",
 ];
 
 function d1(raw) {
@@ -111,7 +112,7 @@ describe("Gmail reply synchronization", () => {
       actor: "Eben",
       owner: "eben@amarimethod.com",
       cursor: null,
-      counts: { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, ignored: 0, deduped: 0 },
+      counts: { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 },
     });
     expect(gmail.listHistoryPage).not.toHaveBeenCalled();
     expect(gmail.getMessage).not.toHaveBeenCalled();
@@ -131,10 +132,47 @@ describe("Gmail reply synchronization", () => {
       actor: "Eben",
       owner: "eben@amarimethod.com",
       cursor: "100",
-      counts: { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, ignored: 0, deduped: 0 },
+      counts: { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 },
       error: { code: "history_cursor_expired", message: "Gmail history cursor expired" },
     });
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(1);
+  });
+
+  it("durably reviews a message deleted between history and get, then advances after later replies", async () => {
+    const { raw, db, now } = fixture();
+    await checkpoint(db, "100", now);
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({ history: [{
+        id: "101",
+        messagesAdded: [{ message: { id: "deleted-1" } }, { message: { id: "inbound-1" } }],
+      }] }),
+      getMessage: vi.fn(async (id) => {
+        if (id === "deleted-1") {
+          throw Object.assign(new Error("Gmail message no longer exists"), { code: "gmail_message_missing" });
+        }
+        return gmailMessage();
+      }),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toMatchObject({
+      status: "succeeded",
+      cursor: "101",
+      counts: { historyRecords: 1, messages: 2, accepted: 1, reviewed: 1, skipped: 1 },
+    });
+    expect(raw.prepare(
+      `SELECT mailbox_actor, grant_owner, mailbox_address, provider_message_id, history_id, reason
+         FROM gmail_sync_gap_reviews`,
+    ).get()).toEqual({
+      mailbox_actor: "Eben",
+      grant_owner: "eben@amarimethod.com",
+      mailbox_address: "eben@amarimethod.com",
+      provider_message_id: "deleted-1",
+      history_id: "101",
+      reason: "provider_message_missing",
+    });
+    expect(raw.prepare("SELECT history_id FROM gmail_history_observations ORDER BY rowid DESC LIMIT 1").get().history_id)
+      .toBe("101");
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_inbound_messages").get().count).toBe(1);
   });
 
   it("records one exact reply and checkpoints its complete history record", async () => {
@@ -147,7 +185,7 @@ describe("Gmail reply synchronization", () => {
       actor: "Eben",
       owner: "eben@amarimethod.com",
       cursor: "101",
-      counts: { historyRecords: 1, messages: 1, accepted: 1, reviewed: 0, ignored: 0, deduped: 0 },
+      counts: { historyRecords: 1, messages: 1, accepted: 1, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 },
     });
 
     expect(gmail.listHistoryPage).toHaveBeenCalledWith({ startHistoryId: "100", pageToken: null, maxResults: 50 });
@@ -194,7 +232,7 @@ describe("Gmail reply synchronization", () => {
       actor: "Eben",
       owner: "eben@amarimethod.com",
       cursor: third,
-      counts: { historyRecords: 3, messages: 2, accepted: 2, reviewed: 0, ignored: 0, deduped: 3 },
+      counts: { historyRecords: 3, messages: 2, accepted: 2, reviewed: 0, skipped: 0, ignored: 0, deduped: 3 },
     });
     expect(listHistoryPage).toHaveBeenNthCalledWith(1, { startHistoryId: start, pageToken: null, maxResults: 10 });
     expect(listHistoryPage).toHaveBeenNthCalledWith(2, { startHistoryId: start, pageToken: "page-2", maxResults: 10 });
@@ -429,7 +467,7 @@ describe("Gmail reply synchronization", () => {
       actor: "Eben",
       owner: "eben@amarimethod.com",
       cursor: "100",
-      counts: { historyRecords: 0, messages: 1, accepted: 1, reviewed: 0, ignored: 0, deduped: 0 },
+      counts: { historyRecords: 0, messages: 1, accepted: 1, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 },
       error: { code: "gmail_unavailable", message: "temporary Gmail read failure", messageId: "inbound-2", historyId: "101" },
     });
     expect(raw.prepare("SELECT history_id FROM gmail_history_observations ORDER BY rowid DESC LIMIT 1").get().history_id)

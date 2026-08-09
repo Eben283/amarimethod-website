@@ -9,6 +9,7 @@ const MIGRATIONS = [
   "../migrations/0010_owned_sender_foundation.sql",
   "../migrations/0015_owned_communication_commands.sql",
   "../migrations/0016_gmail_provider_evidence.sql",
+  "../migrations/0017_gmail_sync_gap_evidence.sql",
 ];
 
 function d1(raw) {
@@ -159,6 +160,30 @@ describe("Gmail provider evidence", () => {
 
     expect(raw.prepare("SELECT history_id FROM gmail_provider_events").get().history_id)
       .toBe("900719925474099312345");
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(0);
+  });
+
+  it("records a missing provider message as idempotent append-only sync-gap review evidence", async () => {
+    const { raw, db, now } = fixture();
+    const context = { mailboxActor: "Eben", grantOwner: "eben@amarimethod.com" };
+    const evidence = {
+      kind: "gmail_message_missing",
+      mailboxAddress: "eben@amarimethod.com",
+      providerMessageId: "deleted-message-1",
+      historyId: "900719925474099312345",
+      reason: "provider_message_missing",
+      observedAt: now,
+    };
+
+    await expect(ingestGmailEvidence(db, context, evidence, now)).resolves.toMatchObject({
+      kind: "gmail_message_missing",
+      providerMessageId: "deleted-message-1",
+      historyId: "900719925474099312345",
+      reason: "provider_message_missing",
+      deduped: false,
+    });
+    await expect(ingestGmailEvidence(db, context, evidence, now)).resolves.toMatchObject({ deduped: true });
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_sync_gap_reviews").get().count).toBe(1);
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(0);
   });
 

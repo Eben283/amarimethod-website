@@ -136,7 +136,7 @@ function normalizeMessage(message, historyId, owner) {
 }
 
 function initialCounts() {
-  return { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, ignored: 0, deduped: 0 };
+  return { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 };
 }
 
 function recovery(actor, owner, cursor, counts, error, detail = {}) {
@@ -250,6 +250,26 @@ export async function syncGmailReplies({ db, provider, maxHistoryRecords = 50, m
         if (result.attribution === "review") counts.reviewed += 1;
         else counts.accepted += 1;
       } catch (error) {
+        if (error?.code === "gmail_message_missing") {
+          let result;
+          try {
+            result = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, {
+              kind: "gmail_message_missing",
+              mailboxAddress: owner,
+              providerMessageId: id,
+              historyId: record.id,
+              reason: "provider_message_missing",
+              observedAt: now,
+            }, now);
+          } catch (reviewError) {
+            return recovery(actor, owner, cursor, counts, reviewError, { messageId: id, historyId: record.id });
+          }
+          counts.messages += 1;
+          counts.reviewed += 1;
+          counts.skipped += 1;
+          if (result.deduped) counts.deduped += 1;
+          continue;
+        }
         return recovery(actor, owner, cursor, counts, error, { messageId: id, historyId: record.id });
       }
     }
