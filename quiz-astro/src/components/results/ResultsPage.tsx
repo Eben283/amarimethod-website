@@ -105,7 +105,7 @@ const EDITORIAL_STYLES = `
 }
 [data-results] .hero-sub em{font-style:normal;color:var(--ink)}
 [data-results] .hero-meta{
-  margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  margin-top:34px;display:grid;grid-template-columns:1fr;gap:1px;
   background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;
   max-width:none;
 }
@@ -495,14 +495,6 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
     : shareState === 'error'    ? 'Something went wrong'
     : 'Share your result';
 
-  // Recovery reading text label (used in hero meta)
-  const recoveryScore = scores.recoveryPotential;
-  const recoveryWord =
-    recoveryScore >= 75 ? 'High'
-    : recoveryScore >= 60 ? 'Good'
-    : recoveryScore >= 45 ? 'Moderate'
-    : 'Limited';
-
   return (
     <div data-results>
       <style dangerouslySetInnerHTML={{ __html: EDITORIAL_STYLES }} />
@@ -527,12 +519,10 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       </div>
 
       {/* 2 — Hero finding */}
-      <ResultsHero
-        firstName={firstName}
-        patternSignature={patternSignature}
-        scores={scores}
-        recoveryWord={recoveryWord}
-      />
+        <ResultsHero
+          firstName={firstName}
+          patternSignature={patternSignature}
+        />
 
       {/* Share strip */}
       <div className="share-strip">
