@@ -41,26 +41,28 @@ const DEFAULT_ACTIVITY_WINDOW_HOURS = 48; // today + yesterday
 const CRM_WORKER_CONTACTS_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
 const CRM_WORKER_TIMEOUT_MS = 10_000;
 
-async function providerCrosswalkForOwnedContact(context, ownedContactId) {
-  if (!context.env.WORKER_AUTH_SECRET) return { providerContactId: null, state: "unavailable" };
+async function contactIdentityForReference(context, contactReference) {
+  if (!context.env.WORKER_AUTH_SECRET) return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
-    const response = await fetch(`${CRM_WORKER_CONTACTS_URL}?limit=20&query=${encodeURIComponent(ownedContactId)}`, {
+    const response = await fetch(`${CRM_WORKER_CONTACTS_URL}?limit=20&query=${encodeURIComponent(contactReference)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal,
     });
-    if (!response.ok) return { providerContactId: null, state: "unavailable" };
+    if (!response.ok) return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
     const body = await response.json();
     const contact = (Array.isArray(body.contacts) ? body.contacts : [])
-      .find((candidate) => String(candidate.id || "") === ownedContactId);
-    if (!contact) return { providerContactId: null, state: "owned_contact_not_found" };
+      .find((candidate) => String(candidate.id || "") === contactReference
+        || String(candidate.provider_contact_id || "") === contactReference);
+    if (!contact) return { ownedContactId: contactReference, providerContactId: null, state: "owned_contact_not_found" };
     return {
+      ownedContactId: String(contact.id),
       providerContactId: contact.provider_contact_id ? String(contact.provider_contact_id) : null,
       state: contact.provider_contact_id ? "resolved" : "owned_only",
     };
   } catch {
-    return { providerContactId: null, state: "unavailable" };
+    return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
   } finally {
     clearTimeout(timer);
   }
@@ -182,11 +184,12 @@ export async function onRequestGet(context) {
     }
 
     if (view === "contact") {
-      const ownedContactId = (url.searchParams.get("contactId") || "").trim();
-      if (!VALID_CONTACT_ID.test(ownedContactId)) {
+      const contactReference = (url.searchParams.get("contactId") || "").trim();
+      if (!VALID_CONTACT_ID.test(contactReference)) {
         return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers });
       }
-      const identity = await providerCrosswalkForOwnedContact(context, ownedContactId);
+      const identity = await contactIdentityForReference(context, contactReference);
+      const ownedContactId = identity.ownedContactId;
       const contactEvidence = {
         ...evidence,
         gaps: [...evidence.gaps, ...contactIdentityGaps(identity.state)],
