@@ -13,6 +13,22 @@ import QuizFooter from './QuizFooter';
 // stays out of the initial welcome-screen bundle.
 const ResultsPage = React.lazy(() => import('./results/ResultsPage'));
 
+// A no-submit review state for internal visual approval. It is only enabled
+// by the explicit URL flag and never calls the quiz submission endpoint.
+const ANSWER_MAP_PREVIEW = {
+  firstName: 'Preview',
+  patternSignature: 'Established Pattern' as const,
+  scores: {
+    softTissueTension: 40,
+    jointBoneAlignment: 25,
+    patternDuration: 80,
+    dailyActivitiesImpact: 70,
+    bodyAdaptations: 25,
+    recoveryPotential: 72,
+  },
+  insights: [],
+};
+
 function topMetaLabel({
   isProcessing,
   currentStep,
@@ -56,6 +72,8 @@ const QuizContainer = () => {
     retrySubmission,
     hasStarted,
   } = useQuiz();
+  const isAnswerMapPreview = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('preview') === 'answer-map';
 
   // Auto-skip Q10 (treatment results) if no treatments selected
   React.useEffect(() => {
@@ -118,7 +136,7 @@ const QuizContainer = () => {
     </section>
   );
 
-  const isResultsView = isCompleted && !isProcessing;
+  const isResultsView = isAnswerMapPreview || (isCompleted && !isProcessing);
   const meta = topMetaLabel({ isProcessing, currentStep, totalSteps });
   // During results the ResultsPage owns its own chrome; hide take-flow topbar/footer.
   const showTakeChrome = !isResultsView;
@@ -143,13 +161,13 @@ const QuizContainer = () => {
 
       {isResultsView ? (
         <div>
-          {scores && patternSignature && (
+          {(isAnswerMapPreview || (scores && patternSignature)) && (
             <Suspense fallback={renderLoadingState()}>
               <ResultsPage
-                firstName={firstName}
-                patternSignature={patternSignature}
-                scores={scores}
-                insights={insights}
+                firstName={isAnswerMapPreview ? ANSWER_MAP_PREVIEW.firstName : firstName}
+                patternSignature={isAnswerMapPreview ? ANSWER_MAP_PREVIEW.patternSignature : patternSignature!}
+                scores={isAnswerMapPreview ? ANSWER_MAP_PREVIEW.scores : scores!}
+                insights={isAnswerMapPreview ? ANSWER_MAP_PREVIEW.insights : insights}
               />
             </Suspense>
           )}
