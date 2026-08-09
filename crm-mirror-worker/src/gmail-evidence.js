@@ -22,8 +22,12 @@ const INBOUND_FIELDS = new Set([
   "historyId", "receivedAt",
 ]);
 const HISTORY_FIELDS = new Set(["kind", "mailboxAddress", "historyId", "observedAt"]);
-const MISSING_MESSAGE_FIELDS = new Set([
+const SYNC_GAP_FIELDS = new Set([
   "kind", "mailboxAddress", "providerMessageId", "historyId", "reason", "observedAt",
+]);
+const SYNC_GAP_REASONS = new Map([
+  ["gmail_message_missing", "provider_message_missing"],
+  ["gmail_body_truncated", "body_truncated"],
 ]);
 
 export class GmailEvidenceError extends Error {
@@ -371,14 +375,14 @@ async function historyObservation(db, identity, input, now) {
   return { kind: "history_observation", mailboxActor: identity.mailboxActor, grantOwner: identity.grantOwner, mailboxAddress, historyId: cursor, deduped: Boolean(existing) };
 }
 
-async function missingMessage(db, identity, input, now) {
-  exactFields(input, MISSING_MESSAGE_FIELDS);
+async function syncGap(db, identity, input, now) {
+  exactFields(input, SYNC_GAP_FIELDS);
   const mailboxAddress = emailAddress(input.mailboxAddress || identity.grantOwner, "mailboxAddress");
   if (mailboxAddress !== identity.grantOwner) throw new GmailEvidenceError("mailboxAddress must equal grantOwner");
   const providerMessageId = identifier(input.providerMessageId, "providerMessageId", { required: true });
   const cursor = historyId(input.historyId, { required: true });
   const reason = cleanText(input.reason, 80, { required: true });
-  if (reason !== "provider_message_missing") throw new GmailEvidenceError("invalid Gmail sync gap reason");
+  if (SYNC_GAP_REASONS.get(input.kind) !== reason) throw new GmailEvidenceError("invalid Gmail sync gap reason");
   const observedAt = timestamp(input.observedAt || now, "observedAt");
   const existing = await db.prepare(
     `SELECT id FROM gmail_sync_gap_reviews
@@ -392,7 +396,7 @@ async function missingMessage(db, identity, input, now) {
   ).bind(id, identity.mailboxActor, identity.grantOwner, mailboxAddress, providerMessageId, cursor,
     reason, observedAt, now).run();
   return {
-    kind: "gmail_message_missing", mailboxActor: identity.mailboxActor, grantOwner: identity.grantOwner,
+    kind: input.kind, mailboxActor: identity.mailboxActor, grantOwner: identity.grantOwner,
     mailboxAddress, providerMessageId, historyId: cursor, reason, deduped: Boolean(existing),
   };
 }
@@ -407,7 +411,7 @@ export async function recordGmailEvidence(db, mailboxContext, input, now = new D
   if (input?.kind === "provider_outcome") return providerOutcome(db, identity, input, now);
   if (input?.kind === "inbound_message") return inboundMessage(db, identity, input, now);
   if (input?.kind === "history_observation") return historyObservation(db, identity, input, now);
-  if (input?.kind === "gmail_message_missing") return missingMessage(db, identity, input, now);
+  if (SYNC_GAP_REASONS.has(input?.kind)) return syncGap(db, identity, input, now);
   throw new GmailEvidenceError("unsupported Gmail evidence kind");
 }
 

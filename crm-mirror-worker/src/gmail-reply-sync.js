@@ -11,6 +11,8 @@ const MAILBOXES = new Map([
   ["Garrett", "garrett@amarimethod.com"],
 ]);
 const MAX_MESSAGES_PER_HISTORY_RECORD = 500;
+const MAX_BODY_CHARS = 50000;
+const MAX_BODY_DECODE_BYTES = (MAX_BODY_CHARS * 4) + 4;
 
 function mailboxContext(provider) {
   const actor = String(provider?.mailboxContext?.mailboxActor || "").trim();
@@ -76,9 +78,15 @@ function decodeBody(payload) {
   if (!payload) return null;
   if (String(payload.mimeType || "").toLowerCase() === "text/plain" && payload.body?.data) {
     const encoded = String(payload.body.data).replace(/-/g, "+").replace(/_/g, "/");
-    const padded = encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=");
+    const encodedLimit = Math.floor((Math.ceil(MAX_BODY_DECODE_BYTES / 3) * 4) / 4) * 4;
+    const bounded = encoded.slice(0, encodedLimit);
+    const padded = bounded.padEnd(Math.ceil(bounded.length / 4) * 4, "=");
     const binary = atob(padded);
-    return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+    const decoded = new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+    return {
+      body: decoded.slice(0, MAX_BODY_CHARS),
+      truncated: encoded.length > bounded.length || decoded.length > MAX_BODY_CHARS,
+    };
   }
   for (const part of payload.parts || []) {
     const body = decodeBody(part);
@@ -118,20 +126,24 @@ function normalizeMessage(message, historyId, owner) {
     ...addresses(headers.get("to")),
     ...addresses(headers.get("cc")),
   ])];
+  const decoded = decodeBody(message.payload);
   return {
-    kind: "inbound_message",
-    providerMessageId,
-    gmailThreadId,
-    rfcMessageId: headers.get("message-id") || null,
-    inReplyTo: headers.get("in-reply-to") || null,
-    references: references(headers.get("references")),
-    mailboxAddress: owner,
-    fromAddress: headers.get("from"),
-    toAddresses,
-    subject: headers.get("subject") || null,
-    body: decodeBody(message.payload) ?? snippetBody(message.snippet),
-    historyId,
-    receivedAt: receivedAt(message, headers),
+    evidence: {
+      kind: "inbound_message",
+      providerMessageId,
+      gmailThreadId,
+      rfcMessageId: headers.get("message-id") || null,
+      inReplyTo: headers.get("in-reply-to") || null,
+      references: references(headers.get("references")),
+      mailboxAddress: owner,
+      fromAddress: headers.get("from"),
+      toAddresses,
+      subject: headers.get("subject") || null,
+      body: decoded?.body ?? snippetBody(message.snippet),
+      historyId,
+      receivedAt: receivedAt(message, headers),
+    },
+    bodyTruncated: Boolean(decoded?.truncated),
   };
 }
 
@@ -160,12 +172,19 @@ async function historyRecords(provider, startCursor, limit, counts) {
   const pageTokens = new Set();
   let pageToken = null;
   let hasMore = false;
+  let terminalHistoryId = null;
   do {
     const page = await provider.listHistoryPage({
       startHistoryId: startCursor,
       pageToken,
       maxResults: Math.min(limit, 500),
     });
+    if (page?.historyId != null) {
+      terminalHistoryId = String(page.historyId).trim();
+      if (!/^\d+$/.test(terminalHistoryId)) {
+        throw Object.assign(new Error("Gmail history response has an invalid high-water ID"), { code: "invalid_history_high_water" });
+      }
+    }
     for (const record of page?.history || []) {
       const id = String(record?.id || "").trim();
       if (!/^\d+$/.test(id)) throw Object.assign(new Error("Gmail history record is missing a decimal ID"), { code: "invalid_history_record" });
@@ -191,7 +210,11 @@ async function historyRecords(provider, startCursor, limit, counts) {
       pageTokens.add(pageToken);
     }
   } while (pageToken);
-  return { records: [...records.values()].sort((a, b) => decimalCompare(a.id, b.id)), hasMore };
+  return {
+    records: [...records.values()].sort((a, b) => decimalCompare(a.id, b.id)),
+    hasMore,
+    terminalHistoryId,
+  };
 }
 
 export async function syncGmailReplies({ db, provider, maxHistoryRecords = 50, maxMessages = 50, now = new Date().toISOString() }) {
@@ -245,10 +268,23 @@ export async function syncGmailReplies({ db, provider, maxHistoryRecords = 50, m
           counts.ignored += 1;
           continue;
         }
-        const result = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, normalizeMessage(message, record.id, owner), now);
+        const normalized = normalizeMessage(message, record.id, owner);
+        const result = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, normalized.evidence, now);
         if (result.deduped) counts.deduped += 1;
         if (result.attribution === "review") counts.reviewed += 1;
         else counts.accepted += 1;
+        if (normalized.bodyTruncated) {
+          const review = await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, {
+            kind: "gmail_body_truncated",
+            mailboxAddress: owner,
+            providerMessageId: id,
+            historyId: record.id,
+            reason: "body_truncated",
+            observedAt: now,
+          }, now);
+          counts.reviewed += 1;
+          if (review.deduped) counts.deduped += 1;
+        }
       } catch (error) {
         if (error?.code === "gmail_message_missing") {
           let result;
@@ -280,5 +316,18 @@ export async function syncGmailReplies({ db, provider, maxHistoryRecords = 50, m
     cursor = record.id;
   }
   if (counts.historyRecords < records.length || loaded.hasMore) partial = true;
+  if (!partial && loaded.terminalHistoryId && decimalCompare(loaded.terminalHistoryId, cursor) > 0) {
+    try {
+      await recordGmailEvidence(db, { mailboxActor: actor, grantOwner: owner }, {
+        kind: "history_observation",
+        mailboxAddress: owner,
+        historyId: loaded.terminalHistoryId,
+        observedAt: now,
+      }, now);
+      cursor = loaded.terminalHistoryId;
+    } catch (error) {
+      return recovery(actor, owner, cursor, counts, error, { historyId: loaded.terminalHistoryId });
+    }
+  }
   return { status: partial ? "partial" : "succeeded", actor, owner, cursor, counts };
 }

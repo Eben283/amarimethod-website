@@ -1,6 +1,6 @@
--- Append-only evidence for a Gmail history item that disappeared before its
--- message could be read. This closes a cursor livelock without silently
--- treating the missing message as received Communication.
+-- Append-only review evidence for a Gmail history gap or bounded content
+-- transformation. This closes cursor livelocks without silently treating a
+-- missing or truncated message as complete Communication evidence.
 
 CREATE TABLE IF NOT EXISTS gmail_sync_gap_reviews (
   id TEXT PRIMARY KEY,
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS gmail_sync_gap_reviews (
   mailbox_address TEXT NOT NULL CHECK (mailbox_address = grant_owner),
   provider_message_id TEXT NOT NULL,
   history_id TEXT NOT NULL,
-  reason TEXT NOT NULL CHECK (reason = 'provider_message_missing'),
+  reason TEXT NOT NULL CHECK (reason IN ('provider_message_missing', 'body_truncated')),
   observed_at TEXT NOT NULL,
   created_at TEXT NOT NULL,
   UNIQUE (grant_owner, provider_message_id, history_id)

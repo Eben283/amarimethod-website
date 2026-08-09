@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
-import { recordGmailEvidence } from "./gmail-evidence.js";
+import { gmailEvidenceReadModel, recordGmailEvidence } from "./gmail-evidence.js";
 import { syncGmailReplies } from "./gmail-reply-sync.js";
 
 const MIGRATIONS = [
@@ -138,6 +138,45 @@ describe("Gmail reply synchronization", () => {
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(1);
   });
 
+  it("checkpoints the terminal Gmail high-water when the filtered history response is empty", async () => {
+    const { raw, db, now } = fixture();
+    await checkpoint(db, "100", now);
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({ history: [], historyId: "150" }),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toEqual({
+      status: "succeeded",
+      actor: "Eben",
+      owner: "eben@amarimethod.com",
+      cursor: "150",
+      counts: { historyRecords: 0, messages: 0, accepted: 0, reviewed: 0, skipped: 0, ignored: 0, deduped: 0 },
+    });
+    expect(gmail.getMessage).not.toHaveBeenCalled();
+    expect(raw.prepare("SELECT history_id FROM gmail_history_observations ORDER BY rowid DESC LIMIT 1").get().history_id)
+      .toBe("150");
+  });
+
+  it("advances to the terminal Gmail high-water after the last returned record succeeds", async () => {
+    const { raw, db, now } = fixture();
+    await checkpoint(db, "100", now);
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({
+        history: [{ id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] }],
+        historyId: "150",
+      }),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toMatchObject({
+      status: "succeeded",
+      cursor: "150",
+      counts: { historyRecords: 1, messages: 1, accepted: 1 },
+    });
+    expect(raw.prepare("SELECT history_id FROM gmail_inbound_messages").get().history_id).toBe("101");
+    expect(raw.prepare("SELECT history_id FROM gmail_history_observations ORDER BY rowid DESC LIMIT 1").get().history_id)
+      .toBe("150");
+  });
+
   it("durably reviews a message deleted between history and get, then advances after later replies", async () => {
     const { raw, db, now } = fixture();
     await checkpoint(db, "100", now);
@@ -255,7 +294,7 @@ describe("Gmail reply synchronization", () => {
         { id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] },
         { id: "102", messagesAdded: [{ message: { id: "inbound-2" } }] },
         { id: "103", messagesAdded: [{ message: { id: "inbound-3" } }] },
-      ] }),
+      ], historyId: "999" }),
       getMessage: vi.fn(async (id) => ({ "inbound-1": gmailMessage(), "inbound-2": second, "inbound-3": third })[id]),
     });
 
@@ -387,6 +426,36 @@ describe("Gmail reply synchronization", () => {
     expect(stored).toHaveLength(4000);
     expect(stored).not.toContain("private.pdf");
     expect(stored).not.toContain("attachment-1");
+  });
+
+  it("bounds oversized inline text, records a visible truncation review, and advances the cursor", async () => {
+    const { raw, db, now } = fixture();
+    await checkpoint(db, "100", now);
+    const message = gmailMessage();
+    message.payload.body.data = Buffer.from("a".repeat(50050)).toString("base64url");
+    const gmail = provider({
+      listHistoryPage: vi.fn().mockResolvedValue({
+        history: [{ id: "101", messagesAdded: [{ message: { id: "inbound-1" } }] }],
+        historyId: "150",
+      }),
+      getMessage: vi.fn().mockResolvedValue(message),
+    });
+
+    await expect(syncGmailReplies({ db, provider: gmail, now })).resolves.toMatchObject({
+      status: "succeeded",
+      cursor: "150",
+      counts: { historyRecords: 1, messages: 1, accepted: 1, reviewed: 1, skipped: 0 },
+    });
+    expect(raw.prepare("SELECT length(body_clean) AS length FROM gmail_inbound_messages").get().length).toBe(50000);
+    expect((await gmailEvidenceReadModel(db, {
+      mailboxActor: "Eben", grantOwner: "eben@amarimethod.com", limit: 10,
+    })).syncGaps).toEqual([
+      expect.objectContaining({
+        provider_message_id: "inbound-1",
+        history_id: "101",
+        reason: "body_truncated",
+      }),
+    ]);
   });
 
   it("requires trustworthy Gmail time metadata and leaves the record uncheckpointed when it is absent", async () => {
