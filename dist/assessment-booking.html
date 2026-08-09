@@ -88,13 +88,14 @@
     .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: var(--sans); font-size: 13px; color: var(--body); text-decoration: none; background: none; border: none; cursor: pointer; }
     .btn-back:hover { color: var(--ink); }
 
+    .client-form { margin-top: 28px; padding: 28px; border: 1px solid var(--line); background: rgba(255,255,255,0.34); }
     .form-row { margin-bottom: 18px; }
     .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-label { display: block; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--body); margin-bottom: 8px; }
     .form-label .req { color: #c64a3a; margin-left: 2px; }
-    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: var(--sans); font-size: 16px; line-height: 1.4; color: var(--ink); background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; transition: border-color 0.15s ease; }
-    .form-input:focus { outline: none; border-bottom-color: var(--ink); border-bottom-width: 2px; padding-bottom: 11px; }
-    .form-input.is-invalid { border-bottom-color: #c64a3a; }
+    .form-input { width: 100%; min-height: 48px; box-sizing: border-box; padding: 11px 13px; font-family: var(--sans); font-size: 16px; line-height: 1.4; color: var(--ink); background: rgba(255,255,255,0.68); border: 1px solid #cfcac0; border-radius: 2px; transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+    .form-input:focus { outline: none; background: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(25,27,24,0.08); }
+    .form-input.is-invalid { border-color: #c64a3a; }
     .form-input::placeholder { color: #b8b0a0; }
     .form-error { font-family: var(--sans); font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
 
@@ -122,6 +123,7 @@
     }
     @media (max-width: 480px) {
       .book-page { padding: clamp(110px,24vw,140px) 16px 48px; }
+      .client-form { padding: 20px 16px; }
       .form-row.cols-2 { grid-template-columns: 1fr; }
       .cal-day { font-size: 14px; min-height: 44px; }
       .slot-btn { min-height: 48px; padding: 16px 10px; }
@@ -265,7 +267,7 @@
           <div class="order-summary-row order-summary-total"><span>Total today</span><span data-booking-price>$29</span></div>
         </div>
 
-        <form id="clientForm" novalidate style="margin-top: 28px;">
+        <form id="clientForm" class="client-form" novalidate>
           <div class="form-row cols-2">
             <div>
               <label class="form-label" for="firstName">First name<span class="req">*</span></label>
@@ -412,6 +414,7 @@
       const CHECKOUT_API = '/api/book/create-checkout';
       const AGREEMENT_VERSION = BOOKING.agreementVersion;
       const LOOKAHEAD_DAYS = 60;
+      const INITIAL_LOOKAHEAD_DAYS = 7;
 
       // ---------- state ----------
       const state = {
@@ -585,6 +588,49 @@
       }
 
       // ---------- slot loading ----------
+      function slotsUrl(startDate, endDate) {
+        return SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
+          + '&startDate=' + startDate + '&endDate=' + endDate
+          + '&timezone=' + encodeURIComponent(state.timezone);
+      }
+
+      async function requestSlots(startDate, endDate) {
+        const res = await fetch(slotsUrl(startDate, endDate), {
+          method: 'GET', headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
+        const data = await res.json();
+        return Array.isArray(data.slots) ? data.slots : [];
+      }
+
+      function mergeSlots(slots) {
+        const byDay = state.slotsByDay;
+        slots.forEach(function (slot) {
+          const day = byDay[slot.date] || (byDay[slot.date] = []);
+          if (!day.some(function (existing) { return existing.datetime === slot.datetime; })) day.push(slot);
+        });
+        Object.keys(byDay).forEach(function (date) {
+          byDay[date].sort(function (a, b) { return a.datetime.localeCompare(b.datetime); });
+        });
+        state.availableDates = new Set(Object.keys(byDay));
+      }
+
+      async function loadAdditionalSlots(startDate, endDate) {
+        try {
+          mergeSlots(await requestSlots(startDate, endDate));
+          renderCalendar();
+          // A quiet background extension may be the first range with an
+          // opening (for example, a page opened over a holiday weekend).
+          if (!state.selectedDate && state.availableDates.size) {
+            selectDate(Array.from(state.availableDates).sort()[0], false);
+          }
+        } catch (err) {
+          // The near-term choices remain usable; do not replace them with an
+          // error merely because the distant calendar horizon is delayed.
+          console.warn('[book] later availability could not load', err && err.message);
+        }
+      }
+
       async function loadSlots() {
         els.slotLoading.hidden = false;
         els.slotError.hidden = true;
@@ -595,44 +641,40 @@
 
         const today = new Date();
         const startDate = ymd(today);
-        const end = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
-        const endDate = ymd(end);
+        const initialEnd = new Date(today.getTime() + INITIAL_LOOKAHEAD_DAYS * 86400000);
+        const finalEnd = new Date(today.getTime() + LOOKAHEAD_DAYS * 86400000);
+        const initialEndDate = ymd(initialEnd);
+        const finalEndDate = ymd(finalEnd);
 
-        // The availability API calls GHL for a two-month range. It can take several
-        // seconds, so draw the calendar immediately and make that wait visible in
-        // the time area rather than leaving the booking surface blank.
+        // Load near-term choices first. The full two-month provider query can
+        // vary by seconds; someone ready to book should not wait for distant
+        // dates before seeing a real time they can choose.
         state.slotsLoading = true;
+        state.slotsByDay = {};
+        state.availableDates = new Set();
+        state.selectedDate = null;
         state.viewLeftMonth = ym(today);
         els.calFrame.hidden = false;
         els.calFrame.setAttribute('aria-busy', 'true');
         renderCalendar();
         renderLoadingSlots();
 
-        const url = SLOTS_API + '?calendarId=' + encodeURIComponent(CALENDAR_ID)
-          + '&startDate=' + startDate + '&endDate=' + endDate
-          + '&timezone=' + encodeURIComponent(state.timezone);
-
         try {
-          const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-          if (!res.ok) throw new Error('slots_fetch_failed_' + res.status);
-          const data = await res.json();
-          const slots = Array.isArray(data.slots) ? data.slots : [];
-
-          const byDay = {};
-          slots.forEach(function (s) { (byDay[s.date] = byDay[s.date] || []).push(s); });
-          state.slotsByDay = byDay;
-          state.availableDates = new Set(Object.keys(byDay));
+          mergeSlots(await requestSlots(startDate, initialEndDate));
           state.slotsLoading = false;
 
           els.slotLoading.hidden = true;
           els.calFrame.setAttribute('aria-busy', 'false');
           if (state.availableDates.size === 0) {
-            els.timeSlotsContainer.hidden = true;
-            els.slotEmpty.hidden = false;
-            return;
+            // Keep the loading state visible while the broader horizon checks.
+            // A person should not see a false "no times" conclusion because
+            // the first seven days happen to be full.
+            void loadAdditionalSlots(ymd(new Date(initialEnd.getTime() + 86400000)), finalEndDate);
+          } else {
+            renderCalendar();
+            selectDate(Array.from(state.availableDates).sort()[0], false);
+            void loadAdditionalSlots(ymd(new Date(initialEnd.getTime() + 86400000)), finalEndDate);
           }
-          renderCalendar();
-          els.timeSlotsContainer.hidden = true;
         } catch (err) {
           state.slotsLoading = false;
           els.slotLoading.hidden = true;
@@ -696,7 +738,7 @@
         }
       }
 
-      function selectDate(dayStr) {
+      function selectDate(dayStr, shouldScroll) {
         state.selectedDate = dayStr;
         // Clear previously selected slot since date changed
         state.selectedSlot = null;
@@ -704,10 +746,10 @@
         // Re-render calendars to update is-selected highlight
         renderCalendar();
         // Render time slots for this date
-        renderTimeSlots(dayStr);
+        renderTimeSlots(dayStr, shouldScroll !== false);
       }
 
-      function renderTimeSlots(dayStr) {
+      function renderTimeSlots(dayStr, shouldScroll) {
         els.timeSlotsContainer.hidden = false;
         els.timeSlotsLabel.textContent = formatDateLong(dayStr);
         els.timeSlots.innerHTML = '';
@@ -727,7 +769,9 @@
         els.step1ContinueBtn.disabled = true;
         els.step1ContinueLabel.textContent = 'Pick a time to continue';
         // Smooth scroll the time slots into view
-        els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (shouldScroll !== false) {
+          els.timeSlotsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
       }
 
       function renderLoadingSlots() {

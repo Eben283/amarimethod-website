@@ -88,13 +88,14 @@
     .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 0 0 16px; font-family: var(--sans); font-size: 13px; color: var(--body); text-decoration: none; background: none; border: none; cursor: pointer; }
     .btn-back:hover { color: var(--ink); }
 
+    .client-form { margin-top: 28px; padding: 28px; border: 1px solid var(--line); background: rgba(255,255,255,0.34); }
     .form-row { margin-bottom: 18px; }
     .form-row.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .form-label { display: block; font-family: var(--sans); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--body); margin-bottom: 8px; }
     .form-label .req { color: #c64a3a; margin-left: 2px; }
-    .form-input { width: 100%; box-sizing: border-box; padding: 12px 0; font-family: var(--sans); font-size: 16px; line-height: 1.4; color: var(--ink); background: transparent; border: none; border-bottom: 1px solid var(--line); border-radius: 0; transition: border-color 0.15s ease; }
-    .form-input:focus { outline: none; border-bottom-color: var(--ink); border-bottom-width: 2px; padding-bottom: 11px; }
-    .form-input.is-invalid { border-bottom-color: #c64a3a; }
+    .form-input { width: 100%; min-height: 48px; box-sizing: border-box; padding: 11px 13px; font-family: var(--sans); font-size: 16px; line-height: 1.4; color: var(--ink); background: rgba(255,255,255,0.68); border: 1px solid #cfcac0; border-radius: 2px; transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
+    .form-input:focus { outline: none; background: #fff; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(25,27,24,0.08); }
+    .form-input.is-invalid { border-color: #c64a3a; }
     .form-input::placeholder { color: #b8b0a0; }
     .form-error { font-family: var(--sans); font-size: 12px; color: #c64a3a; margin-top: 6px; min-height: 1em; }
 
@@ -122,6 +123,7 @@
     }
     @media (max-width: 480px) {
       .book-page { padding: clamp(110px,24vw,140px) 16px 48px; }
+      .client-form { padding: 20px 16px; }
       .form-row.cols-2 { grid-template-columns: 1fr; }
       .cal-day { font-size: 14px; min-height: 44px; }
       .slot-btn { min-height: 48px; padding: 16px 10px; }
@@ -265,7 +267,7 @@
           <div class="order-summary-row order-summary-total"><span>Total today</span><span data-booking-price>$29</span></div>
         </div>
 
-        <form id="clientForm" novalidate style="margin-top: 28px;">
+        <form id="clientForm" class="client-form" novalidate>
           <div class="form-row cols-2">
             <div>
               <label class="form-label" for="firstName">First name<span class="req">*</span></label>
