@@ -1,0 +1,185 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { onRequestPost as startAuthorization } from "./staff-amari-mail-auth.js";
+import { onRequestGet as completeAuthorization } from "./staff-amari-mail-callback.js";
+
+afterEach(() => vi.unstubAllGlobals());
+const GRANTED_SCOPES = [
+  "https://www.googleapis.com/auth/gmail.send",
+  "https://www.googleapis.com/auth/gmail.settings.basic",
+  "https://www.googleapis.com/auth/gmail.readonly",
+].join(" ");
+
+async function staffToken(user = "Eben", secret = "test-secret") {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = btoa(JSON.stringify({ role: "staff", user, exp: Date.now() + 60_000 }));
+  const data = `${header}.${body}`;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(data));
+  return `${data}.${btoa(String.fromCharCode(...new Uint8Array(signature)))}`;
+}
+
+function environment() {
+  const store = new Map();
+  const writes = [];
+  const kv = {
+    get: vi.fn(async (key) => store.get(key) || null),
+    put: vi.fn(async (key, value, options) => { store.set(key, value); writes.push({ key, value, options }); }),
+    delete: vi.fn(async (key) => store.delete(key)),
+  };
+  return {
+    JWT_SECRET: "test-secret",
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "amari-mail-client",
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "amari-mail-secret",
+    GOOGLE_OAUTH_CLIENT_ID: "personal-calendar-client",
+    GOOGLE_OAUTH_CLIENT_SECRET: "personal-calendar-secret",
+    PORTAL_KV: kv,
+    store,
+    writes,
+  };
+}
+
+async function signedState(env, actor = "Eben") {
+  const response = await startAuthorization({
+    request: new Request("https://www.amarimethod.com/api/staff-amari-mail-auth", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${await staffToken(actor)}`, Origin: "https://www.amarimethod.com" },
+    }),
+    env,
+  });
+  return new URL((await response.json()).authorizationUrl).searchParams.get("state");
+}
+
+describe("GET /api/staff-amari-mail-callback", () => {
+  it("stores only a verified Amari-domain grant after checking every required exact SendAs identity", async () => {
+    const env = environment();
+    const state = await signedState(env);
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "mail-access", refresh_token: "mail-refresh", expires_in: 3600, scope: GRANTED_SCOPES }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ emailAddress: "eben@amarimethod.com" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [
+        { sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" },
+        { sendAsEmail: "eben@ebenforrest.com", verificationStatus: "accepted", isPrimary: true },
+      ] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.status).toBe(302);
+    expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/staff/operations?amariMail=connected");
+    expect(new URLSearchParams(fetch.mock.calls[0][1].body).get("client_id")).toBe("amari-mail-client");
+    expect(new URLSearchParams(fetch.mock.calls[0][1].body).get("client_secret")).toBe("amari-mail-secret");
+    expect(fetch.mock.calls[1][0]).toContain("gmail/v1/users/me/profile");
+    expect(fetch.mock.calls[2][0]).toContain("gmail/v1/users/me/settings/sendAs");
+    expect(env.writes.map(({ key }) => key)).toEqual(expect.arrayContaining([
+      "amari-mail:eben:access_token",
+      "amari-mail:eben:refresh_token",
+      "amari-mail:eben:token_expiry",
+      "amari-mail:eben:grant_status",
+    ]));
+    expect(env.writes.every(({ key }) => key.startsWith("amari-mail:"))).toBe(true);
+    expect(env.writes.map(({ key }) => key).join(" ")).not.toContain("google:eben");
+    const grant = JSON.parse(env.writes.find(({ key }) => key === "amari-mail:eben:grant_status").value);
+    expect(grant).toMatchObject({
+      actor: "Eben",
+      profileEmail: "eben@amarimethod.com",
+      verifiedSendAs: ["eben@amarimethod.com"],
+      deliveryEnabled: false,
+      replySyncEnabled: false,
+    });
+  });
+
+  it("rejects tampered state before KV or Google and consumes a valid state only once", async () => {
+    const env = environment();
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const tampered = await completeAuthorization({
+      request: new Request("https://www.amarimethod.com/api/staff-amari-mail-callback?state=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB&code=grant-code"),
+      env,
+    });
+    expect(tampered.headers.get("Location")).toContain("amariMail=failed");
+    expect(env.PORTAL_KV.get).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+
+    const state = await signedState(env);
+    const first = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&error=access_denied`),
+      env,
+    });
+    const replay = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+    expect(first.headers.get("Location")).toContain("amariMail=failed");
+    expect(replay.headers.get("Location")).toContain("amariMail=failed");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("stores Garrett's grant only in Garrett's actor namespace", async () => {
+    const env = environment();
+    const state = await signedState(env, "Garrett");
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "garrett-access", refresh_token: "garrett-refresh", scope: GRANTED_SCOPES }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ emailAddress: "garrett@amarimethod.com" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "garrett@amarimethod.com", isPrimary: true }] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("amariMail=connected");
+    expect([...env.store.keys()]).toEqual(expect.arrayContaining([
+      "amari-mail:garrett:access_token",
+      "amari-mail:garrett:refresh_token",
+      "amari-mail:garrett:grant_status",
+    ]));
+    expect([...env.store.keys()].some((key) => key.startsWith("amari-mail:eben:"))).toBe(false);
+  });
+
+  it("stores no token when the Google profile is personal or the exact actor SendAs is absent", async () => {
+    const env = environment();
+    const state = await signedState(env);
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "personal-access", refresh_token: "personal-refresh", scope: GRANTED_SCOPES }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ emailAddress: "eben@ebenforrest.com" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [
+        { sendAsEmail: "garrett@amarimethod.com", verificationStatus: "accepted" },
+      ] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("amariMail=failed");
+    expect(env.writes.map(({ key }) => key)).not.toEqual(expect.arrayContaining([
+      "amari-mail:eben:access_token",
+      "amari-mail:eben:refresh_token",
+      "amari-mail:eben:grant_status",
+    ]));
+  });
+
+  it("removes partial actor tokens and leaves grant status inactive when KV storage fails", async () => {
+    const env = environment();
+    const state = await signedState(env);
+    const normalPut = env.PORTAL_KV.put.getMockImplementation();
+    env.PORTAL_KV.put.mockImplementation(async (key, value, options) => {
+      if (key === "amari-mail:eben:refresh_token") throw new Error("KV unavailable");
+      return normalPut(key, value, options);
+    });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "mail-access", refresh_token: "mail-refresh", scope: GRANTED_SCOPES }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ emailAddress: "eben@amarimethod.com" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("amariMail=failed");
+    expect([...env.store.keys()].filter((key) => key.startsWith("amari-mail:eben:"))).toEqual([]);
+  });
+});

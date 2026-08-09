@@ -5,35 +5,56 @@ function env(values = {}) {
   const store = new Map(Object.entries(values));
   return { AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "client", AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret", PORTAL_KV: { get: vi.fn(async (key) => store.get(key) || null), put: vi.fn(async (key, value) => store.set(key, value)) } };
 }
+function grant(actor) {
+  const email = actor === "Garrett" ? "garrett@amarimethod.com" : "eben@amarimethod.com";
+  return JSON.stringify({
+    actor,
+    profileEmail: email,
+    verifiedSendAs: [email],
+    scopes: [
+      "https://www.googleapis.com/auth/gmail.send",
+      "https://www.googleapis.com/auth/gmail.settings.basic",
+      "https://www.googleapis.com/auth/gmail.readonly",
+    ],
+    deliveryEnabled: false,
+  });
+}
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Gmail provider", () => {
   it("uses only the purpose-bound Amari mail token namespace", async () => {
     const e = env({
-      "amari-mail:access_token": "current-token",
-      "amari-mail:token_expiry": String(Date.now() + 600_000),
+      "amari-mail:eben:grant_status": grant("Eben"),
+      "amari-mail:eben:access_token": "current-token",
+      "amari-mail:eben:token_expiry": String(Date.now() + 600_000),
+      "amari-mail:garrett:grant_status": grant("Garrett"),
+      "amari-mail:garrett:access_token": "garrett-token",
+      "amari-mail:garrett:token_expiry": String(Date.now() + 600_000),
+      "amari-mail:access_token": "obsolete-shared-token",
       "google:eben:access_token": "personal-token",
       "google:eben:token_expiry": String(Date.now() + 600_000),
     });
-    await expect(getGoogleWorkspaceToken(e)).resolves.toBe("current-token");
+    await expect(getGoogleWorkspaceToken(e, "Eben")).resolves.toBe("current-token");
+    await expect(getGoogleWorkspaceToken(e, "Garrett")).resolves.toBe("garrett-token");
     expect(e.PORTAL_KV.get.mock.calls.flat()).not.toContain("google:eben:access_token");
+    expect(e.PORTAL_KV.get.mock.calls.flat()).not.toContain("amari-mail:access_token");
   });
 
   it("refreshes mail access with only Amari-owned OAuth credentials and mail KV keys", async () => {
-    const e = env({ "amari-mail:refresh_token": "mail-refresh" });
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:refresh_token": "mail-refresh" });
     e.GOOGLE_OAUTH_CLIENT_ID = "personal-client";
     e.GOOGLE_OAUTH_CLIENT_SECRET = "personal-secret";
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ access_token: "fresh-mail-token", expires_in: 3600 }), { status: 200 })));
 
-    await expect(getGoogleWorkspaceToken(e)).resolves.toBe("fresh-mail-token");
+    await expect(getGoogleWorkspaceToken(e, "Eben")).resolves.toBe("fresh-mail-token");
     const requestBody = new URLSearchParams(fetch.mock.calls[0][1].body);
     expect(requestBody.get("client_id")).toBe("client");
     expect(requestBody.get("client_secret")).toBe("secret");
     expect(requestBody.get("refresh_token")).toBe("mail-refresh");
     expect(e.PORTAL_KV.put.mock.calls.map(([key]) => key)).toEqual(expect.arrayContaining([
-      "amari-mail:access_token",
-      "amari-mail:token_expiry",
-      "amari-mail:refresh_token",
+      "amari-mail:eben:access_token",
+      "amari-mail:eben:token_expiry",
+      "amari-mail:eben:refresh_token",
     ]));
     expect(e.PORTAL_KV.put.mock.calls.flat().join(" ")).not.toContain("google:eben");
   });
@@ -47,7 +68,7 @@ describe("Gmail provider", () => {
     };
 
     expect(gmailConfigured(personalConfiguration)).toBe(false);
-    await expect(getGoogleWorkspaceToken(personalConfiguration)).rejects.toThrow("Amari mail is not configured");
+    await expect(getGoogleWorkspaceToken(personalConfiguration, "Eben")).rejects.toThrow("Amari mail is not configured");
     expect(portalKv.get).not.toHaveBeenCalled();
   });
 
@@ -65,7 +86,7 @@ describe("Gmail provider", () => {
   });
 
   it("rejects personal or caller-supplied sender identities before a provider call", async () => {
-    const e = env({ "amari-mail:access_token": "current-token", "amari-mail:token_expiry": String(Date.now() + 600_000) });
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ id: "must-not-send" }), { status: 200 })));
 
     expect(() => resolveAmariMailIdentity("Staff")).toThrow("does not have an Amari mail identity");
@@ -82,7 +103,7 @@ describe("Gmail provider", () => {
   });
 
   it("cannot bypass live Gmail SendAs verification with caller-supplied provider evidence", async () => {
-    const e = env({ "amari-mail:access_token": "current-token", "amari-mail:token_expiry": String(Date.now() + 600_000) });
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
     vi.stubGlobal("fetch", vi.fn(async () => new Response("forbidden", { status: 403 })));
 
     await expect(sendGmailEmail(e, {
@@ -96,7 +117,7 @@ describe("Gmail provider", () => {
   });
 
   it("sends a text email through Gmail without exposing the token in the payload", async () => {
-    const e = env({ "amari-mail:access_token": "current-token", "amari-mail:token_expiry": String(Date.now() + 600_000) });
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ id: "gmail-id", threadId: "thread-id" }), { status: 200 })));
@@ -112,7 +133,7 @@ describe("Gmail provider", () => {
   });
 
   it("lists only exact server-owned identities that Gmail has accepted", async () => {
-    const e = env({ "amari-mail:access_token": "current-token", "amari-mail:token_expiry": String(Date.now() + 600_000) });
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sendAs: [
       { sendAsEmail: "eben@amarimethod.com", displayName: "Eben", verificationStatus: "accepted", isDefault: true },
       { sendAsEmail: "garrett@amarimethod.com", displayName: "Garrett", verificationStatus: "accepted" },
@@ -120,9 +141,18 @@ describe("Gmail provider", () => {
       { sendAsEmail: "primary@amarimethod.com", isPrimary: true },
       { sendAsEmail: "eben@ebenforrest.com", verificationStatus: "accepted", isPrimary: true },
     ] }), { status: 200 })));
-    await expect(listGmailSenders(e)).resolves.toEqual([
+    await expect(listGmailSenders(e, "Eben")).resolves.toEqual([
       { address: "eben@amarimethod.com", name: "Eben", isDefault: true, isPrimary: false },
-      { address: "garrett@amarimethod.com", name: "Garrett", isDefault: false, isPrimary: false },
     ]);
+  });
+
+  it("fails closed when actor-specific verified grant status is absent", async () => {
+    const e = env({
+      "amari-mail:eben:access_token": "unactivated-token",
+      "amari-mail:eben:token_expiry": String(Date.now() + 600_000),
+    });
+    vi.stubGlobal("fetch", vi.fn());
+    await expect(getGoogleWorkspaceToken(e, "Eben")).rejects.toThrow("Amari mail grant is not verified");
+    expect(fetch).not.toHaveBeenCalled();
   });
 });
