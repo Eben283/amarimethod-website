@@ -10,7 +10,7 @@ import PayLinkSheet from '../components/PayLinkSheet';
 import MoneyMoments from '../components/MoneyMoments';
 import SharpenDeck from '../components/SharpenDeck';
 
-type ViewMode = 'day' | 'week';
+type ViewMode = 'day' | 'week' | 'month';
 
 function toDateStr(d: Date): string {
   return d.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
@@ -28,6 +28,16 @@ function getWeekDates(d: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(mon, i));
 }
 
+function getMonthDates(d: Date): Date[] {
+  const first = new Date(d.getFullYear(), d.getMonth(), 1);
+  const start = addDays(first, -((first.getDay() + 6) % 7));
+  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+}
+
+function addMonths(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1);
+}
+
 function isToday(d: Date): boolean {
   return toDateStr(d) === toDateStr(new Date());
 }
@@ -42,6 +52,7 @@ export default function TodayPage() {
   const [view, setView] = useState<ViewMode>('week');
   const [dayAppointments, setDayAppointments] = useState<TodayAppointment[]>([]);
   const [weekData, setWeekData] = useState<Record<string, TodayAppointment[]>>({});
+  const [monthData, setMonthData] = useState<Record<string, TodayAppointment[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [docContactId, setDocContactId] = useState<string | null>(null);
@@ -102,13 +113,40 @@ export default function TodayPage() {
     }
   }, [logout]);
 
+  const loadMonth = useCallback(async (date: Date) => {
+    const reqId = ++reqIdRef.current;
+    setIsLoading(true);
+    setError('');
+    try {
+      const dates = getMonthDates(date);
+      const allAppts = await getCalendarSummary(toDateStr(dates[0]), toDateStr(dates[41]));
+      if (reqId !== reqIdRef.current) return;
+      const map: Record<string, TodayAppointment[]> = {};
+      for (const day of dates) map[toDateStr(day)] = [];
+      for (const appt of allAppts) {
+        const apptDate = new Date(appt.startTime).toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+        if (map[apptDate]) map[apptDate].push(appt);
+      }
+      setMonthData(map);
+    } catch (err) {
+      if (reqId !== reqIdRef.current) return;
+      if (err instanceof ApiError && err.status === 401) { logout(); return; }
+      setError(err instanceof Error ? err.message : 'Failed to load');
+    } finally {
+      if (reqId === reqIdRef.current) setIsLoading(false);
+    }
+  }, [logout]);
+
   useEffect(() => {
     if (view === 'day') loadDay(selectedDate);
-    else loadWeek(selectedDate);
-  }, [selectedDate, view, loadDay, loadWeek]);
+    else if (view === 'week') loadWeek(selectedDate);
+    else loadMonth(selectedDate);
+  }, [selectedDate, view, loadDay, loadWeek, loadMonth]);
 
   function navigateDate(delta: number) {
-    setSelectedDate((prev) => addDays(prev, view === 'week' ? delta * 7 : delta));
+    setSelectedDate((prev) => view === 'month'
+      ? addMonths(prev, delta)
+      : addDays(prev, view === 'week' ? delta * 7 : delta));
   }
 
   function goToToday() {
@@ -117,7 +155,9 @@ export default function TodayPage() {
 
   const dateLabel = view === 'day'
     ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-    : (() => {
+    : view === 'month'
+      ? selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      : (() => {
         const week = getWeekDates(selectedDate);
         const first = week[0];
         const last = week[6];
@@ -126,6 +166,12 @@ export default function TodayPage() {
         }
         return `${first.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${last.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
       })();
+
+  function reloadSelectedDate() {
+    if (view === 'day') loadDay(selectedDate);
+    else if (view === 'week') loadWeek(selectedDate);
+    else loadMonth(selectedDate);
+  }
 
   const showTodayButton = !isToday(selectedDate);
 
@@ -143,15 +189,24 @@ export default function TodayPage() {
         <div className="flex bg-amari-light-sand rounded-lg p-0.5">
           <button
             onClick={() => setView('day')}
+            aria-pressed={view === 'day'}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'day' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'}`}
           >
             Day
           </button>
           <button
             onClick={() => setView('week')}
+            aria-pressed={view === 'week'}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'week' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'}`}
           >
             Week
+          </button>
+          <button
+            onClick={() => setView('month')}
+            aria-pressed={view === 'month'}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${view === 'month' ? 'bg-white text-amari-charcoal shadow-sm' : 'text-amari-text-muted'}`}
+          >
+            Month
           </button>
         </div>
         <div className="flex items-center gap-1">
@@ -164,7 +219,7 @@ export default function TodayPage() {
             </button>
           )}
           <button
-            onClick={() => view === 'day' ? loadDay(selectedDate) : loadWeek(selectedDate)}
+            onClick={reloadSelectedDate}
             disabled={isLoading}
             className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
@@ -194,7 +249,7 @@ export default function TodayPage() {
       ) : error ? (
         <div className="staff-card text-center py-8">
           <p className="text-red-500 text-sm mb-3">{error}</p>
-          <button onClick={() => view === 'day' ? loadDay(selectedDate) : loadWeek(selectedDate)} className="staff-btn-secondary text-sm">Try Again</button>
+          <button onClick={reloadSelectedDate} className="staff-btn-secondary text-sm">Try Again</button>
         </div>
       ) : view === 'day' ? (
         <DayView
@@ -204,9 +259,15 @@ export default function TodayPage() {
           onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
           onSellLink={(appt) => setSellContactId(appt.contactId)}
         />
-      ) : (
+      ) : view === 'week' ? (
         <WeekView
           weekData={weekData}
+          selectedDate={selectedDate}
+          onSelectDay={(d) => { setSelectedDate(d); setView('day'); }}
+        />
+      ) : (
+        <MonthView
+          monthData={monthData}
           selectedDate={selectedDate}
           onSelectDay={(d) => { setSelectedDate(d); setView('day'); }}
         />
@@ -470,6 +531,77 @@ function WeekView({ weekData, selectedDate, onSelectDay }: {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// ── Month View ──
+
+function MonthView({ monthData, selectedDate, onSelectDay }: {
+  monthData: Record<string, TodayAppointment[]>;
+  selectedDate: Date;
+  onSelectDay: (d: Date) => void;
+}) {
+  const monthDates = getMonthDates(selectedDate);
+  const selectedMonth = selectedDate.getMonth();
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-amari-light-sand bg-amari-light-sand">
+      <div className="grid grid-cols-7 gap-px" aria-hidden="true">
+        {SHORT_DAY.map((day) => (
+          <div key={day} className="bg-white px-1 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-amari-text-muted sm:text-xs">
+            {day}
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-px" role="grid" aria-label={selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}>
+        {monthDates.map((day) => {
+          const key = toDateStr(day);
+          const appts = monthData[key] || [];
+          const today = isToday(day);
+          const inMonth = day.getMonth() === selectedMonth;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              role="gridcell"
+              onClick={() => onSelectDay(day)}
+              aria-label={`${day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}, ${appts.length} appointment${appts.length === 1 ? '' : 's'}`}
+              className={`group min-h-[74px] bg-white p-1 text-left align-top transition-colors focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amari-accent-warm sm:min-h-[118px] sm:p-2 ${
+                inMonth ? 'hover:bg-amari-light-sand/40' : 'bg-white/60 text-amari-text-muted opacity-55 hover:opacity-80'
+              }`}
+            >
+              <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-semibold sm:text-sm ${
+                today ? 'bg-amari-accent-warm text-white' : inMonth ? 'text-amari-charcoal' : 'text-amari-text-muted'
+              }`}>
+                {day.getDate()}
+              </span>
+
+              <div className="mt-1 flex flex-wrap gap-0.5 sm:hidden" aria-hidden="true">
+                {appts.slice(0, 4).map((appt) => (
+                  <span key={appt.id} className="h-1.5 w-1.5 rounded-full bg-amari-accent-warm" />
+                ))}
+                {appts.length > 4 && <span className="text-[8px] font-semibold text-amari-text-muted">+{appts.length - 4}</span>}
+              </div>
+
+              <div className="mt-1 hidden space-y-1 sm:block">
+                {appts.slice(0, 3).map((appt) => (
+                  <div key={appt.id} className="rounded border-l-2 border-amari-accent-warm bg-amari-accent-warm/10 px-1.5 py-1">
+                    <p className="truncate text-[10px] font-semibold text-amari-charcoal">
+                      {new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' })}
+                    </p>
+                    <p className="truncate text-[9px] text-amari-text-muted">{appt.contactName || appt.title}</p>
+                  </div>
+                ))}
+                {appts.length > 3 && (
+                  <p className="px-1 text-[9px] font-semibold text-amari-text-muted">+{appts.length - 3} more</p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
