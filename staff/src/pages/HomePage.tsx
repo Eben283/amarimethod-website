@@ -19,7 +19,6 @@ import {
   TrendingUp,
   TriangleAlert,
   Wallet,
-  Workflow,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -203,11 +202,6 @@ export default function HomePage() {
             <div className="home-clear"><span>Clear</span><p>No unanswered replies or system incidents are showing.</p></div>
           ) : null}
 
-          <div className="home-incident-path">
-            <Workflow aria-hidden="true" />
-            <span><strong>Someone received the wrong automated email?</strong><small>Find the exact email in Communication, open that person, then compare its time and message reference with their Workflows section.</small></span>
-            <div><button type="button" onClick={() => navigate('/client-desk')}>Find the person and email</button></div>
-          </div>
         </div>
 
         <div className="home-replies">

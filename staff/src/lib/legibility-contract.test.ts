@@ -90,4 +90,11 @@ describe('Staff legibility contract', () => {
     expect(training).toContain('Playbooks & scripts');
     expect(training).toContain('Reference');
   });
+
+  it('keeps wrong-email investigation out of the daily Home workboard', () => {
+    const home = css('pages/HomePage.tsx');
+    expect(home).not.toContain('Someone received the wrong automated email?');
+    expect(home).not.toContain('Find the person and email');
+    expect(home).not.toContain('home-incident-path');
+  });
 });
