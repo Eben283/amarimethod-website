@@ -201,4 +201,26 @@ describe("CRM mirror dashboard access handoff", () => {
       currentSyncOverall: "healthy",
     });
   });
+
+  it("serves appointment shadow readiness behind auth and fails open to the live schedule", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: { prepare: () => { throw new Error("no such table: appointment_projection_events"); } },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/appointments/readiness"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/appointments/readiness", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      configured: false,
+      shadowOnly: true,
+      state: "unavailable",
+      liveScheduleFallback: true,
+      bufferPolicy: { state: "conflict", runtimeAppOwnedMinutes: 20, olderDocumentedMinutes: 10 },
+    });
+  });
 });

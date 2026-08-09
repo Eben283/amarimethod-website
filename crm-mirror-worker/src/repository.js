@@ -1,3 +1,5 @@
+import { recordAppointmentObservation } from "./appointment-projection-store.js";
+
 function id() {
   return crypto.randomUUID();
 }
@@ -445,7 +447,7 @@ async function refreshEmailReconciliationCandidate(db, purchaseId, billingEmail,
   return true;
 }
 
-export async function upsertGhlAppointment(db, appointment, contactId, now) {
+export async function upsertGhlAppointment(db, appointment, contactId, now, projectionEvidence = {}) {
   const service = appointment.calendarId
     ? await db.prepare("SELECT id FROM services WHERE provider_calendar_id = ?").bind(appointment.calendarId).first()
     : null;
@@ -482,6 +484,18 @@ export async function upsertGhlAppointment(db, appointment, contactId, now) {
      ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
        contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
   ).bind(id(), appointment.externalId, contactId, appointmentId, now).run();
+  // Projection storage is intentionally downstream of the existing current
+  // mirror. A missing/new migration must never break provider-backed schedule
+  // reads or the established appointment import.
+  try {
+    await recordAppointmentObservation(db, appointment, projectionEvidence, now);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      event: "appointment_projection_unavailable",
+      providerAppointmentId: appointment.externalId,
+      message: error instanceof Error ? error.message : String(error),
+    }));
+  }
   return appointmentId;
 }
 

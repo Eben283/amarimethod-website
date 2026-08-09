@@ -4,6 +4,7 @@ import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import { deliveryReadiness } from "./owned-sender.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
+import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -73,6 +74,11 @@ async function webhookFallbackId(payload, data, rawBody) {
   return `${payload.type || "unknown"}:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
+async function sha256Text(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 async function processGhlWebhook(request, env) {
   const rawBody = await request.text();
   if (rawBody.length > 262144 || !await validGhlSignature(rawBody, request.headers.get("X-GHL-Signature"))) return json(401, { error: "invalid webhook signature" });
@@ -100,7 +106,13 @@ async function processGhlWebhook(request, env) {
   if (["AppointmentCreate", "AppointmentUpdate"].includes(payload.type) && data.contactId) {
     const contactId = await findContactIdByGhlId(env.CRM_DB, data.contactId);
     const appointment = normalizeGhlAppointment(data, data.contactId);
-    if (contactId && appointment) await upsertGhlAppointment(env.CRM_DB, appointment, contactId, now);
+    if (contactId && appointment) await upsertGhlAppointment(env.CRM_DB, appointment, contactId, now, {
+      sourceKind: "webhook",
+      providerEventId: webhookId,
+      providerEventType: String(payload.type),
+      providerOccurredAt: data.dateAdded || payload.timestamp || null,
+      evidenceHash: await sha256Text(rawBody),
+    });
     return finish(200, { projected: Boolean(contactId && appointment) }, Boolean(contactId && appointment));
   }
   if (["NoteCreate", "NoteUpdate", "NoteDelete"].includes(payload.type) && data.contactId) {
@@ -366,7 +378,7 @@ export default {
       }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -421,6 +433,13 @@ export default {
           const message = error instanceof Error ? error.message : String(error);
           return json(message === "contact is not mirrored" || message === "follow-up not found" ? 404 : 400, { error: message });
         }
+      }
+      if (request.method === "GET" && url.pathname === "/appointments/readiness") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
+        });
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

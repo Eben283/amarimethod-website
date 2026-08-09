@@ -108,6 +108,31 @@ export async function getStaffCalendars(): Promise<StaffCalendarRegistry> {
   return fetchApi('/staff-calendars');
 }
 
+export interface AppointmentProjectionReadiness {
+  configured: boolean;
+  shadowOnly: true;
+  state: 'ready' | 'attention' | 'unavailable';
+  generatedAt: string;
+  liveScheduleFallback: true;
+  reason?: string;
+  coverage?: { observationsRead: number; totalObservations: number; truncated: boolean };
+  reconciliation?: {
+    summary: { appointments: number; observations: number; conflicts: number; historyGaps: number };
+    issues: Array<{ code: string; providerAppointmentId?: string }>;
+  };
+  bufferPolicy: {
+    state: 'conflict';
+    runtimeAppOwnedMinutes: 20;
+    olderDocumentedMinutes: 10;
+    blocksWriteAuthority: true;
+    note: string;
+  };
+}
+
+export async function getAppointmentProjectionReadiness(): Promise<AppointmentProjectionReadiness> {
+  return fetchApi('/staff-appointment-readiness');
+}
+
 export type OpsSystemSummary = {
   id: string;
   label: string;

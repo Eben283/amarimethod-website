@@ -11,7 +11,14 @@ import {
   TimerReset,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ApiError, getStaffCalendars, type StaffCalendarDefinition, type StaffCalendarRegistry } from '../lib/api';
+import {
+  ApiError,
+  getAppointmentProjectionReadiness,
+  getStaffCalendars,
+  type AppointmentProjectionReadiness,
+  type StaffCalendarDefinition,
+  type StaffCalendarRegistry,
+} from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 import './CalendarRegistry.css';
 
@@ -76,6 +83,9 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
   const [registry, setRegistry] = useState<StaffCalendarRegistry | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [projection, setProjection] = useState<AppointmentProjectionReadiness | null>(null);
+  const [projectionLoading, setProjectionLoading] = useState(true);
+  const [projectionError, setProjectionError] = useState('');
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState<GroupFilter>('all');
   const [state, setState] = useState<StateFilter>('all');
@@ -93,7 +103,20 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
     }
   }, [logout]);
 
-  useEffect(() => { void load(); }, [load]);
+  const loadProjection = useCallback(async () => {
+    setProjectionLoading(true);
+    setProjectionError('');
+    try {
+      setProjection(await getAppointmentProjectionReadiness());
+    } catch (cause) {
+      if (cause instanceof ApiError && cause.status === 401) { logout(); return; }
+      setProjectionError(cause instanceof Error ? cause.message : 'Appointment shadow evidence is unavailable.');
+    } finally {
+      setProjectionLoading(false);
+    }
+  }, [logout]);
+
+  useEffect(() => { void load(); void loadProjection(); }, [load, loadProjection]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -128,6 +151,21 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
       <div className="calendar-registry-boundary">
         <ShieldCheck aria-hidden="true" />
         <div><strong>Calendar definitions are view-only during cutover.</strong><p>{registry.editingBoundary} There is no GHL escape link here.</p></div>
+      </div>
+
+      <div className={`calendar-registry-projection is-${projection?.state || (projectionError ? 'unavailable' : 'loading')}`}>
+        {projection?.state === 'ready' ? <ShieldCheck aria-hidden="true" /> : projectionLoading ? <Loader2 aria-hidden="true" /> : <AlertTriangle aria-hidden="true" />}
+        <div>
+          <strong>Owned appointment history · shadow only</strong>
+          {projectionLoading ? <p>Checking append-only provider evidence…</p> : projection ? (
+            <p>
+              {projection.configured
+                ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} conflicts and ${projection.reconciliation?.summary.historyGaps || 0} history gaps.`
+                : 'Shadow storage is not available yet.'}
+              {' '}The live schedule remains provider-backed. Runtime booking currently enforces {projection.bufferPolicy.runtimeAppOwnedMinutes} minutes of turnover while older calendar evidence records {projection.bufferPolicy.olderDocumentedMinutes}; owned booking writes stay blocked until that is resolved.
+            </p>
+          ) : <p>{projectionError || 'Appointment shadow evidence is unavailable.'} The live schedule remains provider-backed.</p>}
+        </div>
       </div>
 
       <div className="calendar-registry-tools">
