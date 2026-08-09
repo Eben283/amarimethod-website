@@ -26,7 +26,7 @@ const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
   {
     label: 'Care and relationships',
     items: [
-      { label: 'Today', detail: 'Schedule and session work', Icon: CalendarDays, to: '/today' },
+      { label: 'Calendar', detail: 'Schedule, services, and booking rules', Icon: CalendarDays, to: '/calendar' },
       { label: 'Practice members', detail: 'Relationship history', Icon: MessageSquare, to: '/client-desk' },
       { label: 'Follow-up', detail: 'Replies and next moves', Icon: UsersRound, to: '/follow-up' },
       { label: 'Balances', detail: 'Session entitlements', Icon: Wallet, to: '/balances' },

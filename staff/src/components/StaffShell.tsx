@@ -56,7 +56,7 @@ type ShellCounts = {
 
 const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Home', detail: 'Your practice day', to: '/', Icon: House, matches: (path) => path === '/' },
-  { label: 'Today', detail: 'Schedule and sessions', to: '/today', Icon: CalendarDays },
+  { label: 'Calendar', detail: 'Day, week, month and services', to: '/calendar', Icon: CalendarDays, matches: (path) => path === '/calendar' || path === '/today' },
   { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
   { label: 'Follow-up', detail: 'Replies and next moves', to: '/follow-up', Icon: ListChecks },

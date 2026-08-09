@@ -448,12 +448,12 @@
     inset: 0 auto 0 0;
     width: min(318px, calc(100vw - 38px));
     padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
-    box-shadow: 20px 0 50px rgba(10, 30, 36, .25);
+    box-shadow: none;
     transform: translateX(-104%);
     transition: transform 220ms cubic-bezier(.2, .8, .2, 1);
   }
 
-  .practice-rail.is-open { transform: translateX(0); }
+  .practice-rail.is-open { box-shadow: 20px 0 50px rgba(10, 30, 36, .25); transform: translateX(0); }
   .practice-rail__close { display: grid; }
   .practice-search { margin-top: 18px; }
   .practice-search__field { min-height: 45px; }

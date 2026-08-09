@@ -89,7 +89,8 @@ function AppRoutes() {
     <Routes>
       <Route element={<ProtectedStaffLayout />}>
         <Route index element={<Layout><HomePage /></Layout>} />
-        <Route path="today" element={<Layout><TodayPage /></Layout>} />
+        <Route path="calendar" element={<Layout><TodayPage /></Layout>} />
+        <Route path="today" element={<Navigate to="/calendar" replace />} />
         <Route path="clients" element={<Layout><ClientsPage /></Layout>} />
         <Route path="client-desk" element={<Layout><ClientDeskPage /></Layout>} />
         <Route path="balances" element={<Layout><BalancesPage /></Layout>} />
