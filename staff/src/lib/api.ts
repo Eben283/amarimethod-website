@@ -241,14 +241,7 @@ export async function getStaffAmariMailReadiness(): Promise<StaffAmariMailReadin
 }
 
 export async function startStaffAmariMailAuthorization(): Promise<{ authorizationUrl: string; deliveryEnabled: false }> {
-  try {
-    return await fetchApi('/staff-amari-mail-auth', { method: 'POST' });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 503) {
-      throw new Error('Amari mail authorization is not configured');
-    }
-    throw error;
-  }
+  return fetchApi('/staff-amari-mail-auth', { method: 'POST' });
 }
 
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {

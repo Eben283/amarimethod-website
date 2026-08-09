@@ -287,7 +287,7 @@ describe("Staff Amari mail authorization", () => {
       env: environment,
     });
 
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "Amari mail readiness is unavailable",
       actor: "Eben",

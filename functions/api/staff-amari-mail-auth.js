@@ -42,7 +42,7 @@ export async function onRequestGet(context) {
       actor: mailbox.actor,
       mailbox: mailbox.sender,
       deliveryEnabled: false,
-    }, 503, headers);
+    }, 500, headers);
   }
 }
 
@@ -58,7 +58,7 @@ export async function onRequestPost(context) {
   } catch {
     return json({ error: "Staff mailbox is not authorized" }, 403, headers);
   }
-  if (!amariMailOAuthConfigured(context.env)) return json({ error: "Amari mail authorization is not configured" }, 503, headers);
+  if (!amariMailOAuthConfigured(context.env)) return json({ error: "Amari mail authorization is not configured" }, 500, headers);
 
   const state = await createAmariMailOAuthState(context.env, payload.user);
   const authorizationUrl = new URL(AUTH_URL);
