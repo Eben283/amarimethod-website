@@ -25,6 +25,15 @@ export function assessmentTestEligibility(env, flow, step, enrollment) {
   return { eligible: true, recipient: text(env.ASSESSMENT_TEST_RECIPIENT) };
 }
 
+// This is intentionally shipped disabled. A real cutover must separately make GHL bypass only
+// its matching client-confirmation step; enabling this flag before that creates duplicate mail.
+export function assessmentCutoverEligibility(env, flow, step, enrollment) {
+  if (env?.ASSESSMENT_CONFIRMATION_CUTOVER !== "enabled") return { eligible: false, reason: "cutover-disabled" };
+  if (flow?.flowKey !== "initial-in-person" || enrollment?.calendarId !== ASSESSMENT_CALENDAR_ID) return { eligible: false, reason: "not-assessment-confirmation" };
+  if (step?.type !== "email" || step?.template !== "confirmation") return { eligible: false, reason: "not-confirmation-email" };
+  return { eligible: true };
+}
+
 async function ghlGet(env, path) {
   const token = await getAccessToken(env);
   const response = await fetch(`${GHL_API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" } });
@@ -59,5 +68,10 @@ export async function renderAssessmentConfirmation(env, enrollment) {
   ].filter(Boolean).join("");
   const html = `<p>Hi ${escapeHtml(firstName)},</p><p>Your session with Garrett is confirmed:</p><p><strong>${escapeHtml(calendarName)}</strong><br>${escapeHtml(when)}<br>662 8th Ave, San Francisco, CA 94118</p><p>Wear something comfortable you can move in. That’s all you need.</p>${links}<p>We look forward to seeing you.<br>The Amari Method Team</p>`;
   const plainLinks = [calendar && `Add to Google Calendar: ${calendar}`, ical && `Add to iCal/Outlook: ${ical}`, reschedule && `Reschedule: ${reschedule}`, cancel && `Cancel: ${cancel}`].filter(Boolean).join("\n");
-  return { subject: "You're booked — here's what to expect", html, text: `Hi ${firstName},\n\nYour session with Garrett is confirmed:\n${calendarName}\n${when}\n662 8th Ave, San Francisco, CA 94118\n\nWear something comfortable you can move in. That's all you need.\n\n${plainLinks}\n\nWe look forward to seeing you.\nThe Amari Method Team` };
+  return {
+    recipient: text(contact.email || contact.emailAddress || contact.email_address),
+    subject: "You're booked — here's what to expect",
+    html,
+    text: `Hi ${firstName},\n\nYour session with Garrett is confirmed:\n${calendarName}\n${when}\n662 8th Ave, San Francisco, CA 94118\n\nWear something comfortable you can move in. That's all you need.\n\n${plainLinks}\n\nWe look forward to seeing you.\nThe Amari Method Team`,
+  };
 }

@@ -11,7 +11,7 @@ import { resolvePipelineMoves } from "./pipeline.js";
 import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
-import { assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
+import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
 import { sendAssessmentTestEmail } from "./gmail-test-send.js";
 
 /**
@@ -118,9 +118,17 @@ export async function runSweep(env, nowMs, limit = 100) {
     send: (msg) => sendConversationMessage({ env }, msg),
     testDelivery: async (flow, step, enrollment) => {
       const gate = assessmentTestEligibility(env, flow, step, enrollment);
-      if (!gate.eligible) return null;
+      if (gate.eligible) {
+        const message = await renderAssessmentConfirmation(env, enrollment);
+        return { handled: true, recipient: gate.recipient, result: await sendAssessmentTestEmail(env, { to: gate.recipient, ...message }) };
+      }
+      const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
+      if (!cutover.eligible) return null;
       const message = await renderAssessmentConfirmation(env, enrollment);
-      return { handled: true, recipient: gate.recipient, result: await sendAssessmentTestEmail(env, { to: gate.recipient, ...message }) };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(message.recipient)) {
+        return { handled: true, recipient: null, result: { success: false, error: "Assessment contact email is unavailable" } };
+      }
+      return { handled: true, recipient: message.recipient, result: await sendAssessmentTestEmail(env, { to: message.recipient, ...message }) };
     },
   };
 
