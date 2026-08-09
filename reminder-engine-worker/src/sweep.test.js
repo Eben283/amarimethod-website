@@ -40,6 +40,14 @@ describe("processStep — shadow mode (the beside-GHL safety guarantee)", () => 
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "would_send");
   });
 
+  it("can use only an explicit handled test-delivery dependency, and records it as test-only", async () => {
+    const d = deps({ testDelivery: vi.fn().mockResolvedValue({ handled: true, recipient: "test@amarimethod.com", result: { success: true, messageId: "gmail_1" } }) });
+    const out = await processStep({ enrollment: enrollment(), step: step({ type: "email", template: "confirmation" }), flow: shadowFlow }, d, NOW);
+    expect(out.outcome).toBe("sent");
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "test_send", outcome: "sent", message_ref: "gmail_1", detail: expect.objectContaining({ testOnly: true }) }));
+  });
+
   it("defaults to shadow when mode is unset (a new flow never sends by accident)", async () => {
     const d = deps();
     const out = await processStep({ enrollment: enrollment(), step: step(), flow: { flowKey: "x" } }, d, NOW);

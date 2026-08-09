@@ -36,6 +36,23 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
 
   // Shadow is the default: anything not explicitly "active" observes without sending.
   if (flow.mode !== "active") {
+    // This is the only exception to the shadow guarantee: a separately configured, single-contact
+    // Assessment confirmation proof. The dependency returns null unless every allowlist gate passes.
+    if (deps.testDelivery) {
+      try {
+        const delivered = await deps.testDelivery(flow, step, enrollment);
+        if (delivered?.handled) {
+          const ok = delivered.result?.success === true;
+          await deps.logEvent({ ...base, action: "test_send", outcome: ok ? "sent" : "failed", message_ref: delivered.result?.messageId || null, detail: { testOnly: true, recipient: delivered.recipient, ...(ok ? {} : { error: delivered.result?.error || "test delivery failed" }) } });
+          await deps.markStep(enrollment, step.stepIndex, ok ? "sent" : "failed");
+          return { outcome: ok ? "sent" : "failed" };
+        }
+      } catch (err) {
+        await deps.logEvent({ ...base, action: "test_send", outcome: "failed", detail: { testOnly: true, error: String(err?.message || err) } });
+        await deps.markStep(enrollment, step.stepIndex, "failed");
+        return { outcome: "failed" };
+      }
+    }
     await deps.logEvent({ ...base, action: "would_send", outcome: "would_send", detail: { template: step.template } });
     await deps.markStep(enrollment, step.stepIndex, "would_send");
     return { outcome: "would_send" };

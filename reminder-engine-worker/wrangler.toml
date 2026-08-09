@@ -40,4 +40,7 @@ head_sampling_rate = 1
 # Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
 #   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
 # GHL_WEBHOOK_SECRET (same value as the Pages purchase webhooks — the /webhook ingest gate).
-# Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for the send adapter's token access.
+# Assessment test delivery only (all must be present; otherwise every flow remains shadow-only):
+# ASSESSMENT_TEST_DELIVERY=enabled, ASSESSMENT_TEST_CONTACT_ID, ASSESSMENT_TEST_RECIPIENT,
+# AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID, AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET.
+# The recipient must be an Amari-controlled inbox. Do not set these for production client delivery.
